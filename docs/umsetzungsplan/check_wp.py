@@ -4,6 +4,7 @@
 Liest docs/umsetzungsplan/wp/*.md und prüft gegen die Artefakte des Pflichtenhefts:
 - jede der 672 Anforderungen steht in genau einem WP
 - jede WP-Abhängigkeit zeigt auf ein existierendes WP, keine Zyklen, keine Vorwärtsabhängigkeit
+  (das Feld "Vollabnahme erst mit" ist keine Bauabhängigkeit und darf auf spätere WPs zeigen)
 - alle 106 Originaltests, 22 PH-AT-Tests, 80 Parameter, 48 Kennzahlen, 38 Kerntabellen,
   Ergänzungstabellen (Kap. 04 §4.4), OpenAPI-Pfade, Endpunktkatalog (Kap. 05 §5.7) und UI-01..20
   werden in mindestens einem WP genannt
@@ -62,17 +63,23 @@ for wid, w in wps.items():
     for d in w['deps']:
         if d not in wps: errors.append(f'{wid}: Abhängigkeit {d} existiert nicht')
         elif ORDER[ms(d)] > ORDER[ms(wid)]: errors.append(f'{wid}: hängt von späterem {d} ab')
-state = {}
-def visit(n, path):
-    if state.get(n) == 2: return
-    if state.get(n) == 1:
-        errors.append('Zyklus: ' + ' -> '.join(path[path.index(n):] + [n])); return
-    state[n] = 1
-    for d in wps[n]['deps']:
-        if d in wps: visit(d, path + [n])
-    state[n] = 2
+# Zyklen als starke Zusammenhangskomponenten (Tarjan)
 sys.setrecursionlimit(10000)
-for n in wps: visit(n, [])
+idx, low, stack, on, counter = {}, {}, [], set(), [0]
+def strong(v):
+    idx[v] = low[v] = counter[0]; counter[0] += 1; stack.append(v); on.add(v)
+    for d in wps[v]['deps']:
+        if d not in wps: continue
+        if d not in idx: strong(d); low[v] = min(low[v], low[d])
+        elif d in on: low[v] = min(low[v], idx[d])
+    if low[v] == idx[v]:
+        comp = []
+        while True:
+            x = stack.pop(); on.discard(x); comp.append(x)
+            if x == v: break
+        if len(comp) > 1: errors.append('Zyklus zwischen: ' + ', '.join(sorted(comp)))
+for n in wps:
+    if n not in idx: strong(n)
 
 # Katalogabdeckung
 gaps = {}
