@@ -54,7 +54,7 @@
 | WP-M7d-29 | Schreibgeschützter Offline-Cache für Schichtpläne und Aufgaben in der Fahrer-App | 1 | M | WP-M7d-28, WP-M3-24, WP-M7c-07, WP-M7c-08 |
 | WP-M7d-30 | Export von Schichtplänen als PDF/CSV und persönlicher Kalenderfeed | 1 | M | WP-M7d-07, WP-M7d-28, WP-M5-19, WP-M1-11, WP-M1-46 |
 | WP-M7d-31 | Mitarbeiterübersicht: Soll, zugewiesen, Fehlzeiten, Über-/Unterdeckung, offene Bedarfe | 1 | M | WP-M7d-07, WP-M7d-09, WP-M7d-14, WP-M7d-19, WP-M4-46 |
-| WP-M7d-32 | Unverbindlicher Personalbedarfsvorschlag aus Nachfrage, Umlaufplanung und Servicefenstern | 1 | M | WP-M7d-04, WP-M7d-07, WP-M4-45, WP-M4-47, WP-M4-51, WP-M2-03, WP-M2-16, WP-M9a-06 |
+| WP-M7d-32 | Unverbindlicher Personalbedarfsvorschlag aus Nachfrage, Umlaufplanung und Servicefenstern | 1 | M | WP-M7d-04, WP-M7d-07, WP-M4-45, WP-M4-47, WP-M4-51, WP-M2-03, WP-M2-16 |
 | WP-M7d-33 | Zeitkorrekturanträge mit Prüfung und Alt-/Neuwert | 1 | M | WP-M7d-02, WP-M7d-03, WP-M4-08, WP-M4-12, WP-M4-20, WP-M1-46 |
 | WP-M7d-34 | Getrennte Rollenrechte und Audit für Korrektur, Freigabe und Zugriff | 1 | M | WP-M7d-33, WP-M1-07, WP-M1-46, WP-M1-12 |
 | WP-M7d-35 | Zeitkonten: Soll/Ist, Überstunden, Minusstunden mit offengelegter Rundungs- und Pausenlogik | 1 | M | WP-M7d-09, WP-M7d-11, WP-M7d-19, WP-M7d-33, WP-M4-09, WP-M4-10 |
@@ -328,9 +328,10 @@
 - **Liefergegenstände:**
   - Backend: Kalenderdienst im Modul `staff-time` (gesetzliche Feiertage je Ort, betriebliche Sondertage); anteilige Kennzeichnung einer Schicht, die über Mitternacht in oder aus einem Feiertag läuft; Nachtkennzeichnung.
   - Datenbank: Feiertags-/Sondertagskalender mit Ortsbezug und Gültigkeit (Arbeitsname aus WP-M7d-01).
+  - Backend (Leseport): Kalender-Leseport (Feiertag/Sondertag je Ort und Datum, mandantengetrennt, nur lesend) für die Abnehmer WP-M7a-07, WP-M8c-17, WP-M8c-20, WP-M8d-08 und WP-M9a-07; dieses WP ist alleiniger Lieferant der Feiertags-/Sondertagsdaten (in M7 und für den Kalenderdienst des Moduls `config` in M8d).
   - Oberfläche: UI-12 Dienstplan – Kennzeichen im Wochenraster; Pflegemaske des Kalenders.
   - Konfigurationsparameter: `reporting_timezone` für die Tageszuordnung.
-- **Detailverträge vorab:** Quelle und Pflegeverantwortung des Feiertagskalenders; Definition „Nacht“ (im Pflichtenheft nicht beziffert); Ortsbezug (Standort der Schicht).
+- **Detailverträge vorab:** Quelle und Pflegeverantwortung des Feiertagskalenders; Definition „Nacht“ (im Pflichtenheft nicht beziffert); Ortsbezug (Standort der Schicht); Vertrag des Kalender-Leseports, abgestimmt mit WP-M7a-01 (Offene Punkte 22, 34).
 - **Akzeptanzkriterien:**
   1. Eine Schicht an einem Feiertag des Schichtorts ist gekennzeichnet; dieselbe Schicht an einem Ort ohne diesen Feiertag nicht (SCH-019).
   2. Eine Nachtschicht vom Vortag in den Feiertag ist anteilig korrekt gekennzeichnet (SCH-019).
@@ -339,10 +340,9 @@
 - **Tests:** positiv: Feiertag, Nachtschicht über Mitternacht, DST-Nacht. negativ: fremder Mandantenkalender wirkt nicht. Regression AT-47; Zuarbeit zu E2E-102.
 - **Abhängigkeiten:** intern: WP-M7d-02, WP-M7d-03.
   - extern: WP-M4-10 (Zeitrechnung über Mitternacht, Zeitzone und DST)
-  - extern: UNGEDECKT – gemeinsamer Feiertags-/Schließtagskalender für Serienbuchung (AT-06) – Abstimmung, ob ein Kalender geteilt wird (kein lieferndes WP in M7a; WP-M7a-07 ist selbst Abnehmer von WP-M7d-11, siehe Offene Punkte 34)
 - **Entscheidungen:** keine.
 - **Größe:** M
-- **Nicht im Umfang:** Zuschlagsberechnung für Lohn (nur Kennzeichnung und Stundenart, WP-M7d-35/38).
+- **Nicht im Umfang:** Zuschlagsberechnung für Lohn (nur Kennzeichnung und Stundenart, WP-M7d-35/38); Wirkung von Feiertagen/Schließtagen auf Serientermine (Abnehmer in M7a, Serienbuchung); Schließtage eines Dienstes als Betriebszeitregel (nicht Teil von SCH-019, Offene Punkte 22).
 
 ### WP-M7d-12 – Geplante Pausen in der operativen Fahrzeugverfügbarkeit
 
@@ -388,7 +388,7 @@
   - extern: WP-M2-15, WP-M2-16 (Disposition mit Kapazitätsprüfung)
   - extern: WP-M3-52, WP-M3-36 (Alarm-Grundlage und Livebetrieb UI-07)
   - extern: WP-M4-08 (Ist-Arbeitszeit als Zeitereignisse)
-  - extern: WP-M7b-07 (Schicht- und Dienstplanübersicht der Leitstelle (WP-M7b-07) als Abnehmer)
+  - extern: WP-M7b-07 (Schicht- und Dienstplanübersicht der Leitstelle als Oberfläche, an deren Fahrzeugschicht die Vorwarnung angezeigt wird; die Übersicht selbst setzt dieses WP nicht voraus, es entsteht kein Zyklus)
 - **Entscheidungen:** keine.
 - **Größe:** M
 - **Nicht im Umfang:** Automatische Umplanung bereits bestätigter Fahrten (Disposition, M7b).
@@ -831,18 +831,20 @@
 - **Anforderungen:** `LH-6.23-SCH-028`
 - **Liefergegenstände:**
   - Backend: Vorschlagsdienst, der Bedarfslinien aus Nachfragedaten, Fahrzeugumlaufplanung und Servicefenstern ableitet; Vorschläge als eigener, als unverbindlich markierter Objekttyp, nicht als Schicht.
+  - Backend (Eingangsport): Port „Nachfragequelle“ im Modul `staff-time` (Gebiet, Zeitabschnitt, Wert, Quelle, Unsicherheit, Antwort „keine Daten“); in M7 implementiert durch den Adapter „historische Nachfrage“ auf den Kennzahlendaten aus M4. Eine Prognosequelle wird erst in M9 über denselben Port angeschlossen; dieses WP enthält keinen Aufruf in M9-Bausteine.
   - API: `/v1/rosters` (Vorschläge lesen, übernehmen, verwerfen).
   - Oberfläche: UI-12 Dienstplan – Vorschlagsebene mit Quelle/Zeitraum/Unsicherheit, Aktion „in Entwurf übernehmen“.
-- **Detailverträge vorab:** Eingangsdaten und deren Vertrag (Nachfrageprognose stammt aus M9 – bis dahin historische Nachfrage und Servicefenster); Darstellungsform der Unsicherheit.
+- **Detailverträge vorab:** Eingangsdaten und Vertrag des Ports „Nachfragequelle“ (in M7 historische Nachfrage und Servicefenster; die Nachfrageprognose stammt aus M9 und wird dort an den Port angebunden); Darstellungsform der Unsicherheit.
 - **Akzeptanzkriterien:**
   1. Jeder Bedarfsvorschlag weist Quelle, Zeitraum und Unsicherheit aus (SCH-028).
   2. Ein Vorschlag erzeugt ohne Planeraktion weder Entwurfsschicht noch Angebot noch Mitteilung (SCH-028).
   3. Ein übernommener Vorschlag wird erst nach regulärer Veröffentlichung verbindlich (AT-55).
-- **Tests:** positiv: Vorschlag übernehmen. negativ: kein automatisches Verbindlichwerden; fehlende Eingangsdaten führen zu „kein Vorschlag“ statt zu Scheinwerten. Zuarbeit zu AT-55.
+  4. Nachweis im Meilenstein M7 (am Testaggregat): Die Kriterien 1–3 werden mit der Quelle „historische Nachfrage“ und zusätzlich mit einer Test-Nachfragequelle am Port nachgewiesen, die einen erhöhten Bedarf liefert – der Vorschlag erhöht sich, bleibt unverbindlich und nennt die Quelle. Erst in M9 nachweisbar: der vollständige Ablauf AT-55 „Nachfrageprognose erhöht Personalbedarf“ mit der echten Prognose (siehe „Vollabnahme erst mit“).
+- **Tests:** positiv: Vorschlag übernehmen; erhöhte Nachfrage aus der Test-Nachfragequelle erhöht den Vorschlag. negativ: kein automatisches Verbindlichwerden; fehlende Eingangsdaten führen zu „kein Vorschlag“ statt zu Scheinwerten. Zuarbeit zu AT-55 (Teil Unverbindlichkeit und Publikation erst nach Freigabe; Teil Nachfrageprognose erst im Gate M9).
 - **Abhängigkeiten:** intern: WP-M7d-04, WP-M7d-07.
   - extern: WP-M4-45, WP-M4-47, WP-M4-51 (Kennzahlen-/Nachfragedaten)
   - extern: WP-M2-03, WP-M2-16 (Servicefenster und Umlaufdaten (Leseport))
-  - extern: WP-M9a-06 (Nachfrageprognose für vollständiges AT-55 (Gate M9)) – Reihenfolgekonflikt, siehe Offene Punkte 35
+- **Vollabnahme erst mit:** WP-M9a-06, WP-M9a-12, WP-M9b-48 (AT-55 verlangt eine Nachfrageprognose, die erst der Prognose-Leseport aus M9 liefert; in M7 wird der Vorschlag aus historischer Nachfrage und am Port mit Testquelle abgenommen, siehe Offene Punkte 20 und 35)
 - **Entscheidungen:** keine.
 - **Größe:** M
 - **Nicht im Umfang:** Prognosemodell selbst (ANA/AI, spätere Meilensteine).
@@ -1124,9 +1126,9 @@
 17. **Kontakte in der Fahreransicht (`LH-6.23-SCH-015`):** „Kontakte“ steht neben „fremde Personaldaten nicht sichtbar“. Zu klären, welche Kontakte gemeint sind (Leitstelle/Standort oder Kollegen).
 18. **Springer/Bereitschaft (`LH-6.23-SCH-032`):** „gesonderte Aktivierungsregeln“ sind nicht ausgeführt; ebenso fehlt die Bewertung der Bereitschaftszeit im Zeitkonto.
 19. **Automatische Revision bei Ausfall (`LH-6.23-SCH-038`, `LH-6.23-SCH-020`):** Offen, ob die durch Ausfall erzeugte Planrevision sofort als veröffentlicht gilt (Fahrer sieht Entfall sofort) oder Planerfreigabe braucht; betrifft auch die Mitteilungslogik aus `LH-6.23-SCH-014`.
-20. **Bedarfsvorschlag (`LH-6.23-SCH-028`):** AT-55 setzt eine Nachfrageprognose voraus, die erst in M9 entsteht (AT-55 ist Gate M9). In M7d ist nur ein Vorschlag aus historischen Daten und Servicefenstern lieferbar; Form der „Unsicherheit“ ist nicht definiert.
+20. **Bedarfsvorschlag (`LH-6.23-SCH-028`):** AT-55 setzt eine Nachfrageprognose voraus, die erst in M9 entsteht (AT-55 ist Gate M9). In M7d ist nur ein Vorschlag aus historischen Daten und Servicefenstern lieferbar; Form der „Unsicherheit“ ist nicht definiert. Aufgelöst für die Planung: WP-M7d-32 wird in M7 mit historischer Nachfrage am Port „Nachfragequelle“ abgenommen; das vollständige AT-55 ist als „Vollabnahme erst mit“ WP-M9a-06, WP-M9a-12, WP-M9b-48 geführt (Offene Punkte 35). Offen bleibt die Form der „Unsicherheit“.
 21. **Vorwarnhorizont (`LH-6.24-TIM-016`):** „frühzeitig“ ist nicht beziffert, kein Katalogparameter vorhanden.
-22. **Feiertagskalender doppelt benötigt (`LH-6.23-SCH-019`):** M7a benötigt für Serienbuchung (AT-06) ebenfalls Feiertage/Schließtage. Zu entscheiden, ob ein gemeinsamer Kalender in `config`/`service-geo` entsteht oder zwei getrennte; Quelle der gesetzlichen Feiertage ist nicht benannt.
+22. **Feiertagskalender doppelt benötigt (`LH-6.23-SCH-019`):** M7a benötigt für Serienbuchung (AT-06) ebenfalls Feiertage/Schließtage. Festgelegt für die Planung: Innerhalb von M7 entsteht genau ein Kalender, geliefert von WP-M7d-11 mit Leseport; WP-M7a-07 ist Abnehmer (Offene Punkte 34). Weiterhin zu klären (Auftraggeber/Architektur, kein WP dieser Einheit): Quelle der gesetzlichen Feiertage; ob „Schließtage“ eines Dienstes (AT-06) als betriebliche Sondertage dieses Kalenders oder als Betriebszeitregel des Dienstes geführt werden (M7a, Offene Punkte 8); Zusammenführung mit dem Kalenderdienst des Moduls `config` aus WP-M8d-08: festgelegt in M8d, OP-07 – WP-M8d-08 hängt von WP-M7d-11 ab und liest Feiertage/Sondertage über den hier gelieferten Leseport, es entsteht kein zweiter Feiertagsbestand.
 23. **AT-46 im M7-Gate:** Offline-Zeiterfassung ist fachlich `LH-6.24-TIM-006` (P1, M4) und keiner M7d-Anforderung zugeordnet. M7d behandelt den Test als Regression (WP-M7d-43); falls das Gate neue Funktion erwartet, fehlt eine Anforderung dazu.
 24. **Barrierefreiheitsstandard (`LH-6.23-SCH-036`) und Tablet-Zielgeräte (`LH-6.23-SCH-012`):** Weder Prüfstandard noch unterstützte Geräte/Browser sind im Pflichtenheft für den Planer benannt.
 25. **Überschneidung mit M7c:** `WP-M7c-09` (Pausenmeldung), `WP-M7c-13` (Dienstplanzeiten in der Buchungsprüfung), `WP-M7c-14` (zusammengeführte Verfügbarkeit) und `WP-M7c-17` (Qualifikation in der Schichtzuweisung) berühren `LH-6.23-SCH-018`, `LH-6.23-SCH-020` und `LH-6.23-SCH-016`. Die Leseports und Ereignisverträge zwischen `staff-time`, `fleet-safety` und `booking-dispatch` müssen in WP-M7d-01 und WP-M7c-01 gemeinsam festgelegt werden, damit keine Regel doppelt implementiert wird.
@@ -1138,5 +1140,5 @@
 31. **Automatische Zuteilung (`LH-6.23-SCH-016`):** Die Abnahme spricht von „automatisch zugeteilt“, das Pflichtenheft beschreibt aber keine eigenständige automatische Schichtzuteilung. Dieses Dokument versteht darunter Vorlagenanwendung, Vorschlagsübernahme und First-come-first-served – zu bestätigen.
 32. **Gate-Tests außerhalb des M7-Gates:** AT-49, AT-53, AT-54, AT-59 und AT-61 sind dem Gate M5 zugeordnet, obwohl Teile (Krankheitsdetails, Stundenabrechnung/Löschregeln, Planer-Barrierefreiheit `LH-6.23-SCH-036`, Stempeln ohne Freigabe `LH-6.24-TIM-017`) erst mit P2-Anforderungen aus M7d vollständig prüfbar sind. WP-M7d-43 wiederholt sie als Regression; zu entscheiden, ob sie zusätzlich in das Gate M7 aufgenommen werden.
 33. **Kennzahl ohne Katalogeintrag für Zeitwirtschaft:** kataloge.csv enthält für diesen Bereich nur `Schicht-Abdeckungsquote` (und mittelbar `Personalmangelablehnungen`). Für die in `LH-6.24-TIM-015` und `LH-6.23-SCH-027` verlangten Größen (geplante/erfasste Stunden, Fehlzeiten, Überstunden, Compliance-Warnungen, Über-/Unterdeckung) gibt es keine Kennzahldefinitionen; sie werden als Berichtsgrößen in WP-M7d-31 und WP-M7d-39 definiert und sind bei Bedarf im Katalog nachzutragen.
-34. **Reihenfolgekonflikt: möglicher Zyklus WP-M7d-11 ↔ WP-M7a-07 (Feiertags-/Schließtagskalender):** Die externe Abhängigkeit von WP-M7d-11 auf M7a („gemeinsamer Feiertags-/Schließtagskalender für Serienbuchung“) hat in M7a kein lieferndes WP; WP-M7a-07 hängt umgekehrt bereits von WP-M7d-11 ab (siehe M7a, Offene Punkte 40). Ein Rückverweis auf WP-M7a-07 ergäbe einen Zyklus und wurde deshalb nicht eingetragen (Zeile als UNGEDECKT geführt). Zu entscheiden: WP-M7d-11 ist alleiniger Lieferant des Kalenders und die Abstimmung erfolgt im Detailvertrag (WP-M7d-01/WP-M7a-01), oder der Kalender wird in ein gemeinsames WP ausgelagert; zusätzlich ist die Doppelung mit dem Kalenderdienst aus WP-M8d-08 zu klären (vgl. Offene Punkte 22).
-35. **Reihenfolgekonflikt: WP-M7d-32 → WP-M9a-06 (Nachfrageprognose für vollständiges AT-55):** WP-M7d-32 (M7) nennt die Nachfrageprognose aus M9 als Abhängigkeit; liefernd ist WP-M9a-06 (Prognose-Leseport), also ein SPÄTERER Meilenstein. Zugleich hängt WP-M9a-12 von WP-M7d-32 ab (Übernahme der Vorschläge), sodass eine harte Abhängigkeit einen Zyklus ergäbe. Vorschlag: WP-M7d-32 liefert in M7 nur den Vorschlag aus historischen Daten und Servicefenstern gegen den Leseport-Vertrag (Stub) und ohne Abhängigkeit auf M9; der Prognoseanteil und das vollständige AT-55 werden in M9 (WP-M9a-12, WP-M9b-48, WP-M9a-24/WP-M9b-57) abgenommen (vgl. Offene Punkte 20). Bis zur Entscheidung bleibt die Abhängigkeit unverändert dokumentiert.
+34. **Aufgelöst: Zyklus WP-M7d-11 ↔ WP-M7a-07 (Feiertags-/Schließtagskalender):** Die frühere externe Abhängigkeit von WP-M7d-11 auf M7a („gemeinsamer Feiertags-/Schließtagskalender für Serienbuchung“) hatte in M7a kein lieferndes WP; WP-M7a-07 ist umgekehrt Abnehmer von WP-M7d-11. Tatsächliche Baureihenfolge: WP-M7d-11 baut Kalender und Leseport ohne Vorbedarf aus M7a; WP-M7a-07 nutzt den Leseport. Die Zeile in WP-M7d-11 ist deshalb ersatzlos entfallen; die Abstimmung des Leseport-Vertrags erfolgt in den Detailverträgen (WP-M7d-01/WP-M7a-01). Die verbleibenden Klärungen stehen in Offene Punkte 22.
+35. **Aufgelöst: WP-M7d-32 → WP-M9a-06 (Nachfrageprognose für vollständiges AT-55):** Die Nachfrageprognose liefert erst WP-M9a-06 (Prognose-Leseport, späterer Meilenstein); zugleich hängen WP-M9a-12 und WP-M9b-48 von WP-M7d-32 ab, eine Bauabhängigkeit auf M9 wäre also Vorwärtsabhängigkeit und Zyklus. Es besteht kein Bau-Vorbedarf: WP-M7d-32 liefert in M7 den Vorschlag aus historischen Daten und Servicefenstern über den eigenen Port „Nachfragequelle“ und wird dort mit einer Testquelle abgenommen. Der Verweis steht jetzt im Feld „Vollabnahme erst mit“ (WP-M9a-06, WP-M9a-12, WP-M9b-48); der Prognoseanteil und das vollständige AT-55 werden in M9 abgenommen (WP-M9a-24/WP-M9b-57). Hinweis an M9a: WP-M9a-06 nennt WP-M7d-32 als Abnehmer des Prognose-Leseports; die Anbindung an den Port „Nachfragequelle“ ist Umfang von M9 (WP-M9a-12), nicht von WP-M7d-32.

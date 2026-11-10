@@ -7,7 +7,7 @@
 
 **Ziel:** Nach M8c sind alle 48 Kennzahldefinitionen aus `kataloge.csv` als versionierte, ausführbare Definitionen mit Zähler, Nenner, Ausschlüssen, Datenstand und Vollständigkeit verfügbar; ältere Berichte bleiben mit ihrer damaligen Definition reproduzierbar. Der Statistikbereich (UI-19) liefert Ursachenklassifikation, Drilldown, Soll/Ist/Prognose- und Zeitvergleiche, Wirtschaftlichkeits-, Energie-, Ausfall-, Schicht- und Verbundkennzahlen sowie Zielwerte und Qualitätswarnungen. Berichtsjobs erzeugen zeitgesteuerte, berechtigungsgeprüfte CSV-/JSON-Exporte einschließlich Mobilitätsdaten- und pseudonymisiertem Evaluationsexport; kleine Gruppen werden überall unterdrückt.
 
-**Gate-Anteil M8c (Umsetzungsplan §4, Gate M8):** führend E2E-101, E2E-103; Beitrag zu E2E-102 (Berichtszeitraum, Betriebstag, Zeitzone; Kalender und Schichten liegen bei M7d), zu E2E-070 (Verbrauchskennzahl mit Berechnungsbasis; führend M8a) und zu E2E-099 (Kennzahlquelle der Kapazitätsablehnungen; führend M8d). Regression der P1-Nachweise PH-AT-021 und E2E-080 bis E2E-084 mit den erweiterten Definitionen.
+**Gate-Anteil M8c (Umsetzungsplan §4, Gate M8):** führend E2E-101, E2E-103; Beitrag zu E2E-102 (Berichtszeitraum, Betriebstag, Zeitzone; führend M8d mit WP-M8d-32, Kalender und Schichten liegen bei M7d), zu E2E-070 (Verbrauchskennzahl mit Berechnungsbasis; führend M8a) und zu E2E-099 (Kennzahlquelle der Kapazitätsablehnungen; führend M8d). Regression der P1-Nachweise PH-AT-021 und E2E-080 bis E2E-084 mit den erweiterten Definitionen.
 
 **Lesehinweise:**
 
@@ -42,7 +42,7 @@
 | WP-M8c-11 | Nicht bediente Nachfrage mit Engpass-Heatmap und Kleingruppenschutz | 1 | M | WP-M8c-04, WP-M8c-10, WP-M4-49, WP-M4-50, WP-M4-58 |
 | WP-M8c-12 | Nachfrage-Heatmap und Zeit-Histogramm | 1 | S | WP-M8c-11 |
 | WP-M8c-13 | Kosten pro Fahrt und Fahrgastkilometer aus versionierten Kostensätzen | 1 | M | WP-M8c-04, WP-M8c-05, WP-M4-33, WP-M4-39, WP-M4-42, WP-M4-56, WP-M8a-39, WP-M8a-32 |
-| WP-M8c-14 | Wirtschaftlichkeit je Vertrag: Kosten, Zuschussbedarf, Deckungsbeitrag | 1 | M | WP-M8c-13, WP-M6c-19, WP-M6c-20, WP-M6c-23, WP-M8a-32, WP-M8a-34, WP-M8a-18, UNGEDECKT (Zuschussbuchungen) |
+| WP-M8c-14 | Wirtschaftlichkeit je Vertrag: Kosten, Zuschussbedarf, Deckungsbeitrag | 1 | M | WP-M8c-13, WP-M6c-19, WP-M6c-20, WP-M6c-23, WP-M8a-32, WP-M8a-34, WP-M8a-18, WP-M6c-06, Klärung Auftraggeber (pauschale Zuschussbuchungen) |
 | WP-M8c-15 | Treibstoff- und Energiekennzahlen je Antriebsart | 1 | M | WP-M8c-04, WP-M8c-05, WP-M4-43, WP-M4-41, WP-M8a-14, WP-M8a-30, WP-M8a-36 |
 | WP-M8c-16 | Fahrzeugausfallzeiten nach Ursache und geplanter Betriebszeit | 1 | M | WP-M8c-04, WP-M3-08, WP-M3-41, WP-M3-51, WP-M7c-35, WP-M7c-15, WP-M7c-36 |
 | WP-M8c-17 | Schichtplan-Kennzahlen und offener Personalbedarf | 1 | M | WP-M8c-04, WP-M4-14, WP-M4-05, WP-M4-08, WP-M4-09, WP-M7d-23, WP-M7d-26, WP-M7d-14, WP-M7d-35, WP-M7d-11 |
@@ -55,7 +55,7 @@
 | WP-M8c-24 | Standarddashboard Auslastung, Leerkilometer, Abholqualität, No-Show | 1 | S | WP-M8c-06, WP-M8c-23, WP-M4-59, WP-M4-57, WP-M4-56 |
 | WP-M8c-25 | Zielwerte und Schwellenmarkierung für Service Level | 1 | S | WP-M8c-04, WP-M1-20, WP-M1-22, WP-M1-07 |
 | WP-M8c-26 | Qualitätswarnungen gegen Zielwerte mit Zuständigkeit | 1 | M | WP-M8c-16, WP-M8c-25, WP-M8d-22, WP-M8d-23, WP-M8d-26 |
-| WP-M8c-27 | Berichtsjob: zeitgesteuertes CSV und Reporting-API mit Berechtigungsprüfung | 1 | M | WP-M8c-02, WP-M8c-04, WP-M8c-11, WP-M1-15, WP-M1-13, WP-M1-11, WP-M1-07, WP-M1-04, WP-M8e-15, WP-M1-33 |
+| WP-M8c-27 | Berichtsjob: zeitgesteuertes CSV und Reporting-API mit Berechtigungsprüfung | 1 | M | WP-M8c-02, WP-M8c-04, WP-M8c-11, WP-M1-15, WP-M1-13, WP-M1-11, WP-M1-07, WP-M1-04, WP-M1-33 |
 | WP-M8c-28 | Maschinenlesbare Exportformate CSV/JSON mit Felddefinitionen | 1 | S | WP-M8c-27 |
 | WP-M8c-29 | Wiederkehrende Berichte mit Verteilung an berechtigte Empfänger | 1 | M | WP-M8c-27, WP-M8c-28, WP-M2-32 |
 | WP-M8c-30 | Mobilitätsdatenexport für PBefG-/Mobilitätsdatenpflichten | 1 | M | WP-M8c-27, WP-M8c-28, WP-M2-03, WP-M2-04, WP-M2-05, WP-M2-07, WP-M3-03, WP-M4-56 |
@@ -75,12 +75,12 @@
   - Backend: JSON-Schema der Kennzahldefinition (stabile technische ID, Definitionsversion, Zeitzonen-/Periodenbasis, Zähler, Nenner, Ausschlüsse, Datenqualitätsquote, Datenstand – Kap. 01 §1.6); Ergebnisstatus `ZERO_DENOMINATOR`, `PROVISIONAL`, `NOT_AVAILABLE` (Kap. 03 §6/§7); Zustandsautomat Berichtsjob; Zustandsautomat Ursachenwechsel.
   - Backend (Rechte): Rollen-/Rechtematrix der Einheit je Funktion (Kennzahl lesen, Finanzkennzahl lesen, Personalkennzahl lesen, Drilldown Stufe 2/3, Ursachenwechsel, Zielwert pflegen, Bericht/Export anlegen, Berichtsplan pflegen, Mobilitätsdaten-/Evaluationsexport, Dashboard erstellen/teilen, Verbundsicht) auf Basis des Rollenmodells aus M1; im Pflichtenheft nicht als Matrix vorhanden (Offener Punkt 32).
   - Ereignisse/Outbox: JSON-Schemas der eigenen Ereignisse (Arbeitsnamen dieser Datei) und Consumer-Verträge für die gelesenen Ereignisse/Leseports der Nachbareinheiten M2, M3, M4, M6a, M6b, M6c, M7b, M7c, M7d, M8a, M8b, jeweils mit Stub für den vertragsbasierten Bau; Fehlercodes der neuen Endpunkte (428, 412, 409, 404/403 gemäß Kap. 05 §5.1).
-  - Kennzahlen: Zuordnungstabelle aller 48 Namen aus `kataloge.csv` zu technischer ID, Quellereignissen und liefernder Einheit (M4 bereits geliefert / M8c-WP).
+  - Kennzahlen: Zuordnungstabelle aller 48 Namen aus `kataloge.csv` zu technischer ID, Quellereignissen und liefernder Einheit (M4 bereits geliefert / M8c-WP). Für `ETA-MAE`, `ETA-Bias` und `ETA-p90-Abdeckung` (K.4 Zeilen 46 bis 48) legt dieses WP technische ID, Zähler, Nenner, Segmentierung (Prognosehorizont, Modell, Region) und Ergebnisstatus fest; berechnet werden die Werte in WP-M8b-20 nach diesem Vertrag, registriert in WP-M8c-22.
 - **Detailverträge vorab:** dieses WP ist der Detailvertrag; Reviewrollen gemäß Detailvertragsprozess aus M0.
 - **Akzeptanzkriterien:**
   1. `validate_artifacts.py` läuft mit den ergänzten OpenAPI-Dateien fehlerfrei.
   2. Für jede der 28 Anforderungen der Einheit ist ein Detailvertrag und mindestens ein positiver Testfall benannt (Kap. 08 §8.4).
-  3. Jede der 48 Kennzahlen hat genau eine technische ID und ein liefernd verantwortliches WP.
+  3. Jede der 48 Kennzahlen hat genau eine technische ID und ein liefernd verantwortliches WP; für die drei ETA-Kennzahlen liegen Definitionsschema und Consumer-Vertrag der Gütewerte mit schemagültigem Beispielpayload vor, sodass WP-M8b-20 ohne den Katalogausbau aus WP-M8c-22 bauen kann.
   4. Jeder Arbeitsname dieser Datei ist entweder bestätigt oder durch den endgültigen Namen ersetzt.
   5. Für jede Funktion der Einheit ist die berechtigte Rolle in der Rechtematrix benannt; für jede gelesene Fremdquelle existiert ein Consumer-Vertrag mit Stub und benannter liefernder Einheit.
 - **Tests:** positiv: Vertragslinting und Schemavalidierung der Beispielpayloads. negativ: Beispielpayload ohne Definitionsversion bzw. ohne Datenstand wird vom Schema abgelehnt.
@@ -90,7 +90,7 @@
   - extern: WP-M1-07, WP-M1-02 (Rollenmodell und Fehlermodell als Grundlage der Rechtematrix)
 - **Entscheidungen:** D-05 (Zielwerte, Berichtsumfang Pilot), D-07 (Kostenbewertung, Deckungsbeitragsstufen), D-11 (Export-/Auskunftsprozess, Fristen) – blockieren nur Produktivschaltung; die Verträge werden mit gekennzeichneten Annahmen erstellt.
 - **Größe:** M
-- **Nicht im Umfang:** Verträge der Alarm-/Regeltabellen (M8d), der Finanztabellen (M8a), der ETA-Gütewerte (M8b).
+- **Nicht im Umfang:** Verträge der Alarm-/Regeltabellen (M8d), der Finanztabellen (M8a) sowie der Tabellen, Endpunkte und des Gütejobs der ETA-Gütewerte (M8b, dortiger Detailvertrag); die Kennzahldefinition der drei ETA-Kennzahlen und der Consumer-Vertrag, über den M8c die Gütewerte liest, gehören dagegen zu diesem WP.
 
 ### WP-M8c-02 – Migration der Analytics- und Berichtstabellen mit RLS
 
@@ -396,13 +396,14 @@
   1. Der Bericht weist variable und fixe Kosten getrennt aus; die Gesamtsumme entspricht der Summe der Ursprungsereignisse, keine Position ist doppelt enthalten (KPI-027).
   2. Kosten/Fahrt, Kosten/Fahrgast, Zuschussbedarf und Deckungsbeitrag sind je Vertrag vorhanden und stimmen mit dem Orakel überein (KPI-027).
   3. Original plus Umlage wird in keiner Standardsicht doppelt summiert (KPI-027; COST-08).
-  4. Bereits verbuchte Zuschüsse werden im Zuschussbedarf nicht doppelt abgezogen.
+  4. Bereits verbuchte Zuschüsse werden im Zuschussbedarf nicht doppelt abgezogen; als verbuchte Zuschüsse gelten die Zuschusskomponenten aus `price_components` und deren Clearingpositionen (WP-M6c-06, WP-M6c-19). Die Position „andere Deckung“ ist als eigene, leere Eingangsgröße ausgewiesen (kein stiller Wert 0 als Aussage), solange der Auftraggeber keine weitere Zuschussquelle festlegt (Offener Punkt 35).
   5. Ohne Freigabe für Partnerdaten zeigt die konsolidierte Sicht `NOT_AVAILABLE`, keinen Schätzwert (COST-06).
 - **Tests:** positiv: Rechenbeispiel B (Y 1.680, konsolidiert 1.280 nur mit Berechtigung). negativ: Rolle ohne Finanzrecht; Vertrag eines fremden Mandanten; null Fahrgäste → `null`. konkurrierend (Geld): Bericht während Periodenabschluss liest konsistenten Abschlusssnapshot. Beitrag zu PH-AT-015 (keine Doppelzählung nach später Gutschrift), E2E-072.
 - **Abhängigkeiten:** intern: WP-M8c-13.
   - extern: WP-M6c-19, WP-M6c-20, WP-M6c-23 (Clearingpositionen und Erlösaufteilung je Vertrag)
   - extern: WP-M8a-32, WP-M8a-34, WP-M8a-18 (Kostenbasis für Deckungsbeitrag, Budgets, Periodenabschluss-Snapshot)
-  - extern: UNGEDECKT – Zuschussbuchungen (Erlös-/Zuschussquelle; siehe Offener Punkt 35 und OP-39 in M8a)
+  - extern: WP-M6c-06 (Preiskomponenten einschließlich Zuschusskomponente mit Finanzierer und Anspruchsinhaber als Quelle der tariflichen Nettoerlöse und der tarifgebundenen Zuschüsse)
+  - Klärung Auftraggeber (kein WP): Ob neben den tarifgebundenen Zuschusskomponenten (`price_components`, Kap. 03 §4) auch pauschale Zuschuss-/Fördermittelzahlungen je Vertrag als „bereits berücksichtigte andere Deckung“ (Kap. 03 §7) zu buchen sind; keine Anforderung des Pflichtenhefts fordert eine solche Buchung, siehe Offener Punkt 35 und OP-39 in M8a.
 - **Entscheidungen:** D-07 (Deckungsbeitragsstufen, Zuschussbehandlung, Sichtrechte auf konsolidierte Werte; blockiert Produktivschaltung), D-06 (Finanzumfang; blockiert nur Produktivschaltung).
 - **Größe:** M
 - **Nicht im Umfang:** Budgetpflege und `Budgetabweichung` als Finanzfunktion (M8a); Clearing-Gegenberichte UI-16 (M6c).
@@ -727,7 +728,8 @@
 - **Tests:** positiv: Job anlegen, abrufen, CSV gegen Webansicht prüfen; Zeitsteuerung mit simulierter Uhr einschließlich Sommerzeitwechsel. negativ: fehlende Rolle, fremder Mandant, abgelaufener Downloadverweis, unzulässiger Filter, Kleingruppe im Export. konkurrierend (Datentrennung/Einmaligkeit): doppelte Jobanlage parallel; zwei Worker übernehmen denselben Lauf (Fencing); gleichzeitige Läufe zweier Mandanten ohne Pfad-/Cachevermischung. Beitrag zu PH-AT-001 (Export), PH-AT-011.
 - **Abhängigkeiten:** intern: WP-M8c-02, WP-M8c-04, WP-M8c-11.
   - extern: WP-M1-15, WP-M1-13, WP-M1-11, WP-M1-07, WP-M1-04 (`operation` mit Lease/Fencing, Idempotenzregister, Objektspeicherzugang, Rollenmodell, Service-Accounts)
-  - extern: WP-M8e-15, WP-M1-33 (Aufbewahrungs-/Löschregeln (`retention_rule`) für Exportdateien; bis dahin gekennzeichnete Testfrist)
+  - extern: WP-M1-33 (Löschjob-Grundgerüst und `retention_rule` für die Entfernung abgelaufener Exportdateien)
+- **Vollabnahme erst mit:** WP-M8e-15 (die produktive Aufbewahrungs-/Löschklasse der Exportdateien und deren Einbindung in den orchestrierten Löschjob entstehen dort; in diesem WP wird Kriterium 7 mit dem Grundgerüst aus WP-M1-33 und einer gekennzeichneten Testfrist nachgewiesen)
 - **Entscheidungen:** D-11 (Aufbewahrung der Exportdateien, Exportprozess; blockiert nur Produktivschaltung).
 - **Größe:** M
 - **Nicht im Umfang:** ERP-/Ledger-Export `/v1/ledger/exports` (M4/M8a); Verteilung an Empfänger (WP-M8c-29); JSON-Format und Feldkatalog (WP-M8c-28).
@@ -882,7 +884,7 @@
   - extern: WP-M8d-22, WP-M8d-26 (zentraler Alert und Kapazitätsvorschlag (E2E-099, führend))
 - **Entscheidungen:** keine für den Bau; die Produktivschaltung der Verbund- und Exportfunktionen hängt an D-01, D-07 und D-11.
 - **Größe:** M
-- **Nicht im Umfang:** Gate-Tests der Nachbareinheiten (PH-AT-022, E2E-074 bis E2E-079, E2E-105, E2E-106 – M8b; E2E-070 führend M8a; E2E-099 führend M8d); Last- und Restore-Nachweise.
+- **Nicht im Umfang:** Gate-Tests der Nachbareinheiten (PH-AT-022, E2E-074 bis E2E-079, E2E-105, E2E-106 – M8b; E2E-070 führend M8a; E2E-099 und Gesamttest E2E-102 führend M8d, WP-M8d-32); Last- und Restore-Nachweise.
 
 ## Offene Punkte
 
@@ -912,7 +914,7 @@
 24. **`LH-6.14-ANA-006`:** „Konfigurierte Kostensätze“ (kalkulatorisch) und die Istkostenlogik aus `economic_event` (Kap. 03) sind zwei Berechnungsgrundlagen; das Pflichtenheft sagt nicht, welche für diese Kennzahlen führt. `rate_revision` wird nur namentlich genannt.
 25. **`LH-6.14-ANA-004`:** „Wartezeiten“ sind keine der 48 Katalogkennzahlen; Bezugspunkt (Buchung bis Abholung, zugesagte bis tatsächliche Abholung) ist nicht definiert.
 26. **`LH-6.14-ANA-009`:** „Abholqualität“ ist kein Katalogname; die zugehörigen Kennzahlen sind festzulegen.
-27. **E2E-102:** Der Test umfasst Kalender, Logs und Schichten; M8c liefert nur den Berichts-/Betriebstagsanteil. Die führende Einheit für den Gesamttest ist im Meilensteinplan nicht benannt.
+27. **E2E-102 (aufgelöst):** Der Test umfasst Kalender, Logs und Schichten; M8c liefert nur den Berichts-/Betriebstagsanteil (WP-M8c-33). Der Meilensteinplan benennt keine führende Einheit; dieser Plan legt die Führung des Gesamttests in WP-M8d-32, weil die Zeitzonen-, Kalender- und Überlappungsauflösung (`LH-I.7-CFG-021`, WP-M8d-08) dort liegt und WP-M8d-32 den Berichtsanteil aus WP-M8c-33 ohnehin einbindet.
 28. **Abgrenzung zu M4:** Welche der 48 Kennzahlen M4 bereits ausführbar liefert, ist dort ein Vorschlag des Plans. WP-M8c-22 unterstellt diese Liste; weicht sie ab, verschiebt sich Umfang zwischen M4 und M8c.
 29. **Reporting-Infrastruktur:** Kap. 01 §1.1 sieht „Lesereplikat + inkrementelle Projektionen“ vor; ob das Lesereplikat zu M8 bereitsteht, ist im Meilensteinplan nicht festgehalten. Die WPs sind gegen Projektionen geplant und funktionieren auch ohne Replikat.
 30. **Abhängigkeit von M6/M7 trotz „unabhängiger“ Ströme:** Der Meilensteinplan bezeichnet M6, M7 und M8 als voneinander unabhängig. `LH-I.6-KPI-023` (Anschlussdaten, M6a/M6b), `LH-I.6-KPI-031` (Föderation, M6a/M6b), `LH-I.6-KPI-027` (Clearing, M6c), `LH-I.6-KPI-029` (Werkstatt, M7c), `LH-I.6-KPI-030` (Dienstplan, M7d), `LH-I.6-KPI-024` (Support/Rückmeldungen, M7b) und der Gate-Test E2E-101 brauchen jedoch fachlich Daten aus M6/M7. Geplant ist vertragsbasierter Bau mit synthetischen Ereignissen; die Integrationsabnahme und damit das Gate M8 für diese Anforderungen kann erst nach Lieferung der jeweiligen Quelle erfolgen. Die Reihenfolge bzw. ein gemeinsamer Integrationstermin ist im Meilensteinplan festzulegen.
@@ -920,6 +922,6 @@
 32. **Rollen und Rechte der Auswertung:** Das Pflichtenheft legt keine Rechtematrix für Statistik, Finanz- und Personalkennzahlen, Drilldown, Ursachenwechsel, Zielwertpflege, Exporte und Dashboard-Builder fest („berechtigt“ in `LH-I.6-KPI-019`, `LH-I.6-KPI-022`, `LH-I.6-KPI-032`, `LH-I.6-KPI-033` bleibt unbestimmt). Die Matrix entsteht in WP-M8c-01 und ist fachlich freizugeben.
 33. **Aufbewahrung von Berichts- und Exportdateien:** Fristen für Ergebnisdateien von `LH-I.6-KPI-032`, `LH-I.6-KPI-022`, `LH-6.14-ANA-013` und `LH-6.14-ANA-014` sind nicht festgelegt (D-11); die Löschmechanik liegt bei M8e, die Tests verwenden eine gekennzeichnete Testfrist.
 34. **Leistungsziele für Auswertungen:** Für Antwortzeiten der Metrik-API, Laufzeiten von Berichtsjobs und die zulässige Verzögerung des Datenstands nennt das Pflichtenheft im Bereich dieser Einheit keine Zielwerte (Kap. 08 §8.6 bezeichnet die vorhandenen Zahlen als vorläufig). Lastnachweise sind nicht Teil von M8c.
-35. **UNGEDECKT – Zuschussbuchungen (WP-M8c-14):** Für die von `LH-I.6-KPI-027` benötigten Zuschussbuchungen (und Nettoerlöse außerhalb des Clearings) gibt es kein lieferndes WP. WP-M8a-32 liefert nur die Kostenbasis für Deckungsbeitrag und Zuschuss; M8a schließt Fördermittel- und Zuschussabrechnung ausdrücklich aus (dort OP-39). Die Quelle (M2-Tarif, M6c-Clearing oder eigene Zuschussbuchung) ist zu entscheiden und einem WP zuzuordnen.
-36. **Reihenfolgekonflikt (Zyklus) WP-M8c-22 ↔ WP-M8b-20:** WP-M8c-22 benötigt die ETA-Gütewerte aus WP-M8b-20; WP-M8b-20 erwartet umgekehrt von M8c die ausführbaren Definitionen `ETA-MAE`, `ETA-Bias`, `ETA-p90-Abdeckung` und das Dashboard UI-19, die in M8c erst mit WP-M8c-22 vollständig vorliegen. Aufzulösen durch Schnitt (z. B. Definitionsrevisionen der drei ETA-Kennzahlen vorab über WP-M8c-04, Gütewerte danach) im Detailvertrag WP-M8c-01/WP-M8b-01.
+35. **Klärung Auftraggeber – pauschale Zuschuss-/Fördermittelbuchungen (WP-M8c-14):** `LH-I.6-KPI-027` verlangt den Zuschussbedarf je Vertrag; Kap. 03 §7 definiert ihn als freigegebene Kostenbasis minus tarifliche Nettoerlöse minus bereits berücksichtigte andere Deckung. Die Kostenbasis liefert WP-M8a-32, die tariflichen Nettoerlöse und die tarifgebundene Zuschusskomponente (`price_components` mit Finanzierer) liefern WP-M6c-06 und WP-M6c-19/-20/-23; damit ist die Kennzahl baubar. Nicht gedeckt ist eine eigene Buchung pauschaler Zuschüsse oder Fördermittel je Vertrag (z. B. Betriebskostenzuschuss des Aufgabenträgers) als „andere Deckung“: Keine Anforderung des Pflichtenhefts fordert sie, M8a schließt Fördermittel- und Zuschussabrechnung aus (dort OP-39). Zu klären mit dem Auftraggeber (D-07): (a) gibt es solche Zahlungen im Pilot, (b) wer erfasst sie in welcher Form (Ereignisart, Periode, Vertragsbezug), (c) gehen sie in den Deckungsbeitrag ein. Bis zur Klärung weist WP-M8c-14 die Eingangsgröße „andere Deckung“ als nicht geliefert aus; ein lieferndes WP entsteht erst nach einer Erweiterung des Pflichtenhefts.
+36. **Aufgelöst – Reihenfolge WP-M8b-20 → WP-M8c-22 → WP-M8c-32:** Baureihenfolge ist Vertrag (WP-M8c-01: technische IDs und Definitionsschema der drei ETA-Kennzahlen) → Gütewerte (WP-M8b-20 berechnet MAE, Bias und p90-Abdeckung und schreibt die Snapshots) → Katalogregistrierung (WP-M8c-22 liest die Gütewerte) → Dashboard (WP-M8c-32). WP-M8b-20 hängt deshalb nur noch vom Vertrag WP-M8c-01 ab und führt WP-M8c-22 und WP-M8c-32 unter „Vollabnahme erst mit“; WP-M8c-22 behält die Bauabhängigkeit auf WP-M8b-20.
 37. **Zyklusrisiko WP-M8c-04 ↔ M8d:** Die Wirksamkeitsintervalle der Toleranzparameter liefert fachlich am genauesten WP-M8d-15 (versionierte SLA-Ziele im Reporting) bzw. WP-M8d-08 (Zeitauflösung); beide erwarten ihrerseits Leistungen von M8c (KPI-Katalog, Berichtsjobs, Führung E2E-102/E2E-103), die auf WP-M8c-04 aufbauen. Um keinen Zyklus zu erzeugen, hängt WP-M8c-04 nur an WP-M8d-03 und WP-M8d-05; die Integration mit WP-M8d-15 erfolgt im Gate (WP-M8c-33, E2E-103).

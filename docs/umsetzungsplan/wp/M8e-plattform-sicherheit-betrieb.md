@@ -37,8 +37,8 @@
 | WP-M8e-12 | Einwilligungsregister: Rechtsgrundlage je Zweck und nachvollziehbarer Widerruf | 1 | M | WP-M8e-02, WP-M1-30, WP-M7b-24, WP-M7b-26 |
 | WP-M8e-13 | Minderjährigen- und Schülerkonten: Sichtbarkeit und Kontaktregeln | 1 | M | WP-M8e-04, WP-M8e-10, WP-M8e-11, WP-M1-07, WP-M1-08, WP-M1-31, WP-M1-12, WP-M1-46, WP-M3-36, WP-M3-26, WP-M3-30, WP-M3-32, WP-M7b-35, WP-M7b-30, WP-M7b-17 |
 | WP-M8e-14 | Legal Hold: Setzen, Wirkung, Aufhebung | – (Enabler) | S | WP-M8e-02, WP-M1-33, WP-M1-46, WP-M1-22 |
-| WP-M8e-15 | Orchestrierter Lösch- und Auskunftsjob über DB, Objektspeicher, Suchindex, Partnerprojektion | – (Enabler) | M | WP-M8e-02, WP-M8e-14, WP-M1-33, WP-M1-15, WP-M1-11, UNGEDECKT (Suchindex), WP-M5-14, WP-M5-15, WP-M6a-05, WP-M6a-12, WP-M6b-09 |
-| WP-M8e-16 | Betroffenenrechte-Workflow: Auskunft, Export, Korrektur, Löschung mit Fristüberwachung | 1 | M | WP-M8e-14, WP-M8e-15, WP-M1-04, WP-M1-06, WP-M1-46, WP-M1-12, WP-M1-17, WP-M1-43, WP-M1-13, WP-M2-32, WP-M8b-22, WP-M8b-24 |
+| WP-M8e-15 | Orchestrierter Lösch- und Auskunftsjob über DB, Objektspeicher, Suchindex, Partnerprojektion | – (Enabler) | M | WP-M8e-02, WP-M8e-14, WP-M1-33, WP-M1-15, WP-M1-11, Klärung Auftraggeber (Suchindex), WP-M5-14, WP-M5-15, WP-M6a-05, WP-M6a-12, WP-M6b-09 |
+| WP-M8e-16 | Betroffenenrechte-Workflow: Auskunft, Export, Korrektur, Löschung mit Fristüberwachung | 1 | M | WP-M8e-14, WP-M8e-15, WP-M1-04, WP-M1-06, WP-M1-46, WP-M1-12, WP-M1-17, WP-M1-43, WP-M1-13, WP-M2-32 |
 | WP-M8e-17 | Selbstbedienung: Export und Löschung von Profil- und Buchungsdaten | 1 | M | WP-M8e-09, WP-M8e-16, WP-M2-36, WP-M2-23, WP-M2-45 |
 | WP-M8e-18 | Providerpayload-Minimierung gegen freigegebenes Datenflussdiagramm | 1 | M | WP-M8e-02, WP-M1-32, WP-M1-12, WP-M2-29, WP-M2-32, WP-M6a-05, WP-M6a-07, WP-M6b-29, WP-M6b-23 |
 | WP-M8e-19 | Rollenabhängig maskierte Auditansicht | 1 | M | WP-M8e-02, WP-M1-46, WP-M1-12, WP-M1-31, WP-M1-07, WP-M1-43, WP-M5-06 |
@@ -69,7 +69,7 @@
 - **Liefergegenstände:**
   - API: OpenAPI-3.1-Ergänzung für `/v1/privacy/requests` (anlegen, lesen, Statusübergänge, Legal Hold), Erweiterungen von `/v1/me` (Sprache, wirksame Flags, Branding), `/v1/passengers` (Gast, Vertrauensperson, Schülerkonto), `/v1/delegations` (Dokumentationsfelder), `/v1/bookings` (Zugriff per Buchungstoken), `/v1/config/effective`, `/v1/config/revisions`, `/v1/config/revisions/{id}`, `/validate`, `/impact` (Flags, Branding, Sprachen); Festlegung der Arbeitsnamen-Pfade dieser Datei (`/v1/audit/events`, `/v1/privacy/legal-holds`, `/v1/branding`, `/v1/compliance/approvals`, `/v1/exports/master-data`, `/v1/guest/bookings`) oder deren Abbildung auf Katalogpfade; Konventionen nach Kap. 05 §5.1.
   - Datenbank: DDL-Entwurf für Erweiterungen von `consent_revision`, `delegated_access`, `passenger_preference`, `retention_rule`, `erasure_job`, `export_job`, `policy_schema` sowie für die Arbeitsnamen-Tabellen aus WP-M8e-02.
-  - Backend: Zustandsautomat Datenschutzanfrage (Arbeitsstand: `RECEIVED → IDENTITY_VERIFIED → IN_PROGRESS → PARTIALLY_BLOCKED/COMPLETED/REJECTED`), Zustandsautomat Legal Hold, Zustandsautomat Compliance-Freigabe, Zustandsautomat Gast-Buchungstoken; JSON-Schema für Flag-Definition, Branding, Datenflussfreigabe je Empfänger und Stammdaten-Exportpaket.
+  - Backend: Zustandsautomat Datenschutzanfrage (Arbeitsstand: `RECEIVED → IDENTITY_VERIFIED → IN_PROGRESS → PARTIALLY_BLOCKED/COMPLETED/REJECTED`), Zustandsautomat Legal Hold, Zustandsautomat Compliance-Freigabe, Zustandsautomat Gast-Buchungstoken; JSON-Schema für Flag-Definition, Branding, Datenflussfreigabe je Empfänger und Stammdaten-Exportpaket; Vertrag der internen Ports „Auskunftsinhalt liefern“ und „Aufbewahrung prüfen“ der Datenschutzanfrage (Eingaben, Ergebnis je Datenkategorie, Fehlerfälle) mit Stub, gegen den WP-M8e-16 baut und den die Einheit M8b fachlich implementiert.
   - Adapter/Worker: Vorlagen für Abnahmeprotokoll je Testart, Pilotbericht, Incident-Kommunikationsplan P0–P3, Änderungsdokumentation der API, Übergabeinventar.
 - **Detailverträge vorab:** dieses WP ist der Detailvertrag; Reviewrollen gemäß Detailvertragsprozess aus M0; Abstimmung der Zuständigkeit `/v1/privacy/requests` mit M8b (WP-M8b-24 liefert Aufbewahrungsprüfung und Auskunftsinhalt aus dem Verarbeitungsregister, M8e den Workflow und Endpunkt).
 - **Akzeptanzkriterien:**
@@ -77,6 +77,7 @@
   2. Für jede der 31 Anforderungen der Einheit ist ein Detailvertrag benannt; für jede der 11 MUSS-Anforderungen zusätzlich mindestens ein positiver ausführbarer Testfall (Kap. 08 §8.4).
   3. Jeder Arbeitsname dieser Datei ist bestätigt oder durch den endgültigen Namen ersetzt.
   4. Jeder Punkt aus „Offene Punkte“ ist entschieden oder als gekennzeichnete Annahme mit Verantwortlichem im Vertrag festgehalten.
+  5. Die Portverträge „Auskunftsinhalt liefern“ und „Aufbewahrung prüfen“ liegen als versionierte, schemageprüfte Fassung mit Stub vor (Offener Punkt 40).
 - **Tests:** positiv: Vertragslinting, Schemavalidierung der Beispielpayloads. negativ: Beispielpayload einer Datenschutzanfrage ohne Anfrageart bzw. eines Flags ohne Scope wird vom Schema abgelehnt.
 - **Abhängigkeiten:** intern: keine.
   - extern: WP-M0-31, WP-M0-13 (Detailvertragsprozess und CI-Vertragsprüfung)
@@ -416,11 +417,11 @@
 - **Liefergegenstände:**
   - Backend: Orchestrierung über `operation` mit Lease/Fencing; Schritte je Zielsystem (Datenbankmodule über explizite Fachoperationen, Objektspeicher, Suchindex, Cache, Partnerprojektion); Trennung aufbewahrungspflichtiger Finanzbezüge von entbehrlicher PII (Anonymisierung statt Löschung, Kap. 01 §1.7); Sammelschritt für Auskunft/Export in ein mandantengebundenes Paket; Lösch-/Sperrjournal (Arbeitsname `erasure_journal`; außerhalb des wiederherzustellenden Datenbestands geführt, Speicherort im Detailvertrag) und dessen Wiedereinspielung nach Restore.
   - Datenbank: `erasure_job` (Schritte, Status je Ziel), `export_job`, `retention_rule`, `passenger_private`, `passenger_preference`, `consent_revision`, `delegated_access`, `support_case`, `notification`, `audit_event`; kontrollierter Lifecycleprozess für unveränderliche Tabellen (Kap. 04 §4.5).
-  - Adapter/Worker: Löschadapter Objektspeicher und Suchindex; Partner-Löschmitteilung über freigegebenen Adapterkanal; signierter Download des Auskunftspakets (Planungsdefault höchstens 60 Sekunden gültig, Kap. 02 §4).
+  - Adapter/Worker: Löschadapter Objektspeicher; Zielport „Suchindex“ ohne produktiven Adapter (Offener Punkt 41); Partner-Löschmitteilung über freigegebenen Adapterkanal; signierter Download des Auskunftspakets (Planungsdefault höchstens 60 Sekunden gültig, Kap. 02 §4).
   - Ereignisse/Outbox: Löschauftrag je Modul, Abschlussmeldung je Ziel.
 - **Detailverträge vorab:** Modulport „personenbezogene Daten liefern/löschen“ je Fachmodul; Anonymisierungsverfahren je Tabelle; Verhalten bei nicht erreichbarem Partner; Format des Lösch-/Sperrjournals.
 - **Akzeptanzkriterien:**
-  1. Ein Löschjob entfernt bzw. anonymisiert die Daten einer Testperson in Datenbank, Objektspeicher, Suchindex und Partnerprojektion und weist je Ziel einen Status aus.
+  1. Ein Löschjob entfernt bzw. anonymisiert die Daten einer Testperson in Datenbank, Objektspeicher und Partnerprojektion und weist je Ziel einen Status aus. Das Löschziel „Suchindex“ ist als Zielport der Orchestrierung vorhanden und wird mit einem Testdouble nachgewiesen (Schritt wird aufgerufen, Status je Ziel, Wiederaufnahme); solange kein Suchindex existiert, weist der Job das Ziel als „nicht vorhanden“ aus und nicht als „gelöscht“ (Offener Punkt 41).
   2. Aufbewahrungspflichtige Finanzbezüge bleiben erhalten und sind von PII getrennt; Journal und Belegreferenzen bleiben konsistent.
   3. Ein abgebrochener Job wird nach Neustart fortgesetzt, ohne einen Schritt doppelt wirksam auszuführen.
   4. Nach einem Restore auf einen Stand vor der Löschung ist die Person vor Freigabe der Umgebung erneut gelöscht bzw. gesperrt.
@@ -430,7 +431,7 @@
 - **Tests:** positiv: vollständige Löschung, vollständiges Auskunftspaket. negativ: Partner nicht erreichbar (Schritt bleibt offen und sichtbar), Legal Hold, offener Rechnungsbezug, fremder Mandant. konkurrierend (Geld/Datentrennung): Löschjob parallel zu Belegbuchung/Periodenabschluss und parallel zu neuer Buchung derselben Person; zwei Worker auf demselben Job (Fencing). Regression: AT-53, AT-59.
 - **Abhängigkeiten:** intern: WP-M8e-02, WP-M8e-14.
   - extern: WP-M1-33, WP-M1-15, WP-M1-11 (Löschjob-Grundgerüst, `operation` mit Lease/Fencing, Isolation in Objektspeicher/Cache)
-  - extern: UNGEDECKT – Isolation und Löschbarkeit des Suchindex (kein WP liefert einen Suchindex bzw. dessen Mandantenisolation; WP-M1-11 schließt ihn aus), siehe Offener Punkt 41
+  - Klärung Auftraggeber (kein WP): Ob ein eigener Suchindex außerhalb der Datenbank gebaut wird. Kap. 01 §1.1 nennt keinen Suchbaustein, Kap. 01 §1.7 nennt den Suchindex nur als Löschziel; kein WP der Meilensteine M0 bis M8 liefert ihn (WP-M1-11 schließt ihn aus). Siehe Offener Punkt 41.
   - extern: WP-M5-14, WP-M5-15 (Wiederanlaufdrehbuch und Restore-Übung)
   - extern: WP-M6a-05, WP-M6a-12, WP-M6b-09 (Partnerprojektionen und Adapterkanal)
 - **Entscheidungen:** D-11 (Löschmatrix, Wiederanlauf) – Fristen blockieren Produktivschaltung.
@@ -442,14 +443,14 @@
 - **Ziel:** Eine Betroffenenanfrage wird von Eingang über Identitätsprüfung bis Abschluss als Fall geführt und vollständig sowie fristgerecht bearbeitet.
 - **Anforderungen:** `LH-6.18-SEC-014`
 - **Liefergegenstände:**
-  - Backend: Aggregat Datenschutzanfrage mit Arten Auskunft, Export, Korrektur, Löschung; Identitätsprüfung des Anfragenden; Fristberechnung und Eskalation; Aufgaben je Fachmodul; Korrektur als nachvollziehbare Änderung mit Verweis auf unveränderliche Nachweise; Abschlussmitteilung mit Ergebnis je Datenkategorie („erledigt / gesperrt wegen Aufbewahrungspflicht / Legal Hold“).
+  - Backend: Aggregat Datenschutzanfrage mit Arten Auskunft, Export, Korrektur, Löschung; Identitätsprüfung des Anfragenden; Fristberechnung und Eskalation; Aufgaben je Fachmodul; interne Ports „Auskunftsinhalt liefern“ und „Aufbewahrung prüfen“ mit Vertrag aus WP-M8e-01 und Testimplementierung (die fachliche Implementierung liefert WP-M8b-24); Korrektur als nachvollziehbare Änderung mit Verweis auf unveränderliche Nachweise; Abschlussmitteilung mit Ergebnis je Datenkategorie („erledigt / gesperrt wegen Aufbewahrungspflicht / Legal Hold“).
   - Datenbank: `privacy_request`, `privacy_request_step` (Arbeitsnamen), `erasure_job`, `export_job`, `legal_hold` (Arbeitsname), `audit_event`.
   - API: `/v1/privacy/requests` (Kap. 05 §5.7: Auskunft/Löschung und Legal Hold).
   - Oberfläche: UI-20 (Fallbearbeitung „begründeten Fall bearbeiten“; Zustände „fehlender Zweck“, „Legal Hold“, „abgelaufener Zugriff“; Fristampel); UI-05 (Anfrage stellen, Löschstatus).
   - Ereignisse/Outbox: Anfrage eingegangen, Frist gefährdet, abgeschlossen.
 - **Detailverträge vorab:** Zustandsautomat aus WP-M8e-01; Fristwerte und Verlängerungsregel (im Pflichtenheft nicht beziffert); Identitätsprüfverfahren; Antwortschema gemeinsam mit M8b.
 - **Akzeptanzkriterien:**
-  1. Eine Testanfrage jeder Art (Auskunft, Export, Korrektur, Löschung) durchläuft den Workflow vollständig bis zum dokumentierten Abschluss (SEC-014).
+  1. Eine Testanfrage jeder Art (Auskunft, Export, Korrektur, Löschung) durchläuft den Workflow vollständig bis zum dokumentierten Abschluss (SEC-014). In diesem WP wird das mit den Daten aus dem Modulport von WP-M8e-15 und der Testimplementierung der Ports „Auskunftsinhalt liefern“/„Aufbewahrung prüfen“ nachgewiesen; die Vollständigkeit der Auskunft nach Kategorien, Empfängern und Zwecken sowie die Aufbewahrungsprüfung gegen `retention_rule` werden erst mit WP-M8b-24 nachgewiesen.
   2. Die Bearbeitung erfolgt innerhalb der konfigurierten Frist; eine gefährdete Frist erzeugt eine Eskalation, eine überschrittene ist ausgewiesen (SEC-014).
   3. Ohne erfolgreiche Identitätsprüfung werden keine Daten herausgegeben oder gelöscht.
   4. Die Auskunft enthält nachweislich keine Daten, Kategorien oder Existenzhinweise aus anderen Mandanten.
@@ -461,7 +462,7 @@
 - **Abhängigkeiten:** intern: WP-M8e-14, WP-M8e-15.
   - extern: WP-M1-04, WP-M1-06, WP-M1-46, WP-M1-12, WP-M1-17, WP-M1-43, WP-M1-13 (Identität, Audit, Zustandsautomaten-Rahmen, UI-20-Basis, Idempotenzregister)
   - extern: WP-M2-32 (Betriebsnachrichten für Eingangsbestätigung und Abschlussmitteilung)
-  - extern: WP-M8b-22, WP-M8b-24 (Auskunftsinhalt aus dem Verarbeitungsregister und Aufbewahrungsprüfung; führender Nachweis E2E-105) – Reihenfolgekonflikt (Zyklus über WP-M8b-24), siehe Offener Punkt 40
+- **Vollabnahme erst mit:** WP-M8b-22, WP-M8b-24 (der fachliche Auskunftsinhalt aus dem Verarbeitungsregister und die Aufbewahrungsprüfung werden dort in den hier gelieferten Fall eingehängt; erst damit ist die Auskunft inhaltlich vollständig und der führende Nachweis E2E-105 möglich)
 - **Entscheidungen:** D-11 (Auskunfts-/Exportprozess, Verantwortliche je Datenfluss) – blockiert Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Inhalt der Auskunft aus dem Verarbeitungsregister und Aufbewahrungsprüfung (M8b); Fahrertransparenz zum ETA-Profil (M8b).
@@ -953,5 +954,5 @@
 37. **Incident-Klasse und Supportfall.** `LH-6.20-QAT-009`: ob die Klassifikation P0–P3 nur im Incident-Werkzeug des Betriebs oder auch am fachlichen `support_case` (M7b) geführt wird, ist nicht festgelegt; Kap. 04 §4.4 nennt für `support_case` keine Klassifikationsfelder.
 38. **Rollout-Begriff.** `LH-6.1-SYS-008`: „Rollout-Flags“ werden hier als stufenweise Freischaltung je Verkehrsprodukt und Mandant verstanden; ein prozentualer Rollout auf Nutzeranteile ist nicht gefordert und nicht geplant (der Parameter `eta_model_rollout_percent` gehört zu M8b).
 39. **Nachgelagerte Auflösung der EXTERN-Abhängigkeiten.** Alle EXTERN-Zeilen dieser Datei nennen Meilenstein bzw. Einheit und Fähigkeit, aber noch keine konkrete WP-ID der liefernden Einheit; die Auflösung erfolgt in der einheitenübergreifenden Konsolidierung.
-40. **Reihenfolgekonflikt: Zyklus WP-M8e-16 ↔ WP-M8b-24 (Betroffenenrechte).** WP-M8e-16 benötigt aus M8b den Auskunftsinhalt aus dem Verarbeitungsregister und die Aufbewahrungsprüfung (WP-M8b-22, WP-M8b-24); WP-M8b-24 hängt seinerseits von WP-M8e-16 (Workflow und Endpunkt `/v1/privacy/requests`) und WP-M8e-14 ab (dort Offener Punkt 27). M8b und M8e sind parallel, die wechselseitige Abhängigkeit ist aber ein Zyklus und wurde nicht aufgelöst; zu klären ist ein Schnitt (z. B. Port „Auskunftsinhalt/Aufbewahrungsprüfung“ als Vertrag in WP-M8e-01/WP-M8b-01 mit Stub, sodass nur eine Richtung als Lieferabhängigkeit bleibt). Vgl. Offener Punkt 1.
-41. **UNGEDECKT – Suchindex (WP-M8e-15).** WP-M8e-15 soll Personendaten auch im Suchindex löschen und setzt dessen Mandantenisolation voraus; kein WP der Meilensteine M0 bis M8 liefert einen Suchindex oder dessen Isolation (WP-M1-11 schließt ihn ausdrücklich aus, ebenso ungedeckt in WP-M6b-05). Zu entscheiden ist, ob ein Suchindex überhaupt gebaut wird (dann fehlt ein lieferndes WP) oder ob das Löschziel „Suchindex“ entfällt.
+40. **Aufgelöst – Reihenfolge WP-M8e-16 → WP-M8b-24 (Betroffenenrechte).** Baureihenfolge: WP-M8e-16 liefert Fall, Workflow und Endpunkt `/v1/privacy/requests` mit den internen Ports „Auskunftsinhalt liefern“ und „Aufbewahrung prüfen“ (Vertrag in WP-M8e-01, Testimplementierung); WP-M8b-24 liefert danach die fachliche Implementierung beider Ports aus Verarbeitungsregister und `retention_rule`. WP-M8e-16 führt WP-M8b-22 und WP-M8b-24 nur noch unter „Vollabnahme erst mit“; WP-M8b-24 behält die Bauabhängigkeit auf WP-M8e-16 (M8b, Offener Punkt 27). Vgl. Offener Punkt 1.
+41. **Klärung Auftraggeber – Suchindex (WP-M8e-15).** Kap. 01 §1.7 nennt den Suchindex als Ziel des orchestrierten Löschjobs, Kap. 01 §1.1 enthält aber keinen Suchbaustein, und keine Anforderung fordert einen Suchindex außerhalb der Datenbank; kein WP der Meilensteine M0 bis M8 liefert ihn (WP-M1-11 schließt ihn aus; in WP-M6b-05 ebenfalls als Klärung geführt, dort OP-34). WP-M8e-15 liefert deshalb nur den Zielport „Suchindex“ in der Orchestrierung und weist ihn mit einem Testdouble nach. Zu klären mit dem Auftraggeber: (a) wird ein eigener Suchindex gebaut – dann sind ein lieferndes WP einschließlich Mandantenisolation (PH-AT-001) und ein Löschadapter zu ergänzen –, oder (b) entfällt das Löschziel, weil die Suche ausschließlich über die Datenbank unter RLS läuft.

@@ -48,7 +48,7 @@
 | WP-M8a-17 | Revisionsfähiger Archivexport mit Original, Metadaten und Audit-Historie | 1 | M | WP-M8a-11, WP-M8a-12, WP-M8a-16, WP-M4-23, WP-M4-24, WP-M1-12, WP-M1-15, WP-M8c-27 |
 | WP-M8a-18 | Periodenabschluss mit Abschluss-Snapshot, Korrekturvorgang und Restatement-Ansicht | 1 | M | WP-M8a-13, WP-M4-36, WP-M6c-26 |
 | WP-M8a-19 | Dokumentierter, wiederholsicherer Buchungssatzexport | 1 | M | WP-M8a-07, WP-M8a-12, WP-M8a-18, WP-M4-37, WP-M1-15, WP-M1-07 |
-| WP-M8a-20 | DATEV-kompatibler Exportadapter | 1 | M | WP-M8a-19, WP-M6a-02 |
+| WP-M8a-20 | DATEV-kompatibler Exportadapter | 1 | M | WP-M8a-02, WP-M8a-19, WP-M6a-02 |
 | WP-M8a-21 | Abschreibung und kalkulatorische Kapitalbindung je Fahrzeug | 1 | M | WP-M8a-02, WP-M8a-04, WP-M8a-39, WP-M4-33, WP-M4-40, WP-M3-03 |
 | WP-M8a-22 | Leasingverträge mit Vertragsfortschritt und Mehrkilometerprognose | 1 | M | WP-M8a-02, WP-M8a-04, WP-M4-33, WP-M4-41, WP-M3-03, WP-M7c-53 |
 | WP-M8a-23 | Versicherungspolicen, Selbstbehalte und Schadenfallbezug | 1 | M | WP-M8a-02, WP-M3-43, WP-M3-03, WP-M7c-41, WP-M7c-49, WP-M4-33 |

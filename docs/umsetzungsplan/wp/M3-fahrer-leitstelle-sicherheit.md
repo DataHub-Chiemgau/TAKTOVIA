@@ -14,12 +14,12 @@
 | WP-ID | Titel | Anforderungen (Anzahl) | Größe | hängt ab von |
 |---|---|---:|---|---|
 | WP-M3-01 | Detailverträge Fahrer, Leitstelle, Flotte/Sicherheit | – (Enabler) | M | WP-M0-31, WP-M0-13, WP-M1-02, WP-M1-03, WP-M1-07, WP-M2-01 |
-| WP-M3-02 | Migration der M3-Tabellen mit RLS und Unveränderlichkeit | – (Enabler) | M | WP-M3-01, WP-M0-15, WP-M0-16, WP-M0-18, WP-M1-01, WP-M2-02, WP-M2-16 |
+| WP-M3-02 | Migration der M3-Tabellen mit RLS und Unveränderlichkeit | – (Enabler) | M | WP-M3-01, WP-M0-15, WP-M0-16, WP-M0-18, WP-M1-01, WP-M1-34, WP-M1-35, WP-M2-02, WP-M2-16 |
 | WP-M3-03 | Fahrzeugstamm | 1 | M | WP-M3-02, WP-M1-07, WP-M1-08, WP-M1-12, WP-M1-05, WP-M1-43, WP-M1-34 |
 | WP-M3-04 | Kapazitäts- und Stellplatzkonfiguration | 1 | M | WP-M3-03, WP-M2-14 |
-| WP-M3-05 | Fahrerstamm und Qualifikationsrevisionen | – (Enabler) | M | WP-M3-02, WP-M3-03, WP-M1-06, WP-M1-07, WP-M1-31 |
+| WP-M3-05 | Fahrerstamm und Qualifikationsrevisionen | – (Enabler) | M | WP-M3-02, WP-M3-03, WP-M1-06, WP-M1-07, WP-M1-31, WP-M1-35 |
 | WP-M3-06 | Fahrzeugpool-Zuordnung zu Diensten | 1 | M | WP-M3-03, WP-M1-09, WP-M1-25, WP-M2-04, WP-M2-15, WP-M2-02 |
-| WP-M3-07 | Fahrer-/Fahrzeugzuweisung mit eindeutigen Schichtgrenzen | 1 | M | WP-M3-03, WP-M3-05, WP-M1-43, WP-M1-18, WP-M4-04, WP-M4-13, WP-M4-14, WP-M4-65 |
+| WP-M3-07 | Fahrer-/Fahrzeugzuweisung mit eindeutigen Schichtgrenzen | 1 | M | WP-M3-03, WP-M3-05, WP-M1-43, WP-M1-18 |
 | WP-M3-08 | Sperr- und Freigabekern (Safety-Revision, `resource_release`) | – (Enabler) | L | WP-M3-02, WP-M3-03, WP-M3-07, WP-M1-14, WP-M1-12, WP-M1-17, WP-M2-22, WP-M2-23, WP-M2-02 |
 | WP-M3-09 | Readiness-Gate vor Bereitstatus und Disposition | 1 | M | WP-M3-08, WP-M3-14, WP-M3-25, WP-M3-36, WP-M1-19, WP-M1-21, WP-M2-15 |
 | WP-M3-10 | Checklistenvorlagen und Prüfelemente | 1 | M | WP-M3-02, WP-M3-03, WP-M1-22, WP-M1-11 |
@@ -38,7 +38,7 @@
 | WP-M3-23 | Prüfstatus in Fahrer-App und Leitstelle | 1 | M | WP-M3-08, WP-M3-14, WP-M3-35, WP-M3-36 |
 | WP-M3-24 | Driver-App-Basis: Anmeldung, verschlüsselte Outbox, Synchronisation | – (Enabler) | L | WP-M3-01, WP-M0-06, WP-M0-28, WP-M1-04, WP-M1-10, WP-M1-13 |
 | WP-M3-25 | Dienstanmeldung und Schicht-/Fahrzeugzuordnung | 1 | M | WP-M3-07, WP-M3-24, WP-M1-06, WP-M1-08, WP-M2-16 |
-| WP-M3-26 | Stoppliste des Fahrers | 1 | M | WP-M3-25, WP-M1-08, WP-M1-31, WP-M2-14, WP-M2-16, WP-M2-28, WP-M4-61, WP-M4-62 |
+| WP-M3-26 | Stoppliste des Fahrers | 1 | M | WP-M3-25, WP-M1-08, WP-M1-31, WP-M2-14, WP-M2-16, WP-M2-28 |
 | WP-M3-27 | Planänderungen anzeigen und kontrolliert übernehmen | 1 | M | WP-M3-26, WP-M3-35, WP-M2-28, WP-M2-32 |
 | WP-M3-28 | Navigation auf Basis der gültigen Stoppliste | 1 | S | WP-M3-26, WP-M0-30, WP-M2-05 |
 | WP-M3-29 | Fahrerereignisse: Ankunft, Einstieg, No-Show, Ausstieg | 1 | L | WP-M3-08, WP-M3-24, WP-M3-26, WP-M1-13, WP-M1-08, WP-M2-23, WP-M2-25, WP-M2-16 |
@@ -50,7 +50,7 @@
 | WP-M3-35 | Live-Aktualisierungskanal für Leitstelle und Fahrer | – (Enabler) | M | WP-M3-01, WP-M1-14, WP-M1-10, WP-M1-43, WP-M2-28 |
 | WP-M3-36 | Leitstelle Livebetrieb: Fahrzeuge, Position, Verfügbarkeit | 1 | M | WP-M3-08, WP-M3-31, WP-M3-34, WP-M3-35, WP-M1-08, WP-M1-43, WP-M2-16, WP-M2-40 |
 | WP-M3-37 | Auftragsliste mit Suche | 1 | M | WP-M3-36, WP-M1-31, WP-M1-02, WP-M2-23, WP-M2-14 |
-| WP-M3-38 | Fahrzeugbezogene Stoppreihenfolge, Prognose und Besetzung | 1 | M | WP-M3-29, WP-M3-36, WP-M2-16, WP-M2-19, WP-M4-61, WP-M4-62 |
+| WP-M3-38 | Fahrzeugbezogene Stoppreihenfolge, Prognose und Besetzung | 1 | M | WP-M3-29, WP-M3-36, WP-M2-16, WP-M2-19 |
 | WP-M3-39 | Buchung durch die Disposition anlegen, ändern, stornieren | 1 | L | WP-M3-02, WP-M3-08, WP-M3-37, WP-M1-07, WP-M1-12, WP-M1-13, WP-M1-28, WP-M2-21, WP-M2-22, WP-M2-23, WP-M2-26, WP-M2-31, WP-M2-25, WP-M2-34 |
 | WP-M3-40 | Manuelle Umplanung mit Begründung und Plan-CAS | – (Enabler) | M | WP-M3-02, WP-M3-08, WP-M3-38, WP-M1-21, WP-M1-12, WP-M2-16, WP-M2-19, WP-M2-22, WP-M2-28 |
 | WP-M3-41 | Operative Fahrzeugsperre durch die Leitstelle | 1 | S | WP-M3-08, WP-M3-36 |
@@ -68,7 +68,7 @@
 | WP-M3-53 | Regelbasierter Workflow: Incident bei Fahrzeugausfall | 1 | M | WP-M3-02, WP-M3-08, WP-M3-31, WP-M3-52, WP-M1-14, WP-M1-15 |
 | WP-M3-54 | Störungsablauf: betroffene Fahrten, Ersatzvorschläge, Fahrgastauswirkung | 1 | L | WP-M3-22, WP-M3-40, WP-M3-41, WP-M3-46, WP-M3-53, WP-M2-17, WP-M2-21, WP-M2-26, WP-M2-27, WP-M2-31, WP-M2-34 |
 | WP-M3-55 | Ablaufprotokoll automatisch ausgeführter Vorgänge | 1 | S | WP-M3-02, WP-M3-53, WP-M1-12, WP-M1-02 |
-| WP-M3-56 | M3-Gate-Abnahmesuite | – (Enabler) | M | alle WPs dieser Datei, WP-M0-22, WP-M0-32, WP-M0-33, WP-M2-16, WP-M2-23, WP-M2-26, WP-M2-34, WP-M2-48, WP-M4-21 |
+| WP-M3-56 | M3-Gate-Abnahmesuite | – (Enabler) | M | alle WPs dieser Datei (WP-M3-01 bis WP-M3-55), WP-M0-22, WP-M0-32, WP-M0-33, WP-M2-16, WP-M2-23, WP-M2-26, WP-M2-34, WP-M2-48, WP-M4-21 |
 
 ## Arbeitspakete
 
@@ -104,7 +104,7 @@
 - **Ziel:** Alle M3-Tabellen existieren als Flyway-Migration, sind mandantenisoliert und schützen unveränderliche Nachweise auf Datenbankebene.
 - **Anforderungen:** – (Enabler)
 - **Liefergegenstände:**
-  - Datenbank: neue Tabellen nach Kap. 04 §4.4: `driver`, `qualification_revision`, `vehicle_lease`, `vehicle_assignment`, `position_sample`, `checklist_template_revision`, `checklist_step`, `inspection_run`, `inspection_answer`, `defect_case`, `defect_evidence`, `repair_order`, `vehicle_release_decision`, `alert_policy_revision`, `business_alert`, `alert_acknowledgement`. Jeweils Primärschlüssel `(tenant_id,id)`, zusammengesetzte Fremdschlüssel, `revision`, `created_at`, Urheber, RLS-Policy `tenant_isolation` (USING und WITH CHECK). Erweiterung der Kerntabellen `vehicle`, `staff_shift`, `resource_release`, `vehicle_run` nur additiv (expand/contract).
+  - Datenbank: neue Tabellen nach Kap. 04 §4.4: `position_sample`, `checklist_template_revision`, `checklist_step`, `inspection_run`, `inspection_answer`, `defect_case`, `defect_evidence`, `repair_order`, `vehicle_release_decision`, `alert_policy_revision`, `business_alert`, `alert_acknowledgement`. Jeweils Primärschlüssel `(tenant_id,id)`, zusammengesetzte Fremdschlüssel, `revision`, `created_at`, Urheber, RLS-Policy `tenant_isolation` (USING und WITH CHECK). Erweiterung der Kerntabellen `vehicle`, `staff_shift`, `resource_release`, `vehicle_run` nur additiv (expand/contract). Die Tabellen `vehicle_lease` und `vehicle_assignment` (Stammteil aus WP-M1-34) sowie `driver` und `qualification_revision` (Stammteil aus WP-M1-35) bestehen bereits seit M1; sie werden hier nicht neu angelegt, sondern nur additiv um die M3-Spalten, Fremdschlüssel und Indizes ergänzt.
   - Datenbank: neu zu ergänzende Tabellen, die weder `kernschema.sql` noch Kap. 04 §4.4 nennt (Arbeitsnamen, in WP-M3-01 festzulegen, siehe OP-01, OP-02, OP-32): Sperrgründe je Fahrzeug bzw. Dienst (Grund, Quelle, Aufhebungsrecht, gesetzt/aufgehoben), Statushistorie Fahrzeug-/Dienststatus, Quittierung bekannter Schäden am Prüflauf, Korrektur-/Ergänzungseinträge zur Prüfung, Revisionen und Statushistorie der Schadenakte, Incident mit Verknüpfungen, Workflow-Regelrevision, Ablaufprotokoll, bestätigte Planrevision je Fahrer, Boarding-Code je Buchung (nur Hash). Gleiche Konventionen wie oben (Mandantenschlüssel, zusammengesetzte FKs, RLS, Revision, Urheber).
   - Datenbank: `booking_change` (Kap. 04 §4.4, Zeile BKG) wird hier angelegt, weil M2 sie nicht liefert (M2 Offener Punkt 22/44); Schreibrecht ausschließlich für das Modul `booking-dispatch`.
   - Datenbank: fehlende Fremdschlüssel des Kernschemas additiv ergänzen: `staff_shift.driver_ref` → `driver`, `resource_release.inspection_ref` → `inspection_run`; Umgang mit `staff_shift.roster_revision NOT NULL` vor M4 laut OP-07.
@@ -122,6 +122,7 @@
 - **Abhängigkeiten:** intern: WP-M3-01.
   - extern: WP-M0-15, WP-M0-16, WP-M0-18 (Kernschema als Flyway-Migration, DB-Rollen, Tenantkontext-Testharness)
   - extern: WP-M1-01 (RLS-Laufzeitbasis und Isolations-Testharness)
+  - extern: WP-M1-34, WP-M1-35 (bestehende Stammtabellen `vehicle_lease`, `vehicle_assignment` (WP-M1-34) und `driver`, `qualification_revision` (WP-M1-35), die additiv erweitert werden)
   - extern: WP-M2-02, WP-M2-16 (Referenzfixtures und Tabellen des Fahrtenplans (`route_stop`, `passenger_trip`), auf die M3-Tabellen verweisen)
 - **Entscheidungen:** D-02 (Isolationsstufe) – RLS ist Planungsdefault; blockiert den Bau nicht.
 - **Größe:** M
@@ -177,7 +178,7 @@
 - **Anforderungen:** – (Enabler)
 - **Liefergegenstände:**
   - Backend: Aggregat Driver (Verknüpfung zu `membership`), Qualifikationsrevision mit Gültigkeit von/bis und Freigabe; Lesefunktion „gültige Qualifikationen zum Zeitpunkt t" und fortlaufende `qualification_revision`-Nummer je Fahrer.
-  - Datenbank: `driver`, `qualification_revision`; Bezug `staff_shift.driver_ref`.
+  - Datenbank: `driver`, `qualification_revision` (Stammteil aus WP-M1-35, hier im Vollausbau mit Freigabe und Gültigkeit; Erweiterung über WP-M3-02); Bezug `staff_shift.driver_ref`.
   - API: Verwaltungsendpunkte für Fahrer und Qualifikationen (im Detailvertrag zu benennen, Kap. 05 §5.7 nennt keinen Pfad).
   - Oberfläche: UI-11 – Fahrerliste und Qualifikationspflege (Grundform).
 - **Detailverträge vorab:** DDL; Katalog der Qualifikationsarten und deren Bezug zu Fahrzeugtyp/Dienst; Modulzuordnung (OP-07).
@@ -189,6 +190,7 @@
 - **Tests:** Positiv: gültige Qualifikation wird gefunden. Negativ: abgelaufene, nicht freigegebene, fremder Mandant. Konkurrierend: Qualifikationsentzug parallel zur Einsatzfreigabe (Nachweis in WP-M3-08).
 - **Abhängigkeiten:** intern: WP-M3-02, WP-M3-03 (Rahmen UI-11).
   - extern: WP-M1-06, WP-M1-07, WP-M1-31 (Mitgliedschaft, Rollenmodell, Feldschutz)
+  - extern: WP-M1-35 (Stammteil `driver`/`qualification_revision`, auf dem die zeitlich begrenzte Fahrerfreigabe bereits arbeitet; deren Projektion muss nach dem Vollausbau unverändert funktionieren)
 - **Entscheidungen:** D-10 (Fahrerdaten, Mitbestimmung) – blockiert nur die Produktivschaltung personenbezogener Fahrerdaten.
 - **Größe:** M
 - **Nicht im Umfang:** Dienstplan, Abwesenheiten, Ruhezeitprüfung (M4, SCH/TIM); zeitlich begrenzte Fahrerfreigabe an Partner (WP-M1-35, M6).
@@ -232,10 +234,11 @@
   4. Eine überlappende Fahrzeugbelegung (zwei Schichten auf demselben Fahrzeug) erzeugt denselben Konflikt (FLT-003).
   5. Wird eine Doppelschicht über die dokumentierte Ausnahme zugelassen (Verfahren laut OP-07), sind Genehmiger, Grund und Zeitpunkt gespeichert; ohne diese Angaben bleibt es beim Konflikt (FLT-003).
   6. Anlegen und Ändern einer Zuweisung stehen im `audit_event`; eine Schicht eines anderen Mandanten ergibt 404.
+  7. Abgrenzung der Abnahme: In M3 sind die Kriterien 1–6 an direkt in der Leitstelle angelegten Schichtzuweisungen nachgewiesen (Umgang mit `roster_revision` laut Detailvertrag, OP-07). Dass dieselben Konfliktregeln für Schichten gelten, die aus einem veröffentlichten Dienstplan entstehen, wird erst mit WP-M4-04, WP-M4-13, WP-M4-14 und WP-M4-65 nachgewiesen.
 - **Tests:** Positiv: zwei aufeinanderfolgende Schichten. Negativ: Überlappung Fahrer, Überlappung Fahrzeug, DST-Wechsel am 25.10.2026. Konkurrierend: zwei parallele Transaktionen legen überlappende Schichten desselben Fahrers an – höchstens eine wird gespeichert.
 - **Abhängigkeiten:** intern: WP-M3-03, WP-M3-05.
   - extern: WP-M1-43, WP-M1-18 (Web-Anwendungsrahmen, Zeit-/Zeitzonen-Baustein)
-  - extern: WP-M4-04, WP-M4-13, WP-M4-14, WP-M4-65 (Dienstplan mit Entwurf/Publikation und Ruhezeitprüfung (übernimmt später die Schichterzeugung))
+- **Vollabnahme erst mit:** WP-M4-04, WP-M4-13, WP-M4-14, WP-M4-65 (Dienstplan mit Entwurf/Publikation und Ruhezeitprüfung übernimmt später die Schichterzeugung; der Dienstplan baut auf der Schichtzuweisung auf, nicht umgekehrt – siehe OP-07)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Dienstplan-Publikation, Schichttausch, Ruhezeit, Abwesenheit (M4); AT-39 (M4).
@@ -649,11 +652,12 @@
   3. Die Liste enthält ausschließlich Stopps der eigenen Schicht.
   4. Die Projektion enthält je Stopp nur Haltepunkt, Zeiten, Personenzahl und Ressourcenbedarf; keine Kontakt-, Zahlungs- oder Diagnosedaten (Kap. 05 §5.1 Minimierung).
   5. Leerzustand (kein Auftrag), Fehlerzustand (Abruf gescheitert, letzter Stand mit Zeit) und Offline-Zustand sind unterscheidbar dargestellt.
+  6. Abgrenzung der Abnahme: In M3 ist die Prognosezeit aus Kriterium 2 mit der im Detailvertrag festgelegten Quelle vor dem ETA-Grundmodell nachgewiesen (Planzeit aus dem Routing bzw. Ausweis „keine Prognose“, OP-20); der Nachweis mit Prognosezeiten des ETA-Grundmodells erfolgt erst mit WP-M4-61 und WP-M4-62.
 - **Tests:** Positiv: Run mit drei Stopps, Reihenfolge gleich `route_stop`-Sequenz. Negativ: fremde Schicht, Run ohne Stopps (Leerzustand). Konkurrierend: Abruf während eines Plan-Commits liefert eine konsistente Revision.
 - **Abhängigkeiten:** intern: WP-M3-25.
   - extern: WP-M1-08, WP-M1-31 (Objektberechtigung und Feldminimierung)
   - extern: WP-M2-14, WP-M2-16, WP-M2-28 (Fahrtenplan (`vehicle_run`, `route_stop`, `passenger_trip`) mit Planrevision und Fahrer-Projektion)
-  - extern: WP-M4-61, WP-M4-62 (ETA-Grundmodell für die Prognosezeit)
+- **Vollabnahme erst mit:** WP-M4-61, WP-M4-62 (ETA-Grundmodell als Quelle der Prognosezeit; bis dahin Planzeit aus dem Routing, OP-20; kein Bau-Vorbedarf)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Planänderungen (WP-M3-27); Unterstützungshinweise (WP-M3-32).
@@ -751,10 +755,12 @@
   6. Offline erfasste Codes gelten erst nach Serverprüfung als Check-in; ein offline doppelt verwendeter Code führt beim Sync zu genau einem Check-in und einem Klärfall.
   7. Nach Überschreiten der Fehlversuchsgrenze ist die Codeeingabe für diese Buchung gesperrt und die Leitstelle erhält einen Hinweis (Grenzwert laut Detailvertrag, kein Katalogparameter – OP-18).
   8. Ein stornierter oder abgelaufener Buchungszustand macht den Code ungültig.
+  9. Abgrenzung der Abnahme: In M3 sind die Kriterien 1–8 mit Codes nachgewiesen, die über Testfixture und Leitstelle bereitgestellt werden. Der durchgängige Ablauf, in dem der Fahrgast seinen Code selbst in UI-04 abruft und beim Check-in vorzeigt, wird erst mit WP-M7a-14 nachgewiesen.
 - **Tests:** Positiv: gültiger Code → Check-in. Negativ: falscher Code, verwendeter Code, Code fremder Buchung, zu viele Fehlversuche. Konkurrierend: derselbe Code gleichzeitig von zwei Geräten – genau ein Check-in.
 - **Abhängigkeiten:** intern: WP-M3-02, WP-M3-29.
   - extern: WP-M2-23, WP-M2-26 (Bestätigungs- und Stornoereignis der Buchung)
-  - extern: UNGEDECKT – Anzeige des Codes beim Fahrgast (nicht in M2 geplant, OP-18)
+  - Klärung Auftraggeber (kein WP): Übergabeweg des Boarding-Codes an den Fahrgast im P1-Betrieb vor M7 (Bestätigungsnachricht, Vorziehung der Anzeige aus `LH-6.4-BKG-019` per D-12 oder Check-in ohne Code als Regelprozess), siehe OP-18
+- **Vollabnahme erst mit:** WP-M7a-14 (Abruf und Anzeige von Boarding-Code/QR für den Fahrgast in UI-04 nach `LH-6.4-BKG-019`, P2; in M3 wird die Codeprüfung mit über Testfixture und Leitstelle bereitgestelltem Code nachgewiesen)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Ticketkontrolle externer Abschnitte; Check-in ohne Code als Regelprozess (fachlich zu entscheiden, OP-18).
@@ -932,10 +938,11 @@
   1. Für zwei Fahrzeuge mit unterschiedlichen Plänen zeigt die Ansicht nach dem Umschalten jeweils nur Stopps, Zeiten und Besetzung des gewählten Fahrzeugs; es bleiben keine Daten des vorherigen stehen (OPS-003).
   2. Die Besetzung entspricht der Differenz bestätigter Ein- und Ausstiege je Dimension (OPS-003).
   3. Prognosezeiten sind von Zusagefenster und Sollzeit unterscheidbar; fehlende Prognose wird ausgewiesen.
+  4. Abgrenzung der Abnahme: In M3 sind die prognostizierten Zeiten aus Kriterium 3 mit der Planzeit aus dem Routing bzw. dem Ausweis „keine Prognose“ nachgewiesen (OP-20); der Nachweis mit Prognosezeiten des ETA-Grundmodells erfolgt erst mit WP-M4-61 und WP-M4-62.
 - **Tests:** Positiv: Umschalten A ↔ B während einer Planänderung an A. Negativ: Fahrzeug ohne Run (Leerzustand); Fahrzeug fremden Dienstes. Konkurrierend: schnelles Umschalten während eintreffender Live-Updates – keine vermischte Anzeige.
 - **Abhängigkeiten:** intern: WP-M3-29 (Besetzung aus Fahrerereignissen), WP-M3-36.
   - extern: WP-M2-16, WP-M2-19 (Fahrtenplan und Zusagefenster)
-  - extern: WP-M4-61, WP-M4-62 (ETA-Grundmodell)
+- **Vollabnahme erst mit:** WP-M4-61, WP-M4-62 (ETA-Grundmodell als Quelle der prognostizierten Zeiten; bis dahin Planzeit aus dem Routing, OP-20; kein Bau-Vorbedarf)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Planvergleich zweier Revisionen (WP-M3-40).
@@ -1366,7 +1373,7 @@
   8. Die Zustände des Katalogs Kap. 06 §6.9 für UI-07, UI-09, UI-10 und UI-11 sind je als prüfbarer Fachzustand nachgewiesen, nicht nur als Screenshot; Abweichung „Frist überschritten" siehe OP-12.
   9. Die M2-Gate-Regression (PH-AT-004, AT-01 bis AT-05) bleibt nach Ablösung der M2-Fixtures durch die M3-Module grün.
 - **Tests:** Die Suite selbst; zusätzlich Negativkontrolle: ein absichtlich deaktivierter Safety-Check lässt PH-AT-020 rot werden.
-- **Abhängigkeiten:** intern: alle WPs dieser Datei.
+- **Abhängigkeiten:** intern: alle WPs dieser Datei (WP-M3-01, WP-M3-02, WP-M3-03, WP-M3-04, WP-M3-05, WP-M3-06, WP-M3-07, WP-M3-08, WP-M3-09, WP-M3-10, WP-M3-11, WP-M3-12, WP-M3-13, WP-M3-14, WP-M3-15, WP-M3-16, WP-M3-17, WP-M3-18, WP-M3-19, WP-M3-20, WP-M3-21, WP-M3-22, WP-M3-23, WP-M3-24, WP-M3-25, WP-M3-26, WP-M3-27, WP-M3-28, WP-M3-29, WP-M3-30, WP-M3-31, WP-M3-32, WP-M3-33, WP-M3-34, WP-M3-35, WP-M3-36, WP-M3-37, WP-M3-38, WP-M3-39, WP-M3-40, WP-M3-41, WP-M3-42, WP-M3-43, WP-M3-44, WP-M3-45, WP-M3-46, WP-M3-47, WP-M3-48, WP-M3-49, WP-M3-50, WP-M3-51, WP-M3-52, WP-M3-53, WP-M3-54, WP-M3-55).
   - extern: WP-M0-22, WP-M0-32, WP-M0-33 (Akzeptanztestgerüst, Fixtures, Nachverfolgungs-CI)
   - extern: WP-M2-16, WP-M2-23, WP-M2-26, WP-M2-34, WP-M2-48 (echter Fahrtenplan, Buchung, Storno und Betriebsnachrichten für AT-08, AT-09, AT-50 (WP-M2-16, WP-M2-23, WP-M2-26, WP-M2-34); M2-Gate-Suite für die Regression (WP-M2-48))
   - extern: WP-M4-21 (Uploadticket und Malware-Prüfung für AT-33)
@@ -1410,5 +1417,5 @@
 - **OP-32 Lücken im Kernschema für M3** (`LH-6.21-CHK-001`, `LH-6.21-CHK-013`, `LH-6.8-FLT-003`): `staff_shift.driver_ref` hat keinen Fremdschlüssel (die Tabelle `driver` fehlt im Kern-DDL), `resource_release.inspection_ref` ebenfalls nicht; `resource_release` trägt keinen Fahrerbezug außer über die Schicht. `kernschema.sql` enthält kein Überlappungsverbot für `staff_shift`. Für Korrektureinträge, Quittierungen, Statushistorien, Boarding-Code und bestätigte Planrevision nennt Kap. 04 §4.4 keine Tabellen; WP-M3-02 führt sie als Arbeitsnamen.
 - **OP-33 Gültigkeit der Einsatzfreigabe** (`LH-6.21-CHK-001`): `resource_release.valid_until` ist Pflichtfeld, das Pflichtenheft nennt aber keine Regel (Schichtende, feste Dauer, Tageswechsel). Ebenso offen ist, ob nach einer Pause oder Unterbrechung innerhalb derselben Schicht eine neue Prüfung nötig ist; die Anforderung spricht nur vom „ersten Bereitstatus".
 - **OP-34 Rollen für M3** (`LH-6.7-OPS-004`, `LH-6.22-DMG-008`, `LH-6.22-DMG-011`, `LH-I.8-AUT-002`): Die Anforderungen nennen „berechtigter Disponent", „berechtigte Prüfer", „berechtigte Rollen" und „Betriebsleiter", ohne sie abzugrenzen; die Freigaberollen liefert der Betreiber (D-11). WP-M3-01 arbeitet mit Arbeitsnamen; die verbindliche Rechtematrix muss vor der Produktivschaltung vorliegen.
-- **Reihenfolgekonflikt: Zyklusrisiko zwischen parallelen Einheiten (M2/M3/M4)**: Kein WP dieser Datei hängt von einem späteren Meilenstein ab. Mehrere extern-Abhängigkeiten auf M2/M4 zeigen aber auf WPs, die ihrerseits eine Fähigkeit aus M3 als EXTERN ausweisen; als harte Vorgängerbeziehung gelesen entsteht ein Zyklus. Betroffen: WP-M3-06 ↔ WP-M2-15 (Poolzuordnung/Kandidatenfilter), WP-M3-08 ↔ WP-M2-22 (Safety-Prüfung im Hold-/Commit-Pfad), WP-M3-09, WP-M3-12, WP-M3-31 ↔ WP-M2-15 (Einsatzfreigabe/Disponierbarkeit im Kandidatenfilter), WP-M3-27 ↔ WP-M2-28 (Driver-App als Empfänger der Planrevision), WP-M3-29 ↔ WP-M2-25 (Ausführungszustände in der Statushistorie), WP-M3-54 ↔ WP-M2-27 (Störungsablauf/Betreiberstorno), WP-M3-56 ↔ WP-M2-48 (Gate-Suiten), WP-M3-07 ↔ WP-M4-65 und WP-M3-07 → WP-M4-14 → WP-M3-25 → WP-M3-07 (Übernahme der Schichtzuweisung in den Dienstplan). Aufzulösen ist je Paar, welche Seite zuerst gegen Fixture/Leseport (WP-M0-22, WP-M2-02) fertig wird und welche Seite nur die spätere Integration bzw. Ablösung ist (Integrationsschritt statt Vorgänger).
-- **Ungedeckte Fähigkeit: Anzeige des Boarding-Codes beim Fahrgast** (WP-M3-30, siehe OP-18): Kein WP in M0–M4 liefert die Anzeige; die tragende Anforderung `LH-6.4-BKG-019` ist erst in WP-M7a-14 (späterer Meilenstein) geplant.
+- **Baureihenfolge zwischen den parallelen Einheiten M2/M3/M4 (aufgelöst)**: Kein WP dieser Datei hängt von einem späteren Meilenstein ab. Die Baureihenfolge ist: M2 baut Fahrtenplan, Hold-/Commit-Pfad, Änderungsstrom und Betriebsnachrichten zuerst gegen Fixture und Leseport (WP-M0-22, WP-M2-02); die M3-WPs setzen darauf auf und führen ihre M2-Vorgänger als Abhängigkeit. Die Gegenrichtung (z. B. WP-M2-15 → WP-M3-06/WP-M3-08, WP-M2-22 → WP-M3-08/WP-M3-09, WP-M2-25 → WP-M3-29/WP-M3-30, WP-M2-27 → WP-M3-54, WP-M2-28 → WP-M3-27/WP-M3-29) ist in der M2-Datei keine Bauabhängigkeit mehr, sondern als „Vollabnahme erst mit“ geführt (Ablösung der Fixtures bzw. Nachweis am realen Verbraucher). In dieser Datei gilt dasselbe für drei Verweise auf M4, die nur eine spätere Ablösung bedeuten und deshalb aus „Abhängigkeiten“ in „Vollabnahme erst mit“ verschoben wurden: WP-M3-07 → WP-M4-04, WP-M4-13, WP-M4-14, WP-M4-65 (Dienstplan übernimmt später die Schichterzeugung, OP-07), WP-M3-26 und WP-M3-38 → WP-M4-61, WP-M4-62 (ETA-Grundmodell ersetzt die Planzeit, OP-20). Unverändert echte Bauabhängigkeit auf M4 bleibt WP-M4-21 (Uploadticket und Malware-Prüfung, OP-13) für WP-M3-44 und WP-M3-56.
+- **Boarding-Code beim Fahrgast – Klärung Auftraggeber** (WP-M3-30, siehe OP-18): Abruf und Anzeige des Codes für den Fahrgast (UI-04) liefert WP-M7a-14 mit `LH-6.4-BKG-019` (P2, M7); kein WP in M0–M5 liefert sie, und die Anforderung bleibt in ihrer Phase. WP-M3-30 braucht die Anzeige nicht für den Bau; die Abnahme in M3 erfolgt mit Codes aus Testfixture und Leitstelle, die durchgängige Abnahme mit Fahrgast-Anzeige ist als „Vollabnahme erst mit WP-M7a-14“ geführt. Vom Auftraggeber zu entscheiden ist, wie der Fahrgast den Code im P1-Betrieb zwischen Pilotabnahme (M5) und M7 erhält: (a) Code in der Bestätigungsnachricht (Erweiterung der Vorlage aus WP-M2-33/WP-M2-34; im Pflichtenheft für P1 nicht gefordert), (b) Vorziehung von `LH-6.4-BKG-019` per D-12-Beschluss oder (c) Check-in ohne Code über die Fahrgastliste als P1-Regelprozess mit Codeprüfung nur dort, wo ein Code vorliegt. Ohne Entscheidung baut kein WP einen Zustellweg.

@@ -41,7 +41,7 @@
 | WP-M8b-17 | Beanstandung falscher Messungen durch Fahrer | 1 | M | WP-M8b-08, WP-M8b-16, WP-M3-24, WP-M3-44 |
 | WP-M8b-18 | Ablehnen und Überschreiben von ETA-Vorschlägen durch die Leitstelle | 1 | M | WP-M8b-02, WP-M8b-09, WP-M8b-11, WP-M8b-13, WP-M2-16, WP-M2-28, WP-M3-40, WP-M3-36 |
 | WP-M8b-19 | Alternativoptionen bei nicht sicher einhaltbaren Aufträgen | 1 | M | WP-M8b-13, WP-M8b-18, WP-M2-15, WP-M2-17, WP-M3-36 |
-| WP-M8b-20 | Güteüberwachung je Segment mit dokumentiertem Fallback und Rollout-Stopp | 1 | L | WP-M8b-03, WP-M8b-05, WP-M8b-11, WP-M8b-12, WP-M4-45, WP-M4-46, WP-M4-58, WP-M4-61, WP-M8c-22, WP-M8c-32, WP-M8d-22, WP-M8d-23 |
+| WP-M8b-20 | Güteüberwachung je Segment mit dokumentiertem Fallback und Rollout-Stopp | 1 | L | WP-M8b-03, WP-M8b-05, WP-M8b-11, WP-M8b-12, WP-M4-45, WP-M4-46, WP-M4-58, WP-M4-61, WP-M8c-01, WP-M8d-22, WP-M8d-23 |
 | WP-M8b-21 | Drift-Überwachung und Aktualisierung der Routinggrundlagen | 1 | M | WP-M8b-03, WP-M8b-20, WP-M2-10, WP-M8d-22, WP-M8d-23 |
 | WP-M8b-22 | Verarbeitungsregister für neue Datenverarbeitungen | 1 | M | WP-M8b-02, WP-M1-46, WP-M1-07, WP-M1-32, WP-M4-22 |
 | WP-M8b-23 | Aufbewahrungsklassen je Datentyp mit Schutz steuerlicher Nachweise | 1 | M | WP-M8b-02, WP-M8b-22, WP-M1-33, WP-M4-22, WP-M4-23, WP-M4-33 |
@@ -511,12 +511,14 @@
   4. Jeder Fallback und jeder Rollout-Stopp ist mit Anlass, Segment, Zeitpunkt, betroffenen Modellständen und auslösender Kennzahl im Audit dokumentiert und in UI-19 einsehbar (ETA-019).
   5. `eta_model_rollout_percent` ist nur im Bereich 0..100 und nur nach Freigabe veröffentlichbar (Katalogvalidierung); `eta_fallback_policy` lässt keinen Wert zu, der die sichere fahrerneutrale Referenz ausschließt.
   6. Segmente ohne ausreichende Ist-Daten werden als „nicht berechenbar“ ausgewiesen und lösen weder Scheingüte noch einen Fallback aus.
+  7. Abgrenzung des Nachweises: In diesem WP werden die Kriterien 1 bis 6 am eigenen Gütejob, an `/v1/eta/models/{id}/quality` und an der Güteansicht nachgewiesen; die Werte folgen dem Definitionsvertrag aus WP-M8c-01. Der Abruf derselben Kennzahlen über den Kennzahlkatalog (`/v1/analytics/metrics`) und frei zusammengestellte Dashboards wird erst mit WP-M8c-22 bzw. WP-M8c-32 nachgewiesen.
 - **Tests:** positiv: gutes Modell bleibt aktiv. negativ: schlechtes Segment, schlechtes Gesamtmodell (E2E-078), fehlende Ist-Daten → „nicht berechenbar“ statt Scheingüte. konkurrierend (Sicherheit): Fallback parallel zu Rollout-Erhöhung – Endzustand ist Fallback. Referenztests: E2E-078, Teil von PH-AT-022; Regression AT-21.
 - **Abhängigkeiten:**
   - intern: WP-M8b-03, WP-M8b-05, WP-M8b-11, WP-M8b-12.
   - extern: WP-M4-45, WP-M4-46, WP-M4-58, WP-M4-61 (KPI-Kern (`metric_definition_revision`, `aggregate_snapshot`, `dataset_watermark`) einschließlich Kleingruppenschutz mit `kpi_aggregation_min_n`, Grundmodell)
-  - extern: WP-M8c-22, WP-M8c-32 (ausführbare Definitionen `ETA-MAE`, `ETA-Bias`, `ETA-p90-Abdeckung`, Dashboard UI-19) – Reihenfolgekonflikt (Zyklus über WP-M8c-22), siehe Offener Punkt 27
+  - extern: WP-M8c-01 (Vertrag der Kennzahldefinition: technische IDs, Zähler/Nenner und Ergebnisstatus für `ETA-MAE`, `ETA-Bias`, `ETA-p90-Abdeckung`; Consumer-Vertrag der ETA-Gütewerte)
   - extern: WP-M8d-22, WP-M8d-23 (Alarmierung (`alert_policy_revision`, `business_alert`))
+- **Vollabnahme erst mit:** WP-M8c-22, WP-M8c-32 (die drei ETA-Kennzahlen werden dort als freigegebene Definitionsrevisionen in den 48er-Katalog aufgenommen und über `/v1/analytics/metrics` sowie den Dashboard-Builder in UI-19 ausgeliefert; beide lesen die hier erzeugten Gütewerte)
 - **Entscheidungen:** D-10 (Qualitätsgrenzen) – Produktivwerte.
 - **Größe:** L
 - **Nicht im Umfang:** Shadow-Testing und formale Modellfreigabe mit Verantwortlichen (`LH-I.3-ETA-024`, `LH-I.3-ETA-025`, P3/M9).
@@ -605,7 +607,7 @@
 - **Abhängigkeiten:**
   - intern: WP-M8b-22, WP-M8b-23.
   - extern: WP-M1-04, WP-M1-46, WP-M1-33 (Identität, Audit, Löschjob-Grundgerüst)
-  - extern: WP-M8e-16, WP-M8e-14 (Betroffenenrechte-Workflow und Endpunkt `/v1/privacy/requests`, Legal Hold) – Reihenfolgekonflikt (Zyklus über WP-M8e-16), siehe Offener Punkt 27
+  - extern: WP-M8e-16, WP-M8e-14 (Betroffenenrechte-Workflow und Endpunkt `/v1/privacy/requests`, Legal Hold; dieses WP ergänzt Auskunftsinhalt und Aufbewahrungsprüfung im dort gelieferten Fall)
 - **Entscheidungen:** D-11 (Auskunfts-/Exportprozess) – Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Identitätsprüfung des Anfragenden, Export- und Korrekturworkflow (M8e).
@@ -696,7 +698,7 @@
 - **Abhängigkeiten:**
   - intern: WP-M8b-02.
   - extern: WP-M1-20, WP-M1-22 (Konfigurationsrevisionen und Veröffentlichung)
-  - extern: WP-M8d-05 (Entwurf, Vorschau, Freigabe, Rücknahme und Wirkungsbericht der Konfiguration) – Reihenfolgekonflikt (Zyklus über WP-M8d-05), siehe Offener Punkt 27
+  - extern: WP-M8d-05 (Entwurf, Vorschau, Freigabe, Rücknahme und Wirkungsbericht der Konfiguration)
 - **Entscheidungen:** keine.
 - **Größe:** M
 - **Nicht im Umfang:** Release-Rollback der Software (`LH-6.19-NFR-013`, M8e).
@@ -772,4 +774,4 @@
 27. **Zurückgezogene oder abgelaufene Nachweise.** Für `LH-I.3-ETA-013`/`LH-I.11-GOV-003` ist nicht beschrieben, ob Fachfreigaben eine Gültigkeitsdauer haben und was bei Ablauf geschieht. WP-M8b-04 nimmt an, dass die Aktivierung dann gestoppt wird.
 28. **Kostenstellen-/Vertragsscope als Tabelle.** `access_scope` (`LH-I.11-GOV-007`) ist ein Arbeitsname; alternativ Erweiterung von `membership`. Entscheidung in WP-M8b-01 gemeinsam mit M1/M6.
 29. **Rollout-Steuerung.** `eta_model_rollout_percent` ist laut Katalog „0..100 nach Freigabe“; wer einen Rollout freigibt und nach welcher Zuordnungsregel (Fahrt, Fahrer, Dienst) der Anteil gebildet wird, ist nicht beschrieben (`LH-I.3-ETA-019`, E2E-078).
-27. **Reihenfolgekonflikt: Zyklen mit parallelen M8-Einheiten.** Die Auflösung der externen Abhängigkeiten ergibt drei wechselseitige Abhängigkeiten innerhalb des Meilensteins M8, die nicht aufgelöst wurden: (a) Reihenfolgekonflikt: WP-M8b-20 → WP-M8c-22 (ausführbare Definitionen `ETA-MAE`, `ETA-Bias`, `ETA-p90-Abdeckung`), während WP-M8c-22 die ETA-Gütewerte aus M8b (WP-M8b-20) erwartet; (b) Reihenfolgekonflikt: WP-M8b-24 → WP-M8e-16 (Betroffenenrechte-Workflow, `/v1/privacy/requests`), während WP-M8e-16 Auskunftsinhalt und Aufbewahrungsprüfung aus M8b (WP-M8b-22, WP-M8b-24) erwartet; (c) Reihenfolgekonflikt: WP-M8b-28 → WP-M8d-05 (Konfigurationslebenszyklus), während WP-M8d-05 Verantwortliche und Rollback-Anweisung aus WP-M8b-28 erwartet. Zu entscheiden ist je Paar die Lieferrichtung (z. B. Vertrag/Port zuerst gegen Stub, Zusammenschaltung im Gate) oder ein Schnitt der WPs.
+27. **Aufgelöst – Reihenfolge gegenüber parallelen M8-Einheiten.** Die drei wechselseitigen Abhängigkeiten innerhalb von M8 sind auf eine Baurichtung reduziert: (a) WP-M8c-01 (Definitionsvertrag) → WP-M8b-20 (Gütewerte) → WP-M8c-22 (Katalog) → WP-M8c-32 (Dashboard); WP-M8b-20 führt WP-M8c-22 und WP-M8c-32 nur noch unter „Vollabnahme erst mit“. (b) WP-M8e-16 (Workflow, Fall, Endpunkt `/v1/privacy/requests` mit Inhaltsport) → WP-M8b-24 (Auskunftsinhalt und Aufbewahrungsprüfung); WP-M8e-16 führt WP-M8b-22 und WP-M8b-24 unter „Vollabnahme erst mit“. (c) WP-M8d-05 (Konfigurationslebenszyklus) → WP-M8b-28 (Verantwortliche, Reviewpflicht, Rollback-Anweisung); WP-M8d-05 führt WP-M8b-28 unter „Vollabnahme erst mit“.

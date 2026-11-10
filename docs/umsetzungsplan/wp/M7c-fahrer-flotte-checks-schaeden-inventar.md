@@ -24,7 +24,7 @@
 | WP-ID | Titel | Anforderungen (Anzahl) | Größe | hängt ab von |
 |---|---|---:|---|---|
 | WP-M7c-01 | Detailverträge und Zustandsautomaten M7c | – (Enabler) | M | WP-M2-01, WP-M2-32, WP-M2-22, WP-M2-30, WP-M3-01, WP-M4-01, WP-M5-29, WP-M5-31 |
-| WP-M7c-02 | Migration der M7c-Tabellen mit RLS | – (Enabler) | M | WP-M7c-01, WP-M1-01, WP-M1-12, WP-M1-46, WP-M2-32, WP-M3-02, WP-M4-08, WP-M4-06, WP-M4-22, WP-M4-23, WP-M4-32, WP-M4-34, WP-M4-64, UNGEDECKT (`supplier_invoice`) |
+| WP-M7c-02 | Migration der M7c-Tabellen mit RLS | – (Enabler) | M | WP-M7c-01, WP-M1-01, WP-M1-12, WP-M1-46, WP-M2-32, WP-M3-02, WP-M4-08, WP-M4-06, WP-M4-22, WP-M4-23, WP-M4-32, WP-M4-34, WP-M4-64 |
 | WP-M7c-03 | Geschützte Nachrichten des Fahrers an Fahrgast und Leitstelle | 1 | M | WP-M7c-01, WP-M7c-02, WP-M2-32, WP-M2-33, WP-M3-24, WP-M3-26 |
 | WP-M7c-04 | Priorisierte Betriebsinformationen mit Lesebestätigung | 1 | M | WP-M7c-02, WP-M7c-03, WP-M2-32, WP-M3-24 |
 | WP-M7c-05 | Fahrtenbuch mit Export und Änderungsprotokoll | 1 | M | WP-M7c-02, WP-M3-29, WP-M3-34, WP-M4-41, WP-M4-42 |
@@ -131,11 +131,10 @@
   - extern: WP-M1-01, WP-M1-12, WP-M1-46 (Tenantkontext, RLS-Laufzeitbasis, Audit)
   - extern: WP-M2-32 (bestehende Tabellen `notification`, `notification_attempt`)
   - extern: WP-M3-02 (bestehende CHK-/DMG-/DRV-Tabellen)
-  - extern: WP-M4-08, WP-M4-06, WP-M4-22, WP-M4-23, WP-M4-32, WP-M4-34, WP-M4-64 (bestehende Tabellen `time_event`, `absence_request`, `document_revision`, `evidence_link`, `approval_step`)
-  - extern: UNGEDECKT – bestehende Tabelle `supplier_invoice`
+  - extern: WP-M4-08, WP-M4-06, WP-M4-22, WP-M4-23, WP-M4-32, WP-M4-34, WP-M4-64 (bestehende Tabellen `time_event`, `absence_request`, `expense_document`, `document_revision`, `evidence_link`, `approval_step`; der Rechnungsbezug dieser Einheit läuft über `expense_document` aus dem Belegaggregat, nicht über `supplier_invoice`)
 - **Entscheidungen:** D-02 (Isolationsstufe) – blockiert nur die Produktivschaltung.
 - **Größe:** M
-- **Nicht im Umfang:** Fachlogik; Tabellen der Einheit M7d (`shift_offer`, `shift_swap`, `time_correction`).
+- **Nicht im Umfang:** Fachlogik; Tabellen der Einheit M7d (`shift_offer`, `shift_swap`, `time_correction`); Tabelle `supplier_invoice` (in M4 ausdrücklich nicht geliefert; Neuanlage in WP-M8a-02, Fachlogik in WP-M8a-07 – M8a baut auf dieser Migration auf, nicht umgekehrt).
 
 ### WP-M7c-03 – Geschützte Nachrichten des Fahrers an Fahrgast und Leitstelle
 - **Ziel:** Der Fahrer sendet aus der Driver-App Nachrichten an den Fahrgast seiner aktuellen Fahrt und an die Leitstelle, ohne dass private Telefonnummern sichtbar werden.
@@ -856,7 +855,7 @@
 - **Anforderungen:** `LH-6.22-DMG-016`
 - **Liefergegenstände:**
   - Backend: Zuordnung von Termin, Ersatzteilposition, Kostenvoranschlag, Rechnung und Reparaturnachweis zu `repair_order` und `defect_case`; Versionierung je Dokument; Sichtbarkeit je Dokumentart und Rolle.
-  - Datenbank: `repair_order`, `document_revision`, `evidence_link`, `supplier_invoice`, `expense_document`, `defect_evidence`.
+  - Datenbank: `repair_order`, `document_revision`, `evidence_link`, `expense_document`, `defect_evidence`. Die Rechnung wird als `expense_document` (Belegaggregat aus M4) über `evidence_link` am Fall geführt; `supplier_invoice` (Kreditor, Fälligkeit) entsteht erst in M8a und wird dort an denselben Beleg angebunden (WP-M8a-07, WP-M8a-26).
   - API: `/v1/repair-orders`, `/v1/defects`, `/v1/expenses/receipts`.
   - Oberfläche: UI-11 – Reiter „Werkstatt“ der Akte mit Dokumentliste, Versionen und Terminen.
   - Konfigurationsparameter: `invoice_archive_years`.
@@ -1049,7 +1048,7 @@
 - **Anforderungen:** `LH-6.22-DMG-025`
 - **Liefergegenstände:**
   - Backend: Kostenpositionen je Fall mit Kostenart; Werkstattbeleg über den Belegweg aus M4; Freigabe mit Rollentrennung (Melder ≠ Freigeber) und Schwellen; Summenbildung je Kostenart und gesamt; Anzeige der Erstattungsdaten.
-  - Datenbank: `repair_order`, `cost_category`, `cost_object`, `economic_event`, `expense_document`, `supplier_invoice`, `approval_step`, `allocation_line`.
+  - Datenbank: `repair_order`, `cost_category`, `cost_object`, `economic_event`, `expense_document`, `approval_step`, `allocation_line`. Der Werkstattbeleg ist ein `expense_document`; `supplier_invoice` ist nicht Teil dieses WPs (M8a, WP-M8a-07/WP-M8a-26).
   - API: `/v1/repair-orders`, `/v1/expenses/receipts`, `/v1/expenses/{id}`, `/v1/expenses/{expense_id}/approve`, `/v1/cost-events`.
   - Oberfläche: UI-11 – Kostenreiter der Akte mit Summen je Kostenart; UI-14 – Freigabe des Werkstattbelegs.
   - Konfigurationsparameter: `approval_stage_thresholds`, `cost_split_rule`.
@@ -1204,7 +1203,7 @@
 - **Anforderungen:** `LH-I.10-AST-006`
 - **Liefergegenstände:**
   - Backend: Einkaufsanforderung mit Zustandsautomat (angefordert, genehmigt, bestellt, Wareneingang, Rechnung zugeordnet, abgeschlossen, abgelehnt); Genehmigung mit Rollentrennung und Schwellen; Wareneingang bucht Lagerzugang; Rechnungsbezug über den Belegweg.
-  - Datenbank: Einkaufsanforderung (Arbeitsname), `approval_step`, `supplier_invoice`, `expense_document`, `economic_event`, Lagerbewegung.
+  - Datenbank: Einkaufsanforderung (Arbeitsname), `approval_step`, `expense_document`, `economic_event`, Lagerbewegung. Der Rechnungsbezug verweist auf das `expense_document` des Belegwegs aus M4; die Anbindung an `supplier_invoice` und der Zwei-/Drei-Wege-Abgleich folgen in M8a (WP-M8a-07, WP-M8a-15).
   - API: neuer Pfad Einkauf (WP-M7c-01); `/v1/expenses/receipts`, `/v1/expenses/{expense_id}/approve`.
   - Oberfläche: UI-11 – Einkaufsanforderungen mit Verlauf; UI-14 – Rechnung mit Bezug zur Anforderung.
   - Konfigurationsparameter: `approval_stage_thresholds`.
@@ -1329,4 +1328,4 @@
 - **OP-34 Auszahlungsnachweis Trinkgeld kontra Abhängigkeit M6c** (`LH-6.6-DRV-018`): Die Abnahme verlangt Trinkgeld als separaten Posten der Auszahlung; `payout_instruction` und `settlement_statement` gehören zum Clearing (M6c). Liegt M6c zum Bau von WP-M7c-11 nicht vor, ist nur der Quittungsteil abnehmbar.
 - **OP-35 Fahrzeugreinigung** (`LH-I.10-AST-008`): Für Reinigungsfenster gibt es weder Tabelle noch Parameter; offen ist, ob Reinigung als geplantes Fenster, als Folge des Sauberkeitsbefunds aus dem Schichtendcheck (`LH-6.21-CHK-020`) oder beides entsteht.
 - **OP-36 Rollen des Notfallalarms** (`LH-6.6-DRV-012`, `LH-6.22-DMG-021`): Die „definierten Leitstellenrollen“ und die „dokumentierten Eskalationskontakte“ sind nicht benannt; sie sind je Mandant vom Betreiber zu liefern (D-11). Ebenso ist offen, ob der Notfallalarm eine Unfallakte (WP-M7c-40) automatisch anlegt oder nur verknüpfbar macht.
-- **Ungedeckte Abhängigkeit `supplier_invoice`** (WP-M7c-02, mittelbar WP-M7c-35, WP-M7c-44, WP-M7c-51): Die Tabelle `supplier_invoice` wird als „bestehend aus M4“ vorausgesetzt, ist dort aber ausdrücklich nicht im Umfang (M4: „`supplier_invoice` mit Kreditor und Fälligkeit (DOC-016, M8)“). Geliefert wird sie erst durch WP-M8a-02/WP-M8a-07; WP-M8a-02 hängt seinerseits von WP-M7c-02 ab, eine Referenz dorthin ergäbe einen Zyklus. Zu entscheiden: Minimaltabelle in WP-M7c-02 anlegen (M8a erweitert) oder Rechnungsbezug in M7c nur über `expense_document` führen.
+- **Aufgelöst: Abhängigkeit `supplier_invoice`** (WP-M7c-02, mittelbar WP-M7c-35, WP-M7c-44, WP-M7c-51): Die Tabelle `supplier_invoice` war als „bestehend aus M4“ vorausgesetzt, ist dort aber ausdrücklich nicht im Umfang (M4: „`supplier_invoice` mit Kreditor und Fälligkeit (DOC-016, M8)“). Geliefert wird sie durch WP-M8a-02 (Neuanlage) und WP-M8a-07 (Fachlogik); WP-M8a-02 hängt seinerseits von WP-M7c-02 ab, WP-M8a-26 von WP-M7c-35/WP-M7c-44 und WP-M8a-15 von WP-M7c-51. Die Baureihenfolge ist damit M7c vor M8a; eine Abhängigkeit von M7c auf M8a ergäbe einen Zyklus. Festlegung: M7c führt den Rechnungsbezug ausschließlich über `expense_document` und `evidence_link` (Belegweg aus M4, WP-M4-22/WP-M4-23) – das genügt für die Abnahmekriterien von `LH-6.22-DMG-016`, `LH-6.22-DMG-025` und `LH-I.10-AST-006` (Zuordnung, Freigabe, genau eine Kostenwirkung, Verfolgung bis zur verbuchten Rechnung). Die Abhängigkeitszeile in WP-M7c-02 ist entfallen; Kreditor, Fälligkeit und Abgleich an `supplier_invoice` bleiben Umfang von M8a. In WP-M7c-01 ist der Vertrag so zu fassen, dass M8a `supplier_invoice` an dasselbe `expense_document` anbinden kann, ohne eine zweite Kostenwirkung zu erzeugen.

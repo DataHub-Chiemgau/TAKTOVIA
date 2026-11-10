@@ -3,11 +3,11 @@
 - **Meilenstein:** M1 – Plattformkern: Mandanten, Identität, Konfiguration, Ereignisse
 - **Phase:** P1 (alle Anforderungen MUSS, Originalphase und -priorität unverändert)
 - **Anforderungen:** 46 (SYS 7, IAM 8, INT 4, SEC 13, MUL 7, CFG 7)
-- **Arbeitspakete:** 46 (39 mit Anforderungen, 7 Enabler)
+- **Arbeitspakete:** 47 (39 mit Anforderungen, 8 Enabler)
 
 **Ziel:** Nach M1 kann sich ein Mensch per OIDC anmelden, serverseitig geprüft in genau einem Mandanten arbeiten und nur das sehen und ändern, was Rolle, Dienst und Objekt erlauben. Jede Tabelle ist per RLS und zusammengesetzten Schlüsseln isoliert, jede schreibende API ist idempotent und liefert ein einheitliches Fehlermodell, Ereignisse laufen über Outbox/Inbox mit fachlich genau einmaliger Wirkung. Das Konfigurationsregister liefert versionierte, geprüfte und zeitlich wirksame Werte mit Vier-Augen-Freigabe und Rollback als neue Revision. M2, M3 und M4 bauen ausschließlich auf diesen Bausteinen auf.
 
-**Hinweis zur Abnahme:** Mehrere M1-Anforderungen haben eine Originalabnahme, die fachliche Objekte späterer Meilensteine voraussetzt (Buchung, Fahrzeug, Fahrer, Zahlung). Diese WPs liefern in M1 den Plattformbaustein mit einem Nachweis an einem Testaggregat; der Nachweis am echten Fachobjekt ist als EXTERN-Abhängigkeit ausgewiesen und unter „Offene Punkte" gesammelt (OP-01).
+**Hinweis zur Abnahme:** Mehrere M1-Anforderungen haben eine Originalabnahme, die fachliche Objekte späterer Meilensteine voraussetzt (Buchung, Fahrzeug, Fahrer, Zahlung). Diese WPs liefern in M1 den Plattformbaustein mit einem Nachweis an einem Testaggregat; der Nachweis am echten Fachobjekt ist je WP im Feld „Vollabnahme erst mit" ausgewiesen (keine Bauabhängigkeit; die Bauabhängigkeiten der M1-WPs zeigen ausschließlich auf M0 und M1) und unter „Offene Punkte" gesammelt (OP-01, OP-38). Was in M1 nachgewiesen wird und was erst später, steht in den Akzeptanzkriterien des jeweiligen WPs.
 
 **Hinweis zu Bezeichnern:** Tabellen, Endpunkte, UI-IDs und Parameter tragen die Namen der Artefakte (`kernschema.sql`, Kap. 04 §4.4, `openapi.yaml`, Kap. 05 §5.7, Kap. 06 §6.9, `kataloge.csv`). Nicht aus den Artefakten stammen und daher Vorschläge dieses Plans sind: Ereignistypnamen (z. B. `organization.changed`, `config.revision_published`), Port- und Klassennamen (z. B. `TenantContext`, `PolicyCheck`, `ImpactProvider`), alle als „neue Tabelle" oder „Detailvertrag" gekennzeichneten Tabellen und Endpunkte sowie der Zuschnitt „UI-xx Basis". Sie werden im jeweiligen Detailvertrag verbindlich festgelegt (OP-33). Kennzahlen aus `kataloge.csv` liefert M1 nicht; die 48 KPIs beginnen mit M4.
 
@@ -17,50 +17,51 @@
 |---|---|---:|---|---|
 | WP-M1-01 | Tenantkontext, RLS-Laufzeitbasis und Isolations-Testharness | 2 | M | WP-M0-15, WP-M0-16, WP-M0-17 |
 | WP-M1-02 | API-Grundgerüst: Fehlermodell, Validierung, ETag, Listen, Tracing | 1 | M | WP-M1-01, WP-M0-02, WP-M0-08, WP-M0-12 |
-| WP-M1-03 | OpenAPI je Modul und Contract-Test-Pipeline | 1 | S | WP-M1-02, WP-M0-04, WP-M0-13, WP-M2-01, WP-M2-21, WP-M2-23, WP-M3-01, WP-M3-03, WP-M3-53 |
+| WP-M1-03 | OpenAPI je Modul und Contract-Test-Pipeline | 1 | S | WP-M1-02, WP-M0-04, WP-M0-13 |
 | WP-M1-04 | OIDC-Ressourcenserver, IdP-Realm und MFA | 2 | M | WP-M1-02, WP-M1-46, WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35 |
 | WP-M1-05 | Mandant, Rechtsträger, Organisation und vertragliche Rollen | 1 | M | WP-M1-01, WP-M1-02, WP-M1-06, WP-M1-07, WP-M1-14, WP-M1-43, WP-M1-46 |
 | WP-M1-06 | Mitgliedschaft, RequestContext, serverseitiger Tenantwechsel, `/v1/me` | 2 | M | WP-M1-01, WP-M1-04, WP-M1-14, WP-M1-43, WP-M1-46 |
 | WP-M1-07 | Rollenmodell und Rechtematrix | 1 | M | WP-M1-06, WP-M1-43 |
-| WP-M1-08 | Dienst- und Objektberechtigung | 1 | M | WP-M1-07, WP-M1-09, WP-M2-23 |
-| WP-M1-09 | Organisationsstruktur: Regionen, Betriebshöfe, Dienste, Kostenstellen | 1 | M | WP-M1-05, WP-M1-06, WP-M1-07, WP-M1-20, WP-M1-43, WP-M2-04, WP-M2-05 |
-| WP-M1-10 | Sitzungsverwaltung und Sitzungssperre | 1 | M | WP-M1-06, WP-M1-43, WP-M1-46, WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35, WP-M2-35, WP-M2-36 |
-| WP-M1-11 | Isolation außerhalb der Datenbank und mandantengetrennte Bestände | 2 | M | WP-M1-06, WP-M1-08, WP-M1-12, WP-M1-14, WP-M1-22, WP-M0-08, WP-M2-07, WP-M2-38, WP-M4-21, WP-M4-22, WP-M4-33, WP-M4-37, WP-M4-64 |
-| WP-M1-12 | Audit append-only und Sicherheitsereignisse | 1 | M | WP-M1-06, WP-M1-07, WP-M1-14, WP-M1-43, WP-M1-46, WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35, WP-M3-40 |
-| WP-M1-13 | Idempotenzregister und Kollisionskontrolle | 1 | M | WP-M1-02, WP-M1-06, WP-M1-14, WP-M2-24, WP-M2-30 |
-| WP-M1-14 | Outbox-Relay und Inbox-Deduplikation | – (Enabler) | M | WP-M1-01, WP-M1-46, WP-M0-08, WP-M0-10, WP-M5-04 |
+| WP-M1-08 | Dienst- und Objektberechtigung | 1 | M | WP-M1-07, WP-M1-09 |
+| WP-M1-09 | Organisationsstruktur: Regionen, Betriebshöfe, Dienste, Kostenstellen | 1 | M | WP-M1-05, WP-M1-06, WP-M1-07, WP-M1-20, WP-M1-43 |
+| WP-M1-10 | Sitzungsverwaltung und Sitzungssperre | 1 | M | WP-M1-06, WP-M1-43, WP-M1-46, WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35 |
+| WP-M1-11 | Isolation außerhalb der Datenbank und mandantengetrennte Bestände | 2 | M | WP-M1-06, WP-M1-08, WP-M1-12, WP-M1-14, WP-M1-22, WP-M0-08 |
+| WP-M1-12 | Audit append-only und Sicherheitsereignisse | 1 | M | WP-M1-06, WP-M1-07, WP-M1-14, WP-M1-43, WP-M1-46, WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35 |
+| WP-M1-13 | Idempotenzregister und Kollisionskontrolle | 1 | M | WP-M1-02, WP-M1-06, WP-M1-14 |
+| WP-M1-14 | Outbox-Relay und Inbox-Deduplikation | – (Enabler) | M | WP-M1-01, WP-M1-46, WP-M1-47, WP-M0-08, WP-M0-10 |
 | WP-M1-15 | `operation`-Ressource mit Lease/Fencing | – (Enabler) | M | WP-M1-07, WP-M1-13, WP-M1-14 |
-| WP-M1-16 | Webhook-Grundlage (signierter Eingang, Abonnement, Zustellung) | – (Enabler) | M | WP-M1-02, WP-M1-07, WP-M1-13, WP-M1-14, WP-M1-36, WP-M1-46, WP-M0-10, WP-M5-04 |
-| WP-M1-17 | Zustandsautomaten-Rahmen mit serverseitiger Übergangsprüfung | 1 | M | WP-M1-02, WP-M1-14, WP-M2-01, WP-M2-16, WP-M2-23, WP-M2-30, WP-M3-01, WP-M3-31, WP-M3-53 |
-| WP-M1-18 | Zeit-, Zeitzonen- und DST-Baustein | 1 | S | WP-M1-02, WP-M1-43, WP-M2-11, WP-M2-23 |
+| WP-M1-16 | Webhook-Grundlage (signierter Eingang, Abonnement, Zustellung) | – (Enabler) | M | WP-M1-02, WP-M1-07, WP-M1-13, WP-M1-14, WP-M1-36, WP-M1-46, WP-M1-47, WP-M0-10 |
+| WP-M1-17 | Zustandsautomaten-Rahmen mit serverseitiger Übergangsprüfung | 1 | M | WP-M1-02, WP-M1-14 |
+| WP-M1-18 | Zeit-, Zeitzonen- und DST-Baustein | 1 | S | WP-M1-02, WP-M1-43 |
 | WP-M1-19 | Parameterkatalog, `policy_schema` und Systemgrenzen | 2 | M | WP-M1-02, WP-M1-06 |
-| WP-M1-20 | Konfigurationsrevisionen: Entwurf, Historie, Rekonstruktion | 2 | M | WP-M1-07, WP-M1-14, WP-M1-19, WP-M1-43, WP-M1-46, WP-M2-04, WP-M2-07, WP-M2-21, WP-M2-23 |
-| WP-M1-21 | Präzedenzkette und wirksame Konfiguration | 1 | M | WP-M1-07, WP-M1-09, WP-M1-20, WP-M1-43, WP-M3-03 |
-| WP-M1-22 | Validierung, Vier-Augen-Freigabe, Publikation und Rollback | 1 | L | WP-M1-07, WP-M1-13, WP-M1-20, WP-M1-21, WP-M1-23, WP-M1-43, WP-M1-46, WP-M2-04, WP-M2-05, WP-M2-09, WP-M2-21, WP-M2-23 |
-| WP-M1-23 | Wirkungsanalyse vor Publikation | 1 | M | WP-M1-07, WP-M1-15, WP-M1-20, WP-M1-43, WP-M1-46, WP-M2-04, WP-M2-23, WP-M4-17 |
+| WP-M1-20 | Konfigurationsrevisionen: Entwurf, Historie, Rekonstruktion | 2 | M | WP-M1-07, WP-M1-14, WP-M1-19, WP-M1-43, WP-M1-46 |
+| WP-M1-21 | Präzedenzkette und wirksame Konfiguration | 1 | M | WP-M1-07, WP-M1-09, WP-M1-20, WP-M1-43, WP-M0-16 |
+| WP-M1-22 | Validierung, Vier-Augen-Freigabe, Publikation und Rollback | 1 | L | WP-M1-07, WP-M1-13, WP-M1-20, WP-M1-21, WP-M1-23, WP-M1-43, WP-M1-46 |
+| WP-M1-23 | Wirkungsanalyse vor Publikation | 1 | M | WP-M1-07, WP-M1-15, WP-M1-20, WP-M1-43, WP-M1-46 |
 | WP-M1-24 | Unternehmensprofil des Mandanten | 1 | S | WP-M1-05, WP-M1-07, WP-M1-14, WP-M1-43, WP-M1-46 |
-| WP-M1-25 | Dienstkonfiguration und Angebotsmodelle | 1 | M | WP-M1-09, WP-M1-22, WP-M1-43, WP-M2-04, WP-M2-05, WP-M2-07, WP-M2-21, WP-M2-23 |
-| WP-M1-26 | Serverseitige Regelprüfung (Policy-Port) | 1 | S | WP-M1-02, WP-M1-21, WP-M1-46, WP-M2-09, WP-M2-23 |
-| WP-M1-27 | Revisionsfeste Zusage und kontrollierte Änderungsverfahren | 1 | M | WP-M1-02, WP-M1-14, WP-M1-17, WP-M1-46, WP-M2-23, WP-M2-32 |
-| WP-M1-28 | Fahrgastregistrierung mit Kontaktverifikation | 1 | M | WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-31, WP-M1-43, WP-M1-46, WP-M2-32, WP-M2-35, WP-M2-36 |
-| WP-M1-29 | Fahrgastprofil und Präferenzen | 1 | M | WP-M1-07, WP-M1-28, WP-M1-31, WP-M1-43, WP-M2-05, WP-M2-35, WP-M2-36 |
-| WP-M1-30 | Datenschutzeinstellungen: Betriebsmitteilung getrennt von Marketing | 1 | S | WP-M1-29, WP-M1-43, WP-M2-32 |
-| WP-M1-31 | Feldschutz für Mobilitäts- und Unterstützungsmerkmale | 1 | M | WP-M1-01, WP-M1-07, WP-M1-36, WP-M1-43, WP-M1-46, WP-M2-23, WP-M4-06, WP-M4-08 |
+| WP-M1-25 | Dienstkonfiguration und Angebotsmodelle | 1 | M | WP-M1-09, WP-M1-22, WP-M1-43 |
+| WP-M1-26 | Serverseitige Regelprüfung (Policy-Port) | 1 | S | WP-M1-02, WP-M1-21, WP-M1-46 |
+| WP-M1-27 | Revisionsfeste Zusage und kontrollierte Änderungsverfahren | 1 | M | WP-M1-02, WP-M1-14, WP-M1-17, WP-M1-46 |
+| WP-M1-28 | Fahrgastregistrierung mit Kontaktverifikation | 1 | M | WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-31, WP-M1-43, WP-M1-46 |
+| WP-M1-29 | Fahrgastprofil und Präferenzen | 1 | M | WP-M1-07, WP-M1-28, WP-M1-31, WP-M1-43, WP-M0-16 |
+| WP-M1-30 | Datenschutzeinstellungen: Betriebsmitteilung getrennt von Marketing | 1 | S | WP-M1-29, WP-M1-43 |
+| WP-M1-31 | Feldschutz für Mobilitäts- und Unterstützungsmerkmale | 1 | M | WP-M1-01, WP-M1-07, WP-M1-36, WP-M1-43, WP-M1-46 |
 | WP-M1-32 | Dateninventar mit Zweck und Rechtsgrundlage | 1 | S | WP-M1-01, WP-M1-43 |
 | WP-M1-33 | Aufbewahrungs-, Archivierungs- und Löschregeln | 1 | M | WP-M1-07, WP-M1-11, WP-M1-15, WP-M1-31, WP-M1-32, WP-M1-43, WP-M1-46 |
-| WP-M1-34 | Fahrzeugrollen mit Gültigkeitsintervallen | 1 | M | WP-M1-05, WP-M1-07, WP-M1-14, WP-M1-46, WP-M2-16, WP-M3-03, WP-M4-33 |
-| WP-M1-35 | Zeitlich begrenzte Fahrerfreigabe mit minimierter Projektion | 1 | M | WP-M1-05, WP-M1-07, WP-M1-08, WP-M1-14, WP-M1-43, WP-M1-46, WP-M3-05, WP-M6b-04, WP-M6b-05 |
+| WP-M1-34 | Fahrzeugrollen mit Gültigkeitsintervallen | 1 | M | WP-M1-05, WP-M1-07, WP-M1-14, WP-M1-46 |
+| WP-M1-35 | Zeitlich begrenzte Fahrerfreigabe mit minimierter Projektion | 1 | M | WP-M1-05, WP-M1-07, WP-M1-08, WP-M1-14, WP-M1-43, WP-M1-46 |
 | WP-M1-36 | Transportverschlüsselung und Secret-Verwaltung | 2 | S | WP-M0-08, WP-M0-11, WP-M0-12, WP-M0-14, WP-M0-35 |
-| WP-M1-37 | Zahlungsdatentrennung (keine Kartendaten im System) | 1 | S | WP-M1-02, WP-M1-31, WP-M1-32, WP-M1-36, WP-M2-29 |
-| WP-M1-38 | Eingabehärtung und Sicherheits-Scans in CI | 1 | M | WP-M1-02, WP-M1-03, WP-M0-11, WP-M0-12, WP-M0-35, WP-M5-17 |
-| WP-M1-39 | Verschlüsselte Backups und Restore-Test | 1 | M | WP-M1-01, WP-M1-33, WP-M1-36, WP-M0-11, WP-M0-35, WP-M5-14, WP-M5-15 |
+| WP-M1-37 | Zahlungsdatentrennung (keine Kartendaten im System) | 1 | S | WP-M1-02, WP-M1-31, WP-M1-32, WP-M1-36 |
+| WP-M1-38 | Eingabehärtung und Sicherheits-Scans in CI | 1 | M | WP-M1-02, WP-M1-03, WP-M0-11, WP-M0-12, WP-M0-35 |
+| WP-M1-39 | Verschlüsselte Backups und Restore-Test | 1 | M | WP-M1-01, WP-M1-33, WP-M1-36, WP-M0-11, WP-M0-35 |
 | WP-M1-40 | Trennung von Test- und Produktionsdaten und -zugängen | 1 | S | WP-M1-04, WP-M1-36, WP-M0-11 |
-| WP-M1-41 | Sicherheitsvorfallprozess und Übung | 1 | S | WP-M1-05, WP-M1-10, WP-M1-12, WP-M1-14, WP-M1-36, WP-M1-43, WP-M0-10, WP-M5-04 |
-| WP-M1-42 | Datenschutz-Folgenabschätzung | 1 | S | WP-M1-31, WP-M1-32, WP-M1-33, WP-M3-34, WP-M4-61, WP-M4-62 |
-| WP-M1-43 | Web-Designsystem und Anwendungsrahmen | – (Enabler) | M | WP-M1-02, WP-M1-03, WP-M0-05, WP-M0-12, WP-M5-30 |
-| WP-M1-44 | Web-Anmeldung und Mandantenwechsel | – (Enabler) | M | WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-43, WP-M2-35, WP-M2-36 |
-| WP-M1-45 | M1-Gate-Abnahmesuite | – (Enabler) | M | alle WPs dieser Datei, WP-M0-22, WP-M0-31, WP-M0-32, WP-M2-07, WP-M2-23, WP-M2-38, WP-M2-48, WP-M3-44, WP-M3-56, WP-M4-06, WP-M4-08, WP-M4-22, WP-M4-64 |
+| WP-M1-41 | Sicherheitsvorfallprozess und Übung | 1 | S | WP-M1-05, WP-M1-10, WP-M1-12, WP-M1-14, WP-M1-36, WP-M1-43, WP-M1-47, WP-M0-10 |
+| WP-M1-42 | Datenschutz-Folgenabschätzung | 1 | S | WP-M1-31, WP-M1-32, WP-M1-33 |
+| WP-M1-43 | Web-Designsystem und Anwendungsrahmen | – (Enabler) | M | WP-M1-02, WP-M1-03, WP-M0-05, WP-M0-12 |
+| WP-M1-44 | Web-Anmeldung und Mandantenwechsel | – (Enabler) | M | WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-43 |
+| WP-M1-45 | M1-Gate-Abnahmesuite | – (Enabler) | M | alle WPs dieser Datei (WP-M1-01 bis WP-M1-44, WP-M1-46, WP-M1-47), WP-M0-22, WP-M0-31, WP-M0-32 |
 | WP-M1-46 | Audit-Port und append-only Auditspeicher | – (Enabler) | S | WP-M1-01, WP-M0-16 |
+| WP-M1-47 | Minimaler Betriebsalarmkanal | – (Enabler) | S | WP-M1-36, WP-M0-08, WP-M0-10, WP-M0-11, WP-M0-35 |
 
 ## Arbeitspakete
 
@@ -122,11 +123,11 @@
   1. Für jeden in der Anwendung registrierten Endpunkt existiert genau eine `operationId` in `api/`; der Vergleich ist CI-Pflichtschritt und schlägt bei Abweichung fehl. (INT-001)
   2. Contract-Tests decken jeden produktiven M1-Endpunkt mit mindestens einem positiven und einem Fehlerfall ab und laufen grün. (INT-001)
   3. Die Dokumentation nennt Version, Sicherheits-Scopes und Fehlercodes je Endpunkt. (INT-001)
+  4. Abgrenzung des Nachweises: In M1 werden Pipeline, Build-Abbruch bei fehlendem Vertrag und die Vertragsabdeckung aller M1-Endpunkte nachgewiesen; die Vertragsabdeckung der APIs für Buchungen, Verfügbarkeit, Fahrzeug- und Betriebsobjekte wird mit M2/M3 über dieselbe Pipeline nachgewiesen. (INT-001)
 - **Tests:** positiv: Contract-Lauf aller M1-Endpunkte. negativ: absichtlich undokumentierte Testroute lässt den Build scheitern; Antwort mit zusätzlichem Feld wird erkannt. konkurrierend: nicht einschlägig (reine Vertrags- und Buildprüfung).
 - **Abhängigkeiten:** intern: WP-M1-02.
   - extern: WP-M0-04, WP-M0-13 (CI mit Vertragsprüfung (`validate_artifacts.py`))
-  - extern: WP-M2-01, WP-M2-21, WP-M2-23 (APIs für Buchungen und Verfügbarkeit (`/v1/ride-offers`, `/v1/bookings`) als Gegenstand der Originalabnahme)
-  - extern: WP-M3-01, WP-M3-03, WP-M3-53 (APIs für Fahrzeug- und Betriebsobjekte (`/v1/operator/vehicles`, `/v1/operator/incidents`))
+- **Vollabnahme erst mit:** WP-M2-01, WP-M2-21, WP-M2-23, WP-M3-01, WP-M3-03, WP-M3-53 (die Originalabnahme von INT-001 nennt die APIs für Buchungen und Verfügbarkeit (`/v1/ride-offers`, `/v1/bookings`) sowie für Fahrzeug- und Betriebsobjekte (`/v1/operator/vehicles`, `/v1/operator/incidents`); diese entstehen erst in M2/M3 und werden dort über die hier gelieferte Pipeline geprüft)
 - **Entscheidungen:** keine
 - **Größe:** S
 - **Nicht im Umfang:** APIs für Buchungen, Verfügbarkeit, Fahrzeug- und Betriebsobjekte selbst (M2, M3) – diese nutzen die hier gelieferte Pipeline; die zwölf semantischen Contract-Fälle aus Kap. 05 §5.8 werden mit dem Meilenstein Pflicht, der die Funktion liefert.
@@ -231,7 +232,7 @@
   3. Zugriff auf Objekte fremder Mandanten bleibt unabhängig vom Dienstscope 404.
 - **Tests:** positiv: Disponent bearbeitet Objekt eigener Region. negativ: fremde Region per UUID, per Listenfilter, per Sortierung/Cursor einer anderen Sicht. konkurrierend (Datentrennung): Scope-Entzug parallel zu einer Änderung – Änderung nach Commit des Entzugs abgewiesen. Besteht AT-18; Baustein für PH-AT-001.
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-09.
-  - extern: WP-M2-23 (Buchungsaggregat für den Nachweis „fremde regionale Buchungen")
+- **Vollabnahme erst mit:** WP-M2-23 (Nachweis „fremde regionale Buchungen" am echten Buchungsaggregat; M1 weist den Port am Testobjekt mit Dienstbezug nach)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Feldrechte auf sensible Merkmale (WP-M1-31); Kooperationsgrants zwischen Mandanten (M6).
@@ -251,9 +252,10 @@
   2. Betriebshöfe und Kostenstellen lassen sich je Mandant mehrfach anlegen und einem Gebiet/Dienst zuordnen. (MUL-002)
   3. Gleichnamige Kostenstellen in Mandant A und B sind getrennte Objekte.
   4. Anlegen und Ändern von Region, Betriebshof, Dienst und Kostenstelle ist auf berechtigte Rollen beschränkt, auditiert und über `If-Match` gegen stilles Überschreiben geschützt.
+  5. Abgrenzung des Nachweises: In M1 sind die zwei Gebiete als Stammobjekte Region und Dienst mit eigenen Regeln nachgewiesen; die geografische Abgrenzung über Bediengebiet-Geometrie und Haltepunkte je Gebiet wird mit M2 nachgewiesen. (MUL-002)
 - **Tests:** positiv: zwei Regionen, eigene Regeln, ein Login. negativ: Dienst einer Region eines fremden Mandanten zuordnen; doppelte `business_ref` je `kind`; Anlage durch Rolle ohne Recht; ungültige IANA-Zone in `service.timezone`. konkurrierend (Datentrennung): paralleles Anlegen identischer Kostenstelle – genau ein Erfolg (`UNIQUE(tenant_id,kind,business_ref)`).
 - **Abhängigkeiten:** intern: WP-M1-05, WP-M1-06, WP-M1-07, WP-M1-20, WP-M1-43.
-  - extern: WP-M2-04, WP-M2-05 (Bediengebiet-Geometrie (`service_area`) und Haltepunkte (`stop_revision`))
+- **Vollabnahme erst mit:** WP-M2-04, WP-M2-05 (geografische Abgrenzung der Gebiete als Bediengebiet-Geometrie (`service_area`) und Haltepunkte (`stop_revision`); M1 weist Regionen, Dienste und eigenständige Regeln am Stammobjekt nach)
 - **Entscheidungen:** D-05 (Pilotbetreiber/Regionen für Fixtures) – blockiert den Bau nicht.
 - **Größe:** M
 - **Nicht im Umfang:** `service_area`, `stop_revision`, Geo-Validierung (M2); Dienstplan (M4); Kostenrechnung (M4); Betriebshof-Inventar (M7).
@@ -275,10 +277,11 @@
   3. Die Wiederherstellung des Zugangs ist nur über einen im IdP als verifiziert geführten Kontakt möglich und beendet alle bestehenden Sitzungen des Kontos; die Kontaktverifikation für Fahrgäste liefert WP-M1-28. (IAM-009)
   4. Sperren und Entsperren eines Kontos ist auf berechtigte Rollen beschränkt; Sperre, Entsperrung, „alle Geräte abmelden" und Wiederherstellung erzeugen je einen Auditeintrag mit Akteur und Zeitpunkt.
   5. Fällt der Cache der Sperrliste aus, entscheidet die Datenbank; im Zweifel wird der Zugriff verweigert (fail-closed).
+  6. Abgrenzung des Nachweises: In M1 werden die Sitzungsoperationen an der API sowie in UI-05 Basis (Rahmenanwendung `web/passenger` aus WP-M1-43) und UI-18 Basis nachgewiesen; die Einbindung in UI-05 im Vollausbau der Passenger-PWA folgt mit M2 (OP-34). (IAM-009)
 - **Tests:** positiv: Abmelden, erneutes Anmelden. negativ: gesperrte Sitzung ruft `/v1/me` und einen schreibenden Endpunkt auf; Sperrversuch durch unberechtigte Rolle; Wiederherstellung über unverifizierten Kontakt; Sperre bei ausgefallenem Redis (fail-closed über Datenbank). konkurrierend (Sicherheit): Sperre während 50 paralleler Anfragen – keine nach Commit begonnene Anfrage erfolgreich.
 - **Abhängigkeiten:** intern: WP-M1-06, WP-M1-43, WP-M1-46.
   - extern: WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35 (Keycloak mit Admin-Schnittstelle in lokaler Umgebung und Staging)
-  - extern: WP-M2-35, WP-M2-36 (Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34))
+- **Vollabnahme erst mit:** WP-M2-35, WP-M2-36 (UI-05 im Vollausbau der Passenger-PWA laut Meilensteinplan, OP-34; M1 weist die Sitzungsoperationen an API, UI-05 Basis und UI-18 Basis nach)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Web-Login (WP-M1-44); erweiterte IAM-Anforderungen der Phase 2 (M8).
@@ -298,11 +301,11 @@
   3. Eine publizierte Änderung der Tarif-/Konfigurationsrevision in Mandant A ändert die wirksame Konfiguration von B nicht (Vorher/Nachher-Vergleich von `/v1/config/effective` für B identisch); der Nachweis an `tariff_revision` folgt mit M2. (MUL-007)
   4. Rollenzuweisungen, Marken- und Benachrichtigungsregel-Einstellungen sind je Mandant getrennt gespeichert und abrufbar. (MUL-007)
   5. Das Sicherheitsprotokoll enthält bei Fremdzugriff ein Ereignis ohne B-Personen- oder Inhaltsdaten.
+  6. Abgrenzung des Nachweises: In M1 umfasst der Cross-Tenant-Scan alle M1-Endpunkte und technischen Wege; Such-, Medien-, Beleg-, Export- und Finanzendpunkte werden mit M2/M4 in denselben Scan aufgenommen, erst dann ist PH-AT-001 vollständig. (SYS-001)
 - **Tests:** positiv: A und B arbeiten parallel. negativ: bekannte B-UUID über jeden M1-Endpunkt; signierte URL von B mit Sitzung A; Cache-Poisoning-Versuch mit identischer Ressourcen-ID. konkurrierend (Datentrennung): gleichzeitige Publikation in A und B mit identischer `scope_id` – keine gegenseitige Wirkung. Besteht PH-AT-001 (soweit M1-Endpunkte), E2E-091, AT-18.
 - **Abhängigkeiten:** intern: WP-M1-06, WP-M1-08, WP-M1-12, WP-M1-14, WP-M1-22.
-  - extern: WP-M2-07, WP-M2-38, WP-M4-21 (`tariff_revision` für den Tarifnachweis; Such- und Medienendpunkte)
-  - extern: WP-M4-22, WP-M4-33, WP-M4-37, WP-M4-64 (Beleg-, Export- und Finanzendpunkte für den vollständigen PH-AT-001)
   - extern: WP-M0-08 (MinIO/Redis in lokaler Umgebung)
+- **Vollabnahme erst mit:** WP-M2-07, WP-M2-38, WP-M4-21, WP-M4-22, WP-M4-33, WP-M4-37, WP-M4-64 (`tariff_revision` für den Tarifnachweis zu MUL-007; Such-, Medien-, Beleg-, Export- und Finanzendpunkte für den vollständigen PH-AT-001; M1 weist die Isolation an allen M1-Endpunkten und technischen Wegen nach)
 - **Entscheidungen:** D-02 – blockiert den Bau nicht.
 - **Größe:** M
 - **Nicht im Umfang:** WebSocket/SSE-Kanäle (M3 Livekarte); Suchindex (späterer Meilenstein); Partnerprojektionen (M6).
@@ -328,7 +331,7 @@
 - **Tests:** positiv: Abfrage mit Filtern. negativ: UPDATE/DELETE-Versuch; Auditabfrage ohne Berechtigung oder ohne Zweck; Fremdmandant; fehlgeschlagener Login ohne Mandantenkontext; doppelt geliefertes IdP-Ereignis erzeugt keinen zweiten Eintrag. konkurrierend (Sicherheit): Export läuft parallel zu 100 schreibenden Änderungen – die Integritätsprüfung des Exports bleibt gültig und kein Eintrag fehlt; paralleler Zugriff zweier Mandanten auf die Auditabfrage ohne Vermischung. Besteht AT-49 („protokolliert"), E2E-091 („Sicherheitsprotokoll").
 - **Abhängigkeiten:** intern: WP-M1-06, WP-M1-07, WP-M1-14, WP-M1-43, WP-M1-46.
   - extern: WP-M0-08, WP-M0-09, WP-M0-11, WP-M0-35 (Keycloak-Ereignisschnittstelle in lokaler Umgebung und Staging)
-  - extern: WP-M3-40 (Dispositionseingriffe als auditpflichtige Fachaktion (Originalabnahme „Dispositionseingriffe"))
+- **Vollabnahme erst mit:** WP-M3-40 (Originalabnahme nennt „Dispositionseingriffe"; die auditpflichtige Fachaktion entsteht erst in M3 und nutzt den hier gelieferten Port)
 - **Entscheidungen:** D-11 (Aufbewahrung, zulässiger Supportzugriff) – blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Audit-Port, Tabelle und Unveränderlichkeit (WP-M1-46); Alarmregeln und Vorfallprozess (WP-M1-41); Dispositionseingriffe selbst (M3 nutzt den Audit-Port); Datenschutzanfragen `/v1/privacy/requests` und Legal Hold (M8); Supportfall-Bearbeitung in UI-20 (M7).
@@ -347,9 +350,10 @@
   3. Schlüssel kollidieren nicht zwischen Mandanten, Akteuren und Operationstypen.
   4. Ein bereits angenommenes Kommando erscheint bei Wiederholung nicht nachträglich als abgelaufen; Authentisierung und Leseberechtigung werden erneut geprüft.
   5. Abgelaufene Einträge (`expires_at`) werden bereinigt, ohne dass ein noch laufender Befehl seinen Eintrag verliert; der Ablauf des Antwortcaches erlaubt keine zweite fachliche Wirkung, soweit ein fachlicher Unique-Schlüssel existiert.
+  6. Abgrenzung des Nachweises: In M1 wird das Register an einem Testbefehl und am `publishConfig`-Befehl nachgewiesen; der Nachweis an Buchungs- und Zahlungsbefehlen folgt mit M2 über denselben Filter. (INT-004)
 - **Tests:** positiv: Wiederholung nach Timeout liefert gespeichertes Ergebnis. negativ: anderer Body, anderer Pfad, anderer Akteur mit gleichem Schlüssel; zu kurzer Schlüssel. konkurrierend (Geld/Kapazität): 100 parallele identische Requests → eine Wirkung; paralleler Retransmit während laufender Erstverarbeitung. Besteht PH-AT-011 an einem Testbefehl (am `publishConfig`-Befehl mit WP-M1-22; Betragsvariante mit Angebot Q1/Q2 mit M2), ermöglicht AT-24.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-06, WP-M1-14.
-  - extern: WP-M2-24, WP-M2-30 (Buchungs- und Zahlungsbefehle als fachliche Nutzer (Abnahmebezug „Buchungs- und Zahlungsvorgänge"))
+- **Vollabnahme erst mit:** WP-M2-24, WP-M2-30 (Abnahmebezug „Buchungs- und Zahlungsvorgänge"; die Befehle entstehen in M2 und nutzen das hier gelieferte Register)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** fachliche Unique-Constraints für Buchung/Zahlung/Kostenbuchung (M2, M4); PSP-Idempotenz (M2).
@@ -361,7 +365,7 @@
   - Backend: `backend/platform` – Outbox-API für Module, Inbox-Baustein mit Dedupe `(consumer, event_id)` und Aggregatrevisionsprüfung, Lückenerkennung mit Nachlesen per autorisiertem Snapshotabruf (Kap. 01 §1.5); Trennung Ereigniszeit, Empfangszeit, Aggregatversion.
   - Datenbank: `outbox` (`UNIQUE(tenant_id,aggregate_id,aggregate_revision,event_type)`, Teilindex `outbox_unpublished`), `inbox` (PK `(tenant_id,consumer,event_id)`, `payload_sha256`); Ergänzung von Zustellversuchszähler/Dead-Letter-Kennzeichen (im Kern-DDL nicht enthalten, OP-16).
   - Ereignisse/Outbox: Ereignishülle mit `event_id`, `event_type`, `schema_version`, `aggregate_revision`, `occurred_at`, Eigentums-`tenant_id`, Empfängeradressierung.
-  - Adapter/Worker: Relay-Worker PostgreSQL → RabbitMQ Quorum Queues, Wiederaufholen nach Relay-Verlust, Dead-Letter mit Betreiberwarnung.
+  - Adapter/Worker: Relay-Worker PostgreSQL → RabbitMQ Quorum Queues, Wiederaufholen nach Relay-Verlust, Dead-Letter mit Betreiberwarnung über den Betriebsalarmkanal aus WP-M1-47.
 - **Detailverträge vorab:** JSON-Schema der Ereignishülle und Schema-Versionierungsregel; Queue-/Exchange-Topologie; Retry-Staffel (Vorschlag Kap. 05 §5.6: 1 s, 5 s, 30 s, 2 min, 10 min, dann exponentiell mit Jitter bis 24 h – Planungsdefault).
 - **Akzeptanzkriterien:**
   1. Rollback der Fachtransaktion hinterlässt keinen Outbox-Eintrag; Commit hinterlässt genau einen je Aggregatrevision und Ereignistyp.
@@ -370,13 +374,14 @@
   4. Gleiche `event_id` mit anderem Payloadhash wird nicht verarbeitet und über den Sicherheitsereignis-Port (WP-M1-46) gemeldet.
   5. Ein Consumer verarbeitet ein Ereignis nur im Kontext des adressierten Empfängermandanten; ein Ereignis ohne passende Empfängeradressierung wird nicht zugestellt.
   6. Geschäftliche Ereigniszeit, Empfangszeit und Aggregatversion sind getrennt gespeichert und abfragbar.
+  7. Ein Ereignis, das nach Erschöpfung der Zustellversuche in Dead-Letter liegt, erzeugt genau eine Betreiberwarnung, die den in WP-M1-47 konfigurierten Empfänger erreicht; kein stiller Verlust.
 - **Tests:** positiv: Ende-zu-Ende Zustellung. negativ: Duplikat, veraltete Revision, Lücke, veränderter Payload, Ereignis für fremden Empfängermandanten. konkurrierend: zwei Relay-Instanzen gleichzeitig; zwei Consumer-Instanzen verarbeiten dasselbe Ereignis parallel → eine Wirkung. Besteht PH-AT-017, AT-24 (Ereignisteil); semantischer Contract-Fall „100 identische Webhooks" (Dedupe-Baustein).
-- **Abhängigkeiten:** intern: WP-M1-01, WP-M1-46.
+- **Abhängigkeiten:** intern: WP-M1-01, WP-M1-46, WP-M1-47.
   - extern: WP-M0-08 (RabbitMQ in lokaler Umgebung)
-  - extern: WP-M0-10, WP-M5-04 (Observability/Alarmkanal für die Betreiberwarnung bei Dead-Letter)
+  - extern: WP-M0-10 (Metriken und strukturierte Logs als Grundlage der Betreiberwarnung)
 - **Entscheidungen:** keine
 - **Größe:** M
-- **Nicht im Umfang:** fachliche Consumer (M2–M4); Partner-Inbox mit `(partner_id,event_id)` und Signaturprüfung (M6; Grundlage in WP-M1-16).
+- **Nicht im Umfang:** fachliche Consumer (M2–M4); Partner-Inbox mit `(partner_id,event_id)` und Signaturprüfung (M6; Grundlage in WP-M1-16); Alarmregel „Stau in `outbox`" mit Schwelle, Eskalation und Runbook im Katalog kritischer Fehlerszenarien (M5).
 
 ### WP-M1-15 – `operation`-Ressource mit Lease/Fencing
 - **Ziel:** Lang laufende Befehle werden als persistierte `operation` geführt, nach Prozessneustart über Lease/Fencing wieder aufgenommen und sind über `/v1/operations/{operation_id}` abfragbar.
@@ -405,17 +410,17 @@
   - Backend: `backend/platform` – Eingangsfilter: konstantzeitliche HMAC-Prüfung über den exakten Rohbody, Zeitfenster ±300 s, maximale Körpergröße, Schlüssel-ID mit Rotation (alter und neuer Schlüssel kurzzeitig gültig), Quittungen 202 nach Inbox-Commit, 200 `ALREADY_RECEIVED`, 409 bei gleicher ID mit anderem Payload (Kap. 05 §5.6). Ausgang: Zustellworker mit empfängergebundenem, minimiertem Payload.
   - Datenbank: `webhook_subscription` (Kap. 04 §4.4 CFG/SEC/INT: Callbackzielprüfung, Signatur/Secretreferenz, keine Secretwerte); `inbox` für Eingangsdeduplikation.
   - API: `/v1/webhook-subscriptions` (Anlegen, Lesen, Deaktivieren) mit Ziel-URL-Prüfung gegen SSRF (Kap. 05 §5.7).
-  - Adapter/Worker: Retry-Staffel und Dead-Letter mit Betreiberwarnung; Respektieren von 429 `Retry-After`.
+  - Adapter/Worker: Retry-Staffel und Dead-Letter mit Betreiberwarnung über den Betriebsalarmkanal aus WP-M1-47; Respektieren von 429 `Retry-After`.
 - **Detailverträge vorab:** OpenAPI `/v1/webhook-subscriptions`; DDL `webhook_subscription`; Signaturvertrag ausgehend (Header, Algorithmus); SSRF-Regeln (erlaubte Schemata, gesperrte Netze); Ereignistypen, die in P1 abonnierbar sind (OP-17).
 - **Akzeptanzkriterien:**
   1. 100 identische eingehende Testereignisse führen zu genau einem Inbox-Eintrag und einer Wirkung; 99 Antworten sind `ALREADY_RECEIVED`.
   2. Falsche Signatur, Zeitabweichung über 300 s oder zu großer Body werden abgewiesen, ohne Inbox-Eintrag; gleiche Ereignis-ID mit verändertem Payload ergibt 409, ein Sicherheitsereignis und Quarantäne des Ereignisses (Kap. 05 §5.6).
   3. Ein Abonnement mit Ziel in privatem Netz, `localhost` oder mit Nicht-HTTPS-Schema wird mit 422 abgelehnt.
-  4. Nach Erschöpfung der Zustellversuche liegt das Ereignis in Dead-Letter und eine Betreiberwarnung existiert; kein stiller Verlust.
+  4. Nach Erschöpfung der Zustellversuche liegt das Ereignis in Dead-Letter und eine Betreiberwarnung hat den in WP-M1-47 konfigurierten Empfänger erreicht; kein stiller Verlust.
   5. Abonnements sind mandantengetrennt und nur für berechtigte Rollen anleg-, les- und deaktivierbar; die Tabelle `webhook_subscription` enthält nur eine Secretreferenz, nie den Secretwert; Anlegen und Deaktivieren sind auditiert.
 - **Tests:** positiv: Zustellung an Test-Empfänger mit gültiger Signatur. negativ: Signatur, Replay, SSRF-Ziele (inkl. DNS-Rebinding und Redirect auf internes Ziel), fremdes Abonnement. konkurrierend (Sicherheit): 100 parallele identische Eingänge; Schlüsselrotation während Zustellung. Besteht AT-24 (Webhook-Teil), semantischer Contract-Fall „100 identische Webhooks".
-- **Abhängigkeiten:** intern: WP-M1-02, WP-M1-07, WP-M1-13, WP-M1-14, WP-M1-36, WP-M1-46.
-  - extern: WP-M0-10, WP-M5-04 (Observability/Alarmkanal für die Betreiberwarnung bei Dead-Letter)
+- **Abhängigkeiten:** intern: WP-M1-02, WP-M1-07, WP-M1-13, WP-M1-14, WP-M1-36, WP-M1-46, WP-M1-47.
+  - extern: WP-M0-10 (Metriken und strukturierte Logs als Grundlage der Betreiberwarnung)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** `/v1/federation/partners/{partner_id}/events` mit Partnerbindung (M6); `/v1/payments/provider-events/{provider}` mit PSP-Signatur (M2); `/v1/notifications` (M2).
@@ -434,10 +439,10 @@
   2. Ein per API angeforderter, nicht in der Übergangstabelle enthaltener Übergang wird serverseitig mit 409 abgewiesen, der Zustand bleibt unverändert, es entsteht kein Outbox-Ereignis. (SYS-007)
   3. Ein direkter Schreibversuch eines unzulässigen Zustandswerts scheitert zusätzlich am Datenbank-CHECK. (SYS-007)
   4. Ein verspätetes Ereignis mit älterer Revision bewirkt keinen Zustandsrücksprung.
+  5. Abgrenzung des Nachweises: In M1 wird die Übergangsprüfung an `operation.status`, `tenant.status` und je Automatendefinition an einem Testaggregat nachgewiesen; der Nachweis am echten Fahrt-, Buchungs- und Zahlungsaggregat folgt mit M2, am Fahrzeug- und Störungsaggregat mit M3, jeweils über denselben Baustein. (SYS-007)
 - **Tests:** positiv: jeder definierte Übergang (generiert aus der Tabelle). negativ: jeder nicht definierte Übergang (generiert); unbekannter Zustand. konkurrierend: zwei widersprüchliche Übergänge gleichzeitig auf derselben Revision – genau einer gewinnt. Ermöglicht PH-AT-017.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-14.
-  - extern: WP-M2-01, WP-M2-16, WP-M2-23, WP-M2-30 (Buchungs-, Fahrt- und Zahlungsaggregat wenden den Rahmen an)
-  - extern: WP-M3-01, WP-M3-31, WP-M3-53 (Fahrzeug- und Störungsaggregat wenden den Rahmen an)
+- **Vollabnahme erst mit:** WP-M2-01, WP-M2-16, WP-M2-23, WP-M2-30, WP-M3-01, WP-M3-31, WP-M3-53 (Buchungs-, Fahrt- und Zahlungsaggregat (M2) sowie Fahrzeug- und Störungsaggregat (M3) wenden den Rahmen an; erst dort ist SYS-007 am echten Fachobjekt nachweisbar)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Fachlogik der Übergänge (Wächter mit Kapazität, Safety, PSP) – M2/M3; Journey-Statusdimensionen der Föderation (M6).
@@ -458,9 +463,10 @@
   3. Eine Dauer über die Zeitumstellung wird aus absoluten Zeitpunkten berechnet (z. B. 01:00–04:00 Ortszeit am 25.10.2026 = 4 h). (SYS-006)
   4. Die Oberfläche zeigt Zeitpunkte in der Zone des Dienstes mit Offset an.
   5. Der lokale Betriebstag eines Zeitpunkts wird in der Zone des Dienstes bestimmt und zusammen mit dem Zeitpunkt angezeigt (PH-AT-018: „aktuelle Ansicht zeigt … den lokalen Betriebstag"). (SYS-006)
+  6. Abgrenzung des Nachweises: In M1 wird der Baustein an Testanfragen und Anzeige nachgewiesen; die Buchung über die Sommer-/Winterzeitgrenze folgt mit M2. (SYS-006)
 - **Tests:** positiv: Sommer-/Winterzeitpunkte, Zonenwechsel. negativ: DST-Lücke, fehlender Offset, `time_zone` widerspricht Offset, unbekannte Zone. Besteht PH-AT-018 (DST-Teil); der Nachweis an der Buchung folgt mit M2. konkurrierend: nicht einschlägig (zustandsloser Baustein).
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-43.
-  - extern: WP-M2-11, WP-M2-23 (Buchung über Sommer-/Winterzeitgrenze als fachlicher Nachweis)
+- **Vollabnahme erst mit:** WP-M2-11, WP-M2-23 (Buchung über die Sommer-/Winterzeitgrenze als fachlicher Nachweis; M1 weist den Baustein an Testanfragen nach)
 - **Entscheidungen:** keine
 - **Größe:** S
 - **Nicht im Umfang:** Schichtdauer- und Arbeitszeitrechnung (M4); KPI-Periodenbasis (M4/M8).
@@ -504,10 +510,10 @@
   4. Jede Ansicht eines Konfigurationswerts zeigt die verwendete Revision (PH-AT-018). Für einen historischen Zeitpunkt T (z. B. Dispositionsfall vor zwei Revisionen) liefert die As-of-Abfrage exakt die damals wirksame Einstellung samt Revisions-ID. (CFG-003)
   5. Eine publizierte Revision lässt sich weder per API noch per SQL unter der Runtime-Rolle ändern oder löschen.
   6. Entwürfe und Revisionen sind nur für berechtigte Rollen des eigenen Mandanten les- und änderbar; Anlegen und Ändern eines Entwurfs erzeugt einen Auditeintrag.
+  7. Abgrenzung des Nachweises: In M1 sind Bediengebietsbezug und Tarifverknüpfung als versionierte Bestandteile der Dienstkonfiguration (Schema, Revision, Diff) und die Rekonstruktion an einem Testobjekt mit gebundener `config_revision_id` nachgewiesen; die Auflösung der Bezüge gegen `service_area` und `tariff_revision` sowie die Rekonstruktion an einem echten Dispositionsfall folgen mit M2. (SYS-002, CFG-003)
 - **Tests:** positiv: drei Revisionen, As-of auf jede. negativ: Änderung ohne Grund; fehlendes `effective_from`; `effective_to` vor `effective_from`; Rolle ohne Recht; Update einer publizierten Revision; fremder Scope; veralteter ETag. konkurrierend: zwei parallele Entwürfe mit derselben Revisionsnummer – `UNIQUE(tenant_id,scope_kind,scope_id,revision)` lässt genau einen zu. Ermöglicht E2E-096, E2E-098, PH-AT-018 (Konfigurationsteil).
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-14, WP-M1-19, WP-M1-43, WP-M1-46.
-  - extern: WP-M2-21, WP-M2-23 (Dispositionsfall, der seine `config_revision_id` referenziert (Nachweis „historischer Dispositionsfall"))
-  - extern: WP-M2-04, WP-M2-07 (`service_area` und `tariff_revision` als Ziel von Bediengebietsbezug und Tarifverknüpfung der Dienstkonfiguration)
+- **Vollabnahme erst mit:** WP-M2-04, WP-M2-07, WP-M2-21, WP-M2-23 (`service_area` und `tariff_revision` als Ziel von Bediengebietsbezug und Tarifverknüpfung der Dienstkonfiguration; Dispositionsfall mit gebundener `config_revision_id` für den Nachweis „historischer Dispositionsfall")
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Präzedenzauflösung (WP-M1-21); Publikation/Freigabe (WP-M1-22); Tarifrevision `tariff_revision` (M2).
@@ -528,9 +534,11 @@
   4. Ein Dienstwert, der die globale Sicherheitsgrenze verletzt, wird nie als wirksam geliefert.
   5. Die Auflösung zum Zeitpunkt T berücksichtigt nur Revisionen, deren Intervall T enthält.
   6. Am Fixture aus WP-M1-09 (ein Mandant, zwei Regionen mit je einem Dienst) liefert die Auflösung für beide Gebiete unterschiedliche wirksame Werte derselben Parameter; ein Nutzer wechselt innerhalb eines Logins zwischen beiden und sieht jeweils die Regeln des gewählten Gebiets. (MUL-002, Abschlussnachweis)
+  7. Abgrenzung des Nachweises: Fahrzeugspezifische Vorgaben werden in M1 an einem Fixture-Fahrzeug (Tabelle `vehicle` aus dem Kernschema, WP-M0-16) nachgewiesen; der Nachweis am gepflegten Fahrzeugstamm folgt mit M3. (CFG-005)
 - **Tests:** positiv: Auflösung auf jeder Ebene. negativ: nicht freigegebener Override; Kontext eines fremden Mandanten; Parameter unbekannt; Zeitpunkt ohne wirksame Revision; Dienst außerhalb des eigenen `service_scope`. konkurrierend (Datentrennung): Publikation während laufender Auflösungen – jede Antwort ist konsistent zu genau einer Revision. Ermöglicht E2E-096.
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-09, WP-M1-20, WP-M1-43.
-  - extern: WP-M3-03 (Fahrzeugstamm als Scope-Ziel für fahrzeugspezifische Vorgaben)
+  - extern: WP-M0-16 (Tabelle `vehicle` aus dem Kernschema als Scope-Ziel für das Fixture-Fahrzeug)
+- **Vollabnahme erst mit:** WP-M3-03 (gepflegter Fahrzeugstamm als Scope-Ziel fahrzeugspezifischer Vorgaben; M1 weist die Ebene an einem Fixture-Fahrzeug nach)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Schreiben/Publizieren (WP-M1-22); Produkt-Ebene, solange kein Produktobjekt existiert (M2).
@@ -555,10 +563,10 @@
   6. Publikation ohne `If-Match` ergibt 428, mit veralteter Revision 412, Wiederholung mit gleichem `Idempotency-Key` dasselbe Ergebnis.
   7. Validierung, Freigabe, Publikation und Rollback erzeugen je einen Auditeintrag mit Akteur, Zeitpunkt und Grund; die Antwort der Publikation nennt `audit_event_id`. (CFG-006)
   8. Ein unzulässiger Sicherheitswert blockiert die Veröffentlichung in API und Oberfläche; die Oberfläche zeigt Validator-Ergebnis, Prüfer und Wirksamkeitsdatum auch per Tastatur und Screenreader bedienbar an.
+  9. Abgrenzung des Nachweises: Die Nachweise „Sonntagsfahrten unverändert" und „Buchungszusage bleibt korrekt" werden in M1 an aufgelösten Werten und einem Testobjekt mit gebundener Revisionsreferenz geführt; an echten Angeboten und Buchungen (`fare_quote.config_revision_id`) sowie für Bediengebiete und Haltestellen als administrierte Objekte folgt der Nachweis mit M2. (CFG-006)
 - **Tests:** positiv: Entwurf → validieren → freigeben → publizieren → wirksam; Rollback. negativ: Publikation ohne Validierung, ohne Freigabe, Selbstfreigabe, ungültiger Wert, fehlender Wirkungsbericht, fehlender Scope. konkurrierend (Sicherheit/Datentrennung): zwei Publikationen desselben Scopes mit überlappendem Intervall in parallelen Transaktionen – genau eine erfolgreich (Pflicht-Negativtest zu §4.5); paralleler Publish und Rollback; Auflösung genau zum Zeitpunkt `effective_from` liefert trotz Cache nie den abgelösten Wert. Besteht E2E-096, E2E-097 (Publikationsteil), E2E-098 (mit Konfigurationsrevision; Tarifversion folgt M2), PH-AT-018 (Konfigurationsteil).
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-13, WP-M1-20, WP-M1-21, WP-M1-23, WP-M1-43, WP-M1-46.
-  - extern: WP-M2-09, WP-M2-21, WP-M2-23 (Angebot/Buchung mit gebundener `config_revision_id` (`fare_quote.config_revision_id`) für den Nachweis „Sonntagsfahrten unverändert" und „Buchungszusage bleibt korrekt")
-  - extern: WP-M2-04, WP-M2-05 (`service_area`, `stop_revision` als administrierbare Gebiets-/Haltestellenobjekte)
+- **Vollabnahme erst mit:** WP-M2-04, WP-M2-05, WP-M2-09, WP-M2-21, WP-M2-23 (Angebot/Buchung mit gebundener `config_revision_id` (`fare_quote.config_revision_id`) für die Nachweise „Sonntagsfahrten unverändert" und „Buchungszusage bleibt korrekt"; `service_area` und `stop_revision` als administrierbare Gebiets-/Haltestellenobjekte)
 - **Entscheidungen:** keine
 - **Größe:** L
 - **Nicht im Umfang:** Geo-Editor für Bediengebiete und Haltepunkte (M2, UI-17 Vollausbau); Tariffreigabe (M2); Wirkungsbericht-Inhalt (WP-M1-23).
@@ -580,8 +588,7 @@
   4. Wirkungsberichte sind mandantengetrennt; die Analyse ist nur für Rollen mit Konfigurationsrecht auslösbar und enthält keine Personendaten betroffener Fahrgäste oder Beschäftigter, nur Objektverweise und Anzahl.
 - **Tests:** positiv: Bericht ohne Konflikte, Bericht mit Konflikten. negativ: Publikation mit fremdem/veraltetem Bericht; Bericht eines anderen Mandanten. konkurrierend (Kapazität/Sicherheit): Revision wird nach Berichtserstellung geändert – Publikation scheitert; neue betroffene Objekte zwischen Bericht und Publikation werden über die Revisionsbindung erkannt (Regel im Detailvertrag).
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-15, WP-M1-20, WP-M1-43, WP-M1-46.
-  - extern: WP-M2-04, WP-M2-23 (ImpactProvider für Buchungen und Bediengebiete)
-  - extern: WP-M4-17 (ImpactProvider für Schichten)
+- **Vollabnahme erst mit:** WP-M2-04, WP-M2-23, WP-M4-17 (ImpactProvider für Bediengebiete und Buchungen (M2) sowie Schichten (M4); M1 weist Port, Bericht und Publikationssperre mit Test-Provider nach)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** vollständiger Wirkungsbericht über alle Parameter (M8: „restliche Parameter und Wirkungsbericht"); automatische Umplanung betroffener Fahrten.
@@ -622,8 +629,7 @@
   3. Mit M2 wird je Modell eine Testfahrt gemäß Modellregeln erfolgreich gebucht; M1 liefert dafür je Modell eine publizierte Fixture-Konfiguration. (SYS-003)
 - **Tests:** positiv: drei Dienste, je ein Modell. negativ: unbekanntes Modell; modellwidrige Parameterkombination; Dienst mit Betreiber eines fremden Mandanten. konkurrierend (Datentrennung): zwei parallele Publikationen der Dienstkonfiguration desselben Dienstes – genau eine wirksam (Mechanismus aus WP-M1-22).
 - **Abhängigkeiten:** intern: WP-M1-09, WP-M1-22, WP-M1-43.
-  - extern: WP-M2-21, WP-M2-23 (Angebotsbildung und Buchung je Angebotsmodell (Testfahrt))
-  - extern: WP-M2-04, WP-M2-05, WP-M2-07 (`service_area`, `stop_revision`, Tarifverknüpfung)
+- **Vollabnahme erst mit:** WP-M2-04, WP-M2-05, WP-M2-07, WP-M2-21, WP-M2-23 (Testfahrt je Angebotsmodell über Angebotsbildung und Buchung; `service_area`, `stop_revision` und Tarifverknüpfung als Inhalte der Dienstkonfiguration)
 - **Entscheidungen:** D-05 (Pilotdienste und Genehmigungsmodell) – blockiert nur die Produktivkonfiguration.
 - **Größe:** M
 - **Nicht im Umfang:** Disposition, Routing und Buchung (M2); Tarifregeln (M2).
@@ -640,9 +646,10 @@
   1. Ein Testbefehl mit manipulierten Client-Parametern (zusätzliches Feld mit eigener Wartezeit/eigenem Preis, überschriebene Revisions-ID, verändertes Zeitfenster außerhalb der Regel) wird abgewiesen oder die Parameter bleiben wirkungslos; die Entscheidung beruht nachweislich auf der serverseitig aufgelösten Revision. (SYS-011)
   2. Ein bestätigender Befehl ohne `PolicyCheck`-Aufruf lässt den Architekturtest scheitern. (SYS-011)
   3. Die verwendete Regelrevision ist im Ergebnis und im Audit referenziert.
+  4. Abgrenzung des Nachweises: In M1 wird der Port an einem Testbefehl nachgewiesen; der Nachweis an Buchungsbestätigung und Tarifprüfung („operative oder tarifliche Regel") folgt mit M2 über denselben Port. (SYS-011)
 - **Tests:** positiv: regelkonformer Befehl. negativ: zusätzliche Felder, manipulierte Regelwerte, veraltete Revisionsreferenz, Regelwechsel zwischen Angebot und Bestätigung. konkurrierend (Geld/Kapazität): Publikation einer strengeren Regel parallel zur Bestätigung – Entscheidung konsistent zu genau einer Revision.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-21, WP-M1-46.
-  - extern: WP-M2-09, WP-M2-23 (Buchungsbestätigung und Tarifprüfung als Anwender des Ports (Nachweis „operative oder tarifliche Regel"))
+- **Vollabnahme erst mit:** WP-M2-09, WP-M2-23 (Buchungsbestätigung und Tarifprüfung als Anwender des Ports für den Nachweis „operative oder tarifliche Regel"; M1 weist den Port am Testbefehl nach)
 - **Entscheidungen:** keine
 - **Größe:** S
 - **Nicht im Umfang:** die fachlichen Regeln selbst (Gebiet, Zeit, Kapazität, Tarif – M2).
@@ -660,10 +667,10 @@
   2. Jede Änderung einer Zusage über das Änderungsverfahren erzeugt genau ein Audit-Ereignis mit Akteur, Grund, alter und neuer Revision. (SYS-005)
   3. Ist die Änderung fahrgastrelevant, entsteht genau ein Outbox-Ereignis mit Informationsauftrag; bei nicht relevanter Änderung keiner. (SYS-005)
   4. Eine Konfigurationsänderung verändert bestehende Snapshots nicht.
+  5. Abgrenzung des Nachweises: In M1 werden Snapshot-Typ und Änderungsverfahren an einem Testaggregat nachgewiesen, die Fahrgastinformation als Outbox-Ereignis mit Informationsauftrag; der Nachweis an der Buchung (`booking.promise_snapshot`) und die tatsächliche Zustellung der Fahrgastinformation folgen mit M2. (SYS-005)
 - **Tests:** positiv: Änderung mit und ohne Informationspflicht. negativ: direktes Update; Änderung ohne Grund; Änderung durch unberechtigte Rolle. konkurrierend (Geld/Kapazität): zwei gleichzeitige Änderungen derselben Zusage – eine erhält 412, genau ein Audit- und ein Outbox-Eintrag.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-14, WP-M1-17, WP-M1-46.
-  - extern: WP-M2-23 (Buchung mit `promise_snapshot` als fachlicher Träger der Zusage)
-  - extern: WP-M2-32 (Betriebsnachrichten (Push/SMS/E-Mail) für die Fahrgastinformation)
+- **Vollabnahme erst mit:** WP-M2-23, WP-M2-32 (Buchung mit `promise_snapshot` als fachlicher Träger der Zusage; Betriebsnachrichten (Push/SMS/E-Mail) für die tatsächliche Fahrgastinformation)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Inhalt und Berechnung der Zusage (Zeitfenster, Preis – M2); Zustellung der Nachricht (M2); Umplanung durch Leitstelle (M3).
@@ -676,7 +683,7 @@
   - Datenbank: `passenger_private` (`subject_token`, `contact_ciphertext`, `retention_until`); Migration: Verifikationsstatus und -zeitpunkt je Kanal (im Kern-DDL nicht enthalten, OP-23).
   - API: `/v1/passengers` (Konto anlegen/lesen), `/v1/me` (Verifikationsstatus).
   - Oberfläche: UI-05 Basis – Registrierung, Kontakt verifizieren; Zustand „Verifikation fehlt".
-  - Adapter/Worker: Versand des Verifikationscodes per E-Mail über den IdP; Telefon-/SMS-Kanal über Adapter `notification` (OP-23).
+  - Adapter/Worker: Versand des Verifikationscodes per E-Mail über den IdP; Telefon-/SMS-Kanal über einen Versand-Port mit Test-SMS-Adapter (in M1); der produktive SMS-Kanal über den Adapter `notification` wird mit M2 angeschlossen (OP-23).
 - **Detailverträge vorab:** OpenAPI `/v1/passengers`; Verifikationsverfahren je Kanal (Codegültigkeit, Versuchslimit – im Pflichtenheft nicht beziffert); DDL-Ergänzung; Verschlüsselungs-/Schlüsselvertrag für `contact_ciphertext`.
 - **Akzeptanzkriterien:**
   1. Registrierung per E-Mail und per Telefonnummer ist möglich; nach Abschluss der Verifikation ist der Kanal als verifiziert markiert. Der Telefonkanal wird in M1 gegen einen Test-SMS-Adapter nachgewiesen, der produktive SMS-Versand folgt mit M2. (IAM-001)
@@ -686,8 +693,7 @@
   5. Verifikationscodes sind einmalig, zeitlich begrenzt und werden weder im Klartext gespeichert noch geloggt; Kontaktdaten liegen ausschließlich verschlüsselt in `passenger_private.contact_ciphertext`.
 - **Tests:** positiv: Registrierung beider Kanäle. negativ: falscher/abgelaufener Code; Wiederherstellung über unverifizierten Kanal; Konto-Enumeration; Brute-Force auf Code. konkurrierend (Sicherheit): zwei parallele Registrierungen mit demselben Kontakt – genau ein Konto (`UNIQUE(tenant_id,subject_token)`).
 - **Abhängigkeiten:** intern: WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-31, WP-M1-43, WP-M1-46.
-  - extern: WP-M2-32 (SMS-Zustellkanal (Betriebsnachrichten/Adapter `notification`) für Telefonverifikation)
-  - extern: WP-M2-35, WP-M2-36 (Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34))
+- **Vollabnahme erst mit:** WP-M2-32, WP-M2-35, WP-M2-36 (produktiver SMS-Zustellkanal für die Telefonverifikation; UI-05 im Vollausbau der Passenger-PWA laut Meilensteinplan, OP-34)
 - **Entscheidungen:** D-11 (Löschfristen für Kontaktdaten) – blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Vertretung/Delegation (`/v1/delegations`, M7); Callcenter-Anlage von Fahrgästen (UI-06, M7); Passenger-Suche und Buchung (M2).
@@ -706,10 +712,11 @@
   2. Ein Fahrgast liest und ändert ausschließlich sein eigenes Profil; fremde Profil-ID ergibt 404. (IAM-006)
   3. Gleichzeitige Änderungen von zwei Geräten führen nicht zu stillem Überschreiben (412).
   4. Die berechtigte Betreibersicht auf `/v1/passengers` liefert nur die minimierten Felder; Kontakt und Unterstützungsmerkmale erscheinen dort nicht ohne Feldrecht und Zweck (WP-M1-31).
+  5. Abgrenzung des Nachweises: Bevorzugte Haltestellen werden in M1 als Referenzen auf Fixture-Haltepunkte (Tabelle `stop_revision` aus dem Kernschema, WP-M0-16) gespeichert und wiedergegeben, die Oberfläche in UI-05 Basis; der Nachweis gegen den gepflegten Haltepunktstamm und in der Passenger-PWA folgt mit M2 (OP-30, OP-34). (IAM-006)
 - **Tests:** positiv: alle fünf Profilbereiche ändern und neu laden. negativ: fremdes Profil; ungültige Sprache; nicht existierende Haltestellenreferenz; veralteter ETag. konkurrierend (Datentrennung): parallele Änderung von zwei Sitzungen.
 - **Abhängigkeiten:** intern: WP-M1-07, WP-M1-28, WP-M1-31, WP-M1-43.
-  - extern: WP-M2-05 (Haltepunktstamm (`stop_revision`) für bevorzugte Haltestellen und Ortsfavoriten)
-  - extern: WP-M2-35, WP-M2-36 (Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34))
+  - extern: WP-M0-16 (Tabelle `stop_revision` aus dem Kernschema für Fixture-Haltepunkte)
+- **Vollabnahme erst mit:** WP-M2-05, WP-M2-35, WP-M2-36 (gepflegter Haltepunktstamm (`stop_revision`) für bevorzugte Haltestellen und Ortsfavoriten, OP-30; UI-05 im Vollausbau der Passenger-PWA, OP-34)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Vertreter in UI-05 (M7); Unterstützungsmerkmale (WP-M1-31); Marketingeinwilligung (WP-M1-30).
@@ -730,7 +737,7 @@
   3. Marketing ist standardmäßig nicht eingewilligt.
 - **Tests:** positiv: Einwilligen, Widerrufen. negativ: Marketingversand ohne Einwilligung; Änderung fremder Einwilligung; nachträgliches Ändern einer Revision. konkurrierend (Datentrennung): Widerruf parallel zur Zustellprüfung – nach Commit keine Marketingfreigabe.
 - **Abhängigkeiten:** intern: WP-M1-29, WP-M1-43.
-  - extern: WP-M2-32 (Betriebsnachrichten mit Zustellversuchen (`notification`, `notification_attempt`) als Anwender des Ports)
+- **Vollabnahme erst mit:** WP-M2-32 (Betriebsnachrichten mit Zustellversuchen (`notification`, `notification_attempt`) als Anwender des Ports; erst dort ist die Trennung an echter Zustellung nachweisbar)
 - **Entscheidungen:** D-11 (Datenrechte) – blockiert nur Produktivschaltung.
 - **Größe:** S
 - **Nicht im Umfang:** Nachrichtenversand, Vorlagen, Massenkommunikation (M2, M7); Auskunfts-/Löschanfragen (`/v1/privacy/requests`, M8).
@@ -750,10 +757,10 @@
   2. Eine berechtigte Rolle erhält das Merkmal nur mit Zweck; der Zugriff ist im Audit mit Akteur und Zweck nachweisbar. (SEC-005)
   3. Unter der allgemeinen Runtime-Rolle ist `support_ciphertext` nicht selektierbar; nur der Modulzugang liest die Spalte, und sie ist im Ruhezustand verschlüsselt.
   4. Logs, Metriken und Outbox-Payloads enthalten das Merkmal nicht (automatisierter Scan der Testläufe).
+  5. Abgrenzung des Nachweises: In M1 wird der Feldschutz an den Fahrgastmerkmalen über alle M1-Endpunkte nachgewiesen; der minimierte Betreiberpayload der Buchung (M2) und die Arbeitszeit- und Abwesenheitsdaten des vollständigen AT-49 (M4) nutzen denselben Baustein und werden dort nachgewiesen. (SEC-005)
 - **Tests:** positiv: berechtigter Zugriff mit Zweck. negativ: jede Rolle der Rechtematrix ohne Feldrecht; fehlender Zweck; Fremdmandant; direkter SQL-Zugriff mit allgemeiner Rolle. konkurrierend (Sicherheit): Entzug des Feldrechts parallel zum Lesen – nach Commit kein Zugriff. Besteht AT-49 (Merkmalsteil).
 - **Abhängigkeiten:** intern: WP-M1-01, WP-M1-07, WP-M1-36, WP-M1-43, WP-M1-46.
-  - extern: WP-M2-23 (minimierter Betreiberpayload der Buchung als fachlicher Anwender)
-  - extern: WP-M4-06, WP-M4-08 (Arbeitszeit- und Abwesenheitsdaten für den vollständigen AT-49)
+- **Vollabnahme erst mit:** WP-M2-23, WP-M4-06, WP-M4-08 (minimierter Betreiberpayload der Buchung als fachlicher Anwender; Arbeitszeit- und Abwesenheitsdaten für den vollständigen AT-49)
 - **Entscheidungen:** D-11 (Zweck, Rechtsgrundlage, Löschfrist) – blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** HR-/Gesundheitsdaten des Personals (M4); Schadensfotos (M3); paarweise Partner-Aliasse (M6).
@@ -812,13 +819,12 @@
 - **Akzeptanzkriterien:**
   1. Ein Fahrzeug trägt gleichzeitig vier verschiedene Organisationen als Eigentümer, Betreiber, Einsatzleister und Abrechnungspartner; jede Rolle ist einzeln änderbar. (MUL-004)
   2. Nach einem Eigentümerwechsel zum Stichtag liefert die As-of-Abfrage für einen Zeitpunkt vor dem Stichtag weiterhin den alten Eigentümer; ein vorher erzeugter Rollensnapshot bleibt unverändert. (MUL-004)
-  3. Der Nachweis an abgerechneten Fahrzeugfahrten (`vehicle_run` mit Kostenereignis) erfolgt mit M3/M4 über die hier gelieferte Snapshot-Funktion. (MUL-004)
+  3. Abgrenzung des Nachweises: In M1 werden Rollen, Stichtagswechsel und Snapshot an Fixture-Fahrzeugen des Stammteils (`vehicle`) nachgewiesen; der Nachweis an abgerechneten Fahrzeugfahrten (`vehicle_run` mit Kostenereignis) erfolgt mit M2/M3/M4 über die hier gelieferte Snapshot-Funktion. (MUL-004)
   4. Überlappende Intervalle derselben Rolle am selben Fahrzeug werden abgewiesen.
   5. Rollenzuordnungen sind nur für berechtigte Rollen änderbar; jede Änderung ist auditiert und erzeugt genau ein Outbox-Ereignis.
 - **Tests:** positiv: vier Rollen, Wechsel mit Stichtag. negativ: Organisation eines fremden Mandanten; überlappendes Intervall; rückwirkende Änderung in abgeschlossenem Intervall. konkurrierend (Geld): zwei parallele Eigentümerwechsel zum selben Stichtag – genau einer erfolgreich.
 - **Abhängigkeiten:** intern: WP-M1-05, WP-M1-07, WP-M1-14, WP-M1-46.
-  - extern: WP-M2-16, WP-M3-03 (Fahrzeugstamm und `vehicle_run`)
-  - extern: WP-M4-33 (Kostenereignis/Abrechnung der Fahrzeugfahrten)
+- **Vollabnahme erst mit:** WP-M2-16, WP-M3-03, WP-M4-33 (Nachweis an abgerechneten Fahrzeugfahrten: `vehicle_run`, gepflegter Fahrzeugstamm und Kostenereignis/Abrechnung)
 - **Entscheidungen:** D-01 (Rollen je Dienst) – blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Fahrzeugstammdaten, Kapazität, Sicherheitsstatus (M3); Fremdfahrzeug-Freigabe zwischen Mandanten (M6, PH-AT-016).
@@ -839,10 +845,10 @@
   3. Vor T1, nach T2 und nach Widerruf liefert B keinen Zugriff mehr; der Widerruf wirkt mit der nächsten Anfrage.
   4. Die Freigabe gilt nur für die benannten Dienste.
   5. Erteilen, Ändern und Widerrufen einer Freigabe ist auf berechtigte Rollen des Eigentümermandanten beschränkt und auditiert; Pflichtprüfung und gesetzliche Einsatzgrenzen des Fahrers bleiben von der Freigabe unberührt (Nachweis mit M3).
+  6. Abgrenzung des Nachweises: In M1 wird die Freigabe am Stammteil (`driver`, `qualification_revision`) mit Fixture-Fahrern nachgewiesen; der Nachweis am Fahrerstamm im Vollausbau folgt mit M3, die Bindung an Kooperationsvertrag und Grants mit M6 (OP-26). (MUL-005)
 - **Tests:** positiv: Freigabe im Zeitraum. negativ: Zugriff außerhalb des Zeitraums, auf nicht freigegebenen Dienst, auf nicht freigegebenes Feld; Freigabe durch unberechtigte Rolle. konkurrierend (Datentrennung): Widerruf parallel zu Lesezugriffen in B – nach Commit kein Zugriff.
 - **Abhängigkeiten:** intern: WP-M1-05, WP-M1-07, WP-M1-08, WP-M1-14, WP-M1-43, WP-M1-46.
-  - extern: WP-M3-05 (Fahrerstamm und Qualifikationen (`driver`, `qualification_revision`) im Vollausbau)
-  - extern: WP-M6b-04, WP-M6b-05 (Kooperationsvertrag und Grants als vertragliche Grundlage der Freigabe)
+- **Vollabnahme erst mit:** WP-M3-05, WP-M6b-04, WP-M6b-05 (Fahrerstamm und Qualifikationen im Vollausbau; Kooperationsvertrag und Grants als vertragliche Grundlage der Freigabe, OP-26)
 - **Entscheidungen:** D-10 (Fahrerdaten, Mitbestimmung) und D-01 – blockieren nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Einsatzprüfung (Schicht, Qualifikation, Check) beim Dienstantritt (M3); Fremdfahrzeuge (M6); Abrechnung des Fremdeinsatzes (M6).
@@ -883,7 +889,7 @@
   4. Die abschließende Bestätigung am echten PSP-Adapter erfolgt mit M2.
 - **Tests:** positiv: Request mit PSP-Referenz. negativ: Testkartennummer in Body, Query und Header; Migration mit Kartendatenspalte; OpenAPI-Schema mit Kartendatenfeld. konkurrierend (Sicherheit): 100 parallele Requests mit Testkartennummer unter Last – jeder wird abgewiesen oder maskiert, kein Treffer gelangt über asynchrones Logging in Logs oder Audit.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-31, WP-M1-32, WP-M1-36.
-  - extern: WP-M2-29 (PSP-Adapter und `/v1/payments/provider-events/{provider}` für die Prüfung am Zahlungsfluss)
+- **Vollabnahme erst mit:** WP-M2-29 (PSP-Adapter und `/v1/payments/provider-events/{provider}` für die abschließende Prüfung am echten Zahlungsfluss)
 - **Entscheidungen:** D-03 (Teil: PSP-Auswahl) – blockiert nur Produktivschaltung.
 - **Größe:** S
 - **Nicht im Umfang:** Zahlungsautomat, Authorize/Capture/Refund (M2); PCI-Nachweis des PSP.
@@ -903,7 +909,7 @@
 - **Tests:** positiv: Regressionslauf ohne Fehlalarme auf gültigen Requests. negativ: Angriffskatalog je Endpunkt (generiert aus OpenAPI). konkurrierend (Sicherheit): Rate-Limit unter parallelem Missbrauch.
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-03.
   - extern: WP-M0-11, WP-M0-12, WP-M0-35 (CI, Staging-Umgebung)
-  - extern: WP-M5-17 (Penetrationstest und Behandlung der Befunde)
+- **Vollabnahme erst mit:** WP-M5-17 (Penetrationstest des Lastenhefts und Behandlung der Befunde)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Upload-/Malware-Prüfung (M4); Penetrationstest selbst (M5).
@@ -920,10 +926,11 @@
   2. Backups sind im Ruhezustand verschlüsselt; ohne Schlüssel nicht lesbar. (SEC-010)
   3. Die Runtime- und die Migratorrolle können Backups weder verändern noch löschen. (SEC-010)
   4. Nach Restore schlägt der Isolationstest aus WP-M1-01 nicht fehl, und ein zuvor gelöschter Testdatensatz bleibt gelöscht.
+  5. Abgrenzung des Nachweises: M1 weist Restore-Test, Verschlüsselung und Zugriffstrennung nach; die Restore-Übung mit RPO/RTO-Messung einschließlich PSP-Abgleich erfolgt in M5. (SEC-010)
 - **Tests:** positiv: Restore auf Zeitpunkt T. negativ: Restore mit falschem Schlüssel; Löschversuch am Backup mit Anwendungsrolle; manipuliertes Backup wird erkannt. konkurrierend (Sicherheit): Backup und Restore auf Zeitpunkt T unter laufender Schreiblast beider Testmandanten – der wiederhergestellte Stand ist transaktionskonsistent und enthält keine halben Transaktionen.
 - **Abhängigkeiten:** intern: WP-M1-36, WP-M1-01, WP-M1-33.
   - extern: WP-M0-11, WP-M0-35 (Infrastruktur als Code, verwaltete PostgreSQL-/Objektspeicher-Dienste)
-  - extern: WP-M5-14, WP-M5-15 (Restore-Übung mit RPO/RTO-Messung einschließlich PSP-Abgleich)
+- **Vollabnahme erst mit:** WP-M5-14, WP-M5-15 (Restore-Übung mit RPO/RTO-Messung einschließlich PSP-Abgleich)
 - **Entscheidungen:** D-05 (Hosting, Betrieb) – blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Failover/Hochverfügbarkeit und RPO/RTO-Abnahme (M5); Sicherung der Finanzarchive (M4).
@@ -950,17 +957,17 @@
 - **Ziel:** Für Sicherheitsvorfälle existiert ein beschriebener Eskalations-, Untersuchungs- und Meldeprozess mit technischen Auslösern; eine Übung belegt Identifikation, Eindämmung und Meldeentscheidung.
 - **Anforderungen:** `LH-6.18-SEC-011`
 - **Liefergegenstände:**
-  - Backend: Alarmregeln auf Sicherheitsereignisse aus WP-M1-12 (gehäufte Fremdzugriffe, MFA-Fehlschläge, veränderter Payload bei gleicher Ereignis-ID); Eindämmungsfunktionen: Sitzung/Konto sperren (WP-M1-10), Mandant auf `SUSPENDED` setzen, Secret rotieren (WP-M1-36).
+  - Backend: Alarmregeln auf Sicherheitsereignisse aus WP-M1-12 (gehäufte Fremdzugriffe, MFA-Fehlschläge, veränderter Payload bei gleicher Ereignis-ID), zugestellt über den Betriebsalarmkanal aus WP-M1-47; Eindämmungsfunktionen: Sitzung/Konto sperren (WP-M1-10), Mandant auf `SUSPENDED` setzen, Secret rotieren (WP-M1-36).
   - Oberfläche: UI-20 Basis – Liste der Sicherheitsereignisse als Einstieg in die Untersuchung.
   - Adapter/Worker: Betriebsdokument „Sicherheitsvorfall" (Rollen, Eskalationsstufen, Untersuchungsschritte, Entscheidungsvorlage Meldung); Übungsdrehbuch und Protokollvorlage.
 - **Detailverträge vorab:** Rollen und Erreichbarkeiten (Auftraggeber/Betreiber), Meldewege und Fristen (rechtlich vom Auftraggeber zu bestätigen, OP-32); Schweregradschema; Alarmkanäle.
 - **Akzeptanzkriterien:**
   1. Eine durchgeführte Übung (simulierter Cross-Tenant-Zugriffsversuch mit kompromittiertem Konto) ist protokolliert mit Zeitpunkt der Identifikation, Eindämmungsmaßnahmen und dokumentierter Entscheidung über Meldungen. (SEC-011)
   2. Der Prozess benennt Eskalationsstufen, Verantwortliche und Untersuchungsschritte und ist freigegeben. (SEC-011)
-  3. Der auslösende Alarm wird aus den Sicherheitsereignissen automatisch erzeugt und erreicht den definierten Kanal.
+  3. Der auslösende Alarm wird aus den Sicherheitsereignissen automatisch erzeugt und erreicht über den Betriebsalarmkanal aus WP-M1-47 den definierten Empfänger.
 - **Tests:** positiv: Übung nach Drehbuch. negativ: Alarm bei Schwellwertunterschreitung bleibt aus; Eindämmung durch unberechtigte Rolle abgewiesen. konkurrierend (Sicherheit): 200 gleichartige Sicherheitsereignisse in kurzer Folge erzeugen genau einen Vorfallalarm (Deduplikation), kein Ereignis geht verloren.
-- **Abhängigkeiten:** intern: WP-M1-05, WP-M1-10, WP-M1-12, WP-M1-14, WP-M1-36, WP-M1-43.
-  - extern: WP-M0-10, WP-M5-04 (Observability/Alarmkanal)
+- **Abhängigkeiten:** intern: WP-M1-05, WP-M1-10, WP-M1-12, WP-M1-14, WP-M1-36, WP-M1-43, WP-M1-47.
+  - extern: WP-M0-10 (Metriken und strukturierte Logs als Grundlage der Betreiberwarnung)
 - **Entscheidungen:** D-11 (Verantwortliche, Supportzugriff) und D-05 (Supportzeiten) – blockieren die Freigabe des Prozesses für den Produktivbetrieb.
 - **Größe:** S
 - **Nicht im Umfang:** Betriebshandbuch, Monitoring und Eskalation des Gesamtbetriebs (M5); regelbasierte Fachalarme (`alert_policy_revision`, M3/M8).
@@ -975,10 +982,10 @@
   1. Die Freigabeunterlage enthält eine Bewertung der Verarbeitung von Bewegungs- und Mobilitätsdaten und die zugeordneten technischen und organisatorischen Maßnahmen mit Verweis auf die umsetzenden WPs. (SEC-013)
   2. Die DSFA ist vor der ersten Produktivschaltung personenbezogener Daten geprüft, datiert und von der verantwortlichen Stelle freigegeben; ohne Freigabevermerk schlägt die Gate-Prüfung fehl. (SEC-013)
   3. Jedes im Inventar als Bewegungs-/Mobilitätsdatum markierte Feld ist in der DSFA referenziert.
+  4. Abgrenzung des Nachweises: Die in M1 freigegebene DSFA bewertet die in M1 vorhandenen Verarbeitungen sowie die laut Pflichtenheft geplanten Standort-, Fahrer- und ETA-Daten; sobald diese Verarbeitungen mit M3/M4 gebaut sind, erzwingt die Gate-Prüfung aus Kriterium 3 den Nachtrag am realen Datenfluss. (SEC-013)
 - **Tests:** positiv: Gate-Prüfung mit freigegebener DSFA. negativ: neues Mobilitätsdatenfeld ohne DSFA-Referenz lässt die Prüfung scheitern; fehlender Freigabevermerk. konkurrierend: nicht einschlägig (Dokument- und Gate-Prüfung).
 - **Abhängigkeiten:** intern: WP-M1-32, WP-M1-33, WP-M1-31.
-  - extern: WP-M3-34 (Standortdaten (`position_sample`) als nachzutragende Verarbeitung)
-  - extern: WP-M4-61, WP-M4-62 (Fahrer-/ETA-Daten als nachzutragende Verarbeitung)
+- **Vollabnahme erst mit:** WP-M3-34, WP-M4-61, WP-M4-62 (Standortdaten (`position_sample`) sowie Fahrer-/ETA-Daten als Verarbeitungen, die erst dort gebaut und in der DSFA am realen Datenfluss nachgetragen werden)
 - **Entscheidungen:** D-11 und D-10 – blockieren die Produktivschaltung, nicht die Erstellung; D-05 (Hostingregion).
 - **Größe:** S
 - **Nicht im Umfang:** rechtliche Bewertung selbst (Auftraggeber/Datenschutz); Fortschreibung für P2-Verarbeitungen (M6–M8).
@@ -997,10 +1004,11 @@
   3. Der Admin-Rahmen zeigt nur Navigationspunkte, für die `/v1/me` Rechte liefert.
   4. Layout bleibt bei 320 CSS-Pixeln und 200 % Text ohne horizontales Scrollen benutzbar.
   5. Für UI-17, UI-18 und UI-20 sind die Leer-, Fehler- und Rechtezustände aus Kap. 06 §6.9 als wiederverwendbare Zustandskomponenten vorhanden; jeder Bildschirmrahmen benennt Mandant/Dienst, fachlichen Status und Datenstand.
+  6. Abgrenzung des Nachweises: M1 weist die automatisierte Barrierefreiheitsprüfung der Komponenten und Rahmen nach; die Prüfung der Kernreisen mit Tastatur und Screenreader erfolgt im UX-Gate in M5.
 - **Tests:** positiv: Komponententests, visuelle Regression. negativ: API-Fehler 401/403/404/412/428/429 erzeugen die definierten Zustände. konkurrierend: nicht einschlägig (Oberflächenbausteine ohne eigenen Zustand; Doppelklick-/Mehrfachabsendeschutz wird über gesperrte Buttons positiv geprüft). Vorbereitung des UX-Gates (Kap. 08 §8.4).
 - **Abhängigkeiten:** intern: WP-M1-02, WP-M1-03.
   - extern: WP-M0-05, WP-M0-12 (Repository-Gerüst `web/`, CI)
-  - extern: WP-M5-30 (Barrierefreiheitsprüfung der Kernreisen mit Tastatur und Screenreader (UX-Gate))
+- **Vollabnahme erst mit:** WP-M5-30 (Barrierefreiheitsprüfung der Kernreisen mit Tastatur und Screenreader im UX-Gate)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Fachbildschirme UI-01 bis UI-16, UI-19 (M2–M8); Kartenkomponente (M2); Flutter-Apps (M3, M7).
@@ -1017,9 +1025,10 @@
   2. Mandantenwechsel mit zwei Tabs: Tab 1 bleibt in A, Tab 2 wechselt nach B; keine Anfrage aus Tab 1 liefert B-Daten und umgekehrt (UI-Abnahmefall aus Kap. 06 §6.9).
   3. Nach Wechsel sind Listen und Formulare des vorherigen Mandanten zurückgesetzt; ungespeicherte Eingaben werden nicht still in den neuen Mandanten übernommen.
   4. Eine serverseitig gesperrte Sitzung führt bei der nächsten Aktion zur Abmeldung.
+  5. Abgrenzung des Nachweises: Anmeldung und Mandantenwechsel werden in M1 in den Rahmenanwendungen `web/operator` und `web/passenger` (WP-M1-43) mit UI-05 Basis nachgewiesen; UI-05 im Vollausbau der Passenger-PWA folgt mit M2 (OP-34).
 - **Tests:** positiv: Login, Wechsel, Logout (Ende-zu-Ende im Browser). negativ: manipulierter Mandant im lokalen Speicher erzeugt keine Rechte; gesperrte Sitzung; abgelaufenes Token. konkurrierend (Datentrennung): zwei Tabs mit unterschiedlichen Mandanten und gleichzeitigen Schreibaktionen. Unterstützt AT-18 und PH-AT-001 auf UI-Ebene.
 - **Abhängigkeiten:** intern: WP-M1-04, WP-M1-06, WP-M1-10, WP-M1-43.
-  - extern: WP-M2-35, WP-M2-36 (Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34))
+- **Vollabnahme erst mit:** WP-M2-35, WP-M2-36 (UI-05 im Vollausbau der Passenger-PWA laut Meilensteinplan, OP-34; M1 weist Anmeldung und Mandantenwechsel in den Rahmenanwendungen nach)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Fahrgast-Registrierungsseiten (WP-M1-28); Callcenter-Kontext (UI-06, M7).
@@ -1039,11 +1048,9 @@
   5. Die drei M1-relevanten semantischen Contract-Fälle und die zwei UI-Abnahmefälle laufen in CI grün.
   6. Für jede in M1 wirksame Invariante aus Kap. 04 §4.5 existiert ein Negativtest mit mindestens zwei parallelen Transaktionen unter der Runtime-Rolle.
 - **Tests:** PH-AT-001, PH-AT-011, PH-AT-017, PH-AT-018, AT-18, AT-24, AT-49, E2E-091, E2E-096, E2E-097, E2E-098; positiv und negativ je Gate-Test gemäß Soll der Referenz (negativ u. a. Fremdzugriff, abweichender Request bei gleichem Schlüssel, unzulässige Konfiguration); Invarianten-Negativtests konkurrierend mit zwei parallelen Transaktionen.
-- **Abhängigkeiten:** intern: alle WPs dieser Datei.
+- **Abhängigkeiten:** intern: alle WPs dieser Datei (WP-M1-01, WP-M1-02, WP-M1-03, WP-M1-04, WP-M1-05, WP-M1-06, WP-M1-07, WP-M1-08, WP-M1-09, WP-M1-10, WP-M1-11, WP-M1-12, WP-M1-13, WP-M1-14, WP-M1-15, WP-M1-16, WP-M1-17, WP-M1-18, WP-M1-19, WP-M1-20, WP-M1-21, WP-M1-22, WP-M1-23, WP-M1-24, WP-M1-25, WP-M1-26, WP-M1-27, WP-M1-28, WP-M1-29, WP-M1-30, WP-M1-31, WP-M1-32, WP-M1-33, WP-M1-34, WP-M1-35, WP-M1-36, WP-M1-37, WP-M1-38, WP-M1-39, WP-M1-40, WP-M1-41, WP-M1-42, WP-M1-43, WP-M1-44, WP-M1-46, WP-M1-47).
   - extern: WP-M0-22, WP-M0-31, WP-M0-32 (Testinfrastruktur, Detailvertragsprozess, Pflege von `arbeitspakete.csv`)
-  - extern: WP-M2-07, WP-M2-23, WP-M2-38, WP-M2-48 (Buchung, Tarifversion, Such-/Medienendpunkte für die vollständigen Fassungen von PH-AT-001, PH-AT-011, E2E-096, E2E-098)
-  - extern: WP-M3-44, WP-M3-56 (Fotos/Schadensevidenz für AT-49)
-  - extern: WP-M4-06, WP-M4-08, WP-M4-22, WP-M4-64 (Belege, Rechnungen, Arbeitszeit, Abwesenheit, Personalprofil für AT-49, E2E-091, PH-AT-001)
+- **Vollabnahme erst mit:** WP-M2-07, WP-M2-23, WP-M2-38, WP-M2-48, WP-M3-44, WP-M3-56, WP-M4-06, WP-M4-08, WP-M4-22, WP-M4-64 (vollständige Fassungen der Gate-Tests: Buchung, Tarifversion, Such-/Medienendpunkte für PH-AT-001, PH-AT-011, E2E-096, E2E-098; Fotos/Schadensevidenz, Belege, Rechnungen, Arbeitszeit, Abwesenheit und Personalprofil für AT-49, E2E-091, PH-AT-001)
 - **Entscheidungen:** D-12 (Bestätigung der Testzuordnung zu Meilensteinen in M0) – blockiert das Gate, nicht den Bau.
 - **Größe:** M
 - **Nicht im Umfang:** Lasttest, Restore-Übung, Penetrationstest (M5); Gates anderer Meilensteine.
@@ -1066,6 +1073,28 @@
 - **Entscheidungen:** D-11 (Aufbewahrung der Auditdaten) – blockiert nur Produktivschaltung.
 - **Größe:** S
 - **Nicht im Umfang:** Auditabfrage, UI-20, Export mit Integritätsprüfung, Übernahme der IdP-Anmeldeereignisse (WP-M1-12); Alarmregeln (WP-M1-41).
+
+### WP-M1-47 – Minimaler Betriebsalarmkanal
+- **Ziel:** Technische Betreiberwarnungen der M1-Bausteine (Dead-Letter im Outbox-Relay und in der Webhook-Zustellung, Sicherheitsalarme) erreichen bereits in M1 einen definierten Betreiberempfänger. Das WP liefert nur die Minimalfähigkeit „Warnung melden und zustellen"; der Alarmkatalog des Gesamtbetriebs bleibt M5.
+- **Anforderungen:** – (Enabler)
+- **Liefergegenstände:**
+  - Backend: `backend/platform` – Port für Betreiberwarnungen (Quelle, Schweregrad, Korrelations-ID, Mandant nur als opake ID; keine Personen-, Kontakt- oder Inhaltsdaten), Zusammenfassung gleichartiger Warnungen zu einem offenen Alarm; je Warnung eine Metrik und eine strukturierte Logzeile auf Basis von WP-M0-10.
+  - Adapter/Worker: Alarmweiterleitung als Code unter `infra/` – Regelgerüst auf den Metriken aus WP-M0-10, genau ein konfigurierter Empfängerkanal je Umgebung (lokal und in CI ein Test-Empfänger), Wiederholung bei nicht erreichbarem Kanal; Kanalzugang ausschließlich als Secret-Referenz (WP-M1-36).
+  - Datenbank: keine neuen Tabellen; die Fachalarmierung (`business_alert`, `alert_policy_revision`, `alert_acknowledgement`, Kap. 04 §4.4) ist nicht Gegenstand.
+- **Detailverträge vorab:** Schema der Betreiberwarnung; Empfängerkanal und Erreichbarkeit je Umgebung (vom Betreiber/Auftraggeber zu benennen, OP-32, OP-39); Regel für das Zusammenfassen gleichartiger Warnungen (im Pflichtenheft nicht beziffert, Vorschlag dieses Plans im Detailvertrag).
+- **Akzeptanzkriterien:**
+  1. Eine über den Port gemeldete Testwarnung erreicht den konfigurierten Empfänger; Auslöse- und Zustellzeitpunkt sind protokolliert.
+  2. Eine anhaltend gleichartige Warnung erzeugt genau einen offenen Alarm und keine Alarmflut.
+  3. Warnung, Metrik und Logzeile enthalten keine Personen-, Kontakt- oder Inhaltsdaten und keine Daten eines anderen Mandanten (Label-Test aus WP-M0-10).
+  4. Ist der Empfängerkanal nicht erreichbar, geht die Warnung nicht verloren: sie bleibt in Metrik und Log sichtbar und die Zustellung wird wiederholt.
+  5. Der Zugang zum Empfängerkanal steht weder im Repository noch in Logs im Klartext.
+- **Tests:** positiv: Testwarnung wird zugestellt. negativ: Warnung mit als personenbezogen markiertem Feld wird abgewiesen; Empfängerkanal nicht erreichbar. konkurrierend (Sicherheit): 200 gleichartige Warnungen in kurzer Folge aus parallelen Workern – genau ein offener Alarm, keine Warnung geht verloren.
+- **Abhängigkeiten:** intern: WP-M1-36.
+  - extern: WP-M0-10 (Metriken und strukturierte Logs des Observability-Grundgerüsts)
+  - extern: WP-M0-08, WP-M0-11, WP-M0-35 (lokale Umgebung, Infrastruktur als Code, gemeinsame Integrationsumgebung)
+- **Entscheidungen:** keine
+- **Größe:** S
+- **Nicht im Umfang:** Katalog kritischer Fehlerszenarien mit Schwellen, Eskalationsstufen, Runbooks und Empfängermatrix sowie synthetische Proben (M5, Alerting für kritische Fehlerszenarien); Fachalarmierung und regelbasierte Fachalarme (M3/M8); Alarmregeln auf Sicherheitsereignisse (WP-M1-41); Erzeugung der Dead-Letter-Warnungen (WP-M1-14, WP-M1-16).
 
 ## Offene Punkte
 
@@ -1106,52 +1135,6 @@
 - **OP-35 – `service.config_revision_id` ist Pflichtfeld.** Ein Dienst kann laut `kernschema.sql` nur mit vorhandener Konfigurationsrevision angelegt werden; ob diese Revision ein Entwurf sein darf oder publiziert sein muss und wie `service.config_revision_id` bei späteren Publikationen fortgeschrieben wird, ist nicht geregelt. Daraus folgt die Reihenfolge WP-M1-20 vor WP-M1-09. Betrifft `LH-6.1-SYS-002`, `LH-I.4-MUL-002`.
 - **OP-36 – Mandantenanlage und Erstausstattung.** Wer einen Mandanten, dessen Rechtsträger und die erste Administrator-Mitgliedschaft anlegt (Plattformbetreiberrolle im Plattformmandanten?) und mit welcher Freigabe, ist im Pflichtenheft nicht beschrieben; Kap. 02 §4.3 verlangt nur, dass Plattformadministration keine automatische Fachdatensicht erhält. Betrifft `LH-I.4-MUL-003`, `LH-6.2-IAM-004`.
 - **OP-37 – Geldtyp der Plattform.** M2 und M4 setzen einen Geldtyp aus M1 voraus; der Meilensteinplan nennt ihn für M1 nicht ausdrücklich (nur „einheitliches Fehlermodell (Kap. 05 §5.1)" und in der Zielstruktur „Geld-/Zeittypen" unter `backend/platform`). Er ist hier WP-M1-02 zugeordnet; die Zuordnung ist zu bestätigen.
-- **Reihenfolgekonflikt: WP-M1-03 → WP-M2-01, WP-M2-21, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: APIs für Buchungen und Verfügbarkeit (`/v1/ride-offers`, `/v1/bookings`) als Gegenstand der Originalabnahme. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-03 → WP-M3-01, WP-M3-03, WP-M3-53.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: APIs für Fahrzeug- und Betriebsobjekte (`/v1/operator/vehicles`, `/v1/operator/incidents`). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-08 → WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchungsaggregat für den Nachweis „fremde regionale Buchungen". Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-09 → WP-M2-04, WP-M2-05.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Bediengebiet-Geometrie (`service_area`) und Haltepunkte (`stop_revision`). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-10 → WP-M2-35, WP-M2-36.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-11 → WP-M2-07, WP-M2-38, WP-M4-21.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: `tariff_revision` für den Tarifnachweis; Such- und Medienendpunkte. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-11 → WP-M4-22, WP-M4-33, WP-M4-37, WP-M4-64.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Beleg-, Export- und Finanzendpunkte für den vollständigen PH-AT-001. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-12 → WP-M3-40.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Dispositionseingriffe als auditpflichtige Fachaktion (Originalabnahme „Dispositionseingriffe"). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-13 → WP-M2-24, WP-M2-30.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchungs- und Zahlungsbefehle als fachliche Nutzer (Abnahmebezug „Buchungs- und Zahlungsvorgänge"). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-14 → WP-M5-04.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Observability/Alarmkanal für die Betreiberwarnung bei Dead-Letter. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-16 → WP-M5-04.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Observability/Alarmkanal für die Betreiberwarnung bei Dead-Letter. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-17 → WP-M2-01, WP-M2-16, WP-M2-23, WP-M2-30.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchungs-, Fahrt- und Zahlungsaggregat wenden den Rahmen an. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-17 → WP-M3-01, WP-M3-31, WP-M3-53.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fahrzeug- und Störungsaggregat wenden den Rahmen an. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-18 → WP-M2-11, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchung über Sommer-/Winterzeitgrenze als fachlicher Nachweis. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-20 → WP-M2-21, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Dispositionsfall, der seine `config_revision_id` referenziert (Nachweis „historischer Dispositionsfall"). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-20 → WP-M2-04, WP-M2-07.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: `service_area` und `tariff_revision` als Ziel von Bediengebietsbezug und Tarifverknüpfung der Dienstkonfiguration. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-21 → WP-M3-03.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fahrzeugstamm als Scope-Ziel für fahrzeugspezifische Vorgaben. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-22 → WP-M2-09, WP-M2-21, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Angebot/Buchung mit gebundener `config_revision_id` (`fare_quote.config_revision_id`) für den Nachweis „Sonntagsfahrten unverändert" und „Buchungszusage bleibt korrekt". Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-22 → WP-M2-04, WP-M2-05.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: `service_area`, `stop_revision` als administrierbare Gebiets-/Haltestellenobjekte. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-23 → WP-M2-04, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: ImpactProvider für Buchungen und Bediengebiete. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-23 → WP-M4-17.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: ImpactProvider für Schichten. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-25 → WP-M2-21, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Angebotsbildung und Buchung je Angebotsmodell (Testfahrt). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-25 → WP-M2-04, WP-M2-05, WP-M2-07.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: `service_area`, `stop_revision`, Tarifverknüpfung. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-26 → WP-M2-09, WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchungsbestätigung und Tarifprüfung als Anwender des Ports (Nachweis „operative oder tarifliche Regel"). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-27 → WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchung mit `promise_snapshot` als fachlicher Träger der Zusage. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-27 → WP-M2-32.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Betriebsnachrichten (Push/SMS/E-Mail) für die Fahrgastinformation. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-28 → WP-M2-32.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: SMS-Zustellkanal (Betriebsnachrichten/Adapter `notification`) für Telefonverifikation. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-28 → WP-M2-35, WP-M2-36.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-29 → WP-M2-05.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Haltepunktstamm (`stop_revision`) für bevorzugte Haltestellen und Ortsfavoriten. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-29 → WP-M2-35, WP-M2-36.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-30 → WP-M2-32.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Betriebsnachrichten mit Zustellversuchen (`notification`, `notification_attempt`) als Anwender des Ports. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-31 → WP-M2-23.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: minimierter Betreiberpayload der Buchung als fachlicher Anwender. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-31 → WP-M4-06, WP-M4-08.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Arbeitszeit- und Abwesenheitsdaten für den vollständigen AT-49. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-34 → WP-M2-16, WP-M3-03.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fahrzeugstamm und `vehicle_run`. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-34 → WP-M4-33.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Kostenereignis/Abrechnung der Fahrzeugfahrten. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-35 → WP-M3-05.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fahrerstamm und Qualifikationen (`driver`, `qualification_revision`) im Vollausbau. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-35 → WP-M6b-04, WP-M6b-05.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Kooperationsvertrag und Grants als vertragliche Grundlage der Freigabe. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-37 → WP-M2-29.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: PSP-Adapter und `/v1/payments/provider-events/{provider}` für die Prüfung am Zahlungsfluss. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-38 → WP-M5-17.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Penetrationstest und Behandlung der Befunde. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-39 → WP-M5-14, WP-M5-15.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Restore-Übung mit RPO/RTO-Messung einschließlich PSP-Abgleich. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-41 → WP-M5-04.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Observability/Alarmkanal. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-42 → WP-M3-34.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Standortdaten (`position_sample`) als nachzutragende Verarbeitung. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-42 → WP-M4-61, WP-M4-62.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fahrer-/ETA-Daten als nachzutragende Verarbeitung. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-43 → WP-M5-30.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Barrierefreiheitsprüfung der Kernreisen mit Tastatur und Screenreader (UX-Gate). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-44 → WP-M2-35, WP-M2-36.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Passenger-Web (UI-05 im Vollausbau laut Meilensteinplan, OP-34). Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-45 → WP-M2-07, WP-M2-23, WP-M2-38, WP-M2-48.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Buchung, Tarifversion, Such-/Medienendpunkte für die vollständigen Fassungen von PH-AT-001, PH-AT-011, E2E-096, E2E-098. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-45 → WP-M3-44, WP-M3-56.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Fotos/Schadensevidenz für AT-49. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt: WP-M1-45 → WP-M4-06, WP-M4-08, WP-M4-22, WP-M4-64.** M1 darf nur von M0/M1 abhängen; benötigte Fähigkeit aus späterem Meilenstein: Belege, Rechnungen, Arbeitszeit, Abwesenheit, Personalprofil für AT-49, E2E-091, PH-AT-001. Nicht aufgelöst (vgl. OP-01/OP-02).
-- **Reihenfolgekonflikt-Hinweis Staging/Alarmkanal.** „Staging“ ist in M0 nur als Gerüst (WP-M0-11) bzw. gemeinsame Integrationsumgebung (WP-M0-35) gedeckt, die endgültige Staging-Umgebung liefert WP-M5-02; den Alarmkanal schließt WP-M0-10 ausdrücklich aus (Alarmierung erst WP-M5-04). Betrifft WP-M1-04, -10, -12, -14, -16, -36, -38, -41.
+- **OP-38 – Vorwärtsverweise aufgelöst: „Vollabnahme erst mit" statt Bauabhängigkeit.** Alle Verweise von M1-WPs auf WPs aus M2, M3, M4, M5 und M6 wurden einzeln geprüft. Keiner ist ein Bau-Vorbedarf: Die M1-WPs bauen auf den Kerntabellen aus WP-M0-16, auf Testaggregaten, Test-Providern, Test-Adaptern und Fixtures. Die Verweise stehen deshalb im Feld „Vollabnahme erst mit" der WPs WP-M1-03, -08 bis -13, -17, -18, -20 bis -23, -25 bis -31, -34, -35, -37 bis -39 und -42 bis -45; die Akzeptanzkriterien nennen je WP, was in M1 nachgewiesen wird und was erst mit dem liefernden Meilenstein. Die Anforderungen bleiben M1 zugeordnet. Offen bleibt die Frage aus OP-01, ob die Anforderung am M1-Gate mit Bausteinnachweis als erfüllt gilt oder die Endabnahme am Gate des liefernden Meilensteins nachgezogen wird; die liefernden WPs in M2 bis M6 müssen den Nachweis in ihren Akzeptanzkriterien führen.
+- **OP-39 – Alarmkanal vor M5.** Dead-Letter-Warnungen (WP-M1-14, WP-M1-16) und der Sicherheitsalarm (WP-M1-41) brauchen in M1 einen Zustellweg; WP-M0-10 schließt Alarmierung aus und das Alerting des Gesamtbetriebs entsteht erst in M5. Das war ein echter Bau-Vorbedarf und ist durch den Enabler WP-M1-47 (minimaler Betriebsalarmkanal) behoben. Zu klären: Empfängerkanal und Erreichbarkeit je Umgebung vor M5 (Betreiber/Auftraggeber, vgl. OP-32); das M5-Alerting sollte auf dem Port aus WP-M1-47 aufsetzen, statt einen zweiten Zustellweg zu bauen.
+- **OP-40 – Staging vor M5.** „Staging" ist in M0 nur als Gerüst (WP-M0-11) bzw. gemeinsame Integrationsumgebung (WP-M0-35) gedeckt; die endgültige Staging-Umgebung entsteht in M5. Die M1-WPs mit Staging-Bezug (WP-M1-04, -10, -12, -36, -38) hängen nur von WP-M0-11/WP-M0-35 ab und weisen ihre Kriterien in der gemeinsamen Integrationsumgebung nach.

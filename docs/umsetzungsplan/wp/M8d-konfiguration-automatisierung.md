@@ -3,17 +3,17 @@
 - **Meilenstein:** M8 – Finanzen, Controlling, ETA, Governance, Strom „Daten und Steuerung“ (setzt M5 voraus; Nachbareinheiten M8a Belege/Finanzen, M8b ETA/Governance, M8c Analyse/KPI, M8e Plattform/Sicherheit)
 - **Phase:** P2 (24 MUSS, 3 SOLL; Phase und Priorität jeder Anforderung unverändert)
 - **Anzahl Anforderungen:** 27 (CFG 15: `LH-I.7-CFG-008` bis `LH-I.7-CFG-022`; AUT 12: `LH-I.8-AUT-003` bis `LH-I.8-AUT-013`, `LH-I.8-AUT-015`)
-- **Anzahl WPs:** 34 (27 mit Anforderungen, 7 Enabler)
+- **Anzahl WPs:** 35 (27 mit Anforderungen, 8 Enabler)
 
 **Ziel:** Nach M8d ist das Konfigurationsregister aus M1 zum vollständigen Selbstverwaltungswerkzeug ausgebaut: durchgängiger Lebenszyklus Entwurf → Vorschau → Freigabe → Veröffentlichung → Rücknahme, wählbarer Zweistufenmodus, Berechtigungsmatrix je Parameter, fachliche Regelgruppen (Dienst, Tarif, Kooperation, Finanzen, Belegarten, Schichtregeln, SLA, Benachrichtigung), Paketexport/-import, Vorschläge und ein auditierter Notfallmodus. Der Alarm- und Workflowkern aus M3 wird zum Alert-Center mit eingegrenzten, versionierten und per Dry-Run getesteten Automationsregeln, Deduplikation, Unterdrückung, Eskalation und operativen Empfehlungen erweitert. Keine Automation handelt ohne sichtbare Regelversion, keine Konfiguration verändert rückwirkend Zusagen, und jeder Automatismus ist abschaltbar mit dokumentiertem manuellem Ersatzablauf.
 
-**Gate-Anteil M8d (Umsetzungsplan §4, Gate M8):** E2E-099 (führend). Beiträge zu E2E-070 (Prüfcase aus Tanklimit; führend M8a), E2E-102 (Konfiguration über Sommerzeitwechsel; führend M8c) und E2E-103 (versionierte SLA-Schwelle; führend M8c). Fortschreibung von PH-AT-018 (Bezug CFG-011/021) als Regressionsnachweis. PH-AT-022, E2E-074 bis E2E-079, E2E-105, E2E-106 gehören zu M8b, E2E-101 zu M8c.
+**Gate-Anteil M8d (Umsetzungsplan §4, Gate M8):** E2E-099 (führend) und E2E-102 (Mehrregion Zeitzone; führend in WP-M8d-32, weil der Meilensteinplan keine Einheit benennt und die Zeitzonen-/Kalenderauflösung aus `LH-I.7-CFG-021` hier liegt; Beiträge: Berichte aus WP-M8c-33, Schichten und Schichtkalender aus M7d, Darstellung aus WP-M8e-06). Beiträge zu E2E-070 (Prüfcase aus Tanklimit; führend M8a), E2E-103 (versionierte SLA-Schwelle; führend M8c). Fortschreibung von PH-AT-018 (Bezug CFG-011/021) als Regressionsnachweis. PH-AT-022, E2E-074 bis E2E-079, E2E-105, E2E-106 gehören zu M8b, E2E-101 zu M8c.
 
 **Lesehinweise:**
 - Tabellen aus `kernschema.sql` und Kap. 04 §4.4 sind mit exaktem Namen genannt. Wo das Pflichtenheft keine Tabelle nennt, steht „(Arbeitsname)“; der endgültige Name entsteht im Detailvertrag (WP-M8d-01).
 - Kap. 05 §5.7 kennt für diese Einheit nur `/v1/config/effective`, `/v1/config/revisions`, `/v1/config/revisions/{id}`, `/validate`, `/impact`, `/v1/config/revisions/{revision_id}/publish`, `/v1/operator/incidents`, `/v1/notifications`, `/v1/reports/jobs`. Alle weiteren Pfade sind „Detailvertrag“ und in den Offenen Punkten aufgeführt.
 - Kap. 06 §6.9 enthält keine eigene UI-ID für Alert-Center, Regelpflege oder Konfigurationspakete. Zuordnung dieses Plans: Konfiguration → UI-17 („Gebiete/Stops/Tarife“, Aktion „Revision freigeben“; der Konfigurationseditor selbst ist nur in Kap. 06 §6.8 beschrieben), Kooperation → UI-18, Alarme → UI-07 (Arbeitsliste), Finanzen → UI-14/UI-15, Dienstplan → UI-12, Kennzahlen → UI-19, Audit → UI-20 (siehe OP-02).
-- WP-IDs sind stabil, weil Nachbareinheiten sie referenzieren (M8a nennt WP-M8d-12, WP-M8d-13, WP-M8d-22, WP-M8d-23, WP-M8d-30). Die nach der Prüfung ergänzten Enabler WP-M8d-33 (Prüfcase-Kern) und WP-M8d-34 (zeitgesteuerter Ausführungskern) stehen deshalb am Ende, obwohl sie fachlich vor ihren Abnehmern liegen; die Reihenfolge ergibt sich aus der Spalte „hängt ab von“.
+- WP-IDs sind stabil, weil Nachbareinheiten sie referenzieren (M8a nennt WP-M8d-12, WP-M8d-13, WP-M8d-22, WP-M8d-23, WP-M8d-30). Die nach der Prüfung ergänzten Enabler WP-M8d-33 (Prüfcase-Kern), WP-M8d-34 (zeitgesteuerter Ausführungskern) und WP-M8d-35 (Änderungsebenen im Rollenkatalog) stehen deshalb am Ende, obwohl sie fachlich vor ihren Abnehmern liegen; die Reihenfolge ergibt sich aus der Spalte „hängt ab von“.
 - Für jede Oberfläche dieser Einheit gelten ohne Wiederholung je WP die Querschnittsregeln aus Kap. 06: Zustände leer, Ladefehler, fehlendes Recht und veralteter Stand (412 ohne stilles Überschreiben), vollständige Tastaturbedienung, sichtbarer Fokus, WCAG 2.2 AA als Abnahmeziel, Status nie nur als Farbe, Karte immer mit gleichwertiger Liste. Die Prüfung erfolgt je WP im Oberflächentest und gesammelt in WP-M8d-32.
 - Planungsdefaults des Pflichtenhefts sind als solche gekennzeichnet; Beispielwerte aus Abnahmetexten (z. B. „vier Ablehnungen“, „30 Tage“) sind Testfixtures, keine Produktionswerte.
 
@@ -22,20 +22,20 @@
 | WP-ID | Titel | Anforderungen (Anzahl) | Größe | hängt ab von |
 |---|---|---:|---|---|
 | WP-M8d-01 | Detailverträge und Zustandsautomaten M8d | 0 (Enabler) | M | WP-M0-31, WP-M1-03, WP-M1-17 |
-| WP-M8d-02 | Migration der M8d-Tabellen mit RLS und Invarianten | 0 (Enabler) | M | WP-M8d-01, WP-M1-01, WP-M1-19, WP-M1-20, WP-M2-32, WP-M2-33, WP-M3-52, WP-M8e-15 |
+| WP-M8d-02 | Migration der M8d-Tabellen mit RLS und Invarianten | 0 (Enabler) | M | WP-M8d-01, WP-M1-01, WP-M1-19, WP-M1-20, WP-M2-32, WP-M2-33, WP-M3-52 |
 | WP-M8d-03 | Parameterschemas der in M8d verwendeten Katalogparameter | 0 (Enabler) | M | WP-M8d-01, WP-M1-19, WP-M8b-01 |
 | WP-M8d-04 | Referenzfixtures M8d | 0 (Enabler) | S | WP-M8d-02, WP-M8d-03, WP-M4-02, WP-M6b-03 |
-| WP-M8d-05 | Konfigurationslebenszyklus: Entwurf, Vorschau, Freigabe, Veröffentlichung, Rücknahme | 1 | M | WP-M8d-02, WP-M1-20, WP-M1-22, WP-M1-23, WP-M6b-17, WP-M8b-28 |
+| WP-M8d-05 | Konfigurationslebenszyklus: Entwurf, Vorschau, Freigabe, Veröffentlichung, Rücknahme | 1 | M | WP-M8d-02, WP-M1-20, WP-M1-22, WP-M1-23, WP-M6b-17 |
 | WP-M8d-06 | Zweistufenmodus und Freigabeschwellen je Mandant | 1 | M | WP-M8d-05, WP-M1-07, WP-M1-08, WP-M1-12, WP-M1-22 |
-| WP-M8d-07 | Berechtigungsmatrix der Parameter | 1 | M | WP-M8d-03, WP-M8d-05, WP-M1-06, WP-M1-07, WP-M1-08, WP-M1-19, WP-M6b-16, WP-M6b-19 |
-| WP-M8d-08 | Zeitzone, Feiertagskalender und überlappende Zeiträume | 1 | M | WP-M8d-02, WP-M8d-05, WP-M1-09, WP-M4-03, WP-M4-10, WP-M8c-33 |
+| WP-M8d-07 | Berechtigungsmatrix der Parameter | 1 | M | WP-M8d-03, WP-M8d-05, WP-M8d-35, WP-M1-06, WP-M1-07, WP-M1-08, WP-M1-19, WP-M6b-16, WP-M6b-19, Klärung Auftraggeber (Umfang Konzernadmin) |
+| WP-M8d-08 | Zeitzone, Feiertagskalender und überlappende Zeiträume | 1 | M | WP-M8d-02, WP-M8d-05, WP-M1-09, WP-M4-03, WP-M4-10, WP-M7d-11 |
 | WP-M8d-09 | Dienstspezifische Parameter für Reserve, Rollstuhlplätze, Vorlauf und Pooling | 1 | M | WP-M8d-03, WP-M8d-05, WP-M1-21, WP-M1-25, WP-M2-11, WP-M2-13, WP-M2-21, WP-M2-22, WP-M2-23, WP-M3-04 |
 | WP-M8d-10 | Preis-, Rabatt- und Erstattungsregeln mit Gültigkeit und Ausnahmetagen | 1 | M | WP-M8d-05, WP-M8d-08, WP-M2-07, WP-M2-08, WP-M2-26, WP-M6c-06, WP-M6c-07, WP-M6c-09, WP-M6c-14 |
 | WP-M8d-11 | Kooperationsregeln: Daten-, Service-, Tarif- und Zahlungsfreigaben | 1 | M | WP-M8d-03, WP-M8d-05, WP-M6a-04, WP-M6b-04, WP-M6b-05, WP-M6b-08, WP-M6c-07 |
 | WP-M8d-12 | Finanzschwellen durch Finanzrollen mit Prüfworkflow | 1 | M | WP-M8d-03, WP-M8d-07, WP-M8d-22, WP-M8d-33, WP-M4-31, WP-M4-34, WP-M8a-11, WP-M8a-34, WP-M8a-35, WP-M8a-36, WP-M8c-15, WP-M8c-22 |
 | WP-M8d-13 | Belegfelder, Dokumentenpflichten und Freigabegrenzen je Belegart | 1 | M | WP-M8d-03, WP-M8d-05, WP-M4-22, WP-M4-30, WP-M4-34, WP-M4-38, WP-M7c-35, WP-M8a-04, WP-M8a-06, WP-M8a-11 |
 | WP-M8d-14 | Rechtsraumvorlagen für Schichtplanungsregeln | 1 | M | WP-M8d-03, WP-M8d-05, WP-M4-07, WP-M4-13, WP-M4-14, WP-M7d-04, WP-M7d-20 |
-| WP-M8d-15 | Versionierte SLA-Ziele und Ausnahmeregeln im Reporting | 1 | M | WP-M8d-03, WP-M8d-05, WP-M4-46, WP-M4-53, WP-M4-54, WP-M8c-22, WP-M8c-27, WP-M8c-33 |
+| WP-M8d-15 | Versionierte SLA-Ziele und Ausnahmeregeln im Reporting | 1 | M | WP-M8d-03, WP-M8d-05, WP-M4-46, WP-M4-53, WP-M4-54, WP-M8c-22, WP-M8c-27 |
 | WP-M8d-16 | Benachrichtigungskanäle, Vorlagen, Empfängerrollen und Eskalationsketten | 1 | M | WP-M8d-03, WP-M8d-05, WP-M2-33, WP-M2-34, WP-M3-52, WP-M6b-29, WP-M7b-29, WP-M7b-34 |
 | WP-M8d-17 | Konfigurationspaket: Export und Import zwischen Umgebungen | 1 | M | WP-M8d-05, WP-M8d-07, WP-M1-13, WP-M1-15, WP-M6b-20 |
 | WP-M8d-18 | Plausibilitätsvorschläge für Stellgrößen | 1 | M | WP-M8d-05, WP-M8d-06, WP-M4-45, WP-M4-51, WP-M8c-11, WP-M8c-22 |
@@ -44,17 +44,18 @@
 | WP-M8d-21 | Regeländerung mit Dry-Run, Freigabe und Versionswechsel | 1 | M | WP-M8d-20, WP-M8d-05, WP-M8b-28 |
 | WP-M8d-22 | Alert-Center: Bündelung nach Priorität, Quittieren, Delegieren, Erledigen | 1 | L | WP-M8d-02, WP-M8d-20, WP-M3-36, WP-M3-52, WP-M6a-15, WP-M7b-16, WP-M7d-17, WP-M8a-35 |
 | WP-M8d-23 | Deduplikation, Unterdrückungsfenster und Eskalationsregel | 1 | M | WP-M8d-16, WP-M8d-20, WP-M8d-22, WP-M8d-34, WP-M3-52, WP-M7b-16 |
-| WP-M8d-24 | Kritische technische Ausfälle sind nicht unterdrückbar | 1 | S | WP-M8d-16, WP-M8d-23, WP-M5-04 |
-| WP-M8d-25 | Automatischer Prüfauftrag bei Tankung über Limit | 1 | M | WP-M8d-20, WP-M8d-22, WP-M8d-33, WP-M4-23, WP-M4-30, WP-M4-31, WP-M8a-06, WP-M8a-14, WP-M8a-36 |
-| WP-M8d-26 | Kapazitätsempfehlung bei wiederholten Ablehnungen | 1 | M | WP-M8d-20, WP-M8d-22, WP-M2-11, WP-M2-13, WP-M4-48, WP-M4-49, WP-M4-51, WP-M7b-16, WP-M7d-23 |
+| WP-M8d-24 | Kritische technische Ausfälle sind nicht unterdrückbar | 1 | S | WP-M8d-16, WP-M8d-23, WP-M5-03, WP-M5-04, WP-M8b-27 |
+| WP-M8d-25 | Automatischer Prüfauftrag bei Tankung über Limit | 1 | M | WP-M8d-20, WP-M8d-22, WP-M8d-33, WP-M4-23, WP-M4-30, WP-M4-31, WP-M8a-06, WP-M8a-14 |
+| WP-M8d-26 | Kapazitätsempfehlung bei wiederholten Ablehnungen | 1 | M | WP-M8d-20, WP-M8d-22, WP-M2-11, WP-M2-13, WP-M4-15, WP-M4-19, WP-M4-48, WP-M4-49, WP-M4-51, WP-M7b-16, WP-M7d-23 |
 | WP-M8d-27 | Erinnerungen für HU-, Werkstatt- und Leasingfristen | 1 | M | WP-M8d-20, WP-M8d-22, WP-M8d-34, WP-M3-03, WP-M7c-35, WP-M7c-50, WP-M8a-22, WP-M8a-24, WP-M8a-25 |
 | WP-M8d-28 | Ersatzfahrzeugvorschläge mit Eignungsprüfung | 1 | M | WP-M8d-20, WP-M3-08, WP-M3-54, WP-M4-17, WP-M7c-38 |
 | WP-M8d-29 | Kalender- und ereignisgesteuerte Regelausführung mit Nachholprotokoll | 1 | M | WP-M8d-08, WP-M8d-20, WP-M8d-34, WP-M1-14, WP-M1-15, WP-M4-37, WP-M8c-27, WP-M8c-29 |
 | WP-M8d-30 | Finanzalarme und Liste ungeklärter Buchungen zum Monatsabschluss | 1 | M | WP-M8d-12, WP-M8d-22, WP-M8d-33, WP-M4-33, WP-M4-36, WP-M8a-14, WP-M8a-18, WP-M8a-34, WP-M8a-35, WP-M8c-22 |
 | WP-M8d-31 | Deaktivierbare Automationen mit manuellem Ersatzablauf | 1 | M | WP-M8d-20, WP-M8d-21, WP-M3-45, WP-M3-51, WP-M5-26, WP-M7c-34, WP-M7c-36 |
-| WP-M8d-32 | M8d-Gate-Abnahmesuite | 0 (Enabler) | M | WP-M8d-04 bis WP-M8d-31, WP-M8d-33, WP-M8d-34, WP-M8a-36, WP-M8a-38, WP-M8b-26, WP-M8c-33 |
+| WP-M8d-32 | M8d-Gate-Abnahmesuite | 0 (Enabler) | M | WP-M8d-04 bis WP-M8d-31, WP-M8d-33, WP-M8d-34, WP-M8d-35, WP-M7d-11, WP-M8a-36, WP-M8a-38, WP-M8b-26, WP-M8c-33, WP-M8e-06 |
 | WP-M8d-33 | Prüfcase-Kern: Aggregat, Arbeitsliste, Zuweisung, Entscheidung | 0 (Enabler) | M | WP-M8d-02, WP-M1-07, WP-M1-08, WP-M1-12, WP-M1-13, WP-M4-22, WP-M4-34, WP-M4-38, WP-M8a-06, WP-M8a-11, WP-M8a-35 |
 | WP-M8d-34 | Zeitgesteuerter Ausführungskern für Regeln, Fristen und Eskalationen | 0 (Enabler) | M | WP-M8d-02, WP-M1-01, WP-M1-13, WP-M1-14, WP-M1-15, WP-M5-04 |
+| WP-M8d-35 | Änderungsebenen Betreiber, Konzernadmin, Plattformbetreiber im Rollenkatalog | 0 (Enabler) | S | WP-M8d-01, WP-M1-06, WP-M1-07, WP-M6b-19 |
 
 ## Arbeitspakete
 
@@ -86,7 +87,7 @@
 - **Anforderungen:** – (Enabler)
 - **Liefergegenstände:**
   - Datenbank (bestehend, erweitert): `config_revision` (Wertebereich `scope_kind` erweitert um die in M8d benötigten Scope-Arten Rechtsraum, Belegart, Kostenstelle, Fahrzeugtyp, Alerttyp, Gebiet/Zeitfenster – Ebenen laut Spalte „Ebene“ in `kataloge.csv`; Abbildung nicht-UUID-Scopes auf das Pflichtfeld `scope_id uuid`, OP-32; Statuswerte für Vorschau/Rücknahme, Freigabemodus, Bezug auf Vorgängerrevision bei Rücknahme, Kennzeichen Notfallrevision), `policy_schema` (Änderungsberechtigungsebene, Kritikalität, Rechtsraumbezug), `alert_policy_revision` (Scope-Felder Gebiet, Dienst, Ereignistyp, Schweregrad, Zeitraum, Zuständigkeit; Unterdrückungsfenster; Eskalationsregel; Kennzeichen „nicht unterdrückbar“; Aktiv-/Deaktiviert-Status; Dry-Run-Nachweis), `business_alert` (Kategorie Fahrzeug/Kosten/Nachfrage/Personal/Schnittstelle, Priorität, Zustand, Zuständiger, Zähler deduplizierter Vorkommen, erstes/letztes Auftreten), `alert_acknowledgement` (Aktion quittiert/delegiert/erledigt, Akteur, Ziel, Begründung), `channel_template_revision` (Empfängerrolle, Eskalationsstufe).
-  - Datenbank (neu, Arbeitsnamen): `config_package` (Export-/Importpaket mit Checksumme, Schema-/Policyversion), `emergency_intervention` (Notfalleingriff mit Grund, Berechtigtem, Befristung, Nachkontrolle), `operating_calendar`/`calendar_exception_day` (Feiertags-/Ausnahmetage je Rechtsraum/Region), `config_suggestion` (Vorschlag mit Datengrundlage und Entscheidung), `automation_execution` (geplante/ausgeführte/versäumte/nachgeholte Ausführung), `review_case` (Prüfcase mit Bezug zu Beleg/Kostenereignis), `capacity_recommendation` (Empfehlung als Szenario mit Auslöserdaten).
+  - Datenbank (neu, Arbeitsnamen): `config_package` (Export-/Importpaket mit Checksumme, Schema-/Policyversion), `emergency_intervention` (Notfalleingriff mit Grund, Berechtigtem, Befristung, Nachkontrolle), `operating_calendar`/`calendar_exception_day` (Kalenderzuordnung je Rechtsraum/Region und konfigurationsbezogene Ausnahmetage; die Feiertage selbst liest WP-M8d-08 aus dem Kalender-Leseport der Einheit M7d, kein zweiter Feiertagsbestand), `config_suggestion` (Vorschlag mit Datengrundlage und Entscheidung), `automation_execution` (geplante/ausgeführte/versäumte/nachgeholte Ausführung), `review_case` (Prüfcase mit Bezug zu Beleg/Kostenereignis), `capacity_recommendation` (Empfehlung als Szenario mit Auslöserdaten).
   - Datenbank (Invarianten, Kap. 04 §4.5): „Nicht überlappende aktive Tarif-/Policy-/Dienstversion“ für `alert_policy_revision` und Kalender; Dedupe-Unique `(policy,event,recipient)` aus Kap. 04 §4.4 auf `business_alert`, ergänzt um Fingerprint-Schlüssel (OP-12); Append-only für `alert_acknowledgement` und `emergency_intervention`.
   - Datenbank (RLS): Tenant-Policy für jede Tabelle; globale Zeilen (Plattformgrenzen, Rechtsraumvorlagen, nicht unterdrückbare Alarmregeln) liegen im Plattformmandanten (M1 OP-08; `config_revision.tenant_id` ist NOT NULL), sind für Mandanten nur lesbar und ausschließlich über den Plattformkontext schreibbar (OP-32).
   - Datenbank (Lebenszyklus): Aufbewahrungs-/Löschklasse je neuer Tabelle für den Löschjob aus M8e hinterlegt (OP-33); `emergency_intervention` und `alert_acknowledgement` bleiben bis Fristablauf append-only.
@@ -104,7 +105,7 @@
   - extern: WP-M1-01, WP-M1-19, WP-M1-20 (RLS-Laufzeitbasis und Isolations-Testharness, `config_revision`/`policy_schema`)
   - extern: WP-M3-52 (`alert_policy_revision`, `business_alert`, `alert_acknowledgement` in der Grundform)
   - extern: WP-M2-32, WP-M2-33 (`channel_template_revision`, `notification`)
-  - extern: WP-M8e-15 (Lösch- und Auskunftsjob mit Aufbewahrungsklassen und Legal Hold als Abnehmer der Löschklassen)
+- **Vollabnahme erst mit:** WP-M8e-15 (der orchestrierte Lösch- und Auskunftsjob ist Abnehmer der hier je Tabelle hinterlegten Aufbewahrungs-/Löschklassen; in diesem WP wird nur nachgewiesen, dass jede neue Tabelle eine Klasse trägt, die tatsächliche Löschung über alle Ziele erst dort)
 - **Entscheidungen:** D-02 – nur falls Datenbank je Mandant gewählt wird (Umbau der globalen Vorlagenzeilen); blockiert den Bau nicht.
 - **Größe:** M
 - **Nicht im Umfang:** Fachlogik; Tabellen der Nachbareinheiten (`tariff_revision`, `approval_step`, `roster_revision`, `metric_definition_revision` werden nur referenziert).
@@ -172,7 +173,7 @@
 - **Abhängigkeiten:** intern: WP-M8d-02.
   - extern: WP-M1-20, WP-M1-22, WP-M1-23 (Konfigurationsrevisionen, Publikation, Rollback, Wirkungsanalyse)
   - extern: WP-M6b-17 (zeitlich aktivierte Konfiguration in lokaler Betriebszeit)
-  - extern: WP-M8b-28 (Verantwortliche und Rollback-Anweisung produktionskritischer Regeln) – Reihenfolgekonflikt (Zyklus über WP-M8b-28), siehe OP-35
+- **Vollabnahme erst mit:** WP-M8b-28 (Verantwortliche, Reviewpflicht und Rollback-Anweisung produktionskritischer Regeln setzen auf diesem Lebenszyklus auf und ergänzen die Veröffentlichungssperre; CFG-008 wird hier vollständig am Lebenszyklus nachgewiesen, der gemeinsame Regressionslauf Rücknahme mit angezeigter Rollback-Anweisung erst dort)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Freigabemodus/-schwellen (WP-M8d-06); Szenariosimulation mit eigenen Workern (SIM, M9); Paketexport (WP-M8d-17).
@@ -207,17 +208,17 @@
   - Datenbank: `policy_schema` (Änderungsberechtigungsebene, Kennzeichen „kritisch global“).
   - API: `/v1/config/effective` und Katalogressource liefern je Parameter `editable` und die zuständige Ebene; Schreibversuch ohne Recht 403.
   - Oberfläche: UI-17 – Matrixansicht Parameter × Rolle; gesperrte Felder mit Text- und Symbolkennzeichnung (nicht nur Farbe), Hinweis auf zuständige Stelle.
-- **Detailverträge vorab:** Matrix für alle 80 Parameter aus `kataloge.csv`; Definition der Rolle „Konzernadmin“ im Rollenkatalog (OP-06).
+- **Detailverträge vorab:** Matrix für alle 80 Parameter aus `kataloge.csv`; Rollencode „Konzernadmin“ aus WP-M8d-35 (fachlicher Umfang: OP-06).
 - **Akzeptanzkriterien:**
   1. Eine Rolle ohne Änderungsrecht sieht kritische globale Parameter nur lesend: Wert, Einheit und Herkunft sind sichtbar, das Feld ist nicht editierbar. (CFG-018)
   2. Ein direkter API-Schreibversuch derselben Rolle auf einen solchen Parameter wird mit 403 abgewiesen und protokolliert; es entsteht kein Entwurf. (CFG-018)
   3. Die Matrix unterscheidet für jeden Parameter die drei Ebenen Betreiber, Konzernadmin und Plattformbetreiber und ist in der Oberfläche einsehbar. (CFG-018)
   4. Eine Änderung der Matrix ist selbst eine versionierte, freigabepflichtige Konfiguration des Plattformbetreibers.
 - **Tests:** positiv: je Ebene ein erlaubter Schreibvorgang. negativ: Betreiber schreibt Plattformparameter, Konzernadmin schreibt in Mandanten außerhalb seiner Mitgliedschaft, manipuliertes `editable` im Request. konkurrierend (Sicherheit): Recht wird entzogen, während ein Entwurf offen ist – Freigabe/Veröffentlichung prüft erneut und lehnt ab.
-- **Abhängigkeiten:** intern: WP-M8d-03, WP-M8d-05.
+- **Abhängigkeiten:** intern: WP-M8d-03, WP-M8d-05, WP-M8d-35 (Rollencodes der drei Änderungsebenen im Rollenkatalog).
   - extern: WP-M1-06, WP-M1-07, WP-M1-08, WP-M1-19 (Rollen-/Objektberechtigung, Mitgliedschaft, Parameterkatalog)
   - extern: WP-M6b-16, WP-M6b-19 (delegierte Rollenvergabe, Konfigurationshierarchie mit Herkunftsnachweis)
-  - extern: UNGEDECKT – erweiterte IAM-Rollen (Konzern-/Mehrmandantenrollen); in M8e kein lieferndes WP
+  - Klärung Auftraggeber (kein WP): fachlicher Umfang der Rolle „Konzernadmin“ (welche Mandanten ein Konzern umfasst, wer die Rolle vergibt) und Klassifikation „kritischer globaler Parameter“ je Katalogeintrag; gebaut wird mit der Minimalabbildung aus WP-M8d-35 und einer gekennzeichneten Fixture-Matrix, siehe OP-06.
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** Feldschutz für PII/HR/Finanzdaten (M1/M8e); Freigabemodus (WP-M8d-06).
@@ -226,9 +227,9 @@
 - **Ziel:** Konfigurationswerte mit Beginn, Ende, lokaler Zeitzone und Feiertagsbezug werden eindeutig aufgelöst; Sommer-/Winterzeitwechsel erzeugen weder doppelte noch fehlende Betriebsschichten.
 - **Anforderungen:** `LH-I.7-CFG-021`
 - **Liefergegenstände:**
-  - Backend: Modul `config` – Zeitauflösung mit IANA-Zone je Mandant/Region; links geschlossene, rechts offene Intervalle (Kap. 04 §4.1); Kalenderdienst (Feiertag, Ausnahmetag, lokaler Betriebstag) als interner Port; Überlappungsprüfung bei Veröffentlichung; Behandlung doppelter und nicht existenter Ortszeiten (explizite Auswahl mit UTC-Offset bzw. Korrekturpflicht, Kap. 06 §6.2).
-  - Datenbank: `operating_calendar`/`calendar_exception_day` (Arbeitsnamen); `config_revision.effective_from/effective_to` als `timestamptz` plus gespeicherte Zone; Invariante „Nicht überlappende aktive Tarif-/Policy-/Dienstversion“.
-  - API: Kalenderpflege (Detailvertrag); `/v1/config/effective` mit Zeitpunkt und lokalem Betriebstag in der Antwort.
+  - Backend: Modul `config` – Zeitauflösung mit IANA-Zone je Mandant/Region; links geschlossene, rechts offene Intervalle (Kap. 04 §4.1); Kalenderdienst (Feiertag, Ausnahmetag, lokaler Betriebstag) als interner Port, der Feiertage und betriebliche Sondertage je Ort und Datum über den Kalender-Leseport aus WP-M7d-11 bezieht (eine Kalenderquelle für Schichtkennzeichnung, Serienbuchung, Berichte und Konfiguration; OP-07); Überlappungsprüfung bei Veröffentlichung; Behandlung doppelter und nicht existenter Ortszeiten (explizite Auswahl mit UTC-Offset bzw. Korrekturpflicht, Kap. 06 §6.2).
+  - Datenbank: `operating_calendar`/`calendar_exception_day` (Arbeitsnamen; Zuordnung Region/Rechtsraum → Kalender und konfigurationsbezogene Ausnahmetage, kein eigener Feiertagsbestand); `config_revision.effective_from/effective_to` als `timestamptz` plus gespeicherte Zone; Invariante „Nicht überlappende aktive Tarif-/Policy-/Dienstversion“.
+  - API: Pflege der Kalenderzuordnung und der Ausnahmetage (Detailvertrag; die Pflege der Feiertage/Sondertage liegt in der Pflegemaske aus WP-M7d-11); `/v1/config/effective` mit Zeitpunkt und lokalem Betriebstag in der Antwort.
   - Oberfläche: UI-17 – Eingabe von Wirksamkeitszeiten mit Zonenanzeige; Warnung bei überlappenden Zeiträumen; Auswahl mit UTC-Offset bei mehrdeutiger Ortszeit. UI-12 – Schichten über den Zeitwechsel mit absoluter Dauer.
   - Konfigurationsparameter: `reporting_timezone`, `daily_report_time`, `notification_quiet_hours`.
 - **Detailverträge vorab:** Kalenderdatenmodell und Quelle der Feiertage (OP-07); Regel für Konfigurationswechsel innerhalb eines laufenden Betriebstags; Regel für Betriebszeiten, die in die Zeitumstellung fallen.
@@ -236,14 +237,14 @@
   1. Über den Sommer-/Winterzeitwechsel erzeugte Betriebsschichten aus einer Betriebszeitkonfiguration sind vollständig und eindeutig: keine Schicht doppelt, keine fehlt; die Schichtdauer ergibt sich aus absoluten Zeitpunkten (23- bzw. 25-Stunden-Tag). (CFG-021)
   2. Eine Wirksamkeitsgrenze um 02:30 Ortszeit am 25.10.2026 verlangt die Auswahl des UTC-Offsets; ohne Auswahl wird nicht gespeichert. Eine nicht existente Ortszeit wird abgewiesen. (CFG-021)
   3. Zwei Konfigurationen desselben Scopes mit überlappendem Zeitraum werden vor Veröffentlichung beanstandet; die Auflösung liefert zu jedem Zeitpunkt genau einen Wert. (CFG-021)
-  4. Ein Feiertag laut Kalender aktiviert die dafür hinterlegten Werte nur am lokalen Betriebstag der betroffenen Region.
+  4. Ein Feiertag laut Kalender aktiviert die dafür hinterlegten Werte nur am lokalen Betriebstag der betroffenen Region; derselbe Tag ist im Schichtkalender aus WP-M7d-11 als Feiertag gekennzeichnet (eine Quelle, kein abweichender zweiter Bestand).
   5. Die aktuelle Ansicht zeigt verwendete Version und lokalen Betriebstag (PH-AT-018).
 - **Tests:** positiv: Herbst- und Frühjahrsumstellung, Feiertag, Fahrt über Mitternacht. negativ: mehrdeutige Zeit ohne Offset, nicht existente Zeit, Überlappung, Ende vor Beginn. konkurrierend (Datentrennung/Sicherheit): zwei Veröffentlichungen mit angrenzenden Intervallen parallel – keine Überlappung und keine Lücke. Besteht den Konfigurationsteil von PH-AT-018; trägt zu E2E-102 bei.
 - **Abhängigkeiten:** intern: WP-M8d-02, WP-M8d-05.
   - extern: WP-M4-03, WP-M4-10 (Zeitrechnung über Mitternacht, Zeitzone und DST; Schichtmodell)
   - extern: WP-M1-09 (Organisationsstruktur Regionen)
-  - extern: WP-M8c-33 (Berichtsanteil des Tests E2E-102 (Berichte über Mehrregion))
-  - extern: UNGEDECKT – Führung des Gesamttests E2E-102 (Kalender, Logs, Berichte über Mehrregion); M8c liefert nur den Berichtsanteil, eine führende Einheit ist nicht benannt
+  - extern: WP-M7d-11 (Kalender-Leseport: Feiertage und betriebliche Sondertage je Ort und Datum als einzige Feiertagsquelle des Kalenderdienstes)
+- **Vollabnahme erst mit:** WP-M8d-32, WP-M8c-33 (Gesamttest E2E-102 über Kalender, Logs, Schichten und Berichte in mehreren Regionen: geführt in WP-M8d-32, Berichtsanteil aus WP-M8c-33; in diesem WP wird CFG-021 an Konfigurationsauflösung, Kalenderdienst und den aus der Betriebszeitkonfiguration erzeugten Schichten des Fixtures nachgewiesen)
 - **Entscheidungen:** D-05 (Regionen, Zeitzonen des Pilots) – nur Produktivwerte.
 - **Größe:** M
 - **Nicht im Umfang:** Arbeitszeitberechnung (M4/M7d); Berichtsperioden (M8c).
@@ -407,10 +408,12 @@
   2. SLA-Ziele und Ausnahmeregeln sind versioniert; nach Änderung der Pünktlichkeitsschwelle für die nächste Saison liefert der Bericht der alten Periode unverändert den alten Grenzwert und Wert. (CFG-016)
   3. Liegt ein Grenzwertwechsel in der Berichtsperiode, weist der Bericht beide Teilzeiträume mit jeweiligem Grenzwert aus statt eines gemischten Werts.
   4. Eine angewandte Ausnahmeregel ist am Bericht mit Anzahl ausgeschlossener Fälle und Regelversion ausgewiesen; Nenner 0 ergibt „nicht berechenbar“.
+  5. Abgrenzung des Nachweises: Die Kriterien 1 bis 4 werden in diesem WP an Metrik-API, Berichtsjob und UI-19 mit dem Fixture „Schwellenwechsel zur nächsten Saison“ nachgewiesen; der Referenztest E2E-103 als Ganzes wird erst in der führenden Suite der Einheit M8c nachgewiesen (siehe „Vollabnahme erst mit“).
 - **Tests:** positiv: Bericht vor und nach Schwellenwechsel. negativ: rückwirkende Schwellenänderung für abgeschlossene Periode wird nicht auf den historischen Stand angewendet; Bericht für fremden Mandanten. konkurrierend (Datentrennung): Berichtslauf parallel zur Veröffentlichung einer neuen Schwelle – jeder Bericht ist konsistent zu genau einer Version je Zeitraum. Trägt zu E2E-103 und PH-AT-018 bei.
 - **Abhängigkeiten:** intern: WP-M8d-03, WP-M8d-05.
   - extern: WP-M4-46, WP-M4-53, WP-M4-54 (Kennzahlregister mit Definitionsversion, Pünktlichkeitskennzahlen)
-  - extern: WP-M8c-22, WP-M8c-27, WP-M8c-33 (vollständiger KPI-Katalog, Berichtsjobs, Führung von E2E-103)
+  - extern: WP-M8c-22, WP-M8c-27 (vollständiger KPI-Katalog über `/v1/analytics/metrics`, Berichtsjobs über `/v1/reports/jobs`)
+- **Vollabnahme erst mit:** WP-M8c-33 (die Gate-Suite der Einheit M8c führt E2E-103 und bindet das Beitragsszenario dieses WPs ein; sie ist Abnehmer, kein Bau-Vorbedarf)
 - **Entscheidungen:** D-05 (SLA-Zielwerte des Pilots) – nur Produktivwerte.
 - **Größe:** M
 - **Nicht im Umfang:** KPI-Berechnung selbst (M4/M8c); vertragliche SLA mit Partnern (M6).
@@ -631,7 +634,7 @@
   - API: Alarmliste liefert das Kennzeichen; Versuch, eine solche Regel zu unterdrücken oder zu deaktivieren, 422.
   - Oberfläche: UI-07 – kritischer Ausfall als fest angehefteter Eintrag oberhalb aller Filter; Filter „Rauschen ausblenden“ blendet ihn nicht aus.
   - Konfigurationsparameter: `alert_escalation_delay_min` (Katalog: „kritische Ereignisse ohne Verzögerung“), `notification_quiet_hours` (Katalog: „Sicherheitsalarme ausgenommen“), `vehicle_unavailability_alert_min` (Katalog: „kritische Ausfälle sofort melden“).
-- **Detailverträge vorab:** abschließende Liste der kritischen technischen Ausfalltypen (OP-23); Schnittstelle zur Plattformüberwachung aus M5.
+- **Detailverträge vorab:** abschließende Liste der kritischen technischen Ausfalltypen (OP-23); Schnittstelle zur Plattformüberwachung aus M5 (Übergabe technischer Alarme an `business_alert` aus WP-M5-04; eine darüber hinausgehende Betriebsüberwachung ist für P2 nicht gefordert und wird nicht vorausgesetzt).
 - **Akzeptanzkriterien:**
   1. Ein systemischer Dispositionsausfall bleibt bei aktivem Rauschfilter und aktivem Unterdrückungsfenster im Alert-Center sichtbar und wird der Bereitschaft zugestellt. (AUT-009)
   2. Eine Mandantenkonfiguration, die einen kritischen technischen Alarmtyp unterdrückt, stummschaltet oder dessen Regel deaktiviert, wird vor Veröffentlichung abgewiesen. (AUT-009)
@@ -641,7 +644,8 @@
 - **Tests:** positiv: Dispositionsausfall bei aktivem Filter. negativ: Unterdrückungsregel auf kritischen Typ, Deaktivierung durch Mandantenadmin, Quittieren ohne Berechtigung. konkurrierend (Sicherheit): Aktivierung eines Rauschfilters parallel zum Ausfallereignis – Alarm bleibt sichtbar.
 - **Abhängigkeiten:** intern: WP-M8d-16, WP-M8d-23.
   - extern: WP-M5-04 (Alerting für kritische Fehlerszenarien und Monitoring)
-  - extern: UNGEDECKT – erweiterte NFR-/Betriebsüberwachung; in M8e kein lieferndes WP
+  - extern: WP-M5-03 (Metriken, Traces und Logs je Komponente als Signalquelle der technischen Alarmtypen)
+  - extern: WP-M8b-27 (Partnerausfallsignal: Circuit Breaker und `PARTNER_UNAVAILABLE` je Partner)
 - **Entscheidungen:** D-11 (Notbetriebs-/Eskalationsprozess) – blockiert nur die Produktivbesetzung der Empfänger.
 - **Größe:** S
 - **Nicht im Umfang:** technische Ursachenbehebung, Failover (M5/M8e).
@@ -660,14 +664,15 @@
 - **Akzeptanzkriterien:**
   1. Ein Tankbeleg mit Literzahl über `fuel_max_liters` des Fahrzeugs führt zu genau einem offenen Prüfcase; der Beleg samt Original (Hash unverändert) bleibt erhalten und ist am Prüfcase verknüpft. (AUT-005)
   2. Der Beleg wird weder verworfen noch automatisch freigegeben oder gebucht; ohne Entscheidung im Prüfcase entsteht kein gebuchtes Kostenereignis. (AUT-005)
-  3. Der Prüfcase zeigt Limit, Istwert, Berechnungsbasis und Regelversion (E2E-070: „Warnung mit Berechnungsbasis, kein unbemerkter Datenverlust“).
+  3. Der Prüfcase zeigt Limit, Istwert, Berechnungsbasis und Regelversion (E2E-070: „Warnung mit Berechnungsbasis, kein unbemerkter Datenverlust“). In diesem WP wird das am einzelnen Tankereignis nachgewiesen; die Verbrauchswarnung über Perioden und E2E-070 als Ganzes erst mit dem Kontrollbericht der Einheit M8a (siehe „Vollabnahme erst mit“).
   4. Ein Tankkartenimport und ein Belegscan derselben Tankung erzeugen zusammen nur einen Prüfcase.
   5. Die Entscheidung im Prüfcase (plausibel/korrigiert/abgelehnt) ist begründet und protokolliert.
   6. Ein vom Fahrer offline erfasster Tankbeleg über Limit geht bei der Synchronisierung nicht verloren und wird nicht abgewiesen: Er erzeugt denselben Prüfcase, der Fahrer sieht „zur Prüfung“ statt einer Fehlermeldung.
 - **Tests:** positiv: Tankung unter und über Limit. negativ: Limit fehlt (Hinweis statt Blockade), Fremdfahrzeug, Prüfcase-Entscheidung durch den Einreicher selbst. konkurrierend (Geld): doppelte Zustellung desselben Tankereignisses – ein Prüfcase, keine doppelte Kostenwirkung; Freigabe-POST parallel zur Prüfcase-Erzeugung – keine Buchung vor Entscheidung. Trägt zu E2E-070 bei; PH-AT-012 (ein Kostenursprung trotz Tankkarte und Belegscan) bleibt grün.
 - **Abhängigkeiten:** intern: WP-M8d-20, WP-M8d-22, WP-M8d-33.
   - extern: WP-M4-23, WP-M4-30, WP-M4-31 (Tankbeleg-Fachdaten und Tankplausibilität, unveränderliches Original)
-  - extern: WP-M8a-06, WP-M8a-14, WP-M8a-36 (Tankkartenimport, Belegstatusautomat, Kontrollberichte Kraftstoff und Führung von E2E-070)
+  - extern: WP-M8a-06, WP-M8a-14 (Belegstatusautomat, Tankkartenimport)
+- **Vollabnahme erst mit:** WP-M8a-36 (Kontrollberichte Kraftstoff führen E2E-070; der Prüfcase aus diesem WP ist dort Beitragsszenario, die Periodenauswertung ist hier ausdrücklich nicht im Umfang – kein Bau-Vorbedarf)
 - **Entscheidungen:** D-06 – nur Produktivwerte/Prüfzuständigkeit.
 - **Größe:** M
 - **Nicht im Umfang:** Verbrauchsberechnung über Perioden (M8a/M8c); Betrugsbewertung.
@@ -696,7 +701,7 @@
   - extern: WP-M4-48, WP-M4-49, WP-M4-51 (Ablehnungscodes Kapazität/Fahrzeug/Fahrer, Nachfragetrichter)
   - extern: WP-M7b-16 (Alarm Ablehnungshäufung)
   - extern: WP-M7d-23 (Schichtangebote als Umsetzungspfad der angenommenen Empfehlung)
-  - extern: UNGEDECKT – Schichtverlängerung als Umsetzungspfad der angenommenen Empfehlung; in M7d kein lieferndes WP
+  - extern: WP-M4-15, WP-M4-19 (Schichtverlängerung als Umsetzungspfad der angenommenen Empfehlung: Änderung der Schicht mit neuer Revision und Bearbeitung in UI-12; die Empfehlung verlinkt dorthin und ändert selbst nichts)
 - **Entscheidungen:** keine
 - **Größe:** M
 - **Nicht im Umfang:** automatische Umsetzung der Empfehlung; Nachfrageprognose und Szenariosimulation (M9).
@@ -833,22 +838,23 @@
 - **Ziel:** Die M8d zugeordneten Referenztests laufen automatisiert gegen einen Build und sind mit Evidenz in `e2e.csv` eingetragen; alle 24 MUSS-Anforderungen der Einheit haben einen grünen Test.
 - **Anforderungen:** – (Enabler)
 - **Liefergegenstände:**
-  - Adapter/Worker (Tests): Szenarien in `tests/acceptance` für E2E-099 (führend); Beitragsszenarien für E2E-070 (Prüfcase mit Berechnungsbasis), E2E-102 (Konfiguration und Schichten über Sommerzeitwechsel), E2E-103 (alte SLA-Schwelle reproduzierbar); Regression PH-AT-018, E2E-096, E2E-097, E2E-098 nach Ausbau des Konfigurationsregisters; Regression PH-AT-001 (Isolation über Detail-, Listen-, Such- und Exportendpunkte) für alle in M8d neu eingeführten Endpunkte und Tabellen; Regression PH-AT-020 (Bezug AUT) nach Einführung von Ersatzvorschlägen und deaktivierbaren Automationen; Regression E2E-071, E2E-073, PH-AT-012 gemeinsam mit M8a; UI-Abnahmelauf Tastatur/Screenreader und 412-Konflikt (Kap. 06 §6.9) für UI-07 Alert-Center und UI-17 Lebenszyklus; Nachweisprotokoll je Lauf (`source_key[]`, Build, Migrationsstand, Konfigurationsrevision, Seed, Rollen, Soll/Ist, Trace-IDs; Kap. 08 §8.3).
+  - Adapter/Worker (Tests): Szenarien in `tests/acceptance` für E2E-099 (führend) und E2E-102 (führend: Gesamtszenario „Mehrregion Zeitzone“ mit zwei Regionen, Gebietsgrenze, Fahrt über Mitternacht und Sommerzeitwechsel; bindet den Berichtsanteil aus WP-M8c-33, die Schichtkennzeichnung aus WP-M7d-11 und die Darstellung aus WP-M8e-06 als Teilszenarien ein und prüft Kalender, Logs/Audit-Zeitstempel und Schichten gegeneinander); Beitragsszenarien für E2E-070 (Prüfcase mit Berechnungsbasis), E2E-103 (alte SLA-Schwelle reproduzierbar); Regression PH-AT-018, E2E-096, E2E-097, E2E-098 nach Ausbau des Konfigurationsregisters; Regression PH-AT-001 (Isolation über Detail-, Listen-, Such- und Exportendpunkte) für alle in M8d neu eingeführten Endpunkte und Tabellen; Regression PH-AT-020 (Bezug AUT) nach Einführung von Ersatzvorschlägen und deaktivierbaren Automationen; Regression E2E-071, E2E-073, PH-AT-012 gemeinsam mit M8a; UI-Abnahmelauf Tastatur/Screenreader und 412-Konflikt (Kap. 06 §6.9) für UI-07 Alert-Center und UI-17 Lebenszyklus; Nachweisprotokoll je Lauf (`source_key[]`, Build, Migrationsstand, Konfigurationsrevision, Seed, Rollen, Soll/Ist, Trace-IDs; Kap. 08 §8.3).
   - Datenbank: keine neuen Tabellen.
 - **Detailverträge vorab:** Testspezifikation je Szenario mit Fixture und Erwartung; Zuordnung der Beitragsszenarien zu den führenden Einheiten M8a und M8c.
 - **Akzeptanzkriterien:**
   1. E2E-099 besteht: gehäufte Kapazitätsablehnungen in einem Gebiet erzeugen einen zentralen Alert und einen Kapazitätsvorschlag.
-  2. Die Beitragsszenarien zu E2E-070, E2E-102 und E2E-103 bestehen und sind in den führenden Suiten referenziert.
+  2. Die Beitragsszenarien zu E2E-070 und E2E-103 bestehen und sind in den führenden Suiten referenziert.
+  8. E2E-102 besteht als Gesamttest: Bei Fahrten über Gebietsgrenze, Mitternacht und Sommerzeitwechsel stimmen Kalender (lokaler Betriebstag, Feiertag), Logs/Audit (absolute Zeitpunkte mit Offset) und Schichten (absolute Dauer, keine doppelte oder fehlende Schicht) überein; die Teilszenarien der Einheiten M8c, M7d und M8e sind im Nachweisprotokoll referenziert.
   3. PH-AT-018 sowie E2E-096 bis E2E-098 bestehen weiterhin (keine Regression des M1-Verhaltens); PH-AT-001 besteht für jeden neuen M8d-Endpunkt und jede neue M8d-Tabelle unter der Runtime-Rolle; PH-AT-020 besteht weiterhin.
   4. Jede der 24 MUSS-Anforderungen dieser Einheit ist in `arbeitspakete.csv` mit mindestens einem grünen Testfall verknüpft; die drei SOLL-Anforderungen sind getestet oder mit Beschluss zurückgestellt.
   5. Jede Invariante aus Kap. 04 §4.5, die M8d berührt (keine Cross-Tenant-Referenz, kein Kontext → keine Zeile, nicht überlappende aktive Policy-/Dienstversion, Grantwiderruf sofort wirksam, genau eine Kostenwirkung), ist durch mindestens einen Negativtest mit zwei parallelen Transaktionen nachgewiesen und im Nachweisprotokoll dem WP zugeordnet.
   6. Der UI-Abnahmelauf (Tastatur, Screenreader, Zustände leer/Fehler/keine Rechte/veraltet) besteht für Alert-Center und Konfigurationslebenszyklus.
   7. `e2e.csv` wird ausschließlich aus dem Testlauf mit Build-ID befüllt; Evidenz enthält keine unnötigen Personen- oder Personaldaten.
 - **Tests:** positiv: vollständiger Suite-Lauf. negativ: absichtlich verletzte Erwartung markiert das Gate rot. konkurrierend: Suite läuft mit zwei Mandanten parallel ohne gegenseitige Beeinflussung.
-- **Abhängigkeiten:** intern: WP-M8d-04 bis WP-M8d-31, WP-M8d-33, WP-M8d-34.
+- **Abhängigkeiten:** intern: WP-M8d-04 bis WP-M8d-31, WP-M8d-33, WP-M8d-34, WP-M8d-35.
   - extern: WP-M8a-36, WP-M8a-38 (führende Suite E2E-070)
   - extern: WP-M8c-33 (führende Suite E2E-103; Berichtsanteil E2E-102)
-  - extern: UNGEDECKT – führende Suite E2E-102; M8c liefert nur den Berichtsanteil, eine führende Einheit ist nicht benannt
+  - extern: WP-M7d-11, WP-M8e-06 (Teilszenarien E2E-102: Schicht- und Feiertagskennzeichnung über Mitternacht/Sommerzeitwechsel; Darstellung von Kalender- und Zeitangaben)
   - extern: WP-M8b-26 (Ende-zu-Ende-Testkatalog mit automatischer CI-Protokollierung)
 - **Entscheidungen:** keine für den Bau; D-06, D-07, D-11 für die Produktivschaltung der betroffenen Regeln.
 - **Größe:** M
@@ -902,6 +908,30 @@
 - **Größe:** M
 - **Nicht im Umfang:** Erkennen und Nachholen versäumter Ausführungen mit Protokoll in der Oberfläche (WP-M8d-29); Berichtspläne (WP-M8c-29); die fachlichen Regeln selbst.
 
+### WP-M8d-35 – Änderungsebenen Betreiber, Konzernadmin, Plattformbetreiber im Rollenkatalog
+- **Ziel:** Die drei Änderungsebenen aus `LH-I.7-CFG-018` sind als Rollencodes mit Funktionsscopes im Rollenkatalog vorhanden, sodass die Berechtigungsmatrix der Parameter (WP-M8d-07) auf prüfbaren Rollen aufsetzt. Kein lieferndes WP in M1, M6b oder M8e enthält eine Konzernebene.
+- **Anforderungen:** – (Enabler)
+- **Liefergegenstände:**
+  - Backend: Modul `identity` – Ergänzung des Rollenkatalogs aus WP-M1-07 um den Rollencode „Konzernadmin“ (Arbeitsname) sowie Zuordnung der bestehenden Rollen Administrator (Ebene Betreiber) und Plattformadministration (WP-M6b-19, Ebene Plattformbetreiber) zu den drei Änderungsebenen; Funktionsscopes für Konfigurationsentwurf je Ebene (Arbeitsnamen im Detailvertrag); die Rolle „Konzernadmin“ wirkt ausschließlich über je Mandant erteilte Mitgliedschaften (WP-M1-06) und begründet keinen mandantenübergreifenden Zugriff (Kap. 04 §4.1).
+  - Datenbank: Erweiterung des zulässigen Wertebereichs von `membership.role_code`; Matrixzeilen der neuen Rolle in der versionierten Rechtematrix (Testgerüst aus WP-M1-07).
+  - API: `/v1/me` weist die Änderungsebene der aktiven Rolle aus (Detailvertrag); keine neuen Pfade.
+  - Oberfläche: UI-18 – Rolle „Konzernadmin“ in der Rollenvergabe eines Mandanten auswählbar.
+- **Detailverträge vorab:** Rollencode und Scope-Namen; Zuordnung Rolle → Änderungsebene; gekennzeichnete Fixture-Annahme zum Umfang der Konzernrolle (OP-06).
+- **Akzeptanzkriterien:**
+  1. Der generierte Rechtematrixlauf aus WP-M1-07 enthält die Rolle „Konzernadmin“ und führt jede für sie erlaubte und verweigerte Tätigkeit aus; eine Route ohne Matrixeintrag für die neue Rolle lässt den Build scheitern.
+  2. Ein Nutzer mit der Rolle „Konzernadmin“ in den Mandanten A und B erhält in Mandant C ohne Mitgliedschaft dieselbe Antwort wie für eine nicht vorhandene Ressource; der Wechsel zwischen A und B ist ein geprüfter serverseitiger Kontextwechsel.
+  3. Die Rolle erhält ohne gesonderte Zuweisung keinen Zugriff auf Felder der Klassen PII/HR/Finanzen.
+  4. Jede Rolle ist genau einer der drei Änderungsebenen oder keiner zugeordnet; die Zuordnung ist versioniert und über `/v1/me` für die aktive Rolle abrufbar.
+  5. Vergabe und Entzug der Rolle sind auditiert; nach Entzug ist der Zugriff spätestens mit der nächsten Anfrage beendet.
+- **Tests:** positiv: Vergabe der Rolle in zwei Mandanten, Matrixlauf. negativ: Zugriff auf dritten Mandanten, manipulierter Mandantenheader, Vergabe durch Rolle ohne Vergaberecht, Rollencode außerhalb des Katalogs. konkurrierend (Sicherheit): Entzug der Rolle während aktiver Sitzung – Folgeanfrage verweigert. Regression AT-18, PH-AT-001.
+- **Abhängigkeiten:** intern: WP-M8d-01.
+  - extern: WP-M1-06, WP-M1-07 (Mitgliedschaft und RequestContext; Rollenkatalog, Rechtematrix und Matrix-Testgerüst)
+  - extern: WP-M6b-19 (Rolle Plattformadministration und delegierte Rollenvergabe)
+  - Klärung Auftraggeber (kein WP): fachlicher Umfang der Konzernrolle, siehe OP-06.
+- **Entscheidungen:** keine für den Bau; der fachliche Umfang der Konzernrolle (OP-06) blockiert nur die Produktivvergabe.
+- **Größe:** S
+- **Nicht im Umfang:** Berechtigungsmatrix je Parameter und ihre Anzeige (WP-M8d-07); ein eigenes Konzernobjekt oder mandantenübergreifende Leserechte (nicht vom Pflichtenheft gefordert, OP-06); Break-glass-Zugriff (WP-M6b-19).
+
 ## Offene Punkte
 
 1. **OP-01 Zuständigkeit für Parameterschemas.** Der Umsetzungsplan nennt für M8 „restliche Parameter“; welche der 80 Parameter aus `kataloge.csv` von M1, M3, M4, M6, M7, M8a, M8b oder M8d mit Schema geliefert werden, ist nirgends festgelegt (WP-M1-19 verweist pauschal auf spätere Meilensteine). WP-M8d-03 liefert die in dieser Einheit verwendeten Schemas und einen Abdeckungsbericht; die verbindliche Zuordnung ist einheitenübergreifend zu beschließen.
@@ -909,8 +939,8 @@
 3. **OP-03 Fehlende Endpunkte und Tabellen für Alarme, Regeln, Incident.** Kap. 05 §5.7 nennt nur `/v1/operator/incidents`; Pfade für Alarmliste, Quittieren/Delegieren/Erledigen, Regelrevisionen, Dry-Run, Empfehlungen, Prüfcases, Konfigurationspakete, Notfalleingriffe und Kalender fehlen. Kap. 04 §4.4 nennt für „Alerts“ nur `alert_policy_revision`, `business_alert`, `alert_acknowledgement`; eine Incident-, Workflow-, Prüfcase- oder Empfehlungstabelle fehlt (Baustein laut Matrix: „Workflow; Alert; Incident; Rule Revision“). Verhältnis Alarm ↔ Incident und die Modulzuordnung des Alarm-/Workflowbausteins (in `umsetzungsplan.md` §3 kein eigenes Modul) sind zu klären; betrifft `LH-I.8-AUT-003` bis `LH-I.8-AUT-015`.
 4. **OP-04 „Simulation/Vorschau“ in `LH-I.7-CFG-008`.** Das Szenario-/Simulationsmodul (SIM) ist P3. Angenommen wird, dass „Simulation/Vorschau“ den Wirkungsbericht (`/impact`, „Vorschau auf betroffene zukünftige Angebote“, Kap. 06 §6.8) meint und keine Betriebssimulation.
 5. **OP-05 „Kritische Änderung“ und „Freigabeschwellen“ in `LH-I.7-CFG-009`.** Weder Kritikalitätsklassen noch die Form der Schwellen (Betrag, Wertänderung in Prozent, Parameterklasse) sind definiert. Zudem Spannungsverhältnis: `LH-I.7-CFG-009` spricht von einem „gewählten Zweistufenmodus“ (also wählbar), während `kernschema.sql` `CHECK(published_at IS NULL OR approved_by IS NOT NULL)` fordert und WP-M1-22 zusätzlich `approved_by <> created_by` als festen CHECK vorsieht. Ob ein einstufiger Modus mit Selbstfreigabe für unkritische Parameter zulässig ist, muss entschieden werden.
-6. **OP-06 Rolle „Konzernadmin“ in `LH-I.7-CFG-018`.** Das Pflichtenheft definiert keinen Rollenkatalog mit Konzern-/Mehrmandantenrolle; Kap. 04 §4.1 betont, dass gleicher Rechtsträger keinen Zugriff auf andere Mandanten begründet. Umfang und technische Abbildung (Mitgliedschaft je Mandant oder delegierte Rolle) sind offen. Ebenso fehlt die Klassifikation „kritischer globaler Parameter“ je Katalogeintrag.
-7. **OP-07 Feiertagskalender in `LH-I.7-CFG-021` und `LH-I.7-CFG-011`.** Kap. 04 §4.4 enthält keine Kalendertabelle; Quelle (manuelle Pflege, Import), Geltungsbereich (Land, Bundesland, Region) und Verantwortlicher sind nicht angegeben. Die Abnahme von `LH-I.7-CFG-021` bezieht sich auf Betriebsschichten; ob damit aus Betriebszeiten erzeugte Dienstschichten oder Personalschichten gemeint sind, ist nicht eindeutig.
+6. **OP-06 Klärung Auftraggeber – Rolle „Konzernadmin“ in `LH-I.7-CFG-018`.** Die Anforderung nennt die Änderungsebenen Betreiber, Konzernadmin und Plattformbetreiber; das Pflichtenheft enthält aber keinen Rollenkatalog mit Konzern-/Mehrmandantenrolle, und Kap. 04 §4.1 betont, dass gleicher Rechtsträger keinen Zugriff auf andere Mandanten begründet. Kein WP der Einheiten M1, M6b oder M8e liefert eine solche Rolle (WP-M1-07: sieben Rollen ohne Konzernebene; WP-M6b-19: delegierte Rollenvergabe und Plattformadministration). WP-M8d-35 liefert deshalb die Minimalabbildung: Rollencode „Konzernadmin“ im Rollenkatalog, wirksam ausschließlich über je Mandant erteilte Mitgliedschaften (WP-M1-06), ohne mandantenübergreifenden Zugriff. Zu klären mit dem Auftraggeber: (a) was ein „Konzern“ ist (Menge von Mandanten, Rechtsträger, Verbund) und ob er als eigenes Objekt geführt werden muss, (b) wer die Rolle vergibt und entzieht, (c) welche der 80 Parameter als „kritisch global“ gelten und welcher Ebene jeder Parameter zugeordnet ist. Bis dahin verwenden WP-M8d-07 und WP-M8d-35 eine gekennzeichnete Fixture-Matrix. Hinweis: Das Pflichtenheft kennt „organisatorische Unternehmensgruppen“ nur in `LH-I.4-MUL-024` (SOLL, P3, Konzernübersichten; WP-M9b-50 in M9). Diese Anforderung bleibt in ihrer Einheit; sie liefert Leseübersichten und keine Änderungsrechte an Parametern, deckt die Klärung (a) bis (c) also nicht ab, ist aber bei der Antwort zu (a) mit zu berücksichtigen, damit P2-Rolle und P3-Gruppenobjekt denselben Konzernbegriff verwenden.
+7. **OP-07 Feiertagskalender in `LH-I.7-CFG-021` und `LH-I.7-CFG-011`.** Kap. 04 §4.4 enthält keine Kalendertabelle; Quelle (manuelle Pflege, Import), Geltungsbereich (Land, Bundesland, Region) und Verantwortlicher sind nicht angegeben. Die Abnahme von `LH-I.7-CFG-021` bezieht sich auf Betriebsschichten; ob damit aus Betriebszeiten erzeugte Dienstschichten oder Personalschichten gemeint sind, ist nicht eindeutig. Festgelegt für die Planung: Es gibt genau eine Quelle für Feiertage und betriebliche Sondertage, den Kalender aus WP-M7d-11 (`LH-6.23-SCH-019`) mit Leseport; WP-M8d-08 hängt davon ab, liest die Feiertage über diesen Port und führt in `operating_calendar`/`calendar_exception_day` nur Kalenderzuordnung und konfigurationsbezogene Ausnahmetage (vgl. M7d, Offene Punkte 22). Damit prüft E2E-102 in WP-M8d-32 Kalender und Schichten gegen denselben Bestand.
 8. **OP-08 Rollstuhlplätze je Dienst in `LH-I.7-CFG-012`.** `kataloge.csv` enthält keinen Parameter für dienstbezogene Rollstuhlplätze oder eine Rollstuhlreserve (nur `wheelchair_boarding_sec` auf Ebene Fahrzeugtyp und `min_capacity_reserve` in „Plätzen“). Ein neuer Parameter wäre eine Katalogerweiterung. Auch das Zusammenwirken der Reserven zweier Dienste auf demselben Fahrzeug ist nicht geregelt.
 9. **OP-09 Rabatt- und Erstattungsregeln in `LH-I.7-CFG-011`.** Kap. 04 §4.4 nennt `tariff_revision`, `tariff_rule`, `fare_component`, `refund_case`, aber keine eigene Regeltabelle für Rabatte und Erstattungen und keine Struktur für Ausnahmetage. Vorrangregel Ausnahmetag/Intervall fehlt.
 10. **OP-10 Vier Freigabearten in `LH-I.7-CFG-010`.** `cooperation_grant` kennt `actions`, `service_refs`, `allowed_fields`, `purpose`; eine Unterscheidung nach Daten-, Service-, Tarif- und Zahlungsfreigabe ist dort nicht modelliert. Die Parameter `sharing_visibility_level` und `interoperator_bookings` decken nur Daten- und Buchungsfreigabe ab; für Tarif- und Zahlungsfreigabe existiert kein Katalogparameter. Abgrenzung zu WP-M6b-05 ist abzustimmen.
@@ -926,16 +956,16 @@
 20. **OP-20 Ereignistypen, Schweregrade, Zuständigkeit in `LH-I.8-AUT-003`.** Ein Katalog der Ereignistypen und Schweregrade sowie ein Datenmodell für „Zuständigkeit“ fehlen. Unklar ist die Behandlung von Diensten, die mehrere Gebiete bedienen.
 21. **OP-21 Dry-Run-Kriterium in `LH-I.8-AUT-010`.** Herkunft der „Beispieldaten“ (synthetisch, anonymisierte Echtdaten) und das Bestehenskriterium sind nicht festgelegt; bei Echtdaten greifen Datenschutzvorgaben.
 22. **OP-22 Prioritätsmodell und Kategorien in `LH-I.8-AUT-004`.** Prioritätsstufen und deren Ableitung sind nicht definiert; `business_alert` hat laut Kap. 04 §4.4 weder Kategorie noch Delegationsziel. Abgrenzung zu WP-M3-52 (Quittierung) und WP-M7b-16 (automatische Alarme) ist abzustimmen, damit Quittierlogik nicht doppelt entsteht.
-23. **OP-23 Kritische technische Ausfälle in `LH-I.8-AUT-009`.** Eine abschließende Liste fehlt (genannt wird nur der systemische Dispositionsausfall). Unklar ist die Schnittstelle zwischen technischer Plattformüberwachung (WP-M5-04) und fachlichem Alert-Center.
+23. **OP-23 Kritische technische Ausfälle in `LH-I.8-AUT-009`.** Eine abschließende Liste fehlt (genannt wird nur der systemische Dispositionsausfall). Die Signalquellen sind gedeckt: Telemetrie je Komponente (WP-M5-03), technische Alarmregeln mit Übergabe an `business_alert` (WP-M5-04: Kernbuchung, Outbox-Stau, Routing-Worker, PSP) und Partnerausfall über Circuit Breaker (WP-M8b-27). Eine „erweiterte NFR-/Betriebsüberwachung“ in M8e wird nicht benötigt; die NFR-Anforderungen von M8e (`LH-6.19-NFR-010` bis `-020`) betreffen keine Überwachung. Offen bleibt nur die fachliche Liste der Ausfalltypen, die als nicht unterdrückbar gelten.
 24. **OP-24 Zähllogik und Szenario in `LH-I.8-AUT-006`.** Die Abnahme spricht von „vier aufeinanderfolgenden Ablehnungen“, der Parameter `capacity_reject_alert_count` gilt je „Gebiet/Zeitfenster“ mit „Mindeststichprobe festlegen“; E2E-099 spricht von „häufen sich“. Ob aufeinanderfolgend, im Zeitfenster oder als Quote gezählt wird, ist zu entscheiden. Inhalt des „Szenarios“ ohne das P3-Simulationsmodul ist nicht beschrieben. Überschneidung mit dem Alarm „Ablehnungshäufung“ aus WP-M7b-16.
 25. **OP-25 Fristarten in `LH-I.8-AUT-007`.** Der Katalog kennt nur `inspection_warning_days` (HU/Prüffrist, Ebene Mandant) und `maintenance_reminder_km`; für Leasing- und kalenderbasierte Werkstattfristen fehlt ein Vorwarnparameter. Die „30 Tage“ der Abnahme sind ein Beispielwert. Überschneidung mit den Eskalationen aus WP-M8a-25 und den Wartungsregeln aus WP-M8a-24 ist abzugrenzen.
 26. **OP-26 Nachholpolicy in `LH-I.8-AUT-013`.** „Kontrolliert ausgeführt“ ist nicht definiert: automatisch oder nach Bestätigung, in welcher Reihenfolge, mit welcher Obergrenze, mit welchem Datenstand. Der „nächtliche Report“ selbst gehört zu M8c.
 27. **OP-27 „Ungeklärte Buchungen“ in `LH-I.8-AUT-012`.** Der Begriff ist nicht definiert (offene Prüfcases, nicht freigegebene Belege, fehlende Belege, unzugeordnete Kosten, Clearingdifferenzen?). Ob eine nicht leere Liste den Abschluss sperrt oder nur dokumentiert wird, ist mit WP-M8a-18 und D-06 abzustimmen.
 28. **OP-28 „Schadenfreigabe“ in `LH-I.8-AUT-015`.** Unklar, ob die technische Wiederfreigabe des Fahrzeugs nach Schaden, die Freigabe der Schadenmeldung oder die Kostenfreigabe einer Reparatur gemeint ist; angenommen wird die Wiederfreigabe (`/v1/vehicles/{id}/release`). Form und Ablageort des „dokumentierten sicheren manuellen Ersatzablaufs“ sind nicht vorgegeben.
-29. **OP-29 Gate-Zuordnung.** Von den M8-Gate-Tests ist nur E2E-099 eindeutig dieser Einheit zuzuordnen. Kein Referenztest deckt Paketexport (`LH-I.7-CFG-019`), Notfallmodus (`LH-I.7-CFG-022`), Berechtigungsmatrix (`LH-I.7-CFG-018`), Dry-Run (`LH-I.8-AUT-010`) oder Nachholausführung (`LH-I.8-AUT-013`) ab; deren Nachweis erfolgt ausschließlich über die Akzeptanzkriterien der jeweiligen WPs.
+29. **OP-29 Gate-Zuordnung.** Von den M8-Gate-Tests ist nur E2E-099 im Meilensteinplan eindeutig dieser Einheit zuzuordnen. Für E2E-102 (Kalender, Logs, Schichten über Mehrregion und Sommerzeitwechsel) benennt der Meilensteinplan keine führende Einheit; dieser Plan legt die Führung in WP-M8d-32 (Begründung: `LH-I.7-CFG-021` und WP-M8d-08 tragen die Zeitzonen-/Kalenderauflösung; Teilszenarien kommen aus WP-M8c-33, WP-M7d-11 und WP-M8e-06). Kein Referenztest deckt Paketexport (`LH-I.7-CFG-019`), Notfallmodus (`LH-I.7-CFG-022`), Berechtigungsmatrix (`LH-I.7-CFG-018`), Dry-Run (`LH-I.8-AUT-010`) oder Nachholausführung (`LH-I.8-AUT-013`) ab; deren Nachweis erfolgt ausschließlich über die Akzeptanzkriterien der jeweiligen WPs.
 30. **OP-30 Prüfcase/„Prüfworkflow“ ohne Modell.** `LH-I.7-CFG-013` („zugewiesener Prüfworkflow“) und `LH-I.8-AUT-005` („offener Prüfcase“) setzen ein Prüfobjekt voraus, das weder Kap. 04 §4.4 noch Kap. 05 §5.7 kennt. WP-M8d-33 liefert es als Enabler mit dem Arbeitsnamen `review_case`. Zu klären ist die Abgrenzung zu `approval_step`, zum Abgleich-Klärfall aus M8a (WP-M8a-14) und zum Korrekturfall des Belegstatusautomaten (WP-M8a-06) sowie die Modulzuordnung (`documents-finance` ist eine Annahme).
 31. **OP-31 Mehrere Scheduler und MUSS-auf-SOLL-Abhängigkeit.** `LH-I.8-AUT-013` (SOLL) ist die einzige Anforderung, die kalendergesteuerte Ausführung ausdrücklich fordert; die MUSS-Anforderungen `LH-I.8-AUT-007` (Fristen), `LH-I.8-AUT-008` (Eskalation) und `LH-I.7-CFG-022` (Befristung) brauchen sie jedoch. WP-M8d-34 liefert deshalb die planmäßige Ausführung als Enabler, WP-M8d-29 nur Versäumniserkennung und Nachholen. Daneben baut WP-M8c-29 einen eigenen „Scheduler mit Lease; Nachholregel nach Ausfall“ für Berichte, und M3 enthält eine zeitgesteuerte Schwellenauswertung. Ob ein gemeinsamer Ausführungskern entsteht und welche Einheit ihn liefert, ist einheitenübergreifend zu beschließen; der „nächtliche Report“ der Abnahme von `LH-I.8-AUT-013` wäre sonst von zwei Nachholregeln betroffen.
 32. **OP-32 Scope-Arten und globale Zeilen in `config_revision`.** `kernschema.sql` definiert `scope_id uuid NOT NULL` und `tenant_id uuid NOT NULL`. Die Ebenen laut `kataloge.csv` (Rechtsraum, Belegart, Mandant/Rolle, Alerttyp, Gebiet/Zeitfenster) haben teils keine UUID-Entität; Rechtsraumvorlagen (`LH-I.7-CFG-014`) und systemische Regeln sind mandantenübergreifend. Abbildung über den Plattformmandanten (M1 OP-08) und über Stammdatenzeilen je Scope-Art ist eine Annahme und im Detailvertrag festzulegen; betrifft auch `LH-I.7-CFG-015`, `LH-I.7-CFG-013`, `LH-I.8-AUT-009`.
 33. **OP-33 Aufbewahrung und Löschung.** Für Alarme, Quittierungen, Ausführungsprotokolle, Notfalleingriffe, Vorschläge, Empfehlungen und Konfigurationspakete nennt das Pflichtenheft keine Fristen. Personalalarme und Delegationen enthalten Beschäftigtendaten, Kapazitätsempfehlungen verweisen auf `travel_attempt`. Aufbewahrungsklassen, Legal Hold und Auskunftsumfang sind mit M8e (WP-M8e-15) und D-10 abzustimmen; betrifft `LH-I.8-AUT-004`, `LH-I.8-AUT-006`, `LH-I.7-CFG-022`.
 34. **OP-34 Offline erfasste Belege und Pflichtfelder.** Für `LH-I.7-CFG-015` und `LH-I.8-AUT-005` ist nicht geregelt, gegen welche Feldmengen- bzw. Limitrevision ein offline erfasster Beleg geprüft wird (Erfassungszeitpunkt oder Synchronisierung) und was der Fahrer bei nachträglich fehlendem Pflichtfeld sieht. WP-M8d-25 legt nur fest, dass der Beleg nicht verloren geht; die Revisionsregel gehört in den Detailvertrag von WP-M8d-13.
-35. **OP-35 Reihenfolgekonflikt: Zyklus WP-M8d-05 ↔ WP-M8b-28 innerhalb von M8.** Reihenfolgekonflikt: WP-M8d-05 hängt extern von WP-M8b-28 (Verantwortliche und Rollback-Anweisung produktionskritischer Regeln) ab, während WP-M8b-28 seinerseits von WP-M8d-05 (Entwurf, Vorschau, Freigabe, Rücknahme und Wirkungsbericht der Konfiguration) abhängt (siehe M8b, Offener Punkt 27); über WP-M8d-05 ist auch WP-M8d-21 → WP-M8b-28 betroffen. Die Abhängigkeit wurde bei der Auflösung nicht verbogen; welche Einheit die Verantwortlichen-/Rollback-Felder zuerst liefert bzw. wie die Lieferung geschnitten wird, ist einheitenübergreifend zu beschließen.
+35. **OP-35 Aufgelöst – Reihenfolge WP-M8d-05 → WP-M8b-28.** Der Konfigurationslebenszyklus (WP-M8d-05) ist ohne das Register der Verantwortlichen baubar und wird zuerst geliefert; WP-M8b-28 (Verantwortliche, Reviewpflicht, Rollback-Anweisung produktionskritischer Regeln, `LH-I.11-GOV-010`) setzt darauf auf und behält die Bauabhängigkeit auf WP-M8d-05. WP-M8d-05 führt WP-M8b-28 nur noch unter „Vollabnahme erst mit“ (siehe M8b, Offener Punkt 27). Ebenso aufgelöst: WP-M8d-02 führt WP-M8e-15 (Abnehmer der Löschklassen) unter „Vollabnahme erst mit“ statt als Bauabhängigkeit.

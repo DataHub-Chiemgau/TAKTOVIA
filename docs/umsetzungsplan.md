@@ -4,7 +4,7 @@
 
 Grundlage: [Pflichtenheft V0.1](pflichtenheft.md) vom 25.10.2026 mit seinen Anhängen. Dieser Plan beschreibt, in welcher Reihenfolge und mit welchen Nachweisen alle 672 Anforderungen umgesetzt werden. Er ändert weder Phasen noch Prioritäten des Lastenhefts. Im Repository liegt bisher ausschließlich Dokumentation; es existiert noch kein Anwendungscode.
 
-Jede Anforderung ist in [umsetzungsplan/arbeitspakete.csv](umsetzungsplan/arbeitspakete.csv) genau einem Meilenstein und Arbeitspaket zugeordnet. Die Datei wird von [build_zuordnung.py](umsetzungsplan/build_zuordnung.py) aus der Anforderungsmatrix erzeugt.
+Die Meilensteine sind in 810 einzeln abnehmbare Arbeitspakete (WPs) gegliedert, dokumentiert je Planungseinheit unter [umsetzungsplan/wp/](umsetzungsplan/wp/README.md). Jede Anforderung ist in [umsetzungsplan/arbeitspakete.csv](umsetzungsplan/arbeitspakete.csv) genau einem WP zugeordnet. [check_wp.py](umsetzungsplan/check_wp.py) prüft die Vollständigkeit und erzeugt diese Datei. Abschnitt 10 beschreibt Aufbau, Prüfumfang und Befunde der Feinplanung.
 
 ## 1. Überblick
 
@@ -54,7 +54,7 @@ Diese Regeln gelten ab dem ersten Commit und werden in CI geprüft, nicht erst z
 4. **Kapazität nur in PostgreSQL** (Kap. 01 §1.4): Hold und Confirm sperren Kapazitätsabschnitte in stabiler Reihenfolge. Redis ist ausschließlich Cache und Rate-Limit.
 5. **Geld ohne Gleitkomma** (Kap. 03 §2.1): `bigint` in kleinster Einheit, Largest-Remainder-Umlage, Journal je Rechtsträger und Währung ausgeglichen, Korrektur nur durch Gegenereignis.
 6. **Unbestimmtes bleibt unbestimmt** (Kap. 02 §7.3–7.4): `UNKNOWN`/`RECONCILING` werden nie zu Erfolg oder Fehler verkürzt; Timeouts lösen Abgleich aus, keine Neubuchung.
-7. **Vertrag vor Code** (Kap. 08 §8.4): Vor Umsetzung einer MUSS-Anforderung sind Verantwortlicher, Detailvertrag (OpenAPI/DDL/Zustandsautomat) und mindestens ein positiver ausführbarer Test verknüpft. Die Spalten `detailvertrag` und `testfall` in `arbeitspakete.csv` halten das fest.
+7. **Vertrag vor Code** (Kap. 08 §8.4): Vor Umsetzung einer MUSS-Anforderung sind Verantwortlicher, Detailvertrag (OpenAPI/DDL/Zustandsautomat) und mindestens ein positiver ausführbarer Test verknüpft. Jedes WP nennt dafür unter „Detailverträge vorab“ und „Tests“, was vorliegen muss.
 
 ## 3. Zielstruktur des Repositorys
 
@@ -117,7 +117,7 @@ Gate: PH-AT-001, PH-AT-011, PH-AT-017, PH-AT-018; AT-18, AT-24, AT-49, E2E-091, 
 - Passenger-Web als PWA: UI-01 bis UI-05.
 - Endpunkte: `/v1/ride-offers`, `/v1/bookings`, `/v1/services`, `/v1/service-areas`, `/v1/stops`, `/v1/payments/provider-events/{provider}`.
 
-Gate: PH-AT-004; AT-01 bis AT-05, AT-07, AT-13, AT-15, AT-19.
+Gate: PH-AT-004; AT-01 bis AT-05, AT-07, AT-13, AT-15, AT-19. AT-01 und AT-13 sind in M2 nur teilweise nachweisbar, siehe Abschnitt 10.3.
 
 ### M3 – Fahrer, Leitstelle, Fahrzeugsicherheit (48 MUSS)
 
@@ -211,7 +211,7 @@ Kein Entscheid blockiert M0–M2. Später blockieren sie konkrete Meilensteine; 
 
 - **Testpyramide:** Unit-Tests für Domänenregeln; Integrationstests gegen echtes PostgreSQL unter der Runtime-Rolle (Testcontainers); API-Contract-Tests gegen die OpenAPI-Dateien; Akzeptanzszenarien in `tests/acceptance`.
 - **Pflicht-Negativtests:** Jede Invariante aus Kap. 04 §4.5 erhält einen Test mit mindestens zwei parallelen Transaktionen. Die zwölf semantischen Contract-Fälle aus Kap. 05 §5.8 sind CI-Pflicht ab dem Meilenstein, der die betroffene Funktion liefert.
-- **Nachverfolgung:** CI bricht ab, wenn eine als umgesetzt markierte MUSS-Zeile in `arbeitspakete.csv` keinen Testfall referenziert. `e2e.csv` wird ausschließlich aus Testläufen mit Build-ID befüllt.
+- **Nachverfolgung:** `check_wp.py` läuft als CI-Pflichtschritt. Ein WP gilt erst als umgesetzt, wenn die unter „Tests“ genannten Fälle grün sind. `e2e.csv` wird ausschließlich aus Testläufen mit Build-ID befüllt.
 - **Mangelklassen** nach Lastenheft §11.3: Klasse A blockiert jedes Gate.
 
 ## 7. Risiken
@@ -247,5 +247,68 @@ Angenommene Besetzung: vier Fachteams (Plattform, Buchung/Disposition, Betrieb/M
 
 1. Diesen Plan und die Meilensteinzuordnung mit dem Auftraggeber abstimmen; D-12 und D-05 terminieren.
 2. M0 beginnen: Repository-Gerüst, CI, lokale Umgebung, Kernschema als ausführbare Migration.
-3. Detailverträge für M1 erstellen (46 Anforderungen) und in `arbeitspakete.csv` eintragen.
+3. Offene Punkte der Einheiten M0 und M1 mit dem Auftraggeber klären und die Detailverträge für M1 erstellen (46 Anforderungen, 47 WPs).
 4. Spikes durchführen und Schätzung aus Abschnitt 8 aktualisieren.
+
+## 10. Feinplanung in Arbeitspakete
+
+### 10.1 Aufbau
+
+Jede der 20 Planungseinheiten hat eine Datei unter `umsetzungsplan/wp/`. Die großen Meilensteine M6 bis M9 sind dafür in Einheiten nach Fachstrom geteilt (M6a–c, M7a–d, M8a–e, M9a–b). Der [Index](umsetzungsplan/wp/README.md) nennt je Einheit Anzahl, Größenverteilung und offene Punkte.
+
+Ein WP ist eine vertikal geschnittene Lieferung von höchstens sechs Personenwochen (S bis 1, M bis 3, L bis 6). Jedes WP nennt:
+
+- Ziel und zugeordnete Anforderungen (`source_key`)
+- Liefergegenstände mit konkreten Tabellen, Endpunkten, Bildschirmen, Parametern und Kennzahlen
+- Detailverträge, die vor Codebeginn vorliegen müssen
+- Akzeptanzkriterien, mindestens eines je Anforderung aus deren Originalabnahme
+- Tests (positiv, negativ, bei Geld, Kapazität, Sicherheit und Datentrennung auch konkurrierend) und die bedienten Referenztests
+- Bauabhängigkeiten auf andere WPs
+- „Vollabnahme erst mit“: spätere WPs, ohne die die Originalabnahme nicht vollständig nachweisbar ist. Das ist keine Bauabhängigkeit.
+- betroffene Auftraggeberentscheidungen, Größe und Abgrenzung
+
+| | Anzahl |
+|---|---:|
+| Arbeitspakete | 810 |
+| davon mit Anforderungen / reine Enabler | 632 / 178 |
+| Größe S / M / L | 124 / 645 / 41 |
+| Phase 1 (M0–M5) | 283 |
+| Phase 2 (M6–M8) | 446 |
+| Phase 3 (M9) | 81 |
+
+Die Größenklassen sind Obergrenzen. Für Phase 1 ergeben sie zusammen höchstens rund 750 Personenwochen; das liegt in der Größenordnung der Planungsannahme aus Abschnitt 8 und ersetzt keine Schätzung je WP.
+
+### 10.2 Maschinell geprüft
+
+`python docs/umsetzungsplan/check_wp.py` endet nur fehlerfrei, wenn
+
+- jede der 672 Anforderungen in genau einem WP steht und kein unbekannter Schlüssel vorkommt,
+- jedes WP alle Pflichtfelder und eine Größe S, M oder L hat,
+- jede Bauabhängigkeit auf ein existierendes WP zeigt, kein WP von einem späteren Meilenstein abhängt und kein Zyklus besteht.
+
+Zusätzlich berichtet das Skript, ob jeder der folgenden Katalogeinträge in mindestens einem WP genannt wird. Stand dieses Dokuments: alle vollständig.
+
+- 106 Originaltests und 22 PH-AT-Tests
+- 80 Parameter und 48 Kennzahlen
+- 38 Kerntabellen und die Ergänzungstabellen aus Kap. 04 §4.4
+- 14 OpenAPI-Pfade und der Endpunktkatalog aus Kap. 05 §5.7
+- die Bildschirme UI-01 bis UI-20
+
+Die Prüfung weist nach, dass nichts aus diesen Katalogen unzugeordnet ist. Ob ein WP seine Anforderung fachlich vollständig trifft, hat je Einheit ein zweiter, unabhängiger Durchgang gegen Originalbeschreibung und Originalabnahme geprüft; eine Abnahme durch Fachverantwortliche ersetzt das nicht.
+
+### 10.3 Befunde, die den Plan betreffen
+
+- **Viele P1-Abnahmen brauchen spätere Lieferungen.** 72 WPs tragen „Vollabnahme erst mit“. Rund 20 der 46 M1-Anforderungen sind in M1 nur am Plattformbaustein nachweisbar, weil ihre Originalabnahme Buchung, Fahrzeug oder Zahlung voraussetzt. Der Auftraggeber muss festlegen, ob das am M1-Gate genügt oder die Endabnahme am späteren Gate nachgezogen wird.
+- **AT-13 (Parallelfahrtenverbot) ist im M2-Gate nicht vollständig erfüllbar.** Die Regel steht in P2-Anforderungen und braucht ÖPNV-Daten aus M6. M2 weist nur die Ablehnung einer per Regel gesperrten Relation nach; der Rest folgt mit WP-M6a-26, WP-M6a-29 und WP-M7a-30.
+- **AT-01 endet in M2 bei der bestätigten Buchung.** Fahrerzuweisung, Check-in und Fahrtende liefert M3.
+- **Onlinezahlung ist laut Lastenheft P2** (`LH-6.10-PAY-005`), der Plan legt PSP-Adapter und AT-15 aber in M2. Die zugehörigen WPs sind dort Enabler ohne eigene Anforderung. Das braucht eine Bestätigung nach D-12.
+- **Boarding-Code:** Der Fahrer-Check-in mit Code ist P1 (M3), die Anzeige des Codes beim Fahrgast P2 (WP-M7a-14). Der Übergabeweg im Pilot ist offen.
+- **Alarmkanal vorgezogen:** Dead-Letter- und Sicherheitsalarme in M1 brauchen einen Zustellweg vor M5; dafür wurde WP-M1-47 ergänzt.
+- **Suchindex:** Das Pflichtenheft nennt ihn als Isolations- und Löschziel, aber nicht als Baustein. Kein WP baut einen; ob einer gewünscht ist, muss geklärt werden.
+- **Zuschüsse und Konzernrolle:** Pauschale Zuschussbuchungen je Vertrag und der Umfang einer Konzernadmin-Rolle sind im Pflichtenheft nicht festgelegt.
+
+Darüber hinaus führen die WP-Dateien zusammen 711 offene Punkte, überwiegend fehlende Detailangaben im Pflichtenheft (Rechtematrix, Sicherheitsmaxima, einzelne Tabellen und Zustände, fehlende Parameter wie Angebotsgültigkeit oder Stornofristen). Sie stehen jeweils am Ende der Datei mit Bezug auf Anforderung und WP und sind Eingang für die Detailverträge.
+
+### 10.4 Pflege
+
+Änderungen erfolgen in den WP-Dateien. Danach `python docs/umsetzungsplan/check_wp.py --write` ausführen; das Skript schreibt `arbeitspakete.csv` nur bei fehlerfreier Prüfung. Die Spalten `detailvertrag`, `testfall` und `status` der CSV werden dabei neu angelegt und sind ab Umsetzungsbeginn in einem Ticketsystem oder einer getrennten Statusdatei zu führen.

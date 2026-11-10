@@ -18,7 +18,7 @@
 
 | WP-ID | Titel | Anforderungen (Anzahl) | Größe | hängt ab von |
 |---|---|---:|---|---|
-| WP-M6a-01 | Detailverträge Föderation und ÖPNV-Integration | – (Enabler) | M | WP-M0-13, WP-M0-31, WP-M5-31, WP-M6b-01, WP-M6c-01 |
+| WP-M6a-01 | Detailverträge Föderation und ÖPNV-Integration | – (Enabler) | M | WP-M0-13, WP-M0-31, WP-M5-31, WP-M6b-01 |
 | WP-M6a-02 | Schema-Migration Föderation, Hubs, Fahrplan, Capability | – (Enabler) | M | WP-M6a-01, WP-M0-15, WP-M0-18, WP-M1-01, WP-M1-09, WP-M2-03, WP-M2-04, WP-M2-05, WP-M2-09, WP-M2-22, WP-M2-23, WP-M6b-02 |
 | WP-M6a-03 | Sandbox-Partner, Testfeeds und Konformitäts-Harness | – (Enabler) | M | WP-M6a-01, WP-M0-23, WP-M0-24 |
 | WP-M6a-04 | Vertragsgate und Kooperationsfilter | 2 | M | WP-M6a-02, WP-M1-19, WP-M1-20, WP-M1-46, WP-M6b-04, WP-M6b-05, WP-M6b-06, WP-M6b-07, WP-M6b-08 |
@@ -28,10 +28,10 @@
 | WP-M6a-08 | Transfer-Hubs und Mindestumsteigezeiten | 3 | M | WP-M6a-02, WP-M1-19, WP-M1-20, WP-M1-22, WP-M2-03, WP-M2-04, WP-M2-05, WP-M6b-02, WP-M6b-10, WP-M6b-11 |
 | WP-M6a-09 | Föderierte Reiseauskunft mit Teilverfügbarkeit | 2 | L | WP-M6a-03, WP-M6a-04, WP-M6a-05, WP-M6a-07, WP-M6a-08, WP-M1-02, WP-M2-07, WP-M2-11, WP-M2-21, WP-M2-37, WP-M6b-06, WP-M6b-11, WP-M7a-11 |
 | WP-M6a-10 | Nachvollziehbares Ranking und Gebietsüberlappung | 1 | M | WP-M6a-09, WP-M1-20, WP-M1-22, WP-M6b-11 |
-| WP-M6a-11 | Angebotsdarstellung mit Betreiberausweis und Buchungsfähigkeit | 2 | M | WP-M6a-09, WP-M6a-10, WP-M2-35, WP-M2-36, WP-M2-37, WP-M2-41, WP-M2-42, WP-M2-43, WP-M6c-08 |
+| WP-M6a-11 | Angebotsdarstellung mit Betreiberausweis und Buchungsfähigkeit | 2 | M | WP-M6a-09, WP-M6a-10, WP-M2-35, WP-M2-36, WP-M2-37, WP-M2-41, WP-M2-42, WP-M2-43 |
 | WP-M6a-12 | Pseudonyme Föderationsreferenzen und minimierter Betreiberpayload | 2 | M | WP-M6a-02, WP-M1-31, WP-M1-46, WP-M6b-05, WP-M6b-09 |
 | WP-M6a-13 | Saga Teil 1: Hold und Reisekette mit Betreiberreferenzen | 2 | L | WP-M6a-04, WP-M6a-07, WP-M6a-09, WP-M6a-12, WP-M1-02, WP-M1-13, WP-M1-14, WP-M1-15, WP-M2-42, WP-M2-43, WP-M7a-11 |
-| WP-M6a-14 | Saga Teil 2: Confirm, Kompensation und Fehlerzustände | 1 | L | WP-M6a-13, WP-M2-29, WP-M2-30, WP-M2-32, WP-M2-34, WP-M6c-07, WP-M6c-14 |
+| WP-M6a-14 | Saga Teil 2: Confirm, Kompensation und Fehlerzustände | 1 | L | WP-M6a-13, WP-M2-29, WP-M2-30, WP-M2-32, WP-M2-34, WP-M6b-12 |
 | WP-M6a-15 | Reconciliation-Worker, Wiederanlauf und Leitstellenalarm | – (Enabler) | M | WP-M6a-14, WP-M1-14, WP-M1-15, WP-M3-52 |
 | WP-M6a-16 | UI-08 Reise-/Saga-Klärarbeitsplatz | – (Enabler) | M | WP-M6a-15, WP-M1-07, WP-M1-08, WP-M1-43, WP-M1-46, WP-M3-36 |
 | WP-M6a-17 | Signierte, idempotente Partnerereignisse | 1 | M | WP-M6a-13, WP-M1-12, WP-M1-14, WP-M1-16, WP-M6b-26 |
@@ -39,10 +39,10 @@
 | WP-M6a-19 | Anschlussüberwachung, Warnung und Ersatzangebot | 2 | M | WP-M6a-08, WP-M6a-09, WP-M6a-18, WP-M6a-27, WP-M2-32, WP-M2-34, WP-M3-34, WP-M3-36, WP-M3-54, WP-M4-61, WP-M4-62, WP-M6b-14, WP-M6b-27 |
 | WP-M6a-20 | Konfigurierbare Anschlussgarantie | 1 | M | WP-M6a-04, WP-M6a-19, WP-M1-19, WP-M1-20, WP-M1-22 |
 | WP-M6a-21 | Übergabeprojektion für Partnerleitstellen | 1 | M | WP-M6a-12, WP-M6a-18, WP-M3-36, WP-M6b-05, WP-M6b-09, WP-M6b-13 |
-| WP-M6a-22 | Storno, Teilstorno und teilweise gefahrene Reisen | 1 | L | WP-M6a-14, WP-M6a-15, WP-M6a-17, WP-M2-26, WP-M6c-14, WP-M6c-16, WP-M6c-20 |
-| WP-M6a-23 | Segmentbezogene Preisaufstellung mit Tarifgeber | 1 | M | WP-M6a-09, WP-M2-07, WP-M2-09, WP-M6c-06, WP-M6c-09, WP-M6c-10, WP-M6c-16 |
+| WP-M6a-22 | Storno, Teilstorno und teilweise gefahrene Reisen | 1 | L | WP-M6a-14, WP-M6a-15, WP-M6a-17, WP-M2-26, WP-M2-31 |
+| WP-M6a-23 | Segmentbezogene Preisaufstellung mit Tarifgeber | 1 | M | WP-M6a-09, WP-M2-07, WP-M2-09, WP-M6c-02 |
 | WP-M6a-24 | Prüfung externer Ticketberechtigungen | 1 | M | WP-M6a-05, WP-M6a-23, WP-M2-36, WP-M6c-11 |
-| WP-M6a-25 | Ausführungsnachweis und Abrechnungsbezug je Segment | 1 | M | WP-M6a-18, WP-M4-33, WP-M6c-19, WP-M6c-23, WP-M6c-30 |
+| WP-M6a-25 | Ausführungsnachweis und Abrechnungsbezug je Segment | 1 | M | WP-M6a-18, WP-M4-33 |
 | WP-M6a-26 | Fahrplanauskunftsadapter (GTFS statisch) mit Herkunftskennzeichnung | 1 | M | WP-M6a-02, WP-M6a-03, WP-M6a-05, WP-M2-05, WP-M6b-27 |
 | WP-M6a-27 | Echtzeitverarbeitung (GTFS-RT) versioniert, unbekannt statt pünktlich | 3 | M | WP-M6a-26, WP-M6b-27 |
 | WP-M6a-28 | ÖPNV-Alternativen und intermodale Anschlussplanung | 2 | M | WP-M6a-08, WP-M6a-09, WP-M6a-26, WP-M2-18, WP-M2-19, WP-M2-21, WP-M2-37, WP-M2-41 |
@@ -50,7 +50,7 @@
 | WP-M6a-30 | Eignungsprüfung TOMP und OSDM (Architekturprotokoll) | 1 | S | WP-M6a-05 |
 | WP-M6a-31 | TOMP-/OSDM-Adapter für buchbare Pilotpartner | – (Enabler) | L | WP-M6a-05, WP-M6a-07, WP-M6a-30 |
 | WP-M6a-32 | Partner-Sandbox-Modus und Freischaltung | 1 | M | WP-M6a-03, WP-M6a-05, WP-M6a-14, WP-M6a-19, WP-M6a-22, WP-M6b-08, WP-M6b-26, WP-M6c-14 |
-| WP-M6a-33 | Exportadapter für Mobilitätsdatenpflichten | 1 | M | WP-M6a-26, WP-M1-07, WP-M1-11, WP-M1-46, WP-M6b-31, WP-M8c-30 |
+| WP-M6a-33 | Exportadapter für Mobilitätsdatenpflichten | 1 | M | WP-M6a-26, WP-M1-07, WP-M1-11, WP-M1-46, WP-M6b-31 |
 | WP-M6a-34 | Gate-Nachweis M6a und semantische Contract-Fälle | – (Enabler) | M | WP-M6a-01 bis WP-M6a-33, WP-M5-02, WP-M5-22, WP-M6b-05, WP-M6b-07, WP-M6b-34, WP-M6c-07, WP-M6c-19, WP-M6c-23, WP-M6c-32 |
 
 ## Arbeitspakete
@@ -74,13 +74,14 @@
   4. Jeder Punkt aus „Offene Punkte" dieser Datei ist entweder entschieden oder dem Auftraggeber mit source_key vorgelegt.
   5. Jede in Kap. 04 §4.4 bzw. Kap. 05 §5.7 genannte, von M6a berührte Tabelle und jeder Pfad hat genau eine liefernde Einheit; keine Tabelle wird in M6a und M6b doppelt migriert, kein Adapter doppelt gebaut.
   6. Jeder fachliche Fehlerfall der M6a-Pfade ist einem Code aus Kap. 05 §5.4 zugeordnet (`OFFER_EXPIRED`, `HOLD_EXPIRED`, `REQUOTE_REQUIRED`, `CAPACITY_UNAVAILABLE`, `OPERATION_IN_PROGRESS`, `REVISION_MISMATCH`, `PRECONDITION_REQUIRED`, `COOPERATION_NOT_ALLOWED`, `NOT_FOUND`, `PROVIDER_UNAVAILABLE`); neue Codes sind als Ergänzung gekennzeichnet.
+  7. Nachweisabgrenzung: In diesem WP nachgewiesen werden die von M6a einseitig festgelegten Port- und Ereignisverträge zum Zahlungs- und Finanzmodul (Modul-API Authorize/Void/Status, Positionsschema Entgelt/Erstattung, Ereignisvertrag „Segment ausgeführt“) als schemagültige, gegen Stub lauffähige Verträge. Die gemeinsame Abnahme der Schnittlinie mit den Detailverträgen Zahlung/Clearing erfolgt erst mit WP-M6c-01.
 - **Tests:** positiv: Vertragsvalidierung in CI. negativ: bewusst fehlerhafte Beispiel-Payloads werden vom Schema abgewiesen.
 - **Abhängigkeiten:**
   - intern: keine
   - extern: WP-M0-31, WP-M0-13 (Detailvertragsprozess, CI-Vertragsprüfung mit `validate_artifacts.py`)
   - extern: WP-M5-31 (abgenommener P1-Stand als Ausgangsvertrag)
   - extern: WP-M6b-01 (Detailverträge Kooperation/Integration (WP-M6b-01) für die gemeinsame Schnittlinie)
-  - extern: WP-M6c-01 (Detailverträge Zahlung/Clearing (WP-M6c-01) für Confirm, Stornoangebot und Ausführungsnachweis)
+- **Vollabnahme erst mit:** WP-M6c-01 (Lieferrichtung der Schnittlinie: M6a-01 legt die Port- und Ereignisverträge für Confirm, Stornoangebot und Ausführungsnachweis zuerst fest, WP-M6c-01 baut darauf auf; die Gegenprüfung gegen die Detailverträge Zahlung/Clearing ist erst mit deren Vorliegen möglich)
 - **Entscheidungen:** D-01, D-03, D-04, D-08 blockieren nicht die Vertragsarbeit; die Verträge müssen aber alle Varianten als Konfiguration abbilden können. Blockiert nur Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Verträge für Grants/Widerruf (M6b) und Zahlung/Clearing (M6c); Implementierung.
@@ -350,11 +351,12 @@
   8. Ein bekannter externer Preis wird getrennt als „separat zu zahlen" ausgewiesen und nicht kassiert; je Kette ist erkennbar, ob Buchung, Zahlung und Ticket über die Plattform, extern oder gar nicht verfügbar sind (FED-020).
   9. Ein `external_booking_uri` ohne HTTPS oder mit ungeprüftem Ziel wird nicht ausgegeben.
   10. Die Bildschirme erfüllen 200-%-Textvergrößerung und Reflow bei 320 CSS-Pixeln; Mandant/Dienst, fachlicher Status und Datenstand sind benannt (Kap. 06 §6.1).
+  11. Nachweisabgrenzung: In M6a werden die Kriterien 1 bis 6, 9 und 10 vollständig nachgewiesen; die UI-03-Kriterien 7 und 8 (Anbieter und Rechnungsaussteller je Abschnitt, Quittierung externer Abschnitte, getrennt ausgewiesener externer Preis) auf dem Checkout-Rahmen UI-03 aus WP-M2-42. Ihr Nachweis im Mehrparteien-Checkout mit Zahlungsauswahl und Rechnungsausweis folgt mit WP-M6c-08.
 - **Tests:** positiv: Zwei-Betreiber-Angebot, gemischtes Angebot mit bekanntem und unbekanntem externem Preis. negativ: abgelaufenes Angebot, unbestätigte Barrierefreiheit, externer Link mit `http`-Ziel, fehlende Quittierung des externen Abschnitts. konkurrierend: Angebot läuft während der Anzeige in UI-02/UI-03 ab – der Kaufversuch führt zu `OFFER_EXPIRED` und neuer Suche, nicht zu einem Kauf zum alten Preis. Referenztests: ermöglicht E2E-087, PH-AT-006.
 - **Abhängigkeiten:**
   - intern: WP-M6a-09, WP-M6a-10
   - extern: WP-M2-35, WP-M2-36, WP-M2-37, WP-M2-41, WP-M2-42, WP-M2-43 (Passenger-Web UI-01 bis UI-05 als Grundlage)
-  - extern: WP-M6c-08 (Mehrparteien-Checkout in UI-03 (Zahlungsauswahl, Rechnungsausweis))
+- **Vollabnahme erst mit:** WP-M6c-08 (der Mehrparteien-Checkout in UI-03 mit Zahlungsauswahl und Rechnungsausweis setzt auf dieser Angebotsdarstellung auf; die UI-03-Kriterien sind im vollständigen Checkout erst damit nachweisbar)
 - **Entscheidungen:** D-01 (Rechnungsaussteller, Verkäufer je Dienst) und D-03 blockieren nur die Produktivschaltung des Checkout-Wortlauts.
 - **Größe:** M
 - **Nicht im Umfang:** Zahlungsabwicklung im Checkout (M6c); Reisebegleitung UI-04 (WP-M6a-18, WP-M6a-22).
@@ -442,12 +444,15 @@
   8. Scheitert eine Kompensation, entsteht ein sichtbarer Klärfall mit zuständigem Operator, Frist und Kundennachricht (`MANUAL_REVIEW`); die finanzielle Exposition ist ausgewiesen (PH-AT-008, Variante nicht stornierbar) (FED-006).
   9. Grant- und Subjektprüfung werden unmittelbar vor dem Confirm erneut ausgeführt; eine doppelte SCA-Rückkehr startet keine neue Autorisierung; rohe Zahlungsdaten erreichen die API nie.
   10. Fristen werden gegen Serverzeit mit definiertem Sicherheitsabstand geprüft; eine Preis- oder Umstiegsänderung fließt nicht still in die alte Zusage ein (PH-AT-010).
+  11. Nachweisabgrenzung: In M6a wird die Confirm-Saga gegen die Modul-API des Zahlungsmoduls (Authorize, Void, Status) auf dem Zahlungsautomaten aus WP-M2-29/WP-M2-30 im PSP-Simulator nachgewiesen: eine Autorisierung, Aufhebung bei Kompensation, Zahlung `UNKNOWN` ohne zweiten Charge. Capture nach Segmentbestätigung mit Mehrparteienzuordnung, der Fall „Capture-Fehler nach Bestätigung“ im Mehrparteien-Checkout und die Erstattung nach bereits erfolgtem Capture (PH-AT-008, Variante Capture erfolgt) werden erst mit WP-M6c-07 und WP-M6c-14 nachgewiesen.
+  12. Bei der Bestätigung eines Segments wird der Rollensnapshot des Segments über den Baustein aus WP-M6b-12 eingefroren (Verweis auf Vertrags- und Organisationsrevision); fehlt eine Pflichtrolle, wird die Bestätigung des Segments abgewiesen und die Reise nach Kriterium 1 kompensiert (`LH-I.4-MUL-010`, dort zugeordnet; hier Nachweis an der Saga).
 - **Tests:** positiv: beide Segmente bestätigt, eine Zahlung. negativ: B lehnt ab (kostenfrei kompensierbar und nicht stornierbar), Zahlungsablehnung, Betrag weicht ab (`409 REQUOTE_REQUIRED`), PSP-Timeout (Zahlung `UNKNOWN`, kein neuer Charge-Key), Capture-Fehler nach Bestätigung, Kompensation schlägt fehl, Confirm auf fremde Journey (404). konkurrierend: doppelte SCA-Rückkehr, paralleles Confirm und Hold-Ablauf, zwei Worker mit altem und neuem Fencing-Token. Referenztests: besteht mit M6c E2E-089, PH-AT-008, PH-AT-010; ermöglicht PH-AT-005; semantische Contract-Fälle „SCA länger als Hold" und „Confirm-Timeout mit spät positivem Status".
 - **Abhängigkeiten:**
   - intern: WP-M6a-13
   - extern: WP-M2-29, WP-M2-30 (PSP-Adapter mit Zahlungsautomat (Authorize, Void, Status))
-  - extern: WP-M6c-07, WP-M6c-14 (Mehrparteien-Checkout, Capture-Regel, Erstattung bei bereits erfolgtem Capture)
   - extern: WP-M2-32, WP-M2-34 (Betriebsnachrichten (Push/SMS/E-Mail))
+  - extern: WP-M6b-12 (Rollensnapshot je Segment mit Pflichtrollenprüfung, der bei der Segmentbestätigung eingefroren wird (WP-M6b-12))
+- **Vollabnahme erst mit:** WP-M6c-07, WP-M6c-14 (Mehrparteien-Checkout mit Capture-Regel und Erstattung bei bereits erfolgtem Capture setzen auf der Confirm-Saga auf; die Zahlungsvarianten „Capture erfolgt“ sind erst damit nachweisbar)
 - **Entscheidungen:** D-03 (Capturezeitpunkt, Geldfluss) und D-04 (nicht stornierbare Segmentkosten, Teilkauf) blockieren die Produktivschaltung; Bau mit Favorit „nur vollständige Kette" und Testvertrag.
 - **Größe:** L
 - **Nicht im Umfang:** automatischer Abgleich nach `UNKNOWN` (WP-M6a-15); Kundenstorno (WP-M6a-22); Mehrparteienzahlung selbst (M6c).
@@ -671,11 +676,12 @@
   7. Bei einer teilweise gefahrenen Reise bleibt die gefahrene Leistung als Entgeltposition bestehen; nur nicht erbrachte, stornierbare Segmente erzeugen Erstattungspositionen (FED-024).
   8. Ein fehlgeschlagenes Partnerstorno zeigt die verbleibende Verpflichtung und eröffnet einen Supportfall; Storno A bestätigt und B unklar führt zu Einzelstatus und Abgleich (Kap. 02 §7.4, Kap. 06 §6.4).
   9. Quote und Cancel verlangen den aktuellen Journey-ETag (`If-Match`) und einen `Idempotency-Key`; jede Stornoaktion ist mit Akteur (Fahrgast, Vertretung, Leitstelle) auditiert.
+  10. Nachweisabgrenzung: In M6a nachgewiesen werden Stornoangebot, Storno-Saga, Segment- und Reisezustände sowie die Entgelt- und Erstattungspositionen nach eingefrorener Vertragsregel samt Übergabeereignis an das Zahlungsmodul; die Zahlungsreversierung aus Kriterium 5 gegen Void/Erstattung aus WP-M2-31 im PSP-Simulator. Erstattung je Zahlungslage und Zahlungsmittel, Refund-Obergrenze, Korrekturbeleg und Provisionsrückrechnung werden erst mit WP-M6c-14, WP-M6c-16 und WP-M6c-20 nachgewiesen.
 - **Tests:** positiv: B storniert, A bleibt. negativ: abgelaufene Quote, fremde Reise (404), Storno eines bereits gefahrenen Segments, Cancel mit Quote einer anderen Reise, fehlender `If-Match` (428), Partnerstorno schlägt fehl. konkurrierend: zwei parallele Stornos derselben Reise, Storno parallel zu spätem Confirm. Referenztests: besteht mit M6c PH-AT-014, PH-AT-008 (Variante Capture erfolgt); semantischer Contract-Fall „Storno unbekannt".
 - **Abhängigkeiten:**
   - intern: WP-M6a-14, WP-M6a-15, WP-M6a-17
-  - extern: WP-M6c-14, WP-M6c-16, WP-M6c-20 (Stornierungs- und Erstattungsregeln, Teilrefund, Refund-Obergrenzen, Korrekturbeleg, Provisionsrückrechnung (WP-M6c-14, WP-M6c-20))
-  - extern: WP-M2-26 (lokales Storno im Betreiberkern)
+  - extern: WP-M2-26, WP-M2-31 (lokales Storno im Betreiberkern; Void und Erstattung nach Storno als Zahlungsreversierung hinter der Modul-API des Zahlungsmoduls)
+- **Vollabnahme erst mit:** WP-M6c-14, WP-M6c-16, WP-M6c-20 (Regelmatrix nach Zahlungslage, Erstattungsfall mit Teilrefund und Refund-Obergrenze, Korrekturbeleg und Provisionsrückrechnung verbrauchen die hier erzeugten Entgelt- und Erstattungspositionen; PH-AT-014 und PH-AT-008 in der Variante Capture erfolgt bestehen erst damit)
 - **Entscheidungen:** D-03 und D-04 blockieren die Produktivschaltung (Gebührenträger, nicht stornierbare Segmentkosten); Bau mit Testvertrag.
 - **Größe:** L
 - **Nicht im Umfang:** Geldbewegung und Settlement-Korrektur (M6c); Auslöser und Disposition eines Betreiberstornos wegen Fahrzeugausfall (M3/M7) – dessen Wirkung auf die Reisekette ist hier enthalten.
@@ -697,11 +703,13 @@
   4. Ein Subjekt- oder Berechtigungswechsel erfordert ein neues Angebot.
   5. Kundenzahlung und B2B-Provision sind getrennte Kontexte: eine vom Betreiber getragene Provision erscheint nicht als Kundenkomponente; alle Beträge eines Checkouts haben dieselbe Währung und denselben Exponenten (Kap. 05 §5.2).
   6. Die Preisaufstellung des bestätigten Auftrags entspricht dem eingefrorenen Angebot (`content_hash`); eine spätere Tarifrevision ändert sie nicht (FED-023).
+  7. Nachweisabgrenzung: In M6a werden die Kriterien 1 bis 6 für Partnertarife und Einzeltickets auf `fare_quote`/`fare_component` nachgewiesen; die Zeitkarte aus Kriterium 2 als serverseitig geprüfte Berechtigung aus einer Testfixture. Der Ausweis verteilter Rabatte, eingelöster Gutscheine und Guthaben, die Berechtigung aus dem Aggregat Tarifberechtigung und die Übereinstimmung mit dem Kundenbeleg werden erst mit WP-M6c-06, WP-M6c-09, WP-M6c-10, WP-M6c-11 und WP-M6c-16 nachgewiesen.
 - **Tests:** positiv: zwei Tarife, zwei Beförderer. negativ: nicht verifizierte Berechtigung, Währungsmischung in einem Checkout. konkurrierend: Tarifrevision wechselt zwischen Angebot und Hold (`REQUOTE_REQUIRED`). Referenztests: ermöglicht E2E-093, PH-AT-005.
 - **Abhängigkeiten:**
   - intern: WP-M6a-09
   - extern: WP-M2-07, WP-M2-09 (Tarifrevision und unveränderlicher `fare_quote`)
-  - extern: WP-M6c-06, WP-M6c-09, WP-M6c-10, WP-M6c-16 (Preiskomponenten mit Rollen und centgenauer Rabattverteilung, Tarifregeln P2, Guthaben/Gutscheine, Kundenbeleg (WP-M6c-06, WP-M6c-16))
+  - extern: WP-M6c-02 (Tabelle `fare_component` aus der Schema-Migration Zahlung P2)
+- **Vollabnahme erst mit:** WP-M6c-06, WP-M6c-09, WP-M6c-10, WP-M6c-11, WP-M6c-16 (Rollen je Preiskomponente und centgenaue Rabattverteilung, Gutscheine, Guthaben, das Aggregat Tarifberechtigung und der Kundenbeleg setzen auf der hier gelieferten Preisaufstellung auf; deren Ausweis in der Aufstellung ist erst damit nachweisbar)
 - **Entscheidungen:** D-01 und D-03 (Rechnungsaussteller, Verkäufer) blockieren nur die Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Prüfung externer Tickets (WP-M6a-24); Clearingpositionen (M6c).
@@ -749,11 +757,12 @@
   4. Informations- und extern gebuchte Segmente erzeugen keine Abrechnungsposition.
   5. Der Ausführungsnachweis ist unveränderlich; eine Korrektur erfolgt als Gegenereignis mit Bezug auf den Ursprungsnachweis (Invariante „Gegenereignis statt Änderung", Kap. 04 §4.5).
   6. Jeder Partner sieht im Abgleich nur seine eigenen Segmente und Nachweise; der Nachweis enthält keine Fahrgastdaten über den Partner-Fahrgastalias hinaus (FED-025).
+  7. Nachweisabgrenzung: In M6a werden die Kriterien 1, 3, 4 und 5 am Ausführungsnachweis und am Ereignis „Segment ausgeführt“ gegen einen Test-Consumer nach dem Ereignisvertrag zum Finanzmodul nachgewiesen (genau ein Ereignis je Segment und Revision, keines für Informations- und extern gebuchte Segmente). Der zeilenweise Abgleich mit dem monatlichen Partnerbericht und die Partnersicht darauf (Kriterien 2 und 6) werden erst mit WP-M6c-20, WP-M6c-23 und WP-M6c-30 nachgewiesen.
 - **Tests:** positiv: zwei ausgeführte Segmente, Bericht stimmt. negativ: Segment storniert, No-Show, fehlender Nachweis. konkurrierend: doppeltes Ausführungsereignis parallel. Referenztests: ermöglicht E2E-093, PH-AT-005.
 - **Abhängigkeiten:**
   - intern: WP-M6a-18
-  - extern: WP-M6c-19, WP-M6c-23, WP-M6c-30 (Verteilungsabrechnung je Segment, Clearingdatensätze und monatliche Gegenberichte, `/v1/clearing/statements`, UI-16 (WP-M6c-19, WP-M6c-23, WP-M6c-30))
   - extern: WP-M4-33 (Kostenereignis/Journal (`economic_event`))
+- **Vollabnahme erst mit:** WP-M6c-20, WP-M6c-23, WP-M6c-30 (Anspruchsledger, das aus dem Ereignis „Segment ausgeführt“ die `settlement_line` nach der Verteilungsregel aus WP-M6c-19 bildet, Clearingdatensätze mit monatlichem Gegenbericht über `/v1/clearing/statements` und UI-16 verbrauchen den hier gelieferten Ausführungsnachweis; der zeilenweise Abgleich mit dem Partnerbericht ist erst damit nachweisbar)
 - **Entscheidungen:** D-03 (Geldfluss) und D-07 (interne Verrechnung) blockieren nur die Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Berechnung von Provision, Auszahlung und Rückforderung (M6c).
@@ -950,10 +959,9 @@
   - intern: WP-M6a-26
   - extern: WP-M1-07, WP-M1-11, WP-M1-46 (Rollen, Audit, Exportberechtigung)
   - extern: WP-M6b-31 (Exportprofile und Exportläufe je Empfänger (WP-M6b-31))
-  - extern: WP-M8c-30 (Mobilitätsdatenexport für PBefG-/Mobilitätsdatenpflichten und Berichtsjobs (WP-M8c-30); Abgrenzung im Detailvertrag)
 - **Entscheidungen:** keine aus D-01 bis D-12 ausdrücklich; die anwendbaren Pflichten sind rechtlich vom Auftraggeber zu benennen (siehe Offene Punkte 15). D-11 (Datenrechte) berührt die Produktivschaltung.
 - **Größe:** M
-- **Nicht im Umfang:** Berichtswesen und KPI-Exporte (M8); rechtliche Prüfung der Pflichten.
+- **Nicht im Umfang:** Berichtswesen und KPI-Exporte (M8); der Exportprozess des Reportingstroms für PBefG-/Mobilitätsdatenpflichten (WP-M8c-30 im parallelen Meilenstein M8) – er ist kein Bau-Vorbedarf, die Abgrenzung der Datenkategorien zwischen beiden WPs wird im Detailvertrag festgelegt (Offene Punkte 28); rechtliche Prüfung der Pflichten.
 
 ### WP-M6a-34 – Gate-Nachweis M6a und semantische Contract-Fälle
 
@@ -977,7 +985,7 @@
   7. Barrierefreiheitsprüfung der in M6a geänderten Bildschirme (UI-01, UI-02, UI-03, UI-04, UI-07, UI-08, UI-17) gegen WCAG 2.2 AA als Abnahmeziel ist protokolliert.
 - **Tests:** positiv, negativ und konkurrierend wie in den Einzel-WPs; hier als zusammenhängender Lauf in Staging. Referenztests: E2E-085 bis E2E-090, E2E-104, AT-14, PH-AT-005 bis PH-AT-010; Beiträge zu PH-AT-002, PH-AT-003, PH-AT-014 und E2E-093 gemeinsam mit M6b und M6c; E2E-085 gemeinsam mit WP-M6b-34 (Gebietsregel) – M6a führt den Buchungsteil.
 - **Abhängigkeiten:**
-  - intern: WP-M6a-01 bis WP-M6a-33
+  - intern: WP-M6a-01, WP-M6a-02, WP-M6a-03, WP-M6a-04, WP-M6a-05, WP-M6a-06, WP-M6a-07, WP-M6a-08, WP-M6a-09, WP-M6a-10, WP-M6a-11, WP-M6a-12, WP-M6a-13, WP-M6a-14, WP-M6a-15, WP-M6a-16, WP-M6a-17, WP-M6a-18, WP-M6a-19, WP-M6a-20, WP-M6a-21, WP-M6a-22, WP-M6a-23, WP-M6a-24, WP-M6a-25, WP-M6a-26, WP-M6a-27, WP-M6a-28, WP-M6a-29, WP-M6a-30, WP-M6a-31, WP-M6a-32, WP-M6a-33 (alle anderen WPs dieser Datei)
   - extern: WP-M6b-05, WP-M6b-07, WP-M6b-34 (Grant-/Widerrufsnachweise für PH-AT-002, PH-AT-003)
   - extern: WP-M6c-07, WP-M6c-19, WP-M6c-23, WP-M6c-32 (Mehrparteienzahlung und Clearing für PH-AT-005, PH-AT-008, PH-AT-014, E2E-093)
   - extern: WP-M5-02, WP-M5-22 (Staging-Umgebung, Release-Gate in CI)
@@ -1014,4 +1022,4 @@
 25. **Quoten und Aufbewahrung**: Kap. 05 §5.1 verlangt Quoten nach Tenant, Partner und Akteur, nennt aber keine Werte (vgl. M1). Aufbewahrungsfristen für `inbox`-Einträge, `realtime_observation`, Saga-Schritte, Testmitschnitte und Sandbox-Protokolle sind nicht benannt und hängen an D-11 (`LH-I.5-FED-018`, `LH-6.11-PTI-005`, `LH-I.5-FED-028`).
 26. **Intervallbezeichnung** (`LH-I.5-FED-014`): Kap. 02 §5 nennt `[valid_from, valid_until)`, `kernschema.sql` führt `valid_from`/`valid_to` mit `CHECK(valid_to>valid_from)`; die Halboffenheit ist im DDL nicht ausgedrückt.
 27. **Folgen eines Sicherheitswiderrufs für laufende Reisen** (`LH-I.5-FED-003`, `LH-I.5-FED-024`): Kap. 02 §5 verlangt „Reconciliation, Rebooking/Erstattung nach Freigabe"; WP-M6b-07 schließt Rebooking, Erstattung und Reconciliation nach Widerruf aus und verweist auf M6a/M6c. M6a deckt den In-flight-Abgleich (WP-M6a-04, WP-M6a-15) und das Storno (WP-M6a-22) ab; ein eigener Ablauf „Rebooking nach Sicherheitswiderruf" ist im Pflichtenheft nicht beschrieben und keinem WP zugeordnet.
-28. **Reihenfolgekonflikt: Zyklen innerhalb des parallelen Meilensteins M6 (M6a ↔ M6b/M6c)**: Bei der Auflösung der externen Abhängigkeiten auf WP-IDs zeigen mehrere Abhängigkeiten in beide Richtungen; die Nachbardateien nennen ihrerseits `EXTERN[M6a]` mit genau der Fähigkeit des hier abhängigen WPs. Betroffen: WP-M6a-01 ↔ WP-M6c-01 (wechselseitige Detailverträge); WP-M6a-11 ↔ WP-M6c-08 (Angebotsdarstellung ↔ UI-03 Mehrparteien-Checkout); WP-M6a-14 ↔ WP-M6c-07 (Confirm-Saga ↔ Capture-Regel; M6c-07 verlangt zusätzlich WP-M6a-15/-16); WP-M6a-22 ↔ WP-M6c-14 (Cancel-Saga ↔ Erstattungsregeln; über WP-M6a-22 → WP-M6a-14 → WP-M6c-14 auch für WP-M6a-14); WP-M6a-23 ↔ WP-M6c-06 (Preisaufstellung ↔ Preiskomponenten); WP-M6a-24 ↔ WP-M6c-11 (Ticketprüf-Adapter ↔ Tarifberechtigung); WP-M6a-25 ↔ WP-M6c-23 (Ausführungsnachweis ↔ Clearingdatensätze); WP-M6a-04/WP-M6a-09 ↔ WP-M6b-06 (Anbieterfilter ruft Pausen-/Grant-Port); WP-M6a-04 → WP-M6b-07 → Saga WP-M6a-13/-14 → WP-M6a-04; WP-M6a-12 → WP-M6b-09 → Payload-Übergabe im Hold/Confirm WP-M6a-13/-14 → WP-M6a-12; WP-M6a-08/-09/-10 ↔ WP-M6b-11 (Gebietsregel-Port ↔ Journey Planner); WP-M6a-19/-26/-27 ↔ WP-M6b-27 (Feedabruf ↔ Verarbeitung der Feeddaten). Die Abhängigkeiten wurden nicht verbogen. Aufzulösen ist je Paar über vertragsbasierten Bau gegen Stub/Port aus den Detailverträgen (WP-M6a-01, WP-M6b-01, WP-M6c-01) mit festgelegter Lieferrichtung (Port-Lieferant zuerst, Aufrufer danach) oder durch Teilung des WPs in Port- und Integrationsanteil. Zusätzlich: Die in WP-M6a-09 und WP-M6a-13 als M2-Fähigkeit geführten Vertretungen (`/v1/delegations`) liefert laut Gesamtindex erst WP-M7a-11 (paralleler Strom M7, M2 schließt sie ausdrücklich aus); M6a hängt damit entgegen der Stromunabhängigkeit an M7a.
+28. **Reihenfolge innerhalb des parallelen Meilensteins M6 (M6a ↔ M6b/M6c) – aufgelöst**: Die wechselseitigen Abhängigkeiten sind über eine feste Lieferrichtung aufgelöst (Port- bzw. Ereignislieferant zuerst, Aufrufer danach); die jeweils schwächere Richtung steht im Feld „Vollabnahme erst mit“ und ist keine Bauabhängigkeit, die Akzeptanzkriterien nennen je WP die Nachweisabgrenzung. Richtung M6b → M6a: WP-M6b-06, -07, -09, -11, -12 und -27 liefern Ports, Projektionsbaustein und Feeddaten zuerst; WP-M6a-04, -08, -09, -10, -12, -14, -19, -26, -27 rufen sie auf (WP-M6a-14 den Rollensnapshot aus WP-M6b-12 bei der Segmentbestätigung). Richtung M6a → M6c: WP-M6a-01 (Port- und Ereignisverträge), WP-M6a-11 (Angebotsdarstellung), WP-M6a-14 (Confirm-Saga gegen die Modul-API des Zahlungsmoduls auf dem Zahlungsautomaten aus M2), WP-M6a-22 (Storno-Saga und Positionen, Reversierung gegen WP-M2-31), WP-M6a-23 (Preisaufstellung) und WP-M6a-25 (Ausführungsnachweis) liefern zuerst; WP-M6c-01, -06, -07, -08, -14, -20 und -23 bauen darauf auf. Einzige Baurichtung M6c → M6a: WP-M6a-24 nutzt Aggregat Tarifberechtigung und Prüfadapter-Schnittstelle aus WP-M6c-11, WP-M6a-23 die Tabelle `fare_component` aus WP-M6c-02. Die gemeinsamen Ende-zu-Ende-Nachweise liegen in den Gate-Paketen WP-M6a-34, WP-M6b-34 und WP-M6c-32. Zusätzlich: Die in WP-M6a-09 und WP-M6a-13 als M2-Fähigkeit geführten Vertretungen (`/v1/delegations`) liefert laut Gesamtindex erst WP-M7a-11 (paralleler Strom M7, M2 schließt sie ausdrücklich aus); M6a hängt damit entgegen der Stromunabhängigkeit an M7a. Der frühere Verweis von WP-M6a-33 auf WP-M8c-30 (paralleler Strom M8) war eine reine Abgrenzung der Datenkategorien und ist keine Abhängigkeit mehr; WP-M6a-33 baut ausschließlich auf der Exportprofil- und Exportlaufmechanik aus WP-M6b-31.

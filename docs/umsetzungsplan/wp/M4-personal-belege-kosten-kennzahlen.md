@@ -3,7 +3,7 @@
 - **Meilenstein:** M4 (setzt M0 und M1 voraus; läuft parallel zu M2 und M3 und nutzt deren Buchungs-, Fahrtenplan-, Fahrer- und Fahrzeugdaten)
 - **Phase:** P1 (alle Anforderungen MUSS, P1; Phase und Priorität unverändert)
 - **Anzahl Anforderungen:** 53 (SCH 10, TIM 6, DOC 13, FCO 5, KPI 14, ANA 3, ETA 2)
-- **Anzahl WPs:** 65 (50 mit Anforderungen, davon 3 mit je zwei Anforderungen; 15 Enabler)
+- **Anzahl WPs:** 66 (50 mit Anforderungen, davon 3 mit je zwei Anforderungen; 16 Enabler)
 
 **Ziel:** Nach M4 plant ein Personalplaner Schichten in einem Dienstplan mit getrenntem Entwurf und veröffentlichter Revision (UI-12); Konflikte aus Doppelbelegung, Qualifikation, Abwesenheit und Ruhezeit sind vor der Veröffentlichung sichtbar. Fahrer stempeln ihre Ist-Arbeitszeit getrennt vom Plan, auch offline und DST-fest (UI-13). Belege werden über Uploadticket und Quarantäne mit unveränderlichem Original erfasst, per OCR als Vorschlag ausgelesen, auf Dubletten geprüft, nach Rollentrennung freigegeben und genau einmal als Kostenereignis mit ausgeglichenem Journal gebucht (UI-14); Kosten sind centgenau auf Kostenobjekte verteilbar und je Fahrzeug auswertbar (UI-15). Ein Kennzahlregister liefert die P1-Kennzahlen mit Definitionsversion, Nenner, Datenstand und Vollständigkeit, der Nachfragetrichter beruht auf `travel_attempt`, und die ETA beruht auf einem fahrerneutralen, regelkonformen Grundmodell.
 
@@ -36,7 +36,7 @@
 | WP-M4-11 | Stempeln in der Fahrer-App | 1 | M | WP-M4-08, WP-M3-24, WP-M3-25, WP-M3-13, WP-M3-14 |
 | WP-M4-12 | Offline-Stempel mit einmaliger Übernahme | 1 | M | WP-M4-11, WP-M0-28, WP-M3-24 |
 | WP-M4-13 | Hinweise zu Pausen, Ruhezeit und Überschreitungen | 1 | M | WP-M4-04, WP-M4-08, WP-M4-09, WP-M4-10, WP-M1-21 |
-| WP-M4-14 | Veröffentlichung des Dienstplans | 1 | M | WP-M4-05, WP-M4-07, WP-M4-13, WP-M1-13, WP-M1-14, WP-M1-02, WP-M2-32 |
+| WP-M4-14 | Veröffentlichung des Dienstplans | 1 | M | WP-M4-05, WP-M4-07, WP-M4-13, WP-M1-13, WP-M1-14, WP-M1-02, WP-M2-32, WP-M3-25 |
 | WP-M4-15 | Änderungs- und Veröffentlichungsrevisionen der Schicht | 1 | S | WP-M4-14, WP-M1-46, WP-M1-12 |
 | WP-M4-16 | Mandanten- und Depotberechtigung im Dienstplan | 1 | M | WP-M4-04, WP-M1-08, WP-M1-01 |
 | WP-M4-17 | Fahrerschicht, Fahrzeugbereitstellung und Disponierbarkeit | 1 | M | WP-M4-05, WP-M4-14, WP-M3-08, WP-M1-23 |
@@ -85,9 +85,10 @@
 | WP-M4-60 | Live-Dashboard für den laufenden Betrieb | 1 | M | WP-M4-45, WP-M4-59, WP-M2-11, WP-M2-22, WP-M2-14, WP-M3-31, WP-M3-08, WP-M3-29, WP-M3-36 |
 | WP-M4-61 | Fahrerneutrale Referenzfahrzeit | 1 | M | WP-M4-01, WP-M4-02, WP-M0-30, WP-M0-08, WP-M2-10 |
 | WP-M4-62 | Regelkonforme Prognose mit Haltezeiten und Sicherheitsreserve | 1 | M | WP-M4-61, WP-M1-21, WP-M1-19, WP-M3-34 |
-| WP-M4-63 | M4-Gate-Abnahmesuite | 0 | M | alle anderen WPs dieser Datei (WP-M4-01 bis WP-M4-62, WP-M4-64, WP-M4-65), WP-M0-22, WP-M0-12, WP-M2-21, WP-M2-23, WP-M3-24, WP-M3-29 |
+| WP-M4-63 | M4-Gate-Abnahmesuite | 0 | M | alle anderen WPs dieser Datei (WP-M4-01 bis WP-M4-62, WP-M4-64 bis WP-M4-66), WP-M0-22, WP-M0-12, WP-M2-21, WP-M2-23, WP-M3-24, WP-M3-29 |
 | WP-M4-64 | Modulzugänge, RLS und Isolationsnachweis für alle M4-Tabellen und -Endpunkte | 0 | M | WP-M4-01, WP-M0-16, WP-M0-17, WP-M0-18, WP-M1-01, WP-M1-11, WP-M1-31, WP-M1-12 |
-| WP-M4-65 | Übernahme der Schichtzuweisungen aus M3 in den Dienstplan | 0 | S | WP-M4-07, WP-M4-14, WP-M4-16 |
+| WP-M4-65 | Übernahme der Schichtzuweisungen aus M3 in den Dienstplan | 0 | S | WP-M4-07, WP-M4-14, WP-M4-16, WP-M4-17, WP-M2-02, WP-M2-15, WP-M3-07, WP-M3-08 |
+| WP-M4-66 | Anbindung des ETA-Grundmodells an Angebotsbildung, Fahrgastanzeige, Benachrichtigung, Fahrer-App und Leitstelle | 0 | M | WP-M4-61, WP-M4-62, WP-M2-17, WP-M2-21, WP-M2-34, WP-M2-43, WP-M3-26, WP-M3-38 |
 
 ## Arbeitspakete
 
@@ -131,12 +132,14 @@
   2. Jeder Leseport liefert ausschließlich Daten des aktiven Mandanten; ein Aufruf ohne Tenantkontext liefert keine Zeile.
   3. Stub und echte Implementierung bestehen denselben Vertragstest.
   4. Evidenz enthält keine realen Personen- oder Finanzdaten (Kap. 08 §8.4).
+  5. Abgrenzung der Abnahme: In diesem WP sind die Kriterien 1, 2 und 4 sowie der Vertragstest aus Kriterium 3 an den Stub-Implementierungen und – soweit die Quelle bereits vorliegt (Fahrtenplan WP-M2-16, `travel_attempt` WP-M2-11, Fahrer-/Fahrzeugstamm WP-M3-03, Qualifikationen WP-M3-05) – an der echten Implementierung nachgewiesen. Der Vertragstest der echten Implementierung für Buchung mit Zusagesnapshot (WP-M2-23), Fahrerereignisse (WP-M3-29) und Positionsdaten (WP-M3-34) wird erst mit diesen WPs nachgewiesen; die M4-WPs, die diese Daten fachlich brauchen (z. B. WP-M4-41, WP-M4-42, WP-M4-45, WP-M4-52), führen sie selbst als Abhängigkeit.
 - **Tests:** positiv: Fixture-Ladung, Portvertrag. negativ: Fremdmandant-ID am Port ergibt leeres Ergebnis. Konkurrenz: nicht erforderlich.
 - **Abhängigkeiten:** intern: WP-M4-01.
   - extern: WP-M0-08, WP-M0-17, WP-M0-18 (lokale Umgebung, Testharness mit Runtime-Rolle, MinIO)
   - extern: WP-M1-05, WP-M1-09, WP-M1-01 (Mandant, Rechtsträger, Organisationsstruktur (Depots, Kostenstellen), Tenantkontext)
-  - extern: WP-M2-23, WP-M2-16, WP-M2-11 (Buchung mit Zusagesnapshot, `vehicle_run` mit Stoppliste, `travel_attempt`) – Reihenfolgekonflikt (Zyklus) für WP-M2-23, siehe Offener Punkt 44
-  - extern: WP-M3-03, WP-M3-05, WP-M3-29, WP-M3-34 (Fahrer- und Fahrzeugstamm, Qualifikationen, Fahrerereignisse, Positionsdaten) – Reihenfolgekonflikt (Zyklus) für WP-M3-29, WP-M3-34, siehe Offener Punkt 44
+  - extern: WP-M2-16, WP-M2-11 (`vehicle_run` mit Stoppliste, `travel_attempt`)
+  - extern: WP-M3-03, WP-M3-05 (Fahrer- und Fahrzeugstamm, Qualifikationen)
+- **Vollabnahme erst mit:** WP-M2-23, WP-M3-29, WP-M3-34 (Buchung mit Zusagesnapshot, Fahrerereignisse und Positionsdaten lösen die Stub-Implementierungen der Leseports ab; kein Bau-Vorbedarf, bis dahin Stub mit demselben Vertragstest – siehe Offener Punkt 44)
 - **Entscheidungen:** D-05 (Pilotbetreiber/Region für realistische Fixtures; blockiert nicht den Bau), D-06 (Test-Kontenrahmen statt freigegebenem Kontenrahmen).
 - **Größe:** M
 - **Nicht im Umfang:** Sandbox-Partner und PSP-Simulator (M0); Lastfixtures (M5).
@@ -402,7 +405,7 @@
 - **Abhängigkeiten:** intern: WP-M4-05, WP-M4-07, WP-M4-13.
   - extern: WP-M1-13, WP-M1-14, WP-M1-02 (Idempotenzregister, Outbox-Relay, ETag-Grundgerüst)
   - extern: WP-M2-32 (Betriebsnachrichten (Push/SMS/E-Mail) mit Zustellversuchen)
-  - extern: WP-M3-25 (Fahrer-App-Dienststart, der veröffentlichte Schichten anzeigt) – Reihenfolgekonflikt (Zyklus), siehe Offener Punkt 44
+  - extern: WP-M3-25 (Dienststart-Ansicht UI-09 der Fahrer-App, in die die Anzeige „Nächster Dienst“ eingebaut wird; WP-M3-25 hängt nicht von M4 ab, siehe Offener Punkt 44)
 - **Entscheidungen:** keine.
 - **Größe:** M
 - **Nicht im Umfang:** Vorschau mit Differenzliste und Mehrwochenfreigabe (SCH-025, M7); gezielte Push-/E-Mail-Mitteilungen bei jeder Änderung (SCH-014, M7); Einsicht in Einsatzorte, Kontakte, Diensthinweise (SCH-015, M7).
@@ -462,11 +465,12 @@
   2. Erst eine veröffentlichte, besetzte Schicht macht das Fahrzeug im Schichtzeitraum einsatzfähig im Sinne der Personalvoraussetzung (SCH-007).
   3. Eine Anfrage bei freiem Fahrzeug ohne einsatzbereiten Fahrer führt zu keinem Angebot; der Grund ist Personalmangel (E2E-081).
   4. Der `ImpactProvider` meldet für eine Testrevision (z. B. geändertes `min_rest_hours` oder verkleinertes Bediengebiet eines Dienstes) die betroffenen veröffentlichten Schichten des aktiven Mandanten; Entwurfsschichten und fremde Mandanten sind nicht enthalten.
+  5. Abgrenzung der Abnahme: In diesem WP sind die Kriterien 1, 2 und 4 am Leseport „Schichtbesetzung“ und an `resource_release` nachgewiesen (Portvertrag, Antworten besetzt/unbesetzt je Fahrzeug und Zeitraum). Dass Kandidatenfilter und Hold der Disposition den Port statt der Schicht-Fixture auswerten (zweiter Halbsatz von Kriterium 1, Kriterium 3 mit E2E-081 und der konkurrierende Test „Besetzung entfällt während Hold“), wird erst nach der Anbindung in WP-M4-65 nachgewiesen.
 - **Tests:** positiv: besetzte Schicht → Fahrzeug Kandidat. negativ: offene Schicht, Entwurfsschicht, Schicht außerhalb des Zeitraums. konkurrierend (Kapazität/Sicherheit): Besetzung wird entfernt, während ein Hold läuft – der Hold prüft die Schichtrevision erneut und scheitert. Ermöglicht E2E-081.
 - **Abhängigkeiten:** intern: WP-M4-05, WP-M4-14.
-  - extern: WP-M2-15, WP-M2-22 (Fahrzeugkandidatenfilter und Hold nutzen den Port) – Reihenfolgekonflikt (Zyklus), siehe Offener Punkt 44
   - extern: WP-M3-08 (`resource_release`/Einsatzfreigabe wertet Schicht und Qualifikation aus)
   - extern: WP-M1-23 (Provider-Port der Wirkungsanalyse (WP-M1-23))
+- **Vollabnahme erst mit:** WP-M4-65 (bindet Fahrzeugkandidatenfilter und Ressourcen-Leseport der Disposition – WP-M2-15, WP-M2-02, darüber den Hold WP-M2-22 – an den hier gelieferten Port an; E2E-081 und der Hold-Konkurrenztest sind erst damit nachweisbar; die M2-WPs sind Verbraucher, kein Bau-Vorbedarf)
 - **Entscheidungen:** keine.
 - **Größe:** M
 - **Nicht im Umfang:** Bereitstellung erst nach Fahrer-Check-in und Checkliste (SCH-031, M7); Reaktion auf Fahrzeugausfall und Reparatursperre (SCH-038, M7); Krankheitsausfall (AT-44, M7).
@@ -1463,11 +1467,12 @@
   3. Künstlich zu schnelle Eingabewerte führen nicht zu einem engeren Fenster (PH-AT-022, Teilaspekt).
   4. `stop_dwell_sec` lässt sich nicht unter die sichere Haltestellenabfertigung konfigurieren (Katalogvalidierung).
   5. Der Leseport „ETA je Stopp“ liefert für eine laufende Fahrt eine Prognose mit Datenstand; bei veralteten Positionsdaten wird der Fallbackgrund ausgewiesen und die verbindliche Zusage bleibt unverändert.
+  6. Abgrenzung der Abnahme: In diesem WP sind die Kriterien 1 bis 5 am Prognosebaustein und am Leseport gegen den Testsatz von Strecken und die Musterfahrt nachgewiesen. Dass die von der Disposition ausgegebenen Angebotsfenster und die Anzeigen in Fahrgast-App, Benachrichtigung, Fahrer-App und Leitstelle die Prognose tatsächlich verwenden (einschließlich des konkurrierenden Tests „Konfigurationswechsel während der Angebotsbildung“ an echten Angeboten), wird erst mit WP-M4-66 nachgewiesen.
 - **Tests:** positiv: Strecken mit bekannten Tempolimits. negativ: Abschnitt ohne Limitangabe, Rollstuhl-Stopp, Konfiguration unterhalb der Systemgrenze, Positionsdaten älter als `eta_max_data_age_sec`. konkurrierend (Sicherheit): Konfigurationswechsel während der Angebotsbildung – jede Prognose trägt genau eine Modell-/Konfigurationsversion.
 - **Abhängigkeiten:** intern: WP-M4-61.
   - extern: WP-M1-21, WP-M1-19 (wirksame Konfiguration mit Systemgrenzen)
-  - extern: WP-M2-17, WP-M2-21 (Angebotsbildung und Einfügeheuristik verwenden die Prognose für Zeitfenster) – Reihenfolgekonflikt (Zyklus), siehe Offener Punkt 44
   - extern: WP-M3-34 (Positionsdaten mit Standortalter für die laufende ETA (WP-M3-34))
+- **Vollabnahme erst mit:** WP-M4-66 (bindet Angebotsbildung und Einfügeheuristik – WP-M2-21, WP-M2-17 – sowie die Anzeigen aus WP-M2-34, WP-M2-43, WP-M3-26 und WP-M3-38 an den hier gelieferten Prognosebaustein an; die Verbraucher sind kein Bau-Vorbedarf der Prognose)
 - **Entscheidungen:** D-10 (Grundmodell nach Favorit; blockiert nicht), D-09 (Routendaten mit Geschwindigkeitsattributen; blockiert Produktivschaltung).
 - **Größe:** M
 - **Nicht im Umfang:** Unsicherheitsquantil als eigene Anforderung (ETA-018), Datenqualitätsstatus je ETA (ETA-022), ETA-Fehlerkennzahlen und Drift (ETA-019/020) – M8.
@@ -1489,7 +1494,7 @@
   6. Die M4-Anteile von PH-AT-001, AT-49 und E2E-091 (Gate M1, dort für M4-Endpunkte offen vermerkt) sind über WP-M4-64 nachgelaufen und in `e2e.csv` mit Build und Evidenz ergänzt.
   7. Für jede Oberfläche UI-12 bis UI-15 und die Kennzahlenansicht liegt ein Barrierefreiheitsnachweis vor (Tastatur, Screenreader, 200 % Zoom, Reflow 320 CSS-Pixel; Kap. 06 §6.1).
 - **Tests:** die Suite selbst; Lauf unter der Runtime-Rolle mit zwei Mandanten.
-- **Abhängigkeiten:** intern: alle anderen WPs dieser Datei (WP-M4-01 bis WP-M4-62, WP-M4-64, WP-M4-65).
+- **Abhängigkeiten:** intern: alle anderen WPs dieser Datei (WP-M4-01, WP-M4-02, WP-M4-03, WP-M4-04, WP-M4-05, WP-M4-06, WP-M4-07, WP-M4-08, WP-M4-09, WP-M4-10, WP-M4-11, WP-M4-12, WP-M4-13, WP-M4-14, WP-M4-15, WP-M4-16, WP-M4-17, WP-M4-18, WP-M4-19, WP-M4-20, WP-M4-21, WP-M4-22, WP-M4-23, WP-M4-24, WP-M4-25, WP-M4-26, WP-M4-27, WP-M4-28, WP-M4-29, WP-M4-30, WP-M4-31, WP-M4-32, WP-M4-33, WP-M4-34, WP-M4-35, WP-M4-36, WP-M4-37, WP-M4-38, WP-M4-39, WP-M4-40, WP-M4-41, WP-M4-42, WP-M4-43, WP-M4-44, WP-M4-45, WP-M4-46, WP-M4-47, WP-M4-48, WP-M4-49, WP-M4-50, WP-M4-51, WP-M4-52, WP-M4-53, WP-M4-54, WP-M4-55, WP-M4-56, WP-M4-57, WP-M4-58, WP-M4-59, WP-M4-60, WP-M4-61, WP-M4-62, WP-M4-64, WP-M4-65, WP-M4-66).
   - extern: WP-M0-22, WP-M0-12 (Akzeptanztest-Infrastruktur, CI)
   - extern: WP-M2-21, WP-M2-23 (lauffähige Buchung und Angebotsbildung für E2E-080 bis E2E-083)
   - extern: WP-M3-24, WP-M3-29 (lauffähige Fahrer-App und Fahrerereignisse für AT-45, E2E-064, E2E-082, E2E-083)
@@ -1536,13 +1541,39 @@
   2. Eine über die Leitstelle angelegte Zuweisung erscheint im Dienstplan (UI-12) als veröffentlichte Schicht mit Revision, Autor und Zeit und durchläuft dieselbe Konfliktprüfung wie eine Planeraktion.
   3. Zwei überlappende verbindliche Schichten derselben Person oder desselben Fahrzeugs sind weiterhin ausgeschlossen (Zusage aus WP-M3-07); im Entwurf ist die Überlappung speicherbar und als Konflikt sichtbar.
   4. Kein anderes Modul als `staff-time` hat nach der Umstellung DML-Rechte auf `staff_shift` (Architekturtest, WP-M4-64).
+  5. Nach der Ablösung der Schicht-Fixture liefert der Ressourcen-Leseport der Disposition (WP-M2-02) bei unveränderter Schnittstelle die Schichtbesetzung aus dem Leseport „Schichtbesetzung“ (WP-M4-17); eine Anfrage bei freiem Fahrzeug ohne veröffentlichte, besetzte Schicht führt zu keinem Angebot mit Grund Personalmangel (E2E-081), und ein laufender Hold scheitert, wenn die Besetzung vor dem Commit entfällt (offene Vollabnahme aus WP-M4-17, WP-M2-02 und WP-M2-15).
 - **Tests:** positiv: Migration eines M3-Fixturebestands; Zuweisung über die Leitstelle. negativ: direkter Schreibversuch eines anderen Moduls auf `staff_shift`; Zuweisung in fremdem Depot. konkurrierend (Kapazität/Sicherheit): Leitstelle und Planer weisen dieselbe Person parallel überlappend zu – höchstens eine verbindliche Schicht entsteht; Migration parallel zu laufendem Hold lässt bestehende Freigaben gültig.
-- **Abhängigkeiten:** intern: WP-M4-07, WP-M4-14, WP-M4-16.
-  - extern: WP-M2-15 (Kandidatenfilter liest Schichten nur über den Leseport (WP-M2-15)) – Reihenfolgekonflikt (Zyklus), siehe Offener Punkt 44
-  - extern: WP-M3-07, WP-M3-08 (Schichtzuweisung mit Überlappungsverbot und Zuweisungsdialog (WP-M3-07); `resource_release` (WP-M3-08)) – Reihenfolgekonflikt (Zyklus), siehe Offener Punkt 44
+- **Abhängigkeiten:** intern: WP-M4-07, WP-M4-14, WP-M4-16, WP-M4-17.
+  - extern: WP-M2-02, WP-M2-15 (Ressourcen-Leseport und Kandidatenfilter der Disposition, deren Schicht-Fixture hier durch den Leseport „Schichtbesetzung“ abgelöst wird; beide hängen nicht von M4 ab)
+  - extern: WP-M3-07, WP-M3-08 (Schichtzuweisung mit Überlappungsverbot und Zuweisungsdialog (WP-M3-07), deren Bestand migriert und deren Schreibpfad abgelöst wird; `resource_release` (WP-M3-08))
 - **Entscheidungen:** keine.
 - **Größe:** S
 - **Nicht im Umfang:** Schichttausch und Schichtangebote (SCH-021 bis SCH-024, M7); Fahrzeugwechsel in laufender Schicht (M3).
+
+### WP-M4-66 – Anbindung des ETA-Grundmodells an Angebotsbildung, Fahrgastanzeige, Benachrichtigung, Fahrer-App und Leitstelle
+
+- **Ziel:** Die Verbraucher in M2 und M3 beziehen Fahrzeit und Prognosezeit aus dem ETA-Grundmodell (WP-M4-61, WP-M4-62) statt aus der Plan-ETA der Planrevision bzw. der Planzeit aus dem Routing; die dort und in WP-M4-62 offen gebliebenen Vollabnahmen sind nachgewiesen.
+- **Anforderungen:** – (Enabler)
+- **Liefergegenstände:**
+  - Backend: Angebotsbildung und Einfügeheuristik der Disposition (WP-M2-21, WP-M2-17) rufen für Zeitfenster das ETA-Grundmodell als Fachoperation auf (Aufrufer ist die Disposition, WP-M4-61); die Prüfroutine aus WP-M4-62 (implizite Geschwindigkeit je Abschnitt gegen zulässige Geschwindigkeit) läuft für jedes ausgegebene Angebotsfenster; jedes Angebot trägt genau eine Modell-/Konfigurationsversion.
+  - Adapter/Worker: Ablösung der vorläufigen Prognosequelle durch den Leseport „ETA je Stopp“ in den Benachrichtigungsauslösern (WP-M2-34, „relevante ETA-Änderung“), im Buchungsdetail UI-04 (WP-M2-43), in der Stoppliste des Fahrers (WP-M3-26) und in der fahrzeugbezogenen Stoppreihenfolge der Leitstelle (WP-M3-38); die Schnittstellen der Verbraucher bleiben unverändert.
+  - Datenbank: keine neuen Tabellen.
+  - Konfigurationsparameter: keine neuen; verwendet werden `eta_fallback_policy` und `eta_max_data_age_sec` aus WP-M4-61/WP-M4-62.
+- **Detailverträge vorab:** Portvertrag „ETA je Stopp“ (WP-M4-62); Umschaltreihenfolge und Fallbackanzeige je Verbraucher; Entscheidung zu Offener Punkt 41 (Umfang der laufenden ETA); Laufzeitbudget des Modellaufrufs in der Einfügeheuristik (Spike-Bericht Solverlaufzeit, WP-M0-27).
+- **Akzeptanzkriterien:**
+  1. Kein von der Angebotsbildung ausgegebenes Zeitfenster erfordert nach den verwendeten Routendaten eine Geschwindigkeitsüberschreitung; Haltezeiten und Sicherheitsreserve sind im Fenster berücksichtigt (ETA-002 am echten Angebot; Vollabnahme zu WP-M4-62).
+  2. Zwei Angebote für dieselbe Strecke mit unterschiedlichen Fahrer-IDs der zugeordneten Schicht beruhen auf derselben Grundzeit (ETA-001 am echten Angebot).
+  3. Buchungsdetail (UI-04), Stoppliste des Fahrers und Leitstellenansicht zeigen die Prognosezeit des Leseports mit Datenstand; bei Positionsdaten älter als `eta_max_data_age_sec` wird der Rückfall laut `eta_fallback_policy` ausgewiesen statt einer scheinbar aktuellen Prognose; die verbindliche Zusage bleibt unverändert (Vollabnahme zu WP-M2-43, WP-M3-26, WP-M3-38).
+  4. Eine ETA-Änderung des Grundmodells oberhalb der Relevanzschwelle löst die Fahrgastnachricht aus, eine Änderung darunter nicht (Vollabnahme zu WP-M2-34).
+  5. Die Antwortzeit der Angebotsbildung bleibt mit Modellaufruf innerhalb des im Detailvertrag festgelegten Budgets; andernfalls ist die Abweichung als Mangel dokumentiert.
+- **Tests:** positiv: Musterfahrt Ende-zu-Ende von Angebot bis Anzeige mit Prognosezeit und Datenstand. negativ: veraltete Positionsdaten, fehlende Prognose (Ausweis „keine Prognose“), künstlich zu schnelle Eingabewerte. konkurrierend (Sicherheit): Konfigurationswechsel der ETA-Parameter während der Angebotsbildung – jedes Angebot trägt genau eine Modell-/Konfigurationsversion.
+- **Abhängigkeiten:** intern: WP-M4-61, WP-M4-62.
+  - extern: WP-M2-17, WP-M2-21 (Einfügeheuristik und Angebotsobjekt, in die der Modellaufruf eingebunden wird)
+  - extern: WP-M2-34, WP-M2-43 (Benachrichtigungsauslöser und Buchungsdetail UI-04 mit vorläufiger Plan-ETA)
+  - extern: WP-M3-26, WP-M3-38 (Stoppliste des Fahrers und Leitstellenansicht mit vorläufiger Planzeit aus dem Routing)
+- **Entscheidungen:** D-09 (Routinganbieter; Valhalla/OSM als Arbeitsstand, blockiert nicht den Bau).
+- **Größe:** M
+- **Nicht im Umfang:** Neuberechnungsrhythmus und Datenqualitätsstatus je ETA (ETA-022), Unsicherheitsquantil (ETA-018), personalisierte ETA – M8; Änderungen am Solver über den Fahrzeitbezug hinaus.
 
 ## Offene Punkte
 
@@ -1589,4 +1620,4 @@
 41. **Umfang der „laufenden ETA“ aus M4.** M2 und M3 erwarten aus M4 das ETA-Grundmodell als Quelle laufender ETA-Werte (Fahrgastanzeige, Benachrichtigung, Leitstelle). `LH-I.3-ETA-001` und `LH-I.3-ETA-002` verlangen nur Referenzfahrzeit und regelkonforme Prognose; Neuberechnung aus Live-Positionen, Aktualisierungsrhythmus und Datenqualitätsstatus (ETA-022, P2) sind nicht als P1-Anforderung beschrieben. WP-M4-62 liefert einen Leseport mit Datenstand und Fallback; der darüber hinausgehende Umfang ist festzulegen.
 42. **Negative Korrektur im Journal.** PH-AT-015 erwartet eine „Oktoberkorrektur −20,00 EUR“; das Kern-DDL erlaubt in `journal_line` nur `amount_minor > 0` mit Seite `D`/`C`. Die Korrektur ist daher als Gegenbuchung mit getauschter Seite abzubilden; die Darstellung als negativer Betrag in Bericht und Export ist im Detailvertrag festzulegen (betrifft `LH-I.2-FCO-023` und `LH-I.1-DOC-030`, beide P2; in M4 nur Enabler WP-M4-36).
 43. **Zusage `ImpactProvider` für Schichten.** WP-M1-23 erwartet aus M4 einen Provider, der betroffene Schichten für die Wirkungsanalyse von Konfigurationsänderungen meldet; welche Parameter für Schichten impact-pflichtig sind (z. B. `min_rest_hours`, `shift_publish_notice_hours`, Betriebszeiten eines Dienstes), ist im Pflichtenheft nicht aufgelistet (Anforderung `LH-I.7-CFG-007` liegt in M1; in M4 betroffen sind `LH-6.23-SCH-005` und `LH-6.23-SCH-007`).
-44. **Reihenfolgekonflikt: zyklische Verweise auf die Parallelmeilensteine M2/M3.** Kein WP dieser Datei hängt von einem späteren Meilenstein (M5 ff.) ab. Folgende externe Verweise zeigen aber auf M2-/M3-WPs, die ihrerseits (direkt oder über ihre Vorgänger laut Übersichtstabellen bzw. extern-Zeilen von M2 und M3) auf das verweisende M4-WP angewiesen sind: WP-M4-02 → WP-M2-23, WP-M3-29, WP-M3-34 (Rückweg über WP-M3-07 → WP-M4-04 → WP-M4-03 → WP-M4-02 bzw. WP-M3-26 → WP-M4-61 → WP-M4-02); WP-M4-14 → WP-M3-25 (WP-M3-25 → WP-M3-07 → WP-M4-14); WP-M4-17 → WP-M2-15, WP-M2-22 (WP-M2-15 nennt WP-M4-17 als Ablösung der Schicht-Fixture); WP-M4-62 → WP-M2-17, WP-M2-21 (Verbraucher der Prognose; WP-M2-34 und WP-M2-43 hängen von WP-M4-62 ab); WP-M4-65 → WP-M2-15, WP-M3-07, WP-M3-08 (WP-M3-07 führt WP-M4-04, WP-M4-13, WP-M4-14 und WP-M4-65 selbst als Vorgänger; WP-M3-08 hängt von WP-M3-07 ab). Fachlich sind dies bei WP-M4-02 spätere Ablösungen der Stubs durch die echten Leseports, bei WP-M4-14, WP-M4-17 und WP-M4-62 nachgelagerte Verbraucher in M2/M3 und keine Startvoraussetzungen. Bei WP-M4-65 ist die Abhängigkeit von WP-M3-07 dagegen fachlich echt (die Übernahme setzt die M3-Zuweisungen voraus); hier ist die Gegenrichtung in M3 (WP-M3-07 → WP-M4-04/13/14/65) als spätere Integration statt als Vorgänger zu führen. Diese Verweise sind in der Übersichtstabelle („hängt ab von“) nicht eingetragen; alle übrigen Verweise auf M2/M3 sind gegen die Übersichtstabellen von M2 und M3 zyklusfrei und eingetragen. Zu klären: Bereinigung der Vorgängerliste von WP-M3-07 und Umwandlung der übrigen Paare in Integrationsschritte oder ein eigenes Integrations-WP nach Vorliegen beider Seiten (vgl. M2 Offener Punkt 50 und den Reihenfolgekonflikt-Eintrag in M3).
+44. **Reihenfolge gegenüber den Parallelmeilensteinen M2/M3 (aufgelöst).** Kein WP dieser Datei hängt von einem späteren Meilenstein (M5 ff.) ab. Baureihenfolge: M2 baut gegen Fixtures und Leseport, M3 setzt auf M2 auf, M4 setzt auf beiden auf; kein M2-WP hängt von M4 ab, aus M3 hängen nur WP-M3-44 und WP-M3-56 von WP-M4-21 ab (vgl. M2 Offener Punkt 50 und den Eintrag „Baureihenfolge“ in M3). Die früheren wechselseitigen Verweise sind so bereinigt: (a) WP-M4-02 führt Buchung, Fahrerereignisse und Positionsdaten (WP-M2-23, WP-M3-29, WP-M3-34) als „Vollabnahme erst mit“, weil die Leseports bis dahin als Stub mit demselben Vertragstest laufen. (b) WP-M4-14 → WP-M3-25 bleibt Bauabhängigkeit (Anzeige „Nächster Dienst“ in UI-09); die Gegenrichtung steht in WP-M3-07 als „Vollabnahme erst mit“. (c) WP-M4-17 liefert den Leseport „Schichtbesetzung“ ohne Abhängigkeit von seinen Verbrauchern; die Anbindung von Ressourcen-Leseport und Kandidatenfilter (WP-M2-02, WP-M2-15) baut WP-M4-65, das dafür WP-M2-02, WP-M2-15, WP-M3-07, WP-M3-08 und WP-M4-17 als Bauabhängigkeit führt. (d) WP-M4-62 liefert Prognose und Leseport „ETA je Stopp“ ohne Abhängigkeit von seinen Verbrauchern; die Anbindung von Angebotsbildung, Benachrichtigung, UI-04, Stoppliste und Leitstelle baut das neue WP-M4-66. In der Übersichtstabelle stehen nur Bauabhängigkeiten. Hinweis an M2/M3: Die Felder „Vollabnahme erst mit“ von WP-M2-34, WP-M2-43, WP-M3-26 und WP-M3-38 nennen WP-M4-61/WP-M4-62; der Nachweis am Verbraucher erfolgt in WP-M4-66.

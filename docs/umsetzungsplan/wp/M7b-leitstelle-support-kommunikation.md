@@ -29,7 +29,7 @@
 | WP-M7b-14 | Fahrzeugausfall: Sperre, betroffene Fahrten, Wiederherstellung | 1 | M | WP-M7b-04, WP-M7b-12, WP-M2-26, WP-M2-31, WP-M2-27, WP-M3-54, WP-M3-08 |
 | WP-M7b-15 | Notfallmeldung aus der Fahrer-App: priorisierte Anzeige und Eskalation | 1 | M | WP-M7b-12, WP-M7b-13, WP-M3-52, WP-M3-29, WP-M3-35, WP-M7c-06 |
 | WP-M7b-16 | Automatische Alarme: GPS-Ausfall, überfällige Abholung, Ablehnungshäufung | 1 | M | WP-M7b-12, WP-M7b-13, WP-M1-21, WP-M1-14, WP-M3-52, WP-M3-34, WP-M3-42, WP-M4-48 |
-| WP-M7b-17 | Callcenter: Fahrgast auffinden oder Gastbuchung anlegen | 1 | M | WP-M7b-02, WP-M7b-03, WP-M7b-35, WP-M1-28, WP-M1-07, WP-M1-31, WP-M1-12, WP-M1-02, WP-M7a-11 |
+| WP-M7b-17 | Callcenter: Fahrgast auffinden oder Gastbuchung anlegen | 1 | M | WP-M7b-01, WP-M7b-02, WP-M7b-03, WP-M7b-35, WP-M1-28, WP-M1-07, WP-M1-31, WP-M1-12, WP-M1-02, WP-M7a-11 |
 | WP-M7b-18 | Callcenter-Buchung über den gemeinsamen Regel- und Kapazitätskern | 1 | M | WP-M7b-17, WP-M1-13, WP-M1-02, WP-M2-21, WP-M2-22, WP-M2-23, WP-M2-24, WP-M2-08, WP-M3-39, WP-M7a-12 |
 | WP-M7b-19 | Callcenter: Serien, Vertretungsbuchungen und Sonderbedarfe | 1 | M | WP-M7b-18, WP-M1-07, WP-M1-31, WP-M7a-07, WP-M7a-11, WP-M7a-10 |
 | WP-M7b-20 | Supportfall mit Verknüpfungen und Ereignisfolge | 1 | M | WP-M7b-02, WP-M7b-08, WP-M7b-12, WP-M1-07, WP-M1-08, WP-M1-12, WP-M1-31 |

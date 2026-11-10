@@ -7,7 +7,7 @@
 
 **Ziel:** Nach M6b können zwei Mandanten einen Kooperationsvertrag schließen, daraus eng geschnittene technische Grants ableiten, pausieren und widerrufen; ohne aktiven Grant fließt kein operatives Datum über die Mandantengrenze. Gemeinsame Haltestellen und Gebiete, Rollen je Auftrag, Verbundsicht, Störungsadressierung, Kostenverteilung, Datenexport und Datenschutzbericht arbeiten ausschließlich auf freigegebenen, minimierten Projektionen. Die Integrationsschicht liefert abonnierbare signierte Webhooks, verlustfreie Listenabrufe, kündbare Partnerzugänge, konfigurierbare Fahrplan-, Import- und Exportadapter sowie ein Deprecation-Verfahren.
 
-**Hinweis zur Abgrenzung:** Journey-Planung, Saga, Partneradapter und Capability Registry liefert M6a; Checkout, Settlement und Auslaufregeln der Abrechnung liefert M6c. M6b stellt beiden das Grant-Gate, die Projektionsbausteine und die Integrationsbasis bereit. Wo eine Originalabnahme Funktionen aus M6a/M6c braucht, ist das als EXTERN-Abhängigkeit ausgewiesen.
+**Hinweis zur Abgrenzung:** Journey-Planung, Saga, Partneradapter und Capability Registry liefert M6a; Checkout, Settlement und Auslaufregeln der Abrechnung liefert M6c. M6b stellt beiden das Grant-Gate, die Projektionsbausteine und die Integrationsbasis bereit. Wo eine Originalabnahme Funktionen aus M6a/M6c braucht, steht der Bau-Vorbedarf als externe Abhängigkeit und der reine Abnahmebezug im Feld „Vollabnahme erst mit“ (keine Bauabhängigkeit).
 
 **Querschnittsregeln für alle WPs dieser Datei (Detailvertrag in WP-M6b-01, Sammelabnahme in WP-M6b-34):** (1) Jede neue mutierende Operation folgt Kap. 05 §5.1: `Idempotency-Key`, ETag mit `If-Match` (fehlend 428, veraltet 412), `application/problem+json` mit stabilem `code` und `correlation_id`, 404 für nicht sichtbare Objekte, 403 für fehlenden Funktionsscope. (2) Jede in einem WP genannte Oberfläche liefert die Leer-, Fehler- und Rechtezustände aus Kap. 06 §6.9, ist per Tastatur und Screenreader bedienbar, zeigt Status nie nur als Farbe und bietet zu jeder Karte eine gleichwertige Liste. (3) Jede fachliche Änderung an Vertrag, Grant, Freigabe, Zugang, Konfiguration, Export und Supportzugriff erzeugt einen `audit_event` mit Akteur, Zeitpunkt, Objekt und `correlation_id` ohne Fremdinhalte. (4) Jede neue Tabelle erhält eine Aufbewahrungs-/Löschklasse (`retention_rule`).
 
@@ -20,13 +20,13 @@
 | WP-M6b-03 | Referenzfixtures Kooperation (A, B, C, Aufgabenträger) | 0 | S | WP-M6b-02, WP-M0-24, WP-M2-02, WP-M2-03, WP-M2-04, WP-M2-05, WP-M2-23, WP-M3-03, WP-M3-05, WP-M3-08 |
 | WP-M6b-04 | Kooperationsvertrag: Versionen und Lebenszyklus | 0 | M | WP-M6b-02, WP-M1-05, WP-M1-13, WP-M1-17, WP-M1-46, WP-M6a-05 |
 | WP-M6b-05 | Cooperation Grants und Föderations-Policy-Gate | 1 | M | WP-M6b-04, WP-M0-03, WP-M1-06, WP-M1-11, WP-M1-12, WP-M1-46, WP-M3-35 |
-| WP-M6b-06 | Pause, Leistungsbegrenzung und Auslaufgrant | 1 | M | WP-M6b-05, WP-M1-18, WP-M1-46, WP-M6a-04, WP-M6a-09, WP-M6a-13, WP-M6a-14, WP-M8d-34 |
-| WP-M6b-07 | Widerruf: fachlicher Entzug und Sicherheitswiderruf | 0 | M | WP-M6b-05, WP-M6b-06, WP-M1-10, WP-M1-11, WP-M1-46, WP-M3-52, WP-M3-53, WP-M3-54, WP-M6a-13, WP-M6a-14, WP-M6a-15 |
+| WP-M6b-06 | Pause, Leistungsbegrenzung und Auslaufgrant | 1 | M | WP-M6b-05, WP-M1-14, WP-M1-15, WP-M1-18, WP-M1-46, WP-M6a-02 |
+| WP-M6b-07 | Widerruf: fachlicher Entzug und Sicherheitswiderruf | 0 | M | WP-M6b-05, WP-M6b-06, WP-M1-10, WP-M1-11, WP-M1-46, WP-M3-52, WP-M3-53, WP-M3-54 |
 | WP-M6b-08 | UI-18 Kooperation/Rollen: Vertrag, Grants, Pause, Widerruf | 0 | M | WP-M6b-05, WP-M6b-06, WP-M6b-07, WP-M1-43, WP-M6a-05 |
-| WP-M6b-09 | Minimierte Segmentprojektion und Partner-Fahrgastalias | 1 | M | WP-M6b-05, WP-M1-28, WP-M1-31, WP-M2-32, WP-M6a-02, WP-M6a-12, WP-M6a-13 |
+| WP-M6b-09 | Minimierte Segmentprojektion und Partner-Fahrgastalias | 1 | M | WP-M6b-05, WP-M1-28, WP-M1-31, WP-M2-32, WP-M6a-02 |
 | WP-M6b-10 | Gemeinsame Haltestellen und gemeinsame Bediengebiete | 1 | M | WP-M6b-05, WP-M2-03, WP-M2-04, WP-M2-05 |
-| WP-M6b-11 | Gebietsregeln: Überlappung, Priorität, Tarifgrenze, Übergabepunkt, Ausschlusszone | 1 | M | WP-M6b-10, WP-M2-07, WP-M2-12, WP-M6a-08, WP-M6a-09 |
-| WP-M6b-12 | Rollenzuordnung je Auftrag und Fahrtenauswertung | 1 | M | WP-M6b-04, WP-M1-05, WP-M1-34, WP-M2-23, WP-M4-44, WP-M4-45, WP-M6a-13, WP-M6a-14 |
+| WP-M6b-11 | Gebietsregeln: Überlappung, Priorität, Tarifgrenze, Übergabepunkt, Ausschlusszone | 1 | M | WP-M6b-10, WP-M2-07, WP-M2-12 |
+| WP-M6b-12 | Rollenzuordnung je Auftrag und Fahrtenauswertung | 1 | M | WP-M6b-04, WP-M1-05, WP-M1-34, WP-M2-23, WP-M4-44, WP-M4-45, WP-M6a-02 |
 | WP-M6b-13 | Verbund-Dashboard: freigegebene Fahrten und Fahrzeugkapazitäten | 1 | M | WP-M6b-05, WP-M6b-09, WP-M3-03, WP-M3-08, WP-M3-36, WP-M6a-18, WP-M6a-19 |
 | WP-M6b-14 | Adressierte Störungsmeldungen an betroffene Partner | 1 | M | WP-M6b-05, WP-M6b-09, WP-M6b-23, WP-M1-11, WP-M1-14, WP-M2-32, WP-M3-35, WP-M3-52, WP-M3-53, WP-M3-54 |
 | WP-M6b-15 | Kostenverteilung gemeinsam genutzter Ressourcen | 1 | M | WP-M6b-04, WP-M6b-12, WP-M1-34, WP-M4-33, WP-M4-35, WP-M4-36 |
@@ -41,7 +41,7 @@
 | WP-M6b-24 | Webhook-Härtung: Signatur, Rotation, Retry, Dead-Letter | 1 | M | WP-M6b-23, WP-M1-14, WP-M1-16, WP-M1-36 |
 | WP-M6b-25 | Pagination, Filterung und Änderungssemantik aller Listen | 1 | M | WP-M6b-01, WP-M1-02 |
 | WP-M6b-26 | Partnerzugänge: Maschinenidentität, Scopes, Quoten, Schlüsselentzug | 1 | M | WP-M6b-05, WP-M6b-07, WP-M1-02, WP-M1-04, WP-M1-10, WP-M1-36 |
-| WP-M6b-27 | GTFS-/GTFS-RT-Adapter mit Feedkonfiguration | 1 | M | WP-M6b-02, WP-M2-05, WP-M6a-19, WP-M6a-26, WP-M6a-27 |
+| WP-M6b-27 | GTFS-/GTFS-RT-Adapter mit Feedkonfiguration | 1 | M | WP-M6b-02, WP-M2-05 |
 | WP-M6b-28 | CSV-/GeoJSON-Import mit Validierung und Quarantäne | 1 | M | WP-M6b-02, WP-M1-11, WP-M1-38, WP-M2-04, WP-M2-05, WP-M4-21 |
 | WP-M6b-29 | Austauschbare Provider-Adapter (Zahlung, SMS, Push, E-Mail, CRM) | 1 | M | WP-M6b-01, WP-M0-23, WP-M2-29, WP-M2-30, WP-M2-32 |
 | WP-M6b-30 | API-Versionierung und Deprecation-Verfahren | 1 | S | WP-M6b-01, WP-M1-03 |
@@ -156,7 +156,7 @@
 - **Tests:** positiv: Lebenszyklus bis `ACTIVE`. negativ: einseitige Genehmigung; Statuswechsel mit veraltetem ETag (412) und ohne `If-Match` (428); gleicher `Idempotency-Key` mit anderem Inhalt (409); Aktivierung ohne Capability-Nachweis; Mandant C liest Vertrag A↔B (404); Prüfung exakt zum Zeitpunkt `valid_until` (außerhalb). konkurrierend (Sicherheit): parallele Genehmigung und Rücknahme – genau ein konsistenter Endzustand.
 - **Abhängigkeiten:** intern: WP-M6b-02.
   - extern: WP-M1-05, WP-M1-13, WP-M1-17, WP-M1-46 (Mandant, Rechtsträger, Organisation mit `federation_ref`; Zustandsautomaten-Rahmen; Audit; Idempotenzregister)
-  - extern: WP-M6a-05 (Capability Registry als Quelle der technischen Capability-Prüfung (bis dahin Stub))
+  - extern: WP-M6a-05 (Capability Registry als Quelle der technischen Capability-Prüfung; der deterministische Sandbox-Stub dient nur der Testbarkeit des Lebenszyklus, die Aktivierung wird gegen die Registry gebaut)
 - **Entscheidungen:** D-01, D-04 – blockieren nur die Produktivschaltung (reale Vertragsinhalte); Bau mit Testverträgen.
 - **Größe:** M
 - **Nicht im Umfang:** Grants (WP-M6b-05); Pause und Ablauf mit Auslauf (WP-M6b-06); Widerruf (WP-M6b-07); Abrechnungsregeln und Clearing (M6c).
@@ -172,7 +172,7 @@
   - Konfigurationsparameter: `sharing_visibility_level`, `sharing_service_ids`, `interoperator_bookings`, `partner_transport_modes`.
 - **Detailverträge vorab:** Grant-Vokabular; Schnittstelle des Gate-Ports; Zuordnung Vertragsrecht → Grant.
 - **Akzeptanzkriterien:**
-  1. Ohne aktiven Kooperationsvertrag liefert jede mandantenübergreifende Abfrage, Buchungsoperation, Ereigniszustellung, Cache-Antwort, Suchindex-Abfrage, Websocket-/SSE-Nachricht, Queue-Nachricht, jeder Objektspeicher- und jeder Report-Download keine fremden Daten und keinen Schreibeffekt (Kap. 02 §4.3). (MUL-009)
+  1. Ohne aktiven Kooperationsvertrag liefert jede mandantenübergreifende Abfrage, Buchungsoperation, Ereigniszustellung, Cache-Antwort, Suchindex-Abfrage, Websocket-/SSE-Nachricht, Queue-Nachricht, jeder Objektspeicher- und jeder Report-Download keine fremden Daten und keinen Schreibeffekt (Kap. 02 §4.3). Die Suchindex-Abfrage wird an den datenbankgestützten Such- und Listenendpunkten nachgewiesen; ein eigener Suchindex außerhalb der Datenbank ist in Kap. 01 §1.1 nicht vorgesehen (Klärung OP-34). (MUL-009)
   2. Mit aktivem Vertrag und Grant `offer:read` ist die Auskunft möglich, `hold:create` und `booking:confirm` werden abgewiesen. (MUL-009)
   3. Ein Grant kann nicht weiter reichen als sein Vertrag (Dienste, Felder, Zeitraum); der Versuch wird beim Anlegen abgewiesen.
   4. Nicht zum Vertrag gehörende Dienste bleiben unbuchbar (PH-AT-002).
@@ -183,8 +183,8 @@
   9. Fällt die Grantprüfung technisch aus (Datenbank oder Cache nicht erreichbar), wird abgelehnt (fail closed), nicht aus einem alten Cache-Eintrag erlaubt.
 - **Tests:** positiv: freigegebene Projektion lesbar. negativ: kein Vertrag, Vertrag `DRAFT`, Grant abgelaufen, falscher Dienst, falsches Feld, falscher Zweck, `tenant_id` in Body, Pfad und Header manipuliert; Grantprüfung nicht erreichbar; Grant weiter als Vertrag. konkurrierend (Sicherheit/Datentrennung): Grant wird zwischen Prüfung und Commit entzogen – Commit wird gestoppt; parallele Anfragen mit altem Cache-Eintrag nach Revisionswechsel. Ermöglicht PH-AT-002, E2E-085; semantische Contract-Fälle „Manipulation tenant_id" und „unzulässige Fremd-ID" (Kap. 05 §5.8).
 - **Abhängigkeiten:** intern: WP-M6b-04.
-  - extern: WP-M0-03, WP-M1-06, WP-M1-11, WP-M1-12, WP-M1-46, WP-M3-35 (RequestContext mit Zweck und Vertragsrevision; Isolation außerhalb der Datenbank (Cache, Suchindex, Websocket-/SSE-Kanäle, Queue, Objektspeicher, Ereignisse, Exporte); Audit und Sicherheitsereignisse; Architekturtest-Rahmen)
-  - extern: UNGEDECKT – Isolation des Suchindex außerhalb der Datenbank (kein WP bis M6 liefert einen Suchindex bzw. dessen Mandantenisolation; WP-M1-11 schließt ihn aus)
+  - extern: WP-M0-03, WP-M1-06, WP-M1-11, WP-M1-12, WP-M1-46, WP-M3-35 (RequestContext mit Zweck und Vertragsrevision; Isolation außerhalb der Datenbank (Cache, Websocket-/SSE-Kanäle, Queue, Objektspeicher, Ereignisse, Exporte); Audit und Sicherheitsereignisse; Architekturtest-Rahmen)
+  - Klärung Auftraggeber (kein WP): Ob ein eigener Suchindex außerhalb der Datenbank gebaut wird. Kap. 01 §1.1 nennt keinen Suchbaustein, Kap. 01 §1.7 und Kap. 02 §4.3 nennen den Suchindex nur als Isolations- bzw. Löschziel; siehe OP-34.
 - **Entscheidungen:** D-01, D-02 – blockieren nur die Produktivschaltung.
 - **Größe:** M
 - **Nicht im Umfang:** Pause/Ablauf (WP-M6b-06); Widerruf (WP-M6b-07); Maschinenzugänge der Partner (WP-M6b-26); Aufruf des Gates in Planung und Saga (M6a).
@@ -199,6 +199,7 @@
   - Oberfläche: Datenteil für UI-18 (Zustände „Vertragsablauf", „offene Reisen").
   - Ereignisse/Outbox: Pausenbeginn/-ende an Vertragspartei; Hinweis an verantwortliche Leitstelle bei betroffenen Reisen.
   - Konfigurationsparameter: `sharing_service_ids`, `sharing_vehicle_quota`.
+  - Adapter/Worker: Beginn und Ende einer Pause wirken lesend über das halboffene Gültigkeitsintervall gegen Serverzeit, dafür ist kein Scheduler nötig; die Ereignisse „Pausenbeginn/-ende“ löst ein Fälligkeitslauf auf `operation` mit Lease/Fencing über die Outbox genau einmal je Grenze aus (Minimalausbau, siehe OP-28 „zeitgesteuerte Ausführung“).
 - **Detailverträge vorab:** Tabelle „Ereignis → Neue Auskunft/Buchung → Bestehende Reisen → Daten-/Finanzfolge" aus Kap. 02 §5 als ausführbare Regel; Umfang des Restabwicklungsgrants.
 - **Akzeptanzkriterien:**
   1. Ein Partner mit aktiver Pause wird bei künftigen Fahrtanfragen nicht angeboten und erhält keine neuen Holds. (MUL-014)
@@ -209,14 +210,16 @@
   6. Nach Vertragsablauf ist keine Neuanlage möglich; der Auslaufprozess bleibt gemäß eingefrorener Vertragsrevision möglich (Kap. 02 §10 „Vertragsablauf bei bestehender Zusage").
   7. Pause, Begrenzung, deren Änderung und Aufhebung sind mit Akteur, Zeitpunkt und Begründung auditiert; die Vertragspartei erhält genau ein Ereignis je Änderung.
   8. Eine Pause löscht oder storniert keine bestätigte Fahrt; betroffene offene Reisen werden gezählt und der verantwortlichen Leitstelle angezeigt.
+  9. Nachweisabgrenzung: In diesem WP werden alle Kriterien am Anbieterfilter-Port und am Grant-Gate mit Seed-Segmenten in `journey_leg` nachgewiesen (der Port liefert für pausierte oder begrenzte Partner „nicht anbieten“, die Hold-Aktion wird am Gate abgewiesen, der Restabwicklungsgrant ist auf die Seed-Segmente begrenzt). Der Nachweis in der föderierten Reiseauskunft und in der Saga (Kriterien 1 und 2 über eine echte Reisekette) folgt mit WP-M6a-04, WP-M6a-09, WP-M6a-13 und WP-M6a-14.
 - **Tests:** positiv: Pause mit bestehender Zusage J1. negativ: neue Anfrage J2 während Pause; Zugriff über Restabwicklungsgrant auf fremde Reise. Pausenbeginn in einer DST-Lücke bzw. doppelten Ortszeit (abgewiesen bzw. eindeutiger Offset verlangt); Pause mit Ende vor Beginn. konkurrierend (Kapazität/Sicherheit): Hold-Anfrage exakt am Pausenbeginn – deterministisches Ergebnis nach Serverzeit; Pause wird während laufendem Hold gesetzt; zwei parallele Pausenänderungen (412 für die zweite). Ermöglicht PH-AT-003 (Teil „J1 bleibt, J2 nicht").
 - **Abhängigkeiten:** intern: WP-M6b-05.
-  - extern: WP-M1-18, WP-M1-46 (Zeit-/DST-Baustein und zeitgesteuerte Ausführung; Audit)
-  - extern: WP-M8d-34 (zeitgesteuerte Ausführung) – Reihenfolgekonflikt, siehe OP-28
-  - extern: WP-M6a-04, WP-M6a-09, WP-M6a-13, WP-M6a-14 (Anbieterfilter der Angebotsbildung ruft den Pausen-/Grant-Port; bestätigte Segmente (`journey_leg`) als Bezug des Restabwicklungsgrants)
+  - extern: WP-M1-18, WP-M1-46 (Zeit-/DST-Baustein; Audit)
+  - extern: WP-M1-14, WP-M1-15 (Outbox-Relay; `operation` mit Lease/Fencing für den Fälligkeitslauf der Pausenereignisse)
+  - extern: WP-M6a-02 (Tabelle `journey_leg` als Bezug des Restabwicklungsgrants)
+- **Vollabnahme erst mit:** WP-M6a-04, WP-M6a-09, WP-M6a-13, WP-M6a-14 (der Anbieterfilter der Angebotsbildung und die Saga sind Aufrufer des hier gelieferten Pausen-/Grant-Ports; die Wirkung in Reiseauskunft, Hold und Restabwicklung bestätigter Segmente ist erst mit ihnen nachweisbar, Sammelabnahme in WP-M6b-34)
 - **Entscheidungen:** D-04, D-11 – blockieren nur die Produktivschaltung der Auslaufregeln.
 - **Größe:** M
-- **Nicht im Umfang:** Sicherheitswiderruf (WP-M6b-07); finanzielle Auslaufregeln, Erstattung und Abrechnung nach Vertragsende (M6c, `LH-I.9-COM-011`).
+- **Nicht im Umfang:** Sicherheitswiderruf (WP-M6b-07); finanzielle Auslaufregeln, Erstattung und Abrechnung nach Vertragsende (M6c, `LH-I.9-COM-011`); allgemeiner zeitgesteuerter Ausführungskern für Regeln und Fristen (M8d).
 
 ### WP-M6b-07 – Widerruf: fachlicher Entzug und Sicherheitswiderruf
 - **Ziel:** Einzelne Dienste oder ein ganzer Zugang können entzogen werden; ein Sicherheitswiderruf wirkt sofort auch gegen alte Tokens und Caches und eröffnet den Klärprozess.
@@ -236,11 +239,12 @@
   6. Entzogene Projektionen sind für den operativen Zugriff gesperrt; gesetzlich zu archivierende Belege werden nicht gelöscht, nur ihr Downloadpfad ist gesperrt (Kap. 02 §4.3, §5).
   7. Beim fachlichen Entzug sind die betroffenen Reisen markiert und die verantwortliche Leitstelle ist informiert; beim Sicherheitswiderruf existiert ein Incident mit Verweis auf alle In-flight-Fälle.
   8. Der wiederholte Widerruf mit demselben `Idempotency-Key` erzeugt genau eine Grantrevision, ein Ereignis und einen Alarm.
+  9. Nachweisabgrenzung: In diesem WP wird Kriterium 2 am Gate-Port nachgewiesen (die Grantrevisionsprüfung unmittelbar vor dem Commit lehnt nach Widerruf ab, auch parallel in zwei Transaktionen) und der Verweis auf In-flight-Fälle aus Kriterium 7 an Seed-Segmenten. Der Stopp des Commits in der Saga und der Abgleichfall an einer echten Reisekette folgen mit WP-M6a-13, WP-M6a-14 und WP-M6a-15.
 - **Tests:** positiv: fachlicher Entzug mit Restrechten. negativ: Zugriff mit altem Token; Download einer entzogenen Projektion. konkurrierend (Sicherheit): Widerruf parallel zu 50 laufenden Partneroperationen – keine Operation committet nach der neuen Grantrevision. Ermöglicht PH-AT-003.
 - **Abhängigkeiten:** intern: WP-M6b-05, WP-M6b-06.
   - extern: WP-M1-10, WP-M1-11, WP-M1-46 (Sitzungs- und Tokensperre, Cache-Invalidierung mit Policyrevision, Sperre signierter Downloads; Audit)
   - extern: WP-M3-52, WP-M3-53, WP-M3-54 (Alarm-Grundlage (`business_alert`) und Störungs-/Incidentablauf der Leitstelle)
-  - extern: WP-M6a-13, WP-M6a-14, WP-M6a-15 (Saga prüft Grantrevision vor Commit und führt In-flight-Abgleich)
+- **Vollabnahme erst mit:** WP-M6a-13, WP-M6a-14, WP-M6a-15 (die Saga ruft die Grantrevisionsprüfung vor dem Commit auf und führt den In-flight-Abgleich; der Widerruf zwischen Hold und Confirm ist an einer echten Reisekette erst mit ihnen nachweisbar, Sammelabnahme in WP-M6b-34)
 - **Entscheidungen:** D-11 – blockiert nur die Produktivschaltung (Notfallprozess, Zuständige).
 - **Größe:** M
 - **Nicht im Umfang:** Rebooking, Erstattung und Reconciliation nach Widerruf (M6a, M6c); Schlüsselentzug für Maschinenzugänge (WP-M6b-26).
@@ -284,11 +288,13 @@
   6. Dieselbe Minimierung gilt für Cache, Event-Subscription und Report-Download (PH-AT-002).
   7. Kein Payload, Log, Trace oder Ereignis enthält ein Feld der Negativliste (volle Reisekette, Fahrgastkonto, Kartentoken, Kreditkartendaten, fremde Rechnungen, Vorgeschichte); ein automatischer Feldscan belegt das je Empfänger. (MUL-021)
   8. Nach Grantentzug ist die gespeicherte Projektion für den Empfänger gesperrt; der Alias wird nicht für einen anderen Partner wiederverwendet.
+  9. Nachweisabgrenzung: In diesem WP werden die Kriterien am Projektionsbaustein mit Seed-Segmenten in `journey_leg` nachgewiesen (Feldmenge, Aliasse, Relay, Sperre nach Grantentzug, Feldscan je Empfänger). Die Buchung eines Fahrgastkontos bei A und B über eine echte Reisekette (Kriterium 3) und die Übergabe des Payloads im Hold-/Confirm-Aufruf folgen mit WP-M6a-12 und WP-M6a-13.
 - **Tests:** positiv: Segmentpayload für B. negativ: B fragt andere Reise, A-Rohdaten oder Kontaktfeld außerhalb des Grants ab; abgelaufenes Relay. konkurrierend (Datentrennung): parallele Projektionserzeugung für A und B – keine Aliasvertauschung. Ermöglicht PH-AT-002, PH-AT-005.
 - **Abhängigkeiten:** intern: WP-M6b-05.
   - extern: WP-M1-28, WP-M1-31 (Feldschutz für Mobilitäts- und Unterstützungsmerkmale; `passenger_private`)
   - extern: WP-M2-32 (Nachrichtenkanäle (SMS, Push, E-Mail) als Träger des Kontaktrelays)
-  - extern: WP-M6a-02, WP-M6a-12, WP-M6a-13 (Journey/`journey_leg` als Quelle der Segmentdaten; Übergabe des Payloads im Hold-/Confirm-Aufruf)
+  - extern: WP-M6a-02 (Journey/`journey_leg` als Quelle der Segmentdaten)
+- **Vollabnahme erst mit:** WP-M6a-12, WP-M6a-13 (sie nutzen den hier gelieferten Projektionsbaustein und übergeben den Payload im Hold-/Confirm-Aufruf; die Minimierung auf dem Transportweg zum Partner ist erst mit ihnen nachweisbar)
 - **Entscheidungen:** D-01, D-11 – blockieren nur die Produktivschaltung (Verantwortlichkeit je Datenfluss).
 - **Größe:** M
 - **Nicht im Umfang:** Transport des Payloads über Partneradapter und Saga (M6a, dort FED-013/026/027; Abgrenzung siehe OP-04); Löschung von Partnerprojektionen (M8).
@@ -333,10 +339,11 @@
   3. Eine Route über eine Tarifgrenze weist die Grenze und die betroffenen Tarifversionen im Ergebnis aus. (MUL-012)
   4. Ein Umstieg an einem Übergabepunkt ist nur zulässig, wenn die Mindestwechselzeit eingehalten ist. (MUL-012)
   5. Jede Bewertung speichert die verwendeten Gebiets- und Regelrevisionen.
+  6. Nachweisabgrenzung: In diesem WP werden alle Kriterien am Gebietsregel-Port `evaluate` mit Testrouten und Seed-Gebieten nachgewiesen. Die Anwendung des Ports im Reisegraphen der föderierten Reiseauskunft folgt mit WP-M6a-08 und WP-M6a-09.
 - **Tests:** positiv: Route A-Gebiet → Hub → B-Gebiet. negativ: Ziel in Ausschlusszone; Hub ohne Freigabe; gleiche Priorität ohne Auswahlregel wird bei Publikation abgewiesen. konkurrierend (Datentrennung): Regelrevision wechselt während Bewertung – Ergebnis gehört konsistent zu genau einer Revision. Ermöglicht E2E-085.
 - **Abhängigkeiten:** intern: WP-M6b-10.
   - extern: WP-M2-07, WP-M2-12 (Zulässigkeitsprüfung Gebiet und Bedienzeit; Tarifrevisionen)
-  - extern: WP-M6a-08, WP-M6a-09 (Journey Planner ruft den Gebietsregel-Port im Reisegraphen auf)
+- **Vollabnahme erst mit:** WP-M6a-08, WP-M6a-09 (Transfer-Hub-Pflege und Journey Planner sind Aufrufer des hier gelieferten Gebietsregel-Ports; die Bewertung im Reisegraphen einer Reiseauskunft ist erst mit ihnen nachweisbar)
 - **Entscheidungen:** D-05, D-08 – blockieren nur produktive Gebietsdaten.
 - **Größe:** M
 - **Nicht im Umfang:** Straßen- und Gebietsrestriktionen der Disposition (M7, GEO/OPT); Preisberechnung über Tarifgrenzen (M6c); Ranking (M6a).
@@ -355,12 +362,14 @@
   2. Fehlt eine Pflichtrolle, wird die Bestätigung abgewiesen. (MUL-010)
   3. Eine spätere Änderung von Organisation, Vertrag oder Fahrzeugeigentum ändert die Auswertung bereits bestätigter Aufträge nicht.
   4. Jeder Mandant sieht in der Auswertung nur Rollen und Beträge, für die er berechtigt ist; keine gegenseitige Stammdatenfreigabe (E2E-094).
+  5. Nachweisabgrenzung: In diesem WP werden die Kriterien an lokalen Buchungen (`booking`) und an Seed-Segmenten in `journey_leg` nachgewiesen; die Pflichtrollenprüfung aus Kriterium 2 am Snapshot-Baustein und an der lokalen Bestätigung. Die Abweisung der Segmentbestätigung in der Saga und die Auswertung einer echten Mehrbetreiberreise folgen mit WP-M6a-13 und WP-M6a-14.
 - **Tests:** positiv: vier verschiedene Rollenträger. negativ: Rollenreferenz auf unbekannte Organisation; Auswertung durch unbeteiligten Mandanten. konkurrierend (Geld/Datentrennung): Eigentümerwechsel parallel zur Bestätigung – Snapshot ist konsistent zu genau einem Stand. Ermöglicht E2E-094, E2E-093 (Rollenbezug), COST-06 (Kap. 03 §7).
 - **Abhängigkeiten:** intern: WP-M6b-04.
   - extern: WP-M1-05, WP-M1-34 (Organisation mit vertraglichen Rollen; Fahrzeugrollen mit Gültigkeitsintervallen)
   - extern: WP-M2-23 (`booking` und lokale Bestätigung)
   - extern: WP-M4-44, WP-M4-45 (Analytics-Faktenbasis und Kostenübersicht je Kostenobjekt)
-  - extern: WP-M6a-13, WP-M6a-14 (`journey_leg` und Segmentbestätigung in der Saga)
+  - extern: WP-M6a-02 (Tabelle `journey_leg` für die Rollenreferenzen je Segment)
+- **Vollabnahme erst mit:** WP-M6a-13, WP-M6a-14 (die Saga erzeugt die Segmente (WP-M6a-13) und ruft bei der Segmentbestätigung den hier gelieferten Snapshot-Baustein auf (WP-M6a-14, das dieses WP als Bauabhängigkeit führt); Abweisung der Bestätigung bei fehlender Pflichtrolle und Auswertung föderierter Aufträge sind erst mit ihnen nachweisbar)
 - **Entscheidungen:** D-01 – blockiert nur die Produktivschaltung der Rollenbelegung je Dienst.
 - **Größe:** M
 - **Nicht im Umfang:** Preisbestandteile je Rolle, `settlement_line` und Provision (M6c); Kostenverteilung (WP-M6b-15).
@@ -739,10 +748,11 @@
   5. Überschreitet das Datenalter die Staleness-Grenze, wird die Unsicherheit ausgewiesen.
   6. Anlegen, Ändern und Deaktivieren eines Feeds sind auditiert; ohne hinterlegte Lizenzangabe wird ein Feed nicht aktiviert; Zugangsdaten eines Feeds liegen nur als Secretreferenz vor.
   7. Ein Feed eines Mandanten ist für andere Mandanten weder sichtbar noch wirksam, solange keine Freigabe über einen Grant besteht.
+  8. Nachweisabgrenzung: In diesem WP werden Abruf, Validierung, Import, Feedkonfiguration und das Ereignis „Fahrplanabweichung“ nachgewiesen: Der Testfeed mit einem Ausfall und einer Verspätung führt zu `realtime_observation` mit Quellenzeit und zu genau einem Abweichungsereignis je Meldung, geprüft gegen einen Test-Consumer. Die Anzeige in der Reiseauskunft (Kriterium 1), die Abschnittsart aus Kriterium 4 und der Unsicherheitsausweis aus Kriterium 5 folgen mit WP-M6a-26, WP-M6a-27 und WP-M6a-19.
 - **Tests:** positiv: Testfeed mit Ausfall/Verspätung. negativ: defektes Archiv; Feed ohne Lizenzangabe; Zeitstempel in der Zukunft; Feed-URL in privatem Netz. konkurrierend (Datentrennung): zwei Mandanten mit eigenem Feed parallel – keine Vermischung; Import während Abfrage liefert konsistenten Stand. Ermöglicht E2E-087, AT-14, PH-AT-006.
 - **Abhängigkeiten:** intern: WP-M6b-02.
   - extern: WP-M2-05 (Haltepunktrevisionen als Zuordnungsziel)
-  - extern: WP-M6a-19, WP-M6a-26, WP-M6a-27 (Reiseauskunft und Informationssegmente konsumieren Feeddaten; Anschlussüberwachung konsumiert Abweichungsereignisse)
+- **Vollabnahme erst mit:** WP-M6a-19, WP-M6a-26, WP-M6a-27 (Reiseauskunft, Informationssegmente und Anschlussüberwachung sind Verbraucher der hier gelieferten Feeddaten und Abweichungsereignisse; die Aktualisierung der Reiseauskunft ist erst mit ihnen nachweisbar)
 - **Entscheidungen:** D-08 (Datenlizenzen, Feeds der Pilotpartner) – blockiert nur die Produktivschaltung realer Feeds.
 - **Größe:** M
 - **Nicht im Umfang:** fachliche Verarbeitung der Feeddaten für die Reiseauskunft (kanonisches Fahrplanmodell, Herkunftskennzeichnung, Versions-/Reihenfolgeregel, Darstellung – M6a, dort WP-M6a-26/WP-M6a-27; Akzeptanzkriterium 1 wird gemeinsam mit M6a nachgewiesen); NeTEx/SIRI/VDV-Adapter (nach D-08); Telematik-/Ladesystemadapter (M9, INT-013); Reiseplanung und Anschlussrisiko (M6a).
@@ -950,9 +960,10 @@
 - **OP-26 – Aufbewahrung der neuen Datenbestände.** Für Zustellversuche/Dead-Letter (`LH-6.17-INT-006`), isolierte Importfehler (`LH-6.17-INT-009`), Exportpakete (`LH-I.4-MUL-019`, `LH-6.17-INT-014`), Supportzugriffsprotokolle (`LH-I.4-MUL-018`), Traces (`LH-6.17-INT-015`) und gesperrte Partnerprojektionen nach Grantentzug (`LH-I.4-MUL-021`) nennt das Pflichtenheft keine Fristen; sie hängen an D-11. Gebaut wird mit konfigurierbarer Aufbewahrungsklasse.
 - **OP-27 – Last-, Fault-Injection- und Restore-Nachweis.** M5 liefert diese Nachweise nur für den P1-Stand. Für Grant-Gate (Online-Prüfung je Partneroperation, `LH-I.4-MUL-009`), Webhook-Zustellung (`LH-6.17-INT-006`) und Listenabruf (`LH-6.17-INT-007`) gibt es in M6 kein Arbeitspaket mit Lastziel; Kap. 08 §8.6 nennt nur vorläufige Ziele. Zu entscheiden ist, ob M6 ein eigenes Lastpaket erhält oder M8 (NFR) dies übernimmt.
 - **OP-28 – Sprachen je Dienst.** `LH-I.4-MUL-017` verlangt Sprachen je Dienst; das Pflichtenheft nennt weder die Pflichtsprachen noch die Fallbackreihenfolge noch, ob Rechtstexte in jeder aktivierten Sprache vorliegen müssen, bevor ein Dienst veröffentlicht werden darf.
-- **OP-28 – Reihenfolgekonflikt: zeitgesteuerte Ausführung für WP-M6b-06.** WP-M6b-06 setzt für Beginn und Ende der Partnerpause eine „zeitgesteuerte Ausführung" aus M1 voraus. Kein WP aus M0–M6 liefert einen allgemeinen zeitgesteuerten Ausführungskern; das einzige liefernde WP ist WP-M8d-34 (Meilenstein M8, später als M6). Zu entscheiden: Ausführungskern nach M1 vorziehen, in WP-M6b-06 einen eigenen Minimalmechanismus bauen (z. B. auf `operation` mit Lease/Fencing aus WP-M1-15) oder die Pausengrenzen rein lesend über das Gültigkeitsintervall prüfen.
-- **OP-29 – Reihenfolgekonflikt: Zyklus WP-M6b-06 ↔ M6a.** WP-M6b-06 nennt den Anbieterfilter (WP-M6a-04, WP-M6a-09) und bestätigte Segmente (WP-M6a-13, WP-M6a-14) als Abhängigkeit; WP-M6a-04 und WP-M6a-09 hängen ihrerseits von WP-M6b-06 ab (Anbieterfilter-Port), WP-M6a-13/14 mittelbar über WP-M6a-09. Die M6a-Seite ist Verbraucher des Ports; aufzulösen durch Bau gegen Port-Vertrag/Stub (WP-M6b-01, WP-M6a-01) und Verlagerung des Integrationsnachweises nach WP-M6b-34.
-- **OP-30 – Reihenfolgekonflikt: Zyklus WP-M6b-07 ↔ M6a.** WP-M6b-07 nennt die Grantrevisionsprüfung der Saga und den In-flight-Abgleich (WP-M6a-13, WP-M6a-14, WP-M6a-15) als Abhängigkeit; WP-M6a-13 hängt über WP-M6a-04 von WP-M6b-07 ab (WP-M6a-14/15 mittelbar). Auflösung wie OP-29.
-- **OP-31 – Reihenfolgekonflikt: Zyklus WP-M6b-09 ↔ M6a.** WP-M6b-09 nennt Segmentdaten und Payload-Übergabe im Hold-/Confirm-Aufruf (WP-M6a-12, WP-M6a-13) als Abhängigkeit; WP-M6a-12 hängt direkt von WP-M6b-09 ab (Projektionsbaustein), WP-M6a-13 über WP-M6a-12. Ohne Zyklus bleibt nur der Tabellenbezug `journey_leg` (WP-M6a-02). Auflösung wie OP-29.
-- **OP-32 – Reihenfolgekonflikt: Zyklus WP-M6b-11 ↔ M6a.** WP-M6b-11 nennt den Aufruf des Gebietsregel-Ports im Reisegraphen (WP-M6a-08, WP-M6a-09) als Abhängigkeit; beide hängen direkt von WP-M6b-11 ab. Auflösung wie OP-29.
-- **OP-33 – Reihenfolgekonflikt: Zyklus WP-M6b-27 ↔ M6a.** WP-M6b-27 nennt die Verbraucher der Feeddaten und Abweichungsereignisse (WP-M6a-19, WP-M6a-26, WP-M6a-27) als Abhängigkeit; alle drei hängen direkt von WP-M6b-27 ab. Auflösung wie OP-29.
+- **OP-28 – Zeitgesteuerte Ausführung für WP-M6b-06 (aufgelöst).** Kein WP aus M0–M6 liefert einen allgemeinen zeitgesteuerten Ausführungskern; WP-M1-18 liefert nur den Zeit-/DST-Baustein, der allgemeine Kern entsteht erst mit WP-M8d-34 im parallelen Strom M8. WP-M6b-06 hängt deshalb nicht mehr an WP-M8d-34: Beginn und Ende der Pause wirken lesend über das halboffene Gültigkeitsintervall gegen Serverzeit, die Ereignisse „Pausenbeginn/-ende“ löst ein eigener Fälligkeitslauf auf `operation` mit Lease/Fencing (WP-M1-15) über die Outbox (WP-M1-14) aus. Zu bestätigen bleibt nur, ob dieser Lauf nach Lieferung von WP-M8d-34 auf den gemeinsamen Kern umgestellt wird.
+- **OP-29 – Reihenfolge WP-M6b-06 ↔ M6a (aufgelöst).** WP-M6b-06 liefert den Anbieterfilter-/Pausen-Port zuerst und braucht zum Bau nur die Tabelle `journey_leg` (WP-M6a-02). Die Aufrufer WP-M6a-04, WP-M6a-09, WP-M6a-13 und WP-M6a-14 stehen im Feld „Vollabnahme erst mit“; im WP selbst wird am Port und Gate mit Seed-Segmenten nachgewiesen, die Ende-zu-Ende-Abnahme liegt in WP-M6b-34.
+- **OP-30 – Reihenfolge WP-M6b-07 ↔ M6a (aufgelöst).** WP-M6b-07 liefert Widerruf und Grantrevisionsprüfung zuerst; die Saga (WP-M6a-13, WP-M6a-14, WP-M6a-15) ist Aufruferin und steht im Feld „Vollabnahme erst mit“. Auflösung wie OP-29.
+- **OP-31 – Reihenfolge WP-M6b-09 ↔ M6a (aufgelöst).** WP-M6b-09 liefert den Projektionsbaustein zuerst und braucht zum Bau nur `journey_leg` (WP-M6a-02); die Payload-Übergabe im Hold-/Confirm-Aufruf (WP-M6a-12, WP-M6a-13) steht im Feld „Vollabnahme erst mit“. Auflösung wie OP-29.
+- **OP-32 – Reihenfolge WP-M6b-11 ↔ M6a (aufgelöst).** WP-M6b-11 liefert den Gebietsregel-Port zuerst; die Aufrufer im Reisegraphen (WP-M6a-08, WP-M6a-09) stehen im Feld „Vollabnahme erst mit“. Auflösung wie OP-29.
+- **OP-33 – Reihenfolge WP-M6b-27 ↔ M6a (aufgelöst).** WP-M6b-27 liefert Feedabruf, Import und das Ereignis „Fahrplanabweichung“ zuerst; die Verbraucher (WP-M6a-19, WP-M6a-26, WP-M6a-27) stehen im Feld „Vollabnahme erst mit“. Ebenso WP-M6b-12: Bau nur gegen `journey_leg` (WP-M6a-02), die Saga (WP-M6a-13, WP-M6a-14) im Feld „Vollabnahme erst mit“. Auflösung wie OP-29.
+- **OP-34 – Klärung Auftraggeber: eigener Suchindex außerhalb der Datenbank (`LH-I.4-MUL-009`, WP-M6b-05).** Die Architekturtabelle in Kap. 01 §1.1 nennt keinen Suchbaustein (Primärdaten PostgreSQL/PostGIS, Cache Redis, Reporting über Lesereplikat). Kap. 01 §1.7 verlangt Mandantenisolation auch in der „Suche“ und nennt den Suchindex als Ziel des Löschjobs, Kap. 02 §4.3 verlangt, dass „Suchindizes“ dieselben Grenzen übernehmen. Kein WP aus M0–M9 liefert einen Suchindex; WP-M1-11 schließt ihn aus. Zu entscheiden: (a) Es gibt keinen eigenen Suchindex, Suche läuft über PostgreSQL unter RLS und Grant-Gate; dann ist Kriterium 1 von WP-M6b-05 an den Such- und Listenendpunkten vollständig nachgewiesen und das Isolations- bzw. Löschziel „Suchindex“ entfällt (so geplant). (b) Ein eigener Suchindex wird gebaut; dann fehlt ein lieferndes WP samt Mandanten- und Grantisolation, und WP-M6b-05 erhält dieses WP als Abhängigkeit. Dieselbe Frage betrifft den Löschjob WP-M8e-15.
