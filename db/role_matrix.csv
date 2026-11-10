@@ -1,0 +1,39 @@
+table;runtime_privileges;note
+tenant;SELECT;Plattformverwaltung, nicht Runtime (B-02)
+currency;SELECT;global; nur per Migration gepflegt
+legal_entity;SELECT,INSERT,UPDATE;
+organization;SELECT,INSERT,UPDATE;
+membership;SELECT,INSERT,UPDATE;
+config_revision;SELECT,INSERT,UPDATE;
+service;SELECT,INSERT,UPDATE;
+service_area;SELECT,INSERT,UPDATE;
+stop_revision;SELECT,INSERT,UPDATE;
+partner_contract_version;SELECT,INSERT;unveränderlich (Trigger)
+cooperation_grant;SELECT,INSERT,UPDATE;
+passenger_private;SELECT,INSERT,UPDATE;
+travel_attempt;SELECT,INSERT,UPDATE;
+fare_quote;SELECT,INSERT;unveränderlich (Trigger)
+journey;SELECT,INSERT,UPDATE;
+journey_leg;SELECT,INSERT,UPDATE;
+operation;SELECT,INSERT,UPDATE;
+saga_step;SELECT,INSERT,UPDATE;
+vehicle;SELECT,INSERT,UPDATE;
+staff_shift;SELECT,INSERT,UPDATE;
+resource_release;SELECT,INSERT,UPDATE;
+vehicle_run;SELECT,INSERT,UPDATE;
+capacity_hold;SELECT,INSERT,UPDATE;
+booking;SELECT,INSERT,UPDATE;
+payment_intent;SELECT,INSERT,UPDATE;
+expense_document;SELECT,INSERT,UPDATE;
+cost_object;SELECT,INSERT,UPDATE;
+economic_event;SELECT,INSERT;unveränderlich (Trigger)
+allocation_set;SELECT,INSERT,UPDATE;
+allocation_line;SELECT,INSERT,UPDATE;
+fiscal_period;SELECT,INSERT,UPDATE;
+journal;SELECT,INSERT,UPDATE,DELETE;
+journal_line;SELECT,INSERT,UPDATE,DELETE;
+settlement_line;SELECT,INSERT,UPDATE;
+idempotency_record;SELECT,INSERT,UPDATE,DELETE;
+outbox;SELECT,INSERT,UPDATE,DELETE;
+inbox;SELECT,INSERT,UPDATE,DELETE;
+audit_event;SELECT,INSERT;unveränderlich (Trigger)

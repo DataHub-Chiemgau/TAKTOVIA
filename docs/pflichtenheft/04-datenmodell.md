@@ -124,3 +124,7 @@ Standardindizes: `(tenant_id,state,updated_at)` für Arbeitslisten, `(tenant_id,
 Positions-/Audit-/Ereignistabellen erst nach gemessenem Volumen zeitlich partitionieren; RLS auch über direkten Partitionszugriff prüfen und keine direkten Runtime-Rechte auf Partitionen vergeben. Unique-Keys bei Partitionierung berücksichtigen den Partitionsschlüssel oder eine separate globale Dedupe-Registry. Keine stille Abschwächung von Idempotenz durch Zeitpartitionen.
 
 Migrationen versioniert, expand/contract und mit Testdaten beider Mandanten. Backfilljobs sind fortsetzbar; neue Pflichtspalten werden nach Backfill validiert. Datenexport enthält Schema-/Policyversion und Checksumme; Eigentümerdaten und geteilte Projektionen getrennt exportieren. Ein Schema-/Datenbankwechsel pro Mandant muss opake Partnerreferenzen erhalten.
+
+## 4.8 Befunde aus der ersten Ausführung des Kernschemas
+
+Das Kernschema wurde am 10.11.2026 erstmals gegen PostgreSQL 16/PostGIS 3.4 ausgeführt und mit 49 Tests unter der Runtime-Rolle geprüft (`db/tests/`). Ergebnis und Maßnahmen: [Befundbericht](../umsetzungsplan/befunde/kernschema-befunde.md). Wesentlich für die Invarianten aus §4.5: Eine geschlossene `fiscal_period` ist unveränderlich (Migration `V2__haertung_periode.sql`), und die Runtime-Rolle hat auf `tenant` nur Leserechte. Führend für das ausgeführte Schema ist ab jetzt `db/migrations/`; `schema/kernschema.sql` bleibt der Entwurfsstand.

@@ -1,0 +1,44 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  vertraege:
+    name: Vertragsprüfung (WP-M0-13)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install PyYAML jsonschema openapi-spec-validator pglast
+      - run: python docs/pflichtenheft/validate_artifacts.py
+      - run: python docs/umsetzungsplan/check_wp.py
+
+  datenbank:
+    name: Datenbankintegration (WP-M0-17)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env: { POSTGRES_PASSWORD: ci_admin }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TAKTOVIA_DB_HOST: 127.0.0.1
+      TAKTOVIA_DB_NAME: taktovia_test
+      TAKTOVIA_DB_ADMIN_USER: postgres
+      TAKTOVIA_DB_ADMIN_PASSWORD: ci_admin
+      TAKTOVIA_DB_MIGRATOR_PASSWORD: ci_migrator
+      TAKTOVIA_DB_RUNTIME_PASSWORD: ci_runtime
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install "psycopg[binary]==3.2.*"
+      - run: python db/db.py bootstrap
+      - run: python db/db.py migrate
+      - run: python -m unittest discover -s db/tests -p 'test_*.py' -v
+      - name: Frische Datenbank, zweiter Lauf
+        run: python db/db.py reset && python db/db.py migrate && python -m unittest discover -s db/tests -p 'test_*.py'
