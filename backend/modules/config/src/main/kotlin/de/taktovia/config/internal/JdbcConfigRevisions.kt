@@ -81,12 +81,12 @@ internal class JdbcConfigRevisions(
      */
     internal fun insertDraft(
         j: JdbcOperations, id: UUID, scope: ScopeKind, scopeId: UUID, revision: Long?, schemaVersion: String, values: Map<String, Any?>,
-        from: Instant, to: Instant?, createdBy: String, reason: String,
+        from: Instant, to: Instant?, createdBy: String, reason: String, rolledBackFrom: UUID? = null,
     ): Row = j.query( // sql-lint: ok COLUMNS ist eine feste Konstante, Werte gebunden
-        "INSERT INTO taktovia.config_revision AS n (tenant_id, id, scope_kind, scope_id, revision, schema_version, values_json, effective_from, effective_to, created_by, reason) " +
-            "SELECT taktovia.current_tenant(), ?, ?, ?, COALESCE(CAST(? AS bigint), COALESCE(MAX(r.revision), 0) + 1), ?, ?::jsonb, ?, ?, ?, ? " +
+        "INSERT INTO taktovia.config_revision AS n (tenant_id, id, scope_kind, scope_id, revision, schema_version, values_json, effective_from, effective_to, created_by, reason, rolled_back_from) " +
+            "SELECT taktovia.current_tenant(), ?, ?, ?, COALESCE(CAST(? AS bigint), COALESCE(MAX(r.revision), 0) + 1), ?, ?::jsonb, ?, ?, ?, ?, CAST(? AS uuid) " +
             "FROM taktovia.config_revision r WHERE r.scope_kind = ? AND r.scope_id = ? RETURNING ${COLUMNS.replace("r.", "n.")}",
-        ROW, id, scope.name, scopeId, revision, schemaVersion, mapper.writeValueAsString(values), Timestamp.from(from), to?.let(Timestamp::from), createdBy, reason,
+        ROW, id, scope.name, scopeId, revision, schemaVersion, mapper.writeValueAsString(values), Timestamp.from(from), to?.let(Timestamp::from), createdBy, reason, rolledBackFrom,
         scope.name, scopeId,
     ).single()
 
@@ -152,6 +152,7 @@ internal class JdbcConfigRevisions(
         filter.scopeKind?.let { where += "r.scope_kind = ?"; args += it.name }
         filter.scopeId?.let { where += "r.scope_id = ?"; args += it }
         filter.state?.let { where += "r.state = ?"; args += it.name }
+        if (filter.superseded) { where += "r.state = 'PUBLISHED' AND r.effective_to IS NOT NULL AND r.effective_to <= ?"; args += Timestamp.from(clock.instant()) }
         after?.let { where += "(r.created_at, r.id) > (?, ?)"; args += Timestamp.from(it.first); args += it.second }
         // Die Bedingungen sind feste Texte; Werte sind gebunden.
         val sql = "SELECT $COLUMNS FROM taktovia.config_revision r WHERE ${where.joinToString(" AND ")} ORDER BY r.created_at, r.id LIMIT ?" // sql-lint: ok feste Bedingungstexte, Werte gebunden
@@ -209,9 +210,9 @@ internal class JdbcConfigRevisions(
         return normalized
     }
 
-    private fun actorOf(ctx: RequestContext) = ActorRef((if (ctx.actor.type == ActorType.SERVICE) "service:" else "user:") + ctx.actor.subject)
+    internal fun actorOf(ctx: RequestContext) = ActorRef((if (ctx.actor.type == ActorType.SERVICE) "service:" else "user:") + ctx.actor.subject)
 
-    private fun view(j: JdbcOperations, row: Row): ConfigRevisionView {
+    internal fun view(j: JdbcOperations, row: Row): ConfigRevisionView {
         // Vorgänger: die höchste publizierte Revision des Scopes mit kleinerer Nummer.
         val pred = j.query(
             "SELECT $COLUMNS FROM taktovia.config_revision r WHERE r.scope_kind = ? AND r.scope_id = ? AND r.revision < ? AND r.state = 'PUBLISHED' ORDER BY r.revision DESC LIMIT 1",
@@ -222,6 +223,7 @@ internal class JdbcConfigRevisions(
             row.id, row.scopeKind, row.scopeId, row.revision, row.state, row.schemaVersion, row.values, row.effectiveFrom, row.effectiveTo, row.createdBy, row.createdAt,
             row.approvedBy, row.publishedAt, row.reason, row.rowVersion,
             ChangeLogEntry(row.createdBy, row.createdAt, row.reason, row.effectiveFrom, row.effectiveTo, pred?.id, pred?.revision, changes),
+            row.validatedBy, row.validatedAt, row.approvedAt, row.publishedBy, row.rolledBackFrom,
         )
     }
 
@@ -229,19 +231,22 @@ internal class JdbcConfigRevisions(
         val id: UUID, val scopeKind: ScopeKind, val scopeId: UUID, val revision: Long, val state: RevisionState, val schemaVersion: String,
         val values: Map<String, Any?>, val effectiveFrom: Instant, val effectiveTo: Instant?, val createdBy: String, val createdAt: Instant,
         val approvedBy: String?, val publishedAt: Instant?, val reason: String, val rowVersion: Long,
+        val validatedBy: String? = null, val validatedAt: Instant? = null, val approvedAt: Instant? = null, val publishedBy: String? = null, val rolledBackFrom: UUID? = null,
     )
 
-    private val ROW = RowMapper { rs, _ ->
+    internal val ROW = RowMapper { rs, _ ->
         Row(
             rs.getObject("id", UUID::class.java), ScopeKind.valueOf(rs.getString("scope_kind")), rs.getObject("scope_id", UUID::class.java), rs.getLong("revision"),
             RevisionState.valueOf(rs.getString("state")), rs.getString("schema_version"), mapper.readValue(rs.getString("values_json"), Map::class.java).toStringKeyed(),
             rs.getTimestamp("effective_from").toInstant(), rs.getTimestamp("effective_to")?.toInstant(), rs.getString("created_by"), rs.getTimestamp("created_at").toInstant(),
             rs.getString("approved_by"), rs.getTimestamp("published_at")?.toInstant(), rs.getString("reason"), rs.getLong("row_version"),
+            rs.getString("validated_by"), rs.getTimestamp("validated_at")?.toInstant(), rs.getTimestamp("approved_at")?.toInstant(), rs.getString("published_by"),
+            rs.getObject("rolled_back_from", UUID::class.java),
         )
     }
 
-    private companion object {
+    internal companion object {
         const val COLUMNS = "r.id, r.scope_kind, r.scope_id, r.revision, r.state, r.schema_version, r.values_json::text AS values_json, r.effective_from, r.effective_to, " +
-            "r.created_by, r.created_at, r.approved_by, r.published_at, r.reason, r.row_version"
+            "r.created_by, r.created_at, r.approved_by, r.published_at, r.reason, r.row_version, r.validated_by, r.validated_at, r.approved_at, r.published_by, r.rolled_back_from"
     }
 }

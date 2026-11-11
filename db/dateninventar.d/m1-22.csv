@@ -1,0 +1,7 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+config_revision;validated_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Pruefende Person der Validierung (Pseudonym user:<uuid>)
+config_revision;validated_at;nein;KONFIGURATION;;;;
+config_revision;approved_at;nein;KONFIGURATION;;;;
+config_revision;published_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Veroeffentlichende Person (Pseudonym user:<uuid>)
+config_revision;publication_reason;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Grund der Veroeffentlichung (Freitext)
+config_revision;rolled_back_from;nein;KONFIGURATION;;;;

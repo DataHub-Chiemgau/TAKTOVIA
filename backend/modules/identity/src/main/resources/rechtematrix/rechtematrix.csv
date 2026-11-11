@@ -11,6 +11,8 @@ listRetentionRules;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
 updateCompanyProfile;company:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
 publishConfig;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
+approveConfigRevision;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
+rollbackConfigRevision;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
 recordDriverEvent;driver:events;-;M3;N;J;N;N;N;N;N;N;N;N
 cancelJourney;journeys:cancel;-;M2;J;N;J;N;N;N;N;N;N;N
 confirmJourney;journeys:book;-;M2;J;N;J;N;N;N;N;N;N;N

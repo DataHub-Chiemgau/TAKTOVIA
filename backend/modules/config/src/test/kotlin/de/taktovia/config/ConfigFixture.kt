@@ -84,7 +84,10 @@ class ConfigFixture(poolSize: Int = 8, clock: Clock = Clock.systemUTC()) : AutoC
      */
     fun publish(tenant: TenantId, revisionId: UUID) {
         for ((state, extra) in listOf("VALIDATED" to "", "APPROVED" to ", approved_by = 'user:zweite-person'", "PUBLISHED" to ", published_at = clock_timestamp()")) {
-            tx.run(tenant) { j -> j.update("UPDATE taktovia.config_revision SET state = ?$extra WHERE id = ?", state, revisionId) }
+            tx.run(tenant) { j ->
+                if (state == "PUBLISHED") j.update("UPDATE taktovia.config_revision p SET effective_to = n.effective_from FROM taktovia.config_revision n WHERE n.id = ? AND p.tenant_id = n.tenant_id AND p.scope_kind = n.scope_kind AND p.scope_id = n.scope_id AND p.state = 'PUBLISHED' AND p.effective_to IS NULL AND p.effective_from < n.effective_from", revisionId)   // Vorgänger schließen (WP-M1-22: Überlappungsverbot)
+                j.update("UPDATE taktovia.config_revision SET state = ?$extra WHERE id = ?", state, revisionId)
+            }
         }
     }
 

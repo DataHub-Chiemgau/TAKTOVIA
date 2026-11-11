@@ -29,13 +29,18 @@ interface ConfigApi {
     val effective: EffectiveConfig
     /** Wirkungsanalyse vor Publikation (WP-M1-23). */
     val impact: ImpactAnalysis
+    /** Validierung, Vier-Augen-Freigabe, Publikation und Rücknahme (WP-M1-22). */
+    val publication: ConfigPublication
 
     companion object {
-        /** [clock] bestimmt, welche Schema-Version „jetzt“ gilt (Tests setzen eine feste Uhr). */
+        /**
+         * [clock] bestimmt, welche Schema-Version „jetzt“ gilt und ab wann eine Publikation wirken darf (Tests setzen eine feste Uhr). [revisionValidators] sind die
+         * fachlichen Prüfregeln der Module (z. B. Modellregeln der Dienstkonfiguration, WP-M1-25), die bei der Validierung **und** noch einmal bei der Publikation laufen.
+         */
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,
-            impactProviders: List<ImpactProvider> = emptyList(),
-        ): ConfigApi = ConfigServicesFactory.create(ctxTx, audit, outbox, clock, authorizer, impactProviders)
+            impactProviders: List<ImpactProvider> = emptyList(), revisionValidators: List<RevisionValidator> = emptyList(),
+        ): ConfigApi = ConfigServicesFactory.create(ctxTx, audit, outbox, clock, authorizer, impactProviders, revisionValidators)
     }
 }
 
@@ -125,9 +130,16 @@ data class ConfigRevisionView(
     val approvedBy: String?,
     val publishedAt: Instant?,
     val reason: String,
-    /** Zeilenversion für `ETag`/`If-Match`; steigt mit jeder Änderung des Entwurfs. */
+    /** Zeilenversion für `ETag`/`If-Match`; steigt mit jeder Änderung des Entwurfs (Validierung, Freigabe, Publikation, Schließen des Intervalls). */
     val rowVersion: Long,
     val changeLog: ChangeLogEntry,
+    /** Prüfende Person und Zeitpunkt der erfolgreichen Validierung (WP-M1-22); `null` solange nicht validiert. */
+    val validatedBy: String? = null,
+    val validatedAt: Instant? = null,
+    val approvedAt: Instant? = null,
+    val publishedBy: String? = null,
+    /** Die fehlerhafte publizierte Revision, die diese Revision zurücknimmt (Rollback als neue Revision); sonst `null`. */
+    val rolledBackFrom: UUID? = null,
 )
 
 /** Entwurf anlegen. Ersteller ist immer der Akteur des Kontexts, nie ein Wert der Anfrage. */
@@ -152,7 +164,8 @@ data class UpdateDraft(
     val reason: String? = null,
 )
 
-data class RevisionFilter(val scopeKind: ScopeKind? = null, val scopeId: UUID? = null, val state: RevisionState? = null)
+/** [superseded] `true`: nur abgelöste Revisionen (publiziert, Intervall durch einen Nachfolger geschlossen und beendet); der Zustand „abgelöst“ wird nicht gespeichert (V1200). */
+data class RevisionFilter(val scopeKind: ScopeKind? = null, val scopeId: UUID? = null, val state: RevisionState? = null, val superseded: Boolean = false)
 
 /** Ergebnis der erneuten Prüfung eines Entwurfs gegen die zum Prüfzeitpunkt gültige Schema-Version. */
 data class RevalidationReport(val revisionId: UUID, val checkedAgainstVersion: String, val valid: Boolean, val violations: List<Violation>)
@@ -287,4 +300,61 @@ interface EffectiveConfig {
      * Mandantengrenze und Kontextprüfung bleiben.
      */
     fun resolveInTransaction(jdbc: JdbcOperations, ctx: RequestContext, request: EffectiveRequest): EffectiveConfigView
+}
+
+
+/**
+ * Fachliche Prüfregel eines Moduls für Konfigurationsrevisionen (WP-M1-22, WP-M1-25). Läuft bei der Validierung **und** noch einmal in der Transaktion der
+ * Publikation (der Zustand kann sich zwischenzeitlich geändert haben, z. B. die Schema-Version). Gibt es Verletzungen, wird nicht validiert bzw. nicht publiziert.
+ * Die Regel liest nur (der Aufrufer hält die Transaktion mit Mandantenkontext) und meldet Feldverletzungen mit JSON-Pointer relativ zur Revision (`/values/...`).
+ */
+interface RevisionValidator {
+    /** Stabiler Name (nur für Logs). */
+    val name: String
+    fun check(j: JdbcOperations, ctx: RequestContext, revision: ConfigRevisionView): List<Violation>
+}
+
+/** Ergebnis der Validierung: bei [violations] leer ist die Revision jetzt `VALIDATED`, sonst unverändert (`DRAFT`). [auditEventId] ist der Auditeintrag der Prüfung. */
+data class ValidationResult(val revision: ConfigRevisionView, val violations: List<Violation>, val auditEventId: java.util.UUID) {
+    val valid: Boolean get() = violations.isEmpty()
+}
+
+/**
+ * Publikationsbefehl: [effectiveFrom] muss dem bei der Freigabe gesehenen Wirksamkeitsbeginn der Revision entsprechen (die Freigabe gilt für genau diesen Stand
+ * einschließlich Datum; eine Datumsänderung ist eine Änderung des Entwurfs und braucht neue Prüfung und Freigabe), [reason] ist Pflicht (3 bis 1000 Zeichen),
+ * [impactReportId] der Wirkungsbericht zum unveränderten Revisionsstand (WP-M1-23).
+ */
+data class PublishCommand(val effectiveFrom: Instant, val reason: String?, val impactReportId: UUID?)
+
+/** Ergebnis der Publikation: die publizierte Revision und der Auditeintrag der Publikation (`audit_event_id` der API-Antwort). */
+data class PublicationResult(val revision: ConfigRevisionView, val auditEventId: UUID, val closedPredecessorId: UUID?)
+
+/**
+ * Rücknahme einer fehlerhaften publizierten Revision als **neue** Revision mit den Werten einer früheren: [targetRevisionId] `null` = die Vorgängerrevision der
+ * fehlerhaften (höchste publizierte Revision desselben Scopes mit kleinerer Nummer). [effectiveFrom] ist der gewünschte Wirksamkeitsbeginn der Rücknahme.
+ */
+data class RollbackCommand(val effectiveFrom: Instant, val reason: String?, val targetRevisionId: UUID? = null)
+
+/**
+ * Lebenszyklus nach dem Entwurf (WP-M1-22, LH-I.7-CFG-006): Entwurf → geprüft (`validate`) → freigegeben (`approve`, durch eine **zweite** Person) → publiziert
+ * (`publish`, zum Wirksamkeitsbeginn) → abgelöst (abgeleitet: durch Nachfolger geschlossen). Eine Änderung wirkt erst nach Publikation; ein Rollback ist eine neue Revision
+ * mit früheren Werten, die denselben Weg geht (kein Umgehen der Vier-Augen-Regel), und verändert weder die fehlerhafte Revision noch bestehende Zusagen
+ * (gebundene Revisionsreferenzen zeigen weiter ihre Ursprungsversion). Alle Befehle: 404 unbekannt/fremd, 412 veraltete Zeilenversion, 409 unzulässiger Zustand.
+ */
+interface ConfigPublication {
+    /** Funktionsscope `config:write`. Prüft gegen die jetzt gültige Schema-Version (Systemgrenzen, Sicherheitsinvarianten) und die [RevisionValidator]; Audit in jedem Fall. */
+    fun validate(ctx: RequestContext, id: UUID, expectedRowVersion: Long): ValidationResult
+
+    /** Funktionsscope `config:publish`. Nur `VALIDATED`; Prüfer ≠ Ersteller (403), und nur ein Mensch. Audit `config.revision.approved`. */
+    fun approve(ctx: RequestContext, id: UUID, expectedRowVersion: Long): ConfigRevisionView
+
+    /**
+     * Funktionsscope `config:publish`. Nur `APPROVED`; erneute Prüfung (422), Wirkungsbericht (422/409), Wirksamkeitsbeginn nicht rückwirkend (422), Scope-Sperre und
+     * Intervallprüfung (409 bei Überlappung mit einer später beginnenden publizierten Revision); schließt das Intervall der Vorgängerrevision. Zeile, Audit
+     * `config.revision.published` und Ereignis `config.revision_published` (bei einer Rücknahme zusätzlich `config.revision_rolled_back`) in einer Transaktion.
+     */
+    fun publish(ctx: RequestContext, id: UUID, expectedRowVersion: Long, cmd: PublishCommand): PublicationResult
+
+    /** Funktionsscope `config:publish`. [id] ist die fehlerhafte **publizierte** Revision; erzeugt die neue Revision als Entwurf (Audit `config.revision.reverted`). */
+    fun rollback(ctx: RequestContext, id: UUID, expectedRowVersion: Long, cmd: RollbackCommand): ConfigRevisionView
 }

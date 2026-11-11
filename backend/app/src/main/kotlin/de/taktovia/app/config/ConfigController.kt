@@ -8,6 +8,8 @@ import de.taktovia.config.api.CreateDraft
 import de.taktovia.config.api.EffectiveConfigView
 import de.taktovia.config.api.EffectiveParameter
 import de.taktovia.config.api.EffectiveRequest
+import de.taktovia.config.api.PublishCommand
+import de.taktovia.config.api.RollbackCommand
 import de.taktovia.config.api.EffectiveStatus
 import de.taktovia.config.api.ImpactReportView
 import de.taktovia.config.api.ParameterDefinition
@@ -101,7 +103,8 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
         val ctx = RequestContexts.require(request)
         val kind = scopeKind?.let { enumOf<ScopeKind>(it, "scope_kind") }
         val id = scopeId?.let { uuidOf(it, "scope_id") }
-        val st = state?.let { enumOf<RevisionState>(it, "state") }
+        val superseded = state == "SUPERSEDED"
+        val st = state?.takeIf { !superseded }?.let { enumOf<RevisionState>(it, "state") }
         if (asOf != null) {
             // Rekonstruktion: die zum Zeitpunkt wirksame publizierte Revision des Scopes (höchstens ein Eintrag)
             val at = instantOf(asOf, "as_of")
@@ -110,10 +113,10 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
             val found = config.revisions.asOf(ctx, kind!!, id!!, at)
             return linkedMapOf("items" to listOfNotNull(found?.let(::revisionJson)), "next_cursor" to null, "as_of" to at.toString())
         }
-        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "config-revisions:$kind:$id:$st")
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "config-revisions:$kind:$id:$st:$superseded")
         val lim = Paging.limit(limit)
         val pos = Paging.position(cursor, codec, scope)
-        val rows = config.revisions.list(ctx, RevisionFilter(kind, id, st), lim, pos?.let { it.createdAt to it.id })
+        val rows = config.revisions.list(ctx, RevisionFilter(kind, id, st, superseded), lim, pos?.let { it.createdAt to it.id })
         return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { revisionJson(it) }
     }
 
@@ -147,6 +150,49 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
         return resource(config.revisions.updateDraft(ctx, id, expected, cmd))
     }
 
+    /** Validierung (WP-M1-22): ein Entwurf wird gegen Schema-Version und Modellregeln geprüft; gültig = VALIDATED (200), ungültig = Entwurf mit Feldverletzungen (200, valid=false). */
+    @PostMapping("/revisions/{revision_id}/validate")
+    fun validate(@PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): ConfigRevisionResource {
+        val r = config.publication.validate(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch))
+        return ConfigRevisionResource(linkedMapOf(
+            "revision_id" to id.toString(), "valid" to r.valid, "state" to stateOf(r.revision), "row_version" to r.revision.rowVersion, "audit_event_id" to r.auditEventId.toString(),
+            "violations" to r.violations.map { linkedMapOf("pointer" to it.pointer, "code" to it.code.name, "message" to it.message) },
+        ), r.revision.rowVersion)
+    }
+
+    /** Vier-Augen-Freigabe (WP-M1-22): Prüfer ≠ Ersteller. */
+    @PostMapping("/revisions/{revision_id}/approve")
+    fun approve(@PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): ConfigRevisionResource =
+        resource(config.publication.approve(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch)))
+
+    /** Publikation (`publishConfig`, WP-M1-22): `Idempotency-Key` und `If-Match` verlangt die Filterkette (428/412), Wiederholung liefert dasselbe Ergebnis. */
+    @PostMapping("/revisions/{revision_id}/publish")
+    fun publish(
+        @PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest,
+    ): ConfigRevisionResource {
+        val ctx = RequestContexts.require(request)
+        val expected = Etag.parseIfMatch(ifMatch)
+        val r = config.publication.publish(ctx, id, expected, PublishCommand(
+            effectiveFrom = instantBody(body["effective_from"], "effective_from"), reason = body["reason"] as String?,
+            impactReportId = (body["impact_report_id"] as String?)?.let { uuidBody(it, "impact_report_id") }))
+        return ConfigRevisionResource(linkedMapOf(
+            "resource_id" to r.revision.id.toString(), "revision" to r.revision.rowVersion, "state" to "PUBLISHED", "effective_from" to r.revision.effectiveFrom.toString(),
+            "audit_event_id" to r.auditEventId.toString(),
+        ), r.revision.rowVersion)
+    }
+
+    /** Rücknahme einer fehlerhaften publizierten Revision als neue Revision (WP-M1-22); `If-Match` = Zeilenversion der fehlerhaften Revision. */
+    @PostMapping("/revisions/{revision_id}/rollback")
+    fun rollback(
+        @PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest,
+    ): ResponseEntity<ConfigRevisionResource> {
+        val ctx = RequestContexts.require(request)
+        val created = config.publication.rollback(ctx, id, Etag.parseIfMatch(ifMatch), RollbackCommand(
+            effectiveFrom = instantBody(body["effective_from"], "effective_from"), reason = body["reason"] as String?,
+            targetRevisionId = (body["target_revision_id"] as String?)?.let { uuidBody(it, "target_revision_id") }))
+        return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/config/revisions/${created.id}")).body(resource(created))
+    }
+
     /** Wirkungsanalyse für den Revisionsstand im `If-Match` (WP-M1-23); erfordert `config:write`, die Matrix prüft die Operation `requestConfigImpact`. */
     @PostMapping("/revisions/{revision_id}/impact")
     fun requestImpact(@PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): Map<String, Any?> =
@@ -159,12 +205,24 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
 
     // ---- Darstellung ------------------------------------------------------------------------------------------------------------------------
 
+    /** „Abgelöst“ wird nicht gespeichert, sondern abgeleitet: publiziert und das Intervall ist durch einen Nachfolger geschlossen und beendet. */
+    private fun stateOf(v: ConfigRevisionView): String =
+        if (v.state == RevisionState.PUBLISHED && v.effectiveTo != null && !v.effectiveTo!!.isAfter(Instant.now())) "SUPERSEDED" else v.state.name
+
+    private fun instantBody(v: Any?, name: String): Instant = try { OffsetDateTime.parse(v as String).toInstant() } catch (_: Exception) {
+        throw ProblemException.invalid(Violation("/$name", ViolationCode.INVALID_FORMAT))
+    }
+
+    private fun uuidBody(v: String, name: String): UUID = try { UUID.fromString(v) } catch (_: IllegalArgumentException) { throw ProblemException.invalid(Violation("/$name", ViolationCode.INVALID_FORMAT)) }
+
     private fun resource(v: ConfigRevisionView) = ConfigRevisionResource(revisionJson(v), v.rowVersion)
 
     private fun revisionJson(v: ConfigRevisionView): Map<String, Any?> = linkedMapOf(
-        "id" to v.id.toString(), "scope_kind" to v.scopeKind.name, "scope_id" to v.scopeId.toString(), "revision" to v.revision, "row_version" to v.rowVersion, "state" to v.state.name,
+        "id" to v.id.toString(), "scope_kind" to v.scopeKind.name, "scope_id" to v.scopeId.toString(), "revision" to v.revision, "row_version" to v.rowVersion, "state" to stateOf(v),
         "schema_version" to v.schemaVersion, "values" to v.values, "effective_from" to v.effectiveFrom.toString(), "effective_to" to v.effectiveTo?.toString(),
         "created_by" to v.createdBy, "approved_by" to v.approvedBy, "reason" to v.reason, "created_at" to v.createdAt.toString(), "published_at" to v.publishedAt?.toString(),
+        "validated_by" to v.validatedBy, "validated_at" to v.validatedAt?.toString(), "approved_at" to v.approvedAt?.toString(), "published_by" to v.publishedBy,
+        "rolled_back_from" to v.rolledBackFrom?.toString(),
         "change_log" to linkedMapOf(
             "changed_by" to v.changeLog.changedBy, "changed_at" to v.changeLog.changedAt.toString(), "reason" to v.changeLog.reason,
             "effective_from" to v.changeLog.effectiveFrom.toString(), "effective_to" to v.changeLog.effectiveTo?.toString(),
