@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Prüfvertrag für den Eingangsfilter signierter Ereignisse (WP-M1-16)
+  version: 0.0.0
+paths:
+  /v1/probe/inbound/{source}:
+    post:
+      summary: Testeingang für signierte Ereignisse (Quittung 202 ACCEPTED, 200 ALREADY_RECEIVED)
+      operationId: receiveProbeInbound
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - name: source
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_-]{1,62}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: bereits empfangen
+          content:
+            application/json:
+              schema:
+                type: object
+        '202':
+          description: angenommen
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '413':
+          $ref: common.yaml#/components/responses/Problem

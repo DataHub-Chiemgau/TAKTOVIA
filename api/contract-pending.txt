@@ -16,7 +16,6 @@ createLegalEntity  # POST /v1/legal-entities
 createRegion  # POST /v1/regions
 createService  # POST /v1/services
 createVehicleRole  # POST /v1/vehicle-roles
-createWebhookSubscription  # POST /v1/webhook-subscriptions
 getCompanyProfile  # GET /v1/company-profile
 getConfigRevision  # GET /v1/config/revisions/{revision_id}
 getEffectiveConfig  # GET /v1/config/effective
@@ -35,7 +34,6 @@ listRetentionRules  # GET /v1/retention-rules
 listServices  # GET /v1/services
 listSessions  # GET /v1/sessions
 listVehicleRoles  # GET /v1/vehicle-roles
-listWebhookSubscriptions  # GET /v1/webhook-subscriptions
 planJourney  # POST /v1/federation/journeys/plan
 publishConfig  # POST /v1/config/revisions/{revision_id}/publish
 publishRoster  # POST /v1/rosters/{roster_id}/publish

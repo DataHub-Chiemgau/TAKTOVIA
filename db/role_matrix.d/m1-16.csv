@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+webhook_subscription;SELECT,INSERT,UPDATE;WP-M1-16: Abonnement, nur Secret-Referenz, Deaktivieren per UPDATE, kein DELETE
+webhook_delivery;SELECT,INSERT,UPDATE;WP-M1-16: Zustellung mit Retry-Zustand und Dead-Letter
+webhook_quarantine;SELECT,INSERT;WP-M1-16: Eingangsereignis mit gleicher ID und abweichendem Payload (nur Hashes)

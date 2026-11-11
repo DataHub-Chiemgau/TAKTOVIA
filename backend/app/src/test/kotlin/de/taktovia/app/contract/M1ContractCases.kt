@@ -21,6 +21,8 @@ object M1ContractCases {
         val admin = UUID.randomUUID(); val passenger = UUID.randomUUID()
         init { env.grant(tenant, admin, "tenant_admin"); env.grant(tenant, passenger, "passenger") }
         val adminToken = env.token(admin); val passengerToken = env.token(passenger)
+        /** Legt ein Abonnement über die API an und liefert seine ID. */
+        fun create(): String = env.post("/v1/webhook-subscriptions", """{"url":"https://93.184.216.34/hook","event_types":["membership.granted"]}""", adminToken, extra = idem()).json["id"].asString()
     }
 
     private val identityCases: List<ContractCase> = listOf(
@@ -48,5 +50,21 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("GET", "/v1/operations/${UUID.randomUUID()}", headers = w.env.headers(w.adminToken)) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = (identityCases + platformCases).associateBy { it.operationId }
+    /** Webhook-Grundlage (WP-M1-16). */
+    private val webhookCases: List<ContractCase> = listOf(
+        ContractCase("createWebhookSubscription",
+            201, { val w = World(); ContractRequest("POST", "/v1/webhook-subscriptions", """{"url":"https://93.184.216.34/hook","event_types":["membership.granted"]}""", w.env.headers(w.adminToken, extra = idem())) },
+            403, { val w = World(); ContractRequest("POST", "/v1/webhook-subscriptions", """{"url":"https://93.184.216.34/hook","event_types":["membership.granted"]}""", w.env.headers(w.passengerToken, extra = idem())) }, server = { IdentityEnv.server }),
+        ContractCase("listWebhookSubscriptions",
+            200, { val w = World(); ContractRequest("GET", "/v1/webhook-subscriptions?limit=10", headers = w.env.headers(w.adminToken)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/webhook-subscriptions", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("getWebhookSubscription",
+            200, { val w = World(); val id = w.create(); ContractRequest("GET", "/v1/webhook-subscriptions/$id", headers = w.env.headers(w.adminToken)) },
+            404, { val w = World(); ContractRequest("GET", "/v1/webhook-subscriptions/${UUID.randomUUID()}", headers = w.env.headers(w.adminToken)) }, server = { IdentityEnv.server }),
+        ContractCase("deactivateWebhookSubscription",
+            200, { val w = World(); val id = w.create(); ContractRequest("POST", "/v1/webhook-subscriptions/$id/deactivate", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) },
+            404, { val w = World(); ContractRequest("POST", "/v1/webhook-subscriptions/${UUID.randomUUID()}/deactivate", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + platformCases + webhookCases).associateBy { it.operationId }
 }

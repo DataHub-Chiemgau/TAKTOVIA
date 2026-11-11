@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 /** LH-6.18-SEC-009: SSRF-Ziele in Webhook-Abonnements werden von der Schema-Prüfung (x-url) abgewiesen, bevor irgendein Handler läuft. */
 class SsrfApiTest {
     private val s get() = ProbeServer.production()
-    private fun create(url: String) = s.post("/v1/webhook-subscriptions", """{"url":"$url","event_types":["booking.confirmed"]}""")
+    private fun create(url: String) = s.post("/v1/webhook-subscriptions", """{"url":"$url","event_types":["membership.granted"]}""")
 
     @Test
     fun ssrf_ziele_werden_mit_feldfehler_abgewiesen() {
@@ -19,8 +19,8 @@ class SsrfApiTest {
             assertEquals(422, r.status, "$u -> ${r.text}")
             assertTrue(r.json["violations"].values().any { it["pointer"].asString() == "/url" && it["code"].asString() in setOf("TARGET_NOT_ALLOWED", "PATTERN_MISMATCH") }, r.text)
         }
-        // zulässiges Ziel passiert die Eingabeprüfung (der Endpunkt selbst ist erst mit WP-M1-16 gebaut: 404)
+        // zulässiges Ziel passiert die Eingabeprüfung; der Endpunkt (WP-M1-16) verlangt dann einen Anfragekontext: ohne Anmeldung 401, nicht 422
         val ok = create("https://partner.example.org/hooks/taktovia")
-        assertEquals(404, ok.status, ok.text)
+        assertEquals(401, ok.status, ok.text)
     }
 }

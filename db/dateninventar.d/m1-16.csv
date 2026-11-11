@@ -1,0 +1,34 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+webhook_subscription;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;url;nein;TECHNISCHER_BETRIEB;;;;Callbackziel, SSRF-geprueft, kein Personenbezug
+webhook_subscription;event_types;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;secret_ref;nein;TECHNISCHER_BETRIEB;;;;nur Referenz auf die Secret-Verwaltung, nie der Wert
+webhook_subscription;active;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;revision;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;created_by;ja;TECHNISCHER_BETRIEB;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_TECHNISCH;Akteur, der das Abonnement angelegt hat (actor_ref)
+webhook_subscription;created_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_subscription;deactivated_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;subscription_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;event_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;event_type;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;body;nein;TECHNISCHER_BETRIEB;;;;minimierte Ereignishuelle ohne Nutzdaten
+webhook_delivery;state;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;attempts;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;next_attempt_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;claimed_until;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;last_status;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;last_error;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;created_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;delivered_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_delivery;dead_lettered_at;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;source;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;event_id;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;payload_sha256;nein;TECHNISCHER_BETRIEB;;;;nur Hash, kein Payload
+webhook_quarantine;original_sha256;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;reason;nein;TECHNISCHER_BETRIEB;;;;
+webhook_quarantine;received_at;nein;TECHNISCHER_BETRIEB;;;;

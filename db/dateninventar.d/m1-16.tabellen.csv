@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+webhook_subscription;Webhook-Abonnement;LK_BETRIEB;nur Secret-Referenz
+webhook_delivery;Webhook-Zustellung;LK_TECHNISCH;minimierter Payload, Zustellzustand
+webhook_quarantine;Quarantaene Eingangsereignis;LK_TECHNISCH;nur Hashes

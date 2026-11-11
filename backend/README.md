@@ -93,3 +93,13 @@ Lang laufende Befehle werden als `operation` persistiert (`OperationService.enqu
 |---|---|
 | `lease-seconds` / `default-retry-after-seconds` / `reconcile-delay-seconds` | 60 / 3 / 5 |
 | `worker-enabled` (Zeitgeber nur mit `TenantSource`-Bean des Betriebs) / `poll-seconds` | `false` / 2 |
+
+## Webhook-Grundlage (WP-M1-16)
+
+`platform.webhook`: **Eingang** (`InboundWebhookReceiver`, HTTP-Anbindung `app.webhook.InboundWebhookResponder`): konstantzeitliche HMAC-Prüfung über den exakten Rohbody, Zeitfenster ±300 s, Größenlimit, Schlüssel-ID mit Rotation, Quittung 202 nach Inbox-Commit / 200 `ALREADY_RECEIVED` / 409 bei gleicher ID mit anderem Payload (Sicherheitsereignis, Quarantäne). **Abonnement** (`/v1/webhook-subscriptions`, Administrator, SSRF-Prüfung, Secret nur als Referenz, auditiert). **Ausgang** (`WebhookFanout`, `WebhookDeliveryWorker`): empfängergebundener minimierter Payload, Signatur, Ziel vor jedem Aufruf erneut geprüft, Retry-Staffel, `Retry-After`, Dead-Letter mit Betreiberwarnung. Vertrag: [webhooks.md](../docs/umsetzungsplan/vertraege/webhooks.md).
+
+| Einstellung (`taktovia.webhooks.…`, Planungsdefaults) | Standard |
+|---|---|
+| `max-attempts` / `timeout-seconds` | 12 / 10 |
+| `worker-enabled` (Zeitgeber nur mit `taktovia.secrets.dir` und `TenantSource`-Bean) / `poll-seconds` | `false` / 5 |
+| `taktovia.secrets.domain` (Geheimnisdomäne für `secret_ref`; sonst `taktovia-<umgebung>-secrets`) | – |

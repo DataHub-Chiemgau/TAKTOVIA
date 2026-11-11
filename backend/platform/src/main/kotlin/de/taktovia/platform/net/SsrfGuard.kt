@@ -25,6 +25,8 @@ class SsrfGuard(
     private val allowedPorts: Set<Int> = setOf(443),
     private val allowHttp: Boolean = false,
     private val resolver: (String) -> List<InetAddress> = { InetAddress.getAllByName(it).toList() },
+    /** Prüfung einer aufgelösten Adresse; nur Tests ersetzen sie (lokaler Empfänger auf Loopback), Produktivcode nutzt [isPublic]. */
+    private val addressCheck: (InetAddress) -> Boolean = { isPublic(it) },
 ) {
     private val internalSuffixes = listOf(".localhost", ".local", ".internal", ".localdomain", ".lan", ".home.arpa", ".intranet", ".corp", ".private")
     private val hostLabel = Regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
@@ -53,7 +55,7 @@ class SsrfGuard(
         // IP-Literale brauchen kein DNS; Namen werden aufgelöst und jede Adresse einzeln geprüft.
         val addrs = if (host.startsWith("[") || host.matches(Regex("^[0-9.]+$"))) listOf(InetAddress.getByName(host)) else resolver(host)
         require(addrs.isNotEmpty()) { "Ziel nicht auflösbar" }
-        require(addrs.all { isPublic(it) }) { "Ziel verweist auf eine nicht öffentliche Adresse" }
+        require(addrs.all { addressCheck(it) }) { "Ziel verweist auf eine nicht öffentliche Adresse" }
         SafeTarget(uri, port, addrs)
     }
 
