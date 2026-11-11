@@ -17,8 +17,13 @@ interface BookingdispatchApi {
     /** Kapazitätshold und Bestätigung mit Ressourcenvektor (Kernel, WP-M2-14; Vervollständigung in WP-M2-22/-23). */
     val holds: CapacityHolds
 
+    /** Fahrzeugkandidatenfilter nach Dienstpool, Dienstzeit, Freigabe, Ausstattung/Kapazität und Erreichbarkeit (WP-M2-15). */
+    val candidates: VehicleCandidates
+
     companion object {
-        fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900): BookingdispatchApi =
-            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis)
+        fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
+            plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null },
+        ): BookingdispatchApi =
+            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis, plannedPositions)
     }
 }
