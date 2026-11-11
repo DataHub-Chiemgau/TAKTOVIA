@@ -1,4 +1,4 @@
-import copy, json, shutil, tempfile, unittest
+import copy, json, shutil, sys, tempfile, unittest
 from pathlib import Path
 import yaml
 import bundle, lint
@@ -146,6 +146,27 @@ class Breaking(unittest.TestCase):
         new = copy.deepcopy(self.old)
         new['paths']['/v1/operations/{operation_id}']['get']['parameters'].append({'name': 'x', 'in': 'query', 'required': True, 'schema': {'type': 'string'}})
         self.assertTrue(any('neuer Pflichtparameter' in c for c in self.b.compare(self.old, new)))
+
+class TsClient(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import bundle, gen_ts_client
+        self.gen = gen_ts_client
+        self.spec = bundle.bundle()
+
+    def test_generierter_client_passt_zum_vertrag(self):
+        self.assertEqual(self.gen.TARGET.read_text(), self.gen.generate(self.spec))
+
+    def test_jede_operation_steht_in_der_tabelle(self):
+        text = self.gen.generate(self.spec)
+        for item in self.spec['paths'].values():
+            for m in ('get', 'post', 'put', 'patch', 'delete'):
+                if m in item: self.assertIn(f"  {item[m]['operationId']}: {{ method:", text)
+
+    def test_negativ_neue_operation_macht_die_alte_datei_ungueltig(self):
+        spec = copy.deepcopy(self.spec)
+        spec['paths']['/v1/neu'] = {'get': {'operationId': 'getNeu', 'responses': {'200': {'description': 'x'}}}}
+        self.assertNotEqual(self.gen.TARGET.read_text(), self.gen.generate(spec))
 
 if __name__ == '__main__':
     unittest.main()

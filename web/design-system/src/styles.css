@@ -1,0 +1,424 @@
+/*
+ * Designsystem TAKTOVIA: Tokens und Komponentenstile (WP-M1-43).
+ * Zielwerte: WCAG 2.2 AA, Touchflächen >= 44x44 CSS-Pixel, Reflow bei 320 CSS-Pixeln, 200 % Text, reduzierte Bewegung.
+ * Farben tragen nie allein die Information (Status immer mit Text und Symbol).
+ */
+:root {
+    --tk-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --tk-text: #1b1f23;
+    --tk-text-muted: #4a5460;
+    --tk-bg: #ffffff;
+    --tk-bg-subtle: #f3f5f7;
+    --tk-border: #8a949f;
+    --tk-primary: #0b5cad;
+    --tk-primary-text: #ffffff;
+    --tk-focus: #8a2be2;
+    --tk-ok: #1b6e2f;
+    --tk-warning: #8a5a00;
+    --tk-error: #b3261e;
+    --tk-info: #0b5cad;
+    --tk-ok-bg: #e6f4ea;
+    --tk-warning-bg: #fff4d6;
+    --tk-error-bg: #fce8e6;
+    --tk-info-bg: #e8f0fb;
+    --tk-space-1: 0.25rem;
+    --tk-space-2: 0.5rem;
+    --tk-space-3: 1rem;
+    --tk-space-4: 1.5rem;
+    --tk-radius: 0.375rem;
+    --tk-touch-min: 44px;
+    --tk-focus-width: 3px;
+    --tk-nav-width: 15rem;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--tk-font);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--tk-text);
+    background: var(--tk-bg);
+    overflow-wrap: anywhere;
+}
+
+img,
+svg,
+video {
+    max-width: 100%;
+}
+
+:focus-visible {
+    outline: var(--tk-focus-width) solid var(--tk-focus);
+    outline-offset: 2px;
+}
+
+h1 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin: 0 0 var(--tk-space-3);
+}
+
+h2 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.tk-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.tk-skip-link {
+    position: absolute;
+    left: var(--tk-space-2);
+    top: -10rem;
+    z-index: 100;
+    padding: var(--tk-space-2) var(--tk-space-3);
+    background: var(--tk-primary);
+    color: var(--tk-primary-text);
+}
+
+.tk-skip-link:focus {
+    top: var(--tk-space-2);
+}
+
+/* Bedienelemente */
+.tk-button,
+.tk-link-button,
+.tk-nav a,
+.tk-input,
+button,
+select,
+input:not([type='checkbox']):not([type='radio']) {
+    min-height: var(--tk-touch-min);
+    min-width: var(--tk-touch-min);
+    font: inherit;
+}
+
+button,
+.tk-button {
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border: 2px solid var(--tk-primary);
+    border-radius: var(--tk-radius);
+    background: var(--tk-primary);
+    color: var(--tk-primary-text);
+    cursor: pointer;
+}
+
+button[aria-disabled='true'],
+button:disabled {
+    background: var(--tk-bg-subtle);
+    color: var(--tk-text-muted);
+    border-color: var(--tk-border);
+    cursor: not-allowed;
+}
+
+.tk-button-secondary {
+    background: var(--tk-bg);
+    color: var(--tk-primary);
+}
+
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+    width: 100%;
+    max-width: 100%;
+    padding: var(--tk-space-2);
+    border: 2px solid var(--tk-border);
+    border-radius: var(--tk-radius);
+    background: var(--tk-bg);
+    color: var(--tk-text);
+}
+
+input[aria-invalid='true'] {
+    border-color: var(--tk-error);
+}
+
+/* Formulare */
+.tk-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-1);
+    margin-bottom: var(--tk-space-3);
+}
+
+.tk-field-error {
+    color: var(--tk-error);
+    margin: 0;
+}
+
+.tk-form-summary {
+    border: 2px solid var(--tk-error);
+    background: var(--tk-error-bg);
+    border-radius: var(--tk-radius);
+    padding: var(--tk-space-3);
+    margin-bottom: var(--tk-space-3);
+}
+
+.tk-form-summary a {
+    display: inline-block;
+    min-height: var(--tk-touch-min);
+    min-width: var(--tk-touch-min);
+    line-height: var(--tk-touch-min);
+}
+
+/* Status */
+.tk-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-1);
+    padding: 0 var(--tk-space-2);
+    border: 2px solid currentColor;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.tk-status[data-tone='ok'] {
+    color: var(--tk-ok);
+    background: var(--tk-ok-bg);
+}
+.tk-status[data-tone='warning'] {
+    color: var(--tk-warning);
+    background: var(--tk-warning-bg);
+}
+.tk-status[data-tone='error'] {
+    color: var(--tk-error);
+    background: var(--tk-error-bg);
+}
+.tk-status[data-tone='info'],
+.tk-status[data-tone='neutral'] {
+    color: var(--tk-info);
+    background: var(--tk-info-bg);
+}
+
+/* Zustände */
+.tk-state {
+    border: 2px solid var(--tk-border);
+    border-radius: var(--tk-radius);
+    padding: var(--tk-space-4);
+    background: var(--tk-bg-subtle);
+}
+
+.tk-state[data-kind='error'],
+.tk-state[data-kind='unavailable'],
+.tk-state[data-kind='offline'] {
+    border-color: var(--tk-error);
+}
+
+.tk-state[data-kind='forbidden'],
+.tk-state[data-kind='unauthenticated'] {
+    border-color: var(--tk-warning);
+}
+
+.tk-state h1,
+.tk-state h2 {
+    margin-top: 0;
+}
+
+/* Tabelle */
+.tk-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.tk-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tk-table th,
+.tk-table td {
+    text-align: left;
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border-bottom: 1px solid var(--tk-border);
+    vertical-align: top;
+}
+
+.tk-table caption {
+    text-align: left;
+    font-weight: 600;
+    padding: var(--tk-space-2) 0;
+}
+
+/* Dialog */
+.tk-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--tk-space-3);
+    background: rgb(0 0 0 / 55%);
+    z-index: 50;
+}
+
+.tk-dialog {
+    max-width: 32rem;
+    max-height: 100%;
+    overflow: auto;
+    background: var(--tk-bg);
+    border-radius: var(--tk-radius);
+    padding: var(--tk-space-4);
+}
+
+.tk-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--tk-space-2);
+}
+
+/* Rahmen: mobil ein Arbeitsschritt je Seite, Navigation ausklappbar */
+.tk-app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        'header'
+        'nav'
+        'main';
+    min-height: 100vh;
+}
+
+.tk-app-header {
+    grid-area: header;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--tk-space-2);
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border-bottom: 1px solid var(--tk-border);
+    background: var(--tk-bg-subtle);
+}
+
+.tk-app-brand {
+    font-weight: 700;
+    margin-right: auto;
+}
+
+.tk-nav {
+    grid-area: nav;
+    border-bottom: 1px solid var(--tk-border);
+}
+
+.tk-nav[data-open='false'] {
+    display: none;
+}
+
+.tk-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tk-nav a {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--tk-space-3);
+    color: var(--tk-text);
+    text-decoration: none;
+}
+
+.tk-nav a[aria-current='page'] {
+    font-weight: 700;
+    border-left: 4px solid var(--tk-primary);
+    background: var(--tk-info-bg);
+}
+
+.tk-main {
+    grid-area: main;
+    min-width: 0;
+    padding: var(--tk-space-3);
+}
+
+.tk-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--tk-space-2) var(--tk-space-4);
+    margin: 0 0 var(--tk-space-3);
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border: 1px solid var(--tk-border);
+    border-radius: var(--tk-radius);
+}
+
+.tk-context dt {
+    font-size: 0.875rem;
+    color: var(--tk-text-muted);
+}
+
+.tk-context dd {
+    margin: 0;
+}
+
+.tk-context div {
+    min-width: 0;
+}
+
+.tk-screen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--tk-space-3);
+}
+
+.tk-screen-detail {
+    border: 1px solid var(--tk-border);
+    border-radius: var(--tk-radius);
+    padding: var(--tk-space-3);
+}
+
+@media (min-width: 60rem) {
+    .tk-app {
+        grid-template-columns: var(--tk-nav-width) minmax(0, 1fr);
+        grid-template-areas:
+            'header header'
+            'nav main';
+    }
+
+    .tk-nav {
+        border-bottom: 0;
+        border-right: 1px solid var(--tk-border);
+    }
+
+    .tk-nav[data-open='false'] {
+        display: block;
+    }
+
+    .tk-menu-toggle {
+        display: none;
+    }
+
+    .tk-screen[data-detail='true'] {
+        grid-template-columns: minmax(0, 1fr) 20rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+.tk-context-list {
+    display: contents;
+}
