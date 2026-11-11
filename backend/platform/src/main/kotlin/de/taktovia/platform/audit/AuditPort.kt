@@ -1,6 +1,9 @@
 package de.taktovia.platform.audit
 
 import de.taktovia.platform.tenant.PlatformTenants
+import de.taktovia.platform.tenant.TenantId
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import de.taktovia.platform.tenant.TenantTransactions
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
@@ -52,12 +55,26 @@ class JdbcAuditPort(private val clock: Clock = Clock.systemUTC()) : AuditPort {
  * (z. B. fehlgeschlagener Login, OP-14) kann `audit_event` (tenant_id Pflicht) nicht beschrieben werden: [reportWithoutTenant] schreibt dann
  * nur eine strukturierte Logzeile; die Übernahme in einen Plattformmandanten ist mit OP-14/OP-08 zu klären.
  */
-class SecurityEventPort(private val audit: AuditPort, private val systemSink: TenantTransactions? = null) {
+class SecurityEventPort(
+    private val audit: AuditPort,
+    private val systemSink: TenantTransactions? = null,
+    /** Wird nach dem COMMIT der Transaktion mit dem Mandanten des Ereignisses benachrichtigt (Alarmregeln, WP-M1-41); nie vor dem COMMIT, nie bei Rollback. */
+    private val listener: SecurityEventListener? = null,
+) {
     private val log = LoggerFactory.getLogger("taktovia.security")
 
     /** In der Transaktion des Mandanten (zusammen mit der Fachänderung). */
-    fun report(jdbc: JdbcOperations, e: SecurityEvent): UUID =
-        audit.record(jdbc, AuditEntry(e.actor, e.action, e.obj, e.correlationId, e.details))
+    fun report(jdbc: JdbcOperations, e: SecurityEvent): UUID {
+        val id = audit.record(jdbc, AuditEntry(e.actor, e.action, e.obj, e.correlationId, e.details))
+        listener?.let { l ->
+            val tenant = jdbc.queryForObject("SELECT taktovia.current_tenant()", UUID::class.java)!!
+            val notify = { runCatching { l.reported(TenantId(tenant), e.action) }; Unit }   // ein Fehler der Alarmregeln verändert das Ereignis nie
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization { override fun afterCommit() = notify() })
+            } else notify()
+        }
+        return id
+    }
 
     /**
      * Ohne Mandantenkontext (OP-14, Vorschlag umgesetzt in WP-M1-12): immer eine strukturierte Logzeile; ist ein [systemSink] gesetzt, zusätzlich
@@ -70,4 +87,9 @@ class SecurityEventPort(private val audit: AuditPort, private val systemSink: Te
             log.warn("Sicherheitsereignis ohne Mandant nicht im Systemmandanten gespeichert: {}", ex.javaClass.simpleName)
         }
     }
+}
+
+/** Beobachter gemeldeter Sicherheitsereignisse (nach COMMIT). Enthält bewusst keine Ereignisinhalte. */
+fun interface SecurityEventListener {
+    fun reported(tenant: TenantId, action: String)
 }
