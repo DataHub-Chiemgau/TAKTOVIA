@@ -1,0 +1,267 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+checklist_template_revision;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;template_id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;version;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;vehicle_class;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;service_mode;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;state;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;published_at;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;revision;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+checklist_template_revision;created_at;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;template_revision_id;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;step_code;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;position;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;title;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;mandatory;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;safety_critical;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;answer_kind;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;photo_required_on_defect;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;revision;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+checklist_step;created_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;shift_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;driver_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Fahrer (Pseudonym-ID)
+inspection_run;template_revision_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;kind;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;status;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;outcome;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;started_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;completed_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;received_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;safety_revision;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;revision;nein;FLOTTE_SICHERHEIT;;;;
+inspection_run;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+inspection_run;created_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;inspection_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;step_code;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;answer;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;number_value;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;note;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;answered_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;revision;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+inspection_answer;created_at;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;inspection_id;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;step_code;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;amended_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+inspection_amendment;reason;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;new_answer;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;revision;nein;FLOTTE_SICHERHEIT;;;;
+inspection_amendment;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;case_number;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;reported_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;meldende Person (Pseudonym-ID)
+defect_case;reported_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;occurred_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;location_kind;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;location_value;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;category_code;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;description;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;severity;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;status;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;assignee_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;zuständige Person (Pseudonym-ID)
+defect_case;source_inspection_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;source_step_code;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;dismissed_reason;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;revision;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+defect_case;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;updated_at;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;id;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;inspection_id;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;acknowledged_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+known_defect_acknowledgement;revision;nein;FLOTTE_SICHERHEIT;;;;
+known_defect_acknowledgement;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;media_ref;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;sha256;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;captured_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;received_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;revision;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+defect_evidence;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;from_status;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;to_status;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;actor;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+defect_status_history;reason;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;revision;nein;FLOTTE_SICHERHEIT;;;;
+defect_status_history;created_at;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;id;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;status;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;workshop_ref;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;planned_at;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;cost_reference;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;revision;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+repair_order;created_at;nein;FLOTTE_SICHERHEIT;;;;
+repair_order;updated_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;repair_order_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;follow_up_inspection_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;decision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;decided_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle_release_decision;second_approver;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle_release_decision;decided_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;safety_revision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;revision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_release_decision;created_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;source;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;reason_code;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;status;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;set_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle_block;set_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;lifted_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle_block;lifted_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;release_decision_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;revision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_block;created_at;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;id;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;revision_no;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;rules;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;revision;nein;FLOTTE_SICHERHEIT;;;;
+alert_policy_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+alert_policy_revision;created_at;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;alert_kind;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;priority;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;dedupe_key;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;state;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;policy_revision_id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;revision;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+business_alert;created_at;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;updated_at;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;id;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;alert_id;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;acknowledged_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+alert_acknowledgement;note;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;revision;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;created_at;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;event_kind;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;rule;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;revision;nein;FLOTTE_SICHERHEIT;;;;
+workflow_rule_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+workflow_rule_revision;created_at;nein;FLOTTE_SICHERHEIT;;;;
+incident;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;id;nein;FLOTTE_SICHERHEIT;;;;
+incident;kind;nein;FLOTTE_SICHERHEIT;;;;
+incident;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;status;nein;FLOTTE_SICHERHEIT;;;;
+incident;dedupe_key;nein;FLOTTE_SICHERHEIT;;;;
+incident;rule_revision_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;replacement_operation_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;opened_at;nein;FLOTTE_SICHERHEIT;;;;
+incident;updated_at;nein;FLOTTE_SICHERHEIT;;;;
+incident;revision;nein;FLOTTE_SICHERHEIT;;;;
+incident;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+incident;created_at;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;id;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;incident_id;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;link_kind;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;object_id;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;revision;nein;FLOTTE_SICHERHEIT;;;;
+incident_link;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+incident_link;created_at;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;incident_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;event_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;rule_revision_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;action;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;outcome;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;revision;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+workflow_run_log;created_at;nein;FLOTTE_SICHERHEIT;;;;
+position_sample;tenant_id;nein;PERSONALEINSATZ;;;;
+position_sample;id;nein;PERSONALEINSATZ;;;;
+position_sample;vehicle_id;nein;PERSONALEINSATZ;;;;
+position_sample;shift_id;nein;PERSONALEINSATZ;;;;
+position_sample;position;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;STANDORT_ETA;LK_STANDORT;"Fahrzeugposition während des Dienstes; kurzlebige operative Rohdaten, Aufbewahrung OP-04"
+position_sample;accuracy_m;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;STANDORT_ETA;LK_STANDORT;"Genauigkeit der Positionsmessung; kurzlebige operative Rohdaten, Aufbewahrung OP-04"
+position_sample;measured_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;STANDORT_ETA;LK_STANDORT;"Messzeit der Position; kurzlebige operative Rohdaten, Aufbewahrung OP-04"
+position_sample;received_at;nein;PERSONALEINSATZ;;;;
+position_sample;revision;nein;PERSONALEINSATZ;;;;
+position_sample;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+position_sample;created_at;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;tenant_id;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;id;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;vehicle_id;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;shift_id;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;from_status;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;to_status;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;trigger;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;revision;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle_status_history;created_at;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;tenant_id;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;id;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;shift_id;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;run_id;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;plan_revision;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;device_id;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;acknowledged_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zeitpunkt der Planbestätigung durch den Fahrer
+driver_plan_ack;revision;nein;PERSONALEINSATZ;;;;
+driver_plan_ack;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+driver_plan_ack;created_at;nein;PERSONALEINSATZ;;;;
+boarding_code;tenant_id;nein;PERSONALEINSATZ;;;;
+boarding_code;id;nein;PERSONALEINSATZ;;;;
+boarding_code;booking_id;nein;PERSONALEINSATZ;;;;
+boarding_code;code_hash;nein;PERSONALEINSATZ;;;;
+boarding_code;valid_until;nein;PERSONALEINSATZ;;;;
+boarding_code;failed_attempts;nein;PERSONALEINSATZ;;;;
+boarding_code;used_at;nein;PERSONALEINSATZ;;;;
+boarding_code;revision;nein;PERSONALEINSATZ;;;;
+boarding_code;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+boarding_code;created_at;nein;PERSONALEINSATZ;;;;
+booking_change;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;change_kind;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;actor;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+booking_change;reason;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;revision;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle;vehicle_label;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;vehicle_type;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;equipment;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;active;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;master_revision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;capacity_schema_version;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+vehicle;created_at;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;updated_at;nein;FLOTTE_SICHERHEIT;;;;
