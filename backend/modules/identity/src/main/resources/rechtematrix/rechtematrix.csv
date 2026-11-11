@@ -8,6 +8,11 @@ operation_id;scope;datenklasse;meilenstein;passenger;driver;callcenter;support;d
 getCompanyProfile;company:read;-;M1;N;N;N;J;J;J;J;J;N;N
 listAuditEvents;audit:read;-;M1;N;N;N;J;N;N;J;N;N;N
 listRetentionRules;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
+listErasureJobs;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
+listErasureJournal;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
+createRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
+approveRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
+startErasureJob;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateCompanyProfile;company:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
 publishConfig;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N

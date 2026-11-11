@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+retention_rule;Aufbewahrungsregel (WP-M1-33);LK_STAMM;"Konfiguration je Datenklasse; Fristen nicht freigegeben (D-11)"
+erasure_job;Löschlauf (WP-M1-33);LK_AUDIT;Lauf- und Zählerstand ohne Personendaten
+erasure_journal;Lösch-/Sperrjournal (WP-M1-33);LK_AUDIT;append-only, nur Objektkennungen, Quelle für die Wiedereinspielung beim Restore

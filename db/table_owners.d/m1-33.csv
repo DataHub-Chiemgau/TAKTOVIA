@@ -1,0 +1,4 @@
+table;owner;quelle
+retention_rule;platform;WP-M1-33 (Kap. 04 §4.4 CFG/SEC/INT)
+erasure_job;platform;WP-M1-33 (Kap. 04 §4.4 CFG/SEC/INT)
+erasure_journal;platform;WP-M1-33 Lösch-/Sperrjournal (Kap. 01 §1.7)

@@ -1,0 +1,46 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+retention_rule;tenant_id;nein;KONFIGURATION;;;;
+retention_rule;id;nein;KONFIGURATION;;;;
+retention_rule;data_class;nein;KONFIGURATION;;;;
+retention_rule;retention_days;nein;KONFIGURATION;;;;
+retention_rule;action;nein;KONFIGURATION;;;;
+retention_rule;archive_days;nein;KONFIGURATION;;;;
+retention_rule;status;nein;KONFIGURATION;;;;
+retention_rule;revision;nein;KONFIGURATION;;;;
+retention_rule;created_at;nein;KONFIGURATION;;;;
+retention_rule;updated_at;nein;KONFIGURATION;;;;
+retention_rule;approved_at;nein;KONFIGURATION;;;;
+retention_rule;changed_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber der letzten Änderung (Pseudonym user:<uuid>), nie Name oder Mailadresse
+retention_rule;approved_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Freigeber der Regel (Vier-Augen, Pseudonym user:<uuid>)
+erasure_job;tenant_id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;rule_id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;rule_revision;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;data_class;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;action;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;retention_days;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;archive_days;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;status;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;resume_after;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;processed_count;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;skipped_count;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;result_code;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;operation_id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;lease_until;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;created_at;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;updated_at;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;finished_at;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;revision;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_job;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_AUDIT;Auslöser des Löschlaufs (Pseudonym user:<uuid>)
+erasure_journal;tenant_id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;seq;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;job_id;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;data_class;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;action;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;archive_until;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;applied_at;nein;SICHERHEITSPROTOKOLL;;;;
+erasure_journal;object_ref;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_AUDIT;"Objektart und Kennung (UUID) des bearbeiteten Datensatzes, keine Personendaten; Löschnachweis, damit ein Restore Gelöschtes nicht wiederbelebt"
+passenger_private;archived_at;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Beginn des Archivzustands: für operative Rollen nicht lesbar (WP-M1-33)
+passenger_private;archive_until;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Ende des Archivzustands, danach Anonymisierung
+passenger_private;erased_at;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Löschzustand (Tombstone): alle Personenangaben der Zeile entfernt

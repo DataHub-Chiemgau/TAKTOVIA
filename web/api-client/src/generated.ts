@@ -604,12 +604,64 @@ export interface RetentionRule {
   data_category: string;
   retention_days: number;
   action: 'ARCHIVE' | 'DELETE' | 'ANONYMIZE';
+  archive_days?: number | null;
+  status?: 'DRAFT' | 'APPROVED';
   revision: number;
 }
 
 export interface RetentionRuleUpdate {
   retention_days: number;
   action: 'ARCHIVE' | 'DELETE' | 'ANONYMIZE';
+  archive_days?: number | null;
+}
+
+export interface RetentionRuleCreate {
+  data_category: string;
+  retention_days: number;
+  action: 'ARCHIVE' | 'DELETE' | 'ANONYMIZE';
+  archive_days?: number | null;
+}
+
+export type RetentionRuleApprovalRequest = Record<string, never>;
+
+export interface ErasureJobStart {
+  rule_id: UUID;
+}
+
+export interface ErasureJob {
+  id: UUID;
+  rule_id: UUID;
+  data_category: string;
+  action: 'ARCHIVE' | 'DELETE' | 'ANONYMIZE';
+  status: 'RUNNING' | 'RESUMABLE' | 'COMPLETED' | 'ABORTED';
+  processed_count: number;
+  skipped_count: number;
+  result_code?: string | null;
+  operation_id?: UUID | null;
+  created_at: string;
+  finished_at?: string | null;
+  revision: number;
+}
+
+export interface ErasureJobPage {
+  items: ErasureJob[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface ErasureJournalEntry {
+  id: UUID;
+  job_id: UUID;
+  data_category: string;
+  object_ref: string;
+  action: 'ARCHIVE' | 'DELETE' | 'ANONYMIZE';
+  applied_at: string;
+}
+
+export interface ErasureJournalPage {
+  items: ErasureJournalEntry[];
+  next_cursor: string | null;
+  as_of: string;
 }
 
 export interface RetentionRulePage {
@@ -1922,12 +1974,47 @@ export interface Operations {
     body: undefined;
     response: RetentionRulePage;
   };
+  createRetentionRule: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: RetentionRuleCreate;
+    response: RetentionRule;
+  };
   updateRetentionRule: {
     path: { rule_id: UUID };
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: RetentionRuleUpdate;
     response: RetentionRule;
+  };
+  approveRetentionRule: {
+    path: { rule_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: RetentionRuleApprovalRequest;
+    response: RetentionRule;
+  };
+  listErasureJobs: {
+    path: Record<string, never>;
+    query: { limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ErasureJobPage;
+  };
+  startErasureJob: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ErasureJobStart;
+    response: ErasureJob;
+  };
+  listErasureJournal: {
+    path: Record<string, never>;
+    query: { job_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ErasureJournalPage;
   };
   listRunRevisions: {
     path: { run_id: UUID };
@@ -2655,7 +2742,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateCompanyProfile: { method: 'PUT', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['company:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRetentionRules: { method: 'GET', path: '/v1/retention-rules', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createRetentionRule: { method: 'POST', path: '/v1/retention-rules', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['retention:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   updateRetentionRule: { method: 'PUT', path: '/v1/retention-rules/{rule_id}', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  approveRetentionRule: { method: 'POST', path: '/v1/retention-rules/{rule_id}/approvals', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listErasureJobs: { method: 'GET', path: '/v1/erasure-jobs', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  startErasureJob: { method: 'POST', path: '/v1/erasure-jobs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['retention:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listErasureJournal: { method: 'GET', path: '/v1/erasure-journal', pathParams: [], query: ['job_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listRunRevisions: { method: 'GET', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRunRevision: { method: 'POST', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['dispatch:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },

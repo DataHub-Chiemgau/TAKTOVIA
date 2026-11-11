@@ -193,6 +193,54 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Aufbewahrungsregel als Entwurf anlegen
+      operationId: createRetentionRule
+      security:
+      - oidc:
+        - retention:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: Die Regel entsteht als Entwurf und gilt erst nach Freigabe durch eine zweite Person (approveRetentionRule). Fristen sind nicht festgelegt (D-11);
+        die Werte liefert der Aufrufer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionRuleCreate'
   /v1/retention-rules/{rule_id}:
     put:
       summary: Aufbewahrungsregel ändern
@@ -248,6 +296,179 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RetentionRuleUpdate'
+  /v1/retention-rules/{rule_id}/approvals:
+    post:
+      summary: Aufbewahrungsregel freigeben
+      operationId: approveRetentionRule
+      security:
+      - oidc:
+        - retention:write
+      parameters:
+      - name: rule_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: 'Vier-Augen-Prinzip: die Freigabe verlangt eine andere Person als die letzte Änderung (403); je Datenklasse gilt höchstens eine freigegebene Regel (409).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionRuleApprovalRequest'
+  /v1/erasure-jobs:
+    get:
+      summary: Löschläufe auflisten
+      operationId: listErasureJobs
+      security:
+      - oidc:
+        - retention:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureJobPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Löschlauf für eine freigegebene Regel starten
+      operationId: startErasureJob
+      security:
+      - oidc:
+        - retention:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureJob'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: Der Lauf wird als fortsetzbarer Job über die operation `RETENTION_RUN` ausgeführt und wendet nur die freigegebene Regel im Mandantenkontext an;
+        eine nicht freigegebene Regel ergibt 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErasureJobStart'
+  /v1/erasure-journal:
+    get:
+      summary: Löschprotokoll lesen
+      operationId: listErasureJournal
+      security:
+      - oidc:
+        - retention:read
+      parameters:
+      - name: job_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur die Einträge dieses Laufs.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureJournalPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: Je bearbeitetes Objekt Art und Kennung (UUID) und Aktion; nie Personendaten (Lösch-/Sperrjournal).
 components:
   schemas:
     AuditEvent:
@@ -430,6 +651,20 @@ components:
           - ARCHIVE
           - DELETE
           - ANONYMIZE
+        archive_days:
+          type:
+          - integer
+          - 'null'
+          format: int64
+          minimum: 1
+          maximum: 36500
+          description: Dauer des Archivzustands (nur Aktion ARCHIVE), danach Anonymisierung.
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - APPROVED
+          description: Entwurf oder freigegeben; nur eine freigegebene Regel wird von einem Löschlauf angewendet.
         revision:
           type: integer
           format: int64
@@ -441,6 +676,8 @@ components:
       - retention_days
       - action
       - revision
+      description: Bezugszeitpunkt ist das im Datensatz geführte Aufbewahrungsende (Fahrgastkonto `retention_until`); `retention_days` ist die Nachlauffrist danach.
+        `data_category` ist die Löschklasse des Dateninventars (z. B. LK_PII).
     RetentionRuleUpdate:
       type: object
       additionalProperties: false
@@ -456,12 +693,212 @@ components:
           - ARCHIVE
           - DELETE
           - ANONYMIZE
+        archive_days:
+          type:
+          - integer
+          - 'null'
+          format: int64
+          minimum: 1
+          maximum: 36500
       required:
       - retention_days
       - action
+      description: Eine Änderung setzt die Regel auf den Entwurf zurück; sie braucht eine neue Freigabe.
       examples:
       - retention_days: 365
         action: ANONYMIZE
+    RetentionRuleCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        data_category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        retention_days:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 36500
+        action:
+          type: string
+          enum:
+          - ARCHIVE
+          - DELETE
+          - ANONYMIZE
+        archive_days:
+          type:
+          - integer
+          - 'null'
+          format: int64
+          minimum: 1
+          maximum: 36500
+      required:
+      - data_category
+      - retention_days
+      - action
+      examples:
+      - data_category: LK_PII
+        retention_days: 30
+        action: ANONYMIZE
+    RetentionRuleApprovalRequest:
+      type: object
+      additionalProperties: false
+      properties: {}
+      description: Leer; die Freigabe bezieht sich auf die Revision aus If-Match.
+    ErasureJobStart:
+      type: object
+      additionalProperties: false
+      properties:
+        rule_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - rule_id
+    ErasureJob:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        rule_id:
+          $ref: common.yaml#/components/schemas/UUID
+        data_category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        action:
+          type: string
+          enum:
+          - ARCHIVE
+          - DELETE
+          - ANONYMIZE
+        status:
+          type: string
+          enum:
+          - RUNNING
+          - RESUMABLE
+          - COMPLETED
+          - ABORTED
+          description: läuft, fortsetzbar, abgeschlossen, abgebrochen (nicht freigegebene Regel, fehlendes Ziel).
+        processed_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        skipped_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        result_code:
+          type:
+          - string
+          - 'null'
+          maxLength: 64
+        operation_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - rule_id
+      - data_category
+      - action
+      - status
+      - processed_count
+      - skipped_count
+      - created_at
+      - revision
+    ErasureJobPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErasureJob'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    ErasureJournalEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        job_id:
+          $ref: common.yaml#/components/schemas/UUID
+        data_category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        object_ref:
+          type: string
+          minLength: 3
+          maxLength: 80
+          description: Objektart und UUID (`passenger:<uuid>`), nie Personendaten.
+        action:
+          type: string
+          enum:
+          - ARCHIVE
+          - DELETE
+          - ANONYMIZE
+        applied_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - job_id
+      - data_category
+      - object_ref
+      - action
+      - applied_at
+    ErasureJournalPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErasureJournalEntry'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
     RetentionRulePage:
       type: object
       additionalProperties: false

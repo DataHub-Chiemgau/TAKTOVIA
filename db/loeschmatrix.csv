@@ -1,0 +1,8 @@
+datenklasse;aktion_vorschlag;frist_tage;frist_status;umsetzung;bemerkung
+LK_PII;ANONYMIZE;;OFFEN_D11;WP-M1-33 (Ziel passenger, Modul identity);Kontakt- und Unterstützungsdaten des Fahrgastkontos: Tombstone ohne Personenbezug, Einwilligungsnachweis bleibt ohne Identität
+LK_STANDORT;DELETE;;OFFEN_D11;Ziel folgt mit WP-M3-34 (position_sample) und der Nachfrageanalyse;Standort- und ETA-Daten sind kurzlebig (Kap. 01 §1.7); Frist und Zulässigkeit nach DSFA (WP-M1-42)
+LK_BETRIEB;ANONYMIZE;;OFFEN_D11;Ziele folgen mit den Fachmodulen (M2, M3);operative Daten mit begrenzter Lebensdauer (Buchung, Fahrt, Schicht, Sitzung)
+LK_BELEG;ARCHIVE;;OFFEN_D11;Finanzarchiv M4 (invoice_archive_years);aufbewahrungspflichtig: nie gelöscht, nur archiviert und von entbehrlicher PII getrennt
+LK_AUDIT;ARCHIVE;;OFFEN_D11;kontrollierter Lifecycleprozess für unveränderliche Tabellen (Kap. 04 §4.5);append-only, Aufbewahrung nach Sicherheitskonzept
+LK_TECHNISCH;DELETE;;OFFEN_D11;Bereinigung bestehender Dienste (Idempotenz, Zustellung);kurzlebige technische Hilfsdaten
+LK_STAMM;ANONYMIZE;;OFFEN_D11;Ende des Mandanten (M8);Urheber- und Subjektverweise in Stammdaten

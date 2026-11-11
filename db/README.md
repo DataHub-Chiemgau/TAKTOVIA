@@ -16,6 +16,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |
 | `dateninventar.d/*.csv`, `dateninventar_katalog.json`, `dateninventar.py` | Dateninventar mit Zweck, Rechtsgrundlage, Schutz- und Löschklasse je Spalte (WP-M1-32); `python db/dateninventar.py check` gleicht das Schema ab, `export --write` erzeugt den Export für UI-20 |
 | `role_matrix_spalten.d/*.csv` | Spaltenrechte (Rolle × Tabelle × Spalte), wo Tabellenrechte nicht genügen (WP-M1-31: `passenger_private` ohne Ciphertext-Spalten für `taktovia_runtime`, nur `taktovia_fields` liest sie); geprüft von `test_08_feldschutz.py` |
+| `migrations/V10330__aufbewahrung_loeschung.sql`, `loeschmatrix.csv` | WP-M1-33: `retention_rule`, `erasure_job`, `erasure_journal` (append-only), Archiv- und Löschzustand von `passenger_private` (Trigger, restriktive RLS-Policy `archive_hidden`), `replay_erasure_journal` für den Restore (nur Betriebsrolle); die Löschmatrix (Datenklasse × Aktion, **Fristen offen D-11**) ist die Anlage, `test_10_retention.py` meldet eine personenbezogene Datenklasse ohne Eintrag |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |
 
 ## Lokal

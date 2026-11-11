@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { AuditList } from '../audit/AuditList';
 import { useScreenContext } from '../ScreenContext';
 import { DateninventarExport } from './DateninventarExport';
+import { RetentionOverview } from './RetentionOverview';
 import type { Dateninventar } from './DateninventarExport';
 
-/** UI-20 Basis (Datenschutz, Audit, Support): Export des Dateninventars und lesende Auditliste mit Zweckangabe (WP-M1-12); Fälle folgen mit WP-M1-33/-42. */
+/** UI-20 Basis (Datenschutz, Audit, Support): Export des Dateninventars und lesende Auditliste mit Zweckangabe (WP-M1-12); Aufbewahrungsregeln und Löschprotokoll (WP-M1-33); weitere Fälle folgen mit WP-M1-42. */
 export function DatenschutzScreen() {
   const context = useScreenContext({
     tone: 'info',
@@ -41,6 +42,7 @@ export function DatenschutzScreen() {
       >
         {(d) => <DateninventarExport inventar={d} />}
       </ResourceView>
+      <RetentionOverview />
       <AuditList />
     </ScreenFrame>
   );
