@@ -655,6 +655,41 @@ export interface RunRevisionPage {
   as_of: string;
 }
 
+export interface DriverReleaseCreate {
+  driver_id: UUID;
+  recipient_tenant_id: UUID;
+  service_ids: UUID[];
+  valid_from: Timestamp;
+  valid_to: Timestamp;
+}
+
+export interface DriverRelease {
+  id: UUID;
+  driver_id: UUID;
+  recipient_tenant_id: UUID;
+  service_ids: UUID[];
+  valid_from: string;
+  valid_to: string;
+  revoked_at: string | null;
+  revision: number;
+}
+
+export interface DriverReleaseProjection {
+  id: UUID;
+  service_ids: UUID[];
+  valid_from: string;
+  valid_to: string;
+  qualifications: ({
+    code: string;
+    valid_from: string;
+    valid_to: string | null;
+  })[];
+  contact_channel: {
+    kind: 'PHONE' | 'EMAIL' | 'APP';
+    value: string;
+  };
+}
+
 export interface VehicleRoleAssignment {
   id: UUID;
   vehicle_id: UUID;
@@ -1243,7 +1278,7 @@ export interface Notification {
   template: string;
   state: 'QUEUED' | 'SENDING' | 'RETRY_WAIT' | 'UNKNOWN' | 'DELIVERED' | 'FAILED' | 'SUPPRESSED';
   attempts: number;
-  last_failure: 'INVALID_CONTACT' | 'PROVIDER_ERROR' | 'RETRIES_EXHAUSTED' | null;
+  last_failure: 'INVALID_CONTACT' | 'PROVIDER_ERROR' | 'RETRIES_EXHAUSTED' | 'TEMPLATE_UNAVAILABLE' | 'NO_VERIFIED_CONTACT' | null;
   created_at: string;
   revision: number;
 }
@@ -1381,6 +1416,7 @@ export interface PassengerPage {
 
 export interface ProviderEvent {
   event_id: string;
+  provider?: string;
   sequence?: number;
   type: string;
   created_at: string;
@@ -1507,6 +1543,11 @@ export interface ConfigRevision {
   reason?: string;
   created_at?: string;
   published_at?: string | null;
+  validated_by?: string | null;
+  validated_at?: string | null;
+  approved_at?: string | null;
+  published_by?: string | null;
+  rolled_back_from?: UUID | null;
   change_log?: ConfigChangeLog;
 }
 
@@ -1523,11 +1564,20 @@ export interface ConfigRevisionCreate {
 export interface ConfigValidationReport {
   revision_id: UUID;
   valid: boolean;
+  state?: ConfigRevisionState;
+  row_version?: number;
+  audit_event_id?: UUID;
   violations: ({
     pointer: string;
     code: string;
     message: string;
   })[];
+}
+
+export interface ConfigRollbackRequest {
+  effective_from: Timestamp;
+  reason: string;
+  target_revision_id?: UUID;
 }
 
 export interface ConfigImpactReport {
@@ -1556,6 +1606,30 @@ export interface ConfigRevisionPage {
   items: ConfigRevision[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export type OfferModel = 'AREA_ON_DEMAND' | 'LINE_ON_DEMAND' | 'STATION_FEEDER';
+
+export interface ServiceOfferModelRules {
+  model: OfferModel;
+  label: string;
+  required: string[];
+  forbidden: string[];
+  optional: string[];
+}
+
+export interface ServiceOfferModelList {
+  items: ServiceOfferModelRules[];
+}
+
+export interface ServiceConfiguration {
+  service_id: UUID;
+  as_of: string;
+  offer_model: OfferModel | null;
+  model_rules: ServiceOfferModelRules | null;
+  parameters: Record<string, unknown>;
+  revision_id: UUID | null;
+  effective_from: string | null;
 }
 
 export interface Service {
@@ -1868,6 +1942,27 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: RunRevisionCreate;
     response: RunRevision;
+  };
+  createDriverRelease: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: DriverReleaseCreate;
+    response: DriverRelease;
+  };
+  revokeDriverRelease: {
+    path: { release_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: undefined;
+  };
+  getDriverReleaseProjection: {
+    path: { release_id: UUID };
+    query: { service_id: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverReleaseProjection;
   };
   listVehicleRoles: {
     path: Record<string, never>;
@@ -2380,6 +2475,20 @@ export interface Operations {
     body: undefined;
     response: ConfigValidationReport;
   };
+  approveConfigRevision: {
+    path: { revision_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: ConfigRevision;
+  };
+  rollbackConfigRevision: {
+    path: { revision_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ConfigRollbackRequest;
+    response: ConfigRevision;
+  };
   getConfigImpactReport: {
     path: { impact_report_id: UUID };
     query: Record<string, never>;
@@ -2414,6 +2523,20 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: ServiceUpdate;
     response: Service;
+  };
+  getServiceConfiguration: {
+    path: { service_id: UUID };
+    query: { at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceConfiguration;
+  };
+  listServiceOfferModels: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOfferModelList;
   };
   listMySessions: {
     path: Record<string, never>;
@@ -2535,6 +2658,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateRetentionRule: { method: 'PUT', path: '/v1/retention-rules/{rule_id}', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRunRevisions: { method: 'GET', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRunRevision: { method: 'POST', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['dispatch:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  revokeDriverRelease: { method: 'DELETE', path: '/v1/driver-releases/{release_id}', pathParams: ['release_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['driver-releases:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getDriverReleaseProjection: { method: 'GET', path: '/v1/driver-releases/{release_id}/projection', pathParams: ['release_id'], query: ['service_id'], headers: ['traceparent'], hasBody: false, scopes: ['driver-releases:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listVehicleRoles: { method: 'GET', path: '/v1/vehicle-roles', pathParams: [], query: ['vehicle_id', 'as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverClearances: { method: 'GET', path: '/v1/driver-clearances', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -2600,7 +2726,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   recordMyConsent: { method: 'POST', path: '/v1/me/privacy/consents', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
-  receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
+  receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -2608,11 +2734,15 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getConfigRevision: { method: 'GET', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateConfigRevision: { method: 'PATCH', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   validateConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/validate', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  approveConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/approve', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  rollbackConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/rollback', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getConfigImpactReport: { method: 'GET', path: '/v1/config/impact-reports/{impact_report_id}', pathParams: ['impact_report_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getServiceConfiguration: { method: 'GET', path: '/v1/services/{service_id}/configuration', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listServiceOfferModels: { method: 'GET', path: '/v1/service-offer-models', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
   revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
