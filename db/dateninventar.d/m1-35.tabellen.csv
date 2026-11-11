@@ -1,0 +1,5 @@
+tabelle;aggregat;loeschklasse;bemerkung
+driver;Fahrerstamm minimal (WP-M1-35);LK_STAMM;Fixture bis zum Fahrerstamm im Vollausbau (M3)
+qualification_revision;Qualifikationsrevision (WP-M1-35);LK_STAMM;append-only
+driver_release;Fahrerfreigabe (WP-M1-35);LK_STAMM;Nachweis der Weitergabe, nie gelöscht, nur widerrufen
+driver_release_projection;Fahrerfreigabe-Projektion (WP-M1-35);LK_BETRIEB;Kopie unter dem Empfänger, nach Ablauf oder Widerruf gesperrt

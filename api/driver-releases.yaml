@@ -1,0 +1,277 @@
+paths:
+  /v1/driver-releases:
+    post:
+      summary: Fahrer befristet für Dienste eines anderen Mandanten freigeben
+      operationId: createDriverRelease
+      description: 'Eigentümerkontext (WP-M1-35, LH-I.4-MUL-005). Erzeugt Freigabe und minimierte Projektion in einer Transaktion; die Projektion wird unter dem Empfängermandanten gespeichert. Nur berechtigte Rollen des Eigentümers (Datenklasse HR). Unbekannter Fahrer oder unbekannter Empfängermandant (auch ein fremder): 404; Fahrer nicht aktiv: 409; Selbstfreigabe, leere Dienstliste, Ende nicht nach Beginn oder bereits abgelaufen: 422. Tabellen- und Feldnamen sind Planungsannahme (OP-26).'
+      security:
+      - oidc:
+        - driver-releases:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverRelease'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverReleaseCreate'
+  /v1/driver-releases/{release_id}:
+    delete:
+      summary: Fahrerfreigabe widerrufen
+      operationId: revokeDriverRelease
+      description: 'Eigentümerkontext. Der Widerruf wirkt sofort: nach dem Commit liefert die Projektion beim Empfänger 404. Nur geplante oder aktive Freigaben; abgelaufen oder bereits widerrufen 409; veraltete Revision 412; fremde oder unbekannte Freigabe 404.'
+      security:
+      - oidc:
+        - driver-releases:write
+      parameters:
+      - name: release_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/driver-releases/{release_id}/projection:
+    get:
+      summary: Minimierte Projektion einer Fahrerfreigabe lesen
+      operationId: getDriverReleaseProjection
+      description: 'Empfängerkontext. Liefert ausschließlich die feste Feldliste (Qualifikationen, Einsatzzeitraum, Kontaktkanal) und nur im Zeitraum, vor dem Widerruf und für einen freigegebenen Dienst. Gleichartig 404 für unbekannte Freigabe, fremden Mandanten, geplant, abgelaufen, widerrufen und nicht freigegebenen Dienst.'
+      security:
+      - oidc:
+        - driver-releases:read
+      parameters:
+      - name: release_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: service_id
+        in: query
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dienst des Empfängers, für den die Projektion gelesen wird; muss zu den freigegebenen Diensten gehören.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverReleaseProjection'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    DriverReleaseCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        driver_id:
+          $ref: common.yaml#/components/schemas/UUID
+        recipient_tenant_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          minItems: 1
+          maxItems: 50
+          uniqueItems: true
+          description: Dienste des Empfängers, für die die Freigabe gilt.
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          $ref: common.yaml#/components/schemas/Timestamp
+      required:
+      - driver_id
+      - recipient_tenant_id
+      - service_ids
+      - valid_from
+      - valid_to
+      examples:
+      - driver_id: 00000000-0000-4000-8000-0000000000d1
+        recipient_tenant_id: 00000000-0000-4000-8000-0000000000b1
+        service_ids:
+        - 00000000-0000-4000-8000-000000000005
+        valid_from: '2026-12-01T06:00:00Z'
+        valid_to: '2026-12-05T18:00:00Z'
+      x-time: interval
+      description: 'Intervall links geschlossen, rechts offen.'
+    DriverRelease:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        driver_id:
+          $ref: common.yaml#/components/schemas/UUID
+        recipient_tenant_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          minItems: 1
+          maxItems: 50
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        revoked_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - driver_id
+      - recipient_tenant_id
+      - service_ids
+      - valid_from
+      - valid_to
+      - revoked_at
+      - revision
+      description: 'Sicht des Eigentümers; der Zustand (geplant, aktiv, abgelaufen, widerrufen) ergibt sich aus Zeit und revoked_at (zustaende/driver-release.md).'
+    DriverReleaseProjection:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          minItems: 1
+          maxItems: 50
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        qualifications:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              code:
+                type: string
+                pattern: ^[A-Z][A-Z0-9_]{1,39}$
+              valid_from:
+                type: string
+                format: date-time
+              valid_to:
+                oneOf:
+                - type: string
+                  format: date-time
+                - type: 'null'
+            required:
+            - code
+            - valid_from
+            - valid_to
+        contact_channel:
+          type: object
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              enum:
+              - PHONE
+              - EMAIL
+              - APP
+            value:
+              type: string
+              minLength: 1
+              maxLength: 200
+          required:
+          - kind
+          - value
+      required:
+      - id
+      - service_ids
+      - valid_from
+      - valid_to
+      - qualifications
+      - contact_channel
+      description: 'Feste Feldliste (schemas/driver-release-projection.v1.schema.json); kein Name, keine Personalakte, keine Arbeitszeiten, Abwesenheiten oder Gehaltsdaten.'

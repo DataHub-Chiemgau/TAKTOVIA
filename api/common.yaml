@@ -61,6 +61,8 @@ components:
             geo:read: geo:read
             geo:write: geo:write
             notifications:read: notifications:read
+            driver-releases:read: driver-releases:read
+            driver-releases:write: driver-releases:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -106,6 +108,8 @@ components:
             geo:read: geo:read
             geo:write: geo:write
             notifications:read: notifications:read
+            driver-releases:read: driver-releases:read
+            driver-releases:write: driver-releases:write
     partnerSignature:
       type: apiKey
       in: header

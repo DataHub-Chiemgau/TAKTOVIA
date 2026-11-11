@@ -103,5 +103,5 @@ describe('UI-20 Basis: Export des Dateninventars', () => {
     const { container } = setup(['ADMIN']);
     await screen.findByRole('table', { name: /passenger_private/ });
     expect(formatViolations(await runAxe(container))).toBe('');
-  });
+  }, 30_000); // axe über die große Inventartabelle; unter paralleler Last reichen 5 s nicht, je Arbeitspaket wächst das Inventar
 });

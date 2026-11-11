@@ -102,3 +102,6 @@ createStop;geo:write;-;M2;N;N;N;N;N;J;J;N;N;N
 listNotifications;notifications:read;-;M2;N;N;J;J;J;N;J;N;N;N
 getNotification;notifications:read;-;M2;N;N;J;J;J;N;J;N;N;N
 receiveProviderEvent;-;-;M2;N;N;N;N;N;N;N;N;N;N
+createDriverRelease;driver-releases:write;HR;M1;N;N;N;N;N;N;N;N;J;N
+revokeDriverRelease;driver-releases:write;HR;M1;N;N;N;N;N;N;N;N;J;N
+getDriverReleaseProjection;driver-releases:read;HR;M1;N;N;N;N;J;J;N;N;J;N

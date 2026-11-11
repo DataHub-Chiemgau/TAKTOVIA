@@ -17,6 +17,7 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'costs:allocate': ['finance'],
   'expenses:approve': ['finance'],
   'rosters:publish': ['staff'],
+  'driver-releases:write': ['staff'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],

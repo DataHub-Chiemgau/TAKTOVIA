@@ -1,0 +1,5 @@
+table;runtime_privileges;note
+driver;SELECT,INSERT,UPDATE;WP-M1-35: minimaler Fahrerstamm (Fixture bis M3), kein DELETE
+qualification_revision;SELECT,INSERT;WP-M1-35: Qualifikationsrevisionen, nur anhängen
+driver_release;SELECT,INSERT;WP-M1-35: Fahrerfreigabe beim Eigentümer; UPDATE nur auf revoked_at/revoked_by (Spaltenrecht, Trigger driver_release_guard), kein DELETE
+driver_release_projection;SELECT,INSERT;WP-M1-35: minimierte Projektion unter dem Empfänger; UPDATE nur auf revoked_at (Spaltenrecht, Trigger), Policies recipient_read und owner_manage
