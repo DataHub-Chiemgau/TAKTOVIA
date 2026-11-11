@@ -10,7 +10,11 @@ interface BookingdispatchApi {
     /** Leseport auf Fahrzeuge, Schichten, Freigaben und Fahrzeugpool (Daten von `fleet-safety`/`staff-time`; dieses Modul schreibt sie nie). */
     val resources: ResourceAvailability
 
+    /** Fahrzeiten, Distanzen und Wege über den Routing-Worker mit mandantengebundenem Cache; nur vorhanden, wenn ein Worker konfiguriert ist (WP-M2-10). */
+    val routing: RoutingPort?
+
     companion object {
-        fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC()): BookingdispatchApi = BookingServicesFactory.create(ctxTx, clock)
+        fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900): BookingdispatchApi =
+            BookingServicesFactory.create(ctxTx, clock, routingWorkerUrl, routingBudgetMillis)
     }
 }

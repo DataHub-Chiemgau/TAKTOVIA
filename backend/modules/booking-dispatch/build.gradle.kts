@@ -1,5 +1,6 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
+    implementation("tools.jackson.core:jackson-databind")   // Routing-Client (WP-M2-10), Ressourcenvektor (WP-M2-14)
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
     testImplementation(libs.json.schema.validator)

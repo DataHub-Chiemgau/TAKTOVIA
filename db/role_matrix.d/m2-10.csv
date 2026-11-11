@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+route_matrix_cache;SELECT,INSERT,DELETE;WP-M2-10: Cache der Fahrzeitmatrix; kein UPDATE (unveränderliche Einträge), DELETE nur bei neuem Kartenstand

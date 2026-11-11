@@ -76,3 +76,7 @@ Bestandstabellen aus V1 (`travel_attempt`, `vehicle_run`, `capacity_hold`, `book
 | 48 | `vehicle_run` entsteht bei Schichtfreigabe (M3/M4); bis dahin durch Fixture (WP-M2-02) |
 
 AT-01 und AT-13 sind in M2 Teilnachweise (OP-1, OP-2, OP-49); die Gate-Zuordnung bleibt beim Auftraggeber.
+
+## 7. Routing (WP-M2-10): Festlegungen
+
+Aufrufart Kern ↔ Worker: **synchron** (HTTP/JSON, `workers/routing/.../server.py`, Client `booking-dispatch` `HttpRoutingClient`) mit hartem Zeitbudget; Cache zweistufig und mandantengebunden: flüchtig (Redis-Schlüssel `taktovia:route:v1:<mandant>:<profil>:<kartenversion>:<start>:<ziel>`, **Redis-Anbindung nicht gebaut**, nur Schlüssel- und Wertvertrag) und PostgreSQL `route_matrix_cache` (RLS, UNIQUE über Mandant/Start/Ziel/Profil/Kartenversion). Invalidierung: der Port fragt vor jedem Cachezugriff die Kartenversion beim Worker ab; bei einem neuen Stand werden Einträge anderer Versionen des Mandanten gelöscht, Einträge anderer Versionen werden nie gelesen. `route_matrix_cache` ist eine technische, ersetzbare Tabelle ohne Revision und Audit (Ausnahme von der DDL-Konvention in Abschnitt 4, Löschklasse `LK_TECHNISCH`). Haltepunktkatalog des Workers: in M2 die Fixture der Referenzregion; die Pflege aus `stop_revision` ist offen.

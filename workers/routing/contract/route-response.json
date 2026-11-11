@@ -1,0 +1,11 @@
+{
+  "_hinweis": "Beispielantwort von POST /v1/route (WP-M2-10). Der Python-Test (test_routing_adapter.py::test_server_antwortet_mit_definierten_fehlern) prueft die Form gegen den echten Server, der Kotlin-Test (RoutingPortTest) liest dieselbe Datei als Antwort des Stubs.",
+  "origin": "H1",
+  "destination": "H4",
+  "time_s": 180,
+  "distance_m": 1500,
+  "geometry": [[51.05, 13.74], [51.05, 13.7472], [51.0455, 13.7472], [51.0455, 13.7544]],
+  "profile": "car",
+  "map_version": "referenz-2026-11-01",
+  "provider": "grid"
+}
