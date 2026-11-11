@@ -69,9 +69,10 @@ class StructureFixture : AutoCloseable {
         return World(tenant, le, op)
     }
 
-    fun context(tenant: TenantId, subject: String = UUID.randomUUID().toString(), services: Set<UUID> = emptySet()) =
+    fun context(tenant: TenantId, subject: String = UUID.randomUUID().toString(), services: Set<UUID> = emptySet(),
+                scopes: Set<String> = setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write")) =
         RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/structure", subject, "sid-$subject", true), tenant, setOf("tenant_admin"),
-            setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write"), services, UUID.randomUUID())
+            scopes, services, UUID.randomUUID())
 
     /** Legt einen Entwurf für [kind]/[scopeId] an und veröffentlicht ihn (Testaufbau; die Publikation liefert WP-M1-22). */
     fun publishedRevision(ctx: RequestContext, kind: ScopeKind, scopeId: UUID, values: Map<String, Any?>, from: Instant = Instant.parse("2026-01-01T00:00:00Z")): ConfigRevisionView {

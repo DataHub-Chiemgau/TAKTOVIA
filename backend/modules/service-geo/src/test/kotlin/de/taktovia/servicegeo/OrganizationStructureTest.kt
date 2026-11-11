@@ -47,14 +47,19 @@ class OrganizationStructureTest {
         assertEquals(12, fx.config.revisions.asOf(admin, ScopeKind.SERVICE, dNord.id, at)!!.values["max_wait_min"])
         assertEquals(35, fx.config.revisions.asOf(admin, ScopeKind.SERVICE, dSued.id, at)!!.values["max_wait_min"])
         // ein Nutzer (ein Login, eine Mitgliedschaft mit beiden Diensten) arbeitet ohne erneute Anmeldung in beiden Gebieten
-        val login = fx.context(w.tenant, services = setOf(dNord.id, dSued.id))
-        val visible = s.listServices(login, 10, null, login.services)
+        val reader = setOf("services:read")
+        val login = fx.context(w.tenant, services = setOf(dNord.id, dSued.id), scopes = reader)
+        val visible = s.listServices(login, 10, null)
         assertEquals(setOf(dNord.id, dSued.id), visible.map { it.id }.toSet())
         assertEquals(nord.id, visible.single { it.id == dNord.id }.regionId); assertEquals(sued.id, visible.single { it.id == dSued.id }.regionId)
         assertTrue(login.mayUseService(dNord.id) && login.mayUseService(dSued.id))
         // ein Nutzer nur mit dem Nord-Dienst sieht den Süd-Dienst nicht
-        val nordOnly = fx.context(w.tenant, services = setOf(dNord.id))
-        assertEquals(listOf(dNord.id), s.listServices(nordOnly, 10, null, nordOnly.services).map { it.id })
+        val nordOnly = fx.context(w.tenant, services = setOf(dNord.id), scopes = reader)
+        assertEquals(listOf(dNord.id), s.listServices(nordOnly, 10, null).map { it.id })
+        assertEquals(emptyList<UUID>(), s.listServices(nordOnly, 10, null, requested = setOf(dSued.id)).map { it.id }, "Filter auf fremden Dienst: leere Liste")
+        assertTrue(s.listServices(fx.context(w.tenant, scopes = reader), 10, null).isEmpty(), "ohne Dienstscope: kein Dienstzugriff (fail-closed)")
+        // verwaltende Rolle (services:write) sieht alle Dienste des Mandanten
+        assertEquals(setOf(dNord.id, dSued.id), s.listServices(admin, 10, null).map { it.id }.toSet())
         // die Dienstanlage hat jeweils die erste Revision (Entwurf, Revision 1) erzeugt und mit dem Dienst verknüpft
         val first = fx.config.revisions.get(admin, dNord.configRevisionId)
         assertEquals(ScopeKind.SERVICE, first.scopeKind); assertEquals(dNord.id, first.scopeId); assertEquals(1L, first.revision)

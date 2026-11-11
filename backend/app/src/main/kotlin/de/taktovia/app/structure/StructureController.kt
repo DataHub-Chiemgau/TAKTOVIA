@@ -92,7 +92,7 @@ class StructureController(private val geo: ServicegeoApi, private val finance: D
 
     @GetMapping("/v1/services")
     fun listServices(@RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> =
-        page(request, "services", limit, cursor, { c, lim, after -> geo.structure.listServices(c, lim, after, visibleServices(c)) }, { CursorPosition(it.createdAt, it.id) }, ::json)
+        page(request, "services", limit, cursor, { c, lim, after -> geo.structure.listServices(c, lim, after) }, { CursorPosition(it.createdAt, it.id) }, ::json)
 
     @PostMapping("/v1/services")
     fun createService(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<StructureResource> =
@@ -102,9 +102,6 @@ class StructureController(private val geo: ServicegeoApi, private val finance: D
     @PutMapping("/v1/services/{service_id}")
     fun updateService(@PathVariable("service_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): StructureResource =
         resource(json(geo.structure.updateService(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch), UpdateService(body["name"] as String, body["timezone"] as String, uuid(body["region_id"])))))
-
-    /** Verwaltende Rollen (`services:write`) sehen alle Dienste des Mandanten; lesende Rollen nur die Dienste ihres Dienstscopes. */
-    private fun visibleServices(ctx: RequestContext): Set<UUID>? = if (ctx.hasScope("services:write")) null else ctx.services
 
     // ---- gemeinsam ----
 

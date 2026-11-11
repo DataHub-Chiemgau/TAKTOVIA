@@ -7,6 +7,8 @@ import de.taktovia.platform.audit.AuditEntry
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.audit.AuditRequired
 import de.taktovia.platform.audit.ObjectRef
+import de.taktovia.platform.authz.ObjectAuthorizer
+import de.taktovia.platform.authz.ServiceScoped
 import de.taktovia.platform.context.ActorType
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
@@ -32,8 +34,9 @@ import java.util.UUID
  * Region, Betriebshof und Dienstkopf (WP-M1-09, LH-I.4-MUL-002): Fachzeile und Audit in **einer** Transaktion im Mandanten des Kontexts. Mandantentrennung
  * durch RLS und zusammengesetzte Schlüssel; ein Verweis auf ein Objekt eines anderen Mandanten verhält sich wie „nicht vorhanden“ (404).
  */
+@ServiceScoped
 internal class JdbcOrganizationStructure(
-    private val ctxTx: ContextTransactions, private val audit: AuditPort, private val config: ConfigApi, private val clock: Clock,
+    private val ctxTx: ContextTransactions, private val audit: AuditPort, private val config: ConfigApi, private val clock: Clock, private val authorizer: ObjectAuthorizer,
 ) : OrganizationStructure {
 
     // ---- Region -----------------------------------------------------------------------------------------------------------------------
@@ -139,9 +142,11 @@ internal class JdbcOrganizationStructure(
         return v
     }
 
-    override fun listServices(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, visible: Set<UUID>?): List<ServiceView> = ctxTx.run(ctx, readOnly = true) { j ->
-        if (visible != null && visible.isEmpty()) return@run emptyList()
-        val scope = visible?.joinToString(",", "{", "}")   // nur UUIDs, nie Fremdtext
+    override fun listServices(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, requested: Set<UUID>?): List<ServiceView> = ctxTx.run(ctx, readOnly = true) { j ->
+        // Dienstbezug: der Port bestimmt die Dienste, auf die die Liste zugreifen darf (Filter schränken nur ein); verwaltende Rollen sehen alle Dienste des Mandanten.
+        val services = authorizer.effectiveServices(ctx, requested, tenantWide = ctx.hasScope("services:write"))
+        if (services != null && services.isEmpty()) return@run emptyList()
+        val scope = services?.joinToString(",", "{", "}")   // nur UUIDs, nie Fremdtext
         val sql = StringBuilder("SELECT $SERVICE_COLUMNS FROM taktovia.service s WHERE TRUE")
         val args = mutableListOf<Any?>()
         if (scope != null) { sql.append(" AND s.id = ANY(CAST(? AS uuid[]))"); args += scope }

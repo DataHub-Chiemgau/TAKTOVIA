@@ -2,6 +2,8 @@ package de.taktovia.servicegeo.api
 
 import de.taktovia.config.api.ConfigApi
 import de.taktovia.platform.audit.AuditPort
+import de.taktovia.platform.authz.ObjectAuthorizer
+import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.servicegeo.internal.ServicegeoServicesFactory
@@ -18,8 +20,8 @@ interface ServicegeoApi {
 
     companion object {
         /** [config] liefert die erste Konfigurationsrevision eines neuen Dienstes (OP-35) in derselben Transaktion. */
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC()): ServicegeoApi =
-            ServicegeoServicesFactory.create(ctxTx, audit, config, clock)
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer): ServicegeoApi =
+            ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer)
     }
 }
 
@@ -54,6 +56,9 @@ interface OrganizationStructure {
     /** Legt den Dienst samt erster Konfigurationsrevision (Entwurf) an: Anlage scheitert als Ganzes (keine halb angelegten Dienste). */
     fun createService(ctx: RequestContext, cmd: CreateService): ServiceView
     fun updateService(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: UpdateService): ServiceView
-    /** [visible] = `null`: alle Dienste des Mandanten; sonst nur die genannten (Dienstscope, WP-M1-08). */
-    fun listServices(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, visible: Set<UUID>? = null): List<ServiceView>
+    /**
+     * Dienste des Mandanten (Dienstbezug, WP-M1-08): verwaltende Rollen (`services:write`) sehen alle, alle anderen nur die Dienste ihres Dienstscopes; ein
+     * Filterwunsch [requested] schränkt nur weiter ein (fremde Dienste: leere Liste).
+     */
+    fun listServices(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, requested: Set<UUID>? = null): List<ServiceView>
 }
