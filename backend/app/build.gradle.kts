@@ -27,12 +27,18 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation(libs.json.schema.validator)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.testcontainers)
     testImplementation(libs.postgresql)
     testImplementation("io.lettuce:lettuce-core") // nur für den roten Selbsttest der Redis-Regel
+}
+
+// Die Vertragsdateien aus api/ sind Laufzeitquelle der Anfragevalidierung (WP-M1-02) und der Vertragsprüfung (WP-M1-03).
+tasks.processResources {
+    from(rootProject.projectDir.parentFile.resolve("api")) { include("*.yaml"); into("api") }
 }
 
 tasks.withType<Test>().configureEach {

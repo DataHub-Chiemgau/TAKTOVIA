@@ -154,6 +154,10 @@ components:
     SignedMoney:
       type: object
       additionalProperties: false
+      x-money: signed
+      description: Vorzeichenbehafteter Geldbetrag in kleinster Einheit (Rabatt, Korrektur, Gegenereignis). Ganzzahl im Bereich
+        ±9.007.199.254.740.991; Exponent wird serverseitig gegen den Währungskatalog (Tabelle currency) geprüft. Keine binären
+        Gleitkommazahlen.
       properties:
         amount_minor:
           type: integer
@@ -291,6 +295,118 @@ components:
       - state
       - effective_from
       - audit_event_id
+    ErrorCode:
+      type: string
+      description: Stabiler, maschinenlesbarer Fehlercode (Feld code des Schemas Problem). Der HTTP-Status je Code steht in x-http-status.
+        Neue Codes kommen nur additiv hinzu; bestehende ändern sich nie ohne neue Major-Version.
+      enum:
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - UNAUTHENTICATED
+      - FORBIDDEN
+      - COOPERATION_NOT_ALLOWED
+      - NOT_FOUND
+      - METHOD_NOT_ALLOWED
+      - NOT_ACCEPTABLE
+      - CONFLICT
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_IN_PROGRESS
+      - OFFER_EXPIRED
+      - HOLD_EXPIRED
+      - REQUOTE_REQUIRED
+      - CAPACITY_UNAVAILABLE
+      - IMMUTABLE_RECORD
+      - REVISION_MISMATCH
+      - PAYLOAD_TOO_LARGE
+      - UNSUPPORTED_MEDIA_TYPE
+      - VALIDATION_FAILED
+      - PRECONDITION_REQUIRED
+      - RATE_LIMITED
+      - INTERNAL_ERROR
+      - SERVICE_UNAVAILABLE
+      - PROVIDER_UNAVAILABLE
+      x-http-status:
+        BAD_REQUEST: 400
+        INVALID_CURSOR: 400
+        UNAUTHENTICATED: 401
+        FORBIDDEN: 403
+        COOPERATION_NOT_ALLOWED: 403
+        NOT_FOUND: 404
+        METHOD_NOT_ALLOWED: 405
+        NOT_ACCEPTABLE: 406
+        CONFLICT: 409
+        IDEMPOTENCY_CONFLICT: 409
+        OPERATION_IN_PROGRESS: 409
+        OFFER_EXPIRED: 409
+        HOLD_EXPIRED: 409
+        REQUOTE_REQUIRED: 409
+        CAPACITY_UNAVAILABLE: 409
+        IMMUTABLE_RECORD: 409
+        REVISION_MISMATCH: 412
+        PAYLOAD_TOO_LARGE: 413
+        UNSUPPORTED_MEDIA_TYPE: 415
+        VALIDATION_FAILED: 422
+        PRECONDITION_REQUIRED: 428
+        RATE_LIMITED: 429
+        INTERNAL_ERROR: 500
+        SERVICE_UNAVAILABLE: 503
+        PROVIDER_UNAVAILABLE: 503
+    ViolationCode:
+      type: string
+      description: Katalog der Feldverletzungscodes (violations[].code). Feld und Fehlerart sind aus pointer und code erkennbar,
+        ohne message auszuwerten. pointer ist ein JSON-Pointer; Wurzel des Bodys ist '/', Query-Parameter tragen /$query/<name>,
+        Header /$header/<name>.
+      enum:
+      - REQUIRED
+      - UNKNOWN_FIELD
+      - TYPE_MISMATCH
+      - TOO_SHORT
+      - TOO_LONG
+      - BELOW_MINIMUM
+      - ABOVE_MAXIMUM
+      - PATTERN_MISMATCH
+      - INVALID_FORMAT
+      - NOT_IN_ENUM
+      - TOO_FEW_ITEMS
+      - TOO_MANY_ITEMS
+      - NOT_UNIQUE
+      - INVALID_VALUE
+      - NESTING_TOO_DEEP
+      - MONEY_NOT_INTEGER
+      - MONEY_OUT_OF_RANGE
+      - MONEY_NEGATIVE
+      - CURRENCY_UNKNOWN
+      - EXPONENT_MISMATCH
+      - OFFSET_REQUIRED
+      - LOCAL_TIME_NONEXISTENT
+      - LOCAL_TIME_AMBIGUOUS
+      - ZONE_UNKNOWN
+      - ZONE_OFFSET_MISMATCH
+      - INTERVAL_INVALID
+    Money:
+      type: object
+      additionalProperties: false
+      x-money: unsigned
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        exponent:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4
+      required:
+      - amount_minor
+      - currency
+      - exponent
+      description: Nichtnegativer Geldbetrag in kleinster Einheit. EUR 12,50 = {amount_minor:1250,currency:EUR,exponent:2}.
+        ISO-4217-Exponent serverseitig prüfen. Keine binären Gleitkommazahlen.
     Problem:
       type: object
       additionalProperties: false

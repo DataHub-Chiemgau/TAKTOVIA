@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: Prüfvertrag für die Tests des API-Grundgerüsts
+  version: 0.0.0
+paths:
+  /v1/probe/items:
+    get:
+      summary: Liste (Cursor, Sortierung created_at,id)
+      operationId: listProbeItems
+      security:
+      - oidc:
+        - probe:read
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Anlegen
+      operationId: createProbeItem
+      security:
+      - oidc:
+        - probe:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeItemCreate'
+      responses:
+        '201':
+          description: angelegt
+          content:
+            application/json:
+              schema:
+                type: object
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/items/{item_id}:
+    get:
+      summary: Lesen
+      operationId: getProbeItem
+      security:
+      - oidc:
+        - probe:read
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Ändern mit If-Match
+      operationId: updateProbeItem
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeItemUpdate'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/admin:
+    get:
+      summary: Funktionsscope
+      operationId: getProbeAdmin
+      security:
+      - oidc:
+        - probe:admin
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/boom:
+    get:
+      summary: Interner Fehler
+      operationId: getProbeBoom
+      security:
+      - oidc:
+        - probe:read
+      responses:
+        '500':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/immutable:
+    post:
+      summary: Verletzt einen Datenbank-Constraint (reject_mutation)
+      operationId: postProbeImmutable
+      security:
+      - oidc:
+        - probe:write
+      responses:
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/free:
+    post:
+      summary: Ohne Body-Schema
+      operationId: postProbeFree
+      security:
+      - oidc:
+        - probe:write
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    ProbeItemCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+        price:
+          $ref: common.yaml#/components/schemas/Money
+        discount:
+          $ref: common.yaml#/components/schemas/SignedMoney
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      required:
+      - name
+    ProbeItemUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        value:
+          type: string
+          maxLength: 20
+      required:
+      - value

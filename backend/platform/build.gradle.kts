@@ -2,6 +2,7 @@
 dependencies {
     api("org.springframework:spring-jdbc")
     api("org.springframework:spring-tx")
+    implementation("io.lettuce:lettuce-core")
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
 }

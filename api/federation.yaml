@@ -356,29 +356,6 @@ paths:
           $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
-    Money:
-      type: object
-      additionalProperties: false
-      properties:
-        amount_minor:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 9007199254740991
-        currency:
-          type: string
-          pattern: ^[A-Z]{3}$
-        exponent:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4
-      required:
-      - amount_minor
-      - currency
-      - exponent
-      description: Nichtnegativer Geldbetrag in kleinster Einheit. EUR 12,50 = {amount_minor:1250,currency:EUR,exponent:2}.
-        ISO-4217-Exponent serverseitig prüfen. Keine binären Gleitkommazahlen.
     Place:
       type: object
       additionalProperties: false
@@ -718,7 +695,7 @@ components:
           - NOT_APPLICABLE
         quoted_fare:
           oneOf:
-          - $ref: '#/components/schemas/Money'
+          - $ref: common.yaml#/components/schemas/Money
           - type: 'null'
         fare_components:
           type: array
@@ -800,16 +777,16 @@ components:
       additionalProperties: false
       properties:
         pay_at_platform:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         external_known:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         external_unknown_leg_ids:
           type: array
           items:
             $ref: common.yaml#/components/schemas/UUID
           uniqueItems: true
         total_known_amount:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         is_complete_total:
           type: boolean
       required:
@@ -961,7 +938,7 @@ components:
           minLength: 1
           maxLength: 256
         max_authorized_amount:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         accepted_terms_sha256:
           type: string
           pattern: ^[0-9a-f]{64}$
@@ -1036,7 +1013,7 @@ components:
           - type: 'null'
         fare:
           oneOf:
-          - $ref: '#/components/schemas/Money'
+          - $ref: common.yaml#/components/schemas/Money
           - type: 'null'
         hold_expires_at:
           oneOf:
@@ -1226,9 +1203,9 @@ components:
         cancellable:
           type: boolean
         fee:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         refund:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         policy_revision:
           type: string
           minLength: 1
@@ -1261,9 +1238,9 @@ components:
             $ref: '#/components/schemas/CancellationLine'
           minItems: 1
         total_refund:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         total_fee:
-          $ref: '#/components/schemas/Money'
+          $ref: common.yaml#/components/schemas/Money
         remaining_journey_viable:
           type: boolean
       required:
