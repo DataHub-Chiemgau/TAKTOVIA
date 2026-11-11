@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+route_stop;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;id;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;run_id;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;run_revision;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;seq;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;stop_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;planned_at;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;boardings;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;alightings;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;leg_duration_sec;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;leg_distance_m;nein;BUCHUNGSABWICKLUNG;;;;
+route_stop;created_at;nein;BUCHUNGSABWICKLUNG;;;;

@@ -18,3 +18,7 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Ressourcenvektor und Kapazitätshold (WP-M2-14)
 
 `ResourceVector` (Sitz, Rollstuhlplatz, Ausstattung getrennt), `BookingDemand` (Personen, Rollstuhlplätze, Ausstattung, `assistance_codes`), `ReserveRule` (`min_capacity_reserve` je Dimension) und der Kernel `BookingdispatchApi.holds` (`CapacityHolds`: Hold und Bestätigung in je einer Transaktion unter dem Lock auf `vehicle_run`). Festlegungen: [m2-detailvertraege.md §8](../../../docs/umsetzungsplan/vertraege/m2-detailvertraege.md). Die Tabelle `passenger_trip` hält Personen und Plätze je Buchung; `booking.promise_snapshot` ist unveränderlich und enthält den Vektor.
+
+## Fahrtenplan und Routeninvarianten (WP-M2-16)
+
+`BookingdispatchApi.runs` (`RunPlans`): Umlauf je Schicht (`ensureRun`, genau einer auch bei parallelen Aufrufen), Planrevisionen als append-only Stoppfolgen in `route_stop`, `appendRevision` mit Revisionsvergleich unter dem Zeilenlock von `vehicle_run`. `RunPlanValidator` ist der gemeinsame Constraint Validator (Einstieg vor Ausstieg, Belegung je Abschnitt 0..Kapazität je Dimension, eindeutige Stoppreihenfolge); Hold und Confirm nutzen dessen Kapazitätsprüfung. Festlegungen (Abschnittsindex, Zustandsautomat, Annahmen OP-4/OP-48): [m2-detailvertraege.md §9](../../../docs/umsetzungsplan/vertraege/m2-detailvertraege.md).

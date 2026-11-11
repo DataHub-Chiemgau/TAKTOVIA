@@ -11,6 +11,7 @@ import de.taktovia.bookingdispatch.api.PromiseCore
 import de.taktovia.bookingdispatch.api.RejectionReason
 import de.taktovia.bookingdispatch.api.ResourceAvailability
 import de.taktovia.bookingdispatch.api.ResourceVector
+import de.taktovia.bookingdispatch.api.RunPlanValidator
 import de.taktovia.bookingdispatch.api.VehicleAvailability
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
@@ -53,19 +54,12 @@ internal class JdbcCapacityHolds(
         // 4. Ausstattung ist keine verbrauchbare Größe; ein Fahrzeug ohne Rollstuhlplatz fehlt die Ausstattung (Kategorie Ausstattung)
         if (!capacity.equipment.containsAll(cmd.demand.equipment)) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.EQUIPMENT)
         if (cmd.demand.wheelchair > 0 && capacity.wheelchair == 0) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.WHEELCHAIR)
-        // 5. Belegung je Abschnitt und Dimension unter dem Lock prüfen: jede Dimension einzeln
-        val occupancy = j.query(
-            "SELECT s.seg, coalesce(sum((h.capacity_vector->>'seats')::int), 0), coalesce(sum((h.capacity_vector->>'wheelchair')::int), 0) " +
-                "FROM generate_series(?::int, ?::int) AS s(seg) LEFT JOIN taktovia.capacity_hold h ON h.tenant_id = taktovia.current_tenant() AND h.run_id = ? " +
-                "AND h.interval_from <= s.seg AND h.interval_to > s.seg AND (h.state = 'CONSUMED' OR (h.state = 'HELD' AND h.expires_at > clock_timestamp())) GROUP BY s.seg ORDER BY s.seg",
-            { rs, _ -> ResourceVector(rs.getInt(2), rs.getInt(3)) }, cmd.intervalFrom, cmd.intervalTo - 1, cmd.runId,
-        )
-        for (occupied in occupancy) {
-            val free = capacity.freeAfter(occupied, cmd.reserve)
-            val missing = free.missing(cmd.demand)
-            if (Dimension.WHEELCHAIR in missing) return@run HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_WHEELCHAIR, Dimension.WHEELCHAIR)
-            if (Dimension.SEATS in missing) return@run HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_SEATS, Dimension.SEATS)
-        }
+        // 5. Belegung je Abschnitt und Dimension unter dem Lock prüfen (gemeinsamer Validator der Routeninvarianten, WP-M2-16): bestehende Belegung + geschützte Reserve + neuer Bedarf
+        val existing = occupancy(j, cmd.runId, cmd.intervalFrom, cmd.intervalTo)
+        val projected = existing.map { (s, w) -> (s + cmd.reserve.seats + cmd.demand.seats) to (w + cmd.reserve.wheelchair + cmd.demand.wheelchair) }
+        val violations = RunPlanValidator.checkSegmentOccupancy(capacity, projected, cmd.intervalFrom)
+        violations.firstOrNull { it.dimension == Dimension.WHEELCHAIR }?.let { return@run HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_WHEELCHAIR, Dimension.WHEELCHAIR) }
+        violations.firstOrNull { it.dimension == Dimension.SEATS }?.let { return@run HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_SEATS, Dimension.SEATS) }
         // 6. Hold und Ereignis atomar schreiben
         val id = UUID.randomUUID()
         val expires = j.queryForObject(
@@ -81,6 +75,14 @@ internal class JdbcCapacityHolds(
         HoldOutcome.Placed(view, replayed = false)
     }
 
+    /** Belegung (Sitze, Rollstuhlplätze) je Abschnitt `[from, to)`: bestätigte Holds plus gültige gehaltene (Serverzeit); aufzurufen unter dem Lock des Umlaufs. */
+    private fun occupancy(j: JdbcOperations, runId: UUID, from: Int, to: Int): List<Pair<Int, Int>> = j.query(
+        "SELECT s.seg, coalesce(sum((h.capacity_vector->>'seats')::int), 0), coalesce(sum((h.capacity_vector->>'wheelchair')::int), 0) " +
+            "FROM generate_series(?::int, ?::int) AS s(seg) LEFT JOIN taktovia.capacity_hold h ON h.tenant_id = taktovia.current_tenant() AND h.run_id = ? " +
+            "AND h.interval_from <= s.seg AND h.interval_to > s.seg AND (h.state = 'CONSUMED' OR (h.state = 'HELD' AND h.expires_at > clock_timestamp())) GROUP BY s.seg ORDER BY s.seg",
+        { rs, _ -> rs.getInt(2) to rs.getInt(3) }, from, to - 1, runId,
+    )
+
     private fun findByReference(j: JdbcOperations, reference: String): HoldView? = j.query(
         "SELECT id, run_id, run_revision, interval_from, interval_to, capacity_vector::text, expires_at, state FROM taktovia.capacity_hold WHERE federation_ref = ?",
         { rs, _ -> HoldView(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3), rs.getInt(4), rs.getInt(5), ResourceVector.parse(rs.getString(6)), rs.getTimestamp(7).toInstant(), rs.getString(8)) },
@@ -91,16 +93,21 @@ internal class JdbcCapacityHolds(
         // Sperrreihenfolge wie beim Hold: erst der Lauf, dann die Hold-Zeile
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).firstOrNull() ?: throw ProblemException.notFound()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
-        class HoldRow(val state: String, val expired: Boolean, val vector: String, val runRevision: Long, val reference: String)
+        class HoldRow(val state: String, val expired: Boolean, val vector: String, val runRevision: Long, val reference: String, val from: Int, val to: Int)
         val hold = j.query(
-            "SELECT state, expires_at <= clock_timestamp(), capacity_vector::text, run_revision, federation_ref FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE",
-            { rs, _ -> HoldRow(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getLong(4), rs.getString(5)) }, holdId,
+            "SELECT state, expires_at <= clock_timestamp(), capacity_vector::text, run_revision, federation_ref, interval_from, interval_to FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE",
+            { rs, _ -> HoldRow(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getLong(4), rs.getString(5), rs.getInt(6), rs.getInt(7)) }, holdId,
         ).first()
         existingBooking(j, holdId)?.let { return@run it }
         when {
             hold.state == "HELD" && hold.expired -> throw ProblemException(ErrorCode.HOLD_EXPIRED, "Die Reservierung ist abgelaufen.")
             hold.state != "HELD" -> throw ProblemException(if (hold.state == "EXPIRED") ErrorCode.HOLD_EXPIRED else ErrorCode.INVALID_STATE_TRANSITION)
         }
+        // Routeninvariante (gemeinsamer Validator, WP-M2-16): die Belegung der Abschnitte des Holds liegt unter dem Lock innerhalb der Fahrzeugkapazität
+        val capacity = ResourceVector.parse(j.queryForObject(
+            "SELECT v.capacity_config::text FROM taktovia.vehicle_run r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id WHERE r.id = ?", String::class.java, runId)!!, "/vehicle/capacity_config")
+        if (RunPlanValidator.checkSegmentOccupancy(capacity, occupancy(j, runId, hold.from, hold.to), hold.from).isNotEmpty())
+            throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Die Kapazität des Fahrzeugs ist auf dem Abschnitt nicht mehr verfügbar.")
         // Zusage: Kernfelder plus Ressourcenvektor des Holds, geprüft gegen das Zusage-Schema; danach unveränderlich
         val vector = ResourceVector.parse(hold.vector)
         require(vector == demand.vector) { "Bedarf der Buchung weicht vom gehaltenen Vektor ab" }

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+route_stop;SELECT,INSERT;WP-M2-16: Stoppfolge je Planrevision; unveränderlich (Trigger), kein UPDATE/DELETE

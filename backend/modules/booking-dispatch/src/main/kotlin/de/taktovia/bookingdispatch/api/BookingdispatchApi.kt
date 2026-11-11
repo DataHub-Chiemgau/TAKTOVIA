@@ -20,6 +20,9 @@ interface BookingdispatchApi {
     /** Fahrzeugkandidatenfilter nach Dienstpool, Dienstzeit, Freigabe, Ausstattung/Kapazität und Erreichbarkeit (WP-M2-15). */
     val candidates: VehicleCandidates
 
+    /** Fahrtenplan (Aggregat RunPlanRevision, WP-M2-16): Umlauf je Schicht, Stoppfolgen je Revision, Routeninvarianten; lesende Schnittstelle für M3. */
+    val runs: RunPlans
+
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
             plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null },
