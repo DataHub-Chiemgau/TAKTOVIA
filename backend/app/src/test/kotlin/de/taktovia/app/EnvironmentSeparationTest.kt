@@ -49,6 +49,13 @@ class EnvironmentSeparationTest {
                 st.execute("ALTER TABLE taktovia_meta.environment_marker OWNER TO taktovia_migrator")
                 st.execute("GRANT USAGE ON SCHEMA taktovia_meta TO taktovia_runtime")
                 st.execute("GRANT SELECT ON taktovia_meta.environment_marker TO taktovia_runtime")
+                // Startschritt der Anwendung, der in die Datenbank schreibt (WP-M1-07: Protokoll des Ausrollens der Rechtematrix); die Hilfsdatenbank braucht die Tabelle,
+                // damit der Start gegen eine passende Umgebungskennung gelingt (Gegenprobe) und nur die Umgebungsprüfung entscheidet.
+                st.execute("CREATE TABLE taktovia.rights_matrix_rollout (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, matrix_version integer NOT NULL, matrix_sha256 char(64) NOT NULL, previous_sha256 char(64), " +
+                    "role_count integer NOT NULL, operation_count integer NOT NULL, rolled_out_at timestamptz NOT NULL DEFAULT now(), rolled_out_by text NOT NULL)")
+                st.execute("ALTER TABLE taktovia.rights_matrix_rollout OWNER TO taktovia_migrator")
+                st.execute("GRANT USAGE ON SCHEMA taktovia TO taktovia_runtime")
+                st.execute("GRANT SELECT, INSERT ON taktovia.rights_matrix_rollout TO taktovia_runtime")
             }
         }
         return name

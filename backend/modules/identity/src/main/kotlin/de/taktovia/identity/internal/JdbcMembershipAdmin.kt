@@ -3,6 +3,7 @@ package de.taktovia.identity.internal
 import de.taktovia.identity.api.GrantMembership
 import de.taktovia.identity.api.MembershipAdmin
 import de.taktovia.identity.api.MembershipView
+import de.taktovia.identity.api.RoleCatalog
 import de.taktovia.platform.audit.ActorRef
 import de.taktovia.platform.audit.AuditActions
 import de.taktovia.platform.audit.AuditEntry
@@ -93,14 +94,13 @@ internal class JdbcMembershipAdmin(
         val v = mutableListOf<Violation>()
         if (c.issuer.isEmpty() || c.issuer.length > 512) v += Violation("/issuer", ViolationCode.INVALID_VALUE)
         if (c.subject.isEmpty() || c.subject.length > 200) v += Violation("/subject", ViolationCode.INVALID_VALUE)
-        if (!ROLE.matches(c.roleCode)) v += Violation("/role_code", ViolationCode.PATTERN_MISMATCH)
+        if (!RoleCatalog.isValid(c.roleCode)) v += Violation("/role_code", ViolationCode.NOT_IN_ENUM)   // nur Rollen des Rollenkatalogs (WP-M1-07)
         if ((c.serviceScope?.size ?: 0) > 500) v += Violation("/service_scope", ViolationCode.TOO_MANY_ITEMS)
         if (c.validFrom != null && c.validTo != null && !c.validTo.isAfter(c.validFrom)) v += Violation("/valid_to", ViolationCode.INTERVAL_INVALID)
         if (v.isNotEmpty()) throw ProblemException.invalid(*v.toTypedArray())
     }
 
     private companion object {
-        val ROLE = Regex("^[a-z][a-z0-9_]{1,63}$")
         const val COLUMNS = "m.id, m.issuer, m.subject, m.role_code, m.service_scope, m.valid_from, m.valid_to, m.revoked_at, m.revision, m.created_at"
         val MAPPER = RowMapper { rs, _ ->
             MembershipView(

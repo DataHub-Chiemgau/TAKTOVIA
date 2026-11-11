@@ -7,6 +7,7 @@ import de.taktovia.app.security.IdpProperties
 import de.taktovia.app.security.PrincipalType
 import de.taktovia.app.web.Correlation
 import de.taktovia.app.web.ProblemWriter
+import de.taktovia.identity.api.Decision
 import de.taktovia.identity.api.IdentityApi
 import de.taktovia.identity.api.SubjectRef
 import de.taktovia.identity.api.TenantMembership
@@ -49,7 +50,8 @@ class TenantMismatchReporter(private val tx: TenantTransactions, private val eve
  *     (kleinste Mandanten-ID unter den aktiven Mitgliedschaften). Keine Mitgliedschaft: 403.
  *  2. Tenant-Angaben in Header, Pfad oder Query, die vom aktiven Mandanten abweichen, erzeugen keine Rechte: 404 wie „nicht vorhanden“
  *     plus Sicherheitsereignis. (Der Body wird beim Lesen in der Eingabeprüfung geprüft, siehe [TenantClaimInspector].)
- *  3. Funktionsscopes folgen aus den Rollen der Mitgliedschaft; fehlt ein vom Vertrag verlangter Scope: 403 ohne Details.
+ *  3. Funktionsscopes folgen aus den Rollen der Mitgliedschaft über die Rechtematrix; die zentrale Autorisierung ([de.taktovia.identity.api.Authorizer])
+ *     verweigert Operationen ohne Matrixeintrag, ohne erlaubte Rolle oder ohne passenden Scope mit 403 ohne Details.
  * Dienstkonten haben keine Mitgliedschaft; ihr Mandant ist die Bindung im Token (höchstens einer), ihre Scopes sind schon geprüft.
  * Vertragsoperationen aus Zusatzverträgen ([excludedFiles], nur Tests) und ausdrücklich ausgenommene ([EXEMPT]) tragen keinen Kontext.
  */
@@ -73,8 +75,9 @@ class RequestContextFilter(
         try {
             if (principal == null) throw ProblemException(ErrorCode.UNAUTHENTICATED, "Anmeldung fehlt oder ist ungültig.")
             val ctx = when (principal.type) { PrincipalType.HUMAN -> humanContext(request, principal, op); PrincipalType.SERVICE -> serviceContext(request, principal) }
-            if (op.scopes.isEmpty() || !ctx.scopes.containsAll(op.scopes)) {
-                denied(ctx, op, if (op.scopes.isEmpty()) "no_scope_declared" else "scope_missing")
+            // Zentrale Autorisierung (WP-M1-07): Rechtematrix + Funktionsscope; ohne Eintrag oder Scope deny-by-default, ohne Details in der Antwort
+            (identity.authorizer.decide(ctx, op.operationId, op.scopes) as? Decision.Denied)?.let { denial ->
+                denied(ctx, op, denial.reason)
                 throw ProblemException(ErrorCode.FORBIDDEN)
             }
             claimedTenants(request, op).firstOrNull { !it.second.equals(ctx.tenant.toString(), ignoreCase = true) }?.let { (surface, _) ->
@@ -141,8 +144,11 @@ class RequestContextFilter(
 
     companion object {
         const val CONTEXT_HEADER = "X-Taktovia-Context"
-        /** Operationen mit eigener Authentisierung ohne Menschen-/Dienstkontext (Partnersignatur, M6). */
-        val EXEMPT = setOf("receivePartnerEvent")
+        /**
+         * Operationen mit eigener Authentisierung ohne Menschen-/Dienstkontext. Leer: auch die Partnersignatur-Operation (`receivePartnerEvent`)
+         * ist bis M6 für jede Anmeldung verweigert (Matrixzeile ohne erlaubte Rolle); M6 trägt hier ausdrücklich ein, was eine eigene Prüfung hat.
+         */
+        val EXEMPT: Set<String> = emptySet()
         private val HEADER_NAME = Regex("(?i)^(x-)?tenant(-?id)?$")
         private val QUERY_NAME = Regex("(?i)^tenant_?id$")
     }

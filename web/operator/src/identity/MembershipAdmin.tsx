@@ -1,5 +1,5 @@
 import { ApiError, useApi } from '@taktovia/api-client';
-import type { Membership } from '@taktovia/api-client';
+import type { Membership, MembershipCreate } from '@taktovia/api-client';
 import {
   DataTable,
   Field,
@@ -102,7 +102,7 @@ export function MembershipAdmin() {
         body: {
           issuer: session.me.issuer,
           subject: form.subject.trim(),
-          role_code: form.role_code.trim(),
+          role_code: form.role_code.trim() as MembershipCreate['role_code'],
         },
       });
       setForm({ subject: '', role_code: '' });

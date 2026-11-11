@@ -13,7 +13,7 @@ export type Right =
  */
 export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'journeys:book': ['passenger.app'],
-  'operations:read': ['callcenter'],
+  'passengers:read': ['callcenter'],
   'costs:allocate': ['finance'],
   'expenses:approve': ['finance'],
   'rosters:publish': ['staff'],

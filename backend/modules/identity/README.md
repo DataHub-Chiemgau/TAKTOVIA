@@ -10,3 +10,7 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Stand WP-M1-06
 
 Öffentliche Ports (`identity.api.IdentityApi`): `MembershipLookup` (wählbare Mandanten über den subjektgebundenen Verzeichnisindex `membership_subject_index`, aktive Mitgliedschaft je Mandant), `TenantSwitch` (Mitgliedschafts- und Dienstprüfung, Audit), `MembershipAdmin` (erteilen/entziehen/auflisten mit Audit und Outbox in einer Transaktion), `ContextRevalidator` (Wiederprüfung in der Fachtransaktion), `ScopePolicy` (Rolle -> Funktionsscopes). Entscheidungen zu OP-04 (Gültigkeit, `service_scope NULL` = keine Freigabe) und OP-06 (Lookup ohne Allzweck-Definer): [identitaet-kontext.md](../../../docs/umsetzungsplan/vertraege/identitaet-kontext.md).
+
+## Stand WP-M1-07
+
+`identity.api`: `RoleCatalog` (sieben Pflichtrollen + Platzhalter), `RightsMatrix` (lädt `rechtematrix/rechtematrix.csv`, Strukturprüfung, Vertragsabgleich, `scopesFor`), `Authorizer`/`MatrixAuthorizer` (zentrale Entscheidung, deny-by-default), `RightsMatrixRollout` (Protokoll des Ausrollens). Die Matrix ist die einzige Rechtequelle; `ScopePolicy` leitet daraus die Funktionsscopes ab. Siehe [rechtematrix.md](../../../docs/umsetzungsplan/vertraege/rechtematrix.md).

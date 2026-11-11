@@ -24,14 +24,20 @@ interface IdentityApi {
     val admin: MembershipAdmin
     /** Prüft in der Fachtransaktion, dass der Kontext noch gilt (siehe [ContextTransactions]). */
     val revalidator: ContextRevalidator
-    /** Rollen -> Funktionsscopes (zentrale Autorisierungsgrundlage). */
+    /** Rollen -> Funktionsscopes (aus der Rechtematrix abgeleitet). */
     val scopePolicy: ScopePolicy
+    /** Die versionierte Rechtematrix (WP-M1-07). */
+    val rights: RightsMatrix
+    /** Zentrale Autorisierungskomponente. */
+    val authorizer: Authorizer
+    /** Protokoll des Ausrollens der Rechtematrix. */
+    val rollout: RightsMatrixRollout
 
     companion object {
         fun create(
             tx: TenantTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox,
-            clock: Clock = Clock.systemUTC(), scopePolicy: ScopePolicy? = null,
-        ): IdentityApi = IdentityServicesFactory.create(tx, audit, security, outbox, clock, scopePolicy)
+            clock: Clock = Clock.systemUTC(), rights: RightsMatrix = RightsMatrix.load(),
+        ): IdentityApi = IdentityServicesFactory.create(tx, audit, security, outbox, clock, rights)
     }
 }
 

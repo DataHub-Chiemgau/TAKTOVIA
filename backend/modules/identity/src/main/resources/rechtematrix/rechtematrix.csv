@@ -1,0 +1,58 @@
+# Rechtematrix TAKTOVIA (WP-M1-07, LH-6.2-IAM-004): Rolle x Taetigkeit. Entwurf, fachlich NICHT freigegeben (OP-10).
+# matrix_version: 1
+# Zellen: J = erlaubt, N = verweigert. Spalten = Rollencodes des Rollenkatalogs (db: role_catalog). Eine Zeile je operationId der OpenAPI-Vertraege (api/*.yaml);
+# `scope` ist der Funktionsscope der Operation. Alle Operationen mit gleichem Scope haben dieselben Rollenzellen (Test). `datenklasse`: PII/HR/FINANZ oder -;
+# der Administrator (tenant_admin) hat auf Operationen mit Datenklasse keinen Zugriff ohne gesonderte Zuweisung einer Fachrolle (Kap. 01 §1.7).
+# Aenderungen nur per Pull Request zusammen mit rechtematrix.lock (Version erhoehen, SHA-256 erneuern); beim Ausrollen wird die Aenderung protokolliert.
+operation_id;scope;datenklasse;meilenstein;passenger;driver;callcenter;support;dispatcher;planner;tenant_admin;finance;staff_planning;workshop
+getCompanyProfile;company:read;-;M1;N;N;N;J;J;J;J;J;N;N
+listAuditEvents;audit:read;-;M1;N;N;N;J;N;N;J;N;N;N
+listRetentionRules;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
+updateCompanyProfile;company:write;-;M1;N;N;N;N;N;N;J;N;N;N
+updateRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
+publishConfig;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
+recordDriverEvent;driver:events;-;M3;N;J;N;N;N;N;N;N;N;N
+cancelJourney;journeys:cancel;-;M2;J;N;J;N;N;N;N;N;N;N
+confirmJourney;journeys:book;-;M2;J;N;J;N;N;N;N;N;N;N
+getJourney;journeys:read;-;M2;J;N;J;J;J;N;N;N;N;N
+getOffer;journeys:read;-;M2;J;N;J;J;J;N;N;N;N;N
+holdOffer;journeys:book;-;M2;J;N;J;N;N;N;N;N;N;N
+planJourney;journeys:plan;-;M2;J;N;J;N;J;N;N;N;N;N
+quoteCancellation;journeys:cancel;-;M2;J;N;J;N;N;N;N;N;N;N
+receivePartnerEvent;-;-;M6;N;N;N;N;N;N;N;N;N;N
+allocateCost;costs:allocate;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+approveExpense;expenses:approve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+createDriverClearance;fleet:write;HR;M1;N;N;N;N;J;N;N;N;N;J
+createVehicleRole;fleet:write;-;M1;N;N;N;N;J;N;N;N;N;J
+listDriverClearances;fleet:read;HR;M1;N;N;N;J;J;J;N;N;J;J
+listVehicleRoles;fleet:read;-;M1;N;N;N;J;J;J;N;N;J;J
+createCostCenter;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
+createDepot;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
+createLegalEntity;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
+createMembership;memberships:write;-;M1;N;N;N;N;N;N;J;N;N;N
+createRegion;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
+getMe;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+listCostCenters;organization:read;-;M1;N;N;N;J;J;J;J;J;N;N
+listDepots;organization:read;-;M1;N;N;N;J;J;J;J;J;N;N
+listLegalEntities;organization:read;-;M1;N;N;N;J;J;J;J;J;N;N
+listMemberships;memberships:read;-;M1;N;N;N;N;N;N;J;N;N;N
+listRegions;organization:read;-;M1;N;N;N;J;J;J;J;J;N;N
+listSessions;sessions:read;-;M1;N;N;N;J;N;N;J;N;N;N
+revokeMembership;memberships:write;-;M1;N;N;N;N;N;N;J;N;N;N
+revokeSession;sessions:write;-;M1;N;N;N;N;N;N;J;N;N;N
+switchTenant;tenant:switch;-;M1;J;J;J;J;J;J;J;J;J;J
+updateLegalEntity;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
+getOperation;operations:read;-;M1;N;N;J;J;J;N;J;N;N;N
+listPassengers;passengers:read;PII;M1;N;N;J;J;J;N;N;N;N;N
+registerPassenger;passengers:write;PII;M1;J;N;J;N;N;N;N;N;N;N
+createConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
+getConfigRevision;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
+getEffectiveConfig;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
+listConfigRevisions;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
+requestConfigImpact;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
+validateConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
+publishRoster;rosters:publish;HR;M4;N;N;N;N;N;N;N;N;J;N
+createService;services:write;-;M1;N;N;N;N;N;J;J;N;N;N
+listServices;services:read;-;M1;N;N;J;J;J;J;J;N;N;N
+createWebhookSubscription;webhooks:write;-;M1;N;N;N;N;N;N;J;N;N;N
+listWebhookSubscriptions;webhooks:read;-;M1;N;N;N;N;N;N;J;N;N;N

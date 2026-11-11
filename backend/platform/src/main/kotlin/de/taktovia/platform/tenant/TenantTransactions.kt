@@ -39,6 +39,15 @@ class TenantTransactions(dataSource: DataSource) {
     }
 
     /**
+     * Transaktion **ohne** Mandanten- oder Subjektkontext für globale Plattformtabellen ohne `tenant_id` (z. B. Ausrollprotokoll der
+     * Rechtematrix, WP-M1-07). Mandantenlokale Tabellen bleiben dabei durch RLS unsichtbar. Nicht für Fachoperationen verwenden.
+     */
+    fun <T> runGlobal(block: (JdbcOperations) -> T): T {
+        @Suppress("UNCHECKED_CAST")
+        return TransactionTemplate(tx.transactionManager!!).execute { block(jdbc) } as T
+    }
+
+    /**
      * Lookup vor gesetztem Tenantkontext (WP-M1-06, OP-06): setzt **transaktionslokal** `app.subject_key` auf das geprüfte Subject
      * (`issuer`, `subject` aus dem verifizierten Token). Nur damit liefert `membership_subject_index` Zeilen, und zwar ausschließlich die
      * dieses Subjects. Es gibt keinen Tenantkontext; alle anderen Tabellen bleiben unsichtbar. Nur für den Identitätsbaustein gedacht.

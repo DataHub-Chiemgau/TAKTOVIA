@@ -516,7 +516,7 @@ export interface Membership {
 export interface MembershipCreate {
   issuer: string;
   subject: string;
-  role_code: string;
+  role_code: 'passenger' | 'driver' | 'callcenter' | 'support' | 'dispatcher' | 'planner' | 'tenant_admin' | 'finance' | 'staff_planning' | 'workshop';
   service_scope?: UUID[] | null;
   valid_from?: string;
   valid_to?: string | null;

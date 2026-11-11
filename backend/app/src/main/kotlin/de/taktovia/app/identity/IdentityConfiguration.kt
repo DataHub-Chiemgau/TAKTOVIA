@@ -43,6 +43,9 @@ class IdentityConfiguration {
         return ContextTicketCodec(secret, Duration.ofSeconds(env.getProperty("taktovia.identity.context-ttl-seconds", Long::class.java, 3600)))
     }
 
+    /** Protokolliert das Ausrollen der Rechtematrix beim Start (IAM-004 AK 4); schlägt es fehl, startet die Anwendung nicht. */
+    @Bean fun rightsMatrixRolloutRecorder(identity: IdentityApi, env: Environment) = RightsMatrixRolloutRecorder(identity, env.getProperty("spring.application.name") ?: "taktovia")
+
     @Bean fun tenantMismatchReporter(tx: TenantTransactions, events: SecurityEventPort) = TenantMismatchReporter(tx, events)
 
     @Bean fun tenantClaimInspector(m: TenantMismatchReporter): RequestBodyInspector = TenantClaimInspector(m)
@@ -81,4 +84,18 @@ class CompositeRoleDirectory(
 ) : de.taktovia.app.security.PrivilegedRoleDirectory {
     override fun rolesOf(subject: java.util.UUID): Set<String> =
         membership.rolesOf(subject) + others.orderedStream().filter { it !== this }.toList().flatMap { it.rolesOf(subject) }
+}
+
+/** Startschritt: Version und Prüfsumme der mitgelieferten Rechtematrix im Ausrollprotokoll festhalten, wenn sie von der zuletzt protokollierten abweicht. */
+class RightsMatrixRolloutRecorder(private val identity: IdentityApi, private val application: String) : org.springframework.boot.ApplicationRunner {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    /** Als Runner, damit die Umgebungsprüfung (`EnvironmentGuard`) immer zuerst entscheidet und ein Fehlstart nie in ein fremdes Protokoll schreibt. */
+    override fun run(args: org.springframework.boot.ApplicationArguments) {
+        val m = identity.rights
+        val problems = m.problems()
+        check(problems.isEmpty()) { "Rechtematrix ungültig: ${problems.joinToString("; ")}" }
+        val r = identity.rollout.record("service:$application")
+        log.info("Rechtematrix Version {} geladen, Ausrollen {} (sha256 {})", r.version, if (r.recorded) "protokolliert" else "unverändert", r.sha256.take(12))
+    }
 }

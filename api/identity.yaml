@@ -791,7 +791,19 @@ components:
           type: string
           minLength: 2
           maxLength: 64
-          pattern: ^[a-z][a-z0-9_]*$
+          enum:
+          - passenger
+          - driver
+          - callcenter
+          - support
+          - dispatcher
+          - planner
+          - tenant_admin
+          - finance
+          - staff_planning
+          - workshop
+          description: Rollencode des Rollenkatalogs (WP-M1-07, IAM-004); die Pflichtrollen sind Fahrgast, Fahrer, Callcenter, Support, Disponent, Verkehrsplaner
+            und Administrator, finance, staff_planning und workshop sind Platzhalter für M3/M4 (OP-10).
         service_scope:
           oneOf:
           - type: array

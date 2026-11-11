@@ -65,3 +65,9 @@ Nach der Token-Prüfung bildet der `RequestContextFilter` (`app.identity`) je An
 | `context-ttl-seconds` (Gültigkeit der Mandantenbindung) | 3600 |
 
 Für andere Module: `RequestContext` aus `platform.context` verwenden und Datenbankzugriffe über `ContextTransactions.run(ctx) { jdbc -> … }`; den Mandanten nie aus Anfrage-DTOs lesen (Architekturregel `RequestContextRules`: kein `tenant_id` in `*Request`-DTOs oder `@RequestBody`-Typen, Kontexte entstehen nur im Filter).
+
+## Rollenmodell und Rechtematrix (WP-M1-07)
+
+Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `planner`, `tenant_admin` plus Platzhalter `finance`, `staff_planning`, `workshop`) und die versionierte **Rechtematrix** `modules/identity/src/main/resources/rechtematrix/rechtematrix.csv` sind die einzige Rechtequelle: Funktionsscopes folgen aus der Matrix, die zentrale Autorisierung (`identity.api.Authorizer`) entscheidet im `RequestContextFilter`. Eine Operation der API-Verträge ohne Matrixzeile lässt den Build scheitern; Änderungen der Matrix brauchen Versionsanhebung und `rechtematrix.lock` und werden beim Start in `rights_matrix_rollout` protokolliert. Der Administrator hat keinen Zugriff auf PII-/HR-/Finanz-Tätigkeiten ohne gesonderte Fachrolle. Details und offene Punkte (OP-10): [rechtematrix.md](../docs/umsetzungsplan/vertraege/rechtematrix.md).
+
+**Neue Route bauen:** Operation in `api/<modul>.yaml` mit `security: oidc: [<scope>]` deklarieren, Zeile in `rechtematrix.csv` ergänzen (Scope muss zu den übrigen Zeilen desselben Scopes passen), `# matrix_version` erhöhen und `rechtematrix.lock` erneuern (Test nennt den `sha256`-Wert).

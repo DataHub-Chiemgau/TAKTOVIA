@@ -2873,6 +2873,121 @@
       ]
     },
     {
+      "tabelle": "rights_matrix_rollout",
+      "aggregat": "Ausrollprotokoll der Rechtematrix (WP-M1-07)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "nur anhängen, Änderungen an der Matrix nachvollziehbar",
+      "spalten": [
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "matrix_sha256",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "matrix_version",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "operation_count",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "previous_sha256",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "role_count",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "rolled_out_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "rolled_out_by",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "role_catalog",
+      "aggregat": "Rollenkatalog (WP-M1-07)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "globaler Katalog, nur per Migration",
+      "spalten": [
+        {
+          "spalte": "label_de",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "placeholder",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "role_code",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "saga_step",
       "aggregat": "Saga-Schritt",
       "loeschklasse": "LK_BETRIEB",
