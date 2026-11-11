@@ -532,6 +532,8 @@ components:
       - ZONE_OFFSET_MISMATCH
       - INTERVAL_INVALID
       - TARGET_NOT_ALLOWED
+      - UNIT_MISMATCH
+      - SAFETY_INVARIANT_VIOLATED
     Money:
       type: object
       additionalProperties: false

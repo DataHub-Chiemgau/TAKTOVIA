@@ -80,6 +80,9 @@ enum class ViolationCode(val message: String) {
     INTERVAL_INVALID("Intervallende liegt nicht nach dem Beginn"),
     // Eingabehärtung (SEC-009)
     TARGET_NOT_ALLOWED("Ziel-URL nicht zulässig"),
+    // Konfiguration (CFG-002, CFG-004)
+    UNIT_MISMATCH("Einheit passt nicht zum Parameter"),
+    SAFETY_INVARIANT_VIOLATED("Sicherheitsprüfungen dürfen nicht abgeschaltet werden"),
 }
 
 /** Eine Feldverletzung: `pointer` ist ein JSON-Pointer (RFC 6901); Nicht-Body-Orte tragen `/$query/…` bzw. `/$header/…`. */

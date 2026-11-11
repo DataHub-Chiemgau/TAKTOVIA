@@ -71,3 +71,10 @@ Für andere Module: `RequestContext` aus `platform.context` verwenden und Datenb
 Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `planner`, `tenant_admin` plus Platzhalter `finance`, `staff_planning`, `workshop`) und die versionierte **Rechtematrix** `modules/identity/src/main/resources/rechtematrix/rechtematrix.csv` sind die einzige Rechtequelle: Funktionsscopes folgen aus der Matrix, die zentrale Autorisierung (`identity.api.Authorizer`) entscheidet im `RequestContextFilter`. Eine Operation der API-Verträge ohne Matrixzeile lässt den Build scheitern; Änderungen der Matrix brauchen Versionsanhebung und `rechtematrix.lock` und werden beim Start in `rights_matrix_rollout` protokolliert. Der Administrator hat keinen Zugriff auf PII-/HR-/Finanz-Tätigkeiten ohne gesonderte Fachrolle. Details und offene Punkte (OP-10): [rechtematrix.md](../docs/umsetzungsplan/vertraege/rechtematrix.md).
 
 **Neue Route bauen:** Operation in `api/<modul>.yaml` mit `security: oidc: [<scope>]` deklarieren, Zeile in `rechtematrix.csv` ergänzen (Scope muss zu den übrigen Zeilen desselben Scopes passen), `# matrix_version` erhöhen und `rechtematrix.lock` erneuern (Test nennt den `sha256`-Wert).
+
+## Konfigurationskatalog und Revisionen (WP-M1-19, WP-M1-20)
+
+Modul `config`: Parameterkatalog mit Systemgrenzen (`policy_schema`, `GET /v1/config/parameters`) und Konfigurationsrevisionen (`/v1/config/revisions`: anlegen, lesen, auflisten, Entwurf ändern, `as_of`-Rekonstruktion).
+Werte außerhalb von Name, Typ, Einheit, Bereich oder Sicherheitsinvariante werden vor dem Speichern mit 422 abgewiesen; publizierte Revisionen sind in der Datenbank unveränderlich. Andere Module lesen
+Konfiguration nur über `de.taktovia.config.api.ConfigApi`. Neue Katalogversionen sind Migrationen (`db/migrations/`), nie Laufzeitänderungen. Entscheidungen und Grenzen:
+[konfigurationsrevisionen.md](../docs/umsetzungsplan/vertraege/konfigurationsrevisionen.md).

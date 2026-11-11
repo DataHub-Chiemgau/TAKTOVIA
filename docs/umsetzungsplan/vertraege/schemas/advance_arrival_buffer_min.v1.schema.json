@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/advance_arrival_buffer_min.v1.schema.json",
+  "title": "advance_arrival_buffer_min",
+  "description": "Anschluss-Zeitpuffer",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 240,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-advance_arrival_buffer_min",
+  "x-catalog-range": "Planungssicherheit; nicht über Sicherheitsgrenzen"
+}

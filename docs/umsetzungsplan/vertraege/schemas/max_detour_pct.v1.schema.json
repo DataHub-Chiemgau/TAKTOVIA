@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/max_detour_pct.v1.schema.json",
+  "title": "max_detour_pct",
+  "description": "Maximaler Pooling-Umweg",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 200,
+  "x-unit": "PERCENT",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.1-max_detour_pct",
+  "x-catalog-range": "0..200; harte Zusagegrenzen vorgehend"
+}

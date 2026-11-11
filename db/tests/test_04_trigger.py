@@ -189,8 +189,8 @@ class Trigger(unittest.TestCase):
                     qa, jid = uid(), uid()
                     c.execute("INSERT INTO taktovia.travel_attempt(tenant_id,id,created_at,channel) VALUES (%s,%s,now(),'WEB')", (T, qa))
                     cfg = uid()
-                    c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-                                 VALUES (%s,%s,'TENANT',%s,1,'1','{}',now(),'u')""", (T, cfg, T))
+                    c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+                                 VALUES (%s,%s,'TENANT',%s,1,'1','{}',now(),'user:u','Testdaten')""", (T, cfg, T))
                     q = uid()
                     c.execute("""INSERT INTO taktovia.fare_quote(tenant_id,id,attempt_id,currency,pay_at_platform_minor,external_known_minor,external_unknown_leg_ids,
                                  expires_at,tariff_revision_id,config_revision_id,snapshot,content_hash)
@@ -206,8 +206,8 @@ class Trigger(unittest.TestCase):
         with tx(T) as c:
             qa = uid(); cfg = uid(); q = uid()
             c.execute("INSERT INTO taktovia.travel_attempt(tenant_id,id,created_at,channel) VALUES (%s,%s,now(),'WEB')", (T, qa))
-            c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-                         VALUES (%s,%s,'TENANT',%s,2,'1','{}',now(),'u')""", (T, cfg, T))
+            c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+                         VALUES (%s,%s,'TENANT',%s,2,'1','{}',now(),'user:u','Testdaten')""", (T, cfg, T))
             c.execute("""INSERT INTO taktovia.fare_quote(tenant_id,id,attempt_id,currency,pay_at_platform_minor,external_known_minor,external_unknown_leg_ids,
                          expires_at,tariff_revision_id,config_revision_id,snapshot,content_hash)
                          VALUES (%s,%s,%s,'EUR',1000,0,'{}',now(),%s,%s,'{}',%s)""", (T, q, qa, uid(), cfg, 'b' * 64))
@@ -230,8 +230,8 @@ class Trigger(unittest.TestCase):
         with self.assertRaises(psycopg.errors.CheckViolation):
             with tx(T) as c:
                 cfg, svc, org = uid(), uid(), uid()
-                c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-                             VALUES (%s,%s,'SERVICE',%s,1,'1','{}',now(),'u')""", (T, cfg, svc))
+                c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+                             VALUES (%s,%s,'SERVICE',%s,1,'1','{}',now(),'user:u','Testdaten')""", (T, cfg, svc))
                 c.execute("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (%s,%s,%s,'o',%s,'{OPERATOR}')", (T, org, LE, str(uid())))
                 c.execute("INSERT INTO taktovia.service(tenant_id,id,operator_id,name,timezone,config_revision_id) VALUES (%s,%s,%s,'s','Europe/Berlin',%s)", (T, svc, org, cfg))
                 bowtie = 'SRID=4326;MULTIPOLYGON(((0 0,1 1,1 0,0 1,0 0)))'  # selbstschneidend

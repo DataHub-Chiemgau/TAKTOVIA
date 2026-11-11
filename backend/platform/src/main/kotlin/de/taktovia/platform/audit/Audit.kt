@@ -62,6 +62,9 @@ object AuditActions {
     const val TENANT_SWITCHED = "identity.tenant.switched"
     const val CONFIG_PUBLISHED = "config.revision.published"
     const val CONFIG_REVERTED = "config.revision.reverted"
+    /** Entwurf einer Konfigurationsrevision angelegt bzw. geändert (WP-M1-20). */
+    const val CONFIG_DRAFT_CREATED = "config.revision.created"
+    const val CONFIG_DRAFT_CHANGED = "config.revision.changed"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
     const val PROMISE_SNAPSHOT_CHANGED = "promise.snapshot.changed"
     const val SECURITY_TENANT_MISMATCH = "security.tenant.mismatch"
@@ -71,6 +74,7 @@ object AuditActions {
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+        CONFIG_DRAFT_CREATED, CONFIG_DRAFT_CHANGED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
 }

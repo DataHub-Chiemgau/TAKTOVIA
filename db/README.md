@@ -9,6 +9,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
+| `migrations/V1190__policy_schema.sql`, `V1200__config_revision_lebenszyklus.sql` | Parameterkatalog `policy_schema` mit Schema-Versionen und Wertprüfung, Lebenszyklus und Unveränderlichkeit von `config_revision` (WP-M1-19, -20) |
 | `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |
 | `dateninventar.d/*.csv`, `dateninventar_katalog.json`, `dateninventar.py` | Dateninventar mit Zweck, Rechtsgrundlage, Schutz- und Löschklasse je Spalte (WP-M1-32); `python db/dateninventar.py check` gleicht das Schema ab, `export --write` erzeugt den Export für UI-20 |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |

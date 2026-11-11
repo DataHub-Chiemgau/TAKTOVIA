@@ -60,7 +60,7 @@ export interface PublishedRevision {
 
 export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
-export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED';
+export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED';
 
 export interface Money {
   amount_minor: number;
@@ -649,6 +649,55 @@ export interface EffectiveConfig {
   revision_ids: UUID[];
 }
 
+export type ConfigScopeKind = 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
+
+export type ConfigRevisionState = 'DRAFT' | 'VALIDATED' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED';
+
+export interface ConfigChange {
+  pointer: string;
+  kind: 'ADDED' | 'CHANGED' | 'REMOVED';
+  old_value?: unknown;
+  new_value?: unknown;
+}
+
+export interface ConfigChangeLog {
+  changed_by: string;
+  changed_at: string;
+  reason: string;
+  effective_from: string;
+  effective_to: string | null;
+  predecessor_id: UUID | null;
+  predecessor_revision: number | null;
+  changes: ConfigChange[];
+}
+
+export interface ConfigParameter {
+  name: string;
+  type: 'integer' | 'number' | 'boolean' | 'string' | 'object';
+  unit: string;
+  minimum: number | null;
+  maximum: number | null;
+  default?: unknown;
+  allowed_levels: ConfigScopeKind[];
+  security_class: 'STANDARD' | 'SAFETY_INVARIANT';
+  limit_source: 'KATALOG' | 'PLANUNGSANNAHME';
+  description: string;
+  schema: Record<string, unknown>;
+}
+
+export interface ConfigParameterCatalog {
+  schema_version: string;
+  valid_from: string;
+  items: ConfigParameter[];
+}
+
+export interface ConfigRevisionUpdate {
+  values?: Record<string, unknown>;
+  effective_from?: Timestamp;
+  effective_to?: Timestamp | null;
+  reason?: string;
+}
+
 export interface ConfigRevision {
   id: UUID;
   scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
@@ -661,6 +710,10 @@ export interface ConfigRevision {
   effective_to: string | null;
   created_by: string;
   approved_by: string | null;
+  reason?: string;
+  created_at?: string;
+  published_at?: string | null;
+  change_log?: ConfigChangeLog;
 }
 
 export interface ConfigRevisionCreate {
@@ -669,6 +722,8 @@ export interface ConfigRevisionCreate {
   schema_version: string;
   values: Record<string, unknown>;
   effective_from: Timestamp;
+  effective_to?: Timestamp | null;
+  reason?: string;
 }
 
 export interface ConfigValidationReport {
@@ -1031,9 +1086,16 @@ export interface Operations {
     body: undefined;
     response: EffectiveConfig;
   };
+  listConfigParameters: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ConfigParameterCatalog;
+  };
   listConfigRevisions: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string };
+    query: { limit?: number; cursor?: string; scope_kind?: ConfigScopeKind; scope_id?: UUID; state?: ConfigRevisionState; as_of?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: ConfigRevisionPage;
@@ -1050,6 +1112,13 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string };
     body: undefined;
+    response: ConfigRevision;
+  };
+  updateConfigRevision: {
+    path: { revision_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ConfigRevisionUpdate;
     response: ConfigRevision;
   };
   validateConfigRevision: {
@@ -1152,9 +1221,11 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
+  listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createConfigRevision: { method: 'POST', path: '/v1/config/revisions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['config:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
-  getConfigRevision: { method: 'GET', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getConfigRevision: { method: 'GET', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateConfigRevision: { method: 'PATCH', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   validateConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/validate', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

@@ -55,7 +55,7 @@ class PromiseChangeProcedureTest {
 
     private fun newTenant(): TenantId = TenantId(UUID.randomUUID()).also { admin.update("INSERT INTO taktovia.tenant(id,name,status) VALUES (?,?, 'ACTIVE')", it.value, "pr-$it") }
     private fun newConfig(t: TenantId, revision: Long = 1, scope: UUID = UUID.randomUUID()): UUID = UUID.randomUUID().also {
-        admin.update("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by) VALUES (?,?,'tenant',?,?,'1.0','{}'::jsonb,now(),'user:x')",
+        admin.update("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason) VALUES (?,?,'TENANT',?,?,'1','{}'::jsonb,now(),'user:x','Testdaten')",
             t.value, it, scope, revision) }
     private fun fixture(): Fixture {
         val t = newTenant(); val cfg = newConfig(t); val id = UUID.randomUUID()

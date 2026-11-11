@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/max_booking_horizon_days.v1.schema.json",
+  "title": "max_booking_horizon_days",
+  "description": "Vorausbuchungshorizont",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 365,
+  "x-unit": "DAYS",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.1-max_booking_horizon_days",
+  "x-catalog-range": "0..365"
+}

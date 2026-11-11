@@ -13,8 +13,8 @@ CONTENT = json.dumps({'gross_minor': 1000})
 
 def config(c, tenant):
     cid = uid()
-    c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-                 VALUES (%s,%s,'tenant',%s,1,'1.0','{}'::jsonb,now(),'user:x')""", (tenant, cid, uid()))
+    c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+                 VALUES (%s,%s,'TENANT',%s,1,'1','{}'::jsonb,now(),'user:x','Testdaten')""", (tenant, cid, uid()))
     return cid
 
 
@@ -99,8 +99,8 @@ class ZusageSnapshot(unittest.TestCase):
         with tx(A) as c:
             cfg = config(c, A); pid = promise(c, A, cfg)
         with tx(A) as c:   # neue Konfigurationsrevision, auch die alte wird geändert (Gültigkeitsende)
-            c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-                         VALUES (%s,%s,'tenant',%s,2,'1.0','{"x":1}'::jsonb,now(),'user:x')""", (A, uid(), uid()))
+            c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+                         VALUES (%s,%s,'TENANT',%s,2,'1','{}'::jsonb,now(),'user:x','Testdaten')""", (A, uid(), uid()))
             c.execute("UPDATE taktovia.config_revision SET effective_to = now() + interval '1 day' WHERE tenant_id=%s AND id=%s", (A, cfg))
         with tx(A) as c:
             row = c.execute("SELECT content, content_hash, config_revision_id, schema_version FROM taktovia.promise_test_snapshot WHERE promise_id=%s", (pid,)).fetchone()

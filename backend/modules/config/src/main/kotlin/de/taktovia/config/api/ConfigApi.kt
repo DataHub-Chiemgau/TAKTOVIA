@@ -1,4 +1,169 @@
 package de.taktovia.config.api
 
-/** Öffentliche Ports des Moduls `config`; noch leer, wächst mit den Arbeitspaketen. */
-interface ConfigApi
+import de.taktovia.config.internal.ConfigServicesFactory
+import de.taktovia.platform.audit.AuditPort
+import de.taktovia.platform.context.ContextTransactions
+import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.problem.Violation
+import java.math.BigDecimal
+import java.time.Clock
+import java.time.Instant
+import java.util.UUID
+
+/**
+ * Öffentliche Ports des Moduls `config` (WP-M1-19, WP-M1-20): Parameterkatalog mit Systemgrenzen ([parameters]) und
+ * Konfigurationsrevisionen mit Entwurf, Historie und Rekonstruktion ([revisions]). Präzedenz und wirksame Konfiguration (WP-M1-21) sowie
+ * Prüfung, Freigabe und Publikation (WP-M1-22) bauen auf diesen Ports auf.
+ */
+interface ConfigApi {
+    val parameters: ParameterRegistry
+    val revisions: ConfigRevisions
+
+    companion object {
+        /** [clock] bestimmt, welche Schema-Version „jetzt“ gilt (Tests setzen eine feste Uhr). */
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): ConfigApi =
+            ConfigServicesFactory.create(ctxTx, audit, outbox, clock)
+    }
+}
+
+/** Ebene, auf der eine Konfigurationsrevision gilt (Schema `ConfigRevision.scope_kind` der API; OP-18). */
+enum class ScopeKind { TENANT, REGION, DEPOT, SERVICE }
+
+/** Lebenszyklus einer Revision (Entwurf → geprüft → freigegeben → publiziert); Publikation liefert WP-M1-22. */
+enum class RevisionState { DRAFT, VALIDATED, APPROVED, PUBLISHED }
+
+/**
+ * Ein Eintrag des Parameterkatalogs (`policy_schema`): technischer Name, Datentyp, Einheit, gültiger Bereich, Beschreibung. [minimum] und
+ * [maximum] sind zugleich die **Systemgrenzen**: kein Mandant kann sie überschreiben (LH-I.7-CFG-004). [securityClass] `SAFETY_INVARIANT`
+ * kennzeichnet nicht abschaltbare Sicherheitsparameter; [limitSource] `PLANUNGSANNAHME` kennzeichnet Grenzen, die der Katalog nicht beziffert (OP-03).
+ */
+data class ParameterDefinition(
+    val name: String,
+    val type: String,
+    val unit: String,
+    val minimum: BigDecimal?,
+    val maximum: BigDecimal?,
+    val default: Any?,
+    val allowedLevels: Set<ScopeKind>,
+    val securityClass: String,
+    val limitSource: String,
+    val description: String,
+    /** Das vollständige JSON-Schema (Draft 2020-12) des Parameters. */
+    val schema: Map<String, Any?>,
+)
+
+data class ParameterCatalog(val schemaVersion: String, val validFrom: Instant, val parameters: List<ParameterDefinition>)
+
+sealed interface ValidationOutcome {
+    /** Gültig; [values] sind normalisiert (Einheitenhülle `{value, unit}` aufgelöst). */
+    data class Valid(val schemaVersion: String, val values: Map<String, Any?>) : ValidationOutcome
+    data class Invalid(val schemaVersion: String, val violations: List<Violation>) : ValidationOutcome
+}
+
+interface ParameterRegistry {
+    /** Katalog der aktuell gültigen Schema-Version; für jeden Mandanten lesbar. Der Katalog ist nur per Migration änderbar (es gibt keinen Schreibweg). */
+    fun catalog(ctx: RequestContext): ParameterCatalog
+
+    /**
+     * Prüft Werte (Parametername → Wert) einer Revision der Ebene [scope] gegen die Schema-Version [schemaVersion] (Standard: die jetzt gültige):
+     * bekannter Name auf zulässiger Ebene, Datentyp, Einheit, Bereich bzw. Systemgrenze, Sicherheitsinvarianten, Format. Ein Wert darf als
+     * Hülle `{"value": 5, "unit": "MINUTES"}` kommen; die Einheit muss dann zum Parameter passen. Es werden alle Verletzungen gesammelt.
+     */
+    fun validate(ctx: RequestContext, scope: ScopeKind, values: Map<String, Any?>, schemaVersion: String? = null): ValidationOutcome
+}
+
+/** Eine Änderung eines Werts gegenüber der Vorgängerrevision (JSON-Pointer, Altwert, Neuwert). */
+data class ConfigChange(val pointer: String, val kind: ChangeKind, val oldValue: Any?, val newValue: Any?)
+enum class ChangeKind { ADDED, CHANGED, REMOVED }
+
+/** Änderungsprotokoll je Revision (LH-I.7-CFG-003): Benutzer, Zeitpunkt, Grund, Gültigkeitsbeginn und Diff gegen die Vorgängerrevision. */
+data class ChangeLogEntry(
+    val changedBy: String,
+    val changedAt: Instant,
+    val reason: String,
+    val effectiveFrom: Instant,
+    val effectiveTo: Instant?,
+    /** Vorgängerrevision: die höchste publizierte Revision desselben Scopes mit kleinerer Nummer; ohne sie ist jeder Wert „hinzugefügt“. */
+    val predecessorId: UUID?,
+    val predecessorRevision: Long?,
+    val changes: List<ConfigChange>,
+)
+
+data class ConfigRevisionView(
+    val id: UUID,
+    val scopeKind: ScopeKind,
+    val scopeId: UUID,
+    /** Nummer der Revision im Scope (1, 2, 3 …). */
+    val revision: Long,
+    val state: RevisionState,
+    val schemaVersion: String,
+    val values: Map<String, Any?>,
+    val effectiveFrom: Instant,
+    val effectiveTo: Instant?,
+    val createdBy: String,
+    val createdAt: Instant,
+    val approvedBy: String?,
+    val publishedAt: Instant?,
+    val reason: String,
+    /** Zeilenversion für `ETag`/`If-Match`; steigt mit jeder Änderung des Entwurfs. */
+    val rowVersion: Long,
+    val changeLog: ChangeLogEntry,
+)
+
+/** Entwurf anlegen. Ersteller ist immer der Akteur des Kontexts, nie ein Wert der Anfrage. */
+data class CreateDraft(
+    val scopeKind: ScopeKind,
+    val scopeId: UUID,
+    val schemaVersion: String,
+    val values: Map<String, Any?>,
+    val effectiveFrom: Instant,
+    val effectiveTo: Instant? = null,
+    /** Pflicht (3 bis 1000 Zeichen); `null` ergibt 422. */
+    val reason: String?,
+)
+
+/** Entwurf ändern (JSON-Merge auf oberster Ebene): nicht gesetzte Felder bleiben, `values` ersetzt die Werte vollständig. */
+data class UpdateDraft(
+    val values: Map<String, Any?>? = null,
+    val effectiveFrom: Instant? = null,
+    val effectiveTo: Instant? = null,
+    /** `true`: [effectiveTo] wurde gesendet (auch `null` = Ende löschen). */
+    val effectiveToSet: Boolean = false,
+    val reason: String? = null,
+)
+
+data class RevisionFilter(val scopeKind: ScopeKind? = null, val scopeId: UUID? = null, val state: RevisionState? = null)
+
+/** Ergebnis der erneuten Prüfung eines Entwurfs gegen die zum Prüfzeitpunkt gültige Schema-Version. */
+data class RevalidationReport(val revisionId: UUID, val checkedAgainstVersion: String, val valid: Boolean, val violations: List<Violation>)
+
+interface ConfigRevisions {
+    /**
+     * Legt einen Entwurf an: Pflichtangaben und Werte werden **vor** dem Schreiben geprüft (422 mit Feldverletzungen, keine Zeile). Revisionsnummer
+     * je Scope fortlaufend; legen zwei Anfragen gleichzeitig dieselbe Nummer an, gelingt genau eine, die andere erhält 409 `CONFLICT`. Zeile, Audit
+     * `config.revision.created` und Outbox-Ereignis `config.revision_created` entstehen in einer Transaktion. TENANT-Scope: `scopeId` muss der Mandant des Kontexts sein (sonst 404).
+     */
+    fun createDraft(ctx: RequestContext, cmd: CreateDraft): ConfigRevisionView
+
+    /** Ändert einen Entwurf (`If-Match` = [expectedRowVersion]): 404 unbekannt oder fremd, 412 veraltet, 409 wenn kein Entwurf mehr; Audit `config.revision.changed`. */
+    fun updateDraft(ctx: RequestContext, id: UUID, expectedRowVersion: Long, cmd: UpdateDraft): ConfigRevisionView
+
+    /** 404, wenn die Revision unbekannt ist oder zu einem anderen Mandanten gehört. */
+    fun get(ctx: RequestContext, id: UUID): ConfigRevisionView
+
+    /** Sortiert nach (`createdAt`, `id`); höchstens `limit + 1` Zeilen (der Aufrufer schneidet). */
+    fun list(ctx: RequestContext, filter: RevisionFilter, limit: Int, after: Pair<Instant, UUID>?): List<ConfigRevisionView>
+
+    /**
+     * Die zum Zeitpunkt [at] wirksame **publizierte** Revision des Scopes samt Revisions-ID (Rekonstruktion für einen historischen Fall):
+     * Beginn <= [at] und kein Ende oder Ende > [at]; bei mehreren gilt die mit dem spätesten Beginn, dann der höchsten Nummer. `null`, wenn keine wirkte.
+     */
+    fun asOf(ctx: RequestContext, scopeKind: ScopeKind, scopeId: UUID, at: Instant): ConfigRevisionView?
+
+    /**
+     * Prüft die Werte einer Revision erneut gegen die **jetzt** gültige Schema-Version (nicht gegen die beim Anlegen gespeicherte): so wird ein
+     * Entwurf bei der Publikation (WP-M1-22) gegen eine zwischenzeitlich angehobene Version geprüft.
+     */
+    fun revalidate(ctx: RequestContext, id: UUID): RevalidationReport
+}

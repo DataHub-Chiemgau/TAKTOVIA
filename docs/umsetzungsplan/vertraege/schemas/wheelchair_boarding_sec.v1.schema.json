@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/wheelchair_boarding_sec.v1.schema.json",
+  "title": "wheelchair_boarding_sec",
+  "description": "Rollstuhl-Einstiegszeit",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 1800,
+  "x-unit": "SECONDS",
+  "x-levels": [
+    "TENANT",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-wheelchair_boarding_sec",
+  "x-catalog-range": "Muss Fahrzeug und individuelle Situation berücksichtigen"
+}

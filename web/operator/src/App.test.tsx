@@ -67,21 +67,7 @@ describe('operator Anwendungsrahmen', () => {
     expect(screen.queryByRole('heading', { name: 'Datenschutz, Audit, Support' })).toBeNull();
   });
 
-  it.each([['/admin/gebiete', 'Gebiete, Stops, Tarife', 'UI-17']])(
-    'Adminbereich %s ist ein Grundgerüst mit Leerzustand und benennt Mandant, Dienst, Status, Datenstand',
-    async (path, title, ui) => {
-      const { container } = setup(['ADMIN'], path);
-      expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
-      const ctx = screen.getByRole('region', { name: 'Arbeitskontext' });
-      expect(ctx).toHaveTextContent('Verkehrsbetrieb Nord');
-      expect(ctx).toHaveTextContent('Alle Dienste');
-      expect(ctx).toHaveTextContent('Datenstand');
-      expect(ctx).toHaveTextContent('Europe/Berlin');
-      expect(screen.getByTestId('state-view')).toHaveAttribute('data-kind', 'empty');
-      expect(screen.getByText(new RegExp(ui))).toBeInTheDocument();
-      expect(formatViolations(await runAxe(container))).toBe('');
-    },
-  );
+  // UI-17 ist seit WP-M1-20 kein Grundgerüst mehr: Revisionsliste und Parameterkatalog, siehe config/ConfigRevisions.test.tsx.
 
   it('UI-20 zeigt den lesenden Inventar-Export mit Mandanten-, Dienst- und Datenstand-Kontext', async () => {
     const { container } = setup(['ADMIN'], '/admin/datenschutz');

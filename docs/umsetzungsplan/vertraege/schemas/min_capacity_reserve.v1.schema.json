@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/min_capacity_reserve.v1.schema.json",
+  "title": "min_capacity_reserve",
+  "description": "Geschützte Kapazitätsreserve",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 20,
+  "x-unit": "SEATS",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-min_capacity_reserve",
+  "x-catalog-range": "Nicht größer als tatsächlich verfügbare Kapazität"
+}

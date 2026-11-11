@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/arrival_grace_min.v1.schema.json",
+  "title": "arrival_grace_min",
+  "description": "Ankunftstoleranz",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 240,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-arrival_grace_min",
+  "x-catalog-range": "Vertragsabhängig; nicht nachträglich rückwirkend ändern"
+}

@@ -20,7 +20,7 @@ MUTATING = {'post', 'put', 'patch', 'delete'}
 NO_IDEMPOTENCY_KEY = {'receivePartnerEvent'}
 # Mutierende Operationen mit Idempotency-Key, aber ohne If-Match: legen Neues an statt eine Revision zu ändern.
 NO_IF_MATCH = {'planJourney', 'recordDriverEvent'}
-EVENT_NAME = re.compile(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+\.v\d+\.schema\.json$')
+EVENT_NAME = re.compile(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+\.v\d+\.schema\.json$')   # Unterstrich erlaubt: Ereignistypen wie config.revision_created
 
 
 def _param_names(op):

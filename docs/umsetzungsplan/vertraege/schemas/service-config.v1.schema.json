@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/service-config.v1.schema.json",
+  "title": "service_config",
+  "description": "Dienstkonfiguration (LH-6.1-SYS-002): Bediengebietsbezug, Verkehrstyp, Betreiber, Betriebszeiten und Tarifverknüpfung als Bestandteile derselben Revision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "service_area_id",
+    "traffic_type",
+    "operator_id",
+    "operating_hours",
+    "tariff_id"
+  ],
+  "properties": {
+    "service_area_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Bediengebietsbezug: Bezug auf service_area (Auflösung mit M2)."
+    },
+    "traffic_type": {
+      "type": "string",
+      "enum": [
+        "AREA_ON_DEMAND",
+        "LINE_ON_DEMAND",
+        "STATION_FEEDER"
+      ],
+      "description": "Verkehrstyp (Planungsannahme PA-01)."
+    },
+    "operator_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Betreiber: Bezug auf organization."
+    },
+    "operating_hours": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "description": "Betriebszeiten je Wochentag in Ortszeit des Dienstes; 24:00 nur als Ende.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "weekdays",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "weekdays": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 7,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "MON",
+                "TUE",
+                "WED",
+                "THU",
+                "FRI",
+                "SAT",
+                "SUN"
+              ]
+            }
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^(([01][0-9]|2[0-3]):[0-5][0-9]|24:00)$"
+          }
+        }
+      }
+    },
+    "tariff_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tarifverknüpfung: Bezug auf tariff_revision (Auflösung mit M2)."
+    }
+  },
+  "x-unit": "OBJECT",
+  "x-levels": [
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-6.1-SYS-002"
+}

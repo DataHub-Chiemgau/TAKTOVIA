@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/max_wait_min.v1.schema.json",
+  "title": "max_wait_min",
+  "description": "Maximale Wartezeit",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 240,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.1-max_wait_min",
+  "x-catalog-range": "0..240; Sicherheits- und Vertragsvorgaben vorgehend"
+}

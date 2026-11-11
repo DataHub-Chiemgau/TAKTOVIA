@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle_readiness_require_checks.v1.schema.json",
+  "title": "vehicle_readiness_require_checks",
+  "description": "Pflichtprüfung vor Dienst",
+  "type": "boolean",
+  "const": true,
+  "x-unit": "BOOLEAN",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "SAFETY_INVARIANT",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.3-vehicle_readiness_require_checks",
+  "x-catalog-range": "Sicherheitsprüfungen dürfen nicht abgeschaltet werden"
+}

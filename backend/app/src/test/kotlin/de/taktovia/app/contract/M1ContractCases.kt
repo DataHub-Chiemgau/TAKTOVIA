@@ -39,5 +39,5 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("DELETE", "/v1/memberships/${UUID.randomUUID()}", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = identityCases.associateBy { it.operationId }
+    val cases: Map<String, ContractCase> = (identityCases + ConfigContractCases.cases).associateBy { it.operationId }
 }
