@@ -250,9 +250,26 @@ def check_secrets(root, errs, notes):
     notes.append(f"secret-Muster: {n} Dateien durchsucht")
 
 
+def check_gateway(root, errs, notes):
+    """WP-M1-36: TLS-Mindestversion, HSTS, geschlossener Klartext-Port, Upstreams nur per TLS (nicht gegen einen laufenden nginx geprueft)."""
+    g = (root / "gateway" / "nginx.conf.template").read_text(encoding="utf-8")
+    if not re.search(r"ssl_protocols\s+TLSv1\.2\s+TLSv1\.3\s*;", g) or re.search(r"TLSv1(\.[01])?\b(?!\.)", re.sub(r"TLSv1\.[23]", "", g)):
+        errs.append("gateway: ssl_protocols nicht genau TLSv1.2/TLSv1.3")
+    if not re.search(r'add_header\s+Strict-Transport-Security\s+"max-age=\d{7,}[^"]*"\s+always', g):
+        errs.append("gateway: HSTS fehlt")
+    m = re.search(r"listen 80[^;]*;.*?return\s+444\s*;", g, re.S)
+    if not m or "proxy_pass" in m.group(0):
+        errs.append("gateway: Klartext-Port 80 nicht mit 'return 444' geschlossen")
+    if re.search(r"proxy_pass\s+http://", g) or re.search(r"return\s+30[12]\s+http://", g):
+        errs.append("gateway: Klartext-Upstream oder Weiterleitung auf Klartext")
+    if re.search(r"ssl_certificate(_key)?\s+/", g):
+        errs.append("gateway: Zertifikat/Schluessel mit festem Pfad statt Secret-Einhaengung")
+    notes.append("gateway: TLS-Konfiguration statisch geprueft (nginx NICHT gestartet)")
+
+
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz

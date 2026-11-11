@@ -4,6 +4,7 @@ Lokale Umgebung (docker-compose), Infrastruktur als Code, Observability, Bereits
 
 - **Verantwortlich:** Plattform (Rolle laut D-12, noch keine Personen benannt)
 - **Regeln:** [CONTRIBUTING.md](../CONTRIBUTING.md). Keine Geheimnisse im Repository; Passwörter in diesem Verzeichnis sind Entwicklungswerte (`dev-only-…`), **nur lokal**.
+- **Gateway/Transport (WP-M1-36):** `gateway/nginx.conf.template` (TLS 1.2/1.3, HSTS, Klartext-Port geschlossen), statisch von `check.py` geprüft, **nicht gestartet**.
 - **Statische Prüfung (läuft ohne Docker-Daemon):** `python3 infra/check.py`, Selbsttests: `python3 -m unittest infra.test_check` (aus dem Repository-Wurzelverzeichnis), Realm-Hilfsbibliothek: `python3 -m unittest discover infra/keycloak`.
 
 ## Was geprüft ist und was nicht

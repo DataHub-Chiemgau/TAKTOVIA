@@ -151,3 +151,23 @@ jobs:
             --lockfile=web/package-lock.json
             --recursive
             ./backend
+
+  secret-scan:
+    name: Secret-Scan und Transportprüfung (WP-M1-36) – Pflichtschritt, in dieser Umgebung nur lokal ausgeführt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install PyYAML
+      - name: Quellcode, Git-Historie (jeder Fund lässt den Build scheitern; Ausnahmen nur über tools/secret_scan_allowlist.csv)
+        run: |
+          python tools/secret_scan.py tree .
+          python tools/secret_scan.py history .
+      - name: Selbsttests Secret-Scan, TLS-Scanner, Konfiguration
+        run: python -m unittest discover -s tests/acceptance/security -p 'test_*.py' -v
+      - name: Gateway- und Infrastrukturprüfung
+        run: python infra/check.py
+      # Gebaute Images (Auslieferungsartefakt): sobald der Image-Bau steht, `docker save <image> -o image.tar`
+      # und `python tools/secret_scan.py artifact image.tar` sowie über das SBOM-Verzeichnis. NICHT ausgeführt (kein Docker).

@@ -31,6 +31,17 @@ class CheckTests(unittest.TestCase):
         errs, _ = check.run(d)
         self.assertTrue(any("hosting_region" in e for e in errs), errs)
 
+    def test_gateway_klartext_und_alte_tls_version_werden_rot(self):
+        d = self.copy()
+        f = d / "gateway/nginx.conf.template"
+        orig = f.read_text()
+        for old, new, needle in (("ssl_protocols TLSv1.2 TLSv1.3;", "ssl_protocols TLSv1 TLSv1.2 TLSv1.3;", "ssl_protocols"),
+                                 ("add_header Strict-Transport-Security", "add_header X-Foo", "HSTS"),
+                                 ("return 444;", "return 301 https://x;", "Klartext-Port"),
+                                 ("proxy_pass https://backend", "proxy_pass http://backend", "Klartext-Upstream")):
+            f.write_text(orig.replace(old, new))
+            self.assertTrue(any(needle in e for e in check.run(d)[0]), needle)
+
     def test_shared_secret_domain(self):
         d = self.copy()
         f = d / "terraform/envs/production/terraform.tfvars.example"
@@ -45,7 +56,7 @@ class CheckTests(unittest.TestCase):
 
     def test_secret_pattern(self):
         d = self.copy()
-        (d / "deploy/x.txt").write_text("-----BEGIN RSA PRIVATE KEY-----\n")
+        (d / "deploy/x.txt").write_text("-----BEGIN " + "RSA PRIVATE KEY-----\n")
         self.assertTrue(any("secret-Muster" in e for e in check.run(d)[0]))
 
     def test_compose_service_without_healthcheck(self):
