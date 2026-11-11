@@ -166,12 +166,25 @@ fun interface DeliveryPolicy {
     fun isDeliveryAllowed(tenant: TenantId, passengerId: UUID, purpose: ConsentPurpose): Boolean
 }
 
+/**
+ * Verzeichnis für den Nachrichtenversand (WP-M2-32): der **verifizierte** Kontakt eines Kanals im Klartext und die Sprache des Kontos. Der Kontakt wird nur für den
+ * unmittelbaren Versand gelesen (Modulzugang, Feldschutz) und nie gespeichert oder protokolliert; ein nicht verifizierter Kanal liefert `null`.
+ * Betriebsmitteilungen brauchen keine Einwilligung (Kap. 05 §5.7); der Zweck wird von `DeliveryPolicy` geprüft.
+ */
+interface PassengerDirectory {
+    fun verifiedContact(tenant: TenantId, passengerId: UUID, channel: ContactChannel): String?
+
+    /** BCP-47-Tag aus `passenger_private.locale` (z. B. `de-DE`); `null` für ein unbekanntes Konto. */
+    fun locale(tenant: TenantId, passengerId: UUID): String?
+}
+
 /** Öffentliche Ports des Fahrgastkontos (eigene Fabrik, damit [IdentityApi] unverändert bleibt). */
 interface PassengerApi {
     val accounts: PassengerAccounts
     val profiles: PassengerProfiles
     val consents: ConsentService
     val delivery: DeliveryPolicy
+    val directory: PassengerDirectory
 
     companion object {
         /**

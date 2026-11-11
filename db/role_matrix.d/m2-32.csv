@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+notification;SELECT,INSERT,UPDATE;WP-M2-32: Nachrichtenauftrag mit Zustellzustand, kein DELETE; Kontaktdaten nur als Referenz
+notification_attempt;SELECT,INSERT;WP-M2-32: Zustellversuche nur anfügen (Trigger), kein UPDATE/DELETE

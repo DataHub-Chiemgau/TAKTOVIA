@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+channel_template_revision;tenant_id;nein;KONFIGURATION;;;;
+channel_template_revision;id;nein;KONFIGURATION;;;;
+channel_template_revision;event_type;nein;KONFIGURATION;;;;
+channel_template_revision;language;nein;KONFIGURATION;;;;
+channel_template_revision;service_id;nein;KONFIGURATION;;;;
+channel_template_revision;channel;nein;KONFIGURATION;;;;
+channel_template_revision;revision;nein;KONFIGURATION;;;;
+channel_template_revision;subject_template;nein;KONFIGURATION;;;;
+channel_template_revision;body_template;nein;KONFIGURATION;;;;
+channel_template_revision;valid_from;nein;KONFIGURATION;;;;
+channel_template_revision;valid_to;nein;KONFIGURATION;;;;
+channel_template_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+channel_template_revision;created_at;nein;KONFIGURATION;;;;

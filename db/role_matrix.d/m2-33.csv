@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+channel_template_revision;SELECT,INSERT;WP-M2-33: Vorlagenrevisionen unveränderlich (Trigger), kein UPDATE/DELETE
