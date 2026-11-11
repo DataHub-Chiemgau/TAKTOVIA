@@ -21,6 +21,9 @@ resource "terraform_data" "environment_manifest" {
     db_migration_access = var.db_migration_access
     db_runtime_access   = var.db_runtime_access
     data_class          = var.data_class
+    account_domain      = var.account_domain
+    network_domain      = var.network_domain
+    environment_marker  = var.environment
     names               = local.names
   }
 
@@ -28,6 +31,10 @@ resource "terraform_data" "environment_manifest" {
     precondition {
       condition     = var.db_migration_access != var.db_runtime_access
       error_message = "Migrations- und Laufzeitzugang muessen getrennt sein (Kap. 01 1.7)."
+    }
+    precondition {
+      condition     = var.db_ingress_network_domain == var.network_domain
+      error_message = "Die Datenbank ist nur aus dem eigenen Netz der Umgebung erreichbar (WP-M1-40: kein Netzpfad zwischen Umgebungen)."
     }
     precondition {
       condition     = var.environment == "production" || var.data_class != "production"

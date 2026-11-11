@@ -5,13 +5,229 @@
   "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "permanentLockout": false,
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "passwordPolicy": "hashAlgorithm(argon2) and length(12) and notUsername and notEmail and passwordHistory(5) and forceExpiredPasswordChange(365)",
+  "browserFlow": "taktovia-browser",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA256",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "webAuthnPolicyPasswordlessRpEntityName": "TAKTOVIA",
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": [
+    "ES256",
+    "RS256"
+  ],
+  "webAuthnPolicyPasswordlessAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyPasswordlessRequireResidentKey": "Yes",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "required",
+  "webAuthnPolicyPasswordlessCreateTimeout": 0,
+  "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "attributes": {
+    "taktovia.environment": "development",
     "taktovia.note": "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet",
     "taktovia.mfa.privileged_roles": "dispatcher,finance,tenant_admin",
-    "taktovia.mfa.enforcement": "vorbereitet, Durchsetzung in M1"
+    "taktovia.mfa.enforcement": "Backend: acr=loa2 fuer privilegierte Rollen (403 sonst); IdP: Step-up-Flow, operator-web fordert loa2 an",
+    "taktovia.password.hash": "{\"algorithm\": \"argon2id\", \"memory_kib\": \"19456\", \"iterations\": \"2\", \"parallelism\": \"1\", \"hash_length_bytes\": \"32\"}",
+    "acr.loa.map": "{\"loa1\": 1, \"loa2\": 2}"
   },
+  "authenticationFlows": [
+    {
+      "alias": "taktovia-browser",
+      "description": "TAKTOVIA Browser-Anmeldung: Passwort oder Passkey, zweiter Faktor bei Stufe loa2",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "taktovia-forms"
+        }
+      ]
+    },
+    {
+      "alias": "taktovia-forms",
+      "description": "Formularteil",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "taktovia-level1"
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "taktovia-level2"
+        }
+      ]
+    },
+    {
+      "alias": "taktovia-level1",
+      "description": "Stufe 1 (loa1): erster Faktor",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorFlow": false,
+          "authenticatorConfig": "taktovia-loa1"
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticator": "auth-username-form",
+          "authenticatorFlow": false
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 30,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "taktovia-first-factor"
+        }
+      ]
+    },
+    {
+      "alias": "taktovia-first-factor",
+      "description": "Erster Faktor: Passwort oder passwortlos (WebAuthn/Passkey)",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticator": "auth-password-form",
+          "authenticatorFlow": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticator": "webauthn-authenticator-passwordless",
+          "authenticatorFlow": false
+        }
+      ]
+    },
+    {
+      "alias": "taktovia-level2",
+      "description": "Stufe 2 (loa2): zweiter Faktor",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorFlow": false,
+          "authenticatorConfig": "taktovia-loa2"
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "taktovia-second-factor"
+        }
+      ]
+    },
+    {
+      "alias": "taktovia-second-factor",
+      "description": "Zweiter Faktor: TOTP oder WebAuthn (Sicherheitsschluessel)",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticator": "webauthn-authenticator",
+          "authenticatorFlow": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "taktovia-loa1",
+      "config": {
+        "loa-condition-level": "1",
+        "loa-max-age": "36000"
+      }
+    },
+    {
+      "alias": "taktovia-loa2",
+      "config": {
+        "loa-condition-level": "2",
+        "loa-max-age": "0"
+      }
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10
+    },
+    {
+      "alias": "webauthn-register",
+      "name": "Webauthn Register",
+      "providerId": "webauthn-register",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 70
+    },
+    {
+      "alias": "webauthn-register-passwordless",
+      "name": "Webauthn Register Passwordless",
+      "providerId": "webauthn-register-passwordless",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 80
+    }
+  ],
   "roles": {
     "realm": [
       {
@@ -90,7 +306,8 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "access.token.lifespan": "300"
+        "access.token.lifespan": "300",
+        "acr.loa.map": "{\"loa1\": 1, \"loa2\": 2}"
       },
       "protocolMappers": [
         {
@@ -137,6 +354,18 @@
             "multivalued": "true",
             "jsonType.label": "String",
             "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "principal-type-human",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "human",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
           }
         }
       ],
@@ -164,7 +393,9 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "access.token.lifespan": "300"
+        "access.token.lifespan": "300",
+        "acr.loa.map": "{\"loa1\": 1, \"loa2\": 2}",
+        "default.acr.values": "loa2"
       },
       "protocolMappers": [
         {
@@ -211,6 +442,18 @@
             "multivalued": "true",
             "jsonType.label": "String",
             "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "principal-type-human",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "human",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
           }
         }
       ],
@@ -238,7 +481,8 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "access.token.lifespan": "300"
+        "access.token.lifespan": "300",
+        "acr.loa.map": "{\"loa1\": 1, \"loa2\": 2}"
       },
       "protocolMappers": [
         {
@@ -286,6 +530,18 @@
             "jsonType.label": "String",
             "access.token.claim": "true"
           }
+        },
+        {
+          "name": "principal-type-human",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "human",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -301,7 +557,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-partner-tomp",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -318,9 +573,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-partner-tomp"
     },
     {
       "clientId": "adapter-partner-osdm",
@@ -329,7 +597,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-partner-osdm",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -346,9 +613,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-partner-osdm"
     },
     {
       "clientId": "adapter-timetable-gtfs",
@@ -357,7 +637,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-timetable-gtfs",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -374,9 +653,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-timetable-gtfs"
     },
     {
       "clientId": "adapter-psp",
@@ -385,7 +677,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-psp",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -402,9 +693,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-psp"
     },
     {
       "clientId": "adapter-erp-export",
@@ -413,7 +717,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-erp-export",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -430,9 +733,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-erp-export"
     },
     {
       "clientId": "adapter-ocr",
@@ -441,7 +757,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-ocr",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -458,9 +773,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-ocr"
     },
     {
       "clientId": "adapter-notification",
@@ -469,7 +797,6 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "dev-only-adapter-notification",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -486,9 +813,22 @@
             "access.token.claim": "true",
             "id.token.claim": "false"
           }
+        },
+        {
+          "name": "principal-type-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "principal_type",
+            "claim.value": "service",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
       ],
-      "defaultClientScopes": []
+      "defaultClientScopes": [],
+      "secret": "dev-only-adapter-notification"
     }
   ],
   "users": [

@@ -57,3 +57,22 @@ variable "data_class" {
     error_message = "data_class ungueltig."
   }
 }
+
+variable "account_domain" {
+  type        = string
+  description = "Eigenes Konto/Projekt je Umgebung (Kap. 01 1.8, WP-M1-40); nie umgebungsuebergreifend geteilt."
+}
+
+variable "network_domain" {
+  type        = string
+  description = "Eigenes Netz je Umgebung (WP-M1-40); es gibt keinen Netzpfad zwischen Netzen verschiedener Umgebungen."
+}
+
+variable "db_ingress_network_domain" {
+  type        = string
+  description = "Netz, aus dem die Datenbank erreichbar ist; muss das eigene Netz der Umgebung sein (kein Netzpfad von Entwicklung zur Produktionsdatenbank)."
+  validation {
+    condition     = var.db_ingress_network_domain != ""
+    error_message = "db_ingress_network_domain darf nicht leer sein."
+  }
+}

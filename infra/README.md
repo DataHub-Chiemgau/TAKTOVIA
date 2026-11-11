@@ -46,3 +46,6 @@ OTel-Collector (OTLP rein, Filter für personenbezogene Attribute, Metriken zu P
 
 ## IaC (`terraform/`) und Bereitstellung (`deploy/`)
 Siehe [terraform/README.md](terraform/README.md) und [deploy/ablauf.md](deploy/ablauf.md). Die Hostingentscheidung (D-05) ist offen; WP-M0-35 ist nur als Entwurf/Vorabvertrag geliefert.
+
+## Umgebungstrennung (WP-M1-40)
+Je Umgebung (`development`, `staging`, `performance`, `production`) eigenes Konto, Netz, Datenbankhost, Identitätsdomäne (Realm und Issuer; Realm-Exporte `keycloak/realm-taktovia-<umgebung>.json`, erzeugt von `generate_realm.py`), Secret- und PSP-Domäne und eigene Datenbankzugänge: [umgebungsmatrix.json](umgebungsmatrix.json). `python3 infra/check_env_separation.py` (auch in `check.py`) prüft die Matrix gegen Terraform-Parameter (`account_domain`, `network_domain`, `db_ingress_network_domain`), Realm-Exporte und Compose-Konfiguration; reale Netze, Konten und Terraform sind **nicht ausgeführt**. Synthetischer Seed: `python infra/seed/seed_dev.py` (nur Kennung `development`). Detailvertrag: [umgebungstrennung.md](../docs/umsetzungsplan/vertraege/umgebungstrennung.md).

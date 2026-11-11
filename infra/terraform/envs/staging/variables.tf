@@ -6,3 +6,6 @@ variable "identity_domain" { type = string }
 variable "psp_domain" { type = string }
 variable "db_migration_access" { type = string }
 variable "db_runtime_access" { type = string }
+variable "account_domain" { type = string }
+variable "network_domain" { type = string }
+variable "db_ingress_network_domain" { type = string }
