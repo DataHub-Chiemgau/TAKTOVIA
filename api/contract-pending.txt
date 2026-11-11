@@ -17,7 +17,6 @@ createInspection  # POST /v1/inspections
 createRepairOrder  # POST /v1/repair-orders
 createRideOffer  # POST /v1/ride-offers
 createRunRevision  # POST /v1/runs/{run_id}/revisions
-createServiceArea  # POST /v1/service-areas
 createStop  # POST /v1/stops
 createVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks
 createVehicleRelease  # POST /v1/vehicles/{vehicle_id}/release
@@ -41,7 +40,6 @@ listOperatorVehicles  # GET /v1/operator/vehicles
 listRepairOrders  # GET /v1/repair-orders
 listRetentionRules  # GET /v1/retention-rules
 listRunRevisions  # GET /v1/runs/{run_id}/revisions
-listServiceAreas  # GET /v1/service-areas
 listStops  # GET /v1/stops
 planJourney  # POST /v1/federation/journeys/plan
 publishRoster  # POST /v1/rosters/{roster_id}/publish

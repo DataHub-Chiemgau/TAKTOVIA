@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/geo.service_area_revision_effective.v1.schema.json",
+  "title": "Gebietsrevision wirksam (WP-M2-04)",
+  "description": "Payload von `geo.service_area_revision_effective`. Aggregat: Bediengebiet (Gebietsschlüssel, Revision = Revision der Kette). Wirksam ab `valid_from` (links geschlossen, rechts offen). Keine Geometrie im Payload.",
+  "type": "object",
+  "required": ["area_id", "revision_id", "service_id", "revision", "valid_from", "valid_to"],
+  "additionalProperties": false,
+  "properties": {
+    "area_id": {"type": "string", "format": "uuid"},
+    "revision_id": {"type": "string", "format": "uuid"},
+    "service_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+  }
+}

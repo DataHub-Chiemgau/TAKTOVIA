@@ -6037,6 +6037,33 @@
           "bemerkung": "Geometrie eines Bediengebiets, kein Personenbezug"
         },
         {
+          "spalte": "area_key",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Stabiler Gebietsschluessel einer Revisionskette (WP-M2-04)"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",

@@ -13,6 +13,10 @@ internal object GeoContractCases {
         w.env.headers(token, extra = w.idem() + (if (ifMatch != null) mapOf("If-Match" to "\"$ifMatch\"") else emptyMap()))
     private fun hg(w: GeoWorld, token: String = w.admin) = w.env.headers(token)
 
+    private fun square(x: Double) = """{"type":"MultiPolygon","coordinates":[[[[$x,51.0],[${"%.6f".format(java.util.Locale.ROOT, x + 0.1)},51.0],[${"%.6f".format(java.util.Locale.ROOT, x + 0.1)},51.1],[$x,51.1],[$x,51.0]]]]}"""
+    private fun createArea(w: GeoWorld, service: String, x: Double = 13.7) =
+        w.post("/v1/service-areas", """{"service_id":"$service","area":${square(x)},"valid_from":"2026-12-01T00:00:00+01:00","valid_to":null}""").json["id"].asString()
+
     val cases: List<ContractCase> = listOf(
         ContractCase("getServiceOperatingHours",
             200, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${w.service()}/operating-hours", headers = hg(w)) },
@@ -26,5 +30,17 @@ internal object GeoContractCases {
         ContractCase("getServiceAvailability",
             200, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${w.service()}/availability", headers = hg(w, w.passenger)) },
             404, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${UUID.randomUUID()}/availability", headers = hg(w, w.passenger)) }, server = { IdentityEnv.server }),
+        ContractCase("createServiceArea",
+            201, { val w = GeoWorld(); ContractRequest("POST", "/v1/service-areas", """{"service_id":"${w.service()}","area":${square(13.7)},"valid_from":"2026-12-01T00:00:00+01:00","valid_to":null}""", h(w)) },
+            422, { val w = GeoWorld(); ContractRequest("POST", "/v1/service-areas", """{"service_id":"${w.service()}","area":{"type":"MultiPolygon","coordinates":[[[[0,0],[1,1],[1,0],[0,1],[0,0]]]]},"valid_from":"2026-12-01T00:00:00+01:00"}""", h(w)) }, server = { IdentityEnv.server }),
+        ContractCase("listServiceAreas",
+            200, { val w = GeoWorld(); val s = w.service(); createArea(w, s); ContractRequest("GET", "/v1/service-areas?service_id=$s", headers = hg(w)) },
+            403, { val w = GeoWorld(); ContractRequest("GET", "/v1/service-areas", headers = hg(w, w.env.token(UUID.randomUUID()))) }, server = { IdentityEnv.server }),
+        ContractCase("getServiceArea",
+            200, { val w = GeoWorld(); val a = createArea(w, w.service()); ContractRequest("GET", "/v1/service-areas/$a", headers = hg(w)) },
+            404, { val w = GeoWorld(); ContractRequest("GET", "/v1/service-areas/${UUID.randomUUID()}", headers = hg(w)) }, server = { IdentityEnv.server }),
+        ContractCase("updateServiceArea",
+            200, { val w = GeoWorld(); val a = createArea(w, w.service()); ContractRequest("PUT", "/v1/service-areas/$a", """{"area":${square(13.8)},"valid_from":"2027-01-01T00:00:00+01:00","valid_to":null}""", h(w, ifMatch = "1")) },
+            412, { val w = GeoWorld(); val a = createArea(w, w.service()); ContractRequest("PUT", "/v1/service-areas/$a", """{"area":${square(13.8)},"valid_from":"2027-01-01T00:00:00+01:00","valid_to":null}""", h(w, ifMatch = "9")) }, server = { IdentityEnv.server }),
     )
 }

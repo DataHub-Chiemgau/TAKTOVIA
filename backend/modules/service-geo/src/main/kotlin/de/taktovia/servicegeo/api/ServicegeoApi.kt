@@ -25,10 +25,15 @@ interface ServicegeoApi {
     val serviceRevisions: ServiceRevisions
     /** Betriebsstatus eines Dienstes für Fahrgäste und die Angebotsprüfung (WP-M2-03). */
     val availability: ServiceAvailabilities
+    /** Bediengebiete als valide Polygone mit Aktivierungszeitraum (WP-M2-04). */
+    val areas: ServiceAreas
 
     companion object {
         /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */
         fun offerModelValidator(): RevisionValidator = de.taktovia.servicegeo.internal.ServicegeoServicesFactory.offerModelValidator()
+
+        /** ImpactProvider „Bediengebiet“ (WP-M2-04) für `ConfigApi.create(impactProviders = …)`: nennt bestätigte Buchungen außerhalb des neuen Gebiets. */
+        fun areaImpactProvider(): de.taktovia.config.api.ImpactProvider = de.taktovia.servicegeo.internal.ServicegeoServicesFactory.areaImpactProvider()
 
         /** [config] liefert die erste Konfigurationsrevision eines neuen Dienstes (OP-35) in derselben Transaktion. */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,

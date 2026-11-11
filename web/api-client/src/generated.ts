@@ -983,11 +983,18 @@ export interface GeoMultiPolygon {
 
 export interface GeoServiceArea {
   id: UUID;
+  revision_id: UUID;
   service_id: UUID;
   revision: number;
   area: GeoMultiPolygon;
   valid_from: Timestamp;
   valid_to: Timestamp | null;
+}
+
+export interface GeoServiceAreaUpdate {
+  area: GeoMultiPolygon;
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
 }
 
 export interface GeoServiceAreaCreate {
@@ -2187,6 +2194,20 @@ export interface Operations {
     body: GeoServiceAreaCreate;
     response: GeoServiceArea;
   };
+  getServiceArea: {
+    path: { area_id: UUID };
+    query: { revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoServiceArea;
+  };
+  updateServiceArea: {
+    path: { area_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoServiceAreaUpdate;
+    response: GeoServiceArea;
+  };
   listStops: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -2768,6 +2789,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getMe: { method: 'GET', path: '/v1/me', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
