@@ -1,0 +1,122 @@
+openapi: 3.1.0
+info:
+  title: Prüfvertrag für das Idempotenzregister (WP-M1-13)
+  version: 0.0.0
+paths:
+  /v1/probe/commands:
+    post:
+      summary: Testbefehl anlegen (Wirkung Zeile plus Outbox-Eintrag in einer Transaktion)
+      operationId: createProbeCommand
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeCommandCreate'
+      responses:
+        '201':
+          description: angenommen
+          content:
+            application/json:
+              schema:
+                type: object
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/commands/{command_id}/publish:
+    post:
+      summary: Testbefehl veröffentlichen (stellvertretend für publishConfig WP-M1-22, If-Match-geschützt)
+      operationId: publishProbeCommand
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - name: command_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeCommandPublish'
+      responses:
+        '200':
+          description: veröffentlicht
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/operations:
+    post:
+      summary: Testbefehl, der eine persistierte Operation anlegt (202 OperationAccepted)
+      operationId: createProbeOperation
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeCommandCreate'
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ProbeCommandCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        deadline:
+          type: string
+          format: date-time
+          description: Befehl wird nur angenommen, solange die Frist nicht überschritten ist (409 OFFER_EXPIRED als Stellvertreter für Angebots-/Haltefristen).
+        delay_ms:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          description: künstliche Verarbeitungsdauer für Tests mit laufender Erstverarbeitung
+      required:
+      - name
+    ProbeCommandPublish:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - reason

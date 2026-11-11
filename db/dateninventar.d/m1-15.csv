@@ -1,0 +1,6 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+operation;created_at;nein;SAGA_ABWICKLUNG;;;;
+operation;updated_at;nein;SAGA_ABWICKLUNG;;;;
+operation;result_code;nein;SAGA_ABWICKLUNG;;;;Ausgangs- oder Grundcode in Grossbuchstaben, kein Freitext
+operation;attempts;nein;SAGA_ABWICKLUNG;;;;
+operation;lease_owner;nein;SAGA_ABWICKLUNG;;;;technische Worker-Kennung

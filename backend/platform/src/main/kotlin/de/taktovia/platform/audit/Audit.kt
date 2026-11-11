@@ -69,6 +69,9 @@ object AuditActions {
     const val VEHICLE_ROLE_ASSIGNMENT_CHANGED = "fleet.vehicle_role.changed"
     const val CONFIG_PUBLISHED = "config.revision.published"
     const val CONFIG_REVERTED = "config.revision.reverted"
+    /** Webhook-Abonnement angelegt bzw. deaktiviert (WP-M1-16, SEC-009-Bausteine). */
+    const val WEBHOOK_SUBSCRIPTION_CREATED = "webhook.subscription.created"
+    const val WEBHOOK_SUBSCRIPTION_DEACTIVATED = "webhook.subscription.deactivated"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
     const val PROMISE_SNAPSHOT_CHANGED = "promise.snapshot.changed"
     const val SECURITY_TENANT_MISMATCH = "security.tenant.mismatch"
@@ -95,6 +98,7 @@ object AuditActions {
     /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
     const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+        WEBHOOK_SUBSCRIPTION_CREATED, WEBHOOK_SUBSCRIPTION_DEACTIVATED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
         SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,

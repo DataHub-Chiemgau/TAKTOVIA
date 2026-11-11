@@ -75,7 +75,97 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/WebhookSubscriptionCreate'
+  /v1/webhook-subscriptions/{subscription_id}:
+    get:
+      summary: Webhook-Abonnement lesen
+      operationId: getWebhookSubscription
+      security:
+      - oidc:
+        - webhooks:read
+      parameters:
+      - $ref: '#/components/parameters/subscription_id'
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscription'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/webhook-subscriptions/{subscription_id}/deactivate:
+    post:
+      summary: Webhook-Abonnement deaktivieren
+      description: Deaktiviert das Abonnement (kein Löschen); offene Zustellungen werden verworfen. Mit If-Match auf die gelesene Revision.
+      operationId: deactivateWebhookSubscription
+      security:
+      - oidc:
+        - webhooks:write
+      parameters:
+      - $ref: '#/components/parameters/subscription_id'
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscription'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
+  parameters:
+    subscription_id:
+      name: subscription_id
+      in: path
+      required: true
+      schema:
+        $ref: common.yaml#/components/schemas/UUID
   schemas:
     WebhookSubscription:
       type: object
@@ -96,6 +186,10 @@ components:
           maxItems: 50
         active:
           type: boolean
+        secret_ref:
+          type: string
+          pattern: ^secret://[a-z][a-z0-9-]{2,62}/[a-z][a-z0-9_]{1,62}$
+          description: Referenz auf das Signaturgeheimnis in der Secret-Verwaltung der Umgebung; der Wert wird nie ausgegeben oder gespeichert.
         revision:
           type: integer
           format: int64
@@ -106,6 +200,7 @@ components:
       - url
       - event_types
       - active
+      - secret_ref
       - revision
     WebhookSubscriptionCreate:
       type: object
@@ -128,6 +223,12 @@ components:
             maxLength: 128
           maxItems: 50
           minItems: 1
+          description: In P1 abonnierbar sind membership.granted, membership.revoked, operation.state_changed und promise.changed (vorläufig, OP-17).
+        secret_ref:
+          type: string
+          pattern: ^secret://[a-z][a-z0-9-]{2,62}/[a-z][a-z0-9_]{1,62}$
+          description: Optional. Referenz auf ein Geheimnis der Umgebung (Domäne der Umgebung). Ohne Angabe vergibt die Plattform eine Referenz, deren Wert der Betrieb
+            in der Secret-Verwaltung bereitstellt. Geheimniswerte werden nie übertragen.
       required:
       - url
       - event_types
@@ -135,7 +236,7 @@ components:
       examples:
       - url: https://partner.example.org/hooks/taktovia
         event_types:
-        - booking.confirmed
+        - operation.state_changed
     WebhookSubscriptionPage:
       type: object
       additionalProperties: false

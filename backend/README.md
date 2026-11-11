@@ -95,3 +95,34 @@ Jede Anfrage eines Menschen prüft nach der Mandantenermittlung den Sitzungsstat
 | `taktovia.identity.session.max-age-seconds` / `block-ttl-seconds` / `cache-ttl-seconds` (Kontosperren, höchstens 60) | 36000 / 86400 / 60 |
 | `taktovia.idp.admin.base-url`, `realm` (Standard: letztes Issuer-Segment), `client-id` | –, –, `taktovia-idp-admin` |
 | `taktovia.idp.admin.client-secret-file` (oder `client-secret` aus der Umgebung; nie im Repository) | – |
+## Idempotenzregister (WP-M1-13)
+
+Jede schreibende Operation, die `Idempotency-Key` verlangt, läuft durch den `IdempotencyFilter` (`app.web`, nach Authentisierung, Mandantenkontext, Rechtematrix und Eingabeprüfung, vor dem Controller) über `platform.idempotency` (`IdempotencyService`, `IdempotencyRegistry`, `RequestFingerprint`): je `(Akteur, Mandant, operationId, Schlüssel)` genau eine Ausführung, Wiederholung liefert das gespeicherte 2xx-Ergebnis (`Idempotent-Replayed: true`), anderer Fingerprint `409 IDEMPOTENCY_CONFLICT`, laufende Erstverarbeitung `409 OPERATION_IN_PROGRESS`. Fehlerantworten werden nicht gespeichert. Vertrag, Kanonisierungsregel und Grenzen: [idempotenz-register.md](../docs/umsetzungsplan/vertraege/idempotenz-register.md).
+
+| Einstellung (`taktovia.idempotency.…`, Planungsdefaults) | Standard |
+|---|---|
+| `response-ttl-hours` (Antwortcache) | 72 |
+| `lease-seconds` (Erstverarbeitung gilt danach als abgebrochen) | 120 |
+| `in-progress-wait-millis` (Wartezeit eines parallelen Retransmits) | 10000 |
+| `cleanup-minutes` (nur mit einer `TenantSource`-Bean) | 10 |
+
+Für Controller: nichts tun (der Filter wirkt über den Vertrag); die entstandene `operation` optional über das Anfrageattribut `IdempotencyFilter.OPERATION_ID_ATTRIBUTE` melden. Die Fachwirkung muss zusätzlich durch einen fachlichen Unique-Schlüssel einmalig sein (Antwortcache läuft ab).
+
+## Operation mit Lease und Fencing (WP-M1-15)
+
+Lang laufende Befehle werden als `operation` persistiert (`OperationService.enqueue` in der Fachtransaktion, Antwort `202 OperationAccepted` über `OperationResponses.accepted`) und vom `OperationRunner` über `OperationHandler` je Art bearbeitet: Aufnahme per Lease (`lease_until`) mit monoton steigendem `fencing_token`, jede Schreibwirkung gefenced (`LeaseLostException`), Unbestimmtes wird abgeglichen (`RECONCILING`), nie zu Erfolg/Fehler verkürzt. Abfrage: `GET /v1/operations/{operation_id}`. Vertrag, Zustände, Lease/Backoff: [operation-ressource.md](../docs/umsetzungsplan/vertraege/operation-ressource.md).
+
+| Einstellung (`taktovia.operations.…`, Planungsdefaults) | Standard |
+|---|---|
+| `lease-seconds` / `default-retry-after-seconds` / `reconcile-delay-seconds` | 60 / 3 / 5 |
+| `worker-enabled` (Zeitgeber nur mit `TenantSource`-Bean des Betriebs) / `poll-seconds` | `false` / 2 |
+
+## Webhook-Grundlage (WP-M1-16)
+
+`platform.webhook`: **Eingang** (`InboundWebhookReceiver`, HTTP-Anbindung `app.webhook.InboundWebhookResponder`): konstantzeitliche HMAC-Prüfung über den exakten Rohbody, Zeitfenster ±300 s, Größenlimit, Schlüssel-ID mit Rotation, Quittung 202 nach Inbox-Commit / 200 `ALREADY_RECEIVED` / 409 bei gleicher ID mit anderem Payload (Sicherheitsereignis, Quarantäne). **Abonnement** (`/v1/webhook-subscriptions`, Administrator, SSRF-Prüfung, Secret nur als Referenz, auditiert). **Ausgang** (`WebhookFanout`, `WebhookDeliveryWorker`): empfängergebundener minimierter Payload, Signatur, Ziel vor jedem Aufruf erneut geprüft, Retry-Staffel, `Retry-After`, Dead-Letter mit Betreiberwarnung. Vertrag: [webhooks.md](../docs/umsetzungsplan/vertraege/webhooks.md).
+
+| Einstellung (`taktovia.webhooks.…`, Planungsdefaults) | Standard |
+|---|---|
+| `max-attempts` / `timeout-seconds` | 12 / 10 |
+| `worker-enabled` (Zeitgeber nur mit `taktovia.secrets.dir` und `TenantSource`-Bean) / `poll-seconds` | `false` / 5 |
+| `taktovia.secrets.domain` (Geheimnisdomäne für `secret_ref`; sonst `taktovia-<umgebung>-secrets`) | – |

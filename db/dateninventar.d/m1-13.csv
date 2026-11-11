@@ -1,0 +1,7 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+idempotency_record;state;nein;TECHNISCHER_BETRIEB;;;;IN_PROGRESS oder COMPLETED
+idempotency_record;locked_until;nein;TECHNISCHER_BETRIEB;;;;Lease der Erstverarbeitung
+idempotency_record;http_status;nein;TECHNISCHER_BETRIEB;;;;gespeicherter HTTP-Status (nur 2xx)
+idempotency_record;response_headers;nein;TECHNISCHER_BETRIEB;;;;nur Location, ETag, Content-Type, Retry-After
+idempotency_record;created_at;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;completed_at;nein;TECHNISCHER_BETRIEB;;;;

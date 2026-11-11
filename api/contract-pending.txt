@@ -15,11 +15,12 @@ createDriverClearance  # POST /v1/driver-clearances
 createRegion  # POST /v1/regions
 createService  # POST /v1/services
 createWebhookSubscription  # POST /v1/webhook-subscriptions
+createVehicleRole  # POST /v1/vehicle-roles
+getCompanyProfile  # GET /v1/company-profile
 getConfigRevision  # GET /v1/config/revisions/{revision_id}
 getEffectiveConfig  # GET /v1/config/effective
 getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
-getOperation  # GET /v1/operations/{operation_id}
 holdOffer  # POST /v1/federation/offers/{offer_id}/hold
 listConfigRevisions  # GET /v1/config/revisions
 listCostCenters  # GET /v1/cost-centers
@@ -31,7 +32,6 @@ listRetentionRules  # GET /v1/retention-rules
 listServices  # GET /v1/services
 listSessions  # GET /v1/sessions
 listVehicleRoles  # GET /v1/vehicle-roles
-listWebhookSubscriptions  # GET /v1/webhook-subscriptions
 planJourney  # POST /v1/federation/journeys/plan
 publishConfig  # POST /v1/config/revisions/{revision_id}/publish
 publishRoster  # POST /v1/rosters/{roster_id}/publish
