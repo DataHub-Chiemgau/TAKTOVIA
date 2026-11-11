@@ -1,0 +1,11 @@
+{
+  "hinweis": "Planungswerte, fachlich NICHT freigegeben (OP-31, D-05): das Pflichtenheft nennt nur zyklisch/regelmäßig. Ziele des Lastenhefts RPO <= 15 min und RTO <= 2 h sind Zielwerte; ihre Messung gehört zu WP-M5-14/-15.",
+  "basis_backup_intervall": "P1D",
+  "wal_archivierung": "kontinuierlich",
+  "aufbewahrung_tage": 35,
+  "restore_test_zyklus": "P7D",
+  "ziel_rpo_min": 15,
+  "ziel_rto_h": 2,
+  "verschluesselung": "AES-256-GCM, eigener Backup-Schluessel in der Betriebsdomaene",
+  "zugriff": {"schreiben": ["ops-backup"], "lesen": ["ops-backup", "ops-restore", "ops-retention"], "loeschen_nach_ablauf": ["ops-retention"], "kein_zugriff": ["taktovia_runtime", "taktovia_migrator", "taktovia_fields", "Anwendungsidentitaeten"]}
+}

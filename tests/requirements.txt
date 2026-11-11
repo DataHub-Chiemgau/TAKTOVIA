@@ -1,6 +1,8 @@
 # Python-Abhängigkeiten der Testwerkzeuge unter tests/ (feste Versionen; Simulatoren und Sandbox laufen nur mit der stdlib)
 psycopg[binary]==3.2.13
 jsonschema==4.26.0
+# Backup-Verschlüsselung und Restore-Test (WP-M1-39, infra/backup)
+cryptography==50.0.2
 # optional (OpenAPI-Parsbarkeitstest der Simulatoren; ohne diese Pakete wird der Test übersprungen)
 PyYAML==6.0.3
 openapi-spec-validator==0.9.0
