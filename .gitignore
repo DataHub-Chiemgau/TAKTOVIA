@@ -6,3 +6,4 @@ backend/**/build/
 .gradle/
 .kotlin/
 *.class
+.claude/worktrees/
