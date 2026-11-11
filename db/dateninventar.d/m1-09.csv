@@ -1,0 +1,24 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+region;tenant_id;nein;KONFIGURATION;;;;
+region;id;nein;KONFIGURATION;;;;
+region;name;nein;KONFIGURATION;;;;
+region;revision;nein;KONFIGURATION;;;;
+region;created_at;nein;KONFIGURATION;;;;
+region;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+depot;tenant_id;nein;KONFIGURATION;;;;
+depot;id;nein;KONFIGURATION;;;;
+depot;region_id;nein;KONFIGURATION;;;;
+depot;name;nein;KONFIGURATION;;;;
+depot;revision;nein;KONFIGURATION;;;;
+depot;created_at;nein;KONFIGURATION;;;;
+depot;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+service;region_id;nein;KONFIGURATION;;;;
+service;revision;nein;KONFIGURATION;;;;
+service;created_at;nein;KONFIGURATION;;;;
+service;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+cost_object;name;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;region_id;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;service_id;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;revision;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;created_at;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse

@@ -561,6 +561,10 @@ export interface Region {
   revision: number;
 }
 
+export interface RegionUpdate {
+  name: string;
+}
+
 export interface RegionCreate {
   name: string;
 }
@@ -570,6 +574,11 @@ export interface Depot {
   region_id: UUID;
   name: string;
   revision: number;
+}
+
+export interface DepotUpdate {
+  region_id: UUID;
+  name: string;
 }
 
 export interface DepotCreate {
@@ -582,13 +591,23 @@ export interface CostCenter {
   code: string;
   name: string;
   legal_entity_id: UUID;
+  region_id?: UUID | null;
+  service_id?: UUID | null;
   revision: number;
+}
+
+export interface CostCenterUpdate {
+  name: string;
+  region_id?: UUID | null;
+  service_id?: UUID | null;
 }
 
 export interface CostCenterCreate {
   code: string;
   name: string;
   legal_entity_id: UUID;
+  region_id?: UUID | null;
+  service_id?: UUID | null;
 }
 
 export interface Session {
@@ -849,13 +868,22 @@ export interface Service {
   operator_id: UUID;
   name: string;
   timezone: TimeZone;
+  region_id?: UUID | null;
+  config_revision_id: UUID;
   revision: number;
+}
+
+export interface ServiceUpdate {
+  name: string;
+  timezone: TimeZone;
+  region_id?: UUID | null;
 }
 
 export interface ServiceCreate {
   operator_id: UUID;
   name: string;
   timezone: TimeZone;
+  region_id?: UUID | null;
 }
 
 export interface ServicePage {
@@ -1139,6 +1167,13 @@ export interface Operations {
     body: RegionCreate;
     response: Region;
   };
+  updateRegion: {
+    path: { region_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: RegionUpdate;
+    response: Region;
+  };
   listDepots: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -1153,6 +1188,13 @@ export interface Operations {
     body: DepotCreate;
     response: Depot;
   };
+  updateDepot: {
+    path: { depot_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: DepotUpdate;
+    response: Depot;
+  };
   listCostCenters: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -1165,6 +1207,13 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: CostCenterCreate;
+    response: CostCenter;
+  };
+  updateCostCenter: {
+    path: { cost_center_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: CostCenterUpdate;
     response: CostCenter;
   };
   listSessions: {
@@ -1314,6 +1363,13 @@ export interface Operations {
     body: ServiceCreate;
     response: Service;
   };
+  updateService: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ServiceUpdate;
+    response: Service;
+  };
   listMySessions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -1433,10 +1489,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateLegalEntity: { method: 'PUT', path: '/v1/legal-entities/{legal_entity_id}', pathParams: ['legal_entity_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRegions: { method: 'GET', path: '/v1/regions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createRegion: { method: 'POST', path: '/v1/regions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  updateRegion: { method: 'PUT', path: '/v1/regions/{region_id}', pathParams: ['region_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listDepots: { method: 'GET', path: '/v1/depots', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createDepot: { method: 'POST', path: '/v1/depots', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  createDepot: { method: 'POST', path: '/v1/depots', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  updateDepot: { method: 'PUT', path: '/v1/depots/{depot_id}', pathParams: ['depot_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listCostCenters: { method: 'GET', path: '/v1/cost-centers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createCostCenter: { method: 'POST', path: '/v1/cost-centers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  createCostCenter: { method: 'POST', path: '/v1/cost-centers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  updateCostCenter: { method: 'PUT', path: '/v1/cost-centers/{cost_center_id}', pathParams: ['cost_center_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listSessions: { method: 'GET', path: '/v1/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['sessions:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeSession: { method: 'DELETE', path: '/v1/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['sessions:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listOrganizations: { method: 'GET', path: '/v1/organizations', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -1457,7 +1516,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   validateConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/validate', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
   revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

@@ -170,6 +170,14 @@ interface ConfigRevisions {
      * Entwurf bei der Publikation (WP-M1-22) gegen eine zwischenzeitlich angehobene Version geprüft.
      */
     fun revalidate(ctx: RequestContext, id: UUID): RevalidationReport
+
+    /**
+     * Erste Konfigurationsrevision eines **neuen Dienstes** in der laufenden Transaktion des Aufrufers (WP-M1-09, OP-35): `service.config_revision_id`
+     * ist Pflichtfeld, die Dienstanlage erzeugt deshalb zugleich den leeren Entwurf (Revision 1, Scope `SERVICE`, `scope_id` = [serviceId], Werte `{}`)
+     * mit Audit und Ereignis. Eine leere Dienstkonfiguration ist nur als Entwurf zulässig; die Vollständigkeit (`service_config`) verlangt die Publikation.
+     * Mandant = Tenantkontext der Transaktion. Liefert die Revisions-ID.
+     */
+    fun seedServiceHead(jdbc: JdbcOperations, actor: ActorRef, correlationId: UUID, serviceId: UUID, effectiveFrom: Instant): UUID
 }
 
 /**

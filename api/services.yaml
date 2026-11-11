@@ -61,6 +61,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '403':
           $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
         '422':
@@ -75,6 +77,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ServiceCreate'
+  /v1/services/{service_id}:
+    put:
+      summary: Dienstkopf ändern
+      operationId: updateService
+      security:
+      - oidc:
+        - services:write
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceUpdate'
 components:
   schemas:
     Service:
@@ -91,6 +148,13 @@ components:
           maxLength: 200
         timezone:
           $ref: common.yaml#/components/schemas/TimeZone
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung des Dienstes zu einer Region des Mandanten.
+        config_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
         revision:
           type: integer
           format: int64
@@ -101,7 +165,27 @@ components:
       - operator_id
       - name
       - timezone
+      - config_revision_id
       - revision
+    ServiceUpdate:
+      type: object
+      additionalProperties: false
+      description: Der Betreiber ist nach dem Anlegen unveränderlich.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          $ref: common.yaml#/components/schemas/TimeZone
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung des Dienstes zu einer Region des Mandanten.
+      required:
+      - name
+      - timezone
     ServiceCreate:
       type: object
       additionalProperties: false
@@ -114,6 +198,11 @@ components:
           maxLength: 200
         timezone:
           $ref: common.yaml#/components/schemas/TimeZone
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung des Dienstes zu einer Region des Mandanten.
       required:
       - operator_id
       - name
