@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.taktovia.example/schemas/dateninventar.v1.schema.json",
+  "title": "Dateninventar (LH-6.18-SEC-004, WP-M1-32)",
+  "description": "Lesbarer Export des Dateninventars (python db/dateninventar.py export). Quelle sind die CSV-Dateien db/dateninventar.d/*.csv (Spalten: tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung) und *.tabellen.csv (tabelle;aggregat;loeschklasse;bemerkung). Die CI-Prüfung gleicht jede Spalte des Schemas taktovia mit dem Inventar ab. Der Katalog ist vorläufig und nicht freigegeben (OP-24).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "freigegeben", "hinweis", "kataloge", "tabellen"],
+  "properties": {
+    "format": { "const": "dateninventar.v1" },
+    "freigegeben": { "type": "boolean", "description": "false, solange der Katalog nicht vom Auftraggeber freigegeben ist (OP-24, D-11)." },
+    "hinweis": { "type": "string", "minLength": 1 },
+    "kataloge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zwecke", "rechtsgrundlagen", "schutzklassen", "loeschklassen"],
+      "properties": {
+        "zwecke": { "$ref": "#/$defs/Katalog" },
+        "rechtsgrundlagen": { "$ref": "#/$defs/Katalog" },
+        "schutzklassen": { "$ref": "#/$defs/Katalog" },
+        "loeschklassen": { "$ref": "#/$defs/Katalog" }
+      }
+    },
+    "tabellen": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tabelle", "aggregat", "loeschklasse", "bemerkung", "spalten"],
+        "properties": {
+          "tabelle": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "aggregat": { "type": "string" },
+          "loeschklasse": { "type": "string", "minLength": 1, "description": "Löschklasse der Aggregattabelle (Kap. 04 §4.1)." },
+          "bemerkung": { "type": "string" },
+          "spalten": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["spalte", "personenbezogen", "zweck", "rechtsgrundlage", "schutzklasse", "loeschklasse", "bemerkung"],
+              "properties": {
+                "spalte": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+                "personenbezogen": { "enum": ["ja", "nein"] },
+                "zweck": { "type": "string", "minLength": 1 },
+                "rechtsgrundlage": { "type": "string" },
+                "schutzklasse": { "type": "string" },
+                "loeschklasse": { "type": "string" },
+                "bemerkung": { "type": "string" }
+              },
+              "if": { "properties": { "personenbezogen": { "const": "ja" } } },
+              "then": {
+                "properties": {
+                  "rechtsgrundlage": { "minLength": 1 },
+                  "schutzklasse": { "minLength": 1 },
+                  "loeschklasse": { "minLength": 1 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Katalog": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1, "description": "Beschreibung des Katalogeintrags." },
+      "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]*$" }
+    }
+  }
+}

@@ -76,7 +76,7 @@ describe('Eingabehärtung im Web-Rahmen (SEC-009)', () => {
 
   it('im Quelltext liegen keine Tokens oder Anmeldedaten in Web-Speicher oder Cookies (Token nur im Arbeitsspeicher, WP-M1-43)', () => {
     const offenders: string[] = [];
-    for (const app of ['design-system', 'passenger', 'operator']) {
+    for (const app of ['api-client', 'design-system', 'passenger', 'operator']) {
       for (const file of sources(join(WEB, app, 'src'))) {
         const text = readFileSync(file, 'utf8');
         if (/\b(localStorage|sessionStorage)\b|document\.cookie/.test(text)) offenders.push(file);
@@ -87,7 +87,7 @@ describe('Eingabehärtung im Web-Rahmen (SEC-009)', () => {
 
   it('unsicheres HTML wird im Quelltext nicht erzeugt (dangerouslySetInnerHTML, innerHTML, eval)', () => {
     const offenders: string[] = [];
-    for (const app of ['design-system', 'passenger', 'operator']) {
+    for (const app of ['api-client', 'design-system', 'passenger', 'operator']) {
       for (const file of sources(join(WEB, app, 'src'))) {
         if (
           /dangerouslySetInnerHTML|\.innerHTML\s*=|\beval\(|new Function\(/.test(

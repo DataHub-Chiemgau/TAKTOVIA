@@ -2,3 +2,5 @@ node_modules
 dist
 coverage
 package-lock.json
+api-client/src/generated.ts
+operator/src/datenschutz/dateninventar.json

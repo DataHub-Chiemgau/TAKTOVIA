@@ -69,6 +69,8 @@ jobs:
       - run: pip install "psycopg[binary]==3.2.*"
       - run: python db/db.py bootstrap
       - run: python db/db.py migrate
+      - name: Schema gegen Dateninventar (WP-M1-32, SEC-004)
+        run: python db/dateninventar.py check
       - run: python -m unittest discover -s db/tests -p 'test_*.py' -v
       - name: Frische Datenbank, zweiter Lauf
         run: python db/db.py reset && python db/db.py migrate && python -m unittest discover -s db/tests -p 'test_*.py'
@@ -122,8 +124,17 @@ jobs:
         with: { node-version: '24', cache: npm, cache-dependency-path: web/package-lock.json }
       - run: npm ci
         working-directory: web
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install PyYAML
+      - name: API-Client ist aus api/*.yaml erzeugt (WP-M1-43)
+        run: python api/tools/gen_ts_client.py --check
       - run: npm run lint && npm test && npm run build
         working-directory: web
+      - name: Barrierefreiheit im Browser (axe mit Kontrast, Reflow 320 px, 200 % Text, Touchflächen; WP-M1-43)
+        run: npm run a11y:browser
+        working-directory: web
+        env: { CHROME_PATH: /usr/bin/google-chrome }
 
   workers:
     name: Worker (WP-M0-07)

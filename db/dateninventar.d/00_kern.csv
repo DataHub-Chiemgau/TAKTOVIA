@@ -1,0 +1,344 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+allocation_line;tenant_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_line;id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_line;allocation_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_line;cost_object_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_line;amount_minor;nein;ABRECHNUNG_CLEARING;;;;
+allocation_line;weight;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;tenant_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;event_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;revision;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;legal_entity_id;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;currency;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;basis_minor;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;algorithm_version;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;driver_snapshot;nein;ABRECHNUNG_CLEARING;;;;
+allocation_set;state;nein;ABRECHNUNG_CLEARING;;;;
+audit_event;tenant_id;nein;SICHERHEITSPROTOKOLL;;;;
+audit_event;id;nein;SICHERHEITSPROTOKOLL;;;;
+audit_event;actor_ref;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_AUDIT;"Akteur des Vorgangs; Nachvollziehbarkeit sicherheitsrelevanter Vorgänge (SEC-006)"
+audit_event;action;nein;SICHERHEITSPROTOKOLL;;;;
+audit_event;object_ref;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_AUDIT;Verweis auf das betroffene Objekt, kann eine Person bezeichnen
+audit_event;occurred_at;nein;SICHERHEITSPROTOKOLL;;;;
+audit_event;correlation_id;nein;SICHERHEITSPROTOKOLL;;;;
+audit_event;redacted_changes;nein;SICHERHEITSPROTOKOLL;;;;"maskierte Änderungen; Maskierung nach audit-redacted-changes.v1"
+booking;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking;id;nein;BUCHUNGSABWICKLUNG;;;;
+booking;hold_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking;federation_ref;nein;BUCHUNGSABWICKLUNG;;;;
+booking;state;nein;BUCHUNGSABWICKLUNG;;;;
+booking;promise_snapshot;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zusage mit Orten und Zeitfenstern
+booking;revision;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;id;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;run_id;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;run_revision;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;federation_ref;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;capacity_vector;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;interval_from;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;interval_to;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;expires_at;nein;BUCHUNGSABWICKLUNG;;;;
+capacity_hold;state;nein;BUCHUNGSABWICKLUNG;;;;
+config_revision;tenant_id;nein;KONFIGURATION;;;;
+config_revision;id;nein;KONFIGURATION;;;;
+config_revision;scope_kind;nein;KONFIGURATION;;;;
+config_revision;scope_id;nein;KONFIGURATION;;;;
+config_revision;revision;nein;KONFIGURATION;;;;
+config_revision;schema_version;nein;KONFIGURATION;;;;
+config_revision;values_json;nein;KONFIGURATION;;;;
+config_revision;effective_from;nein;KONFIGURATION;;;;
+config_revision;effective_to;nein;KONFIGURATION;;;;
+config_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber der Revision
+config_revision;approved_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Freigeber der Revision (Vier-Augen)
+config_revision;published_at;nein;KONFIGURATION;;;;
+cooperation_grant;tenant_id;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;id;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;contract_version_id;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;grantee_ref;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;purpose;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;actions;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;service_refs;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;allowed_fields;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;valid_from;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;valid_to;nein;KOOPERATION_VERTRAG;;;;
+cooperation_grant;revoked_at;nein;KOOPERATION_VERTRAG;;;;
+cost_object;tenant_id;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;id;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;legal_entity_id;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;kind;nein;ABRECHNUNG_CLEARING;;;;
+cost_object;business_ref;nein;ABRECHNUNG_CLEARING;;;;
+currency;code;nein;WAEHRUNGSKATALOG;;;;
+currency;exponent;nein;WAEHRUNGSKATALOG;;;;
+economic_event;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;id;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;source_system;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;source_ref;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;event_type;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;scenario;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;cost_behavior;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;attribution;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;category;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;currency;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;net_minor;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;tax_minor;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;gross_minor;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;recoverable_tax_minor;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;cost_basis_minor;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;tax_rule_revision;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;occurred_at;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;booked_at;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;service_from;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;service_to;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;reverses_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;object_key;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;original_sha256;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;mime;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;state;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;revision;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;created_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;Urheber des Belegs
+expense_document;approved_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;Freigeber des Belegs
+expense_document;original_received_at;nein;BUCHHALTUNG_BELEGE;;;;
+fare_quote;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;attempt_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;currency;nein;ZAHLUNGSABWICKLUNG;;;;
+fare_quote;pay_at_platform_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+fare_quote;external_known_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+fare_quote;external_unknown_leg_ids;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;expires_at;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;tariff_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;config_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_quote;snapshot;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Angebotsmomentaufnahme mit Start, Ziel und Zeiten
+fare_quote;content_hash;nein;BUCHUNGSABWICKLUNG;;;;
+fiscal_period;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+fiscal_period;id;nein;BUCHHALTUNG_BELEGE;;;;
+fiscal_period;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+fiscal_period;starts_on;nein;BUCHHALTUNG_BELEGE;;;;
+fiscal_period;ends_on;nein;BUCHHALTUNG_BELEGE;;;;
+fiscal_period;closed_at;nein;BUCHHALTUNG_BELEGE;;;;
+idempotency_record;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;principal_ref;ja;TECHNISCHER_BETRIEB;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_TECHNISCH;Akteur des Befehls
+idempotency_record;command_scope;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;key;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;request_sha256;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;operation_id;nein;TECHNISCHER_BETRIEB;;;;
+idempotency_record;response_json;ja;TECHNISCHER_BETRIEB;ART6_1_F_BERECHTIGTES_INTERESSE;KONTAKT_UNTERSTUETZUNG;LK_TECHNISCH;"gespeicherte Antwort kann Personendaten enthalten; kurzlebig (expires_at)"
+idempotency_record;expires_at;nein;TECHNISCHER_BETRIEB;;;;
+inbox;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+inbox;consumer;nein;TECHNISCHER_BETRIEB;;;;
+inbox;event_id;nein;TECHNISCHER_BETRIEB;;;;
+inbox;payload_sha256;nein;TECHNISCHER_BETRIEB;;;;nur Hash des Ereignisses
+inbox;received_at;nein;TECHNISCHER_BETRIEB;;;;
+inbox;aggregate_id;nein;TECHNISCHER_BETRIEB;;;;
+inbox;aggregate_revision;nein;TECHNISCHER_BETRIEB;;;;
+inbox;event_type;nein;TECHNISCHER_BETRIEB;;;;
+inbox;occurred_at;nein;TECHNISCHER_BETRIEB;;;;
+inbox;outcome;nein;TECHNISCHER_BETRIEB;;;;
+journal;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal;id;nein;BUCHHALTUNG_BELEGE;;;;
+journal;event_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal;currency;nein;BUCHHALTUNG_BELEGE;;;;
+journal;period_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal;accounting_date;nein;BUCHHALTUNG_BELEGE;;;;
+journal;state;nein;BUCHHALTUNG_BELEGE;;;;
+journal;posted_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;Buchender
+journal_line;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal_line;id;nein;BUCHHALTUNG_BELEGE;;;;
+journal_line;journal_id;nein;BUCHHALTUNG_BELEGE;;;;
+journal_line;account_code;nein;BUCHHALTUNG_BELEGE;;;;
+journal_line;side;nein;BUCHHALTUNG_BELEGE;;;;
+journal_line;amount_minor;nein;BUCHHALTUNG_BELEGE;;;;
+journey;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+journey;id;nein;BUCHUNGSABWICKLUNG;;;;
+journey;passenger_id;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_BETRIEB;Verweis auf den Fahrgast
+journey;quote_id;nein;BUCHUNGSABWICKLUNG;;;;
+journey;state;nein;BUCHUNGSABWICKLUNG;;;;
+journey;revision;nein;BUCHUNGSABWICKLUNG;;;;
+journey;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+journey;currency;nein;ZAHLUNGSABWICKLUNG;;;;
+journey_leg;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;id;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;journey_id;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;sequence;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;operator_ref;nein;KOOPERATION_VERTRAG;;;;
+journey_leg;service_ref;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;federation_ref;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;capability;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;state;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;planned_departure;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;geplante Abfahrt der Fahrt des Fahrgasts
+journey_leg;planned_arrival;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;geplante Ankunft
+journey_leg;origin_snapshot;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Startpunkt der Fahrt als Momentaufnahme
+journey_leg;destination_snapshot;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zielpunkt der Fahrt als Momentaufnahme
+journey_leg;promise_revision;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;pickup_earliest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zusage Einstiegsfenster
+journey_leg;pickup_latest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zusage Einstiegsfenster
+journey_leg;arrival_earliest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zusage Ankunftsfenster
+journey_leg;arrival_latest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zusage Ankunftsfenster
+journey_leg;execution_state;nein;BUCHUNGSABWICKLUNG;;;;
+journey_leg;contract_version_id;nein;KOOPERATION_VERTRAG;;;;
+journey_leg;gross_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+journey_leg;currency;nein;ZAHLUNGSABWICKLUNG;;;;
+legal_entity;tenant_id;nein;MANDANTENTRENNUNG;;;;
+legal_entity;id;nein;MANDANTENTRENNUNG;;;;
+legal_entity;name;ja;MANDANTENTRENNUNG;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_STAMM;Rechtsträger kann eine natürliche Person (Einzelunternehmen) sein
+legal_entity;country;nein;MANDANTENTRENNUNG;;;;
+legal_entity;tax_reference_token;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_STAMM;Token statt Steuernummer im Klartext
+membership;tenant_id;nein;ZUGANG_ROLLEN;;;;
+membership;id;nein;ZUGANG_ROLLEN;;;;
+membership;issuer;nein;ZUGANG_ROLLEN;;;;
+membership;subject;ja;ZUGANG_ROLLEN;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_STAMM;Kennung des Nutzers beim Identitätsanbieter
+membership;role_code;nein;ZUGANG_ROLLEN;;;;
+membership;service_scope;nein;ZUGANG_ROLLEN;;;;
+membership;revoked_at;nein;ZUGANG_ROLLEN;;;;
+operation;tenant_id;nein;SAGA_ABWICKLUNG;;;;
+operation;id;nein;SAGA_ABWICKLUNG;;;;
+operation;journey_id;nein;SAGA_ABWICKLUNG;;;;
+operation;kind;nein;SAGA_ABWICKLUNG;;;;
+operation;status;nein;SAGA_ABWICKLUNG;;;;
+operation;revision;nein;SAGA_ABWICKLUNG;;;;
+operation;next_attempt_at;nein;SAGA_ABWICKLUNG;;;;
+operation;lease_until;nein;SAGA_ABWICKLUNG;;;;
+operation;fencing_token;nein;SAGA_ABWICKLUNG;;;;
+operation;last_error_code;nein;SAGA_ABWICKLUNG;;;;
+operation;deadline_at;nein;SAGA_ABWICKLUNG;;;;
+organization;tenant_id;nein;MANDANTENTRENNUNG;;;;
+organization;id;nein;MANDANTENTRENNUNG;;;;
+organization;legal_entity_id;nein;MANDANTENTRENNUNG;;;;
+organization;name;nein;MANDANTENTRENNUNG;;;;
+organization;federation_ref;nein;MANDANTENTRENNUNG;;;;
+organization;roles;nein;MANDANTENTRENNUNG;;;;
+outbox;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+outbox;event_id;nein;TECHNISCHER_BETRIEB;;;;
+outbox;aggregate_id;nein;TECHNISCHER_BETRIEB;;;;
+outbox;aggregate_revision;nein;TECHNISCHER_BETRIEB;;;;
+outbox;event_type;nein;TECHNISCHER_BETRIEB;;;;
+outbox;schema_version;nein;TECHNISCHER_BETRIEB;;;;
+outbox;occurred_at;nein;TECHNISCHER_BETRIEB;;;;
+outbox;payload;nein;TECHNISCHER_BETRIEB;;;;"Ereignisnutzdaten laut Ereignisschema; sie sollen keine Personendaten enthalten (Feldschutz SEC-005), keine Zusicherung dieser Prüfung"
+outbox;published_at;nein;TECHNISCHER_BETRIEB;;;;
+outbox;recipient_tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+outbox;recorded_at;nein;TECHNISCHER_BETRIEB;;;;
+outbox;correlation_id;nein;TECHNISCHER_BETRIEB;;;;
+outbox;delivery_attempts;nein;TECHNISCHER_BETRIEB;;;;
+outbox;next_attempt_at;nein;TECHNISCHER_BETRIEB;;;;
+outbox;claimed_until;nein;TECHNISCHER_BETRIEB;;;;
+outbox;last_error;nein;TECHNISCHER_BETRIEB;;;;
+outbox;dead_lettered_at;nein;TECHNISCHER_BETRIEB;;;;
+partner_contract_version;tenant_id;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;id;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;partner_ref;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;version;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;terms_hash;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;terms;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;valid_from;nein;KOOPERATION_VERTRAG;;;;
+partner_contract_version;valid_to;nein;KOOPERATION_VERTRAG;;;;
+passenger_private;tenant_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_private;id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_private;subject_token;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;"Pseudonymes Kontoschlüssel-Token; Bildung siehe Verschlüsselungsvertrag (OP-23)"
+passenger_private;contact_ciphertext;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;"nur verschlüsselt; Kontaktdaten im Klartext nie in der Datenbank"
+passenger_private;support_ciphertext;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;"nur verschlüsselt; transportrelevante Unterstützung ohne Diagnose (SEC-005)"
+passenger_private;retention_until;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Löschzeitpunkt des Fahrgastkontos nach Aufbewahrungsregel (WP-M1-33)
+payment_intent;tenant_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;journey_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;provider;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;provider_ref;ja;ZAHLUNGSABWICKLUNG;ART6_1_B_VERTRAG;BELEGE_JOURNAL;LK_BELEG;"Referenz beim Zahlungsdienstleister; Schutzklasse vorläufig, Zuordnung offen (SEC-008)"
+payment_intent;state;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;currency;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;authorized_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;captured_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;refunded_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;revision;nein;ZAHLUNGSABWICKLUNG;;;;
+resource_release;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;id;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;vehicle_id;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;shift_id;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;safety_revision;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;inspection_ref;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;qualification_revision;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;valid_until;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;revoked_at;nein;FLOTTE_SICHERHEIT;;;;
+saga_step;tenant_id;nein;SAGA_ABWICKLUNG;;;;
+saga_step;id;nein;SAGA_ABWICKLUNG;;;;
+saga_step;operation_id;nein;SAGA_ABWICKLUNG;;;;
+saga_step;leg_id;nein;SAGA_ABWICKLUNG;;;;
+saga_step;action;nein;SAGA_ABWICKLUNG;;;;
+saga_step;state;nein;SAGA_ABWICKLUNG;;;;
+saga_step;partner_command_ref;nein;SAGA_ABWICKLUNG;;;;
+saga_step;partner_result_ref;nein;SAGA_ABWICKLUNG;;;;
+saga_step;attempts;nein;SAGA_ABWICKLUNG;;;;
+saga_step;updated_at;nein;SAGA_ABWICKLUNG;;;;
+service;tenant_id;nein;KONFIGURATION;;;;
+service;id;nein;KONFIGURATION;;;;
+service;operator_id;nein;KONFIGURATION;;;;
+service;name;nein;KONFIGURATION;;;;
+service;timezone;nein;KONFIGURATION;;;;
+service;config_revision_id;nein;KONFIGURATION;;;;
+service_area;tenant_id;nein;KONFIGURATION;;;;
+service_area;id;nein;KONFIGURATION;;;;
+service_area;service_id;nein;KONFIGURATION;;;;
+service_area;revision;nein;KONFIGURATION;;;;
+service_area;area;nein;KONFIGURATION;;;;Geometrie eines Bediengebiets, kein Personenbezug
+service_area;valid_from;nein;KONFIGURATION;;;;
+service_area;valid_to;nein;KONFIGURATION;;;;
+settlement_line;tenant_id;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;id;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;event_id;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;leg_id;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;contract_version_id;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;creditor_ref;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;debtor_ref;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;currency;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;payable_minor;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;revision;nein;ABRECHNUNG_CLEARING;;;;
+settlement_line;reverses_id;nein;ABRECHNUNG_CLEARING;;;;
+staff_shift;tenant_id;nein;PERSONALEINSATZ;;;;
+staff_shift;id;nein;PERSONALEINSATZ;;;;
+staff_shift;driver_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Fahrer der Schicht
+staff_shift;vehicle_id;nein;PERSONALEINSATZ;;;;
+staff_shift;starts_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Arbeitszeitbeginn der Schicht
+staff_shift;ends_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Arbeitszeitende der Schicht
+staff_shift;timezone;nein;PERSONALEINSATZ;;;;
+staff_shift;roster_revision;nein;PERSONALEINSATZ;;;;
+staff_shift;state;nein;PERSONALEINSATZ;;;;
+stop_revision;tenant_id;nein;KONFIGURATION;;;;
+stop_revision;id;nein;KONFIGURATION;;;;
+stop_revision;stop_id;nein;KONFIGURATION;;;;
+stop_revision;revision;nein;KONFIGURATION;;;;
+stop_revision;point;nein;KONFIGURATION;;;;Haltepunkt im Netz, kein Personenbezug
+stop_revision;name;nein;KONFIGURATION;;;;
+stop_revision;accessibility;nein;KONFIGURATION;;;;
+stop_revision;approved_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Freigeber der Revision
+stop_revision;valid_from;nein;KONFIGURATION;;;;
+stop_revision;valid_to;nein;KONFIGURATION;;;;
+tenant;id;nein;MANDANTENTRENNUNG;;;;
+tenant;name;nein;MANDANTENTRENNUNG;;;;
+tenant;status;nein;MANDANTENTRENNUNG;;;;
+travel_attempt;tenant_id;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;id;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;created_at;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;channel;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;primary_rejection;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;secondary_rejections;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;coarse_origin;ja;NACHFRAGEANALYSE;ART6_1_F_BERECHTIGTES_INTERESSE;STANDORT_ETA;LK_STANDORT;"nur grobe Auflösung (z. B. Zone); feinere Auflösung wird nicht angelegt (SEC-004)"
+travel_attempt;coarse_destination;ja;NACHFRAGEANALYSE;ART6_1_F_BERECHTIGTES_INTERESSE;STANDORT_ETA;LK_STANDORT;"nur grobe Auflösung (z. B. Zone); feinere Auflösung wird nicht angelegt (SEC-004)"
+vehicle;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;id;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;owner_org_ref;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;capacity_config;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;active_block;nein;FLOTTE_SICHERHEIT;;;;
+vehicle;safety_revision;nein;FLOTTE_SICHERHEIT;;;;
+vehicle_run;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle_run;id;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle_run;vehicle_id;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle_run;shift_id;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle_run;revision;nein;BUCHUNGSABWICKLUNG;;;;
+vehicle_run;state;nein;BUCHUNGSABWICKLUNG;;;;
