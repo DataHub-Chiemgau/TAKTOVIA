@@ -60,6 +60,8 @@ internal class JdbcConfigRevisions(
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, cmd: CreateDraft): ConfigRevisionView {
         val normalized = checkDraft(j, cmd.scopeKind, cmd.schemaVersion, cmd.values, cmd.reason, cmd.effectiveFrom, cmd.effectiveTo, requireCurrentVersion = true)
+        // Fahrzeug-Scope: das Fahrzeug muss zum Mandanten gehören (RLS); ein fremdes oder unbekanntes Fahrzeug verhält sich wie „nicht vorhanden“ (404).
+        if (cmd.scopeKind == ScopeKind.VEHICLE && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, cmd.scopeId) != 1) throw ProblemException.notFound()
         val id = UUID.randomUUID()
         val actor = actorOf(ctx)
         val row = insertDraft(j, id, cmd.scopeKind, cmd.scopeId, null, cmd.schemaVersion, normalized, cmd.effectiveFrom, cmd.effectiveTo, actor.value, cmd.reason!!.trim())
@@ -87,6 +89,21 @@ internal class JdbcConfigRevisions(
         ROW, id, scope.name, scopeId, revision, schemaVersion, mapper.writeValueAsString(values), Timestamp.from(from), to?.let(Timestamp::from), createdBy, reason,
         scope.name, scopeId,
     ).single()
+
+    @AuditRequired
+    override fun seedServiceHead(jdbc: JdbcOperations, actor: ActorRef, correlationId: UUID, serviceId: UUID, effectiveFrom: Instant): UUID {
+        val version = catalogs.currentVersion(jdbc, clock.instant()) ?: throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Kein Parameterkatalog gültig.")
+        val id = UUID.randomUUID()
+        val row = insertDraft(jdbc, id, ScopeKind.SERVICE, serviceId, null, version, emptyMap(), effectiveFrom, null, actor.value, "Erste Konfigurationsrevision des Dienstes")
+        audit.record(jdbc, AuditEntry(actor, AuditActions.CONFIG_DRAFT_CREATED, ObjectRef("config_revision", id), correlationId, mapOf(
+            "scope_kind" to "SERVICE", "scope_id" to serviceId.toString(), "revision" to row.revision, "schema_version" to version,
+            "effective_from" to effectiveFrom.toString(), "changed_keys" to emptyList<String>())))
+        outbox.append(jdbc, OutboxEvent(id, row.rowVersion, "config.revision_created", mapOf(
+            "revision_id" to id.toString(), "scope_kind" to "SERVICE", "scope_id" to serviceId.toString(), "revision" to row.revision,
+            "state" to row.state.name, "schema_version" to version, "effective_from" to effectiveFrom.toString(), "effective_to" to null,
+        ), clock.instant(), correlationId = correlationId))
+        return id
+    }
 
     override fun updateDraft(ctx: RequestContext, id: UUID, expectedRowVersion: Long, cmd: UpdateDraft): ConfigRevisionView =
         ctxTx.run(ctx) { j -> doUpdate(j, ctx, id, expectedRowVersion, cmd) }

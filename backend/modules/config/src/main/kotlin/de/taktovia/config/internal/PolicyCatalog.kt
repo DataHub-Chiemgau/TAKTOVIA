@@ -43,18 +43,20 @@ internal class PolicyCatalogRepository {
             "SELECT parameter, json_schema::text FROM taktovia.policy_schema WHERE schema_version = ? ORDER BY parameter",
             { rs, _ -> rs.getString(1) to rs.getString(2) }, version,
         )
-        val loaded = LoadedCatalog(version, validFrom, rows.associate { (name, text) -> name to parse(name, text) })
+        // Fahrzeug-Overrides gelten nur für freigegebene Parameter (global, nur per Migration gepflegt): sie erhalten die Ebene VEHICLE zusätzlich zu x-levels.
+        val vehicleReleased = jdbc.queryForList("SELECT parameter FROM taktovia.config_vehicle_override_release", String::class.java).toSet()
+        val loaded = LoadedCatalog(version, validFrom, rows.associate { (name, text) -> name to parse(name, text, name in vehicleReleased) })
         cache[version] = loaded
         return loaded
     }
 
-    private fun parse(name: String, text: String): LoadedParameter {
+    private fun parse(name: String, text: String, vehicleReleased: Boolean): LoadedParameter {
         val node = mapper.readTree(text)
         val levels = node.path("x-levels").values().map { ScopeKind.valueOf(it.asString()) }.toSet()
         val def = ParameterDefinition(
             name = name, type = node.path("type").asString(), unit = node.path("x-unit").asString(),
             minimum = node.get("minimum")?.let { BigDecimal(it.asString()) }, maximum = node.get("maximum")?.let { BigDecimal(it.asString()) },
-            default = node.get("default")?.let { mapper.treeToValue(it, Any::class.java) }, allowedLevels = levels,
+            default = node.get("default")?.let { mapper.treeToValue(it, Any::class.java) }, allowedLevels = if (vehicleReleased) levels + ScopeKind.VEHICLE else levels,
             securityClass = node.path("x-security-class").asString(), limitSource = node.path("x-limit-source").asString(),
             description = node.path("description").asString(), schema = mapper.readValue(text, Map::class.java).toStringKeyed(),
         )

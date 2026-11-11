@@ -5,6 +5,10 @@ import de.taktovia.app.identity.RequestContexts
 import de.taktovia.config.api.ConfigApi
 import de.taktovia.config.api.ConfigRevisionView
 import de.taktovia.config.api.CreateDraft
+import de.taktovia.config.api.EffectiveConfigView
+import de.taktovia.config.api.EffectiveParameter
+import de.taktovia.config.api.EffectiveRequest
+import de.taktovia.config.api.EffectiveStatus
 import de.taktovia.config.api.ParameterDefinition
 import de.taktovia.config.api.RevisionFilter
 import de.taktovia.config.api.RevisionState
@@ -53,6 +57,39 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
         val catalog = config.parameters.catalog(RequestContexts.require(request))
         return linkedMapOf("schema_version" to catalog.schemaVersion, "valid_from" to catalog.validFrom.toString(), "items" to catalog.parameters.map(::parameterJson))
     }
+
+    /** Wirksame Konfiguration nach Präzedenzkette (WP-M1-21): der Kontext aus Region, Dienst und Fahrzeug, der Zeitpunkt `at`; der Mandant folgt aus dem Kontext. */
+    @GetMapping("/effective")
+    fun effective(
+        @RequestParam(required = false) parameter: String?, @RequestParam(name = "region_id", required = false) regionId: String?,
+        @RequestParam(name = "service_id", required = false) serviceId: String?, @RequestParam(name = "vehicle_id", required = false) vehicleId: String?,
+        @RequestParam(required = false) at: String?, request: HttpServletRequest,
+    ): Map<String, Any?> {
+        val view = config.effective.resolve(RequestContexts.require(request), EffectiveRequest(
+            parameter = parameter, regionId = regionId?.let { uuidOf(it, "region_id") }, serviceId = serviceId?.let { uuidOf(it, "service_id") },
+            vehicleId = vehicleId?.let { uuidOf(it, "vehicle_id") }, at = at?.let { instantOf(it, "at") }))
+        return effectiveJson(view)
+    }
+
+    private fun effectiveJson(v: EffectiveConfigView): Map<String, Any?> {
+        val withValue = v.items.filter { it.status == EffectiveStatus.EFFECTIVE }
+        return linkedMapOf(
+            "as_of" to v.asOf.toString(), "values" to withValue.associate { it.parameter to it.value }, "revision_ids" to withValue.mapNotNull { it.revisionId?.toString() }.distinct(),
+            "schema_version" to v.schemaVersion, "items" to v.items.map(::effectiveParameterJson),
+        )
+    }
+
+    private fun effectiveParameterJson(p: EffectiveParameter): Map<String, Any?> = linkedMapOf(
+        "parameter" to p.parameter, "unit" to p.unit, "status" to p.status.name, "value" to p.value, "level" to p.level?.name, "revision_id" to p.revisionId?.toString(), "revision" to p.revision,
+        "scope_id" to p.scopeId?.toString(), "effective_from" to p.effectiveFrom?.toString(), "effective_to" to p.effectiveTo?.toString(), "schema_version" to p.schemaVersion,
+        "rule" to linkedMapOf("code" to p.rule.code, "description" to p.rule.description),
+        "precedence" to p.precedence.map { e ->
+            linkedMapOf(
+                "level" to e.level.name, "outcome" to e.outcome.name, "scope_id" to e.scopeId?.toString(), "value" to e.value, "revision_id" to e.revisionId?.toString(), "revision" to e.revision,
+                "violation" to e.violation, "proposal" to e.proposal?.let { linkedMapOf("revision_id" to it.revisionId.toString(), "state" to it.state.name, "value" to it.value) },
+            )
+        },
+    )
 
     @GetMapping("/revisions")
     fun list(

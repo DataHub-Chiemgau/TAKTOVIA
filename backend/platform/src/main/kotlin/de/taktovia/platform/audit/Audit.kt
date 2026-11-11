@@ -58,6 +58,13 @@ object AuditActions {
     const val MEMBERSHIP_GRANTED = "identity.membership.granted"
     const val MEMBERSHIP_REVOKED = "identity.membership.revoked"
     const val ORGANIZATION_CHANGED = "identity.organization.changed"
+    /** Organisationsstruktur angelegt oder geändert (WP-M1-09): Region, Betriebshof, Dienstkopf, Kostenstelle; Objekt `region:`, `depot:`, `service:`, `cost_center:`. */
+    const val REGION_CHANGED = "identity.region.changed"
+    const val DEPOT_CHANGED = "identity.depot.changed"
+    const val SERVICE_CHANGED = "identity.service.changed"
+    const val COST_CENTER_CHANGED = "finance.cost_center.changed"
+    /** Serverseitige Regelprüfung eines bestätigenden Befehls bestanden (WP-M1-26): Details `command`, `rule_revisions`, `schema_version`, `as_of`, `rule_levels`. */
+    const val POLICY_CHECKED = "policy.command.checked"
     /** Mandantenanlage und Statuswechsel durch die Plattformverwaltung (WP-M1-05). */
     const val TENANT_CREATED = "identity.tenant.created"
     const val TENANT_STATUS_CHANGED = "identity.tenant.status_changed"
@@ -105,7 +112,7 @@ object AuditActions {
     const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
     /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
     const val AUDIT_READ = "audit.events.read"
-    val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+    val CATALOG = setOf(POLICY_CHECKED, REGION_CHANGED, DEPOT_CHANGED, SERVICE_CHANGED, COST_CENTER_CHANGED, MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         CONFIG_DRAFT_CREATED, CONFIG_DRAFT_CHANGED, WEBHOOK_SUBSCRIPTION_CREATED, WEBHOOK_SUBSCRIPTION_DEACTIVATED, PASSENGER_SUPPORT_NEEDS_READ, PASSENGER_CONTACT_READ, SECURITY_CARD_DATA_REJECTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,

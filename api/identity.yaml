@@ -388,6 +388,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RegionCreate'
+  /v1/regions/{region_id}:
+    put:
+      summary: Region ändern
+      operationId: updateRegion
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: region_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionUpdate'
   /v1/depots:
     get:
       summary: Betriebshöfe auflisten
@@ -450,6 +505,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '403':
           $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
         '422':
@@ -464,6 +521,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DepotCreate'
+  /v1/depots/{depot_id}:
+    put:
+      summary: Betriebshof ändern
+      operationId: updateDepot
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: depot_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Depot'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepotUpdate'
   /v1/cost-centers:
     get:
       summary: Kostenstellen auflisten
@@ -526,6 +638,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '403':
           $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
         '422':
@@ -540,6 +654,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CostCenterCreate'
+  /v1/cost-centers/{cost_center_id}:
+    put:
+      summary: Kostenstelle ändern
+      operationId: updateCostCenter
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: cost_center_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCenter'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostCenterUpdate'
   /v1/sessions:
     get:
       summary: Sitzungen auflisten
@@ -1156,6 +1325,16 @@ components:
       - id
       - name
       - revision
+    RegionUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - name
     RegionCreate:
       type: object
       additionalProperties: false
@@ -1190,6 +1369,19 @@ components:
       - region_id
       - name
       - revision
+    DepotUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        region_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - region_id
+      - name
     DepotCreate:
       type: object
       additionalProperties: false
@@ -1222,6 +1414,16 @@ components:
           maxLength: 200
         legal_entity_id:
           $ref: common.yaml#/components/schemas/UUID
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einer Region des Mandanten.
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einem Dienst des Mandanten.
         revision:
           type: integer
           format: int64
@@ -1233,6 +1435,27 @@ components:
       - name
       - legal_entity_id
       - revision
+    CostCenterUpdate:
+      type: object
+      additionalProperties: false
+      description: Kennung und Rechtsträger sind nach dem Anlegen unveränderlich.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einer Region des Mandanten.
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einem Dienst des Mandanten.
+      required:
+      - name
     CostCenterCreate:
       type: object
       additionalProperties: false
@@ -1247,6 +1470,16 @@ components:
           maxLength: 200
         legal_entity_id:
           $ref: common.yaml#/components/schemas/UUID
+        region_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einer Region des Mandanten.
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionale Zuordnung zu einem Dienst des Mandanten.
       required:
       - code
       - name

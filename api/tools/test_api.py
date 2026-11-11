@@ -115,6 +115,31 @@ class ApiTools(unittest.TestCase):
 
 
 
+class RequestSchemaPolicy(unittest.TestCase):
+    """WP-M1-26 / LH-6.1-SYS-011: Lint der Request-Schemas (additionalProperties:false, keine vom Client setzbaren Regel-, Preis- oder Statusfelder)."""
+    def doc(self): return copy.deepcopy(bundle.bundle())
+
+    def test_verbotenes_feld_ohne_ausnahme_wird_gefunden_und_ausnahmen_sind_begruendet(self):
+        d = self.doc()
+        self.assertEqual(lint.request_schema_violations(d), [])
+        for field in ('price_minor', 'config_revision_id', 'max_wait_min', 'status', 'fare', 'policy_revision'):
+            e = self.doc(); e['components']['schemas']['RegionCreate']['properties'][field] = {'type': 'string', 'maxLength': 10}
+            self.assertTrue(any(field in v for v in lint.request_schema_violations(e)), field)
+        import json
+        pol = json.loads(lint.POLICY_FILE.read_text())
+        self.assertTrue(all(len(a['grund']) > 40 for a in pol['ausnahmen']))
+
+    def test_objekt_ohne_additional_properties_false_wird_gefunden(self):
+        d = self.doc(); del d['components']['schemas']['RegionCreate']['additionalProperties']
+        self.assertTrue(any('RegionCreate' in v and 'additionalProperties' in v for v in lint.request_schema_violations(d)))
+        e = self.doc(); e['components']['schemas']['RegionCreate']['additionalProperties'] = True
+        self.assertTrue(lint.request_schema_violations(e))
+
+    def test_negativ_lint_doc_meldet_verstoss(self):
+        d = self.doc(); d['components']['schemas']['RegionCreate']['properties']['price_minor'] = {'type': 'integer', 'minimum': 0, 'maximum': 100}
+        self.assertTrue(any(e.startswith('SYS-011') for e in lint.lint_doc(d)))
+
+
 class Breaking(unittest.TestCase):
     def setUp(self):
         import breaking

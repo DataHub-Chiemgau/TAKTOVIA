@@ -11,12 +11,13 @@ import type { ResourceState } from '@taktovia/design-system';
 import { useEffect, useState } from 'react';
 import { DEFAULT_ZONE, useScreenContext } from '../ScreenContext';
 
-const SCOPE_KINDS: readonly ConfigScopeKind[] = ['TENANT', 'REGION', 'DEPOT', 'SERVICE'];
+const SCOPE_KINDS: readonly ConfigScopeKind[] = ['TENANT', 'REGION', 'DEPOT', 'SERVICE', 'VEHICLE'];
 const SCOPE_LABEL: Record<ConfigScopeKind, string> = {
   TENANT: 'Mandant',
   REGION: 'Region',
   DEPOT: 'Betriebshof',
   SERVICE: 'Dienst',
+  VEHICLE: 'Fahrzeug',
 };
 const STATE_LABEL: Record<ConfigRevision['state'], string> = {
   DRAFT: 'Entwurf',

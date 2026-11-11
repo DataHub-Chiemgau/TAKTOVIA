@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+region;SELECT,INSERT,UPDATE;WP-M1-09: Region eines Mandanten; kein DELETE
+depot;SELECT,INSERT,UPDATE;WP-M1-09: Betriebshof einer Region; kein DELETE
