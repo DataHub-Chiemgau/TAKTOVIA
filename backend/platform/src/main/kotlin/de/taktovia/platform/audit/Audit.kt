@@ -58,6 +58,8 @@ object AuditActions {
     const val MEMBERSHIP_GRANTED = "identity.membership.granted"
     const val MEMBERSHIP_REVOKED = "identity.membership.revoked"
     const val ORGANIZATION_CHANGED = "identity.organization.changed"
+    /** Serverseitiger Tenantwechsel (WP-M1-06). */
+    const val TENANT_SWITCHED = "identity.tenant.switched"
     const val CONFIG_PUBLISHED = "config.revision.published"
     const val CONFIG_REVERTED = "config.revision.reverted"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
@@ -68,7 +70,7 @@ object AuditActions {
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
-    val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+    val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
 }

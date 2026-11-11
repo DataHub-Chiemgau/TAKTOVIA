@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/membership.revoked.v1.schema.json",
+  "title": "Mitgliedschaft entzogen (WP-M1-06, LH-6.17-INT-002)",
+  "description": "Genau dann, wenn eine Mitgliedschaft entzogen wurde; `revoked_at` ist gesetzt, die Revision ist größer als 1. Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1). `aggregate_id` der Hülle ist `membership_id`, `aggregate_revision` die Revision der Mitgliedschaft; je (Aggregat, Revision, Ereignistyp) entsteht höchstens ein Ereignis. Das Ereignis bleibt im Mandanten (Empfänger = Eigentümer); es nennt Issuer und Subject, damit Sitzungs- und Cache-Invalidierung (WP-M1-10) die Wirkung zuordnen können. Ereignisname und Felder sind Vorschlag (OP-33).",
+  "type": "object",
+  "required": [
+    "membership_id",
+    "issuer",
+    "subject",
+    "role_code",
+    "service_scope",
+    "valid_from",
+    "valid_to",
+    "revoked_at",
+    "revision"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "membership_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "role_code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "service_scope": {
+      "oneOf": [
+        {
+          "type": "array",
+          "maxItems": 500,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_to": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "revoked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 2
+    }
+  },
+  "examples": [
+    {
+      "membership_id": "00000000-0000-4000-8000-0000000000e1",
+      "issuer": "https://idp.example.test/realms/taktovia",
+      "subject": "6f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f",
+      "role_code": "dispatcher",
+      "service_scope": null,
+      "valid_from": "2026-11-02T08:00:00Z",
+      "valid_to": null,
+      "revoked_at": "2026-11-03T09:30:00Z",
+      "revision": 2
+    }
+  ]
+}

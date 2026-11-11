@@ -83,7 +83,7 @@ class TokenVerifier(private val props: IdpProperties, private val keys: JwksKeyS
         if (type == PrincipalType.SERVICE && tenants.size > 1) reject("service_with_tenant_switch")
         val scope = c.getStringClaim("scope")?.also { if (it.length > 1024) reject("scope_invalid") }
         return AuthenticatedPrincipal(
-            subject = subject, type = type, clientId = client, sessionId = sid, acr = acr,
+            issuer = c.issuer, subject = subject, type = type, clientId = client, sessionId = sid, acr = acr,
             scopes = scope?.split(' ')?.filter { it.isNotEmpty() }?.toSet() ?: emptySet(), roles = roles.toSet(), tenantIds = tenants,
         )
     }

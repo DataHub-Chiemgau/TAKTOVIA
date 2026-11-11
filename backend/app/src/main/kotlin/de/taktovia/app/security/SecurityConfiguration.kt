@@ -42,7 +42,8 @@ class SecurityConfiguration {
     fun tokenVerifier(p: IdpProperties, keys: JwksKeySource) = TokenVerifier(p, keys)
 
     @Bean @ConditionalOnProperty("taktovia.idp.enabled", havingValue = "true", matchIfMissing = true)
-    fun mfaDenialReporter(tx: TenantTransactions, events: SecurityEventPort): MfaDenialReporter = TenantMfaDenialReporter(tx, events)
+    fun mfaDenialReporter(tx: TenantTransactions, events: SecurityEventPort, identity: ObjectProvider<de.taktovia.identity.api.IdentityApi>): MfaDenialReporter =
+        TenantMfaDenialReporter(tx, events) { p -> identity.getIfAvailable()?.lookup?.selectableTenants(de.taktovia.identity.api.SubjectRef(p.issuer, p.subject.toString()))?.map { it.tenant.value } ?: emptyList() }
 
     @Bean @ConditionalOnProperty("taktovia.idp.enabled", havingValue = "true", matchIfMissing = true)
     fun authenticationFilter(
@@ -62,8 +63,12 @@ object TokenIdentity : RequestIdentityResolver {
     override fun actor(request: HttpServletRequest) = AuthenticatedPrincipal.of(request)?.let { "${it.type.name.lowercase()}:${it.subject}" } ?: request.remoteAddr ?: "unknown"
 }
 
-/** Schreibt das Sicherheitsereignis in den Mandanten, den das Token als Hinweis nennt (höchstens 5); ohne Mandant nur als Logzeile (OP-14). */
-class TenantMfaDenialReporter(private val tx: TenantTransactions, private val events: SecurityEventPort) : MfaDenialReporter {
+/** Schreibt das Sicherheitsereignis in die Mandanten, die das Token als Hinweis nennt oder in denen das Konto eine Mitgliedschaft hat (höchstens 5); ohne Mandant nur als Logzeile (OP-14). */
+class TenantMfaDenialReporter(
+    private val tx: TenantTransactions, private val events: SecurityEventPort,
+    /** Mandanten mit Mitgliedschaft des Kontos (WP-M1-06); ergänzt den Hinweis des Tokens. */
+    private val membershipTenants: (AuthenticatedPrincipal) -> List<java.util.UUID> = { emptyList() },
+) : MfaDenialReporter {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun report(principal: AuthenticatedPrincipal, request: HttpServletRequest, privilegedVia: String) {
@@ -72,7 +77,7 @@ class TenantMfaDenialReporter(private val tx: TenantTransactions, private val ev
             actor = ActorRef.user(principal.subject), action = AuditActions.SECURITY_MFA_MISSING, obj = ObjectRef("user", principal.subject), correlationId = correlation,
             details = mapOf("required_acr" to AuthenticatedPrincipal.ACR_MFA, "presented_acr" to principal.acr, "client_id" to principal.clientId, "privileged_via" to privilegedVia),
         )
-        val tenants = principal.tenantIds.take(5)
+        val tenants = (principal.tenantIds + runCatching { membershipTenants(principal) }.getOrDefault(emptyList())).distinct().take(5)
         if (tenants.isEmpty()) return events.reportWithoutTenant(event)
         var written = 0
         tenants.forEach { t ->

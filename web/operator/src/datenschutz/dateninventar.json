@@ -1945,6 +1945,15 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "ZUGANG_ROLLEN",
@@ -1955,6 +1964,15 @@
         },
         {
           "spalte": "issuer",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
           "personenbezogen": "nein",
           "zweck": "ZUGANG_ROLLEN",
           "rechtsgrundlage": "",
@@ -1997,6 +2015,59 @@
           "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Kennung des Nutzers beim Identitätsanbieter"
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "membership_subject_index",
+      "aggregat": "Verzeichnisindex Subject-Mandant (WP-M1-06)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "wird mit der Mitgliedschaft angelegt, nie gelöscht, Wahrheit bleibt membership",
+      "spalten": [
+        {
+          "spalte": "issuer",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "subject",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Kennung des Nutzers beim Identitätsanbieter, nur zur Mandantenermittlung vor dem Tenantkontext"
         },
         {
           "spalte": "tenant_id",

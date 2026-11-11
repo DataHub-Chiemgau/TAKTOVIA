@@ -15,6 +15,8 @@ class ContractCase(
     val operationId: String,
     val expectedPositive: Int, val positive: () -> ContractRequest,
     val expectedError: Int, val error: () -> ContractRequest,
+    /** Eigene Anwendungsinstanz für Fälle, die eine Anmeldung brauchen (Ressourcenserver mit Test-Issuer); sonst die Standardinstanz des Laufs. */
+    val server: (() -> ProbeServer)? = null,
 )
 
 /**
@@ -22,14 +24,16 @@ class ContractCase(
  * der Status ist für die Operation dokumentiert, der Body validiert gegen das Antwortschema (`additionalProperties:false`
  * erkennt Felder, die der Vertrag nicht kennt), Fehlerantworten gegen `Problem`.
  */
-class ContractRunner(private val server: ProbeServer, private val registry: OpenApiRegistry) {
+class ContractRunner(private val defaultServer: ProbeServer, private val defaultRegistry: OpenApiRegistry) {
     /** Befunde; leer = der Fall ist vertragskonform. */
     fun run(case: ContractCase): List<String> {
+        val server = case.server?.invoke() ?: defaultServer
+        val registry = if (case.server != null) server.registry else defaultRegistry
         val op = registry.operations.singleOrNull { it.operationId == case.operationId } ?: return listOf("${case.operationId}: operationId nicht im Vertrag")
-        return check(case, op, "positiv", case.positive(), case.expectedPositive) + check(case, op, "Fehlerfall", case.error(), case.expectedError)
+        return check(server, registry, case, op, "positiv", case.positive(), case.expectedPositive) + check(server, registry, case, op, "Fehlerfall", case.error(), case.expectedError)
     }
 
-    private fun check(case: ContractCase, op: de.taktovia.app.openapi.ApiOperation, kind: String, req: ContractRequest, expected: Int): List<String> {
+    private fun check(server: ProbeServer, registry: OpenApiRegistry, case: ContractCase, op: de.taktovia.app.openapi.ApiOperation, kind: String, req: ContractRequest, expected: Int): List<String> {
         val who = "${case.operationId} ($kind)"
         val r: Resp = server.send(req.method, req.path, req.body, req.headers, req.contentType)
         val out = mutableListOf<String>()

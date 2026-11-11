@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+membership_subject_index;SELECT,INSERT;WP-M1-06: Kandidatenverzeichnis Subject-Mandant (OP-06); Lesen nur mit app.subject_key des geprüften Subjects, Schreiben nur im eigenen Tenantkontext

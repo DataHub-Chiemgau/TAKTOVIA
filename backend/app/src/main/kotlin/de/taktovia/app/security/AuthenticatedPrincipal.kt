@@ -11,6 +11,8 @@ enum class PrincipalType { HUMAN, SERVICE }
  * [tenantIds] ist nur ein Hinweis des IdP.
  */
 data class AuthenticatedPrincipal(
+    /** Verifizierter Issuer (`iss`) des Tokens; zusammen mit [subject] die Identität einer Mitgliedschaft (WP-M1-06). */
+    val issuer: String,
     val subject: UUID,
     val type: PrincipalType,
     val clientId: String,

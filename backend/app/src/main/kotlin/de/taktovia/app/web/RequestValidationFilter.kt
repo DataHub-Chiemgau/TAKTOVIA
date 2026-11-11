@@ -23,6 +23,11 @@ import java.io.ByteArrayInputStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+/** Zusätzliche Prüfung des geparsten Bodys vor der Schema-Validierung (z. B. Tenant-Angaben, WP-M1-06); wirft [ProblemException]. */
+fun interface RequestBodyInspector {
+    fun inspect(request: HttpServletRequest, op: de.taktovia.app.openapi.ApiOperation?, body: JsonNode)
+}
+
 /** Grenzen für Anfragen (Planungsdefaults, OP-20: vor Produktivschaltung festzulegen). */
 data class RequestLimits(val maxBodyBytes: Int = 1_048_576, val maxJsonDepth: Int = 32)
 
@@ -38,6 +43,7 @@ class RequestValidationFilter(
     private val limits: RequestLimits,
     private val problems: ProblemWriter,
     private val json: JsonMapper,
+    private val inspectors: List<RequestBodyInspector> = emptyList(),
 ) : OncePerRequestFilter() {
     private val bodyMethods = setOf("POST", "PUT", "PATCH")
 
@@ -71,12 +77,14 @@ class RequestValidationFilter(
                 if (op.requestBodyRequired) throw ProblemException.invalid(Violation("/", ViolationCode.REQUIRED))
             } else {
                 val node = parse(bytes)
+                inspectors.forEach { it.inspect(request, op, node) }
                 controlCharacters(node)?.let { throw ProblemException.invalid(Violation(it, ViolationCode.INVALID_VALUE)) }
                 val errors: List<Error> = registry.requestSchema(op)!!.validate(node)
                 val violations = SchemaViolations.from(errors)
                 if (violations.isNotEmpty()) throw ProblemException(ErrorCode.VALIDATION_FAILED, "Mindestens ein Feld ist ungültig.", violations.take(100))
             }
         } else if (hasBody) {
+            inspectors.forEach { it.inspect(request, op, parse(bytes)) }
             controlCharacters(parse(bytes))?.let { throw ProblemException.invalid(Violation(it, ViolationCode.INVALID_VALUE)) } // auch ohne Schema: gültiges JSON in den Grenzen
         }
         return CachedBodyRequest(request, bytes)
