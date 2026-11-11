@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+notification;Nachrichtenauftrag (WP-M2-32);LK_BETRIEB;ein Auftrag je Ereignis, Empfaenger, Kanal, Inhalt wird nicht gespeichert
+notification_attempt;Zustellversuch (WP-M2-32);LK_TECHNISCH;nur anfuegen, technische Codes ohne Inhalt

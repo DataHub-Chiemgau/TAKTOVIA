@@ -6,6 +6,7 @@ import de.taktovia.identity.api.DeliveryPolicy
 import de.taktovia.identity.api.IdentityApi
 import de.taktovia.identity.api.PassengerAccounts
 import de.taktovia.identity.api.PassengerApi
+import de.taktovia.identity.api.PassengerDirectory
 import de.taktovia.identity.api.PassengerProfiles
 import de.taktovia.identity.api.PassengerSettings
 import de.taktovia.identity.api.RecoveryDispatch
@@ -34,6 +35,7 @@ internal object PassengerServicesFactory {
             override val profiles: PassengerProfiles = profiles
             override val consents: ConsentService = consents
             override val delivery: DeliveryPolicy = consents
+            override val directory: PassengerDirectory = JdbcPassengerDirectory(tx, fieldTx, store)
         }
     }
 }

@@ -16,6 +16,7 @@ Endzustände: `DELIVERED`, `FAILED`, `SUPPRESSED`
 | `QUEUED` | `SUPPRESSED` | Kanal ohne verifizierten Kontakt oder Widerspruch | System | 409 `INVALID_STATE_TRANSITION` |
 | `SENDING` | `DELIVERED` | Provider bestätigt Annahme eindeutig | System | 409 `INVALID_STATE_TRANSITION` |
 | `SENDING` | `RETRY_WAIT` | Provider lehnt vorübergehend ab (nachweislich nicht zugestellt) | System | 409 `INVALID_STATE_TRANSITION` |
+| `SENDING` | `SUPPRESSED` | beim Versand kein verifizierter Kontakt (Ergänzung WP-M2-32: der Kontakt wird erst nach dem Beanspruchen aufgelöst) | System | 409 `INVALID_STATE_TRANSITION` |
 | `SENDING` | `UNKNOWN` | Timeout, Ergebnis unbestimmt | System | 409 `INVALID_STATE_TRANSITION` |
 | `SENDING` | `FAILED` | dauerhafter Fehler oder ungültiger Kontakt | System | 409 `INVALID_STATE_TRANSITION` |
 | `UNKNOWN` | `DELIVERED` | Abgleich: zugestellt | System | 409 `INVALID_STATE_TRANSITION` |

@@ -1,0 +1,30 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+notification;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+notification;id;nein;TECHNISCHER_BETRIEB;;;;
+notification;event_id;nein;TECHNISCHER_BETRIEB;;;;
+notification;recipient_ref;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Referenz auf passenger_private.id, kein Klartextkontakt (Kontakt wird erst beim Versand aufgeloest und nie gespeichert)
+notification;channel;nein;TECHNISCHER_BETRIEB;;;;
+notification;event_type;nein;TECHNISCHER_BETRIEB;;;;
+notification;service_id;nein;TECHNISCHER_BETRIEB;;;;
+notification;params;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Platzhalterwerte (Buchungsreferenz, Treffpunkt, Zeitfenster, ETA), nie Kontaktdaten, nie in Logs, nicht ueber die API lesbar
+notification;template_revision_id;nein;TECHNISCHER_BETRIEB;;;;
+notification;language;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;beim ersten Versand gebundene Sprache des Fahrgasts
+notification;state;nein;TECHNISCHER_BETRIEB;;;;
+notification;attempt_count;nein;TECHNISCHER_BETRIEB;;;;
+notification;reconcile_count;nein;TECHNISCHER_BETRIEB;;;;
+notification;failure_reason;nein;TECHNISCHER_BETRIEB;;;;
+notification;next_attempt_at;nein;TECHNISCHER_BETRIEB;;;;
+notification;claimed_until;nein;TECHNISCHER_BETRIEB;;;;
+notification;revision;nein;TECHNISCHER_BETRIEB;;;;
+notification;created_at;nein;TECHNISCHER_BETRIEB;;;;
+notification;updated_at;nein;TECHNISCHER_BETRIEB;;;;
+notification;delivered_at;nein;TECHNISCHER_BETRIEB;;;;
+notification;dead_lettered_at;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;notification_id;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;attempt_no;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;started_at;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;finished_at;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;outcome;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;provider_ref;nein;TECHNISCHER_BETRIEB;;;;
+notification_attempt;error_code;nein;TECHNISCHER_BETRIEB;;;;

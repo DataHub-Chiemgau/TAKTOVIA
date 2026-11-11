@@ -36,7 +36,8 @@
       "enum": [
         "INVALID_CONTACT",
         "PROVIDER_ERROR",
-        "RETRIES_EXHAUSTED"
+        "RETRIES_EXHAUSTED",
+        "TEMPLATE_UNAVAILABLE"
       ]
     }
   },

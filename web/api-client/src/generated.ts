@@ -929,7 +929,7 @@ export interface Notification {
   template: string;
   state: 'QUEUED' | 'SENDING' | 'RETRY_WAIT' | 'UNKNOWN' | 'DELIVERED' | 'FAILED' | 'SUPPRESSED';
   attempts: number;
-  last_failure: 'INVALID_CONTACT' | 'PROVIDER_ERROR' | 'RETRIES_EXHAUSTED' | null;
+  last_failure: 'INVALID_CONTACT' | 'PROVIDER_ERROR' | 'RETRIES_EXHAUSTED' | 'TEMPLATE_UNAVAILABLE' | 'NO_VERIFIED_CONTACT' | null;
   created_at: string;
   revision: number;
 }

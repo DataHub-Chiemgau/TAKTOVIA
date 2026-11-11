@@ -125,6 +125,8 @@ components:
             - INVALID_CONTACT
             - PROVIDER_ERROR
             - RETRIES_EXHAUSTED
+            - TEMPLATE_UNAVAILABLE
+            - NO_VERIFIED_CONTACT
           - type: 'null'
         created_at:
           type: string

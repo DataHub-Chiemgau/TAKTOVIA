@@ -16,14 +16,12 @@ createServiceArea  # POST /v1/service-areas
 createStop  # POST /v1/stops
 getBooking  # GET /v1/bookings/{booking_id}
 getJourney  # GET /v1/federation/journeys/{journey_id}
-getNotification  # GET /v1/notifications/{notification_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
 getRideOffer  # GET /v1/ride-offers/{ride_offer_id}
 holdOffer  # POST /v1/federation/offers/{offer_id}/hold
 holdRideOffer  # POST /v1/ride-offers/{ride_offer_id}/hold
 listBookings  # GET /v1/bookings
 listDriverClearances  # GET /v1/driver-clearances
-listNotifications  # GET /v1/notifications
 listRetentionRules  # GET /v1/retention-rules
 listServiceAreas  # GET /v1/service-areas
 listStops  # GET /v1/stops
