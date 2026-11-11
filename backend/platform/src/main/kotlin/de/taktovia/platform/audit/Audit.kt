@@ -64,8 +64,10 @@ object AuditActions {
     const val SECURITY_PAYLOAD_HASH_MISMATCH = "security.event.payload_hash_mismatch"
     const val SECURITY_RECIPIENT_MISMATCH = "security.event.recipient_mismatch"
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
+    /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
+    const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
-        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED)
+        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
 }
 
 /**

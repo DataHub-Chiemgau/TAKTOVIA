@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/token-claims.v1.schema.json",
+  "title": "Access-Token-Claims des IdP (WP-M1-04, LH-6.2-IAM-002/-010)",
+  "description": "Claims, die der Ressourcenserver (backend/app, Paket security) nach erfolgreicher Prüfung von Signatur (RS256/PS256/ES256, Schlüssel aus dem JWKS des Issuers), iss, aud und exp auswertet. Fehlende oder falsch typisierte Pflichtclaims ergeben 401. Authentisierungsstärke: acr = loa1 (ein Faktor) oder loa2 (zweiter Faktor durchgeführt); amr ist optional und, wenn vorhanden, gegen acr auf Widerspruchsfreiheit geprüft (acr=loa2 verlangt eine Mehrfaktor-Methode in amr). Das Token trägt keine Passwörter und keine Personendaten außer der Subject-UUID.",
+  "type": "object",
+  "required": ["iss", "sub", "aud", "exp", "iat", "azp", "acr", "principal_type"],
+  "properties": {
+    "iss": { "type": "string", "description": "Issuer der Identitätsdomäne der Umgebung; muss exakt dem konfigurierten taktovia.idp.issuer-uri entsprechen (WP-M1-40: je Umgebung verschieden)." },
+    "sub": { "type": "string", "format": "uuid", "description": "Subject (Menschen: Konto-UUID im IdP; Dienstkonten: UUID des Dienstkontos). Wird als actor_ref `user:<sub>` bzw. `service:<azp>` auditiert." },
+    "aud": { "oneOf": [ { "const": "taktovia-api" }, { "type": "array", "contains": { "const": "taktovia-api" }, "items": { "type": "string" } } ], "description": "Audience; muss taktovia.idp.audience enthalten." },
+    "exp": { "type": "integer", "description": "Ablauf (Sekunden seit Epoch); Toleranz taktovia.idp.clock-skew-seconds (Standard 30)." },
+    "iat": { "type": "integer", "description": "Ausstellung; exp - iat darf taktovia.idp.max-token-lifetime-seconds (Standard 900) nicht überschreiten (OP-13)." },
+    "azp": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}$", "description": "Client, der das Token bezogen hat (passenger-web, operator-web, driver-app, adapter-<typ>)." },
+    "principal_type": { "enum": ["human", "service"], "description": "Vom IdP per hardcoded-claim-Mapper je Client gesetzt: human für Authorization-Code-Clients, service für Client-Credentials-Clients." },
+    "acr": { "enum": ["loa1", "loa2"], "description": "Authentisierungsstärke (Keycloak: acr.loa.map {loa1:1, loa2:2}). loa2 = zweiter Faktor." },
+    "amr": { "type": "array", "items": { "type": "string", "maxLength": 32 }, "maxItems": 8, "description": "Optional: verwendete Methoden (pwd, otp, hwk, swk, webauthn, mfa …)." },
+    "sid": { "type": "string", "minLength": 8, "maxLength": 128, "description": "Session-ID des IdP; Pflicht für Menschen, bei Dienstkonten verboten (Dienstkonten haben keine Menschen-Sitzung). Grundlage der Sitzungssperre (WP-M1-10)." },
+    "scope": { "type": "string", "maxLength": 1024, "description": "Leerzeichengetrennte OAuth-Scopes. Bei Dienstkonten sind nur Scopes wirksam, die in taktovia.idp.service-clients für den azp freigegeben sind." },
+    "roles": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$" }, "maxItems": 32, "description": "Realm-Rollen. Für Menschen Grundlage der Erkennung privilegierter Rollen (zusätzlich zu membership.role_code, WP-M1-07)." },
+    "tenant_ids": { "type": "array", "items": { "type": "string", "format": "uuid" }, "maxItems": 100, "description": "Mandanten, für die der Akteur Mitgliedschaften hat. Dient nur als Hinweis; Mandantenwahl und Berechtigung entscheidet WP-M1-06 serverseitig. Dienstkonten sind an höchstens einen Mandanten gebunden." },
+    "jti": { "type": "string", "maxLength": 128 }
+  },
+  "allOf": [
+    { "if": { "properties": { "principal_type": { "const": "human" } } }, "then": { "required": ["sid"] }, "else": { "not": { "required": ["sid"] }, "properties": { "tenant_ids": { "maxItems": 1 } } } }
+  ],
+  "additionalProperties": true,
+  "examples": [
+    { "iss": "https://idp.example.test/realms/taktovia", "sub": "6f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f", "aud": ["taktovia-api"], "exp": 1790000300, "iat": 1790000000,
+      "azp": "operator-web", "principal_type": "human", "acr": "loa2", "amr": ["pwd", "otp"], "sid": "b1d2c3e4-0000-4000-8000-00000000aaaa",
+      "scope": "openid profile", "roles": ["tenant_admin"], "tenant_ids": ["00000000-0000-4000-8000-00000000000a"] }
+  ]
+}

@@ -28,6 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(libs.json.schema.validator)
+    implementation(libs.nimbus.jose.jwt) // JWT-/JWKS-Prüfung des Ressourcenservers (WP-M1-04)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.archunit.junit5)

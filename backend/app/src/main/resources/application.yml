@@ -18,6 +18,19 @@ server:
 taktovia:
   # `local` nur für lokale Entwicklung und Tests; jede andere oder fehlende Angabe erzwingt TLS überall (TransportGuard).
   environment: ${TAKTOVIA_ENVIRONMENT:production}
+  idp:
+    # Ressourcenserver (WP-M1-04): Issuer der Identitätsdomäne dieser Umgebung (WP-M1-40: je Umgebung verschieden). Ohne Issuer kein Start.
+    # Ausschalten (`false`) ist nur mit taktovia.environment=local zulässig. Weitere Einstellungen: docs/umsetzungsplan/vertraege/idp-realm.md
+    enabled: ${TAKTOVIA_IDP_ENABLED:true}
+    issuer-uri: ${TAKTOVIA_IDP_ISSUER_URI:}
+    audience: ${TAKTOVIA_IDP_AUDIENCE:taktovia-api}
+logging:
+  level:
+    # Spring MVC und Tomcat protokollieren auf DEBUG/TRACE Anfrage-Inhalte und Header (Passwörter, Token). Diese Logger bleiben fest auf INFO
+    # (WP-M1-04, LH-6.2-IAM-002: keine Klartextpasswörter in Logs); PasswordLogScanTest belegt das.
+    org.springframework.web: INFO
+    org.apache.coyote: INFO
+    org.apache.tomcat.util.http: INFO
 management:
   endpoints:
     web:
