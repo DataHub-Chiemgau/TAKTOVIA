@@ -27,6 +27,8 @@ interface ServicegeoApi {
     val availability: ServiceAvailabilities
     /** Bediengebiete als valide Polygone mit Aktivierungszeitraum (WP-M2-04). */
     val areas: ServiceAreas
+    /** Haltepunktrevisionen mit Aktivstatus und zulässigen Verkehrsprodukten (WP-M2-05). */
+    val stops: Stops
 
     companion object {
         /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */

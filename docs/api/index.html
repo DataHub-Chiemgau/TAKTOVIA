@@ -671,12 +671,33 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
-<article id="createStop"><h3><span class="m">POST</span> <code>/v1/stops</code></h3><p>Haltepunkt anlegen (neue Revision)</p><dl><dt>operationId</dt><dd><code>createStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<article id="createStop"><h3><span class="m">POST</span> <code>/v1/stops</code></h3><p>Haltepunkt anlegen</p><dl><dt>operationId</dt><dd><code>createStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getStop"><h3><span class="m">GET</span> <code>/v1/stops/{stop_id}</code></h3><p>Haltepunkt lesen</p><dl><dt>operationId</dt><dd><code>getStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateStop"><h3><span class="m">PUT</span> <code>/v1/stops/{stop_id}</code></h3><p>Neue Revision des Haltepunkts anlegen (auch Deaktivierung)</p><dl><dt>operationId</dt><dd><code>updateStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

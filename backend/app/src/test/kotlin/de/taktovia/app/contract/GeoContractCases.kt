@@ -17,6 +17,10 @@ internal object GeoContractCases {
     private fun createArea(w: GeoWorld, service: String, x: Double = 13.7) =
         w.post("/v1/service-areas", """{"service_id":"$service","area":${square(x)},"valid_from":"2026-12-01T00:00:00+01:00","valid_to":null}""").json["id"].asString()
 
+    private fun stopBody(name: String = "Marktplatz", lat: Int = 51) =
+        """{"name":"$name","point":{"latitude":$lat,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":true,"valid_from":"2026-01-01T00:00:00+01:00"}"""
+    private fun createStop(w: GeoWorld) = w.post("/v1/stops", stopBody()).json["stop_id"].asString()
+
     val cases: List<ContractCase> = listOf(
         ContractCase("getServiceOperatingHours",
             200, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${w.service()}/operating-hours", headers = hg(w)) },
@@ -42,5 +46,17 @@ internal object GeoContractCases {
         ContractCase("updateServiceArea",
             200, { val w = GeoWorld(); val a = createArea(w, w.service()); ContractRequest("PUT", "/v1/service-areas/$a", """{"area":${square(13.8)},"valid_from":"2027-01-01T00:00:00+01:00","valid_to":null}""", h(w, ifMatch = "1")) },
             412, { val w = GeoWorld(); val a = createArea(w, w.service()); ContractRequest("PUT", "/v1/service-areas/$a", """{"area":${square(13.8)},"valid_from":"2027-01-01T00:00:00+01:00","valid_to":null}""", h(w, ifMatch = "9")) }, server = { IdentityEnv.server }),
+        ContractCase("createStop",
+            201, { val w = GeoWorld(); ContractRequest("POST", "/v1/stops", stopBody(), h(w)) },
+            422, { val w = GeoWorld(); ContractRequest("POST", "/v1/stops", stopBody(lat = 91), h(w)) }, server = { IdentityEnv.server }),
+        ContractCase("listStops",
+            200, { val w = GeoWorld(); createStop(w); ContractRequest("GET", "/v1/stops?active=true&near_latitude=51.0&near_longitude=13.74&near_radius_m=500", headers = hg(w, w.passenger)) },
+            403, { val w = GeoWorld(); ContractRequest("GET", "/v1/stops", headers = hg(w, w.env.token(UUID.randomUUID()))) }, server = { IdentityEnv.server }),
+        ContractCase("getStop",
+            200, { val w = GeoWorld(); val s = createStop(w); ContractRequest("GET", "/v1/stops/$s", headers = hg(w)) },
+            404, { val w = GeoWorld(); ContractRequest("GET", "/v1/stops/${UUID.randomUUID()}", headers = hg(w)) }, server = { IdentityEnv.server }),
+        ContractCase("updateStop",
+            200, { val w = GeoWorld(); val s = createStop(w); ContractRequest("PUT", "/v1/stops/$s", stopBody("Neu").replace("\"valid_from\":\"2026-01-01", "\"valid_from\":\"2027-01-01"), h(w, ifMatch = "1")) },
+            428, { val w = GeoWorld(); val s = createStop(w); ContractRequest("PUT", "/v1/stops/$s", stopBody("Neu"), h(w)) }, server = { IdentityEnv.server }),
     )
 }

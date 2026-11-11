@@ -8,6 +8,7 @@ import de.taktovia.servicegeo.api.OrganizationStructure
 import de.taktovia.servicegeo.api.ServicegeoApi
 import de.taktovia.platform.outbox.Outbox
 import de.taktovia.servicegeo.api.ServiceAreas
+import de.taktovia.servicegeo.api.Stops
 import de.taktovia.servicegeo.api.ServiceAvailabilities
 import de.taktovia.servicegeo.api.ServiceRevisions
 import java.time.Clock
@@ -24,5 +25,6 @@ internal object ServicegeoServicesFactory {
         override val serviceRevisions: ServiceRevisions = JdbcServiceRevisions(ctxTx, audit, outbox, clock, authorizer)
         override val availability: ServiceAvailabilities = JdbcServiceAvailabilities(ctxTx)
         override val areas: ServiceAreas = JdbcServiceAreas(ctxTx, audit, outbox, clock, authorizer)
+        override val stops: Stops = JdbcStops(ctxTx, audit, outbox, clock)
     }
 }

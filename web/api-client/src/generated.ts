@@ -1016,6 +1016,8 @@ export interface GeoStopAccessibility {
   wheelchair_boarding: 'YES' | 'NO' | 'UNVERIFIED';
   tactile_guidance?: 'YES' | 'NO' | 'UNVERIFIED';
   shelter?: 'YES' | 'NO' | 'UNVERIFIED';
+  verified_at?: string;
+  note?: string;
 }
 
 export interface GeoStop {
@@ -1025,8 +1027,23 @@ export interface GeoStop {
   name: string;
   point: Point;
   accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active: boolean;
+  approved_by: string;
   valid_from: Timestamp;
   valid_to: Timestamp | null;
+}
+
+export type GeoTrafficProducts = string[];
+
+export interface GeoStopUpdate {
+  name: string;
+  point: Point;
+  accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active: boolean;
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
 }
 
 export interface GeoStopCreate {
@@ -1034,6 +1051,8 @@ export interface GeoStopCreate {
   name: string;
   point: Point;
   accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active?: boolean;
   valid_from: Timestamp;
   valid_to?: Timestamp | null;
 }
@@ -2210,7 +2229,7 @@ export interface Operations {
   };
   listStops: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string };
+    query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp; near_latitude?: number; near_longitude?: number; near_radius_m?: number; active?: boolean };
     headers: { traceparent?: string };
     body: undefined;
     response: GeoStopPage;
@@ -2220,6 +2239,20 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: GeoStopCreate;
+    response: GeoStop;
+  };
+  getStop: {
+    path: { stop_id: UUID };
+    query: { revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoStop;
+  };
+  updateStop: {
+    path: { stop_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoStopUpdate;
     response: GeoStop;
   };
   getMe: {
@@ -2791,8 +2824,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at', 'near_latitude', 'near_longitude', 'near_radius_m', 'active'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateStop: { method: 'PUT', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getMe: { method: 'GET', path: '/v1/me', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   switchTenant: { method: 'POST', path: '/v1/me/tenant-switch', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tenant:switch'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listMemberships: { method: 'GET', path: '/v1/memberships', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['memberships:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

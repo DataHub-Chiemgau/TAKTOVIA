@@ -6616,6 +6616,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "active",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Aktivstatus der Revision (WP-M2-05)"
+        },
+        {
           "spalte": "approved_by",
           "personenbezogen": "ja",
           "zweck": "SICHERHEITSPROTOKOLL",
@@ -6623,6 +6632,24 @@
           "schutzklasse": "SECURITY_AUDIT",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Freigeber der Revision"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
         },
         {
           "spalte": "id",
@@ -6677,6 +6704,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "traffic_products",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zulaessige Verkehrsprodukte (WP-M2-05)"
         },
         {
           "spalte": "valid_from",
