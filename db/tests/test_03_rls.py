@@ -109,7 +109,7 @@ class RLS(unittest.TestCase):
         with admin() as a:
             tabs = [r[0] for r in a.execute("""SELECT table_name FROM information_schema.columns
                                                WHERE table_schema='taktovia' AND column_name='tenant_id'""")]
-        self.assertEqual(len(tabs), 36)
+        self.assertGreaterEqual(len(tabs), 36)   # 36 Kerntabellen plus Tabellen späterer Arbeitspakete
         c = runtime()
         try:
             for t in tabs:

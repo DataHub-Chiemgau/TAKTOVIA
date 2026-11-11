@@ -3,6 +3,13 @@ package de.taktovia.app.probe
 import de.taktovia.TaktoviaTestSupport
 import de.taktovia.app.web.RequestIdentityResolver
 import de.taktovia.platform.api.Etag
+import de.taktovia.platform.audit.ActorRef
+import de.taktovia.platform.audit.JdbcAuditPort
+import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.promise.OutboxPassengerInformationPort
+import de.taktovia.platform.promise.PromiseChangeCommand
+import de.taktovia.platform.promise.PromiseChangeProcedure
+import de.taktovia.platform.promise.BoundSnapshot
 import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.problem.ProblemException
 import de.taktovia.platform.statemachine.StateMachines
@@ -76,5 +83,43 @@ class PaymentProbeController(private val tx: TenantTransactions, private val ide
         val t = tenant(r)
         val done = tx.run(t) { j -> transitioner.transition(j, machine, id, body["state"] as String, expected) }
         return body(id, done.to.name, done.revision)
+    }
+}
+
+/** Nur in Tests: Änderungsverfahren der Zusage am Testaggregat über die echte Filterkette (Vertrag `probe/platform-blocks-api.yaml`). */
+@RestController
+@RequestMapping("/v1/probe/promises")
+@ConditionalOnProperty("taktovia.probe.enabled", havingValue = "true")
+class PromiseProbeController(private val tx: TenantTransactions, private val identity: ProbeIdentity) {
+    private val procedure = PromiseChangeProcedure(JdbcAuditPort(), OutboxPassengerInformationPort(Outbox()))
+    private val mapper = tools.jackson.databind.json.JsonMapper.builder().build()
+    private fun tenant(r: HttpServletRequest) = TenantId.parse(identity.tenant(r))
+    private fun body(s: BoundSnapshot) = RevisionedBody(mapOf("id" to s.promiseId.toString(), "revision" to s.revision, "content_hash" to s.contentHash,
+        "content" to mapper.convertValue(s.content, Map::class.java)), s.revision)
+    private val initial = """{"pickup_earliest":"2026-12-01T08:00:00+01:00","pickup_latest":"2026-12-01T08:15:00+01:00","arrival_earliest":"2026-12-01T08:40:00+01:00",
+        "arrival_latest":"2026-12-01T08:55:00+01:00","gross_minor":1000,"currency":"EUR","cancellation_policy_ref":"std-24h","vehicle_class":"standard"}"""
+
+    @PostMapping @ResponseStatus(HttpStatus.CREATED)
+    fun create(r: HttpServletRequest): RevisionedBody {
+        val t = tenant(r); val id = UUID.randomUUID(); val cfg = UUID.randomUUID()
+        return tx.run(t) { j ->
+            j.update("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by) VALUES (?,?,'tenant',?,1,'1.0','{}'::jsonb,now(),'user:probe')",
+                t.value, cfg, UUID.randomUUID())
+            body(procedure.bind(j, id, mapper.readTree(initial), cfg, ActorRef.service("probe"), UUID.randomUUID()))
+        }
+    }
+
+    @GetMapping("/{id}")
+    fun get(@PathVariable id: UUID, r: HttpServletRequest): RevisionedBody = tx.run(tenant(r), readOnly = true) { body(procedure.read(it, id)) }
+
+    @PostMapping("/{id}/changes")
+    fun change(@PathVariable id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>,
+               @RequestHeader("X-Test-Scopes", required = false) scopes: String?, r: HttpServletRequest): RevisionedBody {
+        val expected = ifMatch?.let { Etag.parseIfMatch(it) }
+        return tx.run(tenant(r)) { j ->
+            procedure.change(j, PromiseChangeCommand(id, expected, mapper.valueToTree(body["content"]), body["procedure"] as String, body["reason"] as String?,
+                ActorRef.service(identity.actor(r).replace(Regex("[^A-Za-z0-9._:-]"), "_")), scopes?.split(' ')?.toSet() ?: emptySet(), UUID.randomUUID()))
+            body(procedure.read(j, id))
+        }
     }
 }

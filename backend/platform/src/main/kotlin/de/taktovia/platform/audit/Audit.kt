@@ -60,11 +60,14 @@ object AuditActions {
     const val ORGANIZATION_CHANGED = "identity.organization.changed"
     const val CONFIG_PUBLISHED = "config.revision.published"
     const val CONFIG_REVERTED = "config.revision.reverted"
+    const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
+    const val PROMISE_SNAPSHOT_CHANGED = "promise.snapshot.changed"
     const val SECURITY_TENANT_MISMATCH = "security.tenant.mismatch"
     const val SECURITY_PAYLOAD_HASH_MISMATCH = "security.event.payload_hash_mismatch"
     const val SECURITY_RECIPIENT_MISMATCH = "security.event.recipient_mismatch"
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+        PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED)
 }
 
