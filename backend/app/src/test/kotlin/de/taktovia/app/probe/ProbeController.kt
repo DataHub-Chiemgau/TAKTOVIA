@@ -117,6 +117,10 @@ class ProbeController(private val tx: TenantTransactions, private val codec: Cur
         return mapOf("unreachable" to true)
     }
 
+    /** Antwort mit einem Feld, das der Vertrag (`additionalProperties:false`) nicht kennt: der Vertragslauf muss das erkennen. */
+    @GetMapping("/leaky")
+    fun leaky(@RequestParam(required = false) fail: String?): Map<String, Any> = if (fail != null) throw ProblemException(ErrorCode.FORBIDDEN) else mapOf("id" to UUID.randomUUID().toString(), "geheim" to "darf nicht in der Antwort stehen")
+
     @PostMapping("/free")
     fun free(@RequestBody body: Map<String, Any?>): Map<String, Any?> = body
 }

@@ -33,9 +33,14 @@ def _ext(v):
     return m.group(1) if m else v
 
 
+def module_names(api: Path = API) -> list[str]:
+    """Feste Reihenfolge der ersten Dateien, danach alle weiteren api/<modul>.yaml alphabetisch (neue Module brauchen keine Änderung hier)."""
+    return ORDER + sorted(p.stem for p in api.glob('*.yaml') if p.stem not in ORDER)
+
+
 def bundle(api: Path = API) -> dict:
     out = {}
-    for name in ORDER:
+    for name in module_names(api):
         doc = _rewrite(yaml.safe_load((api / f'{name}.yaml').read_text()))
         for k in ('openapi', 'jsonSchemaDialect', 'info', 'servers'):
             if k in doc: out[k] = doc[k]

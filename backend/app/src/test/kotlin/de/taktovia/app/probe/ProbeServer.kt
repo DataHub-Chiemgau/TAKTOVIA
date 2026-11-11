@@ -46,13 +46,19 @@ class ProbeServer private constructor(val ctx: ConfigurableApplicationContext) {
 
         /** Gemeinsame Instanz mit Standardquote; Tests, die Quoten ändern, übergeben eigene [props]. */
         @Synchronized
-        fun get(vararg props: String): ProbeServer {
+        fun get(vararg props: String): ProbeServer = start(true, props.toList())
+
+        /** Die Anwendung ohne Prüf-Endpunkte und ohne Zusatzverträge: genau die produktiven Routen. */
+        @Synchronized
+        fun production(): ProbeServer = start(false, emptyList())
+
+        private fun start(probe: Boolean, props: List<String>): ProbeServer {
             TaktoviaTestSupport.requireDatabase()
             ProbeDb.ensure()
-            return servers.getOrPut(props.joinToString("|")) {
-                val ctx = SpringApplicationBuilder(TaktoviaApplication::class.java).run(
-                    *(listOf("server.port=0", "taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml",
-                        "taktovia.api.cursor-secret=test-cursor-secret-test-cursor-secret-1234") + props).map { "--$it" }.toTypedArray())
+            return servers.getOrPut((if (probe) "probe|" else "prod|") + props.joinToString("|")) {
+                val base = listOf("server.port=0", "taktovia.api.cursor-secret=test-cursor-secret-test-cursor-secret-1234") +
+                    if (probe) listOf("taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml") else emptyList()
+                val ctx = SpringApplicationBuilder(TaktoviaApplication::class.java).run(*(base + props).map { "--$it" }.toTypedArray())
                 Runtime.getRuntime().addShutdownHook(Thread { ctx.close() })
                 ProbeServer(ctx)
             }

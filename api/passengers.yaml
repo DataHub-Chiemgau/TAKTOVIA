@@ -1,0 +1,162 @@
+paths:
+  /v1/passengers:
+    get:
+      summary: Fahrgäste auflisten
+      operationId: listPassengers
+      security:
+      - oidc:
+        - passengers:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrgast registrieren
+      operationId: registerPassenger
+      security:
+      - oidc:
+        - passengers:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Passenger'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassengerRegistration'
+components:
+  schemas:
+    Passenger:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - PENDING_VERIFICATION
+          - ACTIVE
+          - BLOCKED
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - status
+      - locale
+      - created_at
+      - revision
+    PassengerRegistration:
+      type: object
+      additionalProperties: false
+      properties:
+        contact:
+          type: object
+          additionalProperties: false
+          properties:
+            channel:
+              type: string
+              enum:
+              - EMAIL
+              - PHONE
+            value:
+              type: string
+              minLength: 3
+              maxLength: 254
+          required:
+          - channel
+          - value
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+      required:
+      - contact
+      - locale
+      description: Registrierung mit Kontaktverifikation; der Fahrgast ist bis zur Verifikation PENDING_VERIFICATION.
+      examples:
+      - contact:
+          channel: EMAIL
+          value: fahrgast@example.org
+        locale: de-DE
+    PassengerPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passenger'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

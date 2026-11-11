@@ -42,7 +42,9 @@ def lint_doc(doc: dict) -> list[str]:
             if method in MUTATING:
                 if oid not in NO_IDEMPOTENCY_KEY and 'IdempotencyKey' not in names:
                     errs.append(f'{where}: mutierende Operation ohne Idempotency-Key')
-                if oid not in NO_IDEMPOTENCY_KEY and oid not in NO_IF_MATCH and 'IfMatch' not in names:
+                # Mutation auf einem Pfad ohne Ressourcenvariable (Sammelpfad, /v1/me/…) legt Neues an oder wirkt auf den Kontext:
+                # es gibt keine Revision, auf die sich If-Match beziehen könnte.
+                if oid not in NO_IDEMPOTENCY_KEY and oid not in NO_IF_MATCH and '{' in path and 'IfMatch' not in names:
                     errs.append(f'{where}: Revisionseingriff ohne If-Match')
             if oid in NO_IF_MATCH and 'IfMatch' in names: errs.append(f'{where}: Ausnahmeliste veraltet (trägt If-Match)')
             for code, resp in op.get('responses', {}).items():

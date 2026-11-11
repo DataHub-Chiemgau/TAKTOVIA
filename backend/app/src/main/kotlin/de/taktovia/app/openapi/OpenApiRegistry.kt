@@ -24,9 +24,11 @@ data class ApiOperation(
     val requiredParameters: Set<String>,
     val requestSchemaLocation: String?,
     val requestBodyRequired: Boolean,
-    val responseStatuses: Set<String>,
+    /** Antwortstatus → Ort des Antwortschemas (`null` ohne Body). */
+    val responseSchemas: Map<String, String?>,
     val summary: String,
 ) {
+    val responseStatuses: Set<String> get() = responseSchemas.keys
     private val regex = Regex("^" + path.split('/').joinToString("/") { seg ->
         if (seg.startsWith("{") && seg.endsWith("}")) "[^/]+" else Regex.escape(seg)
     } + "$")
@@ -92,11 +94,37 @@ class OpenApiRegistry(documents: Map<String, String>, dialectKeywords: List<Sema
                     scopes = op.path("security").path(0).path("oidc").values().map { it.asString() },
                     parameters = params.map(::name).toSet(), requiredParameters = params.filter(::required).map(::name).toSet(),
                     requestSchemaLocation = if (hasSchema) ptr else null, requestBodyRequired = body.path("required").asBoolean(false),
-                    responseStatuses = op.path("responses").properties().map { it.key }.toSet(), summary = op.path("summary").asString(),
+                    responseSchemas = op.path("responses").properties().associate { (code, r) -> code to responseSchemaLocation(file, path, method, code, r) },
+                    summary = op.path("summary").asString(),
                 )
             }
         }
         return out
+    }
+
+    private fun responseSchemaLocation(file: String, path: String, method: String, code: String, r: JsonNode): String? {
+        val ref = r.path("\$ref").asString()
+        val (docName, pointer, node) = if (ref.isNotEmpty()) {
+            val target = ref.substringBefore('#').ifEmpty { file }
+            val ptr = ref.substringAfter('#')
+            Triple(target, ptr, docs[target]?.at(ptr) ?: return null)
+        } else Triple(file, "/paths/${path.replace("~", "~0").replace("/", "~1")}/$method/responses/$code", r)
+        val mediaType = node.path("content").properties().firstOrNull { !it.value.path("schema").isMissingNode }?.key ?: return null
+        return "${iri(docName)}#$pointer/content/${mediaType.replace("~", "~0").replace("/", "~1")}/schema"
+    }
+
+    /** Verletzungen von [json] gegen [schema] als `<Pointer> <Schlüsselwort>`; ohne Eingabewerte. */
+    fun schemaErrors(schema: Schema, json: JsonNode): List<String> =
+        schema.validate(json).map { e -> "${e.instanceLocation}${e.property?.let { p -> "/$p" } ?: ""} ${e.keyword}" }
+
+    fun responseSchema(op: ApiOperation, status: String): Schema? = op.responseSchemas[status]?.let { registry.getSchema(SchemaLocation.of(it)) }
+
+    /** Beispiele (`examples`) des Anfrageschemas, soweit vorhanden; Grundlage für aus dem Vertrag abgeleitete Positivfälle. */
+    fun requestExample(op: ApiOperation): JsonNode? {
+        val loc = op.requestSchemaLocation ?: return null
+        val node = docs[loc.substringAfter(BASE).substringBefore('#')]?.at(loc.substringAfter('#')) ?: return null
+        val target = node.path("\$ref").asString().takeIf { it.isNotEmpty() }?.let { r -> docs[r.substringBefore('#').ifEmpty { op.file }]?.at(r.substringAfter('#')) } ?: node
+        return target.path("examples").path(0).takeUnless { it.isMissingNode }
     }
 
     companion object {

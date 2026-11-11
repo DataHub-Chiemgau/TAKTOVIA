@@ -51,6 +51,8 @@ paths:
             application/json:
               schema:
                 type: object
+        '415':
+          $ref: common.yaml#/components/responses/Problem
         '422':
           $ref: common.yaml#/components/responses/Problem
   /v1/probe/items/{item_id}:
@@ -102,6 +104,8 @@ paths:
               schema:
                 type: object
         '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
           $ref: common.yaml#/components/responses/Problem
         '412':
           $ref: common.yaml#/components/responses/Problem
@@ -157,8 +161,44 @@ paths:
             application/json:
               schema:
                 type: object
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '413':
+          $ref: common.yaml#/components/responses/Problem
+        '415':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/leaky:
+    get:
+      summary: Antwort enthält absichtlich ein Feld, das der Vertrag nicht kennt
+      operationId: getProbeLeaky
+      security:
+      - oidc:
+        - probe:read
+      parameters:
+      - name: fail
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbeLeaky'
 components:
   schemas:
+    ProbeLeaky:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - id
     ProbeItemCreate:
       type: object
       additionalProperties: false

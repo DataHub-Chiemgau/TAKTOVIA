@@ -42,6 +42,33 @@ class ApiTools(unittest.TestCase):
         op['parameters'] = [p for p in op['parameters'] if 'IfMatch' not in p.get('$ref', '')]
         self.assertTrue(any('If-Match' in e for e in lint.lint_doc(d)))
 
+    def test_mutation_auf_pfad_ohne_variable_braucht_kein_if_match_mit_variable_schon(self):
+        d = self.doc()
+        for oid, path in (('switchTenant', '/v1/me/tenant-switch'), ('createRegion', '/v1/regions')):
+            self.assertEqual(d['paths'][path]['post']['operationId'], oid)
+            self.assertFalse(any(oid in e for e in lint.lint_doc(d)), oid)
+        op = d['paths']['/v1/memberships/{membership_id}']['delete']
+        op['parameters'] = [p for p in op['parameters'] if 'IfMatch' not in p.get('$ref', '')]
+        self.assertTrue(any('revokeMembership' in e and 'If-Match' in e for e in lint.lint_doc(d)))
+
+    def test_m1_endpunkte_sind_dokumentiert_mit_scopes_und_problem_antworten(self):
+        d = self.doc()
+        ids = {op['operationId'] for item in d['paths'].values() for m, op in item.items() if m in ('get', 'post', 'put', 'patch', 'delete')}
+        for must in ('getMe', 'getEffectiveConfig', 'listConfigRevisions', 'getConfigRevision', 'validateConfigRevision', 'requestConfigImpact', 'publishConfig',
+                     'getOperation', 'listPassengers', 'createWebhookSubscription', 'listServices', 'listAuditEvents', 'updateCompanyProfile', 'createDriverClearance', 'switchTenant', 'revokeSession'):
+            self.assertIn(must, ids)
+        scopes = set(d['components']['securitySchemes']['oidc']['flows']['authorizationCode']['scopes'])
+        for item in d['paths'].values():
+            for m, op in item.items():
+                if m in ('get', 'post', 'put', 'patch', 'delete') and op['operationId'] != 'receivePartnerEvent':
+                    self.assertTrue(set(op['security'][0]['oidc']) <= scopes, op['operationId'])
+        self.assertEqual(lint.lint_doc(d), [])
+
+    def test_neue_moduldatei_wird_ohne_aenderung_der_werkzeuge_gebuendelt(self):
+        names = bundle.module_names()
+        self.assertEqual(names[:len(bundle.ORDER)], bundle.ORDER)
+        for n in ('identity', 'registry', 'passengers', 'webhooks', 'services', 'compliance', 'fleet'): self.assertIn(n, names)
+
     def test_negativ_doppelte_operation_id(self):
         d = self.doc(); d['paths']['/v1/operations/{operation_id}']['get']['operationId'] = 'planJourney'
         self.assertTrue(any('doppelt' in e for e in lint.lint_doc(d)))
