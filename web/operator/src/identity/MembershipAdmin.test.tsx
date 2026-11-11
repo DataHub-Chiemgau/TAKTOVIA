@@ -82,7 +82,8 @@ describe('UI-18 Basis: Mitgliedschaften und Rollen des aktiven Mandanten', () =>
       name: 'Mitgliedschaften des aktiven Mandanten',
     });
     expect(within(table).getAllByRole('row')).toHaveLength(3); // Kopf + 2 Zeilen
-    expect(screen.queryByText(/Fremdbetrieb/)).toBeNull();
+    // der Mandantenwähler im Kopf nennt die wählbaren Mandanten des Kontos; Inhalte des Bildschirms stammen nur vom aktiven Mandanten
+    expect(within(screen.getByRole('main')).queryByText(/Fremdbetrieb/)).toBeNull();
     // die Anfrage trägt keinen Mandanten: der Server bestimmt ihn aus der Mitgliedschaft
     const list = calls.find((c) => c.id === 'listMemberships');
     expect(JSON.stringify(list?.args)).not.toMatch(/tenant/i);

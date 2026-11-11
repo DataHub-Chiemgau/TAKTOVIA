@@ -35,10 +35,36 @@ describe('passenger Anwendungsrahmen', () => {
     expect(formatViolations(await runAxe(container))).toBe('');
   });
 
-  it('Konto (UI-05 Basis) zeigt den Leerzustand', async () => {
-    setup(['PASSENGER'], '/konto');
+  it('Konto (UI-05 Basis) zeigt die eigenen Sitzungen und „Alle Geräte abmelden“', async () => {
+    const client = fakeApiClient({
+      getMe: () => sampleMe({ roles: ['PASSENGER'] }),
+      listMySessions: () => ({
+        items: [
+          {
+            id: '00000000-0000-4000-8000-000000000002',
+            subject: 'user-1',
+            created_at: '2026-10-25T07:00:00Z',
+            last_seen_at: '2026-10-25T08:00:00Z',
+            revoked_at: null,
+            revision: 1,
+          },
+        ],
+        next_cursor: null,
+        as_of: '2026-10-25T08:00:00Z',
+      }),
+    });
+    render(
+      <MemoryRouter initialEntries={['/konto']}>
+        <SessionProvider client={client} now={() => Date.parse('2026-10-25T09:00:00+01:00')}>
+          <App />
+        </SessionProvider>
+      </MemoryRouter>,
+    );
     expect(await screen.findByRole('heading', { level: 1, name: 'Konto' })).toBeInTheDocument();
-    expect(screen.getByTestId('state-view')).toHaveAttribute('data-kind', 'empty');
+    expect(
+      await screen.findByRole('table', { name: 'Meine Sitzungen im aktiven Mandanten' }),
+    ).toHaveTextContent('dieses Gerät');
+    expect(screen.getByRole('button', { name: 'Alle Geräte abmelden' })).toBeInTheDocument();
   });
 
   it('ohne Fahrgastrecht ist „Meine Reisen“ nicht in der Navigation und per Direktaufruf gesperrt', async () => {

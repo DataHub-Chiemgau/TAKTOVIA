@@ -1,7 +1,24 @@
-import { rightsOf, useSession } from '@taktovia/api-client';
-import { AppFrame, ErrorState, ScreenFrame, StateView, visibleNav } from '@taktovia/design-system';
+import {
+  rightsOf,
+  useAuthOptional,
+  useSession,
+  useSignOut,
+  useTenantSwitcherData,
+} from '@taktovia/api-client';
+import {
+  AppFrame,
+  AuthStateView,
+  BusyButton,
+  ErrorState,
+  ScreenFrame,
+  StateView,
+  TenantSwitcher,
+  visibleNav,
+} from '@taktovia/design-system';
 import type { NavLinkProps } from '@taktovia/design-system';
+import { Fragment } from 'react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Konto } from './Konto';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
@@ -53,6 +70,38 @@ function AdminIndex() {
   );
 }
 
+/** Konto ohne aktive Mitgliedschaft: verständlicher Zustand ohne Datenzugriff (WP-M1-44 AK 1). */
+function NoMembership() {
+  const auth = useAuthOptional();
+  return (
+    <AuthStateView
+      kind="noMembership"
+      action={
+        auth ? (
+          <button type="button" onClick={() => auth.signOut()}>
+            Abmelden
+          </button>
+        ) : undefined
+      }
+    />
+  );
+}
+
+/** Kopfbereich: Mandantenwähler (Anzeige der autorisierten Sitzung), Konto (UI-05 Basis) und Abmelden. */
+function HeaderEnd() {
+  const data = useTenantSwitcherData();
+  const signOut = useSignOut();
+  const auth = useAuthOptional();
+  if (!data) return null;
+  return (
+    <>
+      <TenantSwitcher {...data} />
+      <Link to="/konto">Konto</Link>
+      {auth ? <BusyButton onAction={signOut}>Abmelden</BusyButton> : null}
+    </>
+  );
+}
+
 /** Operator-Rahmenanwendung: Routing, rollenbezogene Navigation, Fehlerseiten, Admin-Grundgerüst (WP-M1-43). */
 export function App() {
   const session = useSession();
@@ -64,6 +113,7 @@ export function App() {
         <StateView kind="loading" level={1} />
       </main>
     );
+  if (session.status === 'error' && session.error.status === 403) return <NoMembership />;
   if (session.status === 'error')
     return (
       <main>
@@ -86,93 +136,96 @@ export function App() {
       nav={nav}
       currentHref={location.pathname}
       linkAs={RouterLink}
-      headerEnd={<span>{session.me.tenant_name}</span>}
+      headerEnd={<HeaderEnd />}
     >
-      <Routes>
-        <Route path="/" element={<Start />} />
-        <Route
-          path="/callcenter"
-          element={
-            <RequireRight right="callcenter">
-              <PlaceholderScreen
-                title="Callcenter"
-                emptyTitle="Noch keine Inhalte"
-                hint="Das Callcenter (UI-06) folgt in M2."
-              />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/finanzen"
-          element={
-            <RequireRight right="finance">
-              <PlaceholderScreen
-                title="Finanzen"
-                emptyTitle="Noch keine Inhalte"
-                hint="Belege und Clearing (UI-14, UI-16) folgen in M4 und M6."
-              />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/personal"
-          element={
-            <RequireRight right="staff">
-              <PlaceholderScreen
-                title="Personal"
-                emptyTitle="Noch keine Inhalte"
-                hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
-              />
-            </RequireRight>
-          }
-        />
-        <Route path="/admin" element={<AdminIndex />} />
-        <Route
-          path="/admin/gebiete"
-          element={
-            <RequireRight right="admin.ui17">
-              <PlaceholderScreen
-                title="Gebiete, Stops, Tarife"
-                emptyTitle="Noch keine Gebiete, Stops oder Tarife"
-                hint="UI-17: Revisionen anlegen und freigeben folgt mit den Konfigurations- und Geodaten-Arbeitspaketen."
-              />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/admin/unternehmensprofil"
-          element={
-            <RequireRight right="admin.ui18">
-              <CompanyProfileForm />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/admin/organisationen"
-          element={
-            <RequireRight right="admin.ui18">
-              <OrganizationAdmin />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/admin/kooperation"
-          element={
-            <RequireRight right="admin.ui18">
-              <MembershipAdmin />
-            </RequireRight>
-          }
-        />
-        <Route
-          path="/admin/datenschutz"
-          element={
-            <RequireRight right="admin.ui20">
-              <DatenschutzScreen />
-            </RequireRight>
-          }
-        />
-        <Route path="*" element={<StateView kind="notFound" level={1} />} />
-      </Routes>
+      <Fragment key={session.me.tenant_id}>
+        <Routes>
+          <Route path="/" element={<Start />} />
+          <Route path="/konto" element={<Konto />} />
+          <Route
+            path="/callcenter"
+            element={
+              <RequireRight right="callcenter">
+                <PlaceholderScreen
+                  title="Callcenter"
+                  emptyTitle="Noch keine Inhalte"
+                  hint="Das Callcenter (UI-06) folgt in M2."
+                />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/finanzen"
+            element={
+              <RequireRight right="finance">
+                <PlaceholderScreen
+                  title="Finanzen"
+                  emptyTitle="Noch keine Inhalte"
+                  hint="Belege und Clearing (UI-14, UI-16) folgen in M4 und M6."
+                />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/personal"
+            element={
+              <RequireRight right="staff">
+                <PlaceholderScreen
+                  title="Personal"
+                  emptyTitle="Noch keine Inhalte"
+                  hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
+                />
+              </RequireRight>
+            }
+          />
+          <Route path="/admin" element={<AdminIndex />} />
+          <Route
+            path="/admin/gebiete"
+            element={
+              <RequireRight right="admin.ui17">
+                <PlaceholderScreen
+                  title="Gebiete, Stops, Tarife"
+                  emptyTitle="Noch keine Gebiete, Stops oder Tarife"
+                  hint="UI-17: Revisionen anlegen und freigeben folgt mit den Konfigurations- und Geodaten-Arbeitspaketen."
+                />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/unternehmensprofil"
+            element={
+              <RequireRight right="admin.ui18">
+                <CompanyProfileForm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/organisationen"
+            element={
+              <RequireRight right="admin.ui18">
+                <OrganizationAdmin />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/kooperation"
+            element={
+              <RequireRight right="admin.ui18">
+                <MembershipAdmin />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/datenschutz"
+            element={
+              <RequireRight right="admin.ui20">
+                <DatenschutzScreen />
+              </RequireRight>
+            }
+          />
+          <Route path="*" element={<StateView kind="notFound" level={1} />} />
+        </Routes>
+      </Fragment>
     </AppFrame>
   );
 }

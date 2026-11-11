@@ -74,12 +74,18 @@ describe('Eingabehärtung im Web-Rahmen (SEC-009)', () => {
     60_000,
   );
 
-  it('im Quelltext liegen keine Tokens oder Anmeldedaten in Web-Speicher oder Cookies (Token nur im Arbeitsspeicher, WP-M1-43)', () => {
+  it('im Quelltext liegen keine Tokens oder Anmeldedaten in Web-Speicher oder Cookies (Token nur im Arbeitsspeicher, WP-M1-43/-44)', () => {
+    // Einzige Ausnahme (WP-M1-44): der Anmeldungsbaustein nutzt `sessionStorage` (je Tab) für den einmaligen PKCE-Zustand zwischen Weiterleitung
+    // und Rückkehr sowie die rechtefreie Mandantenbindung des Tabs. Zugriffs- und Erneuerungstoken stehen dort nie; das belegt der Laufzeittest
+    // `auth.test.tsx` („Speicher enthält nie ein Token“). localStorage und Cookies bleiben überall verboten.
+    const SESSION_STORAGE_ALLOWED = join(WEB, 'api-client', 'src', 'auth', 'AuthProvider.tsx');
     const offenders: string[] = [];
     for (const app of ['api-client', 'design-system', 'passenger', 'operator']) {
       for (const file of sources(join(WEB, app, 'src'))) {
         const text = readFileSync(file, 'utf8');
-        if (/\b(localStorage|sessionStorage)\b|document\.cookie/.test(text)) offenders.push(file);
+        if (/\blocalStorage\b|document\.cookie/.test(text)) offenders.push(file);
+        if (/\bsessionStorage\b/.test(text) && file !== SESSION_STORAGE_ALLOWED)
+          offenders.push(file);
       }
     }
     expect(offenders).toEqual([]);

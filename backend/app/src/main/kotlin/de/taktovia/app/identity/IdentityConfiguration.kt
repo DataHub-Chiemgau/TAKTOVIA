@@ -4,7 +4,12 @@ import de.taktovia.app.openapi.OpenApiRegistry
 import de.taktovia.app.security.IdpProperties
 import de.taktovia.app.web.ProblemWriter
 import de.taktovia.app.web.RequestBodyInspector
+import de.taktovia.app.security.KeycloakIdpAdmin
 import de.taktovia.identity.api.IdentityApi
+import de.taktovia.identity.api.IdpAdmin
+import de.taktovia.identity.api.SessionSettings
+import de.taktovia.platform.cache.RedisSessionBlockCache
+import de.taktovia.platform.cache.SessionBlockCache
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.audit.SecurityEventPort
 import de.taktovia.platform.context.ContextTransactions
@@ -29,7 +34,40 @@ import java.time.Duration
 class IdentityConfiguration {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Bean fun identityApi(tx: TenantTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox): IdentityApi = IdentityApi.create(tx, audit, security, outbox)
+    @Bean fun identityApi(
+        tx: TenantTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox,
+        idp: IdpAdmin, blockCache: SessionBlockCache, settings: SessionSettings,
+    ): IdentityApi = IdentityApi.create(tx, audit, security, outbox, idp = idp, blockCache = blockCache, sessionSettings = settings)
+
+    /**
+     * Sitzungseinstellungen (WP-M1-10, Planungswerte OP-13): `taktovia.identity.session.max-age-seconds` (36000), `block-ttl-seconds` (Sitzungssperren im
+     * Cache, 86400), `cache-ttl-seconds` (Kontosperren im Cache, höchstens 60, Standard 60).
+     */
+    @Bean fun sessionSettings(env: Environment): SessionSettings = SessionSettings(
+        maxSessionAge = Duration.ofSeconds(env.getProperty("taktovia.identity.session.max-age-seconds", Long::class.java, 36_000L)),
+        sessionBlockTtl = Duration.ofSeconds(env.getProperty("taktovia.identity.session.block-ttl-seconds", Long::class.java, 86_400L)),
+        accountBlockTtl = Duration.ofSeconds(env.getProperty("taktovia.identity.session.cache-ttl-seconds", Long::class.java, 60L)),
+    )
+
+    /** Redis nur als Cache der Sperrliste (`taktovia.identity.session.redis-url`); ohne Wert entscheidet immer die Datenbank. */
+    @Bean fun sessionBlockCache(env: Environment): SessionBlockCache =
+        env.getProperty("taktovia.identity.session.redis-url")?.takeIf { it.isNotBlank() }?.let { RedisSessionBlockCache.connect(it) } ?: SessionBlockCache.None
+
+    /**
+     * IdP-Administration (`taktovia.idp.admin.*`): `base-url` des Keycloak, `realm` (Standard: letztes Segment des Issuers), `client-id` (Standard
+     * `taktovia-idp-admin`), `client-secret` bzw. Datei `client-secret-file` aus der Secret-Verwaltung (nie im Repository). Ohne `base-url` gibt es
+     * keine Anbindung: lokale Sperren gelten, IdP-Schritte melden Fehler.
+     */
+    @Bean fun idpAdmin(env: Environment): IdpAdmin {
+        val base = env.getProperty("taktovia.idp.admin.base-url")?.takeIf { it.isNotBlank() } ?: return IdpAdmin.Unconfigured
+        val issuer = env.getProperty("taktovia.idp.issuer-uri") ?: error("taktovia.idp.issuer-uri fehlt für die IdP-Administration")
+        val secretFile = env.getProperty("taktovia.idp.admin.client-secret-file")?.takeIf { it.isNotBlank() }
+        val secret = env.getProperty("taktovia.idp.admin.client-secret")?.takeIf { it.isNotBlank() }
+        require(secretFile != null || secret != null) { "taktovia.idp.admin.client-secret-file oder client-secret fehlt" }
+        return KeycloakIdpAdmin(base, env.getProperty("taktovia.idp.admin.realm") ?: issuer.trimEnd('/').substringAfterLast('/'), issuer,
+            env.getProperty("taktovia.idp.admin.client-id") ?: "taktovia-idp-admin",
+            { secretFile?.let { java.nio.file.Files.readString(java.nio.file.Path.of(it)).trim() } ?: secret!! })
+    }
 
     /** Einziger vorgesehener Weg für Fachoperationen eines Requests (Wiederprüfung der Mitgliedschaft in der Transaktion). */
     @Bean fun contextTransactions(tx: TenantTransactions, identity: IdentityApi) = ContextTransactions(tx, identity.revalidator)

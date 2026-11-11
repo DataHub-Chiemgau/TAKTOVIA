@@ -84,7 +84,7 @@ class TokenVerifier(private val props: IdpProperties, private val keys: JwksKeyS
         val scope = c.getStringClaim("scope")?.also { if (it.length > 1024) reject("scope_invalid") }
         return AuthenticatedPrincipal(
             issuer = c.issuer, subject = subject, type = type, clientId = client, sessionId = sid, acr = acr,
-            scopes = scope?.split(' ')?.filter { it.isNotEmpty() }?.toSet() ?: emptySet(), roles = roles.toSet(), tenantIds = tenants,
+            scopes = scope?.split(' ')?.filter { it.isNotEmpty() }?.toSet() ?: emptySet(), roles = roles.toSet(), tenantIds = tenants, issuedAt = java.time.Instant.ofEpochSecond(iat),
         )
     }
 

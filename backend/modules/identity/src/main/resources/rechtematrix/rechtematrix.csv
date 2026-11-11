@@ -1,5 +1,5 @@
 # Rechtematrix TAKTOVIA (WP-M1-07, LH-6.2-IAM-004): Rolle x Taetigkeit. Entwurf, fachlich NICHT freigegeben (OP-10).
-# matrix_version: 2
+# matrix_version: 3
 # Zellen: J = erlaubt, N = verweigert. Spalten = Rollencodes des Rollenkatalogs (db: role_catalog). Eine Zeile je operationId der OpenAPI-Vertraege (api/*.yaml);
 # `scope` ist der Funktionsscope der Operation. Alle Operationen mit gleichem Scope haben dieselben Rollenzellen (Test). `datenklasse`: PII/HR/FINANZ oder -;
 # der Administrator (tenant_admin) hat auf Operationen mit Datenklasse keinen Zugriff ohne gesonderte Zuweisung einer Fachrolle (Kap. 01 §1.7).
@@ -62,3 +62,9 @@ createOrganization;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateOrganization;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
 createTenant;platform:tenants:write;-;M1;N;N;N;N;N;N;N;N;N;N
 changeTenantStatus;platform:tenants:write;-;M1;N;N;N;N;N;N;N;N;N;N
+listMySessions;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+revokeMySession;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+revokeAllMySessions;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+lockAccount;accounts:write;-;M1;N;N;N;N;N;N;J;N;N;N
+unlockAccount;accounts:write;-;M1;N;N;N;N;N;N;J;N;N;N
+startAccountRecovery;accounts:write;-;M1;N;N;N;N;N;N;J;N;N;N

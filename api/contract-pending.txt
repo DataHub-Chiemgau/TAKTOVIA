@@ -31,6 +31,7 @@ listRegions  # GET /v1/regions
 listRetentionRules  # GET /v1/retention-rules
 listServices  # GET /v1/services
 listSessions  # GET /v1/sessions
+listVehicleRoles  # GET /v1/vehicle-roles
 listWebhookSubscriptions  # GET /v1/webhook-subscriptions
 planJourney  # POST /v1/federation/journeys/plan
 publishConfig  # POST /v1/config/revisions/{revision_id}/publish
@@ -41,5 +42,7 @@ recordDriverEvent  # POST /v1/driver/events
 registerPassenger  # POST /v1/passengers
 requestConfigImpact  # POST /v1/config/revisions/{revision_id}/impact
 revokeSession  # DELETE /v1/sessions/{session_id}
+updateCompanyProfile  # PUT /v1/company-profile
+updateLegalEntity  # PUT /v1/legal-entities/{legal_entity_id}
 updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
 validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

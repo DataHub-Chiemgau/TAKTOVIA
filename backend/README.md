@@ -85,3 +85,13 @@ Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `pl
 ## Fahrzeugrollen mit Gültigkeitsintervallen (WP-M1-34)
 
 `GET`/`POST /v1/vehicle-roles` (Modul `fleet-safety`, Port `FleetsafetyApi.vehicleRoles`): Eigentümer, Betreiber, Einsatzleister und Abrechnungspartner (`OWNER`, `OPERATOR`, `DISPATCH_PROVIDER`, `BILLING_PARTNER`) sind unabhängige Zuordnungen Fahrzeug-Organisation mit halboffenem Intervall `[valid_from, valid_to)` in `vehicle_assignment` (RLS, zusammengesetzte Schlüssel, Exclusion Constraint je Fahrzeug und Rolle, abgeschlossene Intervalle unveränderlich). Ein Wechsel zum Stichtag schließt das laufende Intervall und legt ein neues an (ein Audit `fleet.vehicle_role.changed`, ein Ereignis `vehicle.role_assignment_changed`); gleichzeitige Wechsel desselben Fahrzeugs werden über die Fahrzeugzeile serialisiert (genau einer gewinnt, der andere 409). **Abrechnende Module** nutzen `rolesAt(jdbc, vehicleId, instant)` für den Snapshot „Rollen zum Leistungszeitpunkt“, legen ihn ab und lesen nie live. Voraussetzung der Datenbank: Erweiterung `btree_gist` (in der Migration `V1340` angelegt, vertrauenswürdig; das Datenbankabbild braucht die contrib-Erweiterungen).
+## Sitzungsverwaltung und Sitzungssperre (WP-M1-10)
+
+Jede Anfrage eines Menschen prüft nach der Mandantenermittlung den Sitzungsstatus (`identity.api.SessionGate`, im `RequestContextFilter`): gesperrte Sitzung oder gesperrtes Konto ergibt 401 trotz gültigem Token, Nichtprüfbarkeit 503 (fail-closed). PostgreSQL führt (`session_register`, `account_access`); Redis ist nur Cache der **Sperrliste** (kein positiver Cache). Operationen: eigene Sitzungen, „alle Geräte abmelden“, Sitzungen und Konten sperren/entsperren, Wiederherstellung nur über im IdP verifizierten Kontakt (`api/sessions.yaml`, `identity.yaml`). IdP-Schritte laufen über den Port `IdpAdmin` (Keycloak-Admin-REST, Dienstkonto `taktovia-idp-admin`) nach dem Commit. Vertrag: [LH-6.2-IAM-009](../docs/umsetzungsplan/vertraege/LH-6.2-IAM-009.md).
+
+| Einstellung (Planungswerte, OP-13) | Standard |
+|---|---|
+| `taktovia.identity.session.redis-url` (Cache der Sperrliste; ohne Wert entscheidet immer die Datenbank) | – |
+| `taktovia.identity.session.max-age-seconds` / `block-ttl-seconds` / `cache-ttl-seconds` (Kontosperren, höchstens 60) | 36000 / 86400 / 60 |
+| `taktovia.idp.admin.base-url`, `realm` (Standard: letztes Issuer-Segment), `client-id` | –, –, `taktovia-idp-admin` |
+| `taktovia.idp.admin.client-secret-file` (oder `client-secret` aus der Umgebung; nie im Repository) | – |

@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+session_register;Sitzungsregister mit Sperrstatus (WP-M1-10);LK_BETRIEB;nur Kennungen, keine Tokens, Sperre endgültig
+account_access;Konto-Zugangsstatus (WP-M1-10);LK_BETRIEB;eine Zeile je Konto und Mandant (Sperre, Abmeldezeitmarke)

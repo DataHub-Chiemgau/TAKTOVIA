@@ -52,6 +52,8 @@ components:
             retention:write: retention:write
             fleet:read: fleet:read
             fleet:write: fleet:write
+            me:write: me:write
+            accounts:write: accounts:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -88,6 +90,8 @@ components:
             retention:write: retention:write
             fleet:read: fleet:read
             fleet:write: fleet:write
+            me:write: me:write
+            accounts:write: accounts:write
     partnerSignature:
       type: apiKey
       in: header

@@ -171,6 +171,20 @@ def machine_client(adapter, env):
     return c
 
 
+def idp_admin_client(env):
+    """Eng berechtigtes Dienstkonto der IdP-Administration des Backends (WP-M1-10): Sitzungen beenden, Konto sperren, Wiederherstellung anstossen.
+    Rollen nur view-users und manage-users aus realm-management (keine Realm-Verwaltung). Gehoert nicht zu den Adaptern und traegt kein Mandanten-/Nutzerrecht."""
+    c = {
+        "clientId": "taktovia-idp-admin", "name": "IdP-Administration des Backends (Sitzungen, Sperre, Wiederherstellung)", "enabled": True,
+        "publicClient": False, "protocol": "openid-connect", "clientAuthenticatorType": "client-secret",
+        "standardFlowEnabled": False, "directAccessGrantsEnabled": False, "serviceAccountsEnabled": True,
+        "attributes": {"access.token.lifespan": "300"}, "defaultClientScopes": [],
+    }
+    if env["synthetic_users"]:
+        c["secret"] = "dev-only-idp-admin"  # NUR LOKAL
+    return c
+
+
 def build(name, env):
     users = []
     if env["synthetic_users"]:
@@ -179,6 +193,10 @@ def build(name, env):
                 users.append(user(f"{t}.{role}", role, [tid], f"Test {role}", f"Mandant {t.upper()}"))
         users.append(user("ab.dispatcher", "dispatcher", [TENANT_A, TENANT_B], "Test dispatcher", "Beide Mandanten"))
         users.append(user("none.passenger", "passenger", [], "Test passenger", "Ohne Mitgliedschaft"))
+        # Dienstkonto der IdP-Administration mit den beiden Rollen aus realm-management; in den anderen Umgebungen ist die Rollenzuweisung Bereitstellungsschritt
+        users.append({"username": "service-account-taktovia-idp-admin", "enabled": True, "serviceAccountClientId": "taktovia-idp-admin",
+                      "email": "idp-admin@example.test", "realmRoles": [], "credentials": [], "attributes": {"mfa_required": ["false"], "tenant_ids": []},
+                      "clientRoles": {"realm-management": ["view-users", "manage-users"]}})
     privileged = ",".join(r for r, (_, p) in ROLES.items() if p)
     realm = {
         "realm": env["realm"], "displayName": env["display"],
@@ -211,7 +229,7 @@ def build(name, env):
         "clientScopes": [{"name": s, "protocol": "openid-connect", "attributes": {"include.in.token.scope": "true"}} for s in SCOPES],
         "clients": [human_client("passenger-web", "Passenger Web", env),
                     human_client("operator-web", "Operator (Leitstelle/Finanzen/Admin)", env, default_acr="loa2"),
-                    human_client("driver-app", "Driver App", env, extra_scopes=SCOPES)] + [machine_client(a, env) for a in ADAPTERS],
+                    human_client("driver-app", "Driver App", env, extra_scopes=SCOPES)] + [machine_client(a, env) for a in ADAPTERS] + [idp_admin_client(env)],
         "users": users,
     }
     return realm

@@ -1,0 +1,295 @@
+paths:
+  /v1/me/sessions:
+    get:
+      summary: Eigene Sitzungen im aktiven Mandanten auflisten
+      operationId: listMySessions
+      description: Sitzungen des angemeldeten Kontos im aktiven Mandanten (UI-05 Basis). Die eigene Sitzung ist an `session_id` aus `/v1/me` erkennbar.
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: identity.yaml#/components/schemas/SessionPage
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/me/sessions/revoke-all:
+    post:
+      summary: Von allen Geräten abmelden
+      operationId: revokeAllMySessions
+      description: 'Beendet alle Sitzungen des Kontos: lokale Sperre in allen Mandanten des Kontos und Beenden der Sitzungen im Identitätsanbieter.
+        Die Anfrage-Sitzung selbst ist danach gesperrt (nächste Anfrage 401). Ist der Identitätsanbieter nicht erreichbar, gilt die lokale Sperre
+        bereits; die Antwort ist dann 503 (Wiederholung beendet die Sitzungen im IdP).'
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/me/sessions/{session_id}:
+    delete:
+      summary: Eigene Sitzung abmelden
+      operationId: revokeMySession
+      description: 'Sperrt eine eigene Sitzung (Abmeldung eines Geräts) und beendet sie im Identitätsanbieter. Fremde Sitzungen: 404.'
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/account-locks:
+    post:
+      summary: Konto im Mandanten sperren
+      operationId: lockAccount
+      description: 'Sperrt das Konto eines Mitglieds des aktiven Mandanten (UI-18 Basis): jede Anfrage des Kontos in diesem Mandanten ergibt 401,
+        alle Sitzungen werden gesperrt, die Sitzungen im IdP beendet. Das eigene Konto ist nicht sperrbar (409).'
+      security:
+      - oidc:
+        - accounts:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountLockCreate'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAccess'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/account-locks/{subject}:
+    delete:
+      summary: Kontosperre aufheben
+      operationId: unlockAccount
+      description: Hebt die Sperre im aktiven Mandanten auf (`If-Match` = Revision aus der Sperre). Gesperrte Sitzungen bleiben gesperrt; das
+        Konto meldet sich neu an.
+      security:
+      - oidc:
+        - accounts:write
+      parameters:
+      - name: subject
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/account-recoveries:
+    post:
+      summary: Zugangswiederherstellung anstoßen
+      operationId: startAccountRecovery
+      description: Stößt die Wiederherstellung über den Identitätsanbieter an, nur wenn der Kontakt dort als verifiziert geführt wird (sonst 409).
+        Beendet alle bestehenden Sitzungen des Kontos.
+      security:
+      - oidc:
+        - accounts:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRecoveryCreate'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRecovery'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    AccountLockCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          $ref: common.yaml#/components/schemas/UUID
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - subject
+      - reason
+      description: Konto (Subject des Identitätsanbieters) und Grund der Sperre.
+    AccountAccess:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - LOCKED
+        status_changed_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        idp_synced:
+          type: boolean
+          description: 'Ob der Identitätsanbieter die Sperre nachvollzogen hat; `false`: lokal gesperrt, IdP-Sitzungen noch nicht beendet (Wiederholung
+            über „alle Geräte abmelden“ des Kontos bzw. Support).'
+      required:
+      - subject
+      - status
+      - status_changed_at
+      - revision
+      description: Zugangsstatus des Kontos im Mandanten.
+    AccountRecoveryCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - subject
+    AccountRecovery:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          $ref: common.yaml#/components/schemas/UUID
+        started_at:
+          type: string
+          format: date-time
+      required:
+      - subject
+      - started_at
+      description: Wiederherstellung angestoßen; alle bestehenden Sitzungen des Kontos im Mandanten sind gesperrt.

@@ -19,6 +19,10 @@ npm-Workspaces-Monorepo (`package.json`, `package-lock.json` im Verzeichnis `web
 
 Paketgrenzen: Apps hängen von `design-system` und `api-client` ab, nicht umgekehrt; `design-system` kennt den API-Client nicht; `passenger` und `operator` hängen nicht voneinander ab. Umgesetzt sind nur Rahmen und Grundgerüste (UI-17, UI-18, UI-20 als Leerzustand, UI-20 Dateninventar-Export); Fachbildschirme folgen in M2 bis M8.
 
+## Anmeldung und Mandantenwechsel (WP-M1-44)
+
+`api-client/src/auth/` enthält OIDC (Authorization Code mit PKCE), `AuthProvider` (Tokens nur im Arbeitsspeicher je Tab, Erneuerung, 401/403-Behandlung), Entwurfsspeicher je Mandant und die Hooks `useTenantSwitch`, `useMySessions`, `useSignOut`. Die Anwendungen binden sie in `main.tsx` ein (`AuthProvider` → `AuthGate` → `SessionProvider`); Konfiguration über `VITE_OIDC_ISSUER`, `VITE_OIDC_CLIENT_ID`, `VITE_API_ORIGIN`. Vertrag: [web-anmeldung.md](../docs/umsetzungsplan/vertraege/web-anmeldung.md). Tests laufen gegen lokale Ersatzmodelle (`@taktovia/api-client/testing`: `createMockIdp`, `createFakeApi`); Browser-Ende-zu-Ende mit echtem Keycloak ist **nicht ausgeführt**.
+
 ## Befehle
 
 | Befehl                               | Wirkung                                                                                                      |

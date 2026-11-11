@@ -1,4 +1,4 @@
-import { ApiError, useApi } from '@taktovia/api-client';
+import { ApiError, useApi, useDraftState } from '@taktovia/api-client';
 import type { Membership, MembershipCreate } from '@taktovia/api-client';
 import {
   DataTable,
@@ -12,6 +12,7 @@ import {
 import type { ProblemLike, ResourceState } from '@taktovia/design-system';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AccountAccessAdmin } from './AccountAccessAdmin';
 import { DEFAULT_ZONE, useScreenContext } from '../ScreenContext';
 import { useSession } from '@taktovia/api-client';
 
@@ -29,8 +30,16 @@ export function MembershipAdmin() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [problem, setProblem] = useState<ProblemLike | undefined>(undefined);
-  const [notice, setNotice] = useState<string | undefined>(undefined);
-  const [form, setForm] = useState({ subject: '', role_code: '' });
+  // Ungespeicherte Eingaben werden je Mandant aufbewahrt und nie in einen anderen Mandanten übernommen (WP-M1-44)
+  const [form, setForm, draft] = useDraftState(
+    'membership-grant',
+    'Mitgliedschaft erteilen',
+    { subject: '', role_code: '' },
+    (v) => v.subject !== '' || v.role_code !== '',
+  );
+  const [notice, setNotice] = useState<string | undefined>(
+    draft.restored ? 'Ein nicht gespeicherter Entwurf wurde wiederhergestellt.' : undefined,
+  );
 
   const [tick, setTick] = useState(0);
   /** Neu laden (aus Ereignissen): Zustand „lädt“ setzen, dann den Effekt erneut auslösen. */
@@ -199,6 +208,7 @@ export function MembershipAdmin() {
           onChange={(e) => setForm({ ...form, role_code: e.target.value })}
         />
       </Form>
+      <AccountAccessAdmin />
     </ScreenFrame>
   );
 }

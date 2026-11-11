@@ -93,7 +93,7 @@ class RechtematrixTest {
 
     @Test
     fun scopes_der_rollen_folgen_aus_der_matrix() {
-        assertEquals(setOf("me:read", "tenant:switch", "journeys:plan", "journeys:read", "journeys:book", "journeys:cancel", "passengers:write"), matrix.scopesFor(setOf("passenger")))
+        assertEquals(setOf("me:read", "me:write", "tenant:switch", "journeys:plan", "journeys:read", "journeys:book", "journeys:cancel", "passengers:write"), matrix.scopesFor(setOf("passenger")))
         assertTrue(matrix.scopesFor(setOf("driver")).containsAll(listOf("driver:events", "me:read")))
         assertTrue("memberships:write" in matrix.scopesFor(setOf("tenant_admin")) && "memberships:write" !in matrix.scopesFor(setOf("dispatcher")))
         assertEquals(emptySet<String>(), matrix.scopesFor(setOf("gibt-es-nicht")), "unbekannte Rolle: keine Scopes")
