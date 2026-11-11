@@ -3,6 +3,8 @@ package de.taktovia.config.api
 import de.taktovia.config.internal.ConfigServicesFactory
 import de.taktovia.platform.audit.ActorRef
 import de.taktovia.platform.audit.AuditPort
+import de.taktovia.platform.authz.ObjectAuthorizer
+import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
@@ -23,16 +25,18 @@ interface ConfigApi {
     val companyProfile: CompanyProfileService
     val parameters: ParameterRegistry
     val revisions: ConfigRevisions
+    /** Präzedenzkette und wirksame Konfiguration (WP-M1-21). */
+    val effective: EffectiveConfig
 
     companion object {
         /** [clock] bestimmt, welche Schema-Version „jetzt“ gilt (Tests setzen eine feste Uhr). */
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): ConfigApi =
-            ConfigServicesFactory.create(ctxTx, audit, outbox, clock)
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer): ConfigApi =
+            ConfigServicesFactory.create(ctxTx, audit, outbox, clock, authorizer)
     }
 }
 
 /** Ebene, auf der eine Konfigurationsrevision gilt (Schema `ConfigRevision.scope_kind` der API; OP-18). */
-enum class ScopeKind { TENANT, REGION, DEPOT, SERVICE }
+enum class ScopeKind { TENANT, REGION, DEPOT, SERVICE, VEHICLE }
 
 /** Lebenszyklus einer Revision (Entwurf → geprüft → freigegeben → publiziert); Publikation liefert WP-M1-22. */
 enum class RevisionState { DRAFT, VALIDATED, APPROVED, PUBLISHED }
@@ -208,4 +212,66 @@ interface CompanyProfileService {
 
     /** Erste Profilrevision in der laufenden Transaktion des Aufrufers (Erstausstattung bei der Mandantenanlage, WP-M1-05); Mandant = Tenantkontext der Transaktion. */
     fun seed(jdbc: JdbcOperations, actor: ActorRef, correlationId: UUID, input: CompanyProfileInput): CompanyProfileView
+}
+
+
+/**
+ * Ebenen der Präzedenzkette (Kap. 01 §1.6, LH-I.7-CFG-005), aufsteigend nach Spezifität: [GLOBAL] globale Vorgabe und Sicherheitsgrenze (Parameterkatalog,
+ * `policy_schema`), [TENANT] freigegebener Mandantenrahmen, [REGION], [SERVICE], [VEHICLE]. Die Stufe "konkretes Produkt" fehlt bis M2 (kein Produktobjekt);
+ * `DEPOT` ist ein Scope für Revisionen, aber keine Ebene der Präzedenz (der Betriebshof ist kein Geltungsbereich für Betriebsregeln, OP-22).
+ */
+enum class ConfigLevel { GLOBAL, TENANT, REGION, SERVICE, VEHICLE }
+
+/**
+ * Anfrage der wirksamen Konfiguration: [parameter] `null` = alle Parameter des Katalogs. Der Kontext besteht aus [regionId], [serviceId] und [vehicleId];
+ * ohne Region, aber mit Dienst gilt die Region des Dienstes. [at] `null` = jetzt.
+ */
+data class EffectiveRequest(
+    val parameter: String? = null, val regionId: UUID? = null, val serviceId: UUID? = null, val vehicleId: UUID? = null, val at: Instant? = null,
+)
+
+enum class EffectiveStatus { EFFECTIVE, NO_VALUE }
+
+/** Was auf einer Ebene mit dem Wert geschah: [APPLIED] gilt, [OVERRIDDEN] wird von einer spezifischeren Ebene überstimmt, [SKIPPED_LIMIT] verletzt die globale Sicherheitsgrenze, [SKIPPED_NOT_ALLOWED] ist auf dieser Ebene nicht zulässig bzw. nicht freigegeben, [NOT_SET] hat keinen Wert, [NOT_IN_CONTEXT] gehört nicht zum Kontext der Anfrage. */
+enum class LevelOutcome { APPLIED, OVERRIDDEN, SKIPPED_LIMIT, SKIPPED_NOT_ALLOWED, NOT_SET, NOT_IN_CONTEXT }
+
+/** Vorgeschlagener (noch nicht publizierter) Wert: der jüngste Entwurf, geprüft oder freigegebene Stand dieses Scopes, der den Parameter nennt. */
+data class Proposal(val revisionId: UUID, val state: RevisionState, val value: Any?)
+
+data class PrecedenceEntry(
+    val level: ConfigLevel, val outcome: LevelOutcome, val scopeId: UUID?, val value: Any?, val revisionId: UUID?, val revision: Long?,
+    /** Verletzungscode (`ABOVE_MAXIMUM`, `UNKNOWN_FIELD`, …), wenn der Wert übersprungen wurde. */
+    val violation: String?, val proposal: Proposal?,
+)
+
+/** Angewandte Vorrangregel: stabiler [code] und Klartext. */
+data class PrecedenceRule(val code: String, val description: String)
+
+/** Wirksamer Wert eines Parameters mit Einheit, Herkunft (Ebene, Revision, Wirksamkeit), Vorrangregel und der Reihenfolge aller Ebenen (spezifischste zuerst). */
+data class EffectiveParameter(
+    val parameter: String, val unit: String, val status: EffectiveStatus, val value: Any?, val level: ConfigLevel?, val revisionId: UUID?, val revision: Long?,
+    val scopeId: UUID?, val effectiveFrom: Instant?, val effectiveTo: Instant?, val schemaVersion: String, val rule: PrecedenceRule, val precedence: List<PrecedenceEntry>,
+)
+
+data class EffectiveConfigView(val asOf: Instant, val schemaVersion: String, val items: List<EffectiveParameter>)
+
+/**
+ * Auflösung der Präzedenzkette (WP-M1-21, LH-I.7-CFG-005): für Parameter und Kontext zum Zeitpunkt T der wirksame Wert. **Regel:** Die spezifischste Ebene mit einem
+ * veröffentlichten, zu T wirksamen und zulässigen Wert gilt (Fahrzeug vor Dienst vor Region vor Mandant vor globaler Vorgabe). Zulässig heißt: der Wert besteht die Prüfung
+ * gegen die zu T gültige Schema-Version (Systemgrenzen und Sicherheitsinvarianten sind die **globale Sicherheitsgrenze**; ein Wert, der sie verletzt, wird nie als
+ * wirksam geliefert, die nächste Ebene gilt) und die Ebene ist für den Parameter zulässig (Fahrzeug nur bei freigegebenen Parametern). Jede Antwort stammt aus genau einem
+ * konsistenten Lesestand der Revisionen. Der Zwischenspeicher trägt die beteiligten Revisionen und die Schema-Version im Schlüssel und liefert nach einer Publikation nie den abgelösten Wert.
+ */
+interface EffectiveConfig {
+    /**
+     * Für die API: eigene lesende Transaktion im Kontext. Region, Dienst und Fahrzeug des Kontexts müssen zum Mandanten gehören (sonst 404), ein Parameter muss im Katalog stehen
+     * (404), Dienst und Region müssen zusammenpassen (422). Ein Dienst außerhalb des Dienstscopes ist nicht sichtbar (404) für Rollen ohne `config:write`.
+     */
+    fun resolve(ctx: RequestContext, request: EffectiveRequest): EffectiveConfigView
+
+    /**
+     * Für Befehle (Regelprüfung, WP-M1-26) in der **laufenden Fachtransaktion** des Aufrufers: dieselbe Auflösung, aber ohne Dienstscope-Prüfung (der Befehl autorisiert selbst);
+     * Mandantengrenze und Kontextprüfung bleiben.
+     */
+    fun resolveInTransaction(jdbc: JdbcOperations, ctx: RequestContext, request: EffectiveRequest): EffectiveConfigView
 }

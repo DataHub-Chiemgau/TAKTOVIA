@@ -2,6 +2,12 @@ paths:
   /v1/config/effective:
     get:
       summary: Wirksame Konfiguration lesen
+      description: 'Wirksame Konfiguration nach Präzedenzkette (global, Mandant, Region, Dienst, Fahrzeug; die Produktebene folgt mit M2) zum Zeitpunkt
+        at (Standard: jetzt) im angegebenen Kontext. Ohne parameter werden alle Parameter des Katalogs aufgelöst. Je Parameter nennt items den Wert,
+        die Einheit, die Herkunft (Ebene, Revision, Wirksamkeit), die angewandte Vorrangregel und alle Ebenen in der Reihenfolge der Auswertung. Ein
+        Wert, der die globale Sicherheitsgrenze verletzt, wird nie als wirksam geliefert. Der Kontext besteht aus region_id, service_id und
+        vehicle_id; mit service_id gilt die Region des Dienstes. Fremde oder unbekannte Kontextobjekte und Dienste außerhalb des Dienstscopes
+        sind nicht sichtbar (404).'
       operationId: getEffectiveConfig
       security:
       - oidc:
@@ -13,6 +19,28 @@ paths:
         schema:
           type: string
           format: date-time
+      - name: parameter
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{1,62}$
+        description: Technischer Parametername; ohne Angabe alle Parameter des Katalogs.
+      - name: region_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
@@ -26,6 +54,8 @@ paths:
         '401':
           $ref: common.yaml#/components/responses/Problem
         '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
           $ref: common.yaml#/components/responses/Problem
         '422':
           $ref: common.yaml#/components/responses/Problem
@@ -345,18 +375,203 @@ components:
           format: date-time
         values:
           type: object
-          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
-            serverseitig.
+          description: Wirksame Werte je Parameter (nur Parameter mit Wert); Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung
+            geschieht serverseitig.
         revision_ids:
           type: array
           items:
             $ref: common.yaml#/components/schemas/UUID
           maxItems: 50
+          description: Revisionen, aus denen die wirksamen Werte stammen (ohne Duplikate).
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 16
+          description: Zum Zeitpunkt as_of gültige Schema-Version des Parameterkatalogs.
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/EffectiveParameter'
+          description: Je Parameter Wert, Einheit, Herkunft, Vorrangregel und alle Ebenen.
       required:
       - as_of
       - values
       - revision_ids
       description: Wirksame Konfiguration nach Präzedenzkette zum Zeitpunkt as_of.
+    ConfigLevel:
+      type: string
+      enum:
+      - GLOBAL
+      - TENANT
+      - REGION
+      - SERVICE
+      - VEHICLE
+      description: Ebene der Präzedenzkette, aufsteigend nach Spezifität. Die Ebene Produkt folgt mit M2.
+    EffectiveParameter:
+      type: object
+      additionalProperties: false
+      properties:
+        parameter:
+          type: string
+          minLength: 1
+          maxLength: 64
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 32
+        status:
+          type: string
+          enum:
+          - EFFECTIVE
+          - NO_VALUE
+          description: NO_VALUE, wenn zum Zeitpunkt weder eine wirksame Revision noch eine globale Vorgabe existiert.
+        value:
+          description: Wirksamer Wert (beliebiger JSON-Wert; null ohne Wert).
+        level:
+          oneOf:
+          - $ref: '#/components/schemas/ConfigLevel'
+          - type: 'null'
+        revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        scope_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        effective_from:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        effective_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 16
+        rule:
+          $ref: '#/components/schemas/PrecedenceRule'
+        precedence:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/PrecedenceEntry'
+          description: Alle Ebenen in der Reihenfolge der Auswertung (spezifischste zuerst, global zuletzt) mit ihrem Schicksal.
+      required:
+      - parameter
+      - unit
+      - status
+      - value
+      - level
+      - revision_id
+      - revision
+      - scope_id
+      - effective_from
+      - effective_to
+      - schema_version
+      - rule
+      - precedence
+    PrecedenceRule:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - MOST_SPECIFIC_LEVEL_WINS
+          - SINGLE_LEVEL
+          - SAFETY_LIMIT_FALLBACK
+          - GLOBAL_DEFAULT
+          - NO_VALUE
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - code
+      - description
+    PrecedenceEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        level:
+          $ref: '#/components/schemas/ConfigLevel'
+        outcome:
+          type: string
+          enum:
+          - APPLIED
+          - OVERRIDDEN
+          - SKIPPED_LIMIT
+          - SKIPPED_NOT_ALLOWED
+          - NOT_SET
+          - NOT_IN_CONTEXT
+          description: APPLIED gilt; OVERRIDDEN wird von einer spezifischeren Ebene überstimmt; SKIPPED_LIMIT verletzt die globale Sicherheitsgrenze;
+            SKIPPED_NOT_ALLOWED ist auf der Ebene nicht zulässig bzw. nicht freigegeben; NOT_SET setzt den Parameter nicht; NOT_IN_CONTEXT gehört
+            nicht zum Kontext der Anfrage.
+        scope_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        value:
+          description: Wert dieser Ebene (beliebiger JSON-Wert; null, wenn die Ebene den Parameter nicht setzt).
+        revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        violation:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          description: Verletzungscode, wenn der Wert übersprungen wurde.
+        proposal:
+          oneOf:
+          - $ref: '#/components/schemas/EffectiveProposal'
+          - type: 'null'
+      required:
+      - level
+      - outcome
+      - scope_id
+      - value
+      - revision_id
+      - revision
+      - violation
+      - proposal
+    EffectiveProposal:
+      type: object
+      additionalProperties: false
+      description: Vorgeschlagener, noch nicht publizierter Wert (jüngster Entwurf, geprüfter oder freigegebener Stand dieses Scopes).
+      properties:
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          $ref: '#/components/schemas/ConfigRevisionState'
+        value:
+          description: Vorgeschlagener Wert (beliebiger JSON-Wert).
+      required:
+      - revision_id
+      - state
+      - value
     ConfigScopeKind:
       type: string
       enum:
@@ -364,6 +579,7 @@ components:
       - REGION
       - DEPOT
       - SERVICE
+      - VEHICLE
     ConfigRevisionState:
       type: string
       enum:
@@ -561,6 +777,7 @@ components:
           - REGION
           - DEPOT
           - SERVICE
+          - VEHICLE
         scope_id:
           $ref: common.yaml#/components/schemas/UUID
         revision:
@@ -641,6 +858,7 @@ components:
           - REGION
           - DEPOT
           - SERVICE
+          - VEHICLE
         scope_id:
           $ref: common.yaml#/components/schemas/UUID
         schema_version:

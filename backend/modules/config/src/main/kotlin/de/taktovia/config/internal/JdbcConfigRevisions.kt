@@ -60,6 +60,8 @@ internal class JdbcConfigRevisions(
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, cmd: CreateDraft): ConfigRevisionView {
         val normalized = checkDraft(j, cmd.scopeKind, cmd.schemaVersion, cmd.values, cmd.reason, cmd.effectiveFrom, cmd.effectiveTo, requireCurrentVersion = true)
+        // Fahrzeug-Scope: das Fahrzeug muss zum Mandanten gehören (RLS); ein fremdes oder unbekanntes Fahrzeug verhält sich wie „nicht vorhanden“ (404).
+        if (cmd.scopeKind == ScopeKind.VEHICLE && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, cmd.scopeId) != 1) throw ProblemException.notFound()
         val id = UUID.randomUUID()
         val actor = actorOf(ctx)
         val row = insertDraft(j, id, cmd.scopeKind, cmd.scopeId, null, cmd.schemaVersion, normalized, cmd.effectiveFrom, cmd.effectiveTo, actor.value, cmd.reason!!.trim())

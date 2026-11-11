@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+config_vehicle_override_release;SELECT;WP-M1-21: Freigabe der Fahrzeug-Overrides je Parameter; global, nur per Migration gepflegt

@@ -719,6 +719,32 @@
       ]
     },
     {
+      "tabelle": "config_vehicle_override_release",
+      "aggregat": "Freigabe Fahrzeug-Override (WP-M1-21)",
+      "loeschklasse": "LK_KATALOG",
+      "bemerkung": "globaler Katalog ohne Mandantenbezug, nur per Migration gepflegt",
+      "spalten": [
+        {
+          "spalte": "description",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "parameter",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "cooperation_grant",
       "aggregat": "Kooperationsfreigabe",
       "loeschklasse": "LK_STAMM",

@@ -758,9 +758,51 @@ export interface EffectiveConfig {
   as_of: string;
   values: Record<string, unknown>;
   revision_ids: UUID[];
+  schema_version?: string;
+  items?: EffectiveParameter[];
 }
 
-export type ConfigScopeKind = 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
+export type ConfigLevel = 'GLOBAL' | 'TENANT' | 'REGION' | 'SERVICE' | 'VEHICLE';
+
+export interface EffectiveParameter {
+  parameter: string;
+  unit: string;
+  status: 'EFFECTIVE' | 'NO_VALUE';
+  value: unknown;
+  level: ConfigLevel | null;
+  revision_id: UUID | null;
+  revision: number | null;
+  scope_id: UUID | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  schema_version: string;
+  rule: PrecedenceRule;
+  precedence: PrecedenceEntry[];
+}
+
+export interface PrecedenceRule {
+  code: 'MOST_SPECIFIC_LEVEL_WINS' | 'SINGLE_LEVEL' | 'SAFETY_LIMIT_FALLBACK' | 'GLOBAL_DEFAULT' | 'NO_VALUE';
+  description: string;
+}
+
+export interface PrecedenceEntry {
+  level: ConfigLevel;
+  outcome: 'APPLIED' | 'OVERRIDDEN' | 'SKIPPED_LIMIT' | 'SKIPPED_NOT_ALLOWED' | 'NOT_SET' | 'NOT_IN_CONTEXT';
+  scope_id: UUID | null;
+  value: unknown;
+  revision_id: UUID | null;
+  revision: number | null;
+  violation: string | null;
+  proposal: EffectiveProposal | null;
+}
+
+export interface EffectiveProposal {
+  revision_id: UUID;
+  state: ConfigRevisionState;
+  value: unknown;
+}
+
+export type ConfigScopeKind = 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE' | 'VEHICLE';
 
 export type ConfigRevisionState = 'DRAFT' | 'VALIDATED' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED';
 
@@ -811,7 +853,7 @@ export interface ConfigRevisionUpdate {
 
 export interface ConfigRevision {
   id: UUID;
-  scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
+  scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE' | 'VEHICLE';
   scope_id: UUID;
   revision: number;
   state: 'DRAFT' | 'VALIDATED' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED';
@@ -828,7 +870,7 @@ export interface ConfigRevision {
 }
 
 export interface ConfigRevisionCreate {
-  scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
+  scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE' | 'VEHICLE';
   scope_id: UUID;
   schema_version: string;
   values: Record<string, unknown>;
@@ -1295,7 +1337,7 @@ export interface Operations {
   };
   getEffectiveConfig: {
     path: Record<string, never>;
-    query: { at?: string };
+    query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
     headers: { traceparent?: string };
     body: undefined;
     response: EffectiveConfig;
@@ -1507,7 +1549,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createConfigRevision: { method: 'POST', path: '/v1/config/revisions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['config:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },

@@ -19,6 +19,7 @@ import type { NavLinkProps } from '@taktovia/design-system';
 import { Fragment } from 'react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { Konto } from './Konto';
+import { ConfigEditor } from './config/ConfigEditor';
 import { ConfigRevisions } from './config/ConfigRevisions';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
@@ -188,7 +189,17 @@ export function App() {
                 <ConfigRevisions />
                 <p>
                   <Link to="/admin/struktur">Zur Organisationsstruktur (Regionen, Dienste)</Link>
+                  {' · '}
+                  <Link to="/admin/konfiguration">Zur wirksamen Konfiguration</Link>
                 </p>
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/konfiguration"
+            element={
+              <RequireRight right="admin.ui17">
+                <ConfigEditor />
               </RequireRight>
             }
           />

@@ -3,7 +3,7 @@ package de.taktovia.app.contract
 import de.taktovia.app.identity.IdentityEnv
 import java.util.UUID
 
-/** Vertragsfälle der Organisationsstruktur (WP-M1-09): Regionen, Betriebshöfe, Kostenstellen, Dienste. */
+/** Vertragsfälle der Organisationsstruktur (WP-M1-09: Regionen, Betriebshöfe, Kostenstellen, Dienste) und der wirksamen Konfiguration (WP-M1-21). */
 internal object StructureContractCases {
     private fun idem() = mapOf("Idempotency-Key" to "contract-" + UUID.randomUUID())
 
@@ -52,6 +52,9 @@ internal object StructureContractCases {
         ContractCase("createService",
             201, { val w = World(); ContractRequest("POST", "/v1/services", """{"operator_id":"${w.operator()}","name":"Rufbus Nord","timezone":"Europe/Berlin"}""", w.h()) },
             422, { val w = World(); ContractRequest("POST", "/v1/services", """{"operator_id":"${w.operator()}","name":"Rufbus","timezone":"Mars/Olympus"}""", w.h()) }, server = { IdentityEnv.server }),
+        ContractCase("getEffectiveConfig",
+            200, { val w = World(); ContractRequest("GET", "/v1/config/effective?parameter=max_wait_min", headers = w.h(emptyMap())) },
+            404, { val w = World(); ContractRequest("GET", "/v1/config/effective?parameter=gibt_es_nicht", headers = w.h(emptyMap())) }, server = { IdentityEnv.server }),
         ContractCase("updateService",
             200, { val w = World(); ContractRequest("PUT", "/v1/services/${w.service()}", """{"name":"Neu","timezone":"Europe/Berlin"}""", w.h(ifMatch("1"))) },
             412, { val w = World(); ContractRequest("PUT", "/v1/services/${w.service()}", """{"name":"Neu","timezone":"Europe/Berlin"}""", w.h(ifMatch("9"))) }, server = { IdentityEnv.server }),

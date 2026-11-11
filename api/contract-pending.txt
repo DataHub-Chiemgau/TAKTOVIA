@@ -9,7 +9,6 @@ approveExpense  # POST /v1/expenses/{expense_id}/approve
 cancelJourney  # POST /v1/federation/journeys/{journey_id}/cancel
 confirmJourney  # POST /v1/federation/journeys/{journey_id}/confirm
 createDriverClearance  # POST /v1/driver-clearances
-getEffectiveConfig  # GET /v1/config/effective
 getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
 getPassengerSupportNeeds  # GET /v1/passengers/{passenger_id}/support-needs

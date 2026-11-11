@@ -13,7 +13,7 @@ EXPECTED = ('tenant currency legal_entity organization membership config_revisio
             'expense_document cost_object economic_event allocation_set allocation_line fiscal_period journal journal_line '
             'settlement_line idempotency_record outbox inbox audit_event').split()
 # Bewusst globale Tabellen ohne Mandantenbezug und ohne RLS (nur per Migration gepflegt, Runtime nur lesend)
-GLOBAL = {'currency', 'state_transition_rule', 'role_catalog', 'rights_matrix_rollout', 'policy_schema', 'policy_schema_version'}
+GLOBAL = {'currency', 'state_transition_rule', 'role_catalog', 'rights_matrix_rollout', 'policy_schema', 'policy_schema_version', 'config_vehicle_override_release'}
 
 
 class Migration(unittest.TestCase):
