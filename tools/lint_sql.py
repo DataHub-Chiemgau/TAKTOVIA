@@ -47,8 +47,19 @@ def top_level_arg(src, i):
     return src[i:]
 
 
+SAFE_COND = re.compile(r'\$\{if \([^()"]*\) "[^"$\\]*" else "[^"$\\]*"\}')
+
+
+def strip_safe_interpolations(a, consts):
+    """Entfernt Interpolationen, die kein fremdes SQL einbringen können: `const val`-Namen und `${if (…) "literal" else "literal"}`."""
+    a = SAFE_COND.sub('', a)
+    for c in consts:
+        a = re.sub(r'(?<!\\)\$\{' + re.escape(c) + r'\}|(?<!\\)\$' + re.escape(c) + r'(?![A-Za-z0-9_])', '', a)
+    return a
+
+
 def kotlin_arg_ok(arg, consts):
-    a = arg.strip()
+    a = strip_safe_interpolations(arg.strip(), consts)
     if not a or a.startswith('{'):
         return True                                           # Lambda (z. B. TransactionTemplate.execute { … }), kein SQL
     if a in consts:
@@ -81,9 +92,12 @@ def split_plus(a):
     return parts
 
 
+GLOBAL_CONSTS = set()
+
+
 def scan_kotlin(path):
     src = path.read_text()
-    consts = set(re.findall(r'\bconst\s+val\s+([A-Za-z_]\w*)\s*(?::\s*String)?\s*=', src))
+    consts = GLOBAL_CONSTS | set(re.findall(r'\bconst\s+val\s+([A-Za-z_]\w*)\s*(?::\s*String)?\s*=', src))
     out = []
     for m in re.finditer(r'\.(' + '|'.join(KOTLIN_SINKS) + r')\s*\(', src):
         arg = top_level_arg(src, m.end())
@@ -120,6 +134,9 @@ def main(argv):
     roots = [Path(a) for a in argv if not a.startswith('--') and a != 'json'] or [REPO / 'backend', REPO / 'workers']
     findings = []
     for root in roots:
+        for p in root.rglob('*.kt'):
+            if '/src/main/' in p.as_posix() and '/build/' not in p.as_posix():
+                GLOBAL_CONSTS.update(re.findall(r'\bconst\s+val\s+([A-Za-z_]\w*)\s*(?::\s*String)?\s*=\s*"', p.read_text()))
         for p in sorted(root.rglob('*.kt')):
             if '/src/main/' in p.as_posix() and '/build/' not in p.as_posix():
                 findings += scan_kotlin(p)
