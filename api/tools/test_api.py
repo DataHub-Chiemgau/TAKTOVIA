@@ -25,7 +25,7 @@ class ApiTools(unittest.TestCase):
 
     def test_sicherheitsschemata_und_scopes_unveraendert(self):
         d = self.doc()
-        self.assertEqual(set(d['components']['securitySchemes']), {'oidc', 'partnerSignature'})
+        self.assertEqual(set(d['components']['securitySchemes']), {'oidc', 'partnerSignature', 'providerSignature'})
         self.assertEqual(d['paths']['/v1/federation/journeys/plan']['post']['security'], [{'oidc': ['journeys:plan']}])
 
     def test_negativ_pfad_ohne_v1(self):
@@ -60,7 +60,7 @@ class ApiTools(unittest.TestCase):
         scopes = set(d['components']['securitySchemes']['oidc']['flows']['authorizationCode']['scopes'])
         for item in d['paths'].values():
             for m, op in item.items():
-                if m in ('get', 'post', 'put', 'patch', 'delete') and op['operationId'] != 'receivePartnerEvent':
+                if m in ('get', 'post', 'put', 'patch', 'delete') and op['operationId'] not in ('receivePartnerEvent', 'receiveProviderEvent'):
                     self.assertTrue(set(op['security'][0]['oidc']) <= scopes, op['operationId'])
         self.assertEqual(lint.lint_doc(d), [])
 

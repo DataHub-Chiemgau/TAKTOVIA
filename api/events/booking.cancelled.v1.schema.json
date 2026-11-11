@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/booking.cancelled.v1.schema.json",
+  "title": "Buchung storniert mit Grund (WP-M2-26)",
+  "description": "Payload von `booking.cancelled`. Aggregat: booking. Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "booking_id",
+    "reason",
+    "initiator"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason": {
+      "enum": [
+        "PASSENGER_REQUEST",
+        "OPERATOR_CANCELLATION",
+        "NO_SHOW",
+        "PAYMENT_FAILED",
+        "SAFETY"
+      ]
+    },
+    "initiator": {
+      "enum": [
+        "PASSENGER",
+        "OPERATOR",
+        "SYSTEM"
+      ]
+    },
+    "released_hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "refund_minor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  },
+  "examples": [
+    {
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "reason": "PASSENGER_REQUEST",
+      "initiator": "PASSENGER",
+      "released_hold_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "refund_minor": 950,
+      "currency": "EUR"
+    }
+  ]
+}

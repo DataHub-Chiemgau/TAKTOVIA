@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/booking.confirmed.v1.schema.json",
+  "title": "Buchung bestätigt (WP-M2-23)",
+  "description": "Payload von `booking.confirmed`. Aggregat: booking. Datenbasis für Nachfragetrichter und Kennzahlen (M4); Auslöser für Boarding-Code und Fahrtenplan (M3). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "booking_id",
+    "hold_id",
+    "service_id",
+    "run_id",
+    "pickup_earliest",
+    "pickup_latest",
+    "gross_minor",
+    "currency",
+    "capacity_vector"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "service_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "run_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pickup_earliest": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pickup_latest": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "arrival_latest": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "gross_minor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "capacity_vector": {
+      "$ref": "resource-vector.v1.schema.json"
+    }
+  },
+  "examples": [
+    {
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "hold_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "service_id": "0f6f6d0a-3c7b-4d9e-8f10-1c2d3e4f5a6b",
+      "run_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "run_revision": 5,
+      "pickup_earliest": "2026-11-01T11:00:00Z",
+      "pickup_latest": "2026-11-01T11:15:00Z",
+      "gross_minor": 950,
+      "currency": "EUR",
+      "capacity_vector": {
+        "schema_version": "1.0",
+        "seats": 2,
+        "wheelchair": 1
+      }
+    }
+  ]
+}

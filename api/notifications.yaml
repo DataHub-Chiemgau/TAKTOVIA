@@ -1,0 +1,156 @@
+paths:
+  /v1/notifications:
+    get:
+      summary: Nachrichten und Zustellstatus auflisten
+      operationId: listNotifications
+      security:
+      - oidc:
+        - notifications:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - QUEUED
+          - SENDING
+          - RETRY_WAIT
+          - UNKNOWN
+          - DELIVERED
+          - FAILED
+          - SUPPRESSED
+        description: Filter auf den Zustellstatus.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+        '400': &id001
+          $ref: common.yaml#/components/responses/Problem
+        '401': *id001
+        '403': *id001
+        '422': *id001
+        '429': *id001
+        '503': *id001
+  /v1/notifications/{notification_id}:
+    get:
+      summary: Nachricht lesen
+      operationId: getNotification
+      security:
+      - oidc:
+        - notifications:read
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema: &id002
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nachrichten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '429': *id001
+        '503': *id001
+components:
+  schemas:
+    Notification:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id002
+        event_id: *id002
+        channel:
+          type: string
+          enum:
+          - PUSH
+          - SMS
+          - EMAIL
+        template:
+          type: string
+          minLength: 1
+          maxLength: 64
+        state:
+          type: string
+          enum:
+          - QUEUED
+          - SENDING
+          - RETRY_WAIT
+          - UNKNOWN
+          - DELIVERED
+          - FAILED
+          - SUPPRESSED
+        attempts:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100
+        last_failure:
+          oneOf:
+          - type: string
+            enum:
+            - INVALID_CONTACT
+            - PROVIDER_ERROR
+            - RETRIES_EXHAUSTED
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - event_id
+      - channel
+      - template
+      - state
+      - attempts
+      - last_failure
+      - created_at
+      - revision
+      description: Auftrag und Zustellstatus; weder Inhalt noch Kontaktdaten (nur Vorlagenname).
+    NotificationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

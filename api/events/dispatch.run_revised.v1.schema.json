@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/dispatch.run_revised.v1.schema.json",
+  "title": "Planrevision geändert (WP-M2-16/-17)",
+  "description": "Payload von `dispatch.run_revised`. Aggregat: vehicle_run. Verbraucher: M3 (Fahrtenplan, Fahrerhinweise). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "run_id",
+    "previous_revision",
+    "revision",
+    "cause"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "previous_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "cause": {
+      "enum": [
+        "BOOKING_INSERTED",
+        "BOOKING_REMOVED",
+        "MANUAL_CHANGE",
+        "REPLAN"
+      ]
+    },
+    "affected_booking_ids": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "examples": [
+    {
+      "run_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "previous_revision": 4,
+      "revision": 5,
+      "cause": "BOOKING_INSERTED",
+      "affected_booking_ids": [
+        "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f"
+      ]
+    }
+  ]
+}

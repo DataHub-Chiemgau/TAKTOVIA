@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/booking.hold_placed.v1.schema.json",
+  "title": "Hold gesetzt (WP-M2-22)",
+  "description": "Payload von `booking.hold_placed`. Aggregat: capacity_hold. Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "hold_id",
+    "run_id",
+    "run_revision",
+    "interval_from",
+    "interval_to",
+    "capacity_vector",
+    "expires_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "run_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "interval_from": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "interval_to": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "capacity_vector": {
+      "$ref": "resource-vector.v1.schema.json"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "hold_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "run_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "run_revision": 4,
+      "interval_from": 2,
+      "interval_to": 5,
+      "capacity_vector": {
+        "schema_version": "1.0",
+        "seats": 2,
+        "wheelchair": 1
+      },
+      "expires_at": "2026-11-01T10:03:00Z"
+    }
+  ]
+}
