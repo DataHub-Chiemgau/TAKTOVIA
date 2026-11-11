@@ -415,6 +415,15 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="getPassengerSupportNeeds"><h3><span class="m">GET</span> <code>/v1/passengers/{passenger_id}/support-needs</code></h3><p>Unterstützungsbedarf eines Fahrgasts lesen (geschütztes Merkmal, nur mit Zweck)</p><dl><dt>operationId</dt><dd><code>getPassengerSupportNeeds</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>passengers:support:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="registry">registry.yaml</h2>
 <article id="getEffectiveConfig"><h3><span class="m">GET</span> <code>/v1/config/effective</code></h3><p>Wirksame Konfiguration lesen</p><dl><dt>operationId</dt><dd><code>getEffectiveConfig</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>

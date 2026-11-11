@@ -42,6 +42,7 @@ components:
             audit:read: audit:read
             passengers:read: passengers:read
             passengers:write: passengers:write
+            passengers:support:read: passengers:support:read
             webhooks:read: webhooks:read
             webhooks:write: webhooks:write
             services:read: services:read
@@ -78,6 +79,7 @@ components:
             audit:read: audit:read
             passengers:read: passengers:read
             passengers:write: passengers:write
+            passengers:support:read: passengers:support:read
             webhooks:read: webhooks:read
             webhooks:write: webhooks:write
             services:read: services:read

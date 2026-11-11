@@ -17,6 +17,8 @@ Gemeinsame Bausteine für `operator` und `passenger` nach Kap. 06 §6.1. Fach-WP
 | `ConflictDialog`                                        | 412: nur „Aktuellen Stand laden“, „Meine Eingaben prüfen“, „Abbrechen“; bewusst kein „Überschreiben“                                                        |
 | `StateView`, `EmptyState`, `ErrorState`, `ResourceView` | Zustände laden/leer/Fehler/Rechte; `ResourceView` ist der wiederverwendbare Rahmen für UI-17, UI-18, UI-20 und alle folgenden Bildschirme                   |
 | `DateTimeField`, `ZonedTime`                            | Datum/Zeit mit Zone (WP-M1-18)                                                                                                                              |
+| `SupportNeedsSelect` (UI-05 Basis)                      | Unterstützungsbedarf als Auswahl aus festem Katalog, keine Diagnoseabfrage (WP-M1-31); Einbettung durch die Kontoseite (WP-M1-29)                           |
+| `AccessPurposeSelect` (UI-20 Basis)                     | Zweckangabe für den Zugriff auf geschützte Merkmale (Header `X-Access-Purpose`, WP-M1-31)                                                                   |
 
 ## Design-Tokens (`src/styles.css`)
 
@@ -51,3 +53,7 @@ Im Pflichtenheft nicht festgelegt (OP-20). Geprüft wird mit aktuellem Chrome (D
 - Komponenten- und Rahmentests: Vitest mit axe-core in jsdom (ohne Kontrast, da jsdom kein Layout berechnet).
 - `npm run a11y:browser` (`web/tools/a11y-browser.mjs`): echter Chrome, axe-core mit Farbkontrast und WCAG-2.2-AA-Regeln, Reflow bei 320 CSS-Pixeln, 200 % Textgröße, Touchflächen 44x44, sichtbarer Fokus, reduzierte Bewegung; beide Rahmenanwendungen, jeweils Desktop und Mobil. Tastatur- und Screenreader-Prüfung der Kernreisen folgt im UX-Gate (WP-M5-30).
 - Visuelle Regression (Screenshot-Vergleich) ist noch nicht eingerichtet.
+
+## Zahlungsdaten (WP-M1-37)
+
+Vorgabe: Zahlungsdateneingabe (Kartennummer, Ablaufdatum, Prüfziffer, Karteninhaber) erfolgt **ausschließlich in PSP-gehosteten Komponenten**. Das Designsystem und die Anwendungen enthalten keine eigenen Eingabefelder dafür; `src/psp-vorgabe.test.ts` bricht bei `autocomplete="cc-*"`, Feldnamen wie `card-number`/`cvc` oder Typen wie `cardNumber`. Siehe [psp-trennung.md](../../docs/umsetzungsplan/vertraege/psp-trennung.md).

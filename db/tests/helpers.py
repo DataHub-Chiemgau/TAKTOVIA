@@ -12,6 +12,11 @@ def runtime():
     return dbtool.conn('taktovia_runtime', dbtool.env('TAKTOVIA_DB_RUNTIME_PASSWORD'), autocommit=False)
 
 
+def fields():
+    """Modulzugang für sensible Felder (WP-M1-31): nur Schlüssel- und Ciphertext-Spalten von passenger_private."""
+    return dbtool.conn('taktovia_fields', dbtool.fields_password(), autocommit=False)
+
+
 def migrator():
     return dbtool.conn('taktovia_migrator', dbtool.env('TAKTOVIA_DB_MIGRATOR_PASSWORD'), autocommit=True)
 

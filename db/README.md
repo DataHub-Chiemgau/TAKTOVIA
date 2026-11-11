@@ -11,6 +11,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
 | `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |
 | `dateninventar.d/*.csv`, `dateninventar_katalog.json`, `dateninventar.py` | Dateninventar mit Zweck, Rechtsgrundlage, Schutz- und Löschklasse je Spalte (WP-M1-32); `python db/dateninventar.py check` gleicht das Schema ab, `export --write` erzeugt den Export für UI-20 |
+| `role_matrix_spalten.d/*.csv` | Spaltenrechte (Rolle × Tabelle × Spalte), wo Tabellenrechte nicht genügen (WP-M1-31: `passenger_private` ohne Ciphertext-Spalten für `taktovia_runtime`, nur `taktovia_fields` liest sie); geprüft von `test_08_feldschutz.py` |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |
 
 ## Lokal
@@ -51,3 +52,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 - Personenbezogene Felder (`ja`) brauchen Rechtsgrundlage, Schutzklasse und Löschklasse; Zweck und Werte müssen im Katalog `dateninventar_katalog.json` stehen. Der Katalog ist **vorläufig und nicht freigegeben** (OP-24, D-11).
 - Nach Änderungen am Inventar den UI-Export erneuern: `python db/dateninventar.py export --write` (Test `test_ui_export_entspricht_dem_inventar` hält ihn synchron).
 - Felder ohne nachgewiesenen Zweck werden nicht angelegt (z. B. keine feinere Herkunft als `travel_attempt.coarse_origin`).
+
+## Modulzugang für sensible Felder (WP-M1-31)
+
+`db.py bootstrap` legt neben Migrator und Runtime die Anmeldung `taktovia_fields` an (kein Superuser, kein `BYPASSRLS`, ohne Eigentum). Sie darf nur die Schlüssel- und Ciphertext-Spalten von `passenger_private` lesen bzw. ändern (`R__runtime_grants_m1_31.sql`); die Runtime-Rolle hat dort Spaltenrechte ohne Ciphertext. Passwort: `TAKTOVIA_DB_FIELDS_PASSWORD`; in Staging und Produktion ausdrücklich setzen (sonst bricht ein erstes `bootstrap` ab), in Entwicklung und Test wird es aus dem Runtime-Passwort abgeleitet. Bestehende Datenbanken: vor `migrate` einmal `bootstrap` ausführen.

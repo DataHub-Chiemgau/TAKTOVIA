@@ -72,8 +72,9 @@ class SeedTest(unittest.TestCase):
 
     def test_keine_personendaten_im_seed(self):
         seed.seed_two_tenants(DB1)
-        with atdb.tx(DB1, seed.TENANTS["A"]) as c:
-            self.assertIsNone(c.execute("SELECT contact_ciphertext FROM taktovia.passenger_private").fetchone()[0])
+        # Die Runtime-Rolle darf die Ciphertext-Spalten nicht lesen (WP-M1-31); der Nachweis „keine Kontaktdaten“ läuft über die Administration.
+        with atdb.dbtool.admin(DB1) as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM taktovia.passenger_private WHERE contact_ciphertext IS NOT NULL OR support_ciphertext IS NOT NULL").fetchone()[0], 0)
 
 
 class EvidenzTest(unittest.TestCase):

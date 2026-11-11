@@ -35,3 +35,7 @@ export * as zeit from './time';
 export { ResourceView } from './components/ResourceView';
 export type { ResourceState, ResourceViewProps } from './components/ResourceView';
 export { ScrollRegion } from './components/ScrollRegion';
+export { SUPPORT_NEED_CODES, SupportNeedsSelect } from './components/SupportNeedsSelect';
+export type { SupportNeedCode, SupportNeedsSelectProps } from './components/SupportNeedsSelect';
+export { ACCESS_PURPOSES, AccessPurposeSelect } from './components/AccessPurposeSelect';
+export type { AccessPurpose, AccessPurposeSelectProps } from './components/AccessPurposeSelect';

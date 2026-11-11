@@ -64,6 +64,11 @@ object AuditActions {
     const val CONFIG_REVERTED = "config.revision.reverted"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
     const val PROMISE_SNAPSHOT_CHANGED = "promise.snapshot.changed"
+    /** Lesezugriff auf ein geschütztes Fahrgastfeld mit Zweck (WP-M1-31, SEC-005): `<feld>.read`; Details Akteur, Zweck. */
+    const val PASSENGER_SUPPORT_NEEDS_READ = "passenger.support_needs.read"
+    const val PASSENGER_CONTACT_READ = "passenger.contact.read"
+    /** Eingabe mit kartennummernähnlichem Muster abgewiesen (WP-M1-37, SEC-008); nie mit dem Wert. */
+    const val SECURITY_CARD_DATA_REJECTED = "security.input.card_data_rejected"
     const val SECURITY_TENANT_MISMATCH = "security.tenant.mismatch"
     const val SECURITY_PAYLOAD_HASH_MISMATCH = "security.event.payload_hash_mismatch"
     const val SECURITY_RECIPIENT_MISMATCH = "security.event.recipient_mismatch"
@@ -71,7 +76,7 @@ object AuditActions {
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
-        PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
+        PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED, PASSENGER_SUPPORT_NEEDS_READ, PASSENGER_CONTACT_READ, SECURITY_CARD_DATA_REJECTED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
 }
 

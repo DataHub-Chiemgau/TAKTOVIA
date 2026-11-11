@@ -75,8 +75,85 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PassengerRegistration'
+  /v1/passengers/{passenger_id}/support-needs:
+    get:
+      summary: Unterstützungsbedarf eines Fahrgasts lesen (geschütztes Merkmal, nur mit Zweck)
+      description: Geschütztes Feld (WP-M1-31, LH-6.18-SEC-005). Standardantworten des Fahrgasts enthalten es nie. Zugriff nur mit
+        Feldscope `passengers:support:read` (Rollen Callcenter, Support, Disponent), ausdrücklichem Zweck im Header `X-Access-Purpose` und
+        genau dann, wenn die Rolle für diesen Zweck ein Feldrecht hat. Unbeteiligte Rollen und andere Mandanten erhalten 404; ein fehlender
+        Zweck bei sonst berechtigter Rolle 422. Jeder Lesezugriff steht mit Akteur und Zweck im Audit.
+      operationId: getPassengerSupportNeeds
+      security:
+      - oidc:
+        - passengers:support:read
+      parameters:
+      - name: passenger_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: X-Access-Purpose
+        in: header
+        required: true
+        description: Zweck des Zugriffs (Zweckbindung, Kap. 01 §1.7); Katalog siehe feldrechte.json.
+        schema:
+          type: string
+          enum:
+          - BOOKING_ASSISTANCE
+          - SUPPORT_CASE
+          - TRANSPORT_PLANNING
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerSupportNeeds'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    PassengerSupportNeeds:
+      type: object
+      additionalProperties: false
+      description: Geschütztes Merkmal (WP-M1-31). Nur Auswahl aus dem Katalog transportrelevanter Unterstützung, keine Diagnosen, kein Freitext
+        (Kap. 02 §3). Erscheint in keiner anderen Antwort dieser API.
+      properties:
+        passenger_id:
+          $ref: common.yaml#/components/schemas/UUID
+        codes:
+          type: array
+          items:
+            type: string
+            enum:
+            - BOARDING_HELP
+            - AUDIO_GUIDANCE
+            - LOW_FLOOR
+            - WHEELCHAIR_SPACE
+            - ASSISTANCE_ANIMAL
+            - ACCOMPANYING_PERSON
+          uniqueItems: true
+          maxItems: 16
+      required:
+      - passenger_id
+      - codes
+      examples:
+      - passenger_id: 3f2b8c1e-5d4a-4e6b-9a7c-1d2e3f4a5b6c
+        codes:
+        - BOARDING_HELP
     Passenger:
       type: object
       additionalProperties: false

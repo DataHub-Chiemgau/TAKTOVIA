@@ -84,6 +84,23 @@ export const de = {
   'violation.INTERVAL_INVALID': 'Das Zeitintervall ist ungültig.',
   'violation.TARGET_NOT_ALLOWED': 'Dieses Ziel ist nicht zulässig.',
   'violation.UNKNOWN': 'Die Eingabe wurde abgelehnt.',
+  // Feldschutz (WP-M1-31): UI-05 Unterstützungsbedarf (nur Auswahl, keine Diagnoseabfrage), UI-20 Zugriff mit Zweckangabe
+  'support.legend': 'Unterstützung bei der Fahrt',
+  'support.hint':
+    'Wählen Sie nur, was für die Beförderung nötig ist. Angaben zu Krankheiten oder Diagnosen sind nicht nötig und werden nicht abgefragt.',
+  'support.BOARDING_HELP': 'Hilfe beim Ein- und Aussteigen',
+  'support.AUDIO_GUIDANCE': 'Akustische Ansagen und Begleitung',
+  'support.LOW_FLOOR': 'Niederflureinstieg',
+  'support.WHEELCHAIR_SPACE': 'Platz für einen Rollstuhl',
+  'support.ASSISTANCE_ANIMAL': 'Assistenzhund oder -tier',
+  'support.ACCOMPANYING_PERSON': 'Begleitperson',
+  'purpose.label': 'Zweck des Zugriffs',
+  'purpose.placeholder': 'Bitte Zweck wählen',
+  'purpose.required': 'Ohne Zweckangabe ist kein Zugriff möglich.',
+  'purpose.BOOKING_ASSISTANCE': 'Buchung oder Fahrt für den Fahrgast unterstützen',
+  'purpose.SUPPORT_CASE': 'Supportfall bearbeiten',
+  'purpose.TRANSPORT_PLANNING': 'Beförderung disponieren',
+  'purpose.hint': 'Der Zugriff wird mit Ihrem Namen und dem Zweck protokolliert.',
 } as const;
 
 export type MessageKey = keyof typeof de;

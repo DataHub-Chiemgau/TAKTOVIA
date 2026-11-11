@@ -1,0 +1,13 @@
+role;table;column;privileges
+taktovia_runtime;passenger_private;tenant_id;SELECT,INSERT
+taktovia_runtime;passenger_private;id;SELECT,INSERT
+taktovia_runtime;passenger_private;subject_token;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;retention_until;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;contact_ciphertext;
+taktovia_runtime;passenger_private;support_ciphertext;
+taktovia_fields;passenger_private;tenant_id;SELECT
+taktovia_fields;passenger_private;id;SELECT
+taktovia_fields;passenger_private;subject_token;
+taktovia_fields;passenger_private;retention_until;
+taktovia_fields;passenger_private;contact_ciphertext;SELECT,UPDATE
+taktovia_fields;passenger_private;support_ciphertext;SELECT,UPDATE

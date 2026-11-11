@@ -10,7 +10,7 @@ service_area;SELECT,INSERT,UPDATE;
 stop_revision;SELECT,INSERT,UPDATE;
 partner_contract_version;SELECT,INSERT;unveränderlich (Trigger)
 cooperation_grant;SELECT,INSERT,UPDATE;
-passenger_private;SELECT,INSERT,UPDATE;
+passenger_private;;WP-M1-31: nur Spaltenrechte (db/role_matrix_spalten.d/m1-31.csv); Ciphertext-Spalten nur für taktovia_fields
 travel_attempt;SELECT,INSERT,UPDATE;
 fare_quote;SELECT,INSERT;unveränderlich (Trigger)
 journey;SELECT,INSERT,UPDATE;

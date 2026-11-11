@@ -621,6 +621,11 @@ export interface SessionPage {
   as_of: string;
 }
 
+export interface PassengerSupportNeeds {
+  passenger_id: UUID;
+  codes: ('BOARDING_HELP' | 'AUDIO_GUIDANCE' | 'LOW_FLOOR' | 'WHEELCHAIR_SPACE' | 'ASSISTANCE_ANIMAL' | 'ACCOMPANYING_PERSON')[];
+}
+
 export interface Passenger {
   id: UUID;
   status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'BLOCKED';
@@ -1024,6 +1029,13 @@ export interface Operations {
     body: PassengerRegistration;
     response: Passenger;
   };
+  getPassengerSupportNeeds: {
+    path: { passenger_id: UUID };
+    query: Record<string, never>;
+    headers: { 'X-Access-Purpose': 'BOOKING_ASSISTANCE' | 'SUPPORT_CASE' | 'TRANSPORT_PLANNING'; traceparent?: string };
+    body: undefined;
+    response: PassengerSupportNeeds;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string };
@@ -1151,6 +1163,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   revokeSession: { method: 'DELETE', path: '/v1/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['sessions:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createConfigRevision: { method: 'POST', path: '/v1/config/revisions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['config:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
