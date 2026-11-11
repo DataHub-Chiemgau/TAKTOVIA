@@ -70,7 +70,6 @@ describe('operator Anwendungsrahmen', () => {
   it.each([
     ['/admin/gebiete', 'Gebiete, Stops, Tarife', 'UI-17'],
     ['/admin/kooperation', 'Kooperation und Rollen', 'UI-18'],
-    ['/admin/datenschutz', 'Datenschutz, Audit, Support', 'UI-20'],
   ])(
     'Adminbereich %s ist ein Grundgerüst mit Leerzustand und benennt Mandant, Dienst, Status, Datenstand',
     async (path, title, ui) => {
@@ -86,6 +85,18 @@ describe('operator Anwendungsrahmen', () => {
       expect(formatViolations(await runAxe(container))).toBe('');
     },
   );
+
+  it('UI-20 zeigt den lesenden Inventar-Export mit Mandanten-, Dienst- und Datenstand-Kontext', async () => {
+    const { container } = setup(['ADMIN'], '/admin/datenschutz');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Datenschutz, Audit, Support' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('table', { name: /passenger_private/ })).toBeInTheDocument();
+    const ctx = screen.getByRole('region', { name: 'Arbeitskontext' });
+    expect(ctx).toHaveTextContent('Verkehrsbetrieb Nord');
+    expect(ctx).toHaveTextContent('Datenstand');
+    expect(formatViolations(await runAxe(container))).toBe('');
+  }, 30_000);
 
   it('Dienstumfang der Sitzung erscheint im Kontext', async () => {
     const client = fakeApiClient({

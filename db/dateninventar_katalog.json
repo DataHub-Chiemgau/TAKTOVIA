@@ -1,0 +1,49 @@
+{
+  "freigegeben": false,
+  "hinweis": "Vorläufiger Katalog als Arbeitsstand, fachlich und rechtlich NICHT freigegeben (OP-24, D-11): Zwecke, Rechtsgrundlagen und Löschklassen stehen unter dem Vorbehalt der Freigabe durch den Auftraggeber. Der Katalog blockiert den Bau nicht, aber die Produktivfreigabe.",
+  "zwecke": {
+    "MANDANTENTRENNUNG": "Mandanten- und Schlüsselstruktur, Isolation der Daten je Mandant",
+    "ZUGANG_ROLLEN": "Authentifizierung, Mitgliedschaft, Rollen und Dienstumfang",
+    "KONFIGURATION": "Konfigurationsrevisionen, Dienste, Gebiete, Haltepunkte, Stammdaten des Betriebs",
+    "BUCHUNGSABWICKLUNG": "Reisen, Buchungen, Kapazität und Ausführung gegenüber dem Fahrgast",
+    "SAGA_ABWICKLUNG": "Abwicklung und Wiederaufnahme asynchroner Operationen und Partneraufrufe",
+    "ZAHLUNGSABWICKLUNG": "Zahlungsvorgänge mit dem Zahlungsdienstleister",
+    "ABRECHNUNG_CLEARING": "Kostenumlage, Verrechnung und Clearing zwischen Betreibern",
+    "BUCHHALTUNG_BELEGE": "Buchführung, Belege, Journal, Perioden",
+    "FLOTTE_SICHERHEIT": "Fahrzeugstamm, Betriebsfreigabe und technische Einsatzfreigabe",
+    "PERSONALEINSATZ": "Schichtplanung und Einsatz von Fahrpersonal",
+    "KOOPERATION_VERTRAG": "Kooperationsverträge, Freigaben an Partner und deren Gültigkeit",
+    "TECHNISCHER_BETRIEB": "Zustellung von Ereignissen, Idempotenz, Wiederholung und Fehlerbehandlung",
+    "SICHERHEITSPROTOKOLL": "Nachvollziehbarkeit sicherheits- und datenschutzrelevanter Vorgänge (Audit)",
+    "KONTAKT_UND_UNTERSTUETZUNG": "Kontakt- und Unterstützungsdaten des Fahrgastkontos für Betrieb und Hilfe",
+    "NACHFRAGEANALYSE": "grobe Auswertung abgelehnter Anfragen zur Angebotsplanung (nur grobe Auflösung)",
+    "WAEHRUNGSKATALOG": "globaler Katalog der Währungen mit Exponent"
+  },
+  "rechtsgrundlagen": {
+    "ART6_1_A_EINWILLIGUNG": "Art. 6 Abs. 1 lit. a DSGVO: Einwilligung",
+    "ART6_1_B_VERTRAG": "Art. 6 Abs. 1 lit. b DSGVO: Vertragserfüllung (Beförderungs- bzw. Nutzungsvertrag)",
+    "ART6_1_C_RECHTLICHE_VERPFLICHTUNG": "Art. 6 Abs. 1 lit. c DSGVO: rechtliche Verpflichtung (z. B. handels- und steuerrechtliche Aufbewahrung)",
+    "ART6_1_D_LEBENSWICHTIGE_INTERESSEN": "Art. 6 Abs. 1 lit. d DSGVO: lebenswichtige Interessen",
+    "ART6_1_E_OEFFENTLICHES_INTERESSE": "Art. 6 Abs. 1 lit. e DSGVO: öffentliches Interesse oder Ausübung öffentlicher Gewalt",
+    "ART6_1_F_BERECHTIGTES_INTERESSE": "Art. 6 Abs. 1 lit. f DSGVO: berechtigtes Interesse (Sicherheit, Betrieb, Planung)",
+    "BDSG26_BESCHAEFTIGUNG": "§ 26 BDSG: Datenverarbeitung im Beschäftigungskontext"
+  },
+  "schutzklassen": {
+    "KONTAKT_UNTERSTUETZUNG": "Kontakt/Unterstützung (Kap. 01 §1.7): getrennter PII-Bereich, feldbezogene Rechte",
+    "STANDORT_ETA": "Standort/Driver-ETA (Kap. 01 §1.7): Pseudonymisierung, kurzlebige operative Rohdaten",
+    "BELEGE_JOURNAL": "Belege/Journal (Kap. 01 §1.7): Original und Hash, append-only, Retention/Legal Hold",
+    "SECURITY_AUDIT": "Security-Audit (Kap. 01 §1.7): append-only, getrennte Berechtigungsdomäne, Maskierung",
+    "AGGREGIERTE_STATISTIK": "Aggregierte Statistik (Kap. 01 §1.7): Mindestzellgrößen, Unterdrückung kleiner Gruppen",
+    "PERSONAL_HR": "Beschäftigtendaten (Erweiterung, Kap. 01 §1.7 nennt HR-Zugriff, führt aber keine eigene Klasse; Befund)"
+  },
+  "loeschklassen": {
+    "LK_STAMM": "Stammdaten: Löschung mit Ende des Mandanten oder der fachlichen Bedeutung, keine personenbezogene Frist",
+    "LK_BETRIEB": "operative Daten mit begrenzter Lebensdauer; Frist nach Löschmatrix (WP-M1-33, D-11)",
+    "LK_BELEG": "aufbewahrungspflichtige Belege und Journale; Frist rechtlich festzulegen (D-11)",
+    "LK_PII": "Kontakt- und Unterstützungsdaten: Löschung oder Anonymisierung nach Aufbewahrungsregel (`retention_until`)",
+    "LK_STANDORT": "Standort- und ETA-Daten: kurzlebig, danach Löschung oder Aggregation",
+    "LK_AUDIT": "Sicherheitsprotokoll: unveränderlich, Aufbewahrung nach Sicherheitskonzept (D-11)",
+    "LK_TECHNISCH": "technische Hilfsdaten mit kurzer Lebensdauer (Idempotenz, Zustellung)",
+    "LK_KATALOG": "globale Kataloge, nur per Migration gepflegt"
+  }
+}

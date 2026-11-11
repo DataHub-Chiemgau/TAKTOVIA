@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n';
+import { ScrollRegion } from './ScrollRegion';
 import { EmptyState } from './StateView';
 
 export interface Column<T> {
@@ -37,7 +38,7 @@ export function DataTable<T>({
   if (rows.length === 0) return <EmptyState title={emptyTitle ?? t('common.noEntries')} />;
   return (
     <div>
-      <div className="tk-table-wrap">
+      <ScrollRegion label={caption}>
         <table className="tk-table">
           <caption>{caption}</caption>
           <thead>
@@ -59,7 +60,7 @@ export function DataTable<T>({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       {page?.nextCursor ? (
         <button
           type="button"

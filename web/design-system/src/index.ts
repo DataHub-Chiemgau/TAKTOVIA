@@ -34,3 +34,4 @@ export type { ErrorLike, ProblemLike, StateKind } from './problem';
 export * as zeit from './time';
 export { ResourceView } from './components/ResourceView';
 export type { ResourceState, ResourceViewProps } from './components/ResourceView';
+export { ScrollRegion } from './components/ScrollRegion';

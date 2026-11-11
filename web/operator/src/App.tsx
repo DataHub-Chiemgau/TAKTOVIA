@@ -2,6 +2,7 @@ import { rightsOf, useSession } from '@taktovia/api-client';
 import { AppFrame, ErrorState, ScreenFrame, StateView, visibleNav } from '@taktovia/design-system';
 import type { NavLinkProps } from '@taktovia/design-system';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
 import { useScreenContext } from './ScreenContext';
@@ -151,11 +152,7 @@ export function App() {
           path="/admin/datenschutz"
           element={
             <RequireRight right="admin.ui20">
-              <PlaceholderScreen
-                title="Datenschutz, Audit, Support"
-                emptyTitle="Noch keine Datenschutzfälle"
-                hint="UI-20: Begründete Fälle bearbeiten folgt mit Audit und Support."
-              />
+              <DatenschutzScreen />
             </RequireRight>
           }
         />

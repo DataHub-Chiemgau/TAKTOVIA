@@ -92,6 +92,14 @@ for (const app of APPS) {
                 const where = `${app.name} ${route} ${vp.label} Text ${textScale} %`;
                 await page.goto(base + route);
                 await page.waitForSelector('main h1, main [data-testid="state-view"]');
+                await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
+                // Inhaltsprüfung: das Dateninventar muss geladen sein, sonst prüft axe nur den Ladezustand.
+                if (
+                    app.name === 'operator' &&
+                    route === '/admin/datenschutz' &&
+                    (await page.locator('table').count()) === 0
+                )
+                    fail(`${where}: Dateninventar-Tabellen nicht gerendert`);
                 if (textScale !== 100)
                     await page.addStyleTag({
                         content: `html { font-size: ${textScale}% !important; }`,
@@ -118,6 +126,11 @@ for (const app of APPS) {
                         ),
                     ]
                         .filter((el) => el.getClientRects().length > 0)
+                        .map((el) =>
+                            el.matches('[type=checkbox], [type=radio]') && el.closest('label')
+                                ? el.closest('label')
+                                : el,
+                        )
                         .map((el) => ({ el, r: el.getBoundingClientRect() }))
                         .filter(({ r }) => r.width > 0 && (r.width < 43.5 || r.height < 43.5))
                         .map(

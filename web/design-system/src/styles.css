@@ -422,3 +422,19 @@ input[aria-invalid='true'] {
 .tk-context-list {
     display: contents;
 }
+
+/* Kontrollkästchen und Optionsfelder: die Bezeichnung ist die Touchfläche (>= 44x44), das Feld selbst bleibt gut sichtbar */
+label:has(> input[type='checkbox']),
+label:has(> input[type='radio']) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-height: var(--tk-touch-min);
+    min-width: var(--tk-touch-min);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+    width: 1.5rem;
+    height: 1.5rem;
+}

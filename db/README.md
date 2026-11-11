@@ -9,6 +9,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
+| `dateninventar.d/*.csv`, `dateninventar_katalog.json`, `dateninventar.py` | Dateninventar mit Zweck, Rechtsgrundlage, Schutz- und Löschklasse je Spalte (WP-M1-32); `python db/dateninventar.py check` gleicht das Schema ab, `export --write` erzeugt den Export für UI-20 |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |
 
 ## Lokal
@@ -39,3 +40,10 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 - **Migrationsnummern:** Arbeitspaket `WP-M<m>-<nn>` verwendet Versionen ab `V<m>0<nn>0` (z. B. WP-M1-02 → `V1020`, `V1021`, …; WP-M2-05 → `V2050`). V1–V3 gehören dem Kernschema.
 - **Rechte:** je Arbeitspaket eine eigene `R__grants_<wp>.sql` (wiederholbar) statt Änderungen an `R__runtime_grants.sql`.
 - **Rollenmatrix und Tabellenbesitz:** je Arbeitspaket eine eigene Datei `db/role_matrix.d/<wp>.csv` und `db/table_owners.d/<wp>.csv`; Tabellennamen dürfen nicht doppelt vorkommen.
+
+## Dateninventar (WP-M1-32)
+
+- **Jede neue Tabelle und Spalte braucht einen Inventareintrag im selben Pull Request**, sonst scheitert `dateninventar.py check` (CI) und `test_07_dateninventar.py`. Eine Datei je Arbeitspaket: `db/dateninventar.d/<wp>.csv` (`tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung`) und `<wp>.tabellen.csv` (`tabelle;aggregat;loeschklasse;bemerkung`).
+- Personenbezogene Felder (`ja`) brauchen Rechtsgrundlage, Schutzklasse und Löschklasse; Zweck und Werte müssen im Katalog `dateninventar_katalog.json` stehen. Der Katalog ist **vorläufig und nicht freigegeben** (OP-24, D-11).
+- Nach Änderungen am Inventar den UI-Export erneuern: `python db/dateninventar.py export --write` (Test `test_ui_export_entspricht_dem_inventar` hält ihn synchron).
+- Felder ohne nachgewiesenen Zweck werden nicht angelegt (z. B. keine feinere Herkunft als `travel_attempt.coarse_origin`).

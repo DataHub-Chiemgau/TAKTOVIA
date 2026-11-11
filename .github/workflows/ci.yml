@@ -69,6 +69,8 @@ jobs:
       - run: pip install "psycopg[binary]==3.2.*"
       - run: python db/db.py bootstrap
       - run: python db/db.py migrate
+      - name: Schema gegen Dateninventar (WP-M1-32, SEC-004)
+        run: python db/dateninventar.py check
       - run: python -m unittest discover -s db/tests -p 'test_*.py' -v
       - name: Frische Datenbank, zweiter Lauf
         run: python db/db.py reset && python db/db.py migrate && python -m unittest discover -s db/tests -p 'test_*.py'

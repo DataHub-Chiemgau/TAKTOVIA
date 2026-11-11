@@ -168,5 +168,23 @@ class TsClient(unittest.TestCase):
         spec['paths']['/v1/neu'] = {'get': {'operationId': 'getNeu', 'responses': {'200': {'description': 'x'}}}}
         self.assertNotEqual(self.gen.TARGET.read_text(), self.gen.generate(spec))
 
+class Dateninventar(unittest.TestCase):
+    def test_ui_export_entspricht_dem_schema_der_vertraege(self):
+        import jsonschema
+        root = API.parent
+        schema = json.loads((root / 'docs/umsetzungsplan/vertraege/schemas/dateninventar.v1.schema.json').read_text())
+        doc = json.loads((root / 'web/operator/src/datenschutz/dateninventar.json').read_text())
+        jsonschema.validate(doc, schema)
+
+    def test_negativ_personenbezogenes_feld_ohne_rechtsgrundlage_verletzt_das_schema(self):
+        import jsonschema
+        root = API.parent
+        schema = json.loads((root / 'docs/umsetzungsplan/vertraege/schemas/dateninventar.v1.schema.json').read_text())
+        doc = json.loads((root / 'web/operator/src/datenschutz/dateninventar.json').read_text())
+        feld = next(sp for t in doc['tabellen'] for sp in t['spalten'] if sp['personenbezogen'] == 'ja')
+        feld['rechtsgrundlage'] = ''
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(doc, schema)
+
 if __name__ == '__main__':
     unittest.main()
