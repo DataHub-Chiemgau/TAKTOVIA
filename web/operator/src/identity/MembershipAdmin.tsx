@@ -121,6 +121,8 @@ export function MembershipAdmin() {
       {notice ? <p role="status">{notice}</p> : null}
       <p>
         <Link to="/admin/organisationen">Organisationen und Rechtsträgerrollen</Link>
+        {' · '}
+        <Link to="/admin/unternehmensprofil">Unternehmensprofil</Link>
       </p>
       <ResourceView
         state={rows}

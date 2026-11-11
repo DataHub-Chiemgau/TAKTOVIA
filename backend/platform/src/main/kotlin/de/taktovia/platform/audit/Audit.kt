@@ -63,6 +63,8 @@ object AuditActions {
     const val TENANT_STATUS_CHANGED = "identity.tenant.status_changed"
     /** Serverseitiger Tenantwechsel (WP-M1-06). */
     const val TENANT_SWITCHED = "identity.tenant.switched"
+    /** Unternehmensprofil des Mandanten geändert (WP-M1-24). */
+    const val TENANT_PROFILE_CHANGED = "config.tenant_profile.changed"
     const val CONFIG_PUBLISHED = "config.revision.published"
     const val CONFIG_REVERTED = "config.revision.reverted"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
@@ -73,7 +75,7 @@ object AuditActions {
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
-    val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
+    val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
 }

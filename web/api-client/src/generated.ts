@@ -404,15 +404,27 @@ export interface AuditEventPage {
 
 export interface CompanyProfile {
   legal_name: string;
-  address: string;
   contact_email: string;
+  contact_phone?: string;
+  address?: string;
+  billing_address?: string;
+  billing_email?: string;
+  operating_mode?: string;
+  legal_notice?: string;
+  default_currency: string;
   revision: number;
 }
 
 export interface CompanyProfileUpdate {
   legal_name: string;
-  address: string;
   contact_email: string;
+  contact_phone?: string;
+  address?: string;
+  billing_address?: string;
+  billing_email?: string;
+  operating_mode?: string;
+  legal_notice?: string;
+  default_currency: string;
 }
 
 export interface RetentionRule {
@@ -1239,7 +1251,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateCompanyProfile: { method: 'PUT', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['company:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRetentionRules: { method: 'GET', path: '/v1/retention-rules', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   updateRetentionRule: { method: 'PUT', path: '/v1/retention-rules/{rule_id}', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/tenant.profilechanged.v1.schema.json",
+  "title": "Unternehmensprofil des Mandanten geändert, Ereignistyp tenant.profile_changed (WP-M1-24, LH-I.7-CFG-001; Dateiname ohne Unterstrich nach Namensschema, Vorbild platform.statechanged)",
+  "description": "Genau ein Ereignis je Änderung des Unternehmensprofils (Revision 1 bei der Erstausstattung). Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist die Mandanten-ID, `aggregate_revision` die Profilrevision. Das Ereignis nennt nur die Namen der geänderten Felder und die Standardwährung, keine Personendaten; wer Werte braucht, liest das Profil. Name und Felder sind Vorschlag (OP-33).",
+  "type": "object",
+  "required": ["revision", "changed_fields", "default_currency"],
+  "additionalProperties": false,
+  "properties": {
+    "revision": { "type": "integer", "minimum": 1 },
+    "changed_fields": {
+      "type": "array", "uniqueItems": true, "maxItems": 9,
+      "items": { "type": "string", "enum": ["legal_name", "contact_email", "contact_phone", "address", "billing_address", "billing_email", "operating_mode", "legal_notice", "default_currency"] }
+    },
+    "default_currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+  },
+  "examples": [
+    { "revision": 2, "changed_fields": ["contact_email", "default_currency"], "default_currency": "CHF" }
+  ]
+}

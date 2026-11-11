@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Vertragsfälle der produktiven Endpunkte. Wer einen Endpunkt aus `api/<modul>.yaml` baut, streicht seine `operationId` aus
  * `api/contract-pending.txt` und trägt hier einen [ContractCase] mit positivem Fall und Fehlerfall ein; ohne Eintrag
- * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung).
+ * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil).
  * Fälle, die eine Anmeldung brauchen, laufen gegen die Instanz mit Ressourcenserver und Test-Issuer ([IdentityEnv]).
  */
 object M1ContractCases {
@@ -77,5 +77,22 @@ object M1ContractCases {
             404, { val op = IdentityEnv.operator(); ContractRequest("POST", "/v1/platform/tenant-status-changes", """{"managed_tenant_id":"${UUID.randomUUID()}","status":"SUSPENDED"}""", IdentityEnv.headers(IdentityEnv.token(op), extra = idem())) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = (identityCases + organizationCases).associateBy { it.operationId }
+    /** Unternehmensprofil (WP-M1-24); der Mandant kommt wie in der Produktion aus der Plattformverwaltung (Profilrevision 1). */
+    private fun profileTenant(): Pair<UUID, String> {
+        val admin = UUID.randomUUID(); val op = IdentityEnv.operator()
+        val r = IdentityEnv.post("/v1/platform/tenants", """{"name":"Profil-${UUID.randomUUID()}","legal_entity":{"name":"LE","country":"DE"},"first_admin":{"issuer":"${IdentityEnv.idp.issuer}","subject":"$admin"},"contact_email":"info@example.org"}""", IdentityEnv.token(op), null, idem())
+        check(r.status == 201) { r.text }
+        return admin to IdentityEnv.token(admin)
+    }
+    private val profileBody = """{"legal_name":"Stadtwerke GmbH","contact_email":"neu@example.org","default_currency":"CHF"}"""
+    private val profileCases: List<ContractCase> = listOf(
+        ContractCase("getCompanyProfile",
+            200, { val (_, t) = profileTenant(); ContractRequest("GET", "/v1/company-profile", headers = IdentityEnv.headers(t)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/company-profile", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("updateCompanyProfile",
+            200, { val (_, t) = profileTenant(); ContractRequest("PUT", "/v1/company-profile", profileBody, IdentityEnv.headers(t, extra = idem() + ("If-Match" to "\"1\""))) },
+            422, { val (_, t) = profileTenant(); ContractRequest("PUT", "/v1/company-profile", profileBody.replace("CHF", "XXY"), IdentityEnv.headers(t, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases).associateBy { it.operationId }
 }
