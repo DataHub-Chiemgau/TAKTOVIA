@@ -33,6 +33,7 @@ describe('Problem-Auswertung', () => {
     [401, 'unauthenticated'],
     [403, 'forbidden'],
     [404, 'notFound'],
+    [409, 'conflict'],
     [412, 'conflict'],
     [428, 'preconditionRequired'],
     [429, 'rateLimited'],

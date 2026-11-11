@@ -28,13 +28,18 @@ import { Fragment } from 'react';
 import { Profil } from './konto/Profil';
 import { PrivacySettings } from './privacy/PrivacySettings';
 import { Registrierung } from './registrierung/Registrierung';
+import { Hilfe } from './hilfe/Hilfe';
+import { OfflineBanner } from './netz/Offline';
+import { useOnline } from './netz/useOnline';
+import { tx } from './texte';
+import type { TextKey } from './texte';
 
 const ZONE = 'Europe/Berlin';
 
+/** Hauptnavigation „Meine Reisen | Hilfe“ (Kap. 06 §6.2); Start ist die Marke, Konto der Link im Kopfbereich. */
 const NAV: readonly NavEntry<Right>[] = [
-  { id: 'start', label: 'Start', href: '/' },
-  { id: 'reisen', label: 'Meine Reisen', href: '/reisen', requires: 'passenger.app' },
-  { id: 'konto', label: 'Konto', href: '/konto', requires: 'passenger.app' },
+  { id: 'reisen', label: tx('nav.reisen'), href: '/reisen', requires: 'passenger.app' },
+  { id: 'hilfe', label: tx('nav.hilfe'), href: '/hilfe' },
 ];
 
 function RouterLink({ href, children, ...rest }: NavLinkProps) {
@@ -60,26 +65,32 @@ function useScreenContext(status: ScreenContext['status']): ScreenContext | null
   };
 }
 
-function Placeholder({
-  title,
-  emptyTitle,
-  hint,
-}: {
-  title: string;
-  emptyTitle: string;
-  hint: string;
-}) {
-  const context = useScreenContext({ tone: 'info', label: 'Grundgerüst, noch keine Inhalte' });
+/** Platzhalter eines Fachbildschirms (UI-01 bis UI-04) im Seitenrahmen; offline ohne jede Buchungsmöglichkeit. */
+function Placeholder({ screen }: { screen: 'ui01' | 'ui02' | 'ui03' | 'ui04' }) {
+  const online = useOnline();
+  const context = useScreenContext(
+    online
+      ? { tone: 'info', label: tx('shell.status.shell') }
+      : { tone: 'warning', label: 'Offline' },
+  );
   if (!context) return null;
+  const title = tx(`${screen}.title` as TextKey);
   return (
     <ScreenFrame title={title} context={context}>
-      <ResourceView
-        state={{ status: 'ready', data: [] as string[] }}
-        isEmpty={(d) => d.length === 0}
-        empty={{ title: emptyTitle, hint }}
-      >
-        {() => null}
-      </ResourceView>
+      {online ? (
+        <ResourceView
+          state={{ status: 'ready', data: [] as string[] }}
+          isEmpty={(d) => d.length === 0}
+          empty={{
+            title: tx(`${screen}.empty.title` as TextKey),
+            hint: tx(`${screen}.empty.hint` as TextKey),
+          }}
+        >
+          {() => null}
+        </ResourceView>
+      ) : (
+        <StateView kind="offline" title={tx('offline.title')} hint={tx('offline.hint')} />
+      )}
     </ScreenFrame>
   );
 }
@@ -151,10 +162,11 @@ function HeaderEnd() {
   const data = useTenantSwitcherData();
   const signOut = useSignOut();
   const auth = useAuthOptional();
-  if (!data) return null;
   return (
     <>
-      <TenantSwitcher {...data} />
+      <Link to="/">{tx('nav.start')}</Link>
+      <Link to="/konto">{tx('nav.konto')}</Link>
+      {data ? <TenantSwitcher {...data} /> : null}
       {auth ? <BusyButton onAction={signOut}>Abmelden</BusyButton> : null}
     </>
   );
@@ -167,7 +179,7 @@ function RequirePassenger({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Passenger-Rahmenanwendung: Routing, Navigation nach Recht, Fehlerseiten. Buchung (UI-01 bis UI-04) folgt ab M2. */
+/** Passenger-Rahmenanwendung: Routing UI-01 bis UI-05 und Hilfe, Navigation nach Recht, Fehler- und Offlinezustände. Fachinhalte folgen mit WP-M2-36 ff. */
 export function App() {
   const session = useSession();
   const location = useLocation();
@@ -195,33 +207,45 @@ export function App() {
     );
   return (
     <AppFrame
-      brand="TAKTOVIA Fahrgast"
+      brand={tx('shell.brand')}
       nav={visibleNav(NAV, rightsOf(session.me))}
       currentHref={location.pathname}
       linkAs={RouterLink}
       headerEnd={<HeaderEnd />}
     >
       <Fragment key={session.me.tenant_id}>
+        <OfflineBanner />
         <Routes>
+          <Route path="/" element={<Placeholder screen="ui01" />} />
           <Route
-            path="/"
+            path="/angebote"
             element={
-              <Placeholder
-                title="Start"
-                emptyTitle="Noch keine Fahrtsuche"
-                hint="Fahrten suchen und buchen (UI-01 bis UI-03) folgt ab M2."
-              />
+              <RequirePassenger>
+                <Placeholder screen="ui02" />
+              </RequirePassenger>
+            }
+          />
+          <Route
+            path="/checkout/:offerId"
+            element={
+              <RequirePassenger>
+                <Placeholder screen="ui03" />
+              </RequirePassenger>
             }
           />
           <Route
             path="/reisen"
             element={
               <RequirePassenger>
-                <Placeholder
-                  title="Meine Reisen"
-                  emptyTitle="Keine Reisen"
-                  hint="Aktive und vergangene Reisen (UI-04) folgen ab M2."
-                />
+                <Placeholder screen="ui04" />
+              </RequirePassenger>
+            }
+          />
+          <Route
+            path="/reisen/:bookingId"
+            element={
+              <RequirePassenger>
+                <Placeholder screen="ui04" />
               </RequirePassenger>
             }
           />
@@ -233,6 +257,7 @@ export function App() {
               </RequirePassenger>
             }
           />
+          <Route path="/hilfe" element={<Hilfe />} />
           <Route path="*" element={<StateView kind="notFound" level={1} />} />
         </Routes>
       </Fragment>

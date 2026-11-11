@@ -20,7 +20,8 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces",
     "build": "npm run build --workspaces",
-    "a11y:browser": "node tools/a11y-browser.mjs"
+    "a11y:browser": "node tools/a11y-browser.mjs",
+    "e2e:pwa": "node tools/pwa-browser.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

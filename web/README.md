@@ -14,7 +14,7 @@ npm-Workspaces-Monorepo (`package.json`, `package-lock.json` im Verzeichnis `web
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `api-client` (`@taktovia/api-client`)       | Aus `api/*.yaml` erzeugte Typen und Operationstabelle (`src/generated.ts`, per `python api/tools/gen_ts_client.py --write`), Fetch-Laufzeit mit Problem-Fehlern, Rechte aus `/v1/me`, Sitzungs-Provider |
 | `design-system` (`@taktovia/design-system`) | Komponenten, Tokens, i18n, Rahmen, Zustände, axe-core-Testbaustein unter `@taktovia/design-system/testing`; siehe [design-system/README.md](design-system/README.md)                                    |
-| `passenger` (`@taktovia/passenger`)         | Passenger-PWA mit leerer Startseite, Web-Manifest und Service-Worker-Grundgerüst                                                                                                                        |
+| `passenger` (`@taktovia/passenger`)         | Passenger-PWA: App-Shell, Routen UI-01 bis UI-05 und Hilfe, Offlinezustand, Idempotenz-Befehle, Service Worker nur für App-Shell ([Vertrag](../docs/umsetzungsplan/vertraege/web-passenger-pwa.md))     |
 | `operator` (`@taktovia/operator`)           | Operator-Shell mit Routen-Platzhaltern Callcenter, Finanzen, Personal, Admin                                                                                                                            |
 
 Paketgrenzen: Apps hängen von `design-system` und `api-client` ab, nicht umgekehrt; `design-system` kennt den API-Client nicht; `passenger` und `operator` hängen nicht voneinander ab. Umgesetzt sind nur Rahmen und Grundgerüste (UI-17, UI-18, UI-20 als Leerzustand, UI-20 Dateninventar-Export); Fachbildschirme folgen in M2 bis M8.
@@ -25,16 +25,17 @@ Paketgrenzen: Apps hängen von `design-system` und `api-client` ab, nicht umgeke
 
 ## Befehle
 
-| Befehl                               | Wirkung                                                                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `npm ci`                             | Reproduzierbare Installation aus `package-lock.json`                                                         |
-| `npm run lint`                       | ESLint (typescript-eslint strict, react-hooks) und Prettier-Prüfung                                          |
-| `npm run format`                     | Prettier-Formatierung anwenden                                                                               |
-| `npm run typecheck`                  | `tsc --noEmit` je Paket (strikte Konfiguration in `tsconfig.base.json`)                                      |
-| `npm test`                           | Vitest (jsdom, Testing Library, axe-core) je Paket                                                           |
-| `npm run build`                      | Typprüfung und Vite-Build je Paket (Ausgabe `dist/`, nicht versioniert)                                      |
-| `npm run a11y:browser`               | Barrierefreiheit im echten Chrome (axe mit Kontrast, 320 px, 200 % Text, Touchflächen); `CHROME_PATH` setzen |
-| `npm run dev -w @taktovia/passenger` | Lokaler Entwicklungsserver (analog `operator`)                                                               |
+| Befehl                               | Wirkung                                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                             | Reproduzierbare Installation aus `package-lock.json`                                                                                      |
+| `npm run lint`                       | ESLint (typescript-eslint strict, react-hooks) und Prettier-Prüfung                                                                       |
+| `npm run format`                     | Prettier-Formatierung anwenden                                                                                                            |
+| `npm run typecheck`                  | `tsc --noEmit` je Paket (strikte Konfiguration in `tsconfig.base.json`)                                                                   |
+| `npm test`                           | Vitest (jsdom, Testing Library, axe-core) je Paket                                                                                        |
+| `npm run build`                      | Typprüfung und Vite-Build je Paket (Ausgabe `dist/`, nicht versioniert)                                                                   |
+| `npm run a11y:browser`               | Barrierefreiheit im echten Chrome (axe mit Kontrast, 320 px, 200 % Text, Touchflächen); `CHROME_PATH` setzen                              |
+| `npm run e2e:pwa`                    | PWA im echten Chrome gegen den Produktionsbuild (Manifest, Service Worker, Cache, Offline); vorher `npm run build -w @taktovia/passenger` |
+| `npm run dev -w @taktovia/passenger` | Lokaler Entwicklungsserver (analog `operator`)                                                                                            |
 
 Ein Typfehler oder ein axe-Verstoß (siehe negativer Test im `design-system`: Schaltfläche ohne zugänglichen Namen) bricht den Lauf ab.
 
@@ -47,7 +48,7 @@ Ein Typfehler oder ein axe-Verstoß (siehe negativer Test im `design-system`: Sc
 
 ## PWA-Grundlage
 
-`passenger` und `operator` liefern ein Web-Manifest (`public/manifest.webmanifest`, noch ohne Icons); `passenger` registriert im Produktionsbuild einen Service Worker (`public/sw.js`) ohne Caching-Strategie. Offline-Verhalten und Icons folgen mit den Bildschirmen.
+`passenger` und `operator` liefern ein Web-Manifest (`public/manifest.webmanifest`, noch ohne Icons); `passenger` registriert im Produktionsbuild einen Service Worker (`public/sw.js`), der ausschließlich App-Shell-Assets cacht (nie `/v1/*`, nie Anfragen mit Authorization); Manifest mit Symbolen (192/512). Regel: [web-passenger-pwa.md](../docs/umsetzungsplan/vertraege/web-passenger-pwa.md).
 
 ## Bekannte Hinweise
 
