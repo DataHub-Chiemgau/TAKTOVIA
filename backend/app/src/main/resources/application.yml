@@ -3,11 +3,21 @@ spring:
     name: taktovia
   datasource:
     # Ausschließlich die Runtime-Rolle; Migrator-Zugangsdaten gehören nicht in die Laufzeitkonfiguration.
-    url: jdbc:postgresql://${TAKTOVIA_DB_HOST:127.0.0.1}:${TAKTOVIA_DB_PORT:5432}/${TAKTOVIA_DB_NAME:taktovia}
+    url: jdbc:postgresql://${TAKTOVIA_DB_HOST:127.0.0.1}:${TAKTOVIA_DB_PORT:5432}/${TAKTOVIA_DB_NAME:taktovia}?sslmode=${TAKTOVIA_DB_SSLMODE:verify-full}
     username: taktovia_runtime
     password: ${TAKTOVIA_DB_RUNTIME_PASSWORD}
 server:
   port: ${PORT:8080}
+  ssl:
+    # Transportverschlüsselung (WP-M1-36): TLS 1.2/1.3; Schlüsselspeicher aus der Secret-Verwaltung eingehängt.
+    enabled: ${TAKTOVIA_TLS_ENABLED:true}
+    enabled-protocols: TLSv1.3,TLSv1.2
+    key-store: ${TAKTOVIA_TLS_KEYSTORE:}
+    key-store-type: PKCS12
+    key-store-password: ${TAKTOVIA_TLS_KEYSTORE_PASSWORD:}
+taktovia:
+  # `local` nur für lokale Entwicklung und Tests; jede andere oder fehlende Angabe erzwingt TLS überall (TransportGuard).
+  environment: ${TAKTOVIA_ENVIRONMENT:production}
 management:
   endpoints:
     web:

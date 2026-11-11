@@ -20,6 +20,7 @@ SUITES = [  # (Name, Verzeichnis, braucht Datenbank)
     ("performance (Lastgerüst)", "tests/performance", False),
     ("spike (d) PSP-Port", "tests/performance/spikes/spike_d", False),
     ("spike (e) Routing-Port", "tests/performance/spikes/spike_e", False),
+    ("security (Secret-Scan, TLS-Scanner)", "tests/acceptance/security", False),
     ("acceptance (Akzeptanzgerüst)", "tests/acceptance", True),
     ("spike (a) Hold/Confirm/PostGIS", "tests/performance/spikes/spike_a", True),
     ("contract (semantische Contract-Fälle)", "tests/contract", False),

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/operator-warning.v1.schema.json",
+  "title": "Betreiberwarnung (WP-M1-47)",
+  "description": "Technische Warnung an den Betreiber. Keine Personen-, Kontakt- oder Inhaltsdaten; Mandant nur als opake ID. Durchgesetzt von platform.alert.OperatorWarningPolicy.",
+  "type": "object",
+  "required": ["source", "kind", "severity", "correlation_id"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,47}$", "description": "Erzeuger, z. B. outbox-relay, webhook-delivery, security" },
+    "kind": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,47}$", "description": "Art der Warnung, z. B. dead_letter. Quelle und Art bilden den Zusammenfassungsschlüssel." },
+    "severity": { "enum": ["info", "warning", "critical"] },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "tenant_ref": { "type": ["string", "null"], "format": "uuid", "description": "opake Mandanten-ID, nie als Metriklabel" },
+    "attributes": {
+      "type": "object",
+      "propertyNames": { "enum": ["component", "queue", "event_type", "aggregate_type", "attempts", "reason_code", "consumer", "endpoint_ref"] },
+      "additionalProperties": { "type": "string", "pattern": "^[A-Za-z0-9_.:/-]{1,80}$" }
+    }
+  },
+  "examples": [
+    { "source": "outbox-relay", "kind": "dead_letter", "severity": "critical", "correlation_id": "6f1c1a0e-5f43-4a0e-9d0b-0d7f7a1d2f11", "tenant_ref": "0f6f6d0a-3c7b-4d9e-8f10-1c2d3e4f5a6b", "attributes": { "queue": "taktovia.events", "attempts": "14" } }
+  ]
+}

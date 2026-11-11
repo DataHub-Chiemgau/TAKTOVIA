@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/platform.eventenvelope.v1.schema.json",
+  "title": "Ereignishülle (WP-M1-14)",
+  "description": "Hülle jedes Outbox-Ereignisses. Ereigniszeit (occurred_at), Aufzeichnungszeit (recorded_at, Eigentümer) und Aggregatversion sind getrennte Felder; die Empfangszeit entsteht beim Consumer (inbox.received_at). payload_sha256 = SHA-256 über die kanonische JSON-Darstellung des payload (Schlüssel sortiert, kompakt, Zahlen ohne Nachkommanullen). schema_version = <major>.<minor>: Minor ist abwärtskompatibel, eine neue Major ist eine neue Ereignisschema-Datei.",
+  "type": "object",
+  "required": ["event_id", "event_type", "schema_version", "aggregate_id", "aggregate_revision", "occurred_at", "recorded_at", "owner_tenant_id", "recipient_tenant_id", "payload", "payload_sha256"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" },
+    "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "aggregate_id": { "type": "string", "format": "uuid" },
+    "aggregate_revision": { "type": "integer", "minimum": 1 },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "owner_tenant_id": { "type": "string", "format": "uuid" },
+    "recipient_tenant_id": { "type": "string", "format": "uuid", "description": "Explizite Empfängeradressierung (Kap. 02 §4.3). Ohne Empfänger wird nicht zugestellt." },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "payload": { "type": "object" },
+    "payload_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "examples": [
+    {
+      "event_id": "0b1f6a58-6f0e-4f7e-9a53-3f2f0f3d5a10",
+      "event_type": "identity.membership.granted",
+      "schema_version": "1.0",
+      "aggregate_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "aggregate_revision": 8,
+      "occurred_at": "2026-11-01T10:00:00Z",
+      "recorded_at": "2026-11-01T10:00:00Z",
+      "owner_tenant_id": "0f6f6d0a-3c7b-4d9e-8f10-1c2d3e4f5a6b",
+      "recipient_tenant_id": "0f6f6d0a-3c7b-4d9e-8f10-1c2d3e4f5a6b",
+      "payload": { "status": "ACTIVE" },
+      "payload_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

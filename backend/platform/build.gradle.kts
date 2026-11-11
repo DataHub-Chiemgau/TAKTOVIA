@@ -2,6 +2,10 @@
 dependencies {
     api("org.springframework:spring-jdbc")
     api("org.springframework:spring-tx")
+    api("io.micrometer:micrometer-core")                    // Metriken der Betreiberwarnungen (WP-M1-47)
+    implementation("org.slf4j:slf4j-api")                   // strukturierte Logzeile
+    implementation("tools.jackson.core:jackson-databind")   // Ereignishülle, JSON-Verarbeitung (WP-M1-14, -46)
+    implementation("com.rabbitmq:amqp-client")              // Relay-Adapter RabbitMQ (WP-M1-14), nicht ausgeführt ohne Broker
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
 }
