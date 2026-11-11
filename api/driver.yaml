@@ -1,0 +1,130 @@
+paths:
+  /v1/driver/events:
+    post:
+      summary: Ein-/Ausstieg oder No-Show übermitteln
+      operationId: recordDriverEvent
+      security:
+      - oidc:
+        - driver:events
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverEventResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete
+        Offline-Ereignisse überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte
+        Beförderungsbuchung.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverEvent'
+components:
+  schemas:
+    DriverEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        event_type:
+          type: string
+          enum:
+          - CHECK_IN
+          - CHECK_OUT
+          - NO_SHOW
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        occurred_at:
+          type: string
+          format: date-time
+        device_recorded_at:
+          type: string
+          format: date-time
+        position:
+          $ref: common.yaml#/components/schemas/Point
+        accuracy_meters:
+          type: number
+          minimum: 0
+          maximum: 100000
+        offline_recorded:
+          type: boolean
+      required:
+      - event_id
+      - shift_id
+      - vehicle_id
+      - plan_revision
+      - event_type
+      - booking_id
+      - route_stop_id
+      - occurred_at
+      - device_recorded_at
+      - offline_recorded
+    DriverEventResult:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - APPLIED
+          - DUPLICATE
+          - REVIEW_REQUIRED
+        received_at:
+          type: string
+          format: date-time
+        current_plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        reason_code:
+          oneOf:
+          - type: string
+            enum:
+            - STALE_PLAN
+            - OUTSIDE_STOP
+            - CLOCK_SKEW
+            - INVALID_ORDER
+          - type: 'null'
+      required:
+      - event_id
+      - state
+      - received_at
+      - current_plan_revision
+      - reason_code

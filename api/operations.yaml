@@ -1,0 +1,34 @@
+paths:
+  /v1/operations/{operation_id}:
+    get:
+      summary: Dauerhaften Bearbeitungsstatus lesen
+      operationId: getOperation
+      security:
+      - oidc:
+        - operations:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/operation_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/Operation
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem

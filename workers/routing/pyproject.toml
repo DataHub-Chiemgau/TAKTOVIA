@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taktovia-routing"
+version = "0.0.1"
+description = "TAKTOVIA Routing-Worker (OR-Tools, Valhalla-Adapter-Schnittstelle, Spike Solverlaufzeit)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "ortools==9.15.6755",
+  "numpy==2.5.4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.2.0",
+  "ruff==0.17.4",
+  "mypy==2.4.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["slow: langsamer Test"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src", "tests"]
+[[tool.mypy.overrides]]
+module = ["ortools.*"]
+ignore_missing_imports = true

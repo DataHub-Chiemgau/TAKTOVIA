@@ -1,0 +1,353 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://spec.openapis.org/oas/3.1/dialect/base
+info:
+  title: TAKTOVIA – Kernverträge Pflichtenheft
+  version: 0.1.0
+  description: Entwurf vom 25.10.2026. Vertragsartefakt, keine laufende Implementierung. Ergänzender Endpunktkatalog in 05-api-vertraege.md.
+    URLs unter .example sind Platzhalter; Produktion ist deploymentabhängig.
+servers:
+- url: https://api.taktovia.example
+  description: Dokumentationsplatzhalter, kein produktiver Dienst
+components:
+  securitySchemes:
+    oidc:
+      type: oauth2
+      description: OIDC-login/PKCE für Personen; kurzlebige OAuth Access Tokens, issuer/audience/tenant Mitgliedschaft serverseitig
+        geprüft. Deployment ersetzt example-URLs. Machine-to-machine über freigegebene Serviceidentitäten.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.taktovia.example/oauth2/authorize
+          tokenUrl: https://identity.taktovia.example/oauth2/token
+          scopes:
+            journeys:plan: journeys:plan
+            journeys:read: journeys:read
+            journeys:book: journeys:book
+            journeys:cancel: journeys:cancel
+            operations:read: operations:read
+            costs:allocate: costs:allocate
+            expenses:approve: expenses:approve
+            config:publish: config:publish
+            rosters:publish: rosters:publish
+            driver:events: driver:events
+        clientCredentials:
+          tokenUrl: https://identity.taktovia.example/oauth2/token
+          scopes:
+            journeys:plan: journeys:plan
+            journeys:read: journeys:read
+            journeys:book: journeys:book
+            journeys:cancel: journeys:cancel
+            operations:read: operations:read
+            costs:allocate: costs:allocate
+            expenses:approve: expenses:approve
+            config:publish: config:publish
+            rosters:publish: rosters:publish
+            driver:events: driver:events
+    partnerSignature:
+      type: apiKey
+      in: header
+      name: X-Partner-Signature
+      description: v1=<64 hex HMAC-SHA256>; API-Key-Syntax beschreibt den Header, Semantik ist eine dynamische Nachrichtensignatur.
+        Schlüssel nie übertragen. Zusätzliche Pflichtheader im Vertrag.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: ^[A-Za-z0-9._:-]+$
+      description: 'Stabil pro logischem Befehl. Scope = principal + tenant + operation; anderer Payload zu gleichem Schlüssel:
+        409.'
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^"[0-9]+"$
+      description: 'Starker ETag der gelesenen Ressourcenrevision, z. B. "7". Fehlt: 428, veraltet: 412.'
+    Traceparent:
+      name: traceparent
+      in: header
+      required: false
+      schema:
+        type: string
+        pattern: ^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$
+    offer_id:
+      name: offer_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    journey_id:
+      name: journey_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    operation_id:
+      name: operation_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    partner_id:
+      name: partner_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    cost_event_id:
+      name: cost_event_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    expense_id:
+      name: expense_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    revision_id:
+      name: revision_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    roster_id:
+      name: roster_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+  responses:
+    Problem:
+      description: Fehler gemäß application/problem+json; code ist stabil und maschinenlesbar.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    OperationAccepted:
+      description: Befehl dauerhaft gespeichert; noch keine Buchungs-/Stornozusage.
+      headers:
+        Location:
+          schema:
+            type: string
+          description: /v1/operations/{operation_id}
+        Retry-After:
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 300
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Operation'
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+    SignedMoney:
+      type: object
+      additionalProperties: false
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        exponent:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4
+      required:
+      - amount_minor
+      - currency
+      - exponent
+    Point:
+      type: object
+      additionalProperties: false
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+      required:
+      - latitude
+      - longitude
+    Operation:
+      type: object
+      additionalProperties: false
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/UUID'
+        kind:
+          type: string
+          enum:
+          - HOLD
+          - CONFIRM
+          - CANCEL
+          - RECONCILE
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - RECONCILING
+          - SUCCEEDED
+          - FAILED
+          - MANUAL_REVIEW
+        journey_id:
+          oneOf:
+          - $ref: '#/components/schemas/UUID'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        result_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+        retry_after_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 300
+      required:
+      - operation_id
+      - kind
+      - status
+      - journey_id
+      - created_at
+      - updated_at
+      - result_code
+      - retry_after_seconds
+      examples:
+      - operation_id: 00000000-0000-4000-8000-000000000050
+        kind: CONFIRM
+        status: RECONCILING
+        journey_id: 00000000-0000-4000-8000-000000000020
+        created_at: '2026-11-02T06:59:00Z'
+        updated_at: '2026-11-02T06:59:05Z'
+        result_code: PARTNER_RESULT_UNKNOWN
+        retry_after_seconds: 3
+    PublishRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        effective_from:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        impact_report_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - effective_from
+      - reason
+      - impact_report_id
+    PublishedRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        resource_id:
+          $ref: '#/components/schemas/UUID'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - PUBLISHED
+        effective_from:
+          type: string
+          format: date-time
+        audit_event_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - resource_id
+      - revision
+      - state
+      - effective_from
+      - audit_event_id
+    Problem:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          minLength: 1
+          maxLength: 256
+        status:
+          type: integer
+          format: int64
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          minLength: 1
+          maxLength: 256
+        detail:
+          type: string
+          maxLength: 2000
+        correlation_id:
+          $ref: '#/components/schemas/UUID'
+        violations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              pointer:
+                type: string
+                minLength: 1
+                maxLength: 256
+              code:
+                type: string
+                minLength: 1
+                maxLength: 256
+              message:
+                type: string
+                minLength: 1
+                maxLength: 256
+            required:
+            - pointer
+            - code
+            - message
+      required:
+      - type
+      - title
+      - status
+      - code
+      - correlation_id
+      examples:
+      - type: https://api.taktovia.example/problems/offer-expired
+        title: Angebot abgelaufen
+        status: 409
+        code: OFFER_EXPIRED
+        detail: Bitte eine neue Reiseauskunft anfordern. Es wurde keine neue Buchung angelegt.
+        correlation_id: 00000000-0000-4000-8000-000000000070

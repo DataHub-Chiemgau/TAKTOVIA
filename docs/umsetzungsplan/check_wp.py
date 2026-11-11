@@ -113,13 +113,20 @@ for name, g in gaps.items():
 for e in errors: print('FEHLER', e)
 
 if '--write' in sys.argv and not errors:
+    # Von Hand/Vertragsprozess gepflegte Spalten bleiben erhalten (docs/umsetzungsplan/vertragsprozess.md).
+    kept = {}
+    if OUT.exists():
+        with OUT.open(encoding='utf-8', newline='') as f:
+            kept = {r['source_key']: r for r in csv.DictReader(f, delimiter=';')}
     with OUT.open('w', encoding='utf-8', newline='') as f:
         w = csv.writer(f, delimiter=';', quoting=csv.QUOTE_ALL)
         w.writerow(['source_key', 'id_original', 'quellabschnitt', 'phase_original', 'prioritaet_original',
                     'meilenstein', 'arbeitspaket', 'wp_titel', 'wp_groesse', 'wp_datei', 'detailvertrag', 'testfall', 'status'])
         for k, r in reqs.items():
             wid = assign[k][0]; x = wps[wid]
+            old = kept.get(k, {})
             w.writerow([k, r['id_original'], r['quellabschnitt'], r['phase_original'], r['prioritaet_original'],
-                        ms(wid), wid, x['title'], x['size'], 'wp/' + x['file'], '', '', 'Geplant'])
+                        ms(wid), wid, x['title'], x['size'], 'wp/' + x['file'],
+                        old.get('detailvertrag', ''), old.get('testfall', ''), old.get('status') or 'Geplant'])
     print('arbeitspakete.csv geschrieben')
 sys.exit(1 if errors else 0)

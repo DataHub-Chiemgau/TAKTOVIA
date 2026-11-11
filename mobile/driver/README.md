@@ -3,5 +3,57 @@
 Flutter-Fahrer-App mit verschlüsselter lokaler Outbox (Offlinebetrieb, Kap. 01 §1.5).
 
 - **Verantwortlich:** Betrieb/Mobil (Rolle laut D-12, noch keine Personen benannt)
-- **Build/Test:** Gerüst folgt mit WP-M0-06; Spike (c) WP-M0-28
 - **Regeln:** [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- **Stand:** Gerüst (WP-M0-06) und Logik des Spikes (c) (WP-M0-28) liegen als Dateien vor. **Nichts davon wurde ausgeführt**, siehe unten.
+
+## Festgeschriebene Werkzeuge
+
+| Baustein | Version | Quelle |
+|---|---|---|
+| Flutter (stable) | 3.47.9 | `releases_linux.json` von storage.googleapis.com am 11.11.2026; Archiv-SHA-256 `25ed8c3c…044c5a` stimmt mit dem Manifest überein (Archiv geladen, entpackt) |
+| Dart | 3.13.7 (liegt Flutter 3.47.9 bei) | dasselbe Manifest |
+| `sqlite3` (Dart-Paket, mit SQLite3MultipleCiphers) | 3.9.1 | pub.dev-API am 11.11.2026 |
+| `crypto` | 3.0.8 | pub.dev-API am 11.11.2026 |
+| `flutter_lints` | 6.0.0 | pub.dev-API am 11.11.2026 |
+
+Die Lizenzen sind nicht einzeln geprüft (Flutter BSD-3-Clause laut Plan, `sqlite3` MIT laut pub.dev-Tags); Eintrag in `docs/umsetzungsplan/versionen.md` durch die Zuständigen. Begründung der Wahl: [docs/entscheidung-verschluesselte-sqlite.md](docs/entscheidung-verschluesselte-sqlite.md).
+
+## Was fehlt (Blocker)
+
+- **Flutter/Dart nicht ausgeführt.** Das Flutter-SDK wurde heruntergeladen und geprüft, der Start (`flutter --version`) wurde von der Berechtigungsprüfung der Sitzung abgelehnt (Ausführung heruntergeladenen Codes). Es liegen daher **kein** `flutter analyze`, **kein** `flutter test`, **kein** `pubspec.lock`, **kein** Build-Ergebnis vor. Die Dart-Dateien sind ungeprüft und können Syntax- oder Typfehler enthalten.
+- **`android/` und `ios/` fehlen.** Sie entstehen durch `flutter create --platforms=android,ios --org de.taktovia .` im Verzeichnis `mobile/driver`; die vorhandenen `lib/`, `test/` und `pubspec.yaml` anschließend gegen das Ergebnis abgleichen. Damit ist WP-M0-06 AK 1 (Debug-Artefakt je Plattform in CI) offen; die CI-Stufe liegt in WP-M0-12 (`.github/`, nicht Teil dieser Zuweisung).
+- **Zielgeräteliste** (D-05, D-12) liegt nicht vor; ohne Angabe wird auf Referenzgeräten gebaut.
+
+## Erste Schritte (mit Flutter 3.47.9)
+
+```bash
+cd mobile/driver
+flutter create --platforms=android,ios --org de.taktovia .   # erzeugt android/ und ios/
+flutter pub get                                              # erzeugt pubspec.lock (einchecken)
+flutter analyze                                              # Lint; Verstoß bricht ab
+flutter test                                                 # Widget-Test und Offline-Logiktests
+```
+
+Negativtest Lint (WP-M0-06): eine unbenutzte Variable oder einen unbenutzten Import einfügen; `flutter analyze` muss mit Exit-Code ungleich 0 enden (`analysis_options.yaml` setzt diese Befunde auf `error`). Noch nicht ausgeführt.
+
+## Aufbau
+
+- `lib/main.dart` – App-Gerüst ohne Bildschirme (UI-09 ff. ab M3).
+- `lib/offline/` – Offline-Queue-Logik des Spikes WP-M0-28, reines Dart ohne Flutter-Abhängigkeit:
+  - `models.dart` – Ereignis (`device_event_id`, `baseRevision` = letzte Serverrevision, Erfassungszeit Geräteuhr, Empfangszeit Server, Zustand), Offline-Lesestand mit „Stand von …“.
+  - `ports.dart` – Ports `OutboxStore`, `SnapshotStore`, `DriverEventApi`.
+  - `offline_queue.dart` – Erfassung; Konfliktverdacht Check-in vs. Storno.
+  - `sync_engine.dart` – Sync mit Lease (zwei Prozesse), at-least-once Sendung + serverseitige Idempotenz = genau einmal wirksam.
+  - `memory_store.dart` – Referenzspeicher für Tests.
+  - `sqlite_outbox_store.dart` – verschlüsselte SQLite-Ablage (Adapter, ungeprüft).
+  - `fake_driver_event_server.dart` – Test-Gegenstelle für `recordDriverEvent` (`APPLIED`/`DUPLICATE`/`REVIEW_REQUIRED`).
+- `test/` – Widget-Test und Logiktests; `test/offline/sqlite_outbox_store_test.dart` braucht den nativen SQLite3MultipleCiphers-Build.
+- `docs/` – Entscheidung zur verschlüsselten SQLite, Spike-Drehbuch, Messprotokoll-Vorlage.
+
+## Entwurfsentscheidungen des Spikes
+
+- **Genau einmal wirksam:** Client sendet at-least-once; ein Ereignis bleibt in der Outbox, bis eine Serverantwort vorliegt. Der Server dedupliziert über `device_event_id`. Eine verlorene Antwort führt zu `DUPLICATE`; war die erste Verarbeitung `REVIEW_REQUIRED`, liefert der Server das im Feld `originalOutcome` mit (Annahme für den Vertrag `recordDriverEvent`, mit der API-Spezifikation abzugleichen).
+- **Nebenläufigkeit:** `claimBatch` ist atomar (SQLite: `BEGIN IMMEDIATE`) und vergibt Leases; abgelaufene Leases werden von einem anderen Lauf übernommen. Die Reihenfolge zwischen zwei gleichzeitigen Läufen ist nicht garantiert; der Server muss über `baseRevision` entscheiden, nicht über Eingangsreihenfolge (offen für M3).
+- **Zeiten:** Erfassungszeit (Geräteuhr) wird nie überschrieben; die Serverempfangszeit steht getrennt. Lokale Reihenfolge folgt `seq`, nicht der Uhr.
+- **Manipulation:** HMAC je Zeile über die unveränderlichen Felder (Schlüssel getrennt vom Datenbankschlüssel zu halten); fehlerhafte Zeilen werden in Quarantäne gesetzt und nie gesendet. Die Verschlüsselung der Datei (Seitenauthentisierung) schützt zusätzlich die Gesamtdatei.
+- **Klärfall Check-in vs. Storno:** nur Erkennung und Kennzeichnung (`conflictHint`, `ReviewReason`). Der Workflow ist M3.

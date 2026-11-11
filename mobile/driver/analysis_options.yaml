@@ -1,0 +1,21 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # Lint-Verstoss bricht ab (WP-M0-06 AK 2): Warnungen und Lints gelten als Fehler.
+    unused_import: error
+    unused_local_variable: error
+    dead_code: error
+
+linter:
+  rules:
+    - avoid_print
+    - prefer_final_locals
+    - always_declare_return_types
+    - unawaited_futures
+    - cancel_subscriptions
+    - prefer_single_quotes

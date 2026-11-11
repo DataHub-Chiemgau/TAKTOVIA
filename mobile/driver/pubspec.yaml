@@ -1,0 +1,32 @@
+name: taktovia_driver
+description: TAKTOVIA Fahrer-App (Flutter) mit verschluesselter lokaler Outbox. Geruest WP-M0-06, Spike WP-M0-28.
+publish_to: none
+version: 0.1.0+1
+
+# Feste Werkzeugversionen (siehe docs/umsetzungsplan/versionen.md, .flutter-version).
+# NICHT AUSGEFUEHRT: Flutter wurde in der Erstellungsumgebung nicht gestartet, siehe README.
+environment:
+  sdk: ">=3.13.7 <3.14.0"
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Verschluesselte SQLite: sqlite3 mit SQLite3MultipleCiphers (Build-Hook, siehe unten), Entscheidung in docs/entscheidung-verschluesselte-sqlite.md
+  sqlite3: 3.9.1
+  crypto: 3.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+# Nimmt SQLite3MultipleCiphers statt reinem SQLite in den Build auf (Optionsseite des Pakets sqlite3).
+# UNGEPRUEFT: Schluessel- und Wert-Schreibweise ist nach Dokumentation des Pakets zu verifizieren (erster Lauf mit Flutter).
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
+
+flutter:
+  uses-material-design: true

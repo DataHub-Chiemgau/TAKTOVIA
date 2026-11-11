@@ -1,0 +1,10 @@
+{
+    "name": "TAKTOVIA Fahrgast",
+    "short_name": "TAKTOVIA",
+    "start_url": "/",
+    "display": "standalone",
+    "lang": "de",
+    "background_color": "#ffffff",
+    "theme_color": "#0b5fff",
+    "icons": []
+}

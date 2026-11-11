@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taktovia-documents"
+version = "0.0.1"
+description = "TAKTOVIA Dokumenten-Worker (Platzhalter OCR, Malware-Scan, KoSIT-Validator)"
+requires-python = ">=3.13,<3.14"
+# Bewusst keine Datenbanktreiber: der Worker hat keinen Schreibzugriff auf die Datenbank.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.2.0",
+  "ruff==0.17.4",
+  "mypy==2.4.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src", "tests"]

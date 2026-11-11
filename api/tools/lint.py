@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Linter für die API-Verträge (WP-M0-04, Konventionen aus Kap. 05 §5.1).
+
+Regeln: Pfadpräfix /v1; eindeutige operationId; security je Operation; Idempotency-Key bei mutierenden Operationen;
+If-Match bei Revisionseingriffen; Fehlerantworten als application/problem+json; $ref auflösbar (OpenAPI-Validator);
+Schema-Beispiele gültig; Ereignisschemas unter api/events gültiges JSON Schema mit Namensschema.
+Ausnahmen sind unten namentlich begründet; neue Ausnahmen brauchen Review.
+"""
+import json, re, sys
+from pathlib import Path
+import yaml
+from jsonschema import Draft202012Validator, FormatChecker
+from openapi_spec_validator import validate_spec
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bundle import API, bundle  # noqa: E402
+
+MUTATING = {'post', 'put', 'patch', 'delete'}
+# Operationen ohne Idempotency-Key: Partnerereignisse tragen Signaturheader und werden über die Inbox dedupliziert (Kap. 05 §5.6).
+NO_IDEMPOTENCY_KEY = {'receivePartnerEvent'}
+# Mutierende Operationen mit Idempotency-Key, aber ohne If-Match: legen Neues an statt eine Revision zu ändern.
+NO_IF_MATCH = {'planJourney', 'recordDriverEvent'}
+EVENT_NAME = re.compile(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+\.v\d+\.schema\.json$')
+
+
+def _param_names(op):
+    return {p.get('$ref', '').split('/')[-1] or p.get('name') for p in op.get('parameters', [])}
+
+
+def lint_doc(doc: dict) -> list[str]:
+    errs, ids = [], []
+    for path, item in doc['paths'].items():
+        if not path.startswith('/v1/'): errs.append(f'{path}: Pfad ohne /v1-Präfix')
+        for method, op in item.items():
+            if method not in {'get', 'post', 'put', 'patch', 'delete'}: continue
+            oid = op.get('operationId')
+            where = f'{method.upper()} {path} ({oid})'
+            if not oid: errs.append(f'{where}: operationId fehlt')
+            ids.append(oid)
+            if not op.get('security'): errs.append(f'{where}: security fehlt')
+            names = _param_names(op)
+            if method in MUTATING:
+                if oid not in NO_IDEMPOTENCY_KEY and 'IdempotencyKey' not in names:
+                    errs.append(f'{where}: mutierende Operation ohne Idempotency-Key')
+                if oid not in NO_IDEMPOTENCY_KEY and oid not in NO_IF_MATCH and 'IfMatch' not in names:
+                    errs.append(f'{where}: Revisionseingriff ohne If-Match')
+            if oid in NO_IF_MATCH and 'IfMatch' in names: errs.append(f'{where}: Ausnahmeliste veraltet (trägt If-Match)')
+            for code, resp in op.get('responses', {}).items():
+                if str(code)[0] in '45' and '$ref' not in resp:
+                    if 'application/problem+json' not in resp.get('content', {}):
+                        errs.append(f'{where}: Fehlerantwort {code} nicht als application/problem+json')
+    dup = {i for i in ids if ids.count(i) > 1}
+    if dup: errs.append(f'operationId doppelt: {sorted(dup)}')
+    try:
+        validate_spec(doc)
+    except Exception as e:  # noqa: BLE001
+        errs.append(f'OpenAPI ungültig: {str(e).splitlines()[0]}')
+        return errs
+    for name, schema in doc['components']['schemas'].items():
+        v = Draft202012Validator({**schema, 'components': doc['components']}, format_checker=FormatChecker())
+        for i, ex in enumerate(schema.get('examples', [])):
+            try: v.validate(ex)
+            except Exception as e:  # noqa: BLE001
+                errs.append(f'Schema {name}: Beispiel {i} ungültig ({str(e).splitlines()[0]})')
+    return errs
+
+
+def lint_events(events_dir: Path) -> list[str]:
+    errs = []
+    for f in sorted(events_dir.glob('*.json')):
+        if not EVENT_NAME.match(f.name): errs.append(f'{f.name}: Name muss <ereignis.typ>.v<N>.schema.json folgen')
+        try:
+            Draft202012Validator.check_schema(json.loads(f.read_text()))
+        except Exception as e:  # noqa: BLE001
+            errs.append(f'{f.name}: kein gültiges JSON Schema ({str(e).splitlines()[0]})')
+    return errs
+
+
+def main(api: Path = API) -> int:
+    errs = lint_doc(bundle(api)) + lint_events(api / 'events')
+    for e in errs: print('FEHLER', e)
+    print('API-Lint:', 'FEHLER' if errs else 'PASS')
+    return 1 if errs else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

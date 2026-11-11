@@ -39,7 +39,8 @@ class RLS(unittest.TestCase):
     def test_with_check_verhindert_fremden_mandanten(self):
         with self.assertRaises(psycopg.errors.InsufficientPrivilege):
             with tx(A) as c: vehicle(c, B, uid())
-        with self.assertRaises(psycopg.errors.InsufficientPrivilege):  # Umhängen auf B per UPDATE
+        # Umhängen auf B per UPDATE: der Trigger (V3) greift vor der RLS-Prüfung; beide Schutzschichten weisen ab
+        with self.assertRaises((psycopg.errors.CheckViolation, psycopg.errors.InsufficientPrivilege)):
             with tx(A) as c: c.execute('UPDATE taktovia.vehicle SET tenant_id=%s WHERE id=%s', (B, VA))
 
     def test_tenantfremde_referenz_scheitert_per_fk(self):

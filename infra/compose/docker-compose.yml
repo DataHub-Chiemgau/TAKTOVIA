@@ -1,0 +1,139 @@
+# TAKTOVIA lokale Entwicklungsumgebung (WP-M0-08, WP-M0-10). NUR LOKAL, keine Produktionsdaten.
+# STATUS: statisch geprüft (docker compose config), NICHT gestartet (kein Docker-Daemon in der Entwicklungsumgebung).
+# Imageversionen: nicht gegen Registry geprüft; Digest-Pinning offen (infra/README.md).
+#
+# Profile:  core (PostgreSQL, RabbitMQ, Redis) | auth (Keycloak) | storage (MinIO)
+#           routing (Valhalla) | observability (OTel-Collector, Prometheus)
+#           all (alle sechs Fachdienste, ohne observability)
+# Start:    ./up.sh [profil ...]      Reset: ./reset.sh      Smoke: ./smoke.sh
+
+name: taktovia-dev
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgis/postgis:17-3.5}
+    profiles: [core, all]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dev_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?in .env setzen (nur lokal)}
+      POSTGRES_DB: ${POSTGRES_DB:-taktovia}
+    ports: ["127.0.0.1:${PG_PORT:-15432}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE:-rabbitmq:4-management}
+    profiles: [core, all]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-taktovia}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?in .env setzen (nur lokal)}
+    ports:
+      - "127.0.0.1:${RABBIT_AMQP_PORT:-15672}:5672"
+      - "127.0.0.1:${RABBIT_UI_PORT:-25672}:15672"
+    volumes: [rabbitdata:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  # Redis-kompatibel (Valkey) als Platzhalter; Lizenzbewertung offen (versionen.md).
+  # Ausschliesslich Cache und Rate-Limit (Leitlinie 4), keine fuehrenden Daten.
+  redis:
+    image: ${REDIS_IMAGE:-valkey/valkey:8}
+    profiles: [core, all]
+    ports: ["127.0.0.1:${REDIS_PORT:-16379}:6379"]
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.0}
+    profiles: [auth, all]
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?in .env setzen (nur lokal)}
+      KC_HTTP_PORT: "8080"
+    ports: ["127.0.0.1:${KEYCLOAK_PORT:-18080}:8080"]
+    volumes:
+      - ../keycloak/realm-taktovia-dev.json:/opt/keycloak/data/import/realm-taktovia-dev.json:ro
+    healthcheck:
+      # Image ohne curl: TCP-Aufruf per bash; Management-Port 9000 (Keycloak >= 25), nicht verifiziert
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:latest}   # PLATZHALTER: Version festlegen (AGPL-3.0, D-05)
+    profiles: [storage, all]
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-taktovia-dev}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?in .env setzen (nur lokal)}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-19000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes: [miniodata:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # Valhalla: Kartendaten (OSM-Ausschnitt) muessen separat bezogen werden, siehe infra/README.md.
+  valhalla:
+    image: ${VALHALLA_IMAGE:-ghcr.io/gis-ops/docker-valhalla/valhalla:latest}   # PLATZHALTER
+    profiles: [routing, all]
+    environment:
+      tile_urls: ${VALHALLA_TILE_URLS:-}
+      use_tiles_ignore_pbf: "True"
+      build_admins: "True"
+      serve_tiles: "True"
+    ports: ["127.0.0.1:${VALHALLA_PORT:-18002}:8002"]
+    volumes: [./valhalla-data:/custom_files]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8002/status >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
+
+  otel-collector:
+    image: ${OTELCOL_IMAGE:-otel/opentelemetry-collector-contrib:0.100.0}
+    profiles: [observability]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: [../observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro]
+    ports:
+      - "127.0.0.1:${OTLP_GRPC_PORT:-14317}:4317"
+      - "127.0.0.1:${OTLP_HTTP_PORT:-14318}:4318"
+      - "127.0.0.1:${OTEL_HEALTH_PORT:-13133}:13133"
+    # Kein Container-Healthcheck: Image ohne Shell; Erreichbarkeit ueber health_check-Erweiterung (Port 13133) im Smoke-Skript.
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v2.53.0}
+    profiles: [observability]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=2d"]
+    volumes:
+      - ../observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    ports: ["127.0.0.1:${PROMETHEUS_PORT:-19090}:9090"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  rabbitdata:
+  miniodata:

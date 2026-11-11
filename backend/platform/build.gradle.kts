@@ -1,1 +1,16 @@
-// Querschnittsbausteine (Inhalt ab M1); keine Abhängigkeit auf Fachmodule.
+// Querschnittsbausteine; keine Abhängigkeit auf Fachmodule.
+dependencies {
+    api("org.springframework:spring-jdbc")
+    api("org.springframework:spring-tx")
+    testImplementation(libs.postgresql)
+    testImplementation("com.zaxxer:HikariCP")
+}
+
+tasks.withType<Test>().configureEach {
+    // Datenbankabhängige Tests dürfen nie aus Cache oder „up-to-date“ als bestanden gelten (Umgebung ist kein Task-Input).
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }
+    listOf("TAKTOVIA_DB_HOST", "TAKTOVIA_DB_PORT", "TAKTOVIA_DB_NAME", "TAKTOVIA_DB_RUNTIME_PASSWORD",
+        "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_REQUIRE_DB")
+        .forEach { k -> System.getenv(k)?.let { environment(k, it) } }
+}

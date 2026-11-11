@@ -1,0 +1,273 @@
+paths:
+  /v1/cost-events/{cost_event_id}/allocations:
+    post:
+      summary: Kostenbasis auf Kostenträger verteilen
+      operationId: allocateCost
+      security:
+      - oidc:
+        - costs:allocate
+      parameters:
+      - $ref: common.yaml#/components/parameters/cost_event_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllocationResult'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Atomare vollständige Allokationsrevision innerhalb eigener Rechtseinheit. Exakte Summe und freigegebene
+        offene Periode prüfen; 409 PERIOD_CLOSED oder ALREADY_ALLOCATED. Keine neue Quellkostenwirkung; Korrekturen erfolgen
+        über gesonderte Gegenbuchung.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllocationRequest'
+  /v1/expenses/{expense_id}/approve:
+    post:
+      summary: Belegrevision fachlich freigeben
+      operationId: approveExpense
+      security:
+      - oidc:
+        - expenses:approve
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseApproval'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen. POSTED
+        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequest'
+components:
+  schemas:
+    DecimalQuantity:
+      type: string
+      pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$
+      description: Exakte Dezimalzeichenfolge, maximal sechs Nachkommastellen; nicht als Binary Float verarbeiten.
+    CostAllocationLine:
+      type: object
+      additionalProperties: false
+      properties:
+        cost_center_id:
+          $ref: common.yaml#/components/schemas/UUID
+        cost_object_type:
+          type: string
+          enum:
+          - VEHICLE
+          - SERVICE
+          - RUN
+          - LEG
+          - PROJECT
+          - COST_CENTER
+          - UNALLOCATED
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        amount:
+          $ref: common.yaml#/components/schemas/SignedMoney
+        quantity:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalQuantity'
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+            enum:
+            - KM
+            - MIN
+            - KWH
+            - L
+            - ITEM
+          - type: 'null'
+      required:
+      - cost_center_id
+      - cost_object_type
+      - cost_object_id
+      - amount
+      - quantity
+      - unit
+    AllocationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        allocation_policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostAllocationLine'
+          minItems: 1
+          maxItems: 1000
+      required:
+      - allocation_policy_revision
+      - reason
+      - lines
+      description: Summe amount = allokierbare Kostenbasis des Quellereignisses; gleiche Währung/Exponent. Keine Fremdmandanten-Kostenstelle.
+        Umlage über Rechtsträgergrenzen erzeugt separaten vertraglichen Intercompany-Vorgang.
+      examples:
+      - allocation_policy_revision: vehicle-km-v1
+        reason: Tageskosten nach belegten Fahrzeugkilometern
+        lines:
+        - cost_center_id: 00000000-0000-4000-8000-000000000080
+          cost_object_type: SERVICE
+          cost_object_id: 00000000-0000-4000-8000-000000000081
+          amount:
+            amount_minor: 6000
+            currency: EUR
+            exponent: 2
+          quantity: '60.000000'
+          unit: KM
+        - cost_center_id: 00000000-0000-4000-8000-000000000082
+          cost_object_type: SERVICE
+          cost_object_id: 00000000-0000-4000-8000-000000000083
+          amount:
+            amount_minor: 4000
+            currency: EUR
+            exponent: 2
+          quantity: '40.000000'
+          unit: KM
+    AllocationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        allocation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        cost_event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - POSTED
+        basis:
+          $ref: common.yaml#/components/schemas/SignedMoney
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostAllocationLine'
+          minItems: 1
+      required:
+      - allocation_id
+      - cost_event_id
+      - revision
+      - state
+      - basis
+      - lines
+    ApprovalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        validated_document_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - reason
+      - validated_document_revision
+    ExpenseApproval:
+      type: object
+      additionalProperties: false
+      properties:
+        expense_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - WAITING_SECOND_APPROVAL
+          - POSTED
+        posting_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - expense_id
+      - revision
+      - state
+      - posting_id

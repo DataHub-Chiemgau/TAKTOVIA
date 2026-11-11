@@ -1,0 +1,10 @@
+# Platzhalter-Regeln (WP-M0-10). Keine fachlichen Alarme (M5). Es wird nirgends hin alarmiert.
+groups:
+  - name: platzhalter
+    rules:
+      - alert: ScrapeZielNichtErreichbar
+        expr: up == 0
+        for: 5m
+        labels: { severity: info, channel: PLATZHALTER-alarmkanal }
+        annotations:
+          summary: "Scrape-Ziel {{ $labels.job }} seit 5 min nicht erreichbar (nur lokal, nicht verdrahtet)"

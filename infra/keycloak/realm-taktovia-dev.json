@@ -1,0 +1,855 @@
+{
+  "realm": "taktovia-dev",
+  "displayName": "TAKTOVIA Entwicklung (nur lokal, synthetische Daten)",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "attributes": {
+    "taktovia.note": "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet",
+    "taktovia.mfa.privileged_roles": "dispatcher,finance,tenant_admin",
+    "taktovia.mfa.enforcement": "vorbereitet, Durchsetzung in M1"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "passenger",
+        "description": "Fahrgast",
+        "attributes": {
+          "mfa_required": [
+            "false"
+          ]
+        }
+      },
+      {
+        "name": "dispatcher",
+        "description": "Disponent/Leitstelle",
+        "attributes": {
+          "mfa_required": [
+            "true"
+          ]
+        }
+      },
+      {
+        "name": "driver",
+        "description": "Fahrer",
+        "attributes": {
+          "mfa_required": [
+            "false"
+          ]
+        }
+      },
+      {
+        "name": "finance",
+        "description": "Finanzrolle",
+        "attributes": {
+          "mfa_required": [
+            "true"
+          ]
+        }
+      },
+      {
+        "name": "tenant_admin",
+        "description": "Tenantadmin",
+        "attributes": {
+          "mfa_required": [
+            "true"
+          ]
+        }
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "driver:events",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true"
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "passenger-web",
+      "name": "Passenger Web",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "tenant-ids",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_ids",
+            "claim.name": "tenant_ids",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "mfa-required",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "mfa_required",
+            "claim.name": "mfa_required",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "profile",
+        "email"
+      ]
+    },
+    {
+      "clientId": "operator-web",
+      "name": "Operator (Leitstelle/Finanzen/Admin)",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "tenant-ids",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_ids",
+            "claim.name": "tenant_ids",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "mfa-required",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "mfa_required",
+            "claim.name": "mfa_required",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "profile",
+        "email"
+      ]
+    },
+    {
+      "clientId": "driver-app",
+      "name": "Driver App",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "tenant-ids",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_ids",
+            "claim.name": "tenant_ids",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "mfa-required",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "mfa_required",
+            "claim.name": "mfa_required",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "driver:events"
+      ]
+    },
+    {
+      "clientId": "adapter-partner-tomp",
+      "name": "Maschinen-Client Adapter partner-tomp",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-partner-tomp",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-partner-osdm",
+      "name": "Maschinen-Client Adapter partner-osdm",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-partner-osdm",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-timetable-gtfs",
+      "name": "Maschinen-Client Adapter timetable-gtfs",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-timetable-gtfs",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-psp",
+      "name": "Maschinen-Client Adapter psp",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-psp",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-erp-export",
+      "name": "Maschinen-Client Adapter erp-export",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-erp-export",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-ocr",
+      "name": "Maschinen-Client Adapter ocr",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-ocr",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    },
+    {
+      "clientId": "adapter-notification",
+      "name": "Maschinen-Client Adapter notification",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-adapter-notification",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-taktovia-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "taktovia-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "defaultClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "username": "a.passenger",
+      "email": "a.passenger@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test passenger",
+      "lastName": "Mandant A",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "mfa_required": [
+          "false"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-a-passenger",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "passenger"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "a.dispatcher",
+      "email": "a.dispatcher@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test dispatcher",
+      "lastName": "Mandant A",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-a-dispatcher",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "dispatcher"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "a.driver",
+      "email": "a.driver@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test driver",
+      "lastName": "Mandant A",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "mfa_required": [
+          "false"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-a-driver",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "driver"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "a.finance",
+      "email": "a.finance@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test finance",
+      "lastName": "Mandant A",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-a-finance",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "finance"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "a.tenant_admin",
+      "email": "a.tenant_admin@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test tenant_admin",
+      "lastName": "Mandant A",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-a-tenant_admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "tenant_admin"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "b.passenger",
+      "email": "b.passenger@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test passenger",
+      "lastName": "Mandant B",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "false"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-b-passenger",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "passenger"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "b.dispatcher",
+      "email": "b.dispatcher@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test dispatcher",
+      "lastName": "Mandant B",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-b-dispatcher",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "dispatcher"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "b.driver",
+      "email": "b.driver@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test driver",
+      "lastName": "Mandant B",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "false"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-b-driver",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "driver"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "b.finance",
+      "email": "b.finance@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test finance",
+      "lastName": "Mandant B",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-b-finance",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "finance"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "b.tenant_admin",
+      "email": "b.tenant_admin@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test tenant_admin",
+      "lastName": "Mandant B",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-b-tenant_admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "tenant_admin"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "ab.dispatcher",
+      "email": "ab.dispatcher@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test dispatcher",
+      "lastName": "Beide Mandanten",
+      "attributes": {
+        "tenant_ids": [
+          "00000000-0000-4000-8000-00000000000a",
+          "00000000-0000-4000-8000-00000000000b"
+        ],
+        "mfa_required": [
+          "true"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-ab-dispatcher",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "dispatcher"
+      ],
+      "requiredActions": []
+    },
+    {
+      "username": "none.passenger",
+      "email": "none.passenger@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test passenger",
+      "lastName": "Ohne Mitgliedschaft",
+      "attributes": {
+        "tenant_ids": [],
+        "mfa_required": [
+          "false"
+        ],
+        "note": [
+          "NUR LOKAL: Entwicklungs-Passwort, synthetische Testidentitaet"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-only-none-passenger",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "passenger"
+      ],
+      "requiredActions": []
+    }
+  ]
+}

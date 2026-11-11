@@ -51,12 +51,12 @@ class Migration(unittest.TestCase):
         with admin() as c:
             fn = {r[0] for r in c.execute("""SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                                              WHERE n.nspname='taktovia'""")}
-            self.assertEqual(fn, {'current_tenant', 'reject_mutation', 'protect_journal_line', 'guard_journal', 'guard_fiscal_period'})
+            self.assertEqual(fn, {'current_tenant', 'reject_mutation', 'protect_journal_line', 'guard_journal', 'guard_fiscal_period', 'reject_tenant_change'})
             trg = {r[0] for r in c.execute("""SELECT tgname FROM pg_trigger t JOIN pg_class c ON c.oid=tgrelid
                                               JOIN pg_namespace n ON n.oid=c.relnamespace
                                               WHERE n.nspname='taktovia' AND NOT tgisinternal""")}
             self.assertEqual(trg, {'economic_immutable', 'audit_immutable', 'contract_immutable', 'quote_immutable',
-                                   'journal_line_guard', 'journal_guard', 'fiscal_period_guard'})
+                                   'journal_line_guard', 'journal_guard', 'fiscal_period_guard', 'tenant_id_immutable'})
             cfg = dict(c.execute("""SELECT proname, proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                                     WHERE n.nspname='taktovia' AND proname<>'current_tenant'""").fetchall())
             for name, conf in cfg.items():

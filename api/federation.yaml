@@ -1,0 +1,1500 @@
+paths:
+  /v1/federation/journeys/plan:
+    post:
+      summary: Reisevarianten und Preise ermitteln
+      operationId: planJourney
+      security:
+      - oidc:
+        - journeys:plan
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanResponse'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      description: Erzeugt TravelRequestAttempt genau einmal pro Idempotenzschlüssel. Keine Kapazitätszusage. Leere offers
+        mit reject_reason sind fachliches 200, ungültige Anfrage 422. Zeitbudget 5 s; Teilverfügbarkeit einzelner Partner
+        bleibt sichtbar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRequest'
+  /v1/federation/offers/{offer_id}:
+    get:
+      summary: Unveränderten Angebotsstand lesen
+      operationId: getOffer
+      security:
+      - oidc:
+        - journeys:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/offer_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyOffer'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/federation/offers/{offer_id}/hold:
+    post:
+      summary: Kapazitäten der buchbaren Segmente halten
+      operationId: holdOffer
+      security:
+      - oidc:
+        - journeys:book
+      parameters:
+      - $ref: common.yaml#/components/parameters/offer_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: 'Erzeugt eine Journey und Saga. Gleiche Offer-Revision, Preise, Terms und kooperierende Partner prüfen.
+        Abgelaufenes Angebot: 409 OFFER_EXPIRED. Operation SUCCEEDED bedeutet nur alle erforderlichen Holds vorhanden, nicht
+        endgültig gebucht.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoldRequest'
+  /v1/federation/journeys/{journey_id}:
+    get:
+      summary: Reise- und Segmentstatus lesen
+      operationId: getJourney
+      security:
+      - oidc:
+        - journeys:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/journey_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/federation/journeys/{journey_id}/confirm:
+    post:
+      summary: Gehaltene Reise bestätigen und Zahlungsablauf starten
+      operationId: confirmJourney
+      security:
+      - oidc:
+        - journeys:book
+      parameters:
+      - $ref: common.yaml#/components/parameters/journey_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Erforderliche Holds müssen bis zum abgesicherten Commit-Zeitpunkt gültig sein. max_authorized_amount muss
+        exakt pay_at_platform entsprechen; Preisänderung führt zu 409 REQUOTE_REQUIRED. PSP-Authentifizierung wird als ACTION_REQUIRED
+        über Journey angezeigt. HTTP 202 ist keine Bestätigung.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+  /v1/federation/journeys/{journey_id}/cancellation-quotes:
+    post:
+      summary: Stornokosten und Folgen anbieten
+      operationId: quoteCancellation
+      security:
+      - oidc:
+        - journeys:cancel
+      parameters:
+      - $ref: common.yaml#/components/parameters/journey_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationQuote'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Keine Stornowirkung. Prüft auch Erreichbarkeit der verbleibenden Reisekette; Tarif-/Erstattungsregeln je
+        Segment snapshotten.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancellationQuoteRequest'
+  /v1/federation/journeys/{journey_id}/cancel:
+    post:
+      summary: Geprüften Stornovorschlag ausführen
+      operationId: cancelJourney
+      security:
+      - oidc:
+        - journeys:cancel
+      parameters:
+      - $ref: common.yaml#/components/parameters/journey_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Cancel exakt der im gültigen cancellation_quote gespeicherten Segmente. Neue Gebühren werden nie still
+        akzeptiert. UNKNOWN bleibt offen bis Providerabgleich; Erstattung und Reservierungsstorno werden getrennt nachgewiesen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+  /v1/federation/partners/{partner_id}/events:
+    post:
+      summary: Signiertes Partnerereignis zustellen
+      operationId: receivePartnerEvent
+      description: HMAC-SHA256 über timestamp + Punkt + exakte Request-Bytes. Zeitfenster ±300 s. Schlüsselbindung legt Partner
+        und zulässige tenant_id fest. Replay-Ledger und Zustandsversion prüfen. 202 erst nach durable Inbox-Commit; Duplikat
+        liefert 200. OAuth allein ersetzt die Nachrichtensignatur nicht.
+      security:
+      - partnerSignature: []
+      parameters:
+      - $ref: common.yaml#/components/parameters/partner_id
+      - name: X-Partner-Key-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 256
+      - name: X-Partner-Timestamp
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9]{10}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerEvent'
+      responses:
+        '202':
+          description: Neu in dauerhafte Inbox aufgenommen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventReceipt'
+        '200':
+          description: Identisches Ereignis bereits gespeichert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventReceipt'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    Money:
+      type: object
+      additionalProperties: false
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        exponent:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4
+      required:
+      - amount_minor
+      - currency
+      - exponent
+      description: Nichtnegativer Geldbetrag in kleinster Einheit. EUR 12,50 = {amount_minor:1250,currency:EUR,exponent:2}.
+        ISO-4217-Exponent serverseitig prüfen. Keine binären Gleitkommazahlen.
+    Place:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        point:
+          $ref: common.yaml#/components/schemas/Point
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - label
+      - point
+    Party:
+      type: object
+      additionalProperties: false
+      properties:
+        persons:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 50
+        wheelchair_places:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10
+        child_seats:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10
+        assistance_codes:
+          type: array
+          items:
+            type: string
+            enum:
+            - BOARDING_HELP
+            - AUDIO_GUIDANCE
+            - LOW_FLOOR
+          uniqueItems: true
+      required:
+      - persons
+      - wheelchair_places
+      - child_seats
+      - assistance_codes
+      description: wheelchair_places/child_seats sind Teilmengen von persons; keine Diagnosen. Fahrzeugspezifische Kapazitätsmatrix
+        serverseitig.
+    PlanRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        origin:
+          $ref: '#/components/schemas/Place'
+        destination:
+          $ref: '#/components/schemas/Place'
+        time_mode:
+          type: string
+          enum:
+          - DEPART_AFTER
+          - ARRIVE_BY
+        desired_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+          minLength: 1
+          maxLength: 64
+          examples:
+          - Europe/Berlin
+        party:
+          $ref: '#/components/schemas/Party'
+        max_transfers:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4
+        booking_subject:
+          $ref: '#/components/schemas/BookingSubject'
+        entitlement_refs:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          uniqueItems: true
+          maxItems: 20
+          description: Server prüft Berechtigung, Inhaber, Zeitraum und Tarif; keine vertrauenswürdige Preisvorgabe.
+      required:
+      - origin
+      - destination
+      - time_mode
+      - desired_at
+      - time_zone
+      - party
+      - max_transfers
+      - booking_subject
+      - entitlement_refs
+      examples:
+      - origin:
+          label: Start A
+          point:
+            latitude: 47.856
+            longitude: 12.352
+        destination:
+          label: Ziel B
+          point:
+            latitude: 47.856
+            longitude: 12.352
+        time_mode: DEPART_AFTER
+        desired_at: '2026-11-02T08:00:00+01:00'
+        time_zone: Europe/Berlin
+        party:
+          persons: 1
+          wheelchair_places: 0
+          child_seats: 0
+          assistance_codes: []
+        max_transfers: 2
+        booking_subject:
+          mode: SELF
+          passenger_ref: null
+          delegation_ref: null
+        entitlement_refs: []
+    PartnerAvailability:
+      type: object
+      additionalProperties: false
+      properties:
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - AVAILABLE
+          - UNAVAILABLE
+          - TIMEOUT
+          - STALE
+        reason_code:
+          oneOf:
+          - type: string
+            enum:
+            - CAPACITY
+            - STAFF_UNAVAILABLE
+            - NO_SERVICE
+            - PARTNER_TIMEOUT
+            - CONTRACT_INACTIVE
+            - STALE_DATA
+          - type: 'null'
+      required:
+      - operator_id
+      - state
+      - reason_code
+    PlanResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        request_id:
+          $ref: common.yaml#/components/schemas/UUID
+        evaluated_at:
+          type: string
+          format: date-time
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/JourneyOffer'
+          maxItems: 20
+        partners:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerAvailability'
+        reject_reason:
+          oneOf:
+          - type: string
+            enum:
+            - NO_ROUTE
+            - CAPACITY
+            - STAFF_UNAVAILABLE
+            - NO_SERVICE
+            - NO_ACCESSIBLE_TRANSFER
+            - PROVIDER_UNAVAILABLE
+          - type: 'null'
+      required:
+      - request_id
+      - evaluated_at
+      - offers
+      - partners
+      - reject_reason
+    Transfer:
+      type: object
+      additionalProperties: false
+      properties:
+        from_leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        to_leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        hub_id:
+          $ref: common.yaml#/components/schemas/UUID
+        walking_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400
+        minimum_transfer_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400
+        available_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400
+        accessible:
+          type: boolean
+        assurance:
+          type: string
+          enum:
+          - NOT_GUARANTEED
+          - CONTRACTUAL_PROTECTION
+        policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - from_leg_id
+      - to_leg_id
+      - hub_id
+      - walking_seconds
+      - minimum_transfer_seconds
+      - available_seconds
+      - accessible
+      - assurance
+      - policy_revision
+    FareComponent:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - TRANSPORT
+          - DISCOUNT
+          - SURCHARGE
+          - SUBSIDY
+          - COMMISSION
+          - TAX
+        description:
+          type: string
+          minLength: 1
+          maxLength: 256
+        amount:
+          $ref: common.yaml#/components/schemas/SignedMoney
+        tax_code:
+          type: string
+          minLength: 1
+          maxLength: 256
+        tariff_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - code
+      - description
+      - amount
+      - tariff_revision
+    CancellationTerms:
+      type: object
+      additionalProperties: false
+      properties:
+        policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        terms_uri:
+          type: string
+          format: uri
+        terms_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        free_until:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        refundable:
+          type: boolean
+      required:
+      - policy_revision
+      - terms_uri
+      - terms_sha256
+      - free_until
+      - refundable
+    OfferLeg:
+      type: object
+      additionalProperties: false
+      properties:
+        leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 20
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        seller_legal_entity_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        mode:
+          type: string
+          enum:
+          - ON_DEMAND
+          - BUS
+          - RAIL
+          - WALK
+        origin:
+          $ref: '#/components/schemas/Place'
+        destination:
+          $ref: '#/components/schemas/Place'
+        departure_at:
+          type: string
+          format: date-time
+        arrival_at:
+          type: string
+          format: date-time
+        booking_capability:
+          type: string
+          enum:
+          - PLATFORM_BOOKABLE
+          - EXTERNAL_BOOKING
+          - INFORMATION_ONLY
+        fare_status:
+          type: string
+          enum:
+          - KNOWN
+          - UNKNOWN
+          - NOT_APPLICABLE
+        quoted_fare:
+          oneOf:
+          - $ref: '#/components/schemas/Money'
+          - type: 'null'
+        fare_components:
+          type: array
+          items:
+            $ref: '#/components/schemas/FareComponent'
+        tariff_revision:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+        partner_offer_ref:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+        expires_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        external_booking_uri:
+          oneOf:
+          - type: string
+            format: uri
+          - type: 'null'
+        cancellation_terms:
+          oneOf:
+          - $ref: '#/components/schemas/CancellationTerms'
+          - type: 'null'
+        accessibility_confirmed:
+          type: boolean
+        pickup_window:
+          oneOf:
+          - $ref: '#/components/schemas/TimeWindow'
+          - type: 'null'
+        arrival_window:
+          oneOf:
+          - $ref: '#/components/schemas/TimeWindow'
+          - type: 'null'
+      required:
+      - leg_id
+      - sequence
+      - operator_id
+      - seller_legal_entity_id
+      - mode
+      - origin
+      - destination
+      - departure_at
+      - arrival_at
+      - booking_capability
+      - fare_status
+      - quoted_fare
+      - fare_components
+      - tariff_revision
+      - partner_offer_ref
+      - expires_at
+      - external_booking_uri
+      - cancellation_terms
+      - accessibility_confirmed
+      - pickup_window
+      - arrival_window
+      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im bestätigten
+        JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs dürfen null liefern.'
+      allOf:
+      - if:
+          properties:
+            booking_capability:
+              const: PLATFORM_BOOKABLE
+        then:
+          properties:
+            pickup_window:
+              $ref: '#/components/schemas/TimeWindow'
+            arrival_window:
+              $ref: '#/components/schemas/TimeWindow'
+    PriceSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        pay_at_platform:
+          $ref: '#/components/schemas/Money'
+        external_known:
+          $ref: '#/components/schemas/Money'
+        external_unknown_leg_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          uniqueItems: true
+        total_known_amount:
+          $ref: '#/components/schemas/Money'
+        is_complete_total:
+          type: boolean
+      required:
+      - pay_at_platform
+      - external_known
+      - external_unknown_leg_ids
+      - total_known_amount
+      - is_complete_total
+      description: total_known_amount = pay_at_platform + external_known. is_complete_total nur true ohne unbekannte externe
+        Preise; externe Beträge sind nicht Bestandteil des Checkout. Dieselbe Währung/Exponent im gesamten Objekt.
+      examples:
+      - pay_at_platform:
+          amount_minor: 1800
+          currency: EUR
+          exponent: 2
+        external_known:
+          amount_minor: 0
+          currency: EUR
+          exponent: 2
+        external_unknown_leg_ids: []
+        total_known_amount:
+          amount_minor: 1800
+          currency: EUR
+          exponent: 2
+        is_complete_total: true
+      - pay_at_platform:
+          amount_minor: 800
+          currency: EUR
+          exponent: 2
+        external_known:
+          amount_minor: 0
+          currency: EUR
+          exponent: 2
+        external_unknown_leg_ids:
+        - 00000000-0000-4000-8000-000000000003
+        total_known_amount:
+          amount_minor: 800
+          currency: EUR
+          exponent: 2
+        is_complete_total: false
+    JourneyOffer:
+      type: object
+      additionalProperties: false
+      properties:
+        offer_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferLeg'
+          minItems: 1
+          maxItems: 20
+        transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
+        price:
+          $ref: '#/components/schemas/PriceSummary'
+        terms_bundle_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        booking_policy:
+          type: string
+          enum:
+          - COMPENSATE_ON_FAILURE
+          - ALLOW_PARTIAL_WITH_EXPLICIT_CONSENT
+        fully_platform_bookable:
+          type: boolean
+      required:
+      - offer_id
+      - revision
+      - created_at
+      - expires_at
+      - legs
+      - transfers
+      - price
+      - terms_bundle_sha256
+      - booking_policy
+      - fully_platform_bookable
+      description: ' Angebot bindet serverseitig den geprüften BookingSubject und die Entitlementrevisionen aus der Planung.
+        Hold/Confirm dürfen weder Fahrgast noch Anspruch still wechseln; Vertretung wird erneut geprüft.'
+    HoldRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        offer_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        accepted_terms_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        acknowledged_external_leg_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          uniqueItems: true
+        partial_booking_consent:
+          type: boolean
+      required:
+      - offer_revision
+      - accepted_terms_sha256
+      - acknowledged_external_leg_ids
+      - partial_booking_consent
+      description: Alle nicht plattformbuchbaren Legs explizit quittieren. consent false als UI-Default. Änderungen von Preis/Terms
+        erzeugen neues Angebot statt stiller Anpassung.
+      examples:
+      - offer_revision: 1
+        accepted_terms_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        acknowledged_external_leg_ids: []
+        partial_booking_consent: false
+    PaymentAction:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+          - PSP_AUTHENTICATION
+        redirect_uri:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - type
+      - redirect_uri
+      - expires_at
+      description: Nur serverseitig allowgelistete PSP-URI. Keine PAN/CVC oder Secrets.
+    ConfirmRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        payment_method_token:
+          type: string
+          minLength: 1
+          maxLength: 256
+        max_authorized_amount:
+          $ref: '#/components/schemas/Money'
+        accepted_terms_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        return_uri:
+          type: string
+          format: uri
+      required:
+      - max_authorized_amount
+      - accepted_terms_sha256
+      description: payment_method_token nur erforderlich bei positivem Betrag und fehlender hinterlegter PSP-Methode; keine
+        Zahlungsdaten. return_uri muss freigegebene Client-URI sein.
+      examples:
+      - payment_method_token: psp_test_token_not_a_real_credential
+        max_authorized_amount:
+          amount_minor: 1800
+          currency: EUR
+          exponent: 2
+        accepted_terms_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    JourneyLeg:
+      type: object
+      additionalProperties: false
+      properties:
+        leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 20
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_capability:
+          type: string
+          enum:
+          - PLATFORM_BOOKABLE
+          - EXTERNAL_BOOKING
+          - INFORMATION_ONLY
+        booking_reference:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - OFFERED
+          - HOLDING
+          - HELD
+          - CONFIRMING
+          - CONFIRMED
+          - CANCEL_PENDING
+          - CANCELED
+          - COMPLETED
+          - FAILED
+          - UNKNOWN
+          - INFORMATION_ONLY
+          - EXTERNAL_REQUIRED
+        promise_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        origin:
+          $ref: '#/components/schemas/Place'
+        destination:
+          $ref: '#/components/schemas/Place'
+        estimated_arrival_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        fare:
+          oneOf:
+          - $ref: '#/components/schemas/Money'
+          - type: 'null'
+        hold_expires_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        pickup_window:
+          oneOf:
+          - $ref: '#/components/schemas/TimeWindow'
+          - type: 'null'
+        arrival_window:
+          oneOf:
+          - $ref: '#/components/schemas/TimeWindow'
+          - type: 'null'
+        planned_departure_at:
+          type: string
+          format: date-time
+        planned_arrival_at:
+          type: string
+          format: date-time
+        execution_state:
+          type: string
+          enum:
+          - PLANNED
+          - APPROACHING
+          - BOARDED
+          - COMPLETED
+          - NO_SHOW
+          - DISRUPTED
+      required:
+      - leg_id
+      - sequence
+      - operator_id
+      - booking_capability
+      - booking_reference
+      - state
+      - promise_revision
+      - origin
+      - destination
+      - planned_departure_at
+      - planned_arrival_at
+      - estimated_arrival_at
+      - fare
+      - hold_expires_at
+      - pickup_window
+      - arrival_window
+      - execution_state
+      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im bestätigten
+        JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs dürfen null liefern.'
+      allOf:
+      - if:
+          properties:
+            booking_capability:
+              const: PLATFORM_BOOKABLE
+            state:
+              enum:
+              - CONFIRMED
+              - COMPLETED
+        then:
+          properties:
+            pickup_window:
+              $ref: '#/components/schemas/TimeWindow'
+            arrival_window:
+              $ref: '#/components/schemas/TimeWindow'
+    Journey:
+      type: object
+      additionalProperties: false
+      properties:
+        journey_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        offer_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - HOLDING
+          - HELD
+          - CONFIRMING
+          - ACTION_REQUIRED
+          - CONFIRMED
+          - PARTIAL
+          - COMPENSATING
+          - CANCEL_PENDING
+          - CANCELED
+          - COMPLETED
+          - FAILED
+          - RECONCILING
+        coverage:
+          type: string
+          enum:
+          - ALL_TRANSPORT_LEGS
+          - PLATFORM_SEGMENTS_ONLY
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JourneyLeg'
+          minItems: 1
+        price:
+          $ref: '#/components/schemas/PriceSummary'
+        payment_state:
+          type: string
+          enum:
+          - NOT_REQUIRED
+          - PENDING
+          - AUTHORIZING
+          - REQUIRES_ACTION
+          - AUTHORIZED
+          - CAPTURING
+          - CAPTURED
+          - VOIDED
+          - PARTIALLY_REFUNDED
+          - REFUNDED
+          - FAILED
+          - UNKNOWN
+        payment_action:
+          oneOf:
+          - $ref: '#/components/schemas/PaymentAction'
+          - type: 'null'
+        operation_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        updated_at:
+          type: string
+          format: date-time
+        execution_state:
+          type: string
+          enum:
+          - NOT_STARTED
+          - IN_PROGRESS
+          - TRANSFER_AT_RISK
+          - DISRUPTED
+          - COMPLETED
+          - PARTIALLY_COMPLETED
+          - ABANDONED
+        transfer_risks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferRisk'
+      required:
+      - journey_id
+      - revision
+      - offer_id
+      - state
+      - coverage
+      - legs
+      - price
+      - payment_state
+      - payment_action
+      - operation_id
+      - updated_at
+      - execution_state
+      - transfer_risks
+      description: CONFIRMED bezieht sich nur auf PLATFORM_BOOKABLE Legs. coverage kennzeichnet explizit eventuell verbleibende
+        extern zu beschaffende Tickets.
+    CancellationQuoteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        leg_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          minItems: 1
+          uniqueItems: true
+        reason_code:
+          type: string
+          enum:
+          - CUSTOMER_REQUEST
+          - TRANSFER_MISSED
+          - OPERATOR_FAILURE
+          - SAFETY
+      required:
+      - leg_ids
+      - reason_code
+    CancellationLine:
+      type: object
+      additionalProperties: false
+      properties:
+        leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        cancellable:
+          type: boolean
+        fee:
+          $ref: '#/components/schemas/Money'
+        refund:
+          $ref: '#/components/schemas/Money'
+        policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - leg_id
+      - cancellable
+      - fee
+      - refund
+      - policy_revision
+    CancellationQuote:
+      type: object
+      additionalProperties: false
+      properties:
+        cancellation_quote_id:
+          $ref: common.yaml#/components/schemas/UUID
+        journey_id:
+          $ref: common.yaml#/components/schemas/UUID
+        journey_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        expires_at:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CancellationLine'
+          minItems: 1
+        total_refund:
+          $ref: '#/components/schemas/Money'
+        total_fee:
+          $ref: '#/components/schemas/Money'
+        remaining_journey_viable:
+          type: boolean
+      required:
+      - cancellation_quote_id
+      - journey_id
+      - journey_revision
+      - expires_at
+      - lines
+      - total_refund
+      - total_fee
+      - remaining_journey_viable
+    CancelRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        cancellation_quote_id:
+          $ref: common.yaml#/components/schemas/UUID
+        accept_remaining_journey_risk:
+          type: boolean
+      required:
+      - cancellation_quote_id
+      - accept_remaining_journey_risk
+    PartnerEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        event_type:
+          type: string
+          enum:
+          - partner.offer_held
+          - partner.booking_confirmed
+          - partner.booking_canceled
+          - partner.booking_failed
+          - partner.leg_delayed
+        tenant_id:
+          $ref: common.yaml#/components/schemas/UUID
+        schema_version:
+          type: string
+          enum:
+          - '1.0'
+        occurred_at:
+          type: string
+          format: date-time
+        correlation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        aggregate_id:
+          $ref: common.yaml#/components/schemas/UUID
+        aggregate_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        data:
+          $ref: '#/components/schemas/PartnerEventData'
+      required:
+      - event_id
+      - event_type
+      - tenant_id
+      - schema_version
+      - occurred_at
+      - correlation_id
+      - aggregate_id
+      - aggregate_version
+      - data
+      description: tenant_id ist Ausstellerkontext und muss zur verifizierten Partnerbindung passen; darf niemals allein die
+        Zugriffsberechtigung bestimmen.
+      examples:
+      - event_id: 00000000-0000-4000-8000-000000000090
+        event_type: partner.booking_confirmed
+        tenant_id: 00000000-0000-4000-8000-000000000091
+        schema_version: '1.0'
+        occurred_at: '2026-11-02T07:00:00Z'
+        correlation_id: 00000000-0000-4000-8000-000000000070
+        aggregate_id: 00000000-0000-4000-8000-000000000021
+        aggregate_version: 2
+        data:
+          partner_booking_ref: B-4711
+          command_id: 00000000-0000-4000-8000-000000000092
+          leg_id: 00000000-0000-4000-8000-000000000021
+          state: CONFIRMED
+          hold_expires_at: null
+          estimated_arrival_at: '2026-11-02T08:00:00+01:00'
+          failure_code: null
+    PartnerEventData:
+      type: object
+      additionalProperties: false
+      properties:
+        partner_booking_ref:
+          type: string
+          minLength: 1
+          maxLength: 256
+        command_id:
+          $ref: common.yaml#/components/schemas/UUID
+        leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - HELD
+          - CONFIRMED
+          - CANCELED
+          - FAILED
+          - DELAYED
+        hold_expires_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        estimated_arrival_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        failure_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+      required:
+      - partner_booking_ref
+      - command_id
+      - leg_id
+      - state
+      - hold_expires_at
+      - estimated_arrival_at
+      - failure_code
+      description: Keine vollständigen Fahrgast-, Personal- oder Zahlungsprofile. event_type und state müssen kompatibel sein.
+    EventReceipt:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - ACCEPTED
+          - ALREADY_RECEIVED
+      required:
+      - event_id
+      - status
+    TimeWindow:
+      type: object
+      additionalProperties: false
+      properties:
+        earliest_at:
+          type: string
+          format: date-time
+        latest_at:
+          type: string
+          format: date-time
+      required:
+      - earliest_at
+      - latest_at
+      description: Verbindliche Grenzen bei bestätigtem buchbarem Leg; im Angebot vorgeschlagene Zusage. Server prüft earliest_at
+        <= latest_at und Reise-/Umstiegsconstraints.
+    BookingSubject:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          enum:
+          - SELF
+          - DELEGATED
+        passenger_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        delegation_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - mode
+      - passenger_ref
+      - delegation_ref
+      allOf:
+      - if:
+          properties:
+            mode:
+              const: DELEGATED
+        then:
+          properties:
+            passenger_ref:
+              $ref: common.yaml#/components/schemas/UUID
+            delegation_ref:
+              $ref: common.yaml#/components/schemas/UUID
+        else:
+          properties:
+            passenger_ref:
+              type: 'null'
+            delegation_ref:
+              type: 'null'
+      description: SELF wird aus verifizierter Sitzung bestimmt. DELEGATED benötigt serverseitig gültige, zweck-/fahrgastgebundene
+        Vertretung einschließlich dokumentierter Callcenter-Legitimation; IDs verleihen keine Rechte.
+    TransferRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        from_leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        to_leg_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - UNKNOWN
+          - ON_TRACK
+          - AT_RISK
+          - MISSED
+        predicted_margin_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: -86400
+          maximum: 86400
+          description: Restzeit nach vollständiger Mindestwechselzeit; negativ = voraussichtlich verpasst.
+        observed_at:
+          type: string
+          format: date-time
+        reason_code:
+          type: string
+          maxLength: 80
+      required:
+      - from_leg_id
+      - to_leg_id
+      - state
+      - predicted_margin_seconds
+      - observed_at
+      - reason_code

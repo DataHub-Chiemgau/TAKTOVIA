@@ -1,0 +1,54 @@
+paths:
+  /v1/config/revisions/{revision_id}/publish:
+    post:
+      summary: Geprüfte Konfigurationsrevision veröffentlichen
+      operationId: publishConfig
+      security:
+      - oidc:
+        - config:publish
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/PublishedRevision
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+      description: Mandant aus Berechtigungskontext; Wirkungsanalyse, Freigaben und Sicherheitsinvarianten müssen zu unveränderter
+        Revision passen. Keine rückwirkende Änderung bestätigter Zusagen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: common.yaml#/components/schemas/PublishRequest

@@ -1,0 +1,50 @@
+package de.taktovia.platform.tenant
+
+import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.datasource.DataSourceTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
+import java.util.UUID
+import javax.sql.DataSource
+
+/** Typisierte Mandanten-ID. `tenant_id IS NULL` gibt es nicht (Kap. 04 §4.1). */
+@JvmInline
+value class TenantId(val value: UUID) {
+    override fun toString() = value.toString()
+    companion object { fun parse(s: String) = TenantId(UUID.fromString(s)) }
+}
+
+/**
+ * Führt Fachoperationen in genau einer Transaktion mit genau einem Mandantenkontext aus (Kap. 04 §4.6, WP-M1-01).
+ *
+ * Der Kontext wird mit `set_config('app.tenant_id', ?, true)` gesetzt, also transaktionslokal: nach COMMIT oder
+ * ROLLBACK wirkt kein Kontext fort, auch nicht bei Poolwiederverwendung. Sessionweite Kontexte sind verboten
+ * (siehe `SessionContextRuleTest`). Verbindung und Parameter werden nie zusammengesetzt, der Wert ist gebunden.
+ *
+ * Die Datenbankverbindung muss die eingeschränkte Runtime-Rolle sein; das prüft `RuntimeRoleGuard` beim Start.
+ */
+class TenantTransactions(dataSource: DataSource) {
+    private val tx = TransactionTemplate(DataSourceTransactionManager(dataSource))
+    private val jdbc = JdbcTemplate(dataSource)
+
+    /** Eine Transaktion für [tenant]. Der Block darf nur die übergebene [JdbcOperations] verwenden. */
+    fun <T> run(tenant: TenantId, readOnly: Boolean = false, block: (JdbcOperations) -> T): T {
+        val t = TransactionTemplate(tx.transactionManager!!).also { it.isReadOnly = readOnly }
+        return t.execute {
+            jdbc.queryForObject("SELECT set_config('app.tenant_id', ?, true)", String::class.java, tenant.toString())
+            block(jdbc)
+        }!!
+    }
+
+    /**
+     * Worker-/Batchvariante: iteriert begrenzt über die übergebenen Mandanten, je Mandant eine eigene Transaktion mit
+     * neuem Kontext. Ein Fehler bei einem Mandanten bricht dessen Transaktion ab und lässt keinen Kontext zurück;
+     * die Fehler werden gesammelt zurückgegeben, die übrigen Mandanten laufen weiter.
+     */
+    fun <T> forEachTenant(tenants: Collection<TenantId>, block: (TenantId, JdbcOperations) -> T): Map<TenantId, Result<T>> {
+        require(tenants.size <= MAX_TENANTS_PER_BATCH) { "Batch über ${tenants.size} Mandanten überschreitet das Limit $MAX_TENANTS_PER_BATCH" }
+        return tenants.distinct().associateWith { t -> runCatching { run(t) { j -> block(t, j) } } }
+    }
+
+    companion object { const val MAX_TENANTS_PER_BATCH = 1_000 }
+}
