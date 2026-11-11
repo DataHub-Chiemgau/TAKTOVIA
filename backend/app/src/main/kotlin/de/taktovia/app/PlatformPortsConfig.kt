@@ -2,6 +2,7 @@ package de.taktovia.app
 
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.audit.JdbcAuditPort
+import de.taktovia.platform.audit.SecurityEventListener
 import de.taktovia.platform.audit.SecurityEventPort
 import de.taktovia.platform.outbox.Outbox
 import de.taktovia.platform.tenant.TenantTransactions
@@ -20,7 +21,8 @@ class PlatformPortsConfig {
     fun auditPort(): AuditPort = JdbcAuditPort()
 
     @Bean @ConditionalOnMissingBean
-    fun securityEventPort(audit: AuditPort, tx: TenantTransactions) = SecurityEventPort(audit, tx)
+    fun securityEventPort(audit: AuditPort, tx: TenantTransactions, listener: org.springframework.beans.factory.ObjectProvider<SecurityEventListener>) =
+        SecurityEventPort(audit, tx, listener.getIfAvailable())
 
     @Bean @ConditionalOnMissingBean
     fun outbox() = Outbox()
