@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fare-quote-snapshot.v1.schema.json",
+  "title": "Tarifangebot-Snapshot `fare_quote.snapshot` (WP-M2-01, Schema-Version 1.0)",
+  "description": "Unveränderlicher Preisnachweis eines Angebots (Leitlinie 5: Geld als bigint in kleinster Einheit; Kap. 03). Er speist `booking.promise_snapshot` (gross_minor, currency, cancellation_policy_ref). Inhalt: Tarifrevision, tarifliche Strecke samt Routingversion (WP-M2-10), Positionen und Gesamtbetrag. Regeltypen, Formeln und Rundung legt der Detailvertrag von WP-M2-18/-19 fest; hier nur die Hülle.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tariff_revision", "currency", "lines", "gross_minor"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "tariff_revision": { "type": "integer", "minimum": 1 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "distance_m": { "type": "integer", "minimum": 0 },
+    "routing_map_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "lines": {
+      "type": "array", "minItems": 1, "maxItems": 50,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["code", "amount_minor"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,31}$" },
+          "amount_minor": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+          "quantity": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "gross_minor": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "cancellation_policy_ref": { "type": "string", "minLength": 1, "maxLength": 64 }
+  },
+  "examples": [
+    { "schema_version": "1.0", "tariff_revision": 3, "currency": "EUR", "distance_m": 5200, "routing_map_version": "osm-2026-11-01",
+      "lines": [ { "code": "BASE", "amount_minor": 300 }, { "code": "PER_KM", "amount_minor": 650, "quantity": 5200 } ], "gross_minor": 950, "cancellation_policy_ref": "std-24h" }
+  ]
+}

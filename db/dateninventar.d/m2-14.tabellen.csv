@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+passenger_trip;Personen und Plätze einer Buchung (WP-M2-14);LK_BETRIEB;Ein Eintrag je Person und Platzart, Unterstützungsbedarf nur als Katalogcodes

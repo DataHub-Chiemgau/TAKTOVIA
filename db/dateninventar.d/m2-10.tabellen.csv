@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+route_matrix_cache;Cache der Fahrzeitmatrix (WP-M2-10);LK_TECHNISCH;Haltepunkt-Paare ohne Personenbezug, ersetzbar, bei neuem Kartenstand gelöscht

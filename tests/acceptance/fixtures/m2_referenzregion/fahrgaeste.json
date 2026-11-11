@@ -1,0 +1,48 @@
+{
+ "schema": "taktovia.referenzregion.fahrgaeste/1",
+ "hinweis": "Ausschließlich synthetische Fahrgäste ohne Namen, Kontaktdaten oder Diagnosen. `assistance_codes` nennt nur transportrelevante Unterstützung aus dem Katalog (Feldschutz WP-M1-31, Kap. 06 §6.2).",
+ "fahrgaeste": [
+  {
+   "key": "p1",
+   "personen": 1,
+   "rollstuhlplaetze": 0,
+   "assistance_codes": []
+  },
+  {
+   "key": "p2",
+   "personen": 2,
+   "rollstuhlplaetze": 0,
+   "assistance_codes": []
+  },
+  {
+   "key": "p3",
+   "personen": 2,
+   "rollstuhlplaetze": 1,
+   "assistance_codes": [
+    "BOARDING_HELP"
+   ]
+  },
+  {
+   "key": "p4",
+   "personen": 1,
+   "rollstuhlplaetze": 1,
+   "assistance_codes": [
+    "WHEELCHAIR_SPACE"
+   ]
+  },
+  {
+   "key": "p5",
+   "personen": 3,
+   "rollstuhlplaetze": 0,
+   "assistance_codes": [
+    "ASSISTANCE_ANIMAL"
+   ]
+  },
+  {
+   "key": "p6",
+   "personen": 4,
+   "rollstuhlplaetze": 0,
+   "assistance_codes": []
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/resource-vector.v1.schema.json",
+  "title": "Ressourcenvektor (WP-M2-01, final in WP-M2-14, LH-6.4-BKG-004)",
+  "description": "Gemeinsame Form von `vehicle.capacity_config` (Angebot eines Fahrzeugs) und `capacity_hold.capacity_vector` (Bedarf einer Buchung). Getrennte Dimensionen: `seats` (Sitzplätze), `wheelchair` (Rollstuhlplätze) und `equipment` (Ausstattungsmerkmale als Codeliste: beim Fahrzeug vorhanden, bei der Anfrage benötigt). Keine Dimension ersetzt eine andere: ein freier Sitz deckt nie einen Rollstuhlplatz. Unbekannte Dimensionen werden abgewiesen (additionalProperties=false, Fehler 422). `schema_version` ist `1.0`; fehlt sie in einem Altbestand (Spike-Daten), gilt `1.0`. Umrüstzustände (Kap. 01 §1.4 Schritt 2) sind in P1 nicht modelliert (OP-15, Arbeitsannahme). Merkmalscodes sind transportrelevant und enthalten nie eine Diagnose (Kap. 06 §6.2).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "seats": { "type": "integer", "minimum": 0, "maximum": 99 },
+    "wheelchair": { "type": "integer", "minimum": 0, "maximum": 20 },
+    "equipment": {
+      "type": "array", "maxItems": 20, "uniqueItems": true,
+      "items": { "$ref": "#/$defs/EquipmentCode" }
+    }
+  },
+  "$defs": {
+    "EquipmentCode": {
+      "enum": ["RAMP", "LIFT", "CHILD_SEAT", "BOOSTER_SEAT", "LUGGAGE_SPACE", "ASSISTANCE_DOG_SPACE", "STRETCHER_FIXING"],
+      "description": "Vorschlag dieses Plans (OP-15: Liste der Ausstattungsmerkmale ist im Pflichtenheft nicht festgelegt); die Liste wächst nur durch eine neue Schema-Version."
+    }
+  },
+  "examples": [
+    { "schema_version": "1.0", "seats": 2, "wheelchair": 1, "equipment": ["RAMP"] },
+    { "schema_version": "1.0", "seats": 4, "wheelchair": 1, "equipment": ["RAMP", "CHILD_SEAT"] },
+    { "seats": 1, "wheelchair": 0 }
+  ]
+}

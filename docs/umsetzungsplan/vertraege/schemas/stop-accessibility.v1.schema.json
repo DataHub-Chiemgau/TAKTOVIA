@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/stop-accessibility.v1.schema.json",
+  "title": "Haltepunkt-Barrierefreiheit `stop_revision.accessibility` (WP-M2-01, Schema-Version 1.0)",
+  "description": "Barrierefreie Zuordnung eines Haltepunkts (Kap. 05 §5.7 Geodaten). Jedes Merkmal ist `YES`, `NO` oder `UNVERIFIED`; `UNVERIFIED` ist ausdrücklich nicht `YES` (OP-41: Rollstuhlanfrage und Haltepunkt „ungeprüft“ werden nicht still zugelassen). Keine Diagnosen, nur bauliche Merkmale.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "step_free", "wheelchair_boarding"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "step_free": { "$ref": "#/$defs/Tri" },
+    "wheelchair_boarding": { "$ref": "#/$defs/Tri" },
+    "tactile_guidance": { "$ref": "#/$defs/Tri" },
+    "shelter": { "$ref": "#/$defs/Tri" },
+    "verified_at": { "type": "string", "format": "date-time" },
+    "note": { "type": "string", "maxLength": 200 }
+  },
+  "$defs": { "Tri": { "enum": ["YES", "NO", "UNVERIFIED"] } },
+  "examples": [
+    { "schema_version": "1.0", "step_free": "YES", "wheelchair_boarding": "YES", "tactile_guidance": "UNVERIFIED", "verified_at": "2026-11-01T10:00:00Z" }
+  ]
+}

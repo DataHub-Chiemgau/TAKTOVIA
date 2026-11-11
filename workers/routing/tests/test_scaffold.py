@@ -39,9 +39,11 @@ def test_health_endpoint() -> None:
         server.server_close()
 
 
-def test_valhalla_adapter_is_placeholder() -> None:
-    with pytest.raises(NotImplementedError):
-        ValhallaAdapter().travel_time_matrix([(0.0, 0.0)], [(1.0, 1.0)])
+def test_valhalla_adapter_is_a_routing_provider() -> None:
+    """Der Platzhalter (WP-M0-07) ist ab WP-M2-10 ein Adapter; Verhalten siehe
+    test_routing_adapter.py."""
+    adapter = ValhallaAdapter("http://127.0.0.1:9", "v1")
+    assert adapter.name == "valhalla" and adapter.map_version() == "v1"
 
 
 def test_no_database_dependency() -> None:

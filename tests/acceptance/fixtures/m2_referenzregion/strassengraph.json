@@ -1,0 +1,269 @@
+{
+ "schema": "taktovia.referenzregion.strassengraph/1",
+ "map_version": "referenz-2026-11-01",
+ "hinweis": "SYNTHETISCH (WP-M2-02): konstruierter Ausschnitt, kein realer Kartenbestand. Fahrzeit je Kante in Sekunden für Kfz (`time_s`), Fußgänger gehen mit `walk_speed_mps` über `length_m`. `oneway`: nur von `from` nach `to` (Kfz); `closed`: für alle Modi gesperrt; `max_height_m`: Durchfahrtshöhe, ein höheres Fahrzeugprofil darf die Kante nicht nutzen; `modes`: zulässige Fortbewegungsarten.",
+ "walk_speed_mps": 1.2,
+ "profiles": {
+  "car": {
+   "mode": "car",
+   "height_m": 1.8,
+   "weight_t": 1.6
+  },
+  "van_high": {
+   "mode": "car",
+   "height_m": 3.1,
+   "weight_t": 3.2
+  },
+  "walk": {
+   "mode": "walk"
+  }
+ },
+ "nodes": [
+  {
+   "id": "N1",
+   "lat": 51.05,
+   "lon": 13.74
+  },
+  {
+   "id": "N2",
+   "lat": 51.05,
+   "lon": 13.7472
+  },
+  {
+   "id": "N3",
+   "lat": 51.05,
+   "lon": 13.7544
+  },
+  {
+   "id": "N4",
+   "lat": 51.0455,
+   "lon": 13.74
+  },
+  {
+   "id": "N5",
+   "lat": 51.0455,
+   "lon": 13.7472
+  },
+  {
+   "id": "N6",
+   "lat": 51.0455,
+   "lon": 13.7544
+  },
+  {
+   "id": "N7",
+   "lat": 51.041,
+   "lon": 13.74
+  },
+  {
+   "id": "N8",
+   "lat": 51.041,
+   "lon": 13.7472
+  },
+  {
+   "id": "N9",
+   "lat": 51.041,
+   "lon": 13.7544
+  },
+  {
+   "id": "N10",
+   "lat": 51.06,
+   "lon": 13.77
+  }
+ ],
+ "edges": [
+  {
+   "id": "e12",
+   "from": "N1",
+   "to": "N2",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e23",
+   "from": "N2",
+   "to": "N3",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": true,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e45",
+   "from": "N4",
+   "to": "N5",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": 2.5,
+   "max_weight_t": null
+  },
+  {
+   "id": "e56",
+   "from": "N5",
+   "to": "N6",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": true,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e78",
+   "from": "N7",
+   "to": "N8",
+   "length_m": 500,
+   "time_s": 80,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e89",
+   "from": "N8",
+   "to": "N9",
+   "length_m": 500,
+   "time_s": 80,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e14",
+   "from": "N1",
+   "to": "N4",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e25",
+   "from": "N2",
+   "to": "N5",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e36",
+   "from": "N3",
+   "to": "N6",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e47",
+   "from": "N4",
+   "to": "N7",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e58",
+   "from": "N5",
+   "to": "N8",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "e69",
+   "from": "N6",
+   "to": "N9",
+   "length_m": 500,
+   "time_s": 60,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "car",
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  },
+  {
+   "id": "f15",
+   "from": "N1",
+   "to": "N5",
+   "length_m": 700,
+   "time_s": 0,
+   "oneway": false,
+   "closed": false,
+   "modes": [
+    "walk"
+   ],
+   "max_height_m": null,
+   "max_weight_t": null
+  }
+ ]
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/booking.attempt_recorded.v1.schema.json",
+  "title": "Anfrageversuch erfasst oder abgelehnt (WP-M2-11)",
+  "description": "Payload von `booking.attempt_recorded`. Aggregat: travel_attempt. Empfänger: eigener Mandant (Analytics M4). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "attempt_id",
+    "service_id",
+    "outcome",
+    "time_mode",
+    "requested_at",
+    "passengers"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "service_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "outcome": {
+      "enum": [
+        "RECORDED",
+        "REJECTED"
+      ]
+    },
+    "primary_reason": {
+      "enum": [
+        "OUTSIDE_AREA",
+        "OUTSIDE_HOURS",
+        "NO_CAPACITY",
+        "EQUIPMENT_MISSING",
+        "RULE_FORBIDDEN",
+        "NO_ROUTE",
+        "LEAD_TIME",
+        "HORIZON",
+        "WINDOW_NOT_FEASIBLE",
+        "TECHNICAL"
+      ],
+      "description": "Primärgrund der Ablehnung (Kategorien nach Anhang K.1, Prioritätsregel offen: M2 OP-14). `EQUIPMENT_MISSING` zählt in `Ausstattungsablehnungen`."
+    },
+    "time_mode": {
+      "enum": [
+        "DEPARTURE",
+        "ARRIVAL"
+      ]
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "passengers": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "wheelchair": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coarse_origin": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "coarse_destination": {
+      "type": "string",
+      "maxLength": 64
+    }
+  },
+  "examples": [
+    {
+      "attempt_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "service_id": "0f6f6d0a-3c7b-4d9e-8f10-1c2d3e4f5a6b",
+      "outcome": "REJECTED",
+      "primary_reason": "EQUIPMENT_MISSING",
+      "time_mode": "DEPARTURE",
+      "requested_at": "2026-11-01T10:00:00Z",
+      "passengers": 2,
+      "wheelchair": 1,
+      "coarse_origin": "zone-nord",
+      "coarse_destination": "zone-mitte"
+    }
+  ]
+}

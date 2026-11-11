@@ -1,0 +1,9 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+passenger_trip;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;id;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;seq;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;place_kind;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;assistance_codes;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Transportrelevante Unterstützung als Katalogauswahl, keine Diagnose
+passenger_trip;revision;nein;BUCHUNGSABWICKLUNG;;;;
+passenger_trip;created_at;nein;BUCHUNGSABWICKLUNG;;;;

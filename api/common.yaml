@@ -56,6 +56,11 @@ components:
             fleet:write: fleet:write
             me:write: me:write
             accounts:write: accounts:write
+            rides:read: rides:read
+            rides:write: rides:write
+            geo:read: geo:read
+            geo:write: geo:write
+            notifications:read: notifications:read
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -96,12 +101,23 @@ components:
             fleet:write: fleet:write
             me:write: me:write
             accounts:write: accounts:write
+            rides:read: rides:read
+            rides:write: rides:write
+            geo:read: geo:read
+            geo:write: geo:write
+            notifications:read: notifications:read
     partnerSignature:
       type: apiKey
       in: header
       name: X-Partner-Signature
       description: v1=<64 hex HMAC-SHA256>; API-Key-Syntax beschreibt den Header, Semantik ist eine dynamische Nachrichtensignatur.
         Schlüssel nie übertragen. Zusätzliche Pflichtheader im Vertrag.
+    providerSignature:
+      type: apiKey
+      in: header
+      name: X-Provider-Signature
+      description: 'PSP-spezifische Signatur t=<Unix-Sekunden>,v1=<64 hex HMAC-SHA256>; eigene Signatur je Zahlungsdienstleister, nicht der Partner-HMAC
+        (Kap. 05 §5.7). Schlüssel nie übertragen; Zeitfenster ±300 s.'
   parameters:
     IdempotencyKey:
       name: Idempotency-Key

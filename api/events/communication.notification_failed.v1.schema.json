@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/communication.notification_failed.v1.schema.json",
+  "title": "Nachricht endgültig fehlgeschlagen (WP-M2-32)",
+  "description": "Payload von `communication.notification_failed`. Aggregat: notification; sichtbar für Betreiber, kein stiller Verlust. Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "notification_id",
+    "channel",
+    "template",
+    "attempts",
+    "failure"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "notification_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "enum": [
+        "PUSH",
+        "SMS",
+        "EMAIL"
+      ]
+    },
+    "template": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "failure": {
+      "enum": [
+        "INVALID_CONTACT",
+        "PROVIDER_ERROR",
+        "RETRIES_EXHAUSTED"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "notification_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "channel": "SMS",
+      "template": "pickup_reminder",
+      "attempts": 6,
+      "failure": "RETRIES_EXHAUSTED"
+    }
+  ]
+}

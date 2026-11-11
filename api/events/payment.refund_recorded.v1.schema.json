@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.refund_recorded.v1.schema.json",
+  "title": "Erstattung erfasst (WP-M2-31)",
+  "description": "Payload von `payment.refund_recorded`. Aggregat: payment_intent; Geld als bigint (Leitlinie 5). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "refund_minor",
+    "currency",
+    "state"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "refund_minor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "state": {
+      "enum": [
+        "PARTIALLY_REFUNDED",
+        "REFUNDED"
+      ]
+    },
+    "provider_ref": {
+      "type": "string",
+      "maxLength": 128
+    }
+  },
+  "examples": [
+    {
+      "payment_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "refund_minor": 950,
+      "currency": "EUR",
+      "state": "REFUNDED",
+      "provider_ref": "re_1"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+route_matrix_cache;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;id;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;origin_stop;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;dest_stop;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;profile;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;map_version;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;time_s;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;distance_m;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;provider;nein;TECHNISCHER_BETRIEB;;;;
+route_matrix_cache;computed_at;nein;TECHNISCHER_BETRIEB;;;;

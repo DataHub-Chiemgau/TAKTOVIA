@@ -1,0 +1,118 @@
+paths:
+  /v1/payments/provider-events/{provider}:
+    post:
+      summary: Signierte PSP-Benachrichtigung zustellen
+      operationId: receiveProviderEvent
+      description: 'Eigene PSP-Signatur (nicht der Partner-HMAC, Kap. 05 §5.7): `X-Provider-Signature: t=<Unix-Sekunden>,v1=<hex HMAC-SHA256(secret,
+        t + "." + roher Body)>`. Zeitfenster ±300 s, konstantzeitlicher Vergleich, Inbox-Deduplikation je (provider, event_id) mit Payloadhash;
+        identisches Duplikat 200 `ALREADY_RECEIVED`, gleiche ID mit anderem Payload 409. Kein Idempotency-Key: die Inbox dedupliziert.
+        Ein PSP-Ereignis löst Zahlungsübergänge nur nach Statusprüfung aus (Leitlinie 6).'
+      security:
+      - providerSignature: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9_-]+$
+        description: Provider-Kennung des Zahlungsdienstleisters.
+      - name: X-Provider-Timestamp
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9]{10}$
+        description: Unix-Sekunden, Teil der signierten Nachricht.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderEvent'
+      responses:
+        '202':
+          description: Neu in dauerhafte Inbox aufgenommen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderEventReceipt'
+        '200':
+          description: Identisches Ereignis bereits gespeichert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderEventReceipt'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ProviderEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        type:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^payment\.[a-z_.]+$
+        created_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+          description: Providerspezifische Nutzdaten (PSP-Referenzwerte, Beträge in kleinster Einheit); keine rohen Zahlungsdaten.
+      required:
+      - event_id
+      - type
+      - created_at
+      - data
+      examples:
+      - event_id: evt_0123456789abcdef
+        sequence: 1
+        type: payment.authorized
+        created_at: '2026-11-01T10:00:00Z'
+        data:
+          provider_ref: pi_1
+          state: AUTHORIZED
+    ProviderEventReceipt:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          enum:
+          - ACCEPTED
+          - ALREADY_RECEIVED
+      required:
+      - event_id
+      - status
