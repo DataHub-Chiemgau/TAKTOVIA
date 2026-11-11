@@ -71,7 +71,7 @@ class RequestContextFilter(
         val path = request.requestURI
         if (!path.startsWith("/v1/")) return true
         val op = registry.match(request.method, path) ?: return true
-        return op.file in excludedFiles || op.operationId in EXEMPT
+        return op.file in excludedFiles || op.operationId in EXEMPT || op.signatureAuthenticated   // PSP-Ereignisse (WP-M2-29): Mandant aus dem Signaturschlüssel, kein Akteurskontext
     }
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {

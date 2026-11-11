@@ -38,7 +38,9 @@ class AuthenticationFilter(
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val p = request.requestURI
-        return p == "/actuator/health" || p.startsWith("/actuator/health/")
+        if (p == "/actuator/health" || p.startsWith("/actuator/health/")) return true
+        // Operationen mit eigener Nachrichtensignatur (PSP-Ereignisse, WP-M2-29): kein Bearer-Token, die Operation prüft die Signatur selbst und fail-closed
+        return p.startsWith("/v1/") && registry.match(request.method, p)?.signatureAuthenticated == true
     }
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+payment_event;SELECT,INSERT;WP-M2-29: PSP-Ereignisse dedupliziert, unveränderlich (kein UPDATE/DELETE)

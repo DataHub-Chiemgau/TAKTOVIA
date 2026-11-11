@@ -4000,6 +4000,167 @@
       ]
     },
     {
+      "tabelle": "payment_event",
+      "aggregat": "PSP-Ereignis (WP-M2-29)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "nur Referenzwerte und Beträge, kein Rohpayload, unveränderlich",
+      "spalten": [
+        {
+          "spalte": "authorized_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "captured_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "currency",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "dispute_state",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "event_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "event_type",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "internal_kind",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "payload_sha256",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "provider",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "provider_created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "provider_ref",
+          "personenbezogen": "ja",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "Referenz beim Zahlungsdienstleister; Schutzklasse wie payment_intent.provider_ref (vorläufig, SEC-008)"
+        },
+        {
+          "spalte": "provider_sequence",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "received_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "refunded_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reported_state",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "payment_intent",
       "aggregat": "Zahlungsvorgang",
       "loeschklasse": "LK_BELEG",

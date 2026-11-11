@@ -1067,6 +1067,7 @@ export interface PassengerPage {
 
 export interface ProviderEvent {
   event_id: string;
+  provider?: string;
   sequence?: number;
   type: string;
   created_at: string;
@@ -2176,7 +2177,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   recordMyConsent: { method: 'POST', path: '/v1/me/privacy/consents', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
-  receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
+  receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

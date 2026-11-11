@@ -54,7 +54,7 @@ class MfaEnforcementTest {
         val withMfa = idp.sign(admin(acr = "loa2"))
         val uuid = "6f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f"
         val failures = mutableListOf<String>()
-        ops.forEach { op ->
+        ops.filter { !it.signatureAuthenticated }.forEach { op ->   // Operationen mit PSP-Signatur kennen keinen Menschen und keine MFA (WP-M2-29, ProviderEventApiTest)
             val path = op.path.replace(Regex("\\{[^}]+}"), uuid)
             val body = if (op.method in setOf("POST", "PUT", "PATCH")) "{}" else null
             val denied = env.server.send(op.method, path, body, idp.bearer(noMfa))

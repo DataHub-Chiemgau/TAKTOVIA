@@ -54,6 +54,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
+        '413':
+          $ref: common.yaml#/components/responses/Problem
         '422':
           $ref: common.yaml#/components/responses/Problem
         '429':
@@ -70,6 +72,12 @@ components:
           type: string
           minLength: 1
           maxLength: 128
+        provider:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9_-]+$
+          description: Provider-Kennung; falls angegeben, muss sie der Pfadkennung entsprechen (die Zuordnung zu Mandant und Schlüssel folgt nie aus dem Payload).
         sequence:
           type: integer
           format: int64
