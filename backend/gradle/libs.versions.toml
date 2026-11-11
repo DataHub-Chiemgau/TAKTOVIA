@@ -1,0 +1,18 @@
+# Zentrale Versionen (WP-M0-02). Keine dynamischen Versionen; Details und Lizenzen: docs/umsetzungsplan/versionen.md
+[versions]
+kotlin = "2.4.21"
+spring-boot = "4.1.2"
+archunit = "1.5.1"
+postgresql = "42.7.14"
+testcontainers = "2.0.5"
+
+[libraries]
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

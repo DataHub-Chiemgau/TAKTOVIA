@@ -1,0 +1,22 @@
+rootProject.name = "taktovia-backend"
+
+// Ein Deployable (Leitlinie 1): app. Python-Worker (workers/) sind nicht Teil dieses Builds.
+include(":platform", ":app")
+include(":modules:identity")
+include(":modules:config")
+include(":modules:service-geo")
+include(":modules:booking-dispatch")
+include(":modules:journey-federation")
+include(":modules:fare-payment")
+include(":modules:fleet-safety")
+include(":modules:staff-time")
+include(":modules:documents-finance")
+include(":modules:communication-support")
+include(":modules:analytics")
+include(":adapters:psp")
+include(":adapters:partner-tomp")
+include(":adapters:partner-osdm")
+include(":adapters:timetable-gtfs")
+include(":adapters:erp-export")
+include(":adapters:ocr")
+include(":adapters:notification")

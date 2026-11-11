@@ -68,6 +68,17 @@ class Migration(unittest.TestCase):
             self.assertEqual(geo[('service_area', 'area')], 'MULTIPOLYGON:4326')
             self.assertEqual(geo[('stop_revision', 'point')], 'POINT:4326')
 
+    def test_geld_ohne_gleitkomma(self):
+        """Leitlinie 5: alle *_minor-Spalten sind bigint; im Schema gibt es keinen float/real/double-Typ."""
+        with admin() as c:
+            minor = c.execute("""SELECT table_name, column_name, data_type FROM information_schema.columns
+                                  WHERE table_schema='taktovia' AND column_name LIKE '%\\_minor' ESCAPE '\\'""").fetchall()
+            self.assertGreaterEqual(len(minor), 10)
+            self.assertEqual([r for r in minor if r[2] != 'bigint'], [])
+            fl = c.execute("""SELECT table_name, column_name FROM information_schema.columns
+                               WHERE table_schema='taktovia' AND data_type IN ('real','double precision')""").fetchall()
+            self.assertEqual(fl, [])
+
     def test_eigentuemer_ist_migrator(self):
         with admin() as c:
             owners = {r[0] for r in c.execute("""SELECT o.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace

@@ -1,0 +1,37 @@
+# Zuständigkeiten nach Rollen (Beschluss D-12 zu Team und Namen steht aus).
+# Die Teams sind Platzhalter und müssen in der GitHub-Organisation angelegt werden; erst dann greifen die Regeln.
+# Teams: plattform, buchung-disposition, betrieb-mobil, finanzen-daten
+
+*                              @DataHub-Chiemgau/plattform
+/.github/                      @DataHub-Chiemgau/plattform
+/api/                          @DataHub-Chiemgau/plattform
+/db/                           @DataHub-Chiemgau/plattform
+/docs/                         @DataHub-Chiemgau/plattform
+/infra/                        @DataHub-Chiemgau/plattform
+/tests/                        @DataHub-Chiemgau/plattform
+/tools/                        @DataHub-Chiemgau/plattform
+/backend/                      @DataHub-Chiemgau/plattform
+/backend/platform/             @DataHub-Chiemgau/plattform
+/backend/app/                  @DataHub-Chiemgau/plattform
+/backend/modules/identity/     @DataHub-Chiemgau/plattform
+/backend/modules/config/       @DataHub-Chiemgau/plattform
+/backend/modules/service-geo/          @DataHub-Chiemgau/buchung-disposition
+/backend/modules/booking-dispatch/     @DataHub-Chiemgau/buchung-disposition
+/backend/modules/journey-federation/   @DataHub-Chiemgau/buchung-disposition
+/backend/modules/fare-payment/         @DataHub-Chiemgau/buchung-disposition
+/backend/adapters/psp/                 @DataHub-Chiemgau/buchung-disposition
+/backend/adapters/partner-tomp/        @DataHub-Chiemgau/buchung-disposition
+/backend/adapters/partner-osdm/        @DataHub-Chiemgau/buchung-disposition
+/backend/adapters/timetable-gtfs/      @DataHub-Chiemgau/buchung-disposition
+/backend/modules/fleet-safety/         @DataHub-Chiemgau/betrieb-mobil
+/backend/modules/staff-time/           @DataHub-Chiemgau/betrieb-mobil
+/backend/modules/communication-support/ @DataHub-Chiemgau/betrieb-mobil
+/backend/adapters/notification/        @DataHub-Chiemgau/betrieb-mobil
+/web/                          @DataHub-Chiemgau/betrieb-mobil
+/mobile/                       @DataHub-Chiemgau/betrieb-mobil
+/backend/modules/documents-finance/    @DataHub-Chiemgau/finanzen-daten
+/backend/modules/analytics/            @DataHub-Chiemgau/finanzen-daten
+/backend/adapters/erp-export/          @DataHub-Chiemgau/finanzen-daten
+/backend/adapters/ocr/                 @DataHub-Chiemgau/finanzen-daten
+/workers/routing/              @DataHub-Chiemgau/buchung-disposition
+/workers/documents/            @DataHub-Chiemgau/finanzen-daten

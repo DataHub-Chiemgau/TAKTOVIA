@@ -1,0 +1,39 @@
+table;owner;quelle
+tenant;identity;Kap. 04 §4.3 (tenant, membership)
+membership;identity;Kap. 04 §4.3
+legal_entity;identity;Kap. 04 §4.3 (legal_entity, organization)
+organization;identity;Kap. 04 §4.3
+passenger_private;identity;Kap. 04 §4.3 (Plattformsubjekt, Kontaktdaten)
+currency;platform;globaler Katalog, nur per Migration gepflegt
+config_revision;config;Kap. 04 §4.3
+service;service-geo;Kap. 04 §4.3
+service_area;service-geo;Kap. 04 §4.3
+stop_revision;service-geo;Kap. 04 §4.3
+travel_attempt;booking-dispatch;Kap. 04 §4.3, Nachfragetrichter
+vehicle_run;booking-dispatch;Kap. 01 §1.3 (RunPlanRevision)
+capacity_hold;booking-dispatch;Kap. 01 §1.3
+booking;booking-dispatch;Kap. 01 §1.3
+partner_contract_version;journey-federation;Kap. 01 §1.3 (CooperationGrant)
+cooperation_grant;journey-federation;Kap. 01 §1.3
+journey;journey-federation;Kap. 01 §1.3
+journey_leg;journey-federation;Kap. 01 §1.3
+operation;journey-federation;Kap. 01 §1.3 (SagaStep); Annahme: generische Operation hängt an der Reise
+saga_step;journey-federation;Kap. 01 §1.3
+fare_quote;fare-payment;Kap. 01 §1.3 (QuoteSnapshot)
+payment_intent;fare-payment;Kap. 01 §1.3
+vehicle;fleet-safety;Kap. 01 §1.3
+resource_release;fleet-safety;Kap. 01 §1.3 (Release)
+staff_shift;staff-time;Kap. 01 §1.3
+expense_document;documents-finance;Kap. 01 §1.3
+cost_object;documents-finance;Kap. 01 §1.3
+economic_event;documents-finance;Kap. 01 §1.3
+allocation_set;documents-finance;Kap. 01 §1.3
+allocation_line;documents-finance;Kap. 01 §1.3
+fiscal_period;documents-finance;Kap. 01 §1.3
+journal;documents-finance;Kap. 01 §1.3
+journal_line;documents-finance;Kap. 01 §1.3
+settlement_line;documents-finance;Kap. 01 §1.3 (Settlement); Annahme: Clearing gehört zur Finanzdomäne
+idempotency_record;platform;WP-M0-03 Detailvertrag
+outbox;platform;WP-M0-03 Detailvertrag
+inbox;platform;WP-M0-03 Detailvertrag
+audit_event;platform;WP-M0-03 Detailvertrag
