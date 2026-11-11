@@ -1,0 +1,6 @@
+# Laufzeitausgaben der Testwerkzeuge (WP-M0-22 bis -30)
+__pycache__/
+*.pyc
+out/
+evidence-out/
+.venv/

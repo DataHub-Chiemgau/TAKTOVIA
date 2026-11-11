@@ -1,0 +1,11 @@
+{
+  "$comment": "Zustandsautomat des Sandbox-Holds analog capacity_hold (Kap. 04). booking_state ist ein getrenntes Feld (NONE, CONFIRMED, CANCELLED). Muss mit partner_sandbox.HOLD_TRANSITIONS übereinstimmen (Test).",
+  "initial": "HELD",
+  "transitions": {
+    "HELD": ["CONSUMED", "EXPIRED", "RELEASED"],
+    "CONSUMED": [],
+    "RELEASED": [],
+    "EXPIRED": []
+  },
+  "boundary": "Ablauf: Serverzeit (Sandboxuhr) now >= expires_at gilt als EXPIRED (Kap. 01 §1.4)"
+}

@@ -1,8 +1,8 @@
 # LH-6.22-DMG-007 – Statusautomat der Schadenakte
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Fleet/Safety (Modul `fleet-safety`)
 - **Arbeitspaket:** WP-M3-47
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,23 +13,26 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `defect_case.state` mit versioniertem CHECK auf die Werte `neu`, `geprüft`, `in Bearbeitung`, `Reparatur`, `abgeschlossen`, `verworfen` (Schreibweise der Enum-Werte im Bau festzulegen); `defect_case` führt eine Revision für `If-Match`; Statushistorie append-only (Akteur, Zeit, alter/neuer Status, Grund) mit Trigger gegen UPDATE/DELETE; Eintrag in `audit_event`. RLS wie V1.
+- **API:** Statusübergänge unterhalb `/v1/defects/{id}` (Pfade im Detailvertrag festzulegen, Arbeitsname `POST /v1/defects/{id}/transitions`) mit `If-Match`. Fehler: 409 bei unzulässigem Sprung (auch bei direktem API-Aufruf), 428 ohne `If-Match`, 412 bei veralteter Revision, 404 bei Akte eines anderen Mandanten oder nicht berechtigten Dienstes, 403 ohne Rolle.
+- **Zustandsautomat:** `docs/umsetzungsplan/vertraege/zustaende/defect_case.md` (neu anzulegen, im Rahmen aus WP-M1-17). Zulässige Hauptfolge: `neu` → `geprüft` → `in Bearbeitung` → `Reparatur` → `abgeschlossen`; Endzustände `abgeschlossen` und `verworfen`. Welche Abkürzungen (z. B. `neu` → `verworfen`, `in Bearbeitung` → `abgeschlossen` ohne Reparatur) und Rücksprünge zulässig sind, legt das Pflichtenheft nicht fest; die vollständige Übergangstabelle mit Rollen und Vorbedingungen ist Detailvertrag vorab. Vorgaben aus dem WP: `verworfen` nur mit Begründung; `abgeschlossen` bei sicherheitskritisch nur mit Freigabeentscheidung; aus Endzustand kein Übergang ohne dokumentierte Wiedereröffnung. `abgeschlossen`/`verworfen` heben eine bestehende Sperre nicht auf (nur WP-M3-51).
+- **JSON-Schema / Ereignisse:** Statuswechsel als Ereignis über Outbox (Name Arbeitsname `defect.state_changed.v1`).
+- **Parameter und Kennzahlen:** keine.
+- **Oberfläche:** UI-11: nur zulässige Folgeaktionen werden angeboten; Fehlerzustand bei 409/412; fehlende Rechte.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** vollständige Übergangstabelle mit Rollen/Vorbedingungen und Wiedereröffnungsregel sind nicht im Pflichtenheft festgelegt und vor Codebeginn mit dem Auftraggeber zu klären (OP-34 Rollen, D-11 Freigaberollen); der Rahmen und die Hauptfolge sind baubar. Fristüberwachung je Status in M7 nicht im Umfang.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** vollständiger Durchlauf beider Endzustände (`abgeschlossen`, `verworfen`); jeder zulässige Übergang in der Historie mit Akteur und Zeit.
+- **Negativ:** tabellengetrieben jeder nicht in der Übergangstabelle enthaltene Übergang (z. B. `neu` → `abgeschlossen`) ergibt 409, auch über direkten API-Aufruf; Übergang ohne Rolle; `verworfen` ohne Begründung; Übergang aus Endzustand ohne Wiedereröffnung; ohne `If-Match` 428, veraltete Revision 412; Akte anderen Mandanten 404; Abschluss hebt Sperre nicht auf.
+- **Konkurrierend:** zwei gleichzeitige Übergänge, genau einer gelingt, der andere 412/409.
+- **Referenztests:** keine Katalog-ID im WP genannt.
+- Testfälle: geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::unzulaessige_uebergaenge_ergeben_409; geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::vollstaendiger_durchlauf_beider_endzustaende; geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::zwei_gleichzeitige_uebergaenge_genau_einer; geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::verworfen_ohne_grund_und_abschluss_sicherheitskritisch_ohne_freigabe_abgewiesen; geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::abschluss_hebt_sperre_nicht_auf; geplant:backend/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectStateMachineTest.kt::ohne_if_match_428_veraltet_412_fremder_mandant_404; geplant:db/tests/test_defect_case.py::test_state_check_und_historie_append_only
 
 ## Reviews
+
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview).
 
 | Rolle | Person | Datum | Ergebnis |
 |---|---|---|---|

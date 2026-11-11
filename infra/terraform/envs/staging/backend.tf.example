@@ -1,0 +1,4 @@
+# Remote-State je Umgebung (eigener State, eigene Berechtigung). Platzhalter, bis D-05 entschieden ist.
+# terraform {
+#   backend "<anbieter>" { key = "taktovia/staging.tfstate" }
+# }

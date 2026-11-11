@@ -1,8 +1,8 @@
 # LH-6.7-OPS-004 – Buchung durch die Disposition anlegen, ändern, stornieren
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Leitstelle/Dispatch (Modul `booking-dispatch`, Tarif-/Kapazitätskern gemeinsam mit M2)
 - **Arbeitspaket:** WP-M3-39
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `booking` (`state`, `revision`, `promise_snapshot`), `capacity_hold`, `booking_change` (angelegt in WP-M3-02: Akteur, Grund, alte und neue Zusage), Statushistorie der Buchung (WP-M2-25), `audit_event`, `idempotency_record`. Zusage-Snapshot bleibt unveränderlich; Änderung nur über Änderungsverfahren mit Audit. RLS (V1) plus Dienstscope.
+- **API:** `/v1/ride-offers` und `/v1/bookings` im Leitstellenkontext (Scope Disposition): Anlegen (Angebot → Hold → Bestätigung), Ändern (neues Angebot und Hold für den geänderten Wunsch, danach atomarer Tausch: alte Kapazität frei, neue belegt, ein `booking_change`-Eintrag; scheitert der neue Hold, bleibt die alte Buchung mit ihrer Zusage unverändert, kein Zwischenzustand), Stornieren. Pflichtfelder: Grund (Grundkatalog im Detailvertrag, Arbeitsname `reason_code` plus Freitext), `Idempotency-Key`, `If-Match` für Änderung/Storno. Fehler: fehlender Grund → 422 (stabiler Fehlercode), veraltete Revision → 412 `REVISION_MISMATCH`, fehlendes `If-Match` → 428, ohne Dispositionsrolle 403, ohne Recht am Dienst bzw. fremdes Objekt 404. `PlanRequest.booking_subject` nach Kap. 05 §5.9: der Server bindet den Fahrgast und prüft die Legitimation des Disponenten bei Planung, Hold und Confirm; Subjektwechsel verlangt neues Angebot. Der Disponent erscheint im Audit als eigener Akteur, nicht als Fahrgast. Wiederholung mit gleichem Idempotenzschlüssel erzeugt keine zweite Buchung, Änderung oder Stornierung. Dieselbe Safety-Prüfung und Kapazitätsprüfung wie die Fahrgastbuchung; keine Überbuchung.
+- **Zustandsautomat:** Buchungszustände aus M2 (Verweis auf M2-Automat; hier kein neuer Automat).
+- **JSON-Schema / Ereignisse:** Betriebsnachricht an den Fahrgast bei Änderung/Storno (Auslöser WP-M2-34); Preis-/Zeitänderungen mit Zustimmungspflicht werden nicht ohne Zustimmung wirksam (Kap. 06 §6.5).
+- **Parameter und Kennzahlen:** keine neuen.
+- **Oberfläche:** UI-07 – „Eigene Buchung bearbeiten": Anlegen, Ändern, Stornieren mit Grundauswahl (Pflicht) und Folgenanzeige; 412-Konflikt ohne stilles Überschreiben; Zustände Rechte fehlen (Aktion nicht angeboten), Fehler.
+- **Entscheidungen:** D-12 (Vorziehen von P2-Umfang: Buchungsänderung, Buchung für Dritte) – blockiert den Bau des Mindestumfangs nicht, entscheidet aber, ob er genügt.
+- **Offene Punkte:** OP-30 (welche Legitimation ein Disponent in P1 braucht; Buchung für nicht registrierte Fahrgäste; welche Änderungen die Zustimmung des Fahrgasts verlangen; Abrechnung von Preisdifferenzen), OP-34 (Rolle „berechtigter Disponent" nicht abgegrenzt; Rechtematrix vor Produktivschaltung), M2 liefert Bearbeitung bestätigter Buchungen (`LH-6.4-BKG-006`) und `DELEGATED` nicht; Mindestumfang im WP-M3-39. Grundkatalog der Gründe offen. Test `zustimmungspflichtige_aenderung_nicht_ohne_zustimmung_wirksam` prüft bis zur Regel aus OP-30 nur das Mindestverhalten (Kap. 06 §6.5). Die Entscheidungen blockieren den Bau des Kernpfads nicht, wohl aber die Freigabe der zustimmungspflichtigen Änderungen.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Anlegen, Ändern und Stornieren durch den Disponenten hinterlassen je einen Eintrag mit Akteur, Zeitpunkt und Grund (`booking_change`/`audit_event`); Buchung ist an den Fahrgast gebunden, Disponent erscheint als eigener Akteur.
+- **Negativ:** fehlender Grund wird abgewiesen; fehlende Dispositionsrolle (403) bzw. fehlendes Dienstrecht (404); veraltete Revision 412, fehlendes `If-Match` 428; Änderung mit nicht bedienbarem Wunsch lässt bestehende Buchung und Zusage unverändert; keine Überbuchung durch die Leitstellenbuchung; zustimmungspflichtige Preis-/Zeitänderung ohne Zustimmung wird nicht wirksam; Wiederholung mit demselben Idempotenzschlüssel erzeugt nichts Zweites; Betriebsnachricht an Fahrgast wird ausgelöst.
+- **Konkurrierend:** Disponent und Fahrgast buchen gleichzeitig den letzten Platz – genau eine Buchung, der Verlierer erhält 409 `CAPACITY_UNAVAILABLE` (Kap. 05 §5.4); Disponent ändert, während der Fahrgast dieselbe Buchung storniert – genau ein Ergebnis, keine doppelt belegte oder verwaiste Kapazität; gleichzeitige Wiederholung mit demselben Idempotenzschlüssel – eine Ausführung, die zweite referenziert sie (`OPERATION_IN_PROGRESS` bzw. gespeicherte Antwort); zwei Disponenten ändern dieselbe Buchung – eine gewinnt, die andere erhält 412.
+- **Referenztests:** keine Katalog-ID im WP genannt.
+- Testfälle: geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::anlegen_aendern_stornieren_protokolliert_akteur_und_grund; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::aenderung_ohne_grund_wird_abgewiesen; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::disponent_und_fahrgast_buchen_letzten_platz_genau_eine_buchung; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::aenderung_parallel_zu_storno_keine_verwaiste_kapazitaet; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::ohne_dispositionsrolle_403_ohne_dienstrecht_oder_fremder_mandant_404; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::veraltete_revision_412_fehlendes_if_match_428_zwei_disponenten_eine_gewinnt; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::nicht_bedienbarer_aenderungswunsch_laesst_buchung_und_zusage_unveraendert; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::keine_ueberbuchung_und_gleiche_safety_pruefung_wie_fahrgastbuchung; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::idempotenzschluessel_wiederholung_erzeugt_nichts_zweites; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::buchung_an_fahrgast_gebunden_disponent_als_eigener_akteur_und_betriebsnachricht_ausgeloest; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/operator/DispatcherBookingTest.kt::zustimmungspflichtige_aenderung_nicht_ohne_zustimmung_wirksam
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

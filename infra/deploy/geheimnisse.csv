@@ -1,0 +1,9 @@
+geheimnis;verwendet_von;schritt;zugang;speicherort
+db_migration_credential;Flyway-Migration;Migrationsschritt (kurzlebig);nur Migrationsschritt;Geheimnisverwaltung der Umgebung
+db_runtime_credential;backend/app;Laufzeit;nur Laufzeit (Runtime-Rolle);Geheimnisverwaltung der Umgebung
+rabbitmq_credential;backend/app, Worker;Laufzeit;nur Laufzeit;Geheimnisverwaltung der Umgebung
+redis_credential;backend/app;Laufzeit;nur Laufzeit;Geheimnisverwaltung der Umgebung
+objectstore_credential;backend/app;Laufzeit;nur Laufzeit;Geheimnisverwaltung der Umgebung
+keycloak_admin_credential;Betrieb/Realm-Import;Bereitstellung (Realm);nur Bereitstellung;Geheimnisverwaltung der Umgebung
+adapter_client_secrets;Adapter (Client Credentials);Laufzeit;nur Laufzeit je Adapter;Geheimnisverwaltung der Umgebung
+image_signature_key;Signaturpruefung;Signaturpruefung;nur oeffentlicher Schluessel/Identitaetsregel, kein Geheimnis;Konfiguration

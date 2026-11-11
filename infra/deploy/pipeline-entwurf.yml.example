@@ -1,0 +1,14 @@
+# ENTWURF, NICHT AKTIV, NICHT AUSGEFUEHRT. Skizze der Stufe "Bereitstellung" (WP-M0-35). Gehoert nach .github/ (anderer Zustaendigkeitsbereich).
+name: deploy-integration
+on:
+  workflow_run: { workflows: [ci], branches: [main], types: [completed] }
+concurrency: { group: deploy-integration, cancel-in-progress: false }   # Serialisierung
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "1 Signatur pruefen (z. B. cosign verify; Werkzeug offen, WP-M0-14)"
+      - run: echo "2 Migration mit Migrationszugang (nur dieser Schritt)"
+      - run: echo "3 backend/app starten mit Runtime-Zugang"
+      - run: echo "4 Rauchtest (infra/deploy/smoke_runtime_role.sql + Health + Keycloak), Ergebnis mit Build-ID"

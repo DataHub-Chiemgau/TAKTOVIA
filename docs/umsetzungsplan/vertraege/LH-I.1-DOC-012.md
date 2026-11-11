@@ -1,8 +1,8 @@
 # LH-I.1-DOC-012 – Tankplausibilität mit kontrollierbaren Hinweisen
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Finanzen/Belege (Modul `documents-finance`)
 - **Arbeitspaket:** WP-M4-31
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `fuel_transaction` (Kap. 04 §4.4, Entwurf mit WP-M4-30; nur lesend genutzt: Literpreis, Menge, Kilometerstand, Tankkarten-ID, Fahrzeug). Neu per Migration: Hinweistabelle am Beleg (Vorschlag `expense_hint`: `tenant_id`, `expense_id`, `document_revision`, `rule` (`FUEL_VOLUME`, `FUEL_PRICE`, `FUEL_ODOMETER_GAP`, `FUEL_CARD_MISMATCH`), `threshold`, `actual_value`, `basis` jsonb (Vergleichswert, Schwelle, Quelle), Unique `(tenant_id, expense_id, document_revision, rule)`: ein Hinweis je Regel und Revision, auch bei wiederholtem Prüflauf); die Hinweiszeile selbst bleibt unverändert, die Quittierung (Akteur, Begründung, Zeit) ist ein eigener append-only Eintrag (Vorschlag `expense_hint_ack`), `OPEN`/`ACKNOWLEDGED` ergibt sich daraus; RLS wie alle Mandantentabellen, Originalwerte des Belegs unverändert (kein UPDATE auf erfasste Werte). Kilometerabstand gegen den Kilometerstand des letzten `fuel_transaction` desselben Fahrzeugs (keine Abhängigkeit vom Register aus WP-M4-41). Die Prüfung läuft je Dokumentrevision; eine neue Revision mit geänderten Tankwerten wird neu geprüft, eine Quittierung gilt nur für die Revision, auf die sie sich bezieht. Ist keine Karten-ID erfasst (`fuel_transaction` Karten-ID optional), entfällt `FUEL_CARD_MISMATCH` ohne Hinweis.
+- **API:** Hinweisliste im Leseobjekt `/v1/expenses/{id}`; Quittierung mit Begründung (Länge wie `ApprovalRequest.reason`: 3..1000 Zeichen, Annahme; Unterpfad unter `/v1/expenses/{id}`, Pfadname mit dem Bau im API-Vertrag ergänzen; `api/finance.yaml` enthält ihn noch nicht). 401 ohne Authentisierung, 404 für fremde Mandanten, 403 ohne Freigabe-/Prüfrecht, 422 ohne Begründung. Wer quittieren darf (insbesondere ob der Erfasser seinen eigenen Hinweis quittieren darf) legt das Rechtemodell aus WP-M4-34 fest; bis dahin gilt dasselbe Recht wie für die Sachprüfung (Annahme).
+- **Zustandsautomat:** Hinweis `OPEN` → `ACKNOWLEDGED`; ein offener Hinweis blockiert die finanzielle Freigabe (Problem-Code in WP-M4-34) oder führt in einen ausdrücklich freizugebenden Klärfall (Kap. 03 §3 Nr. 2).
+- **JSON-Schema / Ereignisse:** Ergebnisobjekt (Regel, Schwelle, Istwert, Berechnungsbasis); Audit für Entstehung und Quittierung (`audit_event`).
+- **Parameter und Kennzahlen:** `fuel_max_liters` (Liter, Ebene Fahrzeug, an Tankgröße gebunden), `fuel_price_alert_pct` (Prozent, Mandant), `fuel_use_alert_pct` (Prozent, Fahrzeugtyp; Annahme: Schwelle der Regel `FUEL_ODOMETER_GAP`, die Menge gegen Kilometerabstand als Verbrauch bewertet, Formel mit dem Bau, OP 16; ein rückläufiger Kilometerstand gegenüber dem Vorgänger ist stets ein Hinweis), `fuel_card_mapping` (Karten-ID, Gültigkeitsfenster eindeutig); wirksame Werte über WP-M1-21; ist ein Parameter für das Fahrzeug nicht konfiguriert, wird die Regel nicht stillschweigend als bestanden gewertet, sondern mit Vermerk „nicht prüfbar, Parameter fehlt“ angezeigt (Annahme).
+- **Oberfläche:** UI-14 (Belege/OCR): Hinweisbereich je Beleg mit Regel, Istwert, Schwelle, Quelle und Quittieren-Dialog mit Begründung; Leerzustand ohne Hinweise; erfasste Werte bleiben unverändert sichtbar.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP 16 (Vergleichsbasis für `fuel_price_alert_pct` „historische Preisvergleichsdaten“ ohne Quelle; `fuel_use_alert_pct` „Stichprobengröße beachten“ ohne Wert; `fuel_card_mapping` ohne Kartenimport, der P2 ist; der Bau prüft Literpreis bis zur Klärung nur gegen eine konfigurierte, im Hinweis genannte Vergleichsbasis); Verhalten ohne Vorgänger-Kilometerstand: kein Hinweis `FUEL_ODOMETER_GAP`, stattdessen Vermerk „keine Vergleichsbasis“ (Annahme, im Bau zu bestätigen); Formeln der Regeln im Detailvertrag-Schritt des Baus. Nicht im Umfang: Kontrollberichte ungewöhnlicher Verbräuche (FCO-019). Blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** plausibler Tankvorgang (Werte innerhalb der Schwellen) erzeugt keinen Hinweis; Tankvolumen über `fuel_max_liters`, Literpreis außerhalb `fuel_price_alert_pct`, unplausibler Kilometerabstand und nicht zum Fahrzeug passende Tankkarten-ID erzeugen je einen eigenen Hinweis mit Berechnungsbasis (E2E-070).
+- **Negativ:** je Regel ein Grenzfall knapp über der Schwelle (Hinweis) und exakt auf der Schwelle (kein Hinweis); fehlender Vorgänger-Kilometerstand (kein Hinweis `FUEL_ODOMETER_GAP`, Vermerk „keine Vergleichsbasis“); rückläufiger Kilometerstand; fehlende Karten-ID erzeugt keinen Kartenhinweis; nicht konfigurierter Parameter wird als „nicht prüfbar“ angezeigt; neue Dokumentrevision mit geändertem Wert wird neu geprüft; Hinweis ändert keine erfassten Werte (Wertevergleich vor/nach); Quittierung ohne Begründung (422) oder ohne Recht (403) wird abgewiesen, Entstehung und Quittierung stehen im `audit_event`; nicht quittierter Hinweis blockiert die finanzielle Freigabe; Hinweis und Beleg eines fremden Mandanten nicht lesbar (404); Konfiguration eines anderen Mandanten wirkt nicht.
+- **Konkurrierend:** zwei Prüfläufe über denselben Tankvorgang erzeugen je Regel genau einen Hinweis; Quittierung parallel zur Freigabe ergibt entweder blockierte Freigabe oder quittierten Hinweis, nie Freigabe mit offenem Hinweis; zwei parallele Quittierungen desselben Hinweises ergeben genau einen Eintrag.
+- **Referenztests:** E2E-070 (liegt im Gate M8; Vorziehen nach M4 laut OP 35 vorgeschlagen).
+- Testfälle: E2E-070; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::je_regel_eigener_hinweis_ueber_schwelle_und_keiner_exakt_auf_schwelle; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::hinweis_aendert_keine_erfassten_werte_und_nennt_berechnungsbasis; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::unquittierter_hinweis_blockiert_freigabe; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::quittierung_parallel_zu_freigabe_nie_freigabe_mit_offenem_hinweis; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::zwei_pruef_laeufe_ein_hinweis_je_regel; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::fehlender_vorgaenger_und_ruecklaeufiger_stand_karte_und_parameter_faelle; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelPlausibilityTest.kt::quittierung_ohne_begruendung_422_ohne_recht_403_audit_eintrag; geplant:db/tests/test_fuel_hinweis.py::test_hinweis_mandantengetrennt_und_quittierung_append_only
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

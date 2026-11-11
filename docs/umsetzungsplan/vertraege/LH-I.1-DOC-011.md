@@ -1,8 +1,8 @@
 # LH-I.1-DOC-011 – Belegaufteilung auf mehrere Kostenobjekte (centgenau)
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Finanzen/Belege (Modul `documents-finance`)
 - **Arbeitspaket:** WP-M4-35
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** V1: `allocation_set` (`event_id`, `revision`, `legal_entity_id`, `currency`, `basis_minor`, `algorithm_version`, `driver_snapshot jsonb`, `state` `DRAFT`/`POSTED`, Unique `(tenant_id,event_id,revision)`, FK auf `economic_event(tenant_id,id,legal_entity_id,currency)` erzwingt gleichen Rechtsträger und gleiche Währung), `allocation_line` (`cost_object_id`, `amount_minor bigint`, `weight numeric(20,8)`, Unique `(tenant_id,allocation_id,cost_object_id)`), `cost_object` (`kind`, `legal_entity_id`). Neu per Migration: `allocation_activation` (genau eine aktive Umlagerevision je Ereignis; Unique-Constraint). Invariante „Umlage centgenau und final unveränderlich“ (Kap. 04 §4.5): `SUM(allocation_line.amount_minor) = allocation_set.basis_minor`, geprüft im Dienst und per Constraint-Trigger beim Wechsel auf `POSTED`; gebuchte Allokation wird nie überschrieben (Trigger), Korrektur nur als neue Revision/Gegenbuchung. Rundung: Dezimalarithmetik, Abrunden je Empfänger, Restcent nach größtem Dezimalrest, Gleichstand nach stabiler Empfänger-ID (Largest Remainder, Kap. 03 §2.1), negative Korrekturen über Absolutbetrag; kein Gleitkommatyp für Geld in Code und API. RLS wie alle Mandantentabellen.
+- **API:** `POST /v1/cost-events/{cost_event_id}/allocations` (`allocateCost`, `api/finance.yaml`; Scope `costs:allocate`; `Idempotency-Key`, `If-Match`; Body `AllocationRequest`: `allocation_policy_revision`, `reason`, `lines` (`CostAllocationLine` mit `cost_center_id`, `cost_object_type`, `cost_object_id`, `amount` als `SignedMoney`, `quantity`, `unit`); Antwort 201 `AllocationResult` mit `state` `POSTED`, `basis`, `lines`). Statuscodes: 409 `PERIOD_CLOSED`, 409 `ALREADY_ALLOCATED`, 412, 428, 422 bei Summe ungleich Basis (konkreter Fehlercode wird mit dem Bau festgelegt, Contract-Fall Kap. 05 §5.8), 404 für Kostenobjekt/Ereignis eines anderen Mandanten, 403 ohne Scope. Der Schemastand von `AllocationRequest`/`CostAllocationLine` in `api/finance.yaml` kennt nur `amount` (`SignedMoney`: `amount_minor`, `currency`, `exponent`; Währung und Exponent wie die Basis); die prozentuale Aufteilung ist dort noch nicht beschrieben und wird mit dem Bau als Schemaerweiterung ergänzt (Prozent als Dezimalstring je Zeile, serverseitig mit Largest Remainder in Beträge aufgelöst; Summe der Prozente muss 100 ergeben, sonst 422). Je Zeile ein Kostenobjekt; dasselbe Kostenobjekt zweimal in einer Revision wird abgewiesen (Unique `(tenant_id,allocation_id,cost_object_id)`). Ohne Authentisierung 401. Ob Prozent- und Betragszeilen in einem Request gemischt sein dürfen, steht nicht fest (OP 18, Bau lehnt Mischung bis zur Klärung mit 422 ab). Vor dem Posting (Aufteilung im Freigabeablauf) wird der Split als Teil der Belegrevision geprüft und mit dem Ereignis atomar als `allocation_set` `POSTED` angelegt, weil `allocation_set` ein bestehendes `economic_event` referenziert (Bau-Vorschlag, OP 18).
+- **Zustandsautomat:** `allocation_set`: `DRAFT` → `POSTED`; eine neue Revision ersetzt die aktive über `allocation_activation` atomar; `POSTED` ist final.
+- **JSON-Schema / Ereignisse:** `AllocationRequest`/`AllocationResult` (api/finance.yaml); Audit je Allokationsrevision mit Akteur, Regelrevision (`allocation_policy_revision`) und Begründung in `audit_event` (Kap. 05 §5.5). Ereignis „Allokation gebucht“ über Outbox (Schemaname mit dem Bau).
+- **Parameter und Kennzahlen:** `cost_split_rule` (Formel/Regel, Ebene Vertrag; Summe muss 100 % ergeben; Testschlüssel bis D-07).
+- **Oberfläche:** UI-14 (Belege/OCR: Prüfen / Freigeben) mit Aufteilungsdialog je Beleg: Zeilen mit Kostenobjekt (Kostenstelle, Fahrzeug, Projekt), Prozent oder Betrag, Restcent-Anzeige, Differenzanzeige und gesperrter Freigabe-Button bei Differenz; Fehlerzustand `PERIOD_CLOSED`/`ALREADY_ALLOCATED`; ohne Recht `costs:allocate` nur Lesesicht.
+- **Entscheidungen:** D-07 (Umlageschlüssel; Testschlüssel bis zum Beschluss, blockiert nur die Produktivschaltung).
+- **Offene Punkte:** OP 18 (Reihenfolge Freigabe und Aufteilung, Zulässigkeit späterer Neuaufteilung; Ablage eines Split-Entwurfs vor dem Posting ist im DDL nicht vorgesehen, da `economic_event` erst beim Posting entsteht; Schemaerweiterung für Prozent; Bau folgt Kap. 03 §3 Nr. 4: vollständiger Split vor Posting, Summe ungleich Basis blockiert Freigabe bzw. Posting); OP 14 (`cost_object.kind` weicht zwischen DDL und Kap. 03 ab, DDL-Werte gelten bis zur Klärung; `expense_document` hat keinen Kostenobjektbezug); OP 37 (E2E-072 nur innerhalb eines Rechtsträgers, keine Allokation über Rechtsträgergrenzen, Intercompany E2E-094 ist M6/M8). Nicht im Umfang: Kostensplit auf Auftraggeber/Linien (FCO-016). Blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** prozentual und betragsmäßig; 100,01 EUR auf A/B/C ergibt 33,34 / 33,34 / 33,33 EUR, erneuter Lauf identisch (PH-AT-013); 10.000 Minor Units im Drittelsplit ergeben 3.334 / 3.333 / 3.333, die Korrektur hebt die Ursprungsbeträge exakt auf (COST-02); Summe der Teilbeträge entspricht centgenau dem Belegbetrag; Prozentzeilen (Summe 100) ergeben dieselben Beträge wie die gleichwertige Betragsaufteilung; negative Korrektur wird über den Absolutbetrag verteilt und hebt die Ursprungsbeträge auf; Aufteilung über Kostenstellen, Fahrzeuge und Projekte (`cost_object.kind` `COST_CENTER`, `VEHICLE`, `PROJECT`).
+- **Negativ:** Summe ungleich Basis (auch um 1 Cent) blockiert Freigabe bzw. Posting; Prozente ungleich 100 oder dasselbe Kostenobjekt doppelt ergeben 422; ohne Scope `costs:allocate` 403, ohne Authentisierung 401, fehlender `If-Match` 428, veralteter 412; geschlossene Periode (409 `PERIOD_CLOSED`); bereits gebuchte Allokation (409 `ALREADY_ALLOCATED`); Kostenobjekt eines anderen Rechtsträgers oder Mandanten wird abgewiesen (404/422, per FK auch in der DB); Allokation erzeugt keine zusätzliche Quellkostenbuchung, keine Verbindlichkeit, kein zusätzliches Journal (Referenzfall Eigentümer X / Betreiber Y nur als Negativfall); kein Gleitkommatyp für Geld (statische Prüfung); Update/Delete einer `POSTED`-Allokation per SQL unter der Runtime-Rolle scheitert.
+- **Konkurrierend (Geld):** zwei parallele Allokationsrevisionen ergeben genau eine aktive Fassung (`allocation_activation`); zwei identische Requests mit gleichem `Idempotency-Key` ergeben eine Revision; Allokation parallel zum Periodenabschluss: genau eine Reihenfolge gewinnt, nach Abschluss 409 `PERIOD_CLOSED` (COST-05, WP-M4-36).
+- **Referenztests:** E2E-072, PH-AT-013 (Allokationsteil), COST-02.
+- Testfälle: E2E-072; PH-AT-013; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::drittelsplit_100_01_eur_ergibt_33_34_33_34_33_33; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::summe_ungleich_basis_blockiert_freigabe; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::parallele_allokationsrevisionen_genau_eine_aktiv; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::prozent_und_betrag_ergeben_gleiche_zeilen_summe_100_pflicht; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::negative_korrektur_hebt_ursprungsbetraege_exakt_auf_10000_minor; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::geschlossene_periode_409_und_gebuchte_allokation_409; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::allokation_erzeugt_kein_zusatzjournal_und_keine_verbindlichkeit; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::gleicher_idempotency_key_ergibt_eine_revision; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::allokation_parallel_zu_periodenabschluss_genau_eine_reihenfolge; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/AllocationServiceTest.kt::kein_gleitkommatyp_fuer_geld; geplant:db/tests/test_allocation.py::test_fremdes_kostenobjekt_und_zweite_aktive_revision_scheitern; geplant:db/tests/test_allocation.py::test_posted_allokation_update_delete_scheitert_und_summe_ungleich_basis_scheitert
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

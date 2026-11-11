@@ -1,8 +1,8 @@
 # LH-6.22-DMG-010 – Störungsablauf: betroffene Fahrten, Ersatzvorschläge, Fahrgastauswirkung
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Dispatch/Leitstelle (Modul `booking-dispatch`) mit Fleet-Safety
 - **Arbeitspaket:** WP-M3-54
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** Verknüpfungen am Incident (Incident ↔ `defect_case` ↔ betroffene Buchungen/Fahrten); die Incident-Tabelle ist im Kernschema und Kap. 04 §4.4 nicht enthalten (OP-02, Arbeitsname aus WP-M3-01/WP-M3-02). `booking_change` für Umbuchungen (angelegt in WP-M3-02; Schreibrecht nur Modul `booking-dispatch`, Eintrag in `db/table_owners.csv`/`db/role_matrix.csv`). Alle Tabellen mit Mandantenschlüssel, RLS `tenant_isolation`. Hinweis: `operation` (V1) verlangt `journey_id NOT NULL`; ob die Ersatzfahrzeugsuche aus AUT-001 daran hängt, ist offen (siehe LH-I.8-AUT-001).
+- **API:** `GET /v1/operator/incidents/{id}` (Kap. 05 §5.7) mit betroffenen Fahrten, Ersatzvorschlägen (je betroffener Fahrt, mit Wirkung auf das Zusagefenster) und möglichen Aktionen; Verknüpfung in beide Richtungen (Incident → Fahrten/Fahrgäste/Schadenakte, Schadenakte → Incident). Aktionen: Ersatz übernehmen per Plan-Revision `/v1/runs/{id}/revisions` (Plan-CAS und Sicherheitsprüfung im Commit; veraltete Revision 412 `REVISION_MISMATCH`, fehlender `If-Match` 428), Betreiberstorno (Ursache aus WP-M2-27, Erstattung/Benachrichtigung über M2-Wege, idempotent per Idempotency-Key, Wiederholung mit anderem Fingerprint 409 `IDEMPOTENCY_CONFLICT`), Fahrgast informieren; Endpunkte der Aktionen sind im Detailvertrag zu definieren. Statuscodes: 200; 404 (fremder Mandant/Dienst, Kap. 05: nicht sichtbar = 404); 403 (fehlender Scope/Rolle); 412/428 beim zweiten Disponenten auf überholtem Stand; 409 `OPERATION_IN_PROGRESS` bei laufendem Auftrag. Genaue Codes für „bereits entschieden“ sind im Pflichtenheft nicht festgelegt.
+- **Zustandsautomat:** Störungsfall (Ablauf und Zustände) ist als Detailvertrag vorab gefordert und noch nicht erstellt: `vertraege/zustaende/stoerungsfall.md` (anzulegen vor dem Bau; Zustände je Buchung mindestens: offen, Ersatz vorgeschlagen, umgebucht, storniert, offener Punkt, eingestiegen). Jede betroffene Buchung endet in „umgebucht“ oder „storniert“ oder bleibt als offener Punkt im Incident; keine bleibt still auf dem gesperrten Fahrzeug (WP-M3-54 Kriterium 3, AT-09). Incident-Zustände siehe LH-I.8-AUT-001.
+- **JSON-Schema / Ereignisse:** Auslöser ist das Outbox-Ereignis „Fahrzeug gesperrt“ (WP-M3-53); Folgeereignisse Umbuchung/Storno laufen über die M2-Wege (WP-M2-26/27/31, Betriebsnachrichten WP-M2-34); genau eine Fahrgastnachricht je Änderung. Ereignisschemas unter `api/events/` sind mit dem Bau zu ergänzen.
+- **Parameter und Kennzahlen:** `max_reassignments` (Maximale Umbuchungen, Katalog `LH-J.1-max_reassignments`, Ebene Dienst); Datengrundlage für KPI `Buchungsstornoquote Betreiber` (kataloge.csv, `LH-K.1-Zeile-12`; „Fahrzeugausfall getrennt“ ausgewiesen).
+- **Oberfläche:** UI-07 Operator Livebetrieb – Störungsansicht: betroffene Fahrgäste, Aktionen „Ersatzoptionen prüfen“, „Fahrgast informieren“, Sprung zur Schadenakte; bereits eingestiegene Fahrgäste gesondert ausgewiesen; Leerzustand, Ladefehler, Rechtezustand. Vorschläge nur mit freigegebenen, geeigneten Fahrzeugen (Qualifikation, Prüfung, Ressourcenvektor, z. B. Rollstuhlplatz). Eine Ersatzfahrt gilt erst nach bestätigter Umbuchung als zugesagt. Jede Entscheidung der Leitstelle ist mit Akteur, Grund und Zeit protokolliert und im Ablaufprotokoll (LH-I.8-AUT-002) sichtbar.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP-02 (Incident-Ablage), OP-27 (Nachrichtenvorlagen, Kanäle, Zeitpunkt der Fahrgastinformation – nicht festgelegt), Behandlung bereits eingestiegener Fahrgäste (Verfahren laut Detailvertrag, im Pflichtenheft nicht festgelegt), Regel für Buchungen ohne Ersatz (Storno/Erstattung nach M2-Regeln, Detailvertrag). Partnerübernahme (E2E-100, M6) und automatische Umbuchung (M7/M8) sind nicht im Umfang. Keine Blockade für den Kern (Vorschläge und Verknüpfungen); Nachrichtenvorlagen sind vor Abschluss der Fahrgastinformation zu klären.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** AT-09: Sperre löst Ersatzdispositionslogik aus, Leitstelle sieht in der Störungsansicht Vorschläge je betroffener Fahrt (Abnahme „sichtbar“); Verknüpfung in beide Richtungen (Schadenfall ↔ Fahrten/Fahrgäste); Ersatzfahrt erst nach bestätigter Umbuchung zugesagt, genau eine Nachricht je Änderung; Entscheidung mit Akteur/Grund/Zeit im Ablaufprotokoll; AT-50: kritischer Schaden im Dienst, Ersatzfahrer/-fahrzeug, neue Prüfung, Rebooking, Fahrgastkommunikation konsistent.
+- **Negativ:** Kein Ersatz verfügbar → Storno-/Klärpfad, Buchung bleibt nicht still auf gesperrtem Fahrzeug; Ersatzfahrzeug ohne Rollstuhlplatz für Rollstuhlbuchung wird nicht vorgeschlagen; nicht freigegebenes oder ungeprüftes Ersatzfahrzeug wird nicht vorgeschlagen; Incident eines fremden Mandanten/Dienstes → 404; fehlende Rolle → 403; eingestiegene Fahrgäste werden nicht automatisch umgebucht oder storniert.
+- **Konkurrierend:** Zwei Disponenten bearbeiten denselben Incident (genau eine Entscheidung, zweite abgewiesen mit 412/409); Umbuchung parallel zu einem Fahrgaststorno; Wiederholung des Betreiberstornos erzeugt keine doppelte Erstattung; Ersatzübernahme parallel zu einer konkurrierenden Buchung auf dem Ersatzfahrzeug (Plan-CAS, keine Überbuchung).
+- **Referenztests:** AT-09; AT-50
+- Testfälle: AT-09; AT-50; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::gesperrtes_fahrzeug_loest_ersatzlogik_mit_vorschlaegen_aus; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::verknuepfung_schadenfall_fahrten_beide_richtungen; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::buchung_endet_umgebucht_storniert_oder_offener_punkt; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::ersatz_ohne_rollstuhlplatz_wird_nicht_vorgeschlagen; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::eingestiegene_fahrgaeste_nicht_automatisch_umgebucht; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::fremder_mandant_incident_404; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::zwei_disponenten_gleicher_incident_eine_entscheidung; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::betreiberstorno_wiederholung_keine_doppelte_erstattung; geplant:backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/OutageReplacementTest.kt::umbuchung_parallel_zu_fahrgaststorno
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview).

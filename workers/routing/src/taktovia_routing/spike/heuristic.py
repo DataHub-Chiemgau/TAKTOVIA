@@ -237,9 +237,7 @@ def _best_in_route(
     return best
 
 
-def insert_request(
-    state: FleetState, r: Request, budget_s: float | None = None
-) -> InsertResult:
+def insert_request(state: FleetState, r: Request, budget_s: float | None = None) -> InsertResult:
     """Sucht die beste zulässige Einfügung; ``budget_s`` ist ein hartes Zeitbudget."""
     t0 = time.perf_counter()
     deadline = None if budget_s is None else t0 + budget_s

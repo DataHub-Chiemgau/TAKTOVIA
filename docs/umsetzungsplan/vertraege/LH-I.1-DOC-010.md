@@ -1,8 +1,8 @@
 # LH-I.1-DOC-010 – Freigabe-Workflow mit Rollentrennung und Vier-Augen-Schwelle
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Finanzen/Belege (Modul `documents-finance`)
 - **Arbeitspaket:** WP-M4-34
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `approval_step` (Beleg, Dokumentrevision, Schritt, Entscheider, Entscheidung, Begründung, Zeit; Tabellenname in Kap. 04 §4.4 (DOC) genannt, DDL und Migration mit dem Bau, Mandantenspalte `tenant_id`, RLS wie alle Mandantentabellen, append-only per Trigger analog `reject_mutation()`). `expense_document` (V1): `state`, `revision`, `created_by`, `approved_by`; zusätzlich ein eigenes Statusfeld für den Exportstatus am Beleg (Migration), das ausschließlich der Exportjob (WP-M4-37) unter eigener Exportberechtigung setzt. Schritte (Wertemenge `step`): `CAPTURE` (Erfassung), `REVIEW` (fachliche Prüfung), `BUDGET` (Budgetfreigabe), `SECOND_APPROVAL` (zweite Freigabe); Entscheidung `APPROVED`/`REJECTED`. Erstfreigeber ist der Entscheider des letzten `APPROVED`-Schritts vor `SECOND_APPROVAL` (Annahme, OP 17). Invariante: `POSTED` nur nach atomarem Commit von `journal`/`journal_line` und `outbox` (Kap. 04 §4.5); Entscheider der Schritte `SECOND_APPROVAL` und `CAPTURE`/erste Freigabe sind verschiedene Personen (Prüfung im Dienst unter Sperre des Belegs; ob zusätzlich ein DB-Constraint nötig ist, wird im Bau entschieden, der Test sichert das Ergebnis in jedem Fall in der DB ab).
+- **API:** `POST /v1/expenses/{expense_id}/approve` (`approveExpense`, `api/finance.yaml`; Scope `expenses:approve` (einziger in `api/common.yaml` definierter Beleg-Scope; Rechte für Erfassung, Sachprüfung, Budgetfreigabe und Export sind als eigene Rechte vorzusehen und werden mit dem Bau in `api/common.yaml` und der Rechtematrix ergänzt, OP 17); Header `Idempotency-Key`, `If-Match`, `Traceparent`; Body `ApprovalRequest` mit `reason` (3..1000 Zeichen) und `validated_document_revision`; Antwort 200 `ExpenseApproval` mit `state` `WAITING_SECOND_APPROVAL`|`POSTED`, `posting_id`). Statuscodes: 401 ohne Authentisierung; 403 ohne Recht (auch fehlender Scope) und bei Selbst-/Doppelfreigabe; 409 `DUPLICATE_REVIEW_REQUIRED` bei offenem Dublettenkandidaten; 412 bei veralteter Dokumentrevision; 428 ohne `If-Match`; 422 mit je eigenem stabilem Problem-Code bei fehlenden Pflichtfeldern, fehlender Kostenzuordnung, unvollständigem Split (Summe ungleich Basis), nicht quittiertem Plausibilitätshinweis (WP-M4-31) und Integritätsverletzung (WP-M4-24). Gleicher `Idempotency-Key` bucht nicht erneut, gleicher Schlüssel mit anderem Inhalt ergibt 409 `IDEMPOTENCY_CONFLICT`. Fremder Mandant: 404. Die konkreten Problem-Code-Namen werden mit dem Bau im Fehlerkatalog festgelegt (nur `DUPLICATE_REVIEW_REQUIRED` und `IDEMPOTENCY_CONFLICT` stehen bereits in den Artefakten).
+- **Zustandsautomat:** Ein verweigerter Versuch (403) schreibt keinen `approval_step`, setzt weder `approved_by` noch `state`. Beleg in `vertraege/zustaende/beleg.md` (wird mit dem Bau angelegt; Zustände mindestens Entwurf, in Prüfung, `WAITING_SECOND_APPROVAL`, `POSTED`; Ablehnung in Sachprüfung oder Budgetfreigabe führt mit Begründung zurück in die Erfassung, ohne Kostenereignis und ohne Journal).
+- **JSON-Schema / Ereignisse:** Outbox-Ereignisse „Beleg geprüft“, „Beleg freigegeben“, „zweite Freigabe ausstehend“ (Schemas unter `api/events/`, Namen mit dem Bau); Audit je Schritt über `audit_event` (Akteur, Dokumentrevision, Entscheidung, Zeit; WP-M1-46).
+- **Parameter und Kennzahlen:** `approval_stage_thresholds` (Währungsbetrag, Ebene Mandant/Kostenstelle; Testwerte bis D-06); zweite Stufe nur bei Betrag größer als die Schwelle, ein Betrag exakt auf der Schwelle löst sie nicht aus (Annahme gemäß „überschreitet“ in E2E-068), `expense_claim_limit` (Wirkung in P1 offen, OP 39).
+- **Oberfläche:** UI-14 (Belege/OCR: Prüfen / Freigeben; Zustände Dublette, fehlende Kostenstelle); Schaltflächen je Schritt nur mit eigenem Recht sichtbar/aktiv; Leerzustand ohne offene Belege; Fehleranzeige mit Problem-Code und Begründungspflicht; Rechtsfehler 403 ohne Datenpreisgabe.
+- **Entscheidungen:** D-06 (Freigabeschwellen und Rollen; Testwerte bis zum Beschluss, blockiert nur die Produktivschaltung, nicht den Bau).
+- **Offene Punkte:** OP 17 (Bedeutung der „Budgetfreigabe“ in P1 ohne Budgetmodell und Rollenzuordnung der vier Schritte; E2E-068 verlangt „zwei getrennte Berechtigungen“, ob die zweite Freigabe ein eigenes Recht neben `expenses:approve` ist, steht nicht fest; Bau nutzt bis zur Klärung einen Schritt `BUDGET` mit eigenem Recht und Eintrag, ohne Budgetprüfung); OP 39 (Wirkung von `expense_claim_limit`); OP 7 (ERP-Export ohne Zielformat, D-06; der Exportstatus wird als Feld geführt, der Export selbst ist WP-M4-37); OP 4 (E2E-067/XML-PDF-Differenz außerhalb dieses Vertrags). Nicht im Umfang: Freigabestufen nach Kostenstelle/Kostenart/Vertretung (DOC-018), vollständiger Statuskatalog bis Korrekturfall (DOC-026). Blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Freigabe unter der Schwelle führt zu `POSTED` mit `posting_id`; über der Schwelle `WAITING_SECOND_APPROVAL`, zweite Freigabe durch eine andere Person ergibt `POSTED` (E2E-068, PH-AT-019); nach Freigabe ist die Tankung genau einmal gebucht und das Original unverändert (E2E-064). Ein Betrag exakt auf der Schwelle geht ohne zweite Stufe nach `POSTED`. Jeder Schritt (Erfassung, Sachprüfung, Budgetfreigabe, zweite Freigabe) steht mit Akteur, Dokumentrevision, Entscheidung und Zeit in `approval_step` und `audit_event`; Exportstatus ist ein eigenes Feld und nur über die Exportberechtigung setzbar.
+- **Negativ:** Benutzer ohne `expenses:approve` erhält 403 und der Beleg wird nicht `POSTED` (Originalabnahme), auch wenn er Erfassungs- oder Prüfrecht besitzt, und ohne Schritteintrag, ohne `approved_by`, ohne Datenpreisgabe; Aufruf ohne Authentisierung 401; Selbstfreigabe durch Erfasser oder Erstfreigeber der zweiten Stufe, auch über Vertretung, wird abgewiesen; unbestätigte OCR-Felder, offene Dublette (409 `DUPLICATE_REVIEW_REQUIRED`), offener Plausibilitätshinweis, unvollständiger Split, fehlende Pflichtfelder, Integritätsverletzung blockieren je mit eigenem Problem-Code; veraltete Dokumentrevision ergibt 412, fehlender `If-Match` 428; Ablehnung in Sachprüfung/Budgetfreigabe führt in die Erfassung zurück ohne Kostenereignis und Journal; Exportstatus per Freigaberecht allein nicht setzbar; Beleg eines fremden Mandanten ergibt 404; kein Export ohne beide Freigaben; wiederholte Freigabe mit gleichem Schlüssel und anderem Inhalt 409 `IDEMPOTENCY_CONFLICT`.
+- **Konkurrierend (Geld, Sicherheit):** zwei Freigeber geben parallel frei, genau ein Posting; dieselbe Person in beiden Schritten wird abgewiesen, auch bei parallelen Requests; Wiederholung mit gleichem `Idempotency-Key` bucht nicht erneut; Freigabe parallel zu einer Korrektur der Revision ergibt 412 statt Posting; Ablehnung parallel zu Freigabe ergibt genau einen Ausgang.
+- **Referenztests:** E2E-068, E2E-064, PH-AT-019 (Teil von COST-07). E2E-067 (XML/PDF) ist nicht Teil dieses Vertrags (OP 4).
+- Testfälle: E2E-068; E2E-064; PH-AT-019; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::ohne_freigaberecht_403_und_kein_posted; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::zwei_freigeber_parallel_genau_ein_posting; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::dieselbe_person_in_beiden_schritten_auch_parallel_abgewiesen; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::gleicher_idempotency_key_bucht_nicht_erneut_anderer_inhalt_409; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::freigabe_parallel_zu_revisionskorrektur_ergibt_412; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::ablehnung_fuehrt_in_erfassung_ohne_kostenereignis_und_journal; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/ExpenseApprovalTest.kt::betrag_exakt_auf_schwelle_ohne_zweite_stufe; geplant:db/tests/test_approval_step.py::test_schritte_append_only_und_mandantengetrennt; geplant:web/operator/src/belege/BelegFreigabe.test.tsx::freigeben_nur_mit_recht_aktiv_und_403_ohne_datenpreisgabe
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

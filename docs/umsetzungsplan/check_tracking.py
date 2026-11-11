@@ -45,8 +45,8 @@ def check(root: Path) -> list[str]:
         if st not in STATUS: errs.append(f'{k}: unbekannter Status „{st}“'); continue
         if st == 'Abweichung freigegeben' and src['prioritaet_original'] == 'MUSS':
             errs.append(f'{k}: MUSS darf nicht „Abweichung freigegeben“ sein')
-        contracts = [c for c in r['detailvertrag'].split(';') if c]
-        tests = [t for t in r['testfall'].split(';') if t]
+        contracts = [c.strip() for c in r['detailvertrag'].split(';') if c.strip()]
+        tests = [t.strip() for t in r['testfall'].split(';') if t.strip()]
         if st in NEEDS_CONTRACT and not contracts: errs.append(f'{k}: Status {st} ohne detailvertrag')
         if st in NEEDS_TEST and not tests: errs.append(f'{k}: Status {st} ohne testfall')
         for c in contracts:

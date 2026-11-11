@@ -1,8 +1,8 @@
 # LH-I.2-FCO-003 – Kilometerstände aus mehreren Quellen mit Herkunft
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Finanzen/Kosten (Modul `documents-finance`, Vorschlag)
 - **Arbeitspaket:** WP-M4-41
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** neue Tabelle `odometer_reading` (Vorschlag; in Kap. 04 §4.4 nicht benannt, OP 21), append-only per Trigger analog `reject_mutation()`, RLS mandantengetrennt: `tenant_id`, `id`, `vehicle_id` (zusammengesetzter FK `(tenant_id, vehicle_id)` auf `vehicle`), `reading_km`, `source` (`DRIVER_CHECK`, `FUEL_RECEIPT`, `WORKSHOP`, `TELEMATICS`), `source_ref` (Bezug auf Quellobjekt, z. B. `inspection_run`, `fuel_transaction`, Position), `measured_at` (Messzeit), `recorded_at` (Erfassungszeit), Unique `(tenant_id, source, source_ref)` für die Einmaligkeit bei wiederholter Zustellung. Konflikte in `odometer_conflict` (Vorschlag: betroffene Stände, Art `DECREASING`/`SOURCE_MISMATCH`, Status offen/aufgelöst) und Auflösungen als eigene append-only Einträge (Vorschlag `odometer_conflict_resolution`: Konflikt, gewählter Stand oder Verwerfung, Akteur, Grund, Zeit; zusätzlich `audit_event`), der Status offen/aufgelöst ergibt sich daraus; die Rohstände bleiben unverändert erhalten; kein vorhandener Wert wird überschrieben oder gelöscht. Konsum der Quellereignisse über `inbox` (Deduplikation, WP-M1-14). Die Konflikterkennung läuft je Fahrzeug serialisiert (Sperre), damit gleichzeitig eintreffende Stände einander sehen und kein Konflikt übersehen wird.
+- **API:** Unterpfad unter `/v1/vehicles/{id}` (Vorschlag dieses Plans, z. B. `/v1/vehicles/{id}/odometer` und `/v1/vehicles/{id}/odometer/conflicts`, Auflösung per POST mit Begründung); Pfade und Schemas sind in `api/*.yaml` noch nicht vorhanden und werden mit dem Bau ergänzt. Statuscodes: 401 ohne Authentisierung, 404 fremdes Fahrzeug, 403 ohne Recht (Lese- bzw. Auflösungsrecht, Rechtename mit dem Bau), 422 Auflösung ohne Grund, 409 Auflösung eines bereits aufgelösten Konflikts.
+- **Zustandsautomat:** Konflikt `OPEN` → `RESOLVED` (nur durch protokollierte Entscheidung).
+- **JSON-Schema / Ereignisse:** Eingehende Ereignisse Fahrercheck (M3, `inspection_run`), Tankbeleg (WP-M4-30), Telematik über Leseport `position_sample`/Adapter (nur Simulator-Quelle bis D-09); Werkstattquelle bleibt in P1 ein Importkanal ohne `repair_order` (M7/M8). Ausgehend: Ereignis „Kilometerstandskonflikt“ (Name mit dem Bau).
+- **Parameter und Kennzahlen:** keine Katalogparameter; Konflikttoleranz als neuer Parameter im Bau (nicht im Katalog, OP 21).
+- **Oberfläche:** Fahrzeugdetail: Kilometerstandsverlauf mit Quelle je Eintrag, Konfliktliste mit Gegenüberstellung der Quellen und Auflösungsdialog (Grund Pflicht); Leerzustand ohne Stände; Fehlerzustand; ohne Recht nur Lesen.
+- **Entscheidungen:** D-09 (Telematikanbieter; ohne Beschluss nur Simulatorquelle, blockiert nur die Produktivschaltung der Telematikquelle).
+- **Offene Punkte:** OP 21 (kein Datenmodell, Rangfolge der Quellen und Toleranzen bei Konflikten im Pflichtenheft nicht festgelegt; Bau erkennt Konflikte, wählt aber keine Quelle automatisch aus, die Auflösung ist stets menschlich und protokolliert; Toleranzwert und Zeitfenster für „selber Zeitraum“ als konfigurierbare Testannahme); Werkstattquelle in P1; OP 44 (Vollabnahme der Quellen aus M3 erst mit deren Lieferung, bis dahin Leseports als Stub mit demselben Vertragstest). Nicht im Umfang: `repair_order` als Quelle (FCO-011), Wartungsvorwarnung `maintenance_reminder_km` (FCO-009). Blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** aufsteigende Stände aus zwei Quellen werden mit Herkunft (Quelle, Messzeit, Erfassungszeit, Bezug) gespeichert; Stände aller vier Quellarten sind speicherbar und abrufbar; die Konfliktliste zeigt die Quellen einander gegenübergestellt, ein aufgelöster Konflikt nennt Akteur, Grund und Zeit, die Rohstände bleiben sichtbar.
+- **Negativ:** rückläufiger Stand erzeugt Konflikt und überschreibt nichts; zwei Quellen mit Abweichung über Toleranz erzeugen Konflikt; Auflösung ohne Grund wird abgewiesen, Auflösung ist mit Akteur und Grund protokolliert; Update/Delete eines Stands per SQL unter der Runtime-Rolle scheitert; Fahrzeug eines fremden Mandanten ergibt 404; wiederholte Zustellung desselben Quellereignisses erzeugt nur einen Eintrag (auch über `inbox`); ohne Authentisierung 401, ohne Recht 403; erneute Auflösung eines aufgelösten Konflikts 409; Stand innerhalb der Toleranz erzeugt keinen Konflikt; Telematikstände stammen bis D-09 nur aus dem Simulator.
+- **Konkurrierend (Datentrennung):** gleichzeitige Meldung aus zwei Quellen für dasselbe Fahrzeug erhält beide Stände und zeigt den Konflikt, kein Wert geht verloren; Meldungen zweier Mandanten mit gleicher Fahrzeugkennung bleiben getrennt (RLS, Konflikte nie mandantenübergreifend); zwei parallele Auflösungen desselben Konflikts ergeben genau einen Auflösungseintrag.
+- **Referenztests:** keine Katalog-ID im WP genannt; Abnahme über die geplanten Tests.
+- Testfälle: geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::stand_aus_vier_quellen_wird_mit_herkunft_gespeichert; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::widerspruechlicher_stand_wird_konflikt_und_kein_wert_ueberschrieben; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::wiederholte_zustellung_desselben_quellereignisses_ein_eintrag; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::gleichzeitige_meldung_aus_zwei_quellen_beide_erhalten_konflikt_sichtbar; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::toleranz_und_rueckgaengiger_stand_erzeugen_konflikt_innerhalb_toleranz_keiner; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::aufloesung_ohne_grund_422_mit_akteur_grund_protokolliert_keine_automatische_auswahl; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OdometerRegisterTest.kt::parallele_aufloesung_genau_ein_eintrag_und_mandanten_getrennt; geplant:web/operator/src/fahrzeuge/Kilometerstand.test.tsx::konfliktliste_zeigt_quellen_gegenueber_und_aufloesungsdialog_verlangt_grund; geplant:db/tests/test_odometer_reading.py::test_append_only_und_mandantentrennung
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

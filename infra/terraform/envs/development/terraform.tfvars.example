@@ -1,0 +1,8 @@
+# Beispielparameter fuer development. Keine Zugangsdaten. Anbieter/Region stehen unter D-05 (offen).
+hosting_provider    = "unset"
+hosting_region      = "unset"
+secret_domain       = "taktovia-development-secrets"
+identity_domain     = "taktovia-development-idp"
+psp_domain          = "taktovia-development-psp"
+db_migration_access = "taktovia-development-migrator"
+db_runtime_access   = "taktovia-development-runtime"

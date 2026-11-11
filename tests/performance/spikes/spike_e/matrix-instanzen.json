@@ -1,0 +1,14 @@
+{
+  "status": "ANNAHME: gemeinsam mit WP-M0-27 (Solver-Spike) festzulegen; Auftragsdichte und Flottengröße je Mandant sind offen (D-05). Die Größen decken die Referenz '250 Fahrzeuge je Mandant' ab.",
+  "description": "Matrizen der lokalen Kandidatensuche (Kap. 01 §1.4, Budget 1 s): Fahrzeugpositionen und Haltepunkte der Pläne gegen den Abhol- und Zielpunkt der neuen Anfrage sowie Umwegprüfung zwischen Plan-Haltepunkten.",
+  "sizes": [
+    {"id": "M-1x25", "sources": 1, "targets": 25, "meaning": "ein Abholpunkt gegen 25 Fahrzeugpositionen"},
+    {"id": "M-1x250", "sources": 1, "targets": 250, "meaning": "ein Abholpunkt gegen 250 Fahrzeugpositionen (Referenzflotte)"},
+    {"id": "M-2x250", "sources": 2, "targets": 250, "meaning": "Abhol- und Zielpunkt gegen 250 Fahrzeugpositionen (Referenz für das 1-s-Budget)"},
+    {"id": "M-25x25", "sources": 25, "targets": 25, "meaning": "Haltepunkte der Pläne von 5 Kandidatenfahrzeugen untereinander"},
+    {"id": "M-100x100", "sources": 100, "targets": 100, "meaning": "Haltepunkte der Pläne von 20 Kandidatenfahrzeugen"},
+    {"id": "M-250x250", "sources": 250, "targets": 250, "meaning": "Fahrzeugpositionen untereinander (Obergrenze, Cache-Aufwärmung)"}
+  ],
+  "reference_size_id": "M-2x250",
+  "budget_ms": 1000
+}

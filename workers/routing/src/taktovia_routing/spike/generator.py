@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import random
 from array import array
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -25,7 +26,9 @@ PU_WINDOW = 900
 SERVICE = 60
 
 
-def build_matrix(seed: int, n_nodes: int = N_NODES) -> tuple[list[array[int]], list[tuple[float, float]]]:
+def build_matrix(
+    seed: int, n_nodes: int = N_NODES
+) -> tuple[list[array[int]], list[tuple[float, float]]]:
     rng = random.Random(seed)
     centers = [(rng.uniform(0.2, 0.8) * AREA_M, rng.uniform(0.2, 0.8) * AREA_M) for _ in range(3)]
     coords: list[tuple[float, float]] = []
@@ -49,7 +52,9 @@ def build_matrix(seed: int, n_nodes: int = N_NODES) -> tuple[list[array[int]], l
     return rows, coords
 
 
-def make_vehicles(seed: int, n_vehicles: int, n_nodes: int, with_breaks: bool = True) -> list[Vehicle]:
+def make_vehicles(
+    seed: int, n_vehicles: int, n_nodes: int, with_breaks: bool = True
+) -> list[Vehicle]:
     rng = random.Random(seed * 7919 + 1)
     out: list[Vehicle] = []
     for vid in range(n_vehicles):
@@ -72,15 +77,33 @@ def make_vehicles(seed: int, n_vehicles: int, n_nodes: int, with_breaks: bool = 
     return out
 
 
-def make_request(rng: random.Random, rid: int, T: list[array[int]], n_nodes: int) -> Request:
+@dataclass(frozen=True, slots=True)
+class Profile:
+    """Zeitliche Verteilung der Pickup-Zeiten (Sekunden ab Planungsbeginn) und Fensterbreite."""
+
+    name: str
+    t_lo: int
+    t_hi: int
+    window: int
+
+
+DAY = Profile("tag", 600, DAY_END, PU_WINDOW)  # über den Tag verteilt, 15-min-Fenster
+PEAK = Profile("spitze", 2 * 3600, 4 * 3600, 1200)  # Spitzenfenster 2 h, 20-min-Fenster
+WIDE = Profile("weit", 3600, 5 * 3600, 3600)  # Stresslast: 60-min-Fenster, 4 h
+PROFILES = {p.name: p for p in (DAY, PEAK, WIDE)}
+
+
+def make_request(
+    rng: random.Random, rid: int, T: list[array[int]], n_nodes: int, profile: Profile = DAY
+) -> Request:
     for _ in range(100):
         p = rng.randrange(n_nodes)
         d = rng.randrange(n_nodes)
         if 300 <= T[p][d] <= 2400:
             break
     direct = T[p][d]
-    pu_e = rng.randrange(600, DAY_END, 60)
-    pu_l = pu_e + PU_WINDOW
+    pu_e = rng.randrange(profile.t_lo, profile.t_hi, 60)
+    pu_l = pu_e + profile.window
     max_ride = int(direct * 1.5) + 300
     u = rng.random()
     if u < 0.08:
@@ -102,10 +125,12 @@ def make_instance(seed: int, n_vehicles: int = 250, with_breaks: bool = True) ->
     )  # fmt: skip
 
 
-def make_requests(inst: Instance, n: int, seed: int, id_offset: int = 0) -> list[Request]:
-    """Deterministische Anfragefolge; ``seed`` und ``id_offset`` trennen Zustands- und Abfrageströme."""
+def make_requests(
+    inst: Instance, n: int, seed: int, id_offset: int = 0, profile: Profile = DAY
+) -> list[Request]:
+    """Deterministische Anfragefolge; Seed und ``id_offset`` trennen Zustands- und Abfrageströme."""
     rng = random.Random(seed)
-    return [make_request(rng, id_offset + k, inst.T, inst.n_nodes) for k in range(n)]
+    return [make_request(rng, id_offset + k, inst.T, inst.n_nodes, profile) for k in range(n)]
 
 
 def straight_line_m(a: tuple[float, float], b: tuple[float, float]) -> float:

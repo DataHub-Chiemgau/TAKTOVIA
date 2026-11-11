@@ -1,8 +1,8 @@
 # LH-6.12-COM-002 – Nachrichtenvorlagen je Sprache, Verkehrsprodukt, Ereignistyp
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Kommunikation (Modul `communication-support`)
 - **Arbeitspaket:** WP-M2-33
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,27 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** neue Tabelle `channel_template_revision` (Migration nach V3, nächste freie Versionsnummer, Kap. 04 §4.4), Spalten mindestens: `tenant_id`, `id`, `event_type`, `language` (BCP-47), `service_id` bzw. Verkehrsprodukt (nullable für Rückfall), `channel`, `revision bigint`, `body_template`, `valid_from`, `valid_to`; Primärschlüssel `(tenant_id, id)`, Unique `(tenant_id, event_type, language, service_id, channel, revision)`, Check `valid_to IS NULL OR valid_to > valid_from`; da `service_id` nullbar ist, muss die Unique-Regel NULL-Werte als gleich behandeln (z. B. `NULLS NOT DISTINCT`), sonst sind Dubletten ohne Verkehrsprodukt möglich; Trigger/Grant verbieten UPDATE und DELETE (nur anfügen); RLS `tenant_isolation`. Revisionen sind unveränderlich (Änderung = neue Revision). `notification` speichert die verwendete Vorlagenrevision (`template_revision_id`).
+- **Vorlagenauflösung:** nach (Ereignistyp, Verkehrsprodukt/Dienst, Sprache, Kanal) mit dokumentierter Rückfallkette: 1. exakt; 2. gleiche Sprache ohne Verkehrsprodukt; 3. Standardsprache Deutsch (Kap. 06 §6.1) mit Verkehrsprodukt; 4. Deutsch ohne Verkehrsprodukt; sonst Kanalfehler am Auftrag, keine leere Nachricht.
+- **Platzhalterkatalog je Ereignistyp** (typisiert): Buchungsreferenz (Pflicht bei buchungsbezogenen Ereignistypen), Buchungsnummer, Treffpunkt, Zeitfenster, ETA. Werte werden kanalgerecht maskiert (HTML/Markup-Escaping E-Mail, Klartext SMS/Push); fehlender Platzhalterwert -> Rendering-Fehler -> Kanalfehler.
+- **Aktivierungsregel:** Eine Revision ohne Pflichtplatzhalter Buchungsreferenz kann für buchungsbezogene Ereignistypen nicht aktiviert werden (Validierung beim Anlegen/Aktivieren, Fehler 422).
+- **API:** Vorlagenpflege unter `/v1/notifications` (Unterpfad, z. B. `/v1/notifications/templates`) oder Seed-basierte Pflege in P1; Entscheidung in OP 29. Lesen/Pflege nur berechtigte Rollen des eigenen Mandanten, fremde ID -> 404.
+- **Zustandsautomat:** keine eigene Revisionsmaschine; Revision ist "gültig ab valid_from" und unveränderlich.
+- **JSON-Schema / Ereignisse:** keine eigenen; Sprachpräferenz stammt vom Fahrgastkonto (WP-M1-29, `passenger_preference`; die Spalte ist im Plan nicht festgelegt, Abgleich mit WP-M1-29 im Bau).
+- **Parameter und Kennzahlen:** keine Katalogparameter.
+- **Oberfläche:** Sprachwahl des Fahrgasts in UI-05 (WP-M2-36); Zustand: Wechsel wirkt auf folgende Nachrichten, die Buchungsreferenz bleibt unverändert.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP 29 (WP-Dokument): welche zweite Sprache neben Deutsch in P1 (die Abnahme setzt mindestens zwei voraus; Bau und Test nutzen Deutsch und Englisch als Testsprachen, die Auslieferungssprache ist fachlich zu bestätigen) und ob die Pflege über Oberfläche/API oder nur Seed erfolgt. Verhältnis Dienst und Verkehrsprodukt ist im Kern-DDL nicht modelliert (OP 6): bis zur Klärung dient `service.id` als Träger des Verkehrsprodukts. Beides blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** zwei Sprachen x zwei Verkehrsprodukte x Ereignistypen; Sprachwechsel des Fahrgasts bei gleicher Buchung und gleichem Ereignistyp -> Vorlage der neuen Sprache, Buchungsreferenz identisch in beiden Nachrichten; zwei Dienste mit unterschiedlichem Verkehrsprodukt erhalten unterschiedliche Texte; versendete Nachricht behält ihre Vorlagenrevision nach Anlage einer neuen Revision.
+- **Negativ:** fehlender Platzhalterwert -> Kanalfehler; fehlende Vorlage ohne Rückfall -> Kanalfehler statt leerer Nachricht; Aktivierung ohne Buchungsreferenz -> 422; Markup im Platzhalterwert wird maskiert; Vorlage eines fremden Mandanten nicht lesbar (404).
+- **Konkurrierend:** Sprachwechsel parallel zur Nachrichtenerzeugung -> genau eine definierte Sprache je Nachricht, Buchungsreferenz nie verloren; Aktivierung einer neuen Revision parallel zum Rendering -> Nachricht verweist auf eine konsistente Revision.
+- **Referenztests:** keine Katalog-ID im WP genannt (WP-M2-33 nennt keine); Baustein für AT-01/AT-07 (Nachrichtenteil) über COM-001.
+- Testfälle: geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::sprachwechsel_nutzt_richtige_vorlage_mit_buchungsreferenz; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::aktivierung_ohne_buchungsreferenz_wird_abgelehnt; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::rueckfallkette_und_fehlende_vorlage_ergibt_kanalfehler; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::zwei_dienste_mit_verschiedenem_verkehrsprodukt_unterschiedliche_texte; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::platzhalterwert_markup_wird_maskiert_und_fehlender_wert_ergibt_kanalfehler; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::versendete_nachricht_behaelt_vorlagenrevision; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateResolutionTest.kt::sprachwechsel_und_aktivierung_parallel_zum_rendering_konsistent; geplant:backend/communication-support/src/test/kotlin/de/taktovia/communication/TemplateApiTest.kt::fremde_vorlage_ergibt_404; geplant:db/tests/test_channel_template_revision.py::test_revision_unveraenderlich_und_rls
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich (Datentrennung, Maskierung).
+

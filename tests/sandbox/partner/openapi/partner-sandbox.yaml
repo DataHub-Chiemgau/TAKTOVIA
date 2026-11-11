@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info:
+  title: Sandbox-Partner (Entwurf des internen Adaptervertrags "Partner intern")
+  version: 0.1.0
+  description: >
+    Entwurf des Ports für backend/adapters/partner-tomp und partner-osdm (Kap. 05 §5.7, Kap. 02 §9), WP-M0-24.
+    Als OpenAPI-Ergänzung nach api/ zu übernehmen (Entscheidung des Eigentümers von api/, nicht Teil dieses Pakets).
+    Jeder Aufruf trägt die Maschinenidentität im Header X-Caller-Id (Sandbox-Vereinfachung statt mTLS/OAuth).
+servers:
+  - url: http://127.0.0.1:18100
+paths:
+  /v1/partner/capabilities:
+    get:
+      operationId: partnerCapabilities
+      parameters: [{name: service_ref, in: query, required: false, schema: {type: string}}]
+      responses:
+        '200': {description: Wirksame Capability-Matrix je Instanz und Dienst}
+        '403': {description: Maschinenidentität nicht zugelassen}
+  /v1/partner/offers:
+    post:
+      operationId: partnerOffers
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OfferRequest'}}}}
+      responses:
+        '200': {description: Angebote (bei nur auskunftsfähigem Partner information_only=true)}
+        '422': {description: Capability nicht unterstützt}
+  /v1/partner/reservations:
+    post:
+      operationId: partnerHold
+      summary: Hold mit expires_at und Hold-TTL; stabile command_id
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReserveRequest'}}}}
+      responses:
+        '201': {description: Hold angelegt oder dieselbe Reservierung bei Wiederholung (Header Idempotent-Replayed)}
+        '409': {description: NO_CAPACITY}
+        '422': {description: CAPABILITY_NOT_SUPPORTED oder definitive Ablehnung}
+  /v1/partner/reservations/{id}/confirm:
+    post:
+      operationId: partnerConfirm
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {description: Bestätigt (HELD zu CONSUMED); Wiederholung liefert dieselbe Reservierung}
+        '409': {description: HOLD_EXPIRED oder HOLD_RELEASED}
+        '404': {description: Unbekannte Referenz}
+  /v1/partner/reservations/{id}/cancel:
+    post:
+      operationId: partnerCancel
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {description: Storniert oder freigegeben}
+        '404': {description: Unbekannte Referenz}
+  /v1/partner/reservations/{id}/extend:
+    post:
+      operationId: partnerExtendHold
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {description: Hold verlängert}
+        '422': {description: Capability nicht unterstützt oder Gesamtdauer überschritten}
+  /v1/partner/reservations/{id}/refund:
+    post:
+      operationId: partnerRefund
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {description: Erstattung vermerkt}
+        '422': {description: Capability nicht unterstützt oder Betrag über Preis}
+  /v1/partner/reservations/{id}/status:
+    get:
+      operationId: partnerStatus
+      summary: Status nach reservation_id, federation_ref oder command_id
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {description: Status inklusive matches (Anzahl Reservierungen zur Referenz)}
+        '404': {description: Unbekannte Referenz}
+components:
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: string}, description: 'reservation_id, federation_ref oder command_id'}
+  schemas:
+    OfferRequest:
+      type: object
+      required: [service_ref]
+      properties:
+        service_ref: {type: string}
+        earliest_at: {type: string, format: date-time}
+        resource_vector: {$ref: '#/components/schemas/ResourceVector'}
+    ReserveRequest:
+      type: object
+      required: [command_id, federation_ref, service_ref]
+      properties:
+        command_id: {type: string}
+        federation_ref: {type: string}
+        service_ref: {type: string}
+        offer_id: {type: string}
+        hold_ttl_seconds: {type: integer, minimum: 1, maximum: 900}
+        resource_vector: {$ref: '#/components/schemas/ResourceVector'}
+    ResourceVector:
+      type: object
+      properties:
+        seats: {type: integer, minimum: 0}
+        wheelchair: {type: integer, minimum: 0}

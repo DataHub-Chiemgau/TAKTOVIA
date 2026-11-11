@@ -1,8 +1,8 @@
 # LH-6.5-OPT-008 – Mehrzielbewertung mit konfigurierbaren Gewichten
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Disposition (Modul `booking-dispatch`, Bewertungsfunktion)
 - **Arbeitspaket:** WP-M2-20
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** Je Variante gespeicherte Teilwerte (Wartezeit, Umweg, Leerstrecke, Betriebsqualität) und die verwendete Gewichtsrevision (Verweis auf `config_revision`). Keine Tabelle im V1/V2-Schema vorhanden; Ablage als Diagnosedaten am Angebot (WP-M2-21) bzw. in einer neuen Migration, im Bau festzulegen. Gewichte als neue Dienstparameter im Konfigurationsregister (Schema über WP-M1-19).
+- **API:** Keine eigene Schnittstelle; Wirkung als Reihenfolge der Angebote in `POST /v1/ride-offers`. Diagnoseausgabe der Teilwerte und Gewichte je Variante nur für Tests.
+- **Zustandsautomat:** keiner.
+- **JSON-Schema / Ereignisse:** Konfigurationsschema der vier Gewichte (`vertraege/schemas/`, im Bau mit WP-M1-19 anzulegen).
+- **Parameter und Kennzahlen:** Gewichte für Wartezeit, Umwege, Leerstrecken, Betriebsqualität: im Parameterkatalog `kataloge.csv` nicht enthalten, als neue Dienstparameter anzulegen (OP-18 des WP-Dokuments). Bewertung nach Kap. 01 §1.4 Schritt 3: erst Unzulässigkeit = 0, dann weiche Ziele, danach Leerweg/Fahrzeit/Kosten.
+- **Oberfläche:** Keine Fahrgastwirkung außer der Reihenfolge der Angebote.
+- **Entscheidungen:** D-05 (Produktionsgewichte; blockiert nur die Produktivschaltung).
+- **Offene Punkte:** OP-18 des WP-Dokuments: Formel, Normierung, Wertebereiche der Gewichte und Messdefinition Betriebsqualität sind im Pflichtenheft nicht festgelegt. Der Bau legt sie als vorläufige, im Vertrag nachzutragende Festlegung an (Gewichte nichtnegativ, Ausgabe Teilwerte). Gleichstand wird deterministisch aufgelöst (Regel im Bau festzulegen, z. B. Variante-ID). Blockiert den Bau nicht, die Fachfreigabe der Formel steht aus.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Referenzszenario mit zwei zulässigen Varianten: Erhöhung eines Gewichts ändert die Rangfolge in die erwartete Richtung; Teilwerte und Gewichte je Variante sind ausgegeben; gleiche Eingaben und Gewichtsrevision ergeben dieselbe Rangfolge.
+- **Negativ:** Gewicht außerhalb des Wertebereichs wird vom Konfigurationsregister abgelehnt; unzulässige Variante bleibt auch bei beliebig hohem gewichtetem Vorteil ausgeschlossen (Bewertung 0).
+- **Konkurrierend:** Gewichtsänderung parallel zu einer laufenden Angebotsberechnung: das Angebot nennt die zu seinem Beginn wirksame Gewichtsrevision, die Rangfolge entspricht genau dieser Revision.
+- **Referenztests:** Keine Katalog-ID im WP genannt.
+- Testfälle: geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/MultiObjectiveScoringTest.kt::gewichtsaenderung_aendert_rangfolge_nachvollziehbar; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/MultiObjectiveScoringTest.kt::unzulaessige_variante_bleibt_ausgeschlossen
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview).

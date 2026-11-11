@@ -1,0 +1,22 @@
+# BEISPIEL (nicht aktiv, nicht ausgeführt): manuell auslösbarer CI-Lauf des Beispiel-Lastprofils (WP-M0-25, Akzeptanz 1).
+# Zur Übernahme nach .github/workflows/performance.yml durch den Eigentümer von .github/ gedacht; dieses Paket ändert .github/ nicht.
+name: Lastprofil (manuell)
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Lastprofil unter tests/performance/profiles/
+        default: health-example.json
+jobs:
+  lastprofil:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -r tests/requirements.txt
+      - run: python -m unittest discover -s tests/performance -p 'test_*.py'
+      # Beispiel gegen den Platzhalter-Server; gegen ein gestartetes Backend: --target http://127.0.0.1:8080
+      - run: python tests/performance/run.py --profile tests/performance/profiles/${{ inputs.profile }} --stub-target --out tests/performance/out
+      - uses: actions/upload-artifact@v4
+        with: { name: lastlauf-bericht, path: tests/performance/out }

@@ -1,8 +1,8 @@
 # LH-6.4-BKG-003 – Confirm: atomare Buchungsbestätigung
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Buchung/Disposition (Modul `booking-dispatch`, Confirm)
 - **Arbeitspaket:** WP-M2-23
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `booking` (V1: `hold_id`, `service_id`, `federation_ref`, `state`, `promise_snapshot`, `revision`; `UNIQUE(tenant_id,hold_id)`, `UNIQUE(tenant_id,federation_ref)`), `capacity_hold` (`state` `HELD → CONSUMED`), `vehicle_run`/`route_stop` (Planrevision), `passenger_trip`. Migration (WP-M2-23): Fahrgastbezug (`passenger_private`), `created_at`, Urheber, je Mandant eindeutige lesbare Buchungsnummer (Format OP-42), CHECK der zulässigen `booking.state`-Werte; je nach Entscheidung aus WP-M2-01 Hülle `journey`/`journey_leg` (OP-3). RLS erzwungen; Invariante „Kapazität: Run-Zeilen in stabiler Reihenfolge sperren, Revisionen vergleichen“ (Kap. 04 §4.5); Kapazität liegt ausschließlich in PostgreSQL, kein Redis-Lock. Alles-oder-nichts: der Hold bindet alle Abschnitte (`interval_from`..`interval_to`) und alle Dimensionen des `capacity_vector`; Confirm verbraucht ihn vollständig oder gar nicht, keine Teilreservierung. Hold verbrauchen, Buchung, `promise_snapshot`, Planrevision und Outbox in einer lokalen Transaktion; `promise_snapshot` nach Bestätigung unveränderlich (Baustein WP-M1-27).
+- **API:** `POST /v1/bookings` (Hold-Referenz, akzeptierter Betrag, `Idempotency-Key`, `If-Match`); `GET /v1/bookings/{id}` mit ETag; `GET /v1/bookings` (eigene, Cursor). Fehler: abgelaufener Hold → `409 HOLD_EXPIRED`; abweichender Betrag → `409 REQUOTE_REQUIRED`; Kapazität nicht mehr verfügbar → `409 CAPACITY_UNAVAILABLE`; wiederholtes Confirm desselben Holds liefert dieselbe Buchung; fremde Buchung/fremder Hold → 404. Betreibersicht mit Dienst-Scope und minimiertem Payload (Unterstützungsbedarf nur für zuständige Rollen).
+- **Zustandsautomat:** Hold `HELD → CONSUMED | RELEASED | EXPIRED`; lokale Buchung `booking.state` (OP-4), beide in WP-M2-01 unter `vertraege/zustaende/`.
+- **JSON-Schema / Ereignisse:** `booking.promise_snapshot` (enthält Ressourcenvektor, Preisstand, Zeitfenster, Konfigurations-/Tarifrevision); Ereignis „Buchung bestätigt“; ImpactProvider „Buchungen“ für WP-M1-23.
+- **Parameter und Kennzahlen:** `min_capacity_reserve` (Plätze, Dienst; wirkt auf die Kapazitätsprüfung); Kennzahl `Buchungskonversion` (Datenbasis).
+- **Oberfläche:** Bestätigung in UI-03 (WP-M2-42) mit Zuständen Holdablauf, Kapazität weg, Preisänderung; Buchungsdetail UI-04.
+- **Entscheidungen:** D-11 (Aufbewahrung personenbezogener Buchungsdaten; blockiert nur Produktivschaltung); D-05 (Lastprofil, blockiert nicht den Bau).
+- **Offene Punkte:** OP-3 (`journey`-Hülle; Entscheidung in WP-M2-01 vor Codebeginn von WP-M2-23, **blockiert den Bau dieses WP bis zur Entscheidung**); OP-4 (Zustandsautomat `booking.state`); OP-5 (Reihenfolge Zahlung/Confirm im Einbetreiberfall, D-03); OP-39 (Lastprofil); OP-42 (Buchungsnummer); OP-40/OP-43 (Fixtures statt führender Module, Vollabnahme der Safety-Prüfung mit WP-M3-08/WP-M3-09).
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Hold über mehrere Abschnitte und Dimensionen → Confirm reserviert alle oder keine; Hold → Confirm → Buchung lesbar (Fahrgast eigene Buchung, Betriebspersonal im Dienst-Scope); Buchungsnummer je Mandant eindeutig und in Bestätigung, UI-04 und Nachrichten identisch; `promise_snapshot` enthält den Ressourcenvektor.
+- **Negativ:** Confirm auf abgelaufenen Hold → 409 `HOLD_EXPIRED`, keine Buchung, Kapazität frei; freigegebener/fremder Hold; abweichender akzeptierter Betrag → `REQUOTE_REQUIRED`; fehlender `Idempotency-Key`, fehlender `If-Match` (428), veralteter (412); fremder Fahrgast, Betriebspersonal ohne Dienst-Scope und anderer Mandant → 404; direktes UPDATE auf `promise_snapshot` schlägt fehl; Betreiberpayload ohne überzählige Kontaktdaten; Abbruch mitten in der Transaktion hinterlässt weder Buchung noch verbrauchten Hold noch Outbox.
+- **Konkurrierend:** AT-03: zwei parallele Zusagen auf den letzten Platz → höchstens eine bestätigte Buchung; PH-AT-004: 100 parallele Bestätigungen unterschiedlicher Anfragen bei genau einem freien Sitz unter der Runtime-Rolle → höchstens eine neue Sitzreservierung, kein Abschnitt über Kapazität, keine negative Belegung, alle Abweisungen mit eindeutigem Grund; Wiederholung mit belegtem Rollstuhlplatz bei freiem Sitz und mit veränderter Routenrevision; Confirm parallel zum Expiry-Job und zur Hold-Freigabe → genau ein Ausgang; `UNIQUE(tenant_id,hold_id)` verhindert zweite Buchung bei parallelem Confirm; gegenläufige Abschnittsreihenfolge ohne unbehandelten Deadlock.
+- **Referenztests:** AT-03 („Zwei Clients buchen parallel letzten Platz“), PH-AT-004, PH-AT-018 (Teil Zusage: nachträgliche Tarif-/Konfigurationsänderung ändert `promise_snapshot` nicht); Contract-Fall „letzter Platz“ (Kap. 05 §5.8, Einbetreiberanteil).
+- Testfälle: AT-03; PH-AT-004; PH-AT-018; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt::hold_confirm_buchung_lesbar; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt::abgelaufener_hold_ergibt_409_hold_expired; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::hundert_parallele_confirms_ein_sitz; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::abbruch_mitten_in_transaktion_atomar; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/BookingAuthorizationTest.kt::betriebspersonal_fremder_dienst_404; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/BookingAuthorizationTest.kt::fremder_fahrgast_und_anderer_mandant_404; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt::abweichender_betrag_requote_required; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt::promise_snapshot_unveraenderlich_nach_konfig_und_tarifwechsel; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt::buchungsnummer_je_mandant_eindeutig; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::zwei_clients_letzter_platz_hoechstens_eine_buchung; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::confirm_parallel_expiry_und_release_ein_ausgang; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::gegenlaeufige_abschnittsreihenfolge_kein_deadlock; geplant:backend/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt::rollstuhlplatz_belegt_sitz_frei_und_routenrevision_veraendert
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

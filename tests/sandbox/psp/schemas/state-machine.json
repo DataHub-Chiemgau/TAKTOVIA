@@ -1,0 +1,17 @@
+{
+  "$comment": "Zustandsautomat des PSP-Simulators nach Kap. 03 §4.2. CAPTURE_UNKNOWN/RECONCILING entstehen auf der Aufruferseite; DISPUTED ist ein getrenntes Feld (dispute_state: OPEN|WON|LOST). Muss mit psp_sim.TRANSITIONS übereinstimmen (Test).",
+  "initial": "CREATED",
+  "transitions": {
+    "CREATED": ["AUTHORIZATION_FAILED", "AUTHORIZED", "REQUIRES_ACTION"],
+    "REQUIRES_ACTION": ["AUTHORIZATION_FAILED", "AUTHORIZED"],
+    "AUTHORIZED": ["CAPTURE_PENDING", "CAPTURED", "VOID_PENDING", "VOIDED"],
+    "CAPTURE_PENDING": ["CAPTURED"],
+    "CAPTURED": ["PARTIALLY_REFUNDED", "REFUNDED", "REFUND_PENDING"],
+    "VOID_PENDING": ["VOIDED"],
+    "REFUND_PENDING": ["PARTIALLY_REFUNDED", "REFUNDED"],
+    "PARTIALLY_REFUNDED": ["PARTIALLY_REFUNDED", "REFUNDED", "REFUND_PENDING"],
+    "AUTHORIZATION_FAILED": [],
+    "VOIDED": [],
+    "REFUNDED": []
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/partner-sandbox/partner-event.schema.json",
+  "title": "Partnerereignis an POST /v1/federation/partners/{partner_id}/events (Entwurf)",
+  "description": "Header: X-Partner-Key-Id, X-Partner-Timestamp (Unix-Sekunden), X-Partner-Signature = v1=hex(HMAC-SHA256(secret, timestamp + '.' + raw_body)). tenant_id ist Metadatum und muss zur verifizierten Partnerbindung passen (Kap. 05 §5.6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "occurred_at", "tenant_id", "partner_id", "aggregate_ref", "aggregate_version", "payload"],
+  "properties": {
+    "event_id": {"type": "string", "pattern": "^pev_[0-9a-f]{16}$"},
+    "event_type": {"enum": ["reservation.confirmed", "reservation.cancelled", "reservation.expired", "reservation.status_changed", "reservation.refunded"]},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "tenant_id": {"type": "string", "format": "uuid"},
+    "partner_id": {"type": "string", "minLength": 1},
+    "aggregate_ref": {"type": "string", "minLength": 1, "description": "federation_ref der Reservierung"},
+    "aggregate_version": {"type": "integer", "minimum": 1},
+    "payload": {"type": "object"}
+  }
+}

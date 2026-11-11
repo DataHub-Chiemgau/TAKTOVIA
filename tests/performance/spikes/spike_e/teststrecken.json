@@ -1,0 +1,19 @@
+{
+  "status": "VORLAGE: Koordinaten synthetisch (Stellvertreterregion, D-05 offen). Reale Haltepunkte, barrierefreie Zugänge und Referenzfahrzeiten stellt der Auftraggeber bei (Beistellung). Die Erwartungen 'reference_duration_s' bleiben bis dahin leer.",
+  "region": {"name": "Stellvertreterregion (synthetisch)", "bbox_lat_lon": [50.95, 13.55, 51.20, 14.00], "real_world_validated": false},
+  "criteria_source": "D-09: Teststrecken, Fuß-/Rollstuhlwege, Restriktionen, Matrixlatenz, zulässige Datenspeicherung",
+  "routes": [
+    {"id": "R01", "category": "fahrzeug_kurz", "profile": "auto", "from": [51.050, 13.740], "to": [51.062, 13.756], "note": "Innenstadtnahe Kurzstrecke ca. 2 km", "reference_duration_s": null, "expect_error": null},
+    {"id": "R02", "category": "fahrzeug_mittel", "profile": "auto", "from": [51.030, 13.700], "to": [51.100, 13.800], "note": "ca. 10-15 km, Stadt und Umland", "reference_duration_s": null, "expect_error": null},
+    {"id": "R03", "category": "fahrzeug_lang", "profile": "auto", "from": [50.980, 13.600], "to": [51.180, 13.950], "note": "ca. 35 km, Überland", "reference_duration_s": null, "expect_error": null},
+    {"id": "R04", "category": "restriktion_einbahn_abbiegeverbot", "profile": "auto", "from": [51.045, 13.735], "to": [51.045, 13.737], "note": "Ziel gegen Einbahnrichtung: der Anbieter muss einen Umweg liefern, keine Luftlinie. Reale Straße benennen.", "reference_duration_s": null, "expect_error": null},
+    {"id": "R05", "category": "restriktion_fussgaengerzone", "profile": "auto", "from": [51.051, 13.738], "to": [51.0515, 13.7385], "note": "Ziel in Fußgängerzone: Anfahrt nur bis zum Rand, Rest zu Fuß (Haltepunkt-Zuordnung). Reale Zone benennen.", "reference_duration_s": null, "expect_error": null},
+    {"id": "R06", "category": "restriktion_gewicht_hoehe", "profile": "auto", "from": [51.070, 13.720], "to": [51.075, 13.760], "note": "Querung mit Gewichts-/Höhenbeschränkung (Kleinbus); Anbieter muss Fahrzeugparameter berücksichtigen können", "reference_duration_s": null, "expect_error": null},
+    {"id": "R07", "category": "fuss_haltepunkt_zugang", "profile": "pedestrian", "from": [51.0500, 13.7400], "to": [51.0508, 13.7410], "note": "Fußweg Haltepunkt zum Eingang ca. 120 m", "reference_duration_s": null, "expect_error": null},
+    {"id": "R08", "category": "fuss_mit_treppe", "profile": "pedestrian", "from": [51.0600, 13.7500], "to": [51.0600, 13.7600], "note": "Fußweg über eine Treppe (nur Fußgängerprofil zulässig)", "reference_duration_s": null, "expect_error": null},
+    {"id": "R09", "category": "rollstuhl_barrierefrei", "profile": "wheelchair", "from": [51.0500, 13.7400], "to": [51.0508, 13.7410], "note": "Dieselbe Strecke wie R07 mit Rollstuhlprofil: Abweichung zum Fußweg und Bordsteinabsenkungen prüfen", "reference_duration_s": null, "expect_error": null},
+    {"id": "R10", "category": "rollstuhl_treppe_alternativ", "profile": "wheelchair", "from": [51.0600, 13.7500], "to": [51.0600, 13.7600], "note": "Wie R08: Rollstuhlprofil muss die Treppe meiden und einen stufenfreien Umweg liefern oder 'keine Route' melden; eine Route über die Treppe ist eine Fehlroute", "reference_duration_s": null, "expect_error": null},
+    {"id": "R11", "category": "ausserhalb_datenbestand", "profile": "auto", "from": [51.050, 13.740], "to": [52.520, 13.400], "note": "Ziel ausserhalb des Datenbestands: sauberer Fehler (OutOfCoverage), keine Luftlinienschätzung", "reference_duration_s": null, "expect_error": "OutOfCoverage"},
+    {"id": "R12", "category": "keine_verbindung", "profile": "wheelchair", "from": [50.950, 13.700], "to": [51.050, 13.700], "note": "Start auf nicht erreichbarem Netzteil (Referenznetz: gesperrte Zeile); in einer realen Region eine bekannte Insel/Sackgasse benennen", "reference_duration_s": null, "expect_error": "NoRoute"}
+  ]
+}

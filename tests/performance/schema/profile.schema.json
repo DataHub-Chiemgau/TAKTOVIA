@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/performance/profile.schema.json",
+  "title": "Lastprofil (Kap. 08 §8.6)",
+  "description": "Pflichtangaben je Messung: Endpointmix, Fehlerrate (Schwelle), Datenvolumen, Hardware (wird gemessen und im Bericht festgehalten), Parallelität, Kandidaten-/Flottengröße, Partneranteile. Peak-Requests/s und Anzahl aktiver Mandanten sind offene Pflichtparameter: Tagesdurchschnitt allein genügt nicht.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_version", "name", "mode", "target", "endpoint_mix", "load", "max_error_rate", "dataset", "candidate_fleet", "partner_share", "open_parameters", "reference_targets"],
+  "properties": {
+    "profile_version": {"const": "1.0"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "mode": {"enum": ["example", "measurement"], "description": "example: Werkzeugnachweis, keine Abnahmeaussage; measurement: verlangt gesetzte offene Pflichtparameter"},
+    "target": {"type": "object", "additionalProperties": false, "required": ["base_url"], "properties": {"base_url": {"type": "string", "pattern": "^https?://"}, "description": {"type": "string"}}},
+    "endpoint_mix": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "method", "path", "weight"], "properties": {"name": {"type": "string"}, "method": {"enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]}, "path": {"type": "string", "pattern": "^/"}, "weight": {"type": "number", "exclusiveMinimum": 0}, "expect_status": {"type": "array", "items": {"type": "integer"}, "minItems": 1}, "body": {"type": ["object", "null"]}, "headers": {"type": "object", "additionalProperties": {"type": "string"}}, "target_class": {"enum": ["standard_api", "offer", "driver_plan", "none"]}}}},
+    "load": {"type": "object", "additionalProperties": false, "required": ["concurrency", "duration_s"], "properties": {"concurrency": {"type": "integer", "minimum": 1, "maximum": 1000}, "duration_s": {"type": "number", "exclusiveMinimum": 0}, "warmup_s": {"type": "number", "minimum": 0}, "request_timeout_s": {"type": "number", "exclusiveMinimum": 0}, "think_time_ms": {"type": "number", "minimum": 0}, "seed": {"type": "integer"}}},
+    "max_error_rate": {"type": "number", "minimum": 0, "maximum": 1},
+    "dataset": {"type": "object", "additionalProperties": false, "required": ["description", "volume"], "properties": {"description": {"type": "string", "minLength": 1}, "volume": {"type": "string", "minLength": 1}}},
+    "candidate_fleet": {"type": "object", "additionalProperties": false, "required": ["vehicles_per_tenant", "candidates"], "properties": {"vehicles_per_tenant": {"type": ["integer", "null"]}, "candidates": {"type": ["integer", "null"]}, "note": {"type": "string"}}},
+    "partner_share": {"type": "object", "additionalProperties": false, "required": ["local", "partner"], "properties": {"local": {"type": "number", "minimum": 0, "maximum": 1}, "partner": {"type": "number", "minimum": 0, "maximum": 1}}},
+    "open_parameters": {"type": "object", "additionalProperties": false, "required": ["peak_requests_per_second", "active_tenants"], "properties": {"peak_requests_per_second": {"$ref": "#/$defs/open"}, "active_tenants": {"$ref": "#/$defs/open"}}},
+    "reference_targets": {"type": "object", "additionalProperties": false, "required": ["provisional", "standard_api_p95_s", "offer_p95_s", "driver_plan_p95_s", "vehicles_per_tenant", "bookings_per_day", "sessions", "rpo_min", "rto_h"], "properties": {"provisional": {"const": true, "description": "vorläufige Lastenheftziele, keine gemessene Leistung (Kap. 08 §8.6)"}, "standard_api_p95_s": {"type": "number"}, "offer_p95_s": {"type": "number"}, "driver_plan_p95_s": {"type": "number"}, "vehicles_per_tenant": {"type": "integer"}, "bookings_per_day": {"type": "integer"}, "sessions": {"type": "integer"}, "rpo_min": {"type": "number"}, "rto_h": {"type": "number"}}}
+  },
+  "$defs": {"open": {"type": "object", "additionalProperties": false, "required": ["value", "status"], "properties": {"value": {"type": ["number", "null"]}, "status": {"type": "string"}}}}
+}

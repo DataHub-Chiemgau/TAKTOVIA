@@ -1,0 +1,19 @@
+{
+  "status": "Bewertungsschema mit Gewichtung, VOR der Messung festgelegt (WP-M0-30). Änderung nur mit Begründung und Datum; Bewertungsbeispiele in den Tests sind Rechenproben, keine Bewertung realer Anbieter.",
+  "scale": {"0": "nicht erfüllt", "1": "mit großen Einschränkungen", "2": "teilweise", "3": "weitgehend", "4": "voll erfüllt"},
+  "criteria": [
+    {"id": "K1", "name": "Abweichung der Fahrzeiten zu den Referenzfahrzeiten (Teststrecken R01 bis R06)", "weight": 20, "measure": "mittlere und maximale relative Abweichung, Ausreißer benennen"},
+    {"id": "K2", "name": "Matrixlatenz p95 für die Referenzgröße M-2x250 gegenüber dem 1-s-Budget", "weight": 20, "measure": "gemessene p95 in ms; Skala: <=250 ms=4, <=500=3, <=1000=2, <=2000=1, sonst 0"},
+    {"id": "K3", "name": "Fuß- und Rollstuhlwege, Restriktionen (R04 bis R10, R12): Fehlrouten", "weight": 20, "measure": "Anzahl Fehlrouten und korrekt gemeldete Nicht-Verbindungen; jede Treppenroute im Rollstuhlprofil ist ein schwerer Fehler"},
+    {"id": "K4", "name": "Lizenz- und Datennutzungsbedingungen (Speicherung in route_matrix_cache, Kap. 04 §4.4)", "weight": 15, "measure": "schriftlich bewertet; K.O. wenn Zwischenspeicherung der Ergebnisse oder Nutzung für den Zweck untersagt"},
+    {"id": "K5", "name": "Betriebsaufwand (Eigenbetrieb, Kartenupdates, Kacheln, Skalierung)", "weight": 10, "measure": "geschätzte Personentage je Monat, Aktualisierungsweg"},
+    {"id": "K6", "name": "Kosten (Lizenz, Abrufe, Infrastruktur) je 30.000 Buchungen/Tag-Referenz", "weight": 5, "measure": "Preismodell; Kosten je Szenario"},
+    {"id": "K7", "name": "Datenstand und Versionierbarkeit (Cache-Schlüssel braucht eine Version)", "weight": 5, "measure": "Liefert der Anbieter eine stabile Datenstandskennung?"},
+    {"id": "K8", "name": "Verfügbarkeit und Timeout-Verhalten", "weight": 5, "measure": "SLA, Verhalten bei Timeout im Adapter (Teilergebnis oder begründete Ablehnung)"}
+  ],
+  "knockout": [
+    {"id": "KO1", "criterion": "K4", "condition": "Speicherung/Caching der Ergebnisse oder der Zweck (Personenbeförderung, Disposition) ist lizenzrechtlich untersagt"},
+    {"id": "KO2", "criterion": "K3", "condition": "Rollstuhlprofil liefert Routen über Treppen ohne Warnung"}
+  ],
+  "decision_rule": "Gewichtete Summe in Prozent der Höchstpunktzahl; Empfehlung nur ohne K.O. und mit mindestens 60 %. Bei Abstand unter 10 Prozentpunkten wird die Unsicherheit ausdrücklich benannt und D-09 mit beiden Varianten offen gehalten."
+}

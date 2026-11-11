@@ -1,0 +1,2 @@
+# Laufzeit-Lockfile des Dokumenten-Workers: derzeit keine Abhängigkeiten außerhalb der
+# Standardbibliothek (OCR, Malware-Scan, KoSIT folgen in M4). Entwicklungswerkzeuge: requirements-dev.lock

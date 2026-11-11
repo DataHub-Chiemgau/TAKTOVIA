@@ -1,8 +1,8 @@
 # LH-I.6-KPI-006 – Getrennte Zeitpunkte: geplant, angekündigt, zugesagt, prognostiziert, tatsächlich
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Analytik (Modul `analytics`)
 - **Arbeitspaket:** WP-M4-52
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** Zeitfaktentabelle je Fahrgastfahrt und Stopp mit Zeitart (`planned`, `announced`, `promised`, `forecast`, `actual`; Arbeitsnamen), Ereignis Abholung/Ankunft, Wert (timestamptz, absolute Zeitpunkte), Quelle, Version (Zusageversion, Planrevision, Prognoseversion). Append-only: neue Werte erzeugen neue Zeilen, bestehende werden nicht überschrieben. Bezug auf `booking.promise_snapshot` (V1, jsonb mit Zeitfenster) nur über Leseport. Offline-Ist-Zeiten speichern Geräte- und Serverzeit getrennt. Alle Faktentabellen im Modul `analytics` tragen `tenant_id` mit RLS wie in `db/migrations/V1__kernschema.sql`; kein Schreibzugriff auf Tabellen anderer Module (Architekturtest); keine Fahrgast-Klartextdaten in Fakten.
+- **API:** Abruf der fünf Zeitarten je Fahrt über `/v1/analytics/metrics` bzw. Detailabruf (Unterpfad im Bau festzulegen; `api/analytics.yaml` fehlt noch). Fehlende Ist-Zeit ergibt `null` mit Grund "nicht bewertbar", nie 0.
+- **Zustandsautomat:** keiner; liest Planrevision und Zusageversion.
+- **JSON-Schema / Ereignisse:** Konsum von Buchungs-, Planrevisions-, Benachrichtigungs- und Fahrerereignissen (M2/M3); `promise_snapshot` ist untypisiert, Schema der Zeitfenster ist festzulegen.
+- **Parameter und Kennzahlen:** Verspätung = Ist-Zeit minus Zielzeit der gebundenen Zusageversion; spätere Umplanung oder Prognose ändert die Vergleichsbasis nicht; einvernehmliche Änderung der Zusage erzeugt eine neue Zusageversion. Konfiguration (`on_time_pickup_tolerance_min`, `pickup_window_min`) wird nur als zum Zusagezeitpunkt gebundene Version verwendet (PH-AT-018).
+- **Oberfläche:** Anzeige der fünf Zeitarten je Fahrt (Betriebsdetail, UI-ID nicht festgelegt, OP 23); Zustände: Ist-Zeit fehlt (nicht bewertbar), Zusage nicht vorhanden.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP 28: Die "angekündigte" Zeit hat weder Feld im Kern-DDL noch Definition (vermutlich die dem Fahrgast per Benachrichtigung mitgeteilte Zeit, Quelle WP-M2-34). Ohne diese Festlegung ist die Zeitart `announced` nicht baubar; die vier übrigen Zeitarten sind unabhängig baubar. Der Vertrag hält den Vorschlag fest, Bestätigung durch Fachanalyse steht aus.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Fahrt mit Umplanung nach der Zusage: alle fünf Zeitarten für Abholung und Ankunft getrennt gespeichert und abrufbar; Verspätung nutzt die Zusageversion, die Umplanung ändert sie nicht; Abruf je Fahrt liefert alle fünf Zeitarten; einvernehmliche Änderung der Zusage erzeugt eine neue Zusageversion, die alte bleibt lesbar; Zeitart `announced` bis zur Festlegung OP 28 nur mit Testwert.
+- **Negativ:** Fehlende Ist-Zeit ergibt "nicht bewertbar" statt Nullwert; nachträgliche Änderung von Pünktlichkeitsschwelle oder Tarif ändert die gespeicherte Zusage nicht; UPDATE oder DELETE einer Zeitfaktenzeile wird unter der Runtime-Rolle abgewiesen; Offline-Ist-Zeit behält Geräte- und Serverzeit; DST-Doppelstunde (25.10.2026, 02:30) ergibt zwei eindeutige Zeitpunkte.
+- **Konkurrierend:** Zwei parallele Umplanungen und eine Prognoseaktualisierung nach der Zusage: Zusageversion bleibt unverändert, jede Revision erscheint genau einmal; Fakten eines fremden Mandanten sind nicht sichtbar.
+- **Referenztests:** PH-AT-018 (Teil Zusage und Schwelle, DST-Fixture 25.10.2026 `Europe/Berlin`); AT-47 (Schicht über DST-Umstellung, e2e.csv) nur mittelbar, deshalb nicht als Testfall-Token geführt.
+- Testfälle: PH-AT-018; geplant:db/tests/test_zeitfakten.py::test_verspaetung_gegen_zusageversion_nach_umplanung; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/TimeFactsTest.kt::fehlende_ist_zeit_ist_nicht_bewertbar
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview).

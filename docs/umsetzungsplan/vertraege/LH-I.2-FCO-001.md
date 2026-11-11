@@ -1,8 +1,8 @@
 # LH-I.2-FCO-001 – Kostenklassifikation: fix/variabel und direkt/umgelegt
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Finanzen/Kosten (Modul `documents-finance`)
 - **Arbeitspaket:** WP-M4-39
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `economic_event` (V1): `cost_behavior` `FIXED`/`VARIABLE`/`MIXED`, `attribution` `DIRECT`/`ALLOCATED`, `category`, `scenario` (`ACTUAL`/`PLAN`/`FORECAST`/`SIMULATION`), `cost_basis_minor`, `booked_at`, `reverses_id`; Index `(tenant_id,legal_entity_id,booked_at)` (Standardindex, per Migration zu ergänzen, falls nicht vorhanden). Neu per Migration: `cost_category` (Kostenart mit Standardverhalten, `tenant_id`, RLS). `economic_event` ist unveränderlich (Trigger `economic_immutable`); Umklassifikation nur über Gegenereignis (`reverses_id`) und Neubuchung. Invariante: Originalposition und ihre Umlage werden nie zusammengezählt; die Achsen fix/variabel und direkt/umgelegt sind orthogonal (Kap. 04 §4.4 FCO/FIN).
+- **API:** `GET /v1/cost-events` (Auswertung nach Klasse, Kostenobjekt (Fahrzeug `cost_object.kind='VEHICLE'` und Verkehrsleistung `SERVICE`/`RUN`/`LEG`, Auslegung von „Verkehrsleistung“ nach Beispiel B „direkt Dienst“, OP 19), Periode; nur gebuchte (`POSTED`) Ereignisse zählen; Parameter `valuation` ist Pflicht und wird auf die DDL-Spalte `scenario` abgebildet, für P1 nur `ACTUAL`, andere Werte 422 (Annahme, Plan/Forecast ist FCO-017); Abfragen ohne explizite Bewertungsart, Periode und Währung werden mit 422 abgewiesen, Kap. 03 §1.1). Antwort als Kreuztabelle je Kostenobjekt und Periode mit Bewertungsart, Periode, Währung und Datenstand; Zeile „nicht klassifiziert“ für Ereignisse ohne Klassifikation. Fremdes Fahrzeug bzw. fremder Mandant: 404. Das Auswertungsschema wird mit dem Bau in `api/finance.yaml` ergänzt (dort noch nicht beschrieben).
+- **Zustandsautomat:** keiner (Klassifikation wird beim Posting gesetzt, danach unveränderlich).
+- **JSON-Schema / Ereignisse:** Auswertungsschema mit Datenstand (Wasserstandsangabe, siehe `dataset_watermark`, Modul `analytics`); Audit der Umklassifikation über das Gegenereignis.
+- **Parameter und Kennzahlen:** keine Katalogparameter; Standardverhalten je Kostenart aus `cost_category`. Beitrag zu COST-08 (Original plus Umlage in keiner Standardsicht doppelt).
+- **Oberfläche:** UI-15 (TCO/Deckungsbeitrag) bzw. Kostenaufstellung je Fahrzeug: vier Spalten/Gruppen fix, variabel, direkt, zugerechnet, Summe, Zeile „nicht klassifiziert“; Zustände leer (Datenlücke) und Fehler (fehlende Parameter); Anzeige von Bewertungsart, Periode, Währung, Datenstand.
+- **Entscheidungen:** D-07 (Kostenarten und Klassifikation; Testkatalog bis zum Beschluss, blockiert nur die Produktivschaltung).
+- **Offene Punkte:** OP 19 („vier Klassen“ als zwei Achsen: Auslegung als Kreuztabelle, die Achsen werden nicht addiert; mit dem Auftraggeber zu bestätigen; die „Summe“ ist die Summe der wirksamen Ist-Kosten, nicht die Addition der vier Klassen); Behandlung von `MIXED` (Detailvertrag beim Bau, bis dahin eigene Spalte „gemischt“); OP 15 (Eindeutigkeit von `economic_event` ohne Revision; die Neubuchung nach einer Umklassifikation trägt denselben Ursprung und braucht eine eigene Schlüsselbildung, z. B. über `event_type` oder `source_ref`, Festlegung mit dem Bau). Nicht im Umfang: Plan/Forecast-Bewertung (FCO-017), konsolidierte Verbundsicht (MUL-020). Blockiert den Bau nicht.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Fixture nach Rechenbeispiel B (Kap. 03 §6) für Betreiber Y mit 1.680,00 EUR (Gestellung X 800,00; Energie 180,00 variabel direkt Fahrzeug; Fahrer 600,00 variabel direkt Dienst; Disposition 100,00 fix umgelegt; die Klassifikation der Gestellung nennt das Beispiel nicht, sie steht im Test als „nicht klassifiziert“ 800,00 oder als Testannahme, Summe stets 1.680,00; die Verteilung auf K1 1.008,00 und K2 672,00 wird nicht auf die 1.680,00 addiert): Aufstellung eines Testfahrzeugs zeigt fix, variabel, direkt und zugerechnet getrennt und in Summe; Gesamtsumme entspricht der Summe der wirksamen Ist-Kosten; Auswertung nennt Bewertungsart, Periode, Währung und Datenstand.
+- **Negativ:** Ereignis ohne Klassifikation wird separat als „nicht klassifiziert“ ausgewiesen, nicht verworfen; fremdes Fahrzeug bzw. fremder Mandant ergibt 404; Abfrage ohne `valuation`, Periode oder Währung wird abgewiesen; Original und Umlage derselben Kosten werden nicht doppelt gezählt (COST-08); `MIXED` erscheint in der eigenen Spalte „gemischt“ und wird weder fix noch variabel zugeschlagen; andere Bewertungsart als `ACTUAL` oder fehlende Währung ergibt 422; ohne Authentisierung 401, ohne Leserecht 403; direkte Änderung der Klassifikation eines gebuchten Ereignisses scheitert per SQL, Umklassifikation nur als Gegenereignis mit Neubuchung.
+- **Konkurrierend (Geld):** Umklassifikation (Gegenereignis plus Neubuchung) parallel zur Auswertung liefert nie eine Summe mit Doppelzählung (konsistenter Datenstand); zwei parallele Umklassifikationen desselben Ereignisses ergeben genau eine wirksame Neubuchung (Unique `(tenant_id,legal_entity_id,source_system,source_ref,event_type,scenario)` bzw. Idempotenz).
+- **Referenztests:** COST-08 (Kap. 03; keine Katalog-ID im Testfall-Token).
+- Testfälle: geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::kostenaufstellung_testfahrzeug_zeigt_vier_klassen_getrennt_und_in_summe; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::original_und_umlage_werden_nicht_doppelt_gezaehlt; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::mixed_eigene_spalte_und_nicht_klassifiziert_getrennt_ausgewiesen; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::abfrage_ohne_valuation_periode_waehrung_422_fremdes_fahrzeug_404; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::umklassifikation_parallel_zur_auswertung_keine_doppelzaehlung; geplant:backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostClassificationTest.kt::zwei_parallele_umklassifikationen_genau_eine_neubuchung; geplant:db/tests/test_cost_classification.py::test_klassifikation_nur_per_gegenereignis_aenderbar
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

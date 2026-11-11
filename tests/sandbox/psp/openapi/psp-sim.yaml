@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: PSP-Simulator (Port-Entwurf und Steuerschnittstelle)
+  version: 0.1.0
+  description: >
+    Entwurf des internen PSP-Ports (backend/adapters/psp) und der Steuerschnittstelle des Simulators (WP-M0-23).
+    Nur Testnetz. Beträge sind Ganzzahlen in kleinster Einheit. Vorläufig, Bestätigung in WP-M0-29.
+servers:
+  - url: http://127.0.0.1:18091
+paths:
+  /psp/v1/payments:
+    post:
+      operationId: pspAuthorize
+      summary: Authorize
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/AuthorizeRequest'}}}
+      responses:
+        '201': {description: 'Zahlung angelegt (Zustand AUTHORIZED, REQUIRES_ACTION oder AUTHORIZATION_FAILED)', content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '409': {description: Händlerreferenz existiert bereits}
+        '422': {description: Idempotenzschlüssel mit anderem Request wiederverwendet}
+    get:
+      operationId: pspStatusByReference
+      summary: Statusabfrage nach ursprünglicher Händlerreferenz
+      parameters:
+        - {name: merchant_ref, in: query, required: false, schema: {type: string}}
+        - {name: operation_ref, in: query, required: false, schema: {type: string}}
+      responses:
+        '200': {description: Zahlung, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '404': {description: Unbekannte Referenz}
+  /psp/v1/payments/{paymentId}:
+    get:
+      operationId: pspStatus
+      summary: Statusabfrage nach payment_id oder provider_ref
+      parameters: [{$ref: '#/components/parameters/PaymentId'}]
+      responses:
+        '200': {description: Zahlung, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '404': {description: Unbekannte Referenz}
+        '503': {description: Statusabfrage nicht verfügbar (Fehlermodus)}
+  /psp/v1/payments/{paymentId}/capture:
+    post:
+      operationId: pspCapture
+      summary: Capture (optional Teilbetrag)
+      parameters: [{$ref: '#/components/parameters/PaymentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/AmountRequest'}}}}
+      responses:
+        '200': {description: Zahlung, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '409': {description: Zustand erlaubt kein Capture}
+        '422': {description: Betrag über Autorisierung}
+  /psp/v1/payments/{paymentId}/void:
+    post:
+      operationId: pspVoid
+      summary: Void (nur vor Capture)
+      parameters: [{$ref: '#/components/parameters/PaymentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200': {description: Zahlung, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '409': {description: Zustand erlaubt kein Void}
+  /psp/v1/payments/{paymentId}/refund:
+    post:
+      operationId: pspRefund
+      summary: Refund (Teilbetrag möglich)
+      parameters: [{$ref: '#/components/parameters/PaymentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AmountRequest'}}}}
+      responses:
+        '200': {description: Zahlung, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '409': {description: Kein Capture vorhanden}
+        '422': {description: Erstattung über Capture}
+  /psp/v1/capabilities:
+    get:
+      operationId: pspCapabilities
+      responses: {'200': {description: Fähigkeiten des Simulators}}
+  /control/clock:
+    get: {operationId: simGetClock, responses: {'200': {description: Simulatoruhr}}}
+    post:
+      operationId: simSetClock
+      summary: Testzeit-Protokoll v1 (set | advance_seconds | mode)
+      requestBody: {content: {application/json: {schema: {type: object, properties: {set: {type: string, format: date-time}, advance_seconds: {type: number, minimum: 0}, mode: {enum: [frozen, real]}}}}}}
+      responses: {'200': {description: Uhr}}
+  /control/faults:
+    get: {operationId: simListFaults, responses: {'200': {description: Fehlermodi}}}
+    post:
+      operationId: simAddFault
+      summary: Fehlermodus je Operation und Referenz
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Fault'}}}}
+      responses: {'201': {description: Angelegt}}
+    delete: {operationId: simClearFaults, responses: {'200': {description: Gelöscht}}}
+  /control/log:
+    get: {operationId: simLog, summary: Protokoll aller Aufrufe und Webhook-Zustellungen, responses: {'200': {description: Protokoll}}}
+  /control/events:
+    get: {operationId: simEvents, responses: {'200': {description: Erzeugte Ereignisse}}}
+  /control/webhooks/deliver:
+    post:
+      operationId: simDeliverWebhook
+      summary: Benachrichtigung bis zu 100-mal identisch, verspätet oder mit ungültiger Signatur zustellen
+      requestBody: {required: true, content: {application/json: {schema: {type: object, properties: {event_id: {type: string}, payment_id: {type: string}, type: {type: string}, target_url: {type: string}, mode: {enum: [valid, bad_signature, late]}, repeat: {type: integer, minimum: 1, maximum: 100}, late_seconds: {type: integer}}}}}}
+      responses: {'200': {description: Zustellprotokoll}}
+  /control/disputes:
+    post: {operationId: simDispute, summary: Streitfall nach Capture öffnen oder (resolve) abschließen, responses: {'200': {description: Zahlung}}}
+  /control/sca/{paymentId}/complete:
+    post: {operationId: simScaComplete, summary: Rückkehr aus SCA/3DS simulieren, parameters: [{$ref: '#/components/parameters/PaymentId'}], responses: {'200': {description: Zahlung}}}
+  /control/config:
+    get: {operationId: simGetConfig, responses: {'200': {description: Konfiguration inkl. abgeleitetem Testschlüssel (nur lokal)}}}
+    post: {operationId: simSetConfig, responses: {'200': {description: Konfiguration}}}
+  /control/settle:
+    post: {operationId: simSettle, summary: Ausstehende Operationen sofort abschließen, responses: {'200': {description: ok}}}
+  /control/reset:
+    post: {operationId: simReset, responses: {'200': {description: ok}}}
+components:
+  parameters:
+    PaymentId: {name: paymentId, in: path, required: true, schema: {type: string}}
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1}}
+  schemas:
+    AuthorizeRequest:
+      type: object
+      required: [merchant_ref, amount_minor, currency]
+      properties:
+        merchant_ref: {type: string}
+        operation_ref: {type: string}
+        amount_minor: {type: integer, minimum: 1}
+        currency: {type: string, pattern: '^[A-Z]{3}$'}
+        payment_method: {enum: [pm_ok, pm_decline, pm_sca], description: Testzahlungsmittel}
+    AmountRequest:
+      type: object
+      properties:
+        operation_ref: {type: string}
+        amount_minor: {type: integer, minimum: 1}
+    Fault:
+      type: object
+      required: [operation, mode]
+      properties:
+        operation: {enum: [authorize, capture, void, refund, status]}
+        ref: {type: string, description: 'Händler- oder Operationsreferenz oder *'}
+        mode: {enum: [timeout, lost_response, duplicate, decline, unavailable]}
+        times: {type: integer, description: 'Anzahl Auslösungen, -1 unbegrenzt'}
+        hold_seconds: {type: number}
+    Payment:
+      type: object
+      required: [payment_id, provider_ref, merchant_ref, state, currency, authorized_minor, captured_minor, refunded_minor]
+      properties:
+        payment_id: {type: string}
+        provider_ref: {type: string}
+        merchant_ref: {type: string}
+        state: {enum: [CREATED, REQUIRES_ACTION, AUTHORIZED, CAPTURE_PENDING, CAPTURED, AUTHORIZATION_FAILED, VOID_PENDING, VOIDED, REFUND_PENDING, PARTIALLY_REFUNDED, REFUNDED]}
+        dispute_state: {enum: [null, OPEN, WON, LOST]}
+        currency: {type: string}
+        authorized_minor: {type: integer}
+        captured_minor: {type: integer}
+        refunded_minor: {type: integer}

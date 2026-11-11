@@ -1,0 +1,8 @@
+# Beispielparameter fuer production. Keine Zugangsdaten. Anbieter/Region stehen unter D-05 (offen).
+hosting_provider    = "unset"
+hosting_region      = "unset"
+secret_domain       = "taktovia-production-secrets"
+identity_domain     = "taktovia-production-idp"
+psp_domain          = "taktovia-production-psp"
+db_migration_access = "taktovia-production-migrator"
+db_runtime_access   = "taktovia-production-runtime"

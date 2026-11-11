@@ -1,6 +1,6 @@
 # LH-6.24-TIM-006 – Hinweise zu Pausen, Ruhezeit und Überschreitungen
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Personal/Zeit (Modul `staff-time`)
 - **Arbeitspaket:** WP-M4-13
 - **Status:** Vertrag in Arbeit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** keine eigene Tabelle zwingend; Hinweise werden aus `staff_shift` (Plan) und `time_event` (Ist) berechnet und mit Regel, Berechnungsbasis und betroffenen Schichten/Zeiten ausgegeben (ob persistiert, ist mit dem Bau zu entscheiden). Hinweise ändern weder Plan- noch Ist-Daten. Sichtbarkeit nur für Planer mit Depotrecht und die betroffene Person (RLS/Objektberechtigung).
+- **API:** Hinweisliste im Lesemodell von `/v1/rosters` und in der Soll/Ist-Sicht von `/v1/time-events`; Aufruf im Dienstplan-Entwurf, bei der Publikation (`/v1/rosters/{roster_id}/publish`, `api/rosters.yaml`) und über Ist-Zeiten. Statuscodes 200, 401, 403.
+- **Zustandsautomat:** keiner.
+- **JSON-Schema / Ereignisse:** Hinweisobjekt mit Regel, Sollwert, Istwert, Bezug (Schema vorab festzulegen).
+- **Parameter und Kennzahlen:** `min_rest_hours` (Stunden, Rechtsraum, rechtlich erforderliche Mindestdauer), `max_daily_work_minutes` (Minuten, Rechtsraum); beide „rechtliche Vorgaben nicht überschreibbar“: Werte unterhalb der rechtlichen Systemgrenze werden von der Konfiguration abgewiesen. Für die Pause gibt es keinen Katalogparameter.
+- **Oberfläche:** Warnhinweis in Dienstplan und Zeitübersicht mit Regel, Sollwert, Istwert; kein automatischer Rechtsentscheid; Anzeige nur für Planer mit Depotrecht und betroffene Person.
+- **Entscheidungen:** D-10 (Mitbestimmung; blockiert nur Produktivschaltung).
+- **Offene Punkte:** Regelmatrix für AT-40 fehlt (WP-M4 Offener Punkt 3): wer sie liefert (AG-Freigabe), Pausenregel ohne Katalogparameter, und ob eine Ruhezeitverletzung in P1 die Publikation sperrt (Warnung oder Sperre). Das blockiert den Bau der Pausen- und Publikationsregel (Akzeptanzkriterium 2 und 4 des WP) bis zur Freigabe; Ruhezeit- und Tagesarbeitszeit-Hinweise mit den Katalogparametern sind baubar. Der Testfall zur fehlenden Pflichtpause (Akzeptanzkriterium 2, Teil Pause) wird erst nach Freigabe der Regelmatrix benannt. Deshalb bleibt der Status „Vertrag in Arbeit“.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** regelkonformer Plan ohne Hinweis; Testdaten mit unterschrittener Ruhezeit erzeugen einen Warnhinweis mit Regel, Sollwert und Istwert; fehlende Pflichtpause und überschrittene Tagesarbeitszeit erzeugen den passenden Hinweis (Originalabnahme).
+- **Negativ:** Ruhezeit 1 min unter Grenze; Grenzfall exakt auf der Grenze (kein Hinweis); Verletzung über DST-Umstellung; Parameterwert unter rechtlicher Systemgrenze wird abgewiesen; Hinweise für Dritte ohne Depotrecht nicht sichtbar; Hinweis ändert keine Plan-/Ist-Daten.
+- **Konkurrierend:** Publikation parallel zu einem neuen Ist-Stempel derselben Person: Hinweisberechnung bleibt konsistent und verändert keine Daten (Datentrennung).
+- **Referenztests:** AT-40 (erst nach Freigabe der Regelmatrix erfüllbar).
+- Testfälle: AT-40; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::ruhezeit_eine_minute_unter_grenze_erzeugt_warnhinweis; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::tagesarbeitszeit_ueberschreitung_erzeugt_hinweis; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::ruhezeit_exakt_auf_grenze_kein_hinweis; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::ruhezeit_ueber_dst_umstellung_aus_absoluten_zeitpunkten; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::hinweis_fuer_dritte_ohne_depotrecht_nicht_sichtbar; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/RuheZeitHinweisTest.kt::publikation_parallel_zu_stempel_hinweis_konsistent_ohne_datenaenderung; geplant:backend/modules/config/src/test/kotlin/de/taktovia/config/ArbeitszeitParameterTest.kt::wert_unter_rechtlicher_systemgrenze_abgewiesen
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

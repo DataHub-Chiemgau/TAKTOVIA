@@ -1,0 +1,20 @@
+{
+  "drehbuch_version": "1.0",
+  "status": "VORLAGE",
+  "umgebung": {"name": null, "datenstand": null, "backup_referenz": null, "verantwortlich": null},
+  "ausfallzeitpunkt": null,
+  "letzter_wiederherstellbarer_commit": {"zeitpunkt": null, "referenz": null},
+  "zeitpunkt_e2e_probe": null,
+  "abgleich_externe_vorgaenge": [],
+  "referenzziele": {"rpo_min": 15, "rto_h": 2, "provisional": true},
+  "schritte": [
+    {"nr": 1, "schritt": "Ausfall feststellen und Zeitpunkt festhalten", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 2, "schritt": "Schreibzugriffe stoppen, Ereignisstrom und Worker anhalten", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 3, "schritt": "Datenbank aus Backup/WAL wiederherstellen; letzten wiederherstellbaren Commit bestimmen", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 4, "schritt": "Migrationsstand und Rollen/RLS prüfen", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 5, "schritt": "Externe Buchungen und Zahlungen mit Providerreferenzen abgleichen, bevor unsichere Schritte wiederholt werden", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 6, "schritt": "Worker und Ereignisstrom wieder aktivieren", "zeitpunkt": null, "ergebnis": null},
+    {"nr": 7, "schritt": "Funktionsfähige End-to-End-Probe (Buchungs- und Operatorprobe)", "zeitpunkt": null, "ergebnis": null}
+  ],
+  "bewertung": {"rpo_min_gemessen": null, "rto_h_gemessen": null, "rpo_erfuellt": null, "rto_erfuellt": null}
+}

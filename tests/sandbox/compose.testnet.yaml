@@ -1,0 +1,32 @@
+# Compose-Profil "sandbox" für PSP-Simulator und Sandbox-Partner (WP-M0-23, -24). Nur Testnetz: eigenes Compose-Netz, Ports nur an 127.0.0.1
+# (ein 'internal'-Netz würde die Veröffentlichung der Ports verhindern). Zur Übernahme in infra/compose/ durch den Eigentümer von infra/ gedacht; hier eigenständig prüfbar:
+#   docker compose -f tests/sandbox/compose.testnet.yaml --profile sandbox config
+# Ausführung (docker compose --profile sandbox up) ist in der Entwicklungsumgebung nicht möglich (kein Docker-Daemon): NICHT AUSGEFÜHRT.
+name: taktovia-sandbox
+services:
+  psp-sim:
+    profiles: [sandbox, all]
+    image: ${PYTHON_IMAGE:-python:3.13-slim}
+    working_dir: /app
+    command: ["python", "sandbox/psp/psp_sim.py", "--host", "0.0.0.0", "--port", "18091", "--seed", "1"]
+    environment:
+      TAKTOVIA_TESTNET: "1"          # erlaubt den Bind auf 0.0.0.0 nur innerhalb des internen Netzes
+    volumes:
+      - ./:/app/sandbox:ro
+      - ../lib:/app/lib:ro
+    ports: ["127.0.0.1:${PSP_SIM_PORT:-18091}:18091"]
+    networks: [testnet]
+  partner-sandbox:
+    profiles: [sandbox, all]
+    image: ${PYTHON_IMAGE:-python:3.13-slim}
+    working_dir: /app
+    command: ["python", "sandbox/partner/partner_sandbox.py", "--host", "0.0.0.0", "--base-port", "18100", "--seed", "1"]
+    environment:
+      TAKTOVIA_TESTNET: "1"
+    volumes:
+      - ./:/app/sandbox:ro
+      - ../lib:/app/lib:ro
+    ports: ["127.0.0.1:18100-18102:18100-18102"]
+    networks: [testnet]
+networks:
+  testnet: {}

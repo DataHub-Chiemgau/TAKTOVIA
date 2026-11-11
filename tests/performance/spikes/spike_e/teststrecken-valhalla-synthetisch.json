@@ -1,0 +1,160 @@
+{
+ "status": "SYNTHETISCH: Teststrecken auf dem künstlichen Gitternetz aus osm_pbf.py (nur für den lokalen Valhalla-Probelauf). Die Erwartungen sind konstruiert und beweisen nur, dass die Engine die modellierten Restriktionen einhält.",
+ "network": {
+  "rows": 120,
+  "cols": 120,
+  "lat0": 51.0,
+  "lon0": 13.7,
+  "dlat": 0.0009,
+  "dlon": 0.0014,
+  "real_world_validated": false
+ },
+ "routes": [
+  {
+   "id": "V01",
+   "category": "fahrzeug_kurz",
+   "profile": "auto",
+   "from": [
+    51.009,
+    13.714
+   ],
+   "to": [
+    51.018,
+    13.735
+   ],
+   "expect": "route"
+  },
+  {
+   "id": "V02",
+   "category": "fahrzeug_mittel",
+   "profile": "auto",
+   "from": [
+    51.0045,
+    13.707
+   ],
+   "to": [
+    51.054,
+    13.812
+   ],
+   "expect": "route"
+  },
+  {
+   "id": "V03",
+   "category": "fahrzeug_lang",
+   "profile": "auto",
+   "from": [
+    51.0018,
+    13.7028
+   ],
+   "to": [
+    51.1053,
+    13.8638
+   ],
+   "expect": "route"
+  },
+  {
+   "id": "V04a",
+   "category": "restriktion_einbahn_mit_richtung",
+   "profile": "auto",
+   "from": [
+    51.0153,
+    13.728
+   ],
+   "to": [
+    51.0153,
+    13.742
+   ],
+   "expect": "route",
+   "pair": "V04"
+  },
+  {
+   "id": "V04b",
+   "category": "restriktion_einbahn_gegen_richtung",
+   "profile": "auto",
+   "from": [
+    51.0153,
+    13.742
+   ],
+   "to": [
+    51.0153,
+    13.728
+   ],
+   "expect": "umweg_laenger_als:V04a",
+   "pair": "V04"
+  },
+  {
+   "id": "V05",
+   "category": "restriktion_fussgaengerzone",
+   "profile": "auto",
+   "from": [
+    51.0549,
+    13.77
+   ],
+   "to": [
+    51.0549,
+    13.798
+   ],
+   "expect": "laenge_km_mindestens:2.05",
+   "note": "gerade Strecke 20 Spalten = ca. 1,96 km; Zone muss umfahren werden"
+  },
+  {
+   "id": "V06a",
+   "category": "fuss_treppe",
+   "profile": "pedestrian",
+   "from": [
+    51.0567,
+    13.798
+   ],
+   "to": [
+    51.0576,
+    13.798
+   ],
+   "expect": "route",
+   "pair": "V06"
+  },
+  {
+   "id": "V06b",
+   "category": "rollstuhl_treppe_meiden",
+   "profile": "wheelchair",
+   "from": [
+    51.0567,
+    13.798
+   ],
+   "to": [
+    51.0576,
+    13.798
+   ],
+   "expect": "umweg_laenger_als:V06a",
+   "pair": "V06"
+  },
+  {
+   "id": "V07",
+   "category": "ausserhalb_datenbestand",
+   "profile": "auto",
+   "from": [
+    51.009,
+    13.714
+   ],
+   "to": [
+    52.52,
+    13.4
+   ],
+   "expect": "error:OutOfCoverage"
+  },
+  {
+   "id": "V08",
+   "category": "keine_verbindung",
+   "profile": "auto",
+   "from": [
+    51.009,
+    13.714
+   ],
+   "to": [
+    50.995,
+    13.7805
+   ],
+   "expect": "error:NoRoute",
+   "note": "Ziel auf nicht angebundenem Weg"
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/performance/report.schema.json",
+  "title": "Berichtsformat für Messwerte (WP-M0-25) – gemeinsame Kopffelder für Lastläufe und Spikes (a) bis (e)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["report_version", "kind", "title", "started_at", "header", "results", "evaluation", "open_parameters", "valid_for_acceptance", "limitations"],
+  "properties": {
+    "report_version": {"const": "1.0"},
+    "kind": {"enum": ["load-run", "spike"]},
+    "title": {"type": "string", "minLength": 1},
+    "started_at": {"type": "string"},
+    "header": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hardware", "dataset", "sample", "raw_data"],
+      "properties": {
+        "hardware": {"type": "object", "required": ["logical_cpus", "cpu_model"]},
+        "dataset": {"type": "object", "required": ["description", "volume"], "description": "Datenstand"},
+        "sample": {"type": "object", "required": ["n"], "description": "Stichprobe: Anzahl der Messwerte und Auswahlregel"},
+        "raw_data": {"type": "object", "required": ["path", "sha256"], "description": "Rohdatenablage"},
+        "parameters": {"type": "object"}
+      }
+    },
+    "results": {"type": "object"},
+    "evaluation": {"type": "array", "items": {"type": "object", "required": ["criterion", "target", "measured", "verdict"], "properties": {"verdict": {"enum": ["erfüllt", "verfehlt", "nicht bewertet"]}}}},
+    "open_parameters": {"type": "object"},
+    "valid_for_acceptance": {"type": "boolean", "description": "false bei Beispielprofil oder offenen Pflichtparametern"},
+    "limitations": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+  }
+}

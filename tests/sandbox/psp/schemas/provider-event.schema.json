@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/psp-sim/provider-event.schema.json",
+  "title": "Asynchrone PSP-Benachrichtigung (Entwurf für /v1/payments/provider-events/{provider}, Kap. 05 §5.7)",
+  "description": "Signatur im Header X-PSP-Signature: t=<Unix-Sekunden>,v1=<hex(HMAC-SHA256(secret, t + '.' + roher Body))>. Eigene PSP-Signatur, nicht der Partner-HMAC aus Kap. 05 §5.6. Beträge in kleinster Einheit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "sequence", "provider", "type", "created_at", "data"],
+  "properties": {
+    "event_id": {"type": "string", "pattern": "^evt_[0-9a-f]{16}$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "provider": {"type": "string", "minLength": 1},
+    "type": {"enum": ["payment.requires_action", "payment.authorized", "payment.authorization_failed", "payment.capture_pending", "payment.captured", "payment.void_pending", "payment.voided", "payment.refund_pending", "payment.partially_refunded", "payment.refunded", "payment.dispute.opened", "payment.dispute.won", "payment.dispute.lost"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payment_id", "provider_ref", "merchant_ref", "state", "currency", "authorized_minor", "captured_minor", "refunded_minor", "dispute_state"],
+      "properties": {
+        "payment_id": {"type": "string"},
+        "provider_ref": {"type": "string"},
+        "merchant_ref": {"type": "string"},
+        "state": {"enum": ["CREATED", "REQUIRES_ACTION", "AUTHORIZED", "CAPTURE_PENDING", "CAPTURED", "AUTHORIZATION_FAILED", "VOID_PENDING", "VOIDED", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED"]},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "authorized_minor": {"type": "integer", "minimum": 0},
+        "captured_minor": {"type": "integer", "minimum": 0},
+        "refunded_minor": {"type": "integer", "minimum": 0},
+        "dispute_state": {"enum": [null, "OPEN", "WON", "LOST"]}
+      }
+    }
+  }
+}

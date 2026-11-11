@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/performance/restore-drehbuch.schema.json",
+  "title": "Protokoll Restore-Drehbuch (Kap. 08 §8.6, WP-M0-25)",
+  "description": "Protokollfelder: Ausfallzeitpunkt, letzter wiederherstellbarer Commit, Zeitpunkt der funktionsfähigen End-to-End-Probe, Abgleich externer Buchungen/Zahlungen mit Providerreferenzen. Die Durchführung gehört zu M5; M0 liefert nur die Vorlage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["drehbuch_version", "status", "umgebung", "ausfallzeitpunkt", "letzter_wiederherstellbarer_commit", "zeitpunkt_e2e_probe", "abgleich_externe_vorgaenge", "referenzziele", "schritte", "bewertung"],
+  "properties": {
+    "drehbuch_version": {"const": "1.0"},
+    "status": {"enum": ["VORLAGE", "DURCHGEFUEHRT"]},
+    "umgebung": {"type": "object", "required": ["name", "datenstand", "backup_referenz", "verantwortlich"]},
+    "ausfallzeitpunkt": {"type": ["string", "null"], "description": "ISO-8601 UTC; Zeitpunkt des Ausfalls"},
+    "letzter_wiederherstellbarer_commit": {"type": "object", "required": ["zeitpunkt", "referenz"], "properties": {"zeitpunkt": {"type": ["string", "null"]}, "referenz": {"type": ["string", "null"], "description": "z. B. WAL-Position/LSN oder Commit-ID"}}},
+    "zeitpunkt_e2e_probe": {"type": ["string", "null"], "description": "Zeitpunkt, an dem die funktionsfähige End-to-End-Probe (Buchung/Operatorprobe) erfolgreich war"},
+    "abgleich_externe_vorgaenge": {"type": "array", "description": "Externe Buchungen/Zahlungen mit Providerreferenzen, abgeglichen bevor unsichere Schritte wiederholt oder Kunden als ungebucht markiert werden", "items": {"type": "object", "required": ["art", "provider_ref", "interne_ref", "status_intern_nach_restore", "status_extern", "entscheidung"], "properties": {"art": {"enum": ["PARTNERBUCHUNG", "ZAHLUNG", "ERSTATTUNG"]}, "provider_ref": {"type": "string"}, "interne_ref": {"type": "string"}, "status_intern_nach_restore": {"type": "string"}, "status_extern": {"type": "string"}, "entscheidung": {"type": "string"}}}},
+    "referenzziele": {"type": "object", "required": ["rpo_min", "rto_h", "provisional"], "properties": {"rpo_min": {"const": 15}, "rto_h": {"const": 2}, "provisional": {"const": true}}},
+    "schritte": {"type": "array", "items": {"type": "object", "required": ["nr", "schritt", "zeitpunkt", "ergebnis"]}},
+    "bewertung": {"type": "object", "required": ["rpo_min_gemessen", "rto_h_gemessen", "rpo_erfuellt", "rto_erfuellt"]}
+  }
+}

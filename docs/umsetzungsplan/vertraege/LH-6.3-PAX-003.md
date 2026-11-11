@@ -1,8 +1,8 @@
 # LH-6.3-PAX-003 – Standortfreigabe nur nach Zustimmung
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Passenger-Web (UI-01)
 - **Arbeitspaket:** WP-M2-39
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** keine. Der Standort wird nur als Suchkoordinate der aktuellen Anfrage verarbeitet und nicht persistiert.
+- **API:** keine eigene; Standort geht nur als Koordinate in die Ortssuche (WP-M2-38) und nur dort an den Geocoding-Adapter in dokumentierter Form, nicht an Dritte.
+- **Zustandsautomat:** UI-Zustände je Browserstatus: erlaubt, abgelehnt, dauerhaft blockiert, nicht verfügbar; zusätzlich Zeitüberschreitung und ungenaue Position. Jeder Zustand mit verständlichem Text; manuelle Eingabe bleibt sichtbar und fokussierbar.
+- **JSON-Schema / Ereignisse:** keine.
+- **Parameter und Kennzahlen:** keine.
+- **Oberfläche:** UI-01 Schaltfläche „Meinen Standort verwenden“; die Browserabfrage (Geolocation) wird ausschließlich durch diese Nutzeraktion ausgelöst, nie beim Seitenaufruf; erteilte Freigabe liefert einen Startvorschlag, der bestätigt werden muss; Dialog per Tastatur und Screenreader bedienbar.
+- **Entscheidungen:** D-11 (Datenrechte, nur falls die Zustimmung persistiert werden soll).
+- **Offene Punkte:** OP-34 (ob die Zustimmung über die Browserberechtigung hinaus als `consent_revision` zu protokollieren ist). Arbeitsannahme: keine Persistenz; blockiert den Bau nicht. Zustimmungstext vom Bau mit Fachanalyse abzustimmen.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Freigabe erteilt: Standort wird als Startvorschlag angeboten und muss bestätigt werden; manuelle Ortswahl ist in jedem Zustand sichtbar und fokussierbar (manuelle Ortswahl bleibt stets möglich).
+- **Negativ:** automatisierter Browsertest: ohne Nutzeraktion keine Standortabfrage; abgelehnt, dauerhaft blockiert, nicht verfügbar, Timeout, ungenaue Position: jeweils vollständige Buchung per manueller Eingabe von Start und Ziel; Standort wird nicht persistiert und nicht an Dritte gesendet (Netzwerk-/Datenbankprüfung); Tastatur-/Screenreaderprüfung des Dialogs.
+- **Konkurrierend:** Freigabe trifft ein, während der Fahrgast bereits manuell einen Start gewählt hat: manuelle Wahl wird nicht überschrieben; Freigabe trifft nach Seitenwechsel oder Abbruch ein: kein Startvorschlag ohne erneute Bestätigung.
+- **Referenztests:** AT-19 (ohne Kartenpflicht, Teil, abgeleitet aus WP-M2-39 Tests; im WP nicht ausdrücklich genannt).
+- Testfälle: AT-19; geplant:web/passenger/src/booking/LocationConsent.test.tsx::keine_standortabfrage_ohne_nutzeraktion; geplant:web/passenger/src/booking/LocationConsent.test.tsx::abgelehnte_freigabe_erlaubt_manuelle_buchung; geplant:web/passenger/src/booking/LocationConsent.test.tsx::standort_wird_nicht_persistiert; geplant:web/passenger/src/booking/LocationConsent.test.tsx::erteilte_freigabe_bietet_startvorschlag_zur_bestaetigung; geplant:web/passenger/src/booking/LocationConsent.test.tsx::blockiert_nicht_verfuegbar_timeout_ungenau_erlauben_manuelle_buchung; geplant:web/passenger/src/booking/LocationConsent.test.tsx::manuelle_wahl_wird_von_spaeter_freigabe_nicht_ueberschrieben; geplant:web/passenger/src/booking/LocationConsent.test.tsx::dialog_per_tastatur_und_screenreader_bedienbar; geplant:web/passenger/src/booking/LocationConsent.test.tsx::standort_geht_nur_an_geocoding_adapter
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich (Datenschutz Standort).

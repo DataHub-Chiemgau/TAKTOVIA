@@ -1,8 +1,8 @@
 # LH-6.21-CHK-011 – Abweichung mit Foto und Schadenvorgang aus Prüfschritt oder Störung
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Flottensicherheit (Modul `fleet-safety`)
 - **Arbeitspaket:** WP-M3-20
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `defect_case` (Herkunftsreferenzen: Prüflauf `inspection_run.id`, Prüfschritt-Antwort `inspection_answer.id`, Fahrzeug, Schicht bzw. Incident-Referenz; Fallnummer je Mandant eindeutig, Basis WP-M3-43), `inspection_answer` (Verweis `defect_case_id`), `defect_evidence` (Foto: Aufnahmedatum vom Gerät, als nicht vertrauenswürdig gekennzeichnet, plus Serverempfangszeit; Medienprüfstatus). Alle Tabellen mit `tenant_id` und RLS nach V1-Muster; DDL entsteht aus WP-M3-01/-02 (in V1/V2/V3 noch nicht vorhanden; Tabellenname `defect_evidence` ist Arbeitsname aus Kap. 04 §4.4). Invarianten: (a) je Prüfschritt-Antwort höchstens eine Schadenakte (UNIQUE auf Herkunft Prüfschritt je Mandant); (b) die Gegenreferenz Prüfschritt -> Akte darf die Unveränderlichkeit abgeschlossener Antworten (CHK-013, DB-Schutz gegen UPDATE auf `inspection_answer`) nicht verletzen: nach Abschluss des Prüflaufs wird `inspection_answer.defect_case_id` nicht nachträglich gesetzt, die Gegenreferenz ergibt sich aus der Herkunftsspalte von `defect_case` (Umsetzung vor Codebeginn mit WP-M3-02 festzulegen, siehe Offene Punkte); (c) Text, Kategorie und Aufnahmedatum der Abweichung sind Pflichtangaben je Abweichung/Foto.
+- **API:** `POST /v1/defects` mit Herkunftsangabe (Prüfschritt) und Idempotency-Key; wiederholtes Auslösen für denselben Prüfschritt liefert dieselbe Akte (kein zweites Anlegen). `GET /v1/inspections/{id}` und `GET /v1/defects/{id}` liefern die Gegenreferenz. Statuscodes: 201/200 (Wiederholung), 404 bei fremdem Prüflauf bzw. Fahrer ohne Fahrzeugbezug, 422 mit Feldverweis bei fehlendem Aufnahmedatum/Text/Kategorie sowie bei Herkunft Prüfschritt, der nicht negativ beantwortet ist, 409 `IDEMPOTENCY_CONFLICT` bei abweichendem Inhalt unter gleichem Schlüssel. Server setzt Mandant, Meldender, Zeitstempel, Fallnummer, Anfangsstatus; Clientwerte werden nicht übernommen. Endpunkte `/v1/defects` und `/v1/inspections/{id}` sind in `api/*.yaml` noch nicht vorhanden (Kap. 05 §5.7 nennt sie); Foto-Upload-Pfad offen (OP-13).
+- **Zustandsautomat:** DefectCase (Anfangsstatus „neu" laut WP-M3-43); Klassifikation/Sperre nicht Teil dieses Vertrags (WP-M3-45/-46).
+- **JSON-Schema / Ereignisse:** Ereignis „Schaden gemeldet" (Outbox, aus WP-M3-43) ohne Freitext/Personendetails.
+- **Parameter und Kennzahlen:** keine aus `kataloge.csv`; Kategorienkatalog des Schadens als Detailvertrag WP-M3-43/-44.
+- **Oberfläche:** UI-09 – „Nein – Mangel melden" an jedem negativ beantworteten Prüfschritt (nicht nur bei kritischen) öffnet die Erfassung mit vorbelegten Referenzen; Fotos zeigen das Aufnahmedatum sichtbar; Fotos ohne bestandene Medienprüfung sind nicht sichtbar. UI-11 – Sprung Prüfung <-> Schadenakte. Zustände: Fehler bei Upload, Rechte (Fahrer ohne Fahrzeugbezug: 404).
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP-13 (Uploadvertrag, Größen-/Formatgrenzen und Malware-Scan für Prüf-/Schadensfotos; Foto-Pfad folgt WP-M3-44, Bau der Fotoanteile abhängig davon); OP-16 (Antwortoptionen „Nein – Mangel melden" vs. „Mangel"); Quelle des Aufnahmedatums ist als Gerätezeit plus Serverempfangszeit geplant, Bestätigung durch Fachanalyse offen. Zusätzlich: OP-31 (Aufnahmedatum/Bildmetadaten: Zeitquelle, EXIF-Minimierung, Einblendung ins Bild oder nur neben dem Bild); Kategorienkatalog der Abweichung (Detailvertrag WP-M3-43/-44) und Gegenreferenz ohne Mutation abgeschlossener Antworten (Invariante b) vor Codebeginn; Verhalten, wenn eine Entwurfsantwort mit Akte später von „Nein“ auf „Ja“ geändert wird, ist nicht festgelegt. Der Bau der Foto-Anteile (Upload, Medienprüfung, Anzeige) ist bis zur Klärung von OP-13 und Abstimmung mit WP-M3-44/WP-M4-21 blockiert; Text/Kategorie/Akte-Anteil ist nicht blockiert.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** negativer Prüfschritt mit Text, Kategorie und zwei Fotos erzeugt eine Schadenakte mit Fallnummer; beide Richtungen (Prüfung -> Akte, Akte -> Prüfschritt) navigierbar; Erfassung auch an nicht kritischem negativem Schritt.
+- **Negativ:** Akte zu fremdem Prüflauf (404); Foto ohne Aufnahmedatum (422); Foto ohne bestandene Medienprüfung nicht sichtbar; Gegenreferenz-Abruf durch Fahrer ohne Fahrzeugbezug (404); Clientangaben zu Mandant/Meldender/Status werden ignoriert; Auslösen für nicht negativ beantworteten Prüfschritt (422); Abweichung ohne Text bzw. ohne Kategorie (422 mit Feldverweis); Antwort einer bereits abgeschlossenen Prüfung wird durch das Verknüpfen nicht verändert (DB-Schutz CHK-013).
+- **Konkurrierend:** doppelte Übermittlung nach Timeout (gleicher Idempotency-Key bzw. gleicher Prüfschritt) – genau eine Akte; zwei Geräte lösen parallel für denselben Prüfschritt aus – genau eine Akte.
+- **Referenztests:** keine Katalog-ID im WP für diese Anforderung genannt (verwandt: AT-33 Schadenfall mobil, gehört zu DMG-004/WP-M3-44).
+- Testfälle: geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::negativer_pruefschritt_erzeugt_schadenakte_mit_fotos; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::abweichung_an_nicht_kritischem_negativem_schritt_moeglich; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::fremder_pruefschritt_oder_fahrer_ohne_bezug_ergibt_404; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::fehlende_pflichtangaben_text_kategorie_aufnahmedatum_ergeben_422; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::clientwerte_zu_mandant_meldender_status_ignoriert; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::foto_ohne_bestandene_medienpruefung_nicht_sichtbar; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::doppelte_uebermittlung_erzeugt_genau_eine_akte; geplant:backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/DefectFromInspectionTest.kt::zwei_geraete_parallel_selber_pruefschritt_genau_eine_akte; geplant:db/tests/test_defect_origin.py::test_je_pruefschritt_hoechstens_eine_akte; geplant:db/tests/test_defect_origin.py::test_verknuepfung_veraendert_abgeschlossene_antwort_nicht; geplant:mobile/driver/test/pruefung_mangel_melden_test.dart::foto_zeigt_aufnahmedatum_und_mangel_melden_an_jedem_negativen_schritt
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

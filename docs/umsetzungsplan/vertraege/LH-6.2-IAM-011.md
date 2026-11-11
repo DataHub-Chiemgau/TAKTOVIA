@@ -1,8 +1,8 @@
 # LH-6.2-IAM-011 – Datenschutzeinstellungen: Betriebsmitteilung getrennt von Marketing
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Plattform (Modul `identity`)
 - **Arbeitspaket:** WP-M1-30
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,24 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `consent_revision` (Kap. 04 §4.4 IAM/PAX/SUP; in `kernschema.sql`/V1/V2 noch nicht vorhanden, neue Flyway-Migration). Pflichtform nach Konvention: PK `(tenant_id,id)`, zusammengesetzter FK auf `passenger_private(tenant_id,id)` (die Tabelle `passenger` gibt es im Kernschema nicht; Passagiere liegen in `passenger_private`, Besitzer `identity`), RLS `tenant_isolation` (USING und WITH CHECK) mit FORCE, append-only (Änderung/Löschung per Trigger verweigert, analog `reject_mutation()` aus V1, SQLSTATE 23514). Pflichteinträge für die neue Tabelle: `db/table_owners.csv` (Besitzer `identity`), `db/role_matrix.csv` (nur SELECT, INSERT; kein UPDATE/DELETE) und `R__runtime_grants.sql`; Migrationsprüfung aus WP-M1-01 (`tenant_id`, PK `(tenant_id,id)`, zusammengesetzte FKs, RLS) muss grün sein. Spalten (Vorschlag, im Pflichtenheft nicht festgelegt): `purpose` (Zweckklasse), `granted boolean`, `recorded_at timestamptz`, `text_version text`. Aktueller Stand je Passagier und Zweck = jüngste Revision; Marketing ohne Revision = nicht eingewilligt (Standard). Eine Revision gehört genau einem Passagier und einem Zweck; `text_version` benennt die dem Passagier gezeigte Einwilligungstextversion (Herkunft/Pflege der Textversionen im Pflichtenheft nicht festgelegt, siehe Offene Punkte).
+- **API:** `/v1/me` – Datenschutzeinstellungen lesen und ändern (Ergänzung der OpenAPI in `api/`, Detailvertrag vorab); Änderung legt eine neue Revision an, ändert nie eine bestehende. Nur der eigene Passagier; fremde Einwilligung -> 404. Unbekannter oder nicht änderbarer Zweck (z. B. `OPERATIONAL_SAFETY` abwählen) sowie unbekannte Felder -> 422 mit `violations[].pointer/code` (siehe LH-6.17-INT-003); Änderung ohne gültigen `Idempotency-Key` bzw. `If-Match` gemäß LH-6.17-INT-003/-004. Fehler als `Problem`. Ob `OPERATIONAL_SAFETY` überhaupt abwählbar sein darf, legt das Pflichtenheft nicht fest; Planungsstand: nicht abwählbar (Originalabnahme verlangt, dass sicherheitsrelevante Fahrtinformationen unabhängig von Marketing zugestellt werden).
+- **Port:** `isDeliveryAllowed(passenger, purpose)` in `backend/identity`, vom Benachrichtigungsdienst aufzurufen. Feste Zweckklassen: `OPERATIONAL_SAFETY` (betrieblich/sicherheitsrelevant, immer erlaubt) und `MARKETING` (nur bei jüngster Revision `granted=true`). Der Zweck-Enum ist Detailvertrag vor Baubeginn (Werteliste in OpenAPI-Schema).
+- **Zustandsautomat:** keine (Revisionsfolge je Passagier/Zweck: eingewilligt/widerrufen).
+- **JSON-Schema / Ereignisse:** kein eigenes Ereignis in P1 vorgesehen.
+- **Parameter und Kennzahlen:** `notification_quiet_hours` (kataloge.csv, Parameter LH-J.7, Bereich `Zeitspanne`, Ebene Mandant, "Sicherheitsalarme ausgenommen"; Schema und Werte noch nicht freigegeben) als angrenzende Regel: Ruhezeiten sind keine Einwilligung und ändern `isDeliveryAllowed` nicht; die Ausnahme für Sicherheitsalarme wird mit dem Benachrichtigungsdienst (WP-M2-32) angewandt. Keine KPI.
+- **Oberfläche:** UI-05 (Konto/Berechtigung, Kap. 06) Basis – getrennte Schalter für Betriebsmitteilungen und Marketing in `web/passenger`; Pflichtzustimmung wird nie mit Marketingeinwilligung kombiniert (Kap. 06 §6.3). Zustände: Standard Marketing aus (WP-Akzeptanzkriterium 3), Fehler beim Speichern (Problem-Antwort, Schalter springt zurück); die UI-05-Zustände des Kap. 06 (Verifikation fehlt, Vertretung abgelaufen, Löschstatus) gehören zu IAM-001/-006/-009 und M8. Ob UI-05 Basis in M1 entsteht, ist OP-34.
+- **Entscheidungen:** D-11 (Datenrechte) – blockiert nur die Produktivschaltung, nicht den Bau.
+- **Offene Punkte:** OP-34 (UI-05 in M1 oder M2); OP-01 (Nachweis mit echter Fahrtinformation und Zustellung erst mit M2, WP-M2-32; in M1 am Port); Spalten und Zweck-Enum von `consent_revision` sind im Pflichtenheft nicht festgelegt und im Detailvertrag vorab zu fixieren (nicht bauhindernd); Herkunft und Pflege der Einwilligungs-`text_version` und die Frage, ob `OPERATIONAL_SAFETY` je abwählbar sein darf, sind nicht festgelegt (Planungsstand wie oben, nicht bauhindernd); Zusammenspiel von `notification_quiet_hours` und Zweckklassen wird mit WP-M2-32 festgelegt.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Einwilligen und Widerrufen erzeugt je eine Revision mit Zeitpunkt und `text_version`; bei abgelehntem Marketing liefert `isDeliveryAllowed` für `OPERATIONAL_SAFETY` "erlaubt" und für `MARKETING` "nicht erlaubt"; Marketing ist ohne Revision standardmäßig nicht eingewilligt; frühere Revisionen bleiben lesbar.
+- **Negativ:** Marketingversand ohne Einwilligung wird abgewiesen; Ablehnung von Marketing blockiert keine sicherheitsrelevante Information (Kernfall der Originalabnahme); Änderung einer fremden Einwilligung -> 404; UPDATE/DELETE einer Revision wird verweigert; Pflichtzustimmung ist nicht mit Marketing kombinierbar (UI-Test: Marketing-Schalter getrennt, standardmäßig aus, Buchungszustimmung setzt ihn nicht); Änderung mit unbekanntem Zweck oder zusätzlichem Feld -> 422 mit `violations[].pointer/code`; `OPERATIONAL_SAFETY` lässt sich über die API nicht abwählen; `fremde passenger_id` beim INSERT scheitert am zusammengesetzten FK, fremde `tenant_id` am WITH CHECK; kein Marketing-Freigabe, solange nur Revisionen mit `granted=false` oder keine existieren.
+- **Konkurrierend (Datentrennung):** Widerruf parallel zur Zustellprüfung – nach Commit des Widerrufs keine Marketingfreigabe; Zugriff Mandant A auf Revisionen von B liefert keine Zeile; zwei parallele Einwilligungsänderungen desselben Passagiers erzeugen zwei Revisionen in eindeutiger Reihenfolge, der aktuelle Stand ist die jüngste.
+- **Referenztests:** keine Katalog-ID im WP genannt; Nachweis an echter Zustellung mit WP-M2-32.
+- Testfälle: geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/ConsentDeliveryPortTest.kt::marketing_abgelehnt_sicherheitsinfo_erlaubt; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/ConsentDeliveryPortTest.kt::marketing_ohne_revision_standardmaessig_nicht_erlaubt; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/ConsentDeliveryPortTest.kt::widerruf_parallel_zur_zustellpruefung; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/ConsentApiTest.kt::aenderung_legt_neue_revision_an_fremde_einwilligung_404_unbekannter_zweck_422; geplant:db/tests/test_consent_revision.py::test_revision_update_delete_verweigert; geplant:db/tests/test_consent_revision.py::test_rls_und_fk_mandantentrennung; geplant:web/passenger/src/privacy/PrivacySettings.test.tsx::marketing_schalter_getrennt_standard_aus_nicht_mit_pflichtzustimmung_kombiniert
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich (Datentrennung).

@@ -25,10 +25,10 @@
 ## Tests
 
 - **Positiv:** generierter Matrixlauf: jede als erlaubt markierte M1-Tätigkeit gelingt je Rolle.
-- **Negativ:** jede als verweigert markierte Tätigkeit ergibt 403/404; neue Route ohne Matrixeintrag lässt den Build scheitern; Administrator ohne gesonderte Zuweisung kann PII/HR/Finanzfelder nicht lesen; unbekannter `role_code` wird per CHECK abgewiesen.
+- **Negativ:** jede als verweigert markierte Tätigkeit ergibt 403/404; neue Route ohne Matrixeintrag lässt den Build scheitern; Administrator ohne gesonderte Zuweisung kann PII/HR/Finanzfelder nicht lesen; unbekannter `role_code` wird per CHECK abgewiesen; Rollenwechsel/Matrixänderung ist im Repository nachvollziehbar (Versionierung der Matrixdatei) und wird beim Ausrollen auditiert; Operator-Web zeigt nur erlaubte Bereiche (Anzeige ersetzt keine serverseitige Prüfung); Fremdmandant-Zugriff bleibt verweigert (AT-18).
 - **Konkurrierend:** Rollenentzug während aktiver Sitzung – Folgeanfrage wird verweigert.
 - **Referenztests:** AT-18 (Teil Rolle).
-- Testfälle: AT-18; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::matrix_alle_rollen_erlaubt_und_verweigert; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::route_ohne_matrixeintrag_scheitert; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::rollenentzug_waehrend_sitzung_verweigert
+- Testfälle: AT-18; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::matrix_alle_rollen_erlaubt_und_verweigert; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::route_ohne_matrixeintrag_scheitert; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::administrator_ohne_zuweisung_kein_pii_hr_finanzzugriff; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::matrixaenderung_nachvollziehbar_und_auditiert; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/RechtematrixTest.kt::rollenentzug_waehrend_sitzung_verweigert; geplant:db/tests/test_09_rollenkatalog.py::test_unbekannter_role_code_per_check_abgewiesen; geplant:web/operator/src/navigation/rollennavigation.test.tsx::nur_erlaubte_bereiche_sichtbar
 
 ## Reviews
 

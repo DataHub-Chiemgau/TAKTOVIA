@@ -1,0 +1,24 @@
+{
+  "profile_version": "1.0",
+  "name": "health-example",
+  "description": "Beispielprofil gegen den Health-Endpunkt des Backends (WP-M0-25). Werkzeugnachweis, keine Leistungsaussage über Fachfunktionen.",
+  "mode": "example",
+  "target": {"base_url": "http://127.0.0.1:8080", "description": "Backend lokal (backend/app, Endpunkt /actuator/health); mit --stub-target gegen einen lokalen Platzhalter-Server"},
+  "endpoint_mix": [
+    {"name": "health", "method": "GET", "path": "/actuator/health", "weight": 1.0, "expect_status": [200], "target_class": "standard_api"}
+  ],
+  "load": {"concurrency": 8, "duration_s": 5, "warmup_s": 1, "request_timeout_s": 5, "think_time_ms": 0, "seed": 1},
+  "max_error_rate": 0.01,
+  "dataset": {"description": "keine Fachdaten (Health-Endpunkt)", "volume": "0 Zeilen"},
+  "candidate_fleet": {"vehicles_per_tenant": null, "candidates": null, "note": "für das Beispielprofil nicht relevant; Referenz 250 Fahrzeuge je Mandant ab M2"},
+  "partner_share": {"local": 1.0, "partner": 0.0},
+  "open_parameters": {
+    "peak_requests_per_second": {"value": null, "status": "OFFEN (D-05): Spitzenlast je Sekunde muss mit dem Auftraggeber vereinbart werden; 30.000 Buchungen/Tag ist kein Peakprofil"},
+    "active_tenants": {"value": null, "status": "OFFEN (D-05): Anzahl aktiver Mandanten in der Spitze"}
+  },
+  "reference_targets": {
+    "provisional": true,
+    "standard_api_p95_s": 1.0, "offer_p95_s": 5.0, "driver_plan_p95_s": 10.0,
+    "vehicles_per_tenant": 250, "bookings_per_day": 30000, "sessions": 5000, "rpo_min": 15, "rto_h": 2
+  }
+}

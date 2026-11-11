@@ -1,8 +1,8 @@
 # LH-6.6-DRV-005 – Fahrerereignisse: Ankunft, Einstieg, No-Show, Ausstieg
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Fahrer-Backend (Modul `staff-time`, Statusschreiben über Modul-API `booking-dispatch`; ein Modul `driver` gibt es nicht, Zuschnitt OP-07)
 - **Arbeitspaket:** WP-M3-29
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** dauerhafte Deduplikation über `event_id` (Idempotenzregister WP-M1-13; Zusatztabelle aus WP-M3-02 mit Ereignis-, Geräte- und Serverempfangszeit getrennt gespeichert und Inhaltshash für „gleiche `event_id` mit anderem Inhalt"); Wirkung auf `booking.state` und `journey_leg.execution_state` (V1, Default `PLANNED`) nur über die M2-Modul-API mit Statushistorie. RLS über `tenant_id`.
+- **API:** `POST /v1/driver/events` (`recordDriverEvent`, Scope `driver:events`, `Idempotency-Key`, `Traceparent`). `DriverEvent`: `event_id`, `shift_id`, `vehicle_id`, `plan_revision`, `event_type`, `booking_id`, `route_stop_id`, `occurred_at`, `device_recorded_at`, `position`, `accuracy_meters`, `offline_recorded`. Antwort `DriverEventResult` mit `state` `APPLIED`/`DUPLICATE`/`REVIEW_REQUIRED`, `received_at`, `current_plan_revision`, `reason_code` (`STALE_PLAN`, `OUTSIDE_STOP`, `CLOCK_SKEW`, `INVALID_ORDER`). Statuscodes: 404 bei Schicht, Fahrzeug, Buchung oder Stopp außerhalb der eigenen angetretenen Schicht; 409 bei gleicher `event_id` mit anderem Inhalt; 422 bei No-Show vor Ablauf von `no_show_grace_min`; 401/403/429/503 laut `api/driver.yaml`. Ein `tenant_id` im Request erzeugt keine Rechte. Die Erweiterung um den Ereignistyp Ankunft (`event_type` kennt bisher nur `CHECK_IN`, `CHECK_OUT`, `NO_SHOW`) ist eine Änderung an `api/driver.yaml` vor Codebeginn (OP-03); `booking_id` ist bisher Pflicht, die Ankunft am Stopp kann mehrere oder keine Buchung betreffen. Die Ankunft startet die Wartefrist; der Wartezeitbeginn wird gegen die serverseitig plausibilisierte Ankunftszeit gerechnet, nicht gegen die Gerätezeit allein. Die Antwort für „Ereignis ohne Einsatzfreigabe des Fahrzeugs“ und „Ereignis nach Schichtende“ (Statuscode bzw. `REVIEW_REQUIRED`) legt `api/driver.yaml` bisher nicht fest und ist vor Codebeginn zu bestimmen; in keinem Fall entsteht eine Statuswirkung.
+- **Zustandsautomat:** `vertraege/zustaende/fahrerereignis.md` (zu erstellen): Übergangstabelle Ereignis zu Buchungs- und Fahrtstatus (Ankunft, Einstieg, Nicht-Erscheinen, Ausstieg) und Regel für `REVIEW_REQUIRED`; Ausstieg ohne Einstieg ergibt `INVALID_ORDER`; Ereignis gegen serverseitiges Storno ergibt Klärfall ohne Zustandsrücksprung; verspätetes Ereignis hebt keine aktuelle Schadenssperre auf.
+- **JSON-Schema / Ereignisse:** Outbox-Ereignisse Fahrgast eingestiegen, Fahrgast ausgestiegen, No-Show festgestellt (mit Grund, Wartezeit, Regelstand), Klärfall eröffnet (`api/events/`, Schemas zu erstellen).
+- **Parameter und Kennzahlen:** `no_show_grace_min` (Katalog `LH-J.1-no_show_grace_min`; Validierung nur „positiv und fahrgastgerecht"); Datengrundlage für die KPI `No-Show-Rate`, `Abholung pünktlich`, `Ankunft pünktlich`.
+- **Oberfläche:** UI-10 Driver Fahrt/Schaden: große Check-in/out-Flächen, No-Show erst nach Ablauf der Wartefrist mit Grund; Fehlerzustände „falscher Stopp" und „vergangene Revision"; keine Erfassungsdialoge während der Fahrbewegung (Kap. 06 §6.7).
+- **Entscheidungen:** keine.
+- **Offene Punkte:** OP-03 (`DriverEvent` unvollständig: Ankunft und `booking_id`-Pflicht; vor Codebeginn zu klären, blockiert die Ankunftsmeldung). OP-21 (No-Show-Abrechnung: die Gebührenregel `LH-6.4-BKG-015` ist P2; dieses WP bucht keine Gebühr; ob AT-08 im M3-Gate ohne Gebührenwirkung als bestanden gilt, klärt der Auftraggeber). Die zulässige Uhrabweichung für `CLOCK_SKEW` ist im Pflichtenheft nicht festgelegt und vor Codebeginn zu bestimmen.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** AT-08 (Wartefrist, Grund, Status); vollständige Fahrt Ankunft, Einstieg, Ausstieg schreibt konsistente Fahrt- und Buchungsstatus; Fahreranteil von AT-01 (Check-in, Fahrtende); No-Show speichert Grund, Wartezeit und Regelstand und steht als Ereignis bereit; Ankunft startet die Wartefrist; Ereignis-, Geräte- und Serverempfangszeit getrennt gespeichert.
+- **Negativ:** fremde Schicht (404), falscher Stopp (`OUTSIDE_STOP`), Uhrabweichung (`CLOCK_SKEW`), Ausstieg ohne Einstieg (`INVALID_ORDER`), No-Show vor Ablauf `no_show_grace_min` (abgewiesen), Offline-Check-in auf alter Planrevision (`STALE_PLAN`, keine ausgeführte Beförderungsbuchung), Ereignis ohne Einsatzfreigabe des Fahrzeugs, Ereignis nach Schichtende, gleiche `event_id` mit anderem Inhalt, `tenant_id` im Request ohne Wirkung, verspätetes Ereignis hebt Schadenssperre nicht auf.
+- **Konkurrierend:** Check-in parallel zum Storno derselben Buchung ergibt Klärfall ohne Zustandsrücksprung; 100 identische Ereignisse ergeben eine Wirkung (`DUPLICATE`).
+- **Referenztests:** AT-08, AT-11 (gemeinsam mit WP-M3-24), AT-01 (Fahreranteil); Contract-Fall „Offline-Check-in auf alter Planrevision" (Kap. 05 §5.8).
+- Testfälle: AT-08; AT-11; AT-01; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::vollstaendige_fahrt_ankunft_einstieg_ausstieg_konsistente_status; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::ankunft_startet_wartefrist; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::no_show_vor_wartefrist_abgewiesen; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::no_show_speichert_grund_wartezeit_und_regelstand; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::ausstieg_ohne_einstieg_invalid_order; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::falscher_stopp_outside_stop; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::uhrabweichung_clock_skew; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::offline_checkin_alte_planrevision_review_required; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::fremde_schicht_ergibt_404; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::ereignis_ohne_einsatzfreigabe_oder_nach_schichtende_ohne_wirkung; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::gleiche_event_id_anderer_inhalt_409; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::tenant_id_im_request_ohne_wirkung; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::verspaetetes_ereignis_hebt_schadenssperre_nicht_auf; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::checkin_parallel_zu_storno_klaerfall; geplant:backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverEventServiceTest.kt::hundert_identische_ereignisse_eine_wirkung
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

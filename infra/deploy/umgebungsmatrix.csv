@@ -1,0 +1,5 @@
+umgebung;zweck;datenklasse;zugriffsberechtigte;geheimnisdomaene;identitaetsdomaene;psp_domaene
+development;lokale Entwicklung (compose) und gemeinsame Integrationsumgebung (vorlaeufig);synthetisch;Entwicklung, CI;taktovia-development-secrets;taktovia-development-idp;taktovia-development-psp
+staging;Abnahme- und Integrationstests vor Produktion (Zielplattform, M5);synthetisch;Entwicklung, Test, Betrieb;taktovia-staging-secrets;taktovia-staging-idp;taktovia-staging-psp
+performance;Lasttests mit produktionsaehnlichem synthetischem Volumen;produktionsaehnlich synthetisch;Test, Betrieb;taktovia-performance-secrets;taktovia-performance-idp;taktovia-performance-psp
+production;Produktivbetrieb;Produktionsdaten;Betrieb (eng, nachvollziehbar);taktovia-production-secrets;taktovia-production-idp;taktovia-production-psp

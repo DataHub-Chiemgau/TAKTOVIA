@@ -23,11 +23,11 @@
 ## Tests
 
 - **Positiv:** Disponent bearbeitet Objekt der eigenen Region.
-- **Negativ:** fremde Region per UUID, per Listenfilter, per Sortierung/Cursor einer anderen Sicht; Filter auf fremden Dienst → leere Liste; fremder Mandant bleibt 404 unabhängig vom Scope.
+- **Negativ:** fremde Region per UUID (Detail- und Änderungszugriff), per Listenfilter, per Sortierung/Cursor einer anderen Sicht; Filter auf fremden Dienst → leere Liste; fremder Mandant bleibt 404 unabhängig vom Scope; `service_scope = NULL` verweigert (Vorschlag, OP-04); Repository mit Dienstbezug ohne Port-Aufruf lässt den Architekturtest scheitern.
 - **Konkurrierend:** Scope-Entzug parallel zu einer Änderung → Änderung nach Commit des Entzugs abgewiesen.
 - **Referenztests:** AT-18, Baustein für PH-AT-001. Nachweis an echter Buchung mit WP-M2-23.
-- Testfälle: AT-18; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::disponent_fremde_region_ergibt_404; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::scope_entzug_parallel_zu_aenderung
+- Testfälle: AT-18; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::disponent_fremde_region_ergibt_404; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::disponent_eigene_region_bearbeitet; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::fremder_dienst_per_listenfilter_leere_liste; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::sortierung_cursor_fremde_sicht_ergibt_404; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::fremder_mandant_404_unabhaengig_vom_scope; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::service_scope_null_verweigert; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationArchitectureTest.kt::repository_mit_dienstbezug_ruft_port_auf; geplant:backend/platform/src/test/kotlin/de/taktovia/platform/ObjectAuthorizationTest.kt::scope_entzug_parallel_zu_aenderung
 
 ## Reviews
 
-Noch keine Reviewer benannt (D-12). Zweitprüfung erforderlich (Datentrennung).
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich (Datentrennung).

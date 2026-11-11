@@ -1,8 +1,8 @@
 # LH-6.23-SCH-005 – Veröffentlichung des Dienstplans
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Personal/Zeit (Modul `staff-time`)
 - **Arbeitspaket:** WP-M4-14
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `staff_shift` (V1: `roster_revision bigint NOT NULL`, `state text NOT NULL`); `roster_revision` (Kap. 04 §4.4, neue Migration, Mandantenschlüssel `(tenant_id,id)`, RLS, nach Publikation unveränderlich). Entwurf und veröffentlichte Revision sind getrennte Stände; Publikation schreibt eine neue `roster_revision` (kein Überschreiben) und setzt die `staff_shift` der Revision auf verbindlich, alles in einer Transaktion zusammen mit Outbox-Eintrag und `audit_event` (Akteur, Revision, Zeit). Die Spaltenform von `staff_shift` (Zustandswerte, Entwurf-/Publikationsstand) legt WP-M4-03 fest (Offener Punkt 8 des WP-Dokuments: V1-DDL hat `driver_ref`/`vehicle_id NOT NULL`).
+- **API:** `POST /v1/rosters/{roster_id}/publish` (`publishRoster`, Scope `rosters:publish`, Header `Idempotency-Key`, `If-Match`, `Traceparent`; Request `PublishRequest` (Pflichtfelder `effective_from`, `reason` 3..1000 Zeichen, `impact_report_id`), Antwort 200 `PublishedRevision` (`resource_id`, `revision`, `state` = `PUBLISHED`, `effective_from`, `audit_event_id`) mit `ETag`; `api/rosters.yaml`, `api/common.yaml`). Fehler: 409 bei blockierendem Konflikt mit Konfliktliste (keine Revision, kein Ereignis), 409 `IDEMPOTENCY_CONFLICT` bei gleichem Schlüssel und anderem Inhalt, 412 bei veralteter Revision, 428 ohne `If-Match`, 403 ohne Scope, 404 für nicht sichtbaren Dienstplan. Wiederholung mit gleichem `Idempotency-Key` liefert dieselbe Revision. Im API-Vertrag `api/rosters.yaml` existiert bisher nur der Publikationspfad; die lesenden `/v1/rosters`-Pfade (Eigen-Sicht, operative Schichtansicht, Konfliktliste) sind mit WP-M4-01 zu ergänzen. Fahrersicht: `/v1/rosters` Eigen-Sicht liefert ausschließlich eigene veröffentlichte Schichten der jeweils aktuellen veröffentlichten Revision; Entwurfsstände sind für die Fahrerrolle nicht lesbar. Operative Schichtansicht (Leitstelle, Leseport aus WP-M4-17) enthält nur Schichten der veröffentlichten Revision.
+- **Zustandsautomat:** Dienstplan Entwurf -> geprüft -> veröffentlicht (Zustandsdatei `vertraege/zustaende/dienstplan.md` ist mit WP-M4-01 anzulegen; Übergang Entwurf -> veröffentlicht nur über Publikationsbefehl nach erneuter Konfliktprüfung WP-M4-07 und Regelhinweisen WP-M4-13 unter Sperre).
+- **JSON-Schema / Ereignisse:** Outbox-Ereignis „Dienstplan veröffentlicht“ (Revision, betroffene Personen) nach `api/events/`; Fahrerbenachrichtigung über Outbox und Betriebsnachrichten (WP-M2-32). Benachrichtigt werden nur Personen, deren Schichten sich gegenüber der vorherigen veröffentlichten Revision geändert haben; ein Zustellfehler wird dokumentiert und macht die Publikation nicht rückgängig.
+- **Parameter und Kennzahlen:** `shift_publish_notice_hours` (Veröffentlichungsvorlauf, Stunden, Mandant). Die Publikation erteilt keine technische Fahrzeugfreigabe (Kap. 05 §5.5).
+- **Oberfläche:** UI-12 (Dienstplan, Aktion „Entwurf veröffentlichen“, Zustände Konflikt/unbesetzter Dienst, Fehler 409/412); UI-09 Fahrer-App „Nächster Dienst“ zeigt nur veröffentlichte Revision; leer: kein veröffentlichter Dienst; Rechte: Fahrerrolle ohne Entwurfszugriff.
+- **Entscheidungen:** keine.
+- **Offene Punkte:** (a) Wirkung von `shift_publish_notice_hours` (Warnung oder Sperre bei Unterschreitung) ist im Pflichtenheft nicht festgelegt (OP-9); bis zur Klärung implementiert der Bau keine Sperre über diesen Parameter, blockiert den Bau aber nicht. (b) Inhalt der „korrekten Meldung“ an den Fahrer in AT-37 (gezielte Mitteilungen erst SCH-014, P2; OP-9): Mindestinhalt Planrevision. (c) Führendes Modul für `staff_shift` (OP-38). (d) Impact-pflichtige Parameter (OP-43); `PublishRequest.impact_report_id` ist im generischen Schema Pflicht, ob und wie die Wirkungsanalyse für eine Dienstplanpublikation erzeugt wird, ist offen (OP-43), im Bau ist der Verweis bis zur Klärung nur zu validieren (UUID), nicht fachlich auszuwerten.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** AT-37-Ablauf: Schicht erstellen, im Entwurf ändern; Fahrer-Eigensicht zeigt unverändert den vorherigen veröffentlichten Stand; nach Publikation zeigt sie genau die neue veröffentlichte Revision und der Fahrer erhält eine Meldung mit der neuen Planrevision; operative Schichtansicht enthält nur veröffentlichte Schichten; `audit_event` mit Akteur, Revision, Zeit.
+- **Negativ:** Fahrerrolle liest Entwurf (404/403, keine Entwurfsdaten in Listen, Cursor oder Sortierung); Publikation mit blockierendem Konflikt -> 409 mit Konfliktliste, keine Revision, kein Outbox-Ereignis; fehlender Scope `rosters:publish` -> 403; fehlendes `If-Match` -> 428; veralteter ETag -> 412; `Idempotency-Key` mit abweichendem Inhalt -> 409 `IDEMPOTENCY_CONFLICT`; Benachrichtigung nur an geänderte Personen; Zustellfehler lässt Revision bestehen; Publikation setzt keine Fahrzeugfreigabe (`resource_release` unverändert).
+- **Konkurrierend:** zwei parallele Publikationen desselben Entwurfs: genau eine gewinnt, die andere erhält 412/409; Publikation parallel zu einer konfliktauslösenden Zuweisung: Konfliktprüfung unter Sperre erkennt den Konflikt; Fahrerabruf während der Publikation sieht entweder vollständig alte oder vollständig neue Revision, nie einen Mischstand.
+- **Referenztests:** AT-37.
+- Testfälle: AT-37; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/RosterPublishTest.kt::fahrer_sieht_vor_veroeffentlichung_keine_aenderung; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/RosterPublishTest.kt::parallele_publikation_genau_eine_gewinnt; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/RosterPublishTest.kt::publikation_mit_konflikt_409_ohne_revision_und_ereignis; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/RosterPublishTest.kt::benachrichtigung_nur_an_geaenderte_personen; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/RosterPublishTest.kt::idempotenz_gleicher_schluessel_dieselbe_revision
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich (Datentrennung Entwurf/veröffentlicht).

@@ -1,6 +1,6 @@
 # LH-6.10-PAY-004 – Zahlungsautomat unabhängig vom Buchungsstatus
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Fachmodul `fare-payment`
 - **Arbeitspaket:** WP-M2-30
 - **Status:** Vertrag in Arbeit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `payment_intent` (V1): `tenant_id`, `id`, `journey_id` (Pflicht-FK auf `journey`, OP-3), `provider`, `provider_ref` (`UNIQUE(tenant_id,provider,provider_ref)`), `state`, `currency`, `authorized_minor`, `captured_minor`, `refunded_minor`, `revision`; CHECKs `captured_minor<=authorized_minor` und `refunded_minor<=captured_minor` (halten unter parallelen Schreibversuchen); neue Migration: CHECK der zulässigen `state`-Werte. Zahlstatus liegt ausschließlich in `payment_intent.state`, Buchungsstatus in `booking.state`; keine gemeinsamen Zustandsfelder. `operation` (V1: `journey_id`, `kind`, `status`, `lease_until`, `fencing_token`) trägt die Zahlungsoperation. RLS `tenant_isolation`.
+- **API:** Zahlungsblock (Projektion des Zahlstatus) in `GET /v1/bookings/{id}`, getrennt vom Buchungsstatus; Statusabfrage der laufenden Operation über `GET /v1/operations/{operation_id}` (`api/operations.yaml`); Zahlungsauswahl/SCA-Rückkehr im Checkout. UI-Projektion des Zahlstatus nach Kap. 05 §5.9: interne `CAPTURE_UNKNOWN`/`RECONCILING` → `UNKNOWN`. `/v1/bookings` und die Zahlungsauswahl stehen nur im Endpunktkatalog (Kap. 05 §5.7), nicht in `openapi.yaml`; `/v1/operations/{operation_id}` ist in `api/operations.yaml` vorhanden. Fehler als `application/problem+json`; fremder Mandant bzw. fremde Buchung → 404 `NOT_FOUND`. Autorisierung exakt über `fare_quote.pay_at_platform_minor`; abweichender Betrag abgewiesen. Kopplung an Hold/Confirm über Fachoperationen und Ereignisse, nicht über gemeinsame Felder.
+- **Zustandsautomat:** `vertraege/zustaende/zahlung.md` (aus WP-M2-01) nach Kap. 03 §4.2: `CREATED → REQUIRES_ACTION → AUTHORIZED → CAPTURE_PENDING → CAPTURED`; `AUTHORIZATION_FAILED`; `VOID_PENDING → VOIDED`; `CAPTURE_UNKNOWN → RECONCILING`. Das Automatenmodell Kap. 03 §4.2 kennt keinen eigenen Zustand für einen PSP-Timeout bei der Autorisierung (nur `CAPTURE_UNKNOWN`); die Zuordnung des „Zahlstatus unbestimmt“ beim Autorisierungs-Timeout (Kap. 02 §7.4: Zahlungsstatus `UNKNOWN`) ist im Detailvertrag `zahlung.md` festzulegen. Fehlerpfade nach Kap. 02 §7.4: Autorisierung abgelehnt (Hold freigegeben, keine Buchung bestätigt, anderer Zahlungsweg möglich), PSP-Timeout (Zahlstatus unbestimmt, Abgleich per Statusabfrage mit Lease/Fencing), Capture fehlgeschlagen (Buchung bleibt bestätigt, Zahlstatus zeigt Fehler/Klärfall, Fahrt weder storniert noch abgeschlossen oder bezahlt markiert), SCA länger als Hold (kein abgelaufener Platz bestätigt, nachträgliche Autorisierung aufgehoben).
+- **JSON-Schema / Ereignisse:** Outbox: Zahlung autorisiert, fehlgeschlagen, eingezogen, unbestimmt (`api/events/`); PSP-Ereignisse über WP-M2-29 (`payment_event`, `inbox`).
+- **Parameter und Kennzahlen:** keine im Katalog; Capture-Zeitpunkt als Testannahme.
+- **Oberfläche:** Zahlstatus und Klärfall in UI-03 (Checkout) und UI-04 (Buchungsdetail), getrennt vom Buchungsstatus; Fehlerzustand bei abgelehnter Zahlung.
+- **Entscheidungen:** D-03 (Teil: PSP und Capture-Zeitpunkt): Bau gegen PSP-Simulator mit Testannahme, blockiert nur die Produktivschaltung.
+- **Offene Punkte:** OP-3 (`journey`-Hülle für Einbetreiberbuchungen, betrifft `payment_intent.journey_id`), OP-5 (Reihenfolge Zahlung/Confirm, ob Bestätigung ohne erfolgreiche Autorisierung zulässig ist, und Capture-Zeitpunkt), OP-27 (Zahlungsplan bei Vorausbuchungen). `DISPUTED` und `REFUND_PENDING → REFUNDED` sind nicht Umfang dieses Vertrags (M6 bzw. WP-M2-31). **Blockiert den Bau:** OP-3 und OP-5 sind in WP-M2-01 zu entscheiden und hier nachzutragen; ohne die Entscheidung kann die Kopplung Hold/Confirm/Authorize nicht abschließend codiert werden. Vertrag bleibt daher in Arbeit.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** Authorize → Confirm → Capture gegen den PSP-Simulator; Zahl- und Buchungsstatus getrennt gespeichert und getrennt abrufbar, jede Kombination des Detailvertrags darstellbar.
+- **Negativ:** unzulässiger Zahlungszustandswert oder unzulässiger Übergang (z. B. `CAPTURED` ohne `AUTHORIZED`) wird abgewiesen; Capture-Fehler nach bestätigter Buchung: Buchung bleibt bestätigt, Zahlstatus zeigt Fehler, Fahrt nicht storniert, nicht abgeschlossen, nicht bezahlt; Autorisierung abgelehnt → Hold freigegeben, keine Buchung; abweichender Betrag abgewiesen; SCA länger als Hold → kein abgelaufener Platz bestätigt, nachträgliche Autorisierung aufgehoben; Verstoß gegen CHECK erstattet ≤ erfasst ≤ autorisiert; fremder Mandant → 404; Webhook mit unbekannter oder doppelter `provider_ref` erzeugt keine zweite Zahlung (`UNIQUE(tenant_id,provider,provider_ref)`).
+- **Konkurrierend (Geld):** doppelte SCA-Rückkehr; Webhook und Statusabfrage parallel; zwei Worker auf derselben Operation (Fencing); Prozessabbruch zwischen PSP-Erfolg und lokalem Commit → Abgleich ohne zweite Belastung; parallele Schreibversuche gegen die CHECKs.
+- **Referenztests:** AT-15 (PSP-Timeout, später identisches Event: keine Doppelbelastung, klarer Status).
+- Testfälle: AT-15; geplant:db/tests/test_payment_intent.py::test_checks_erstattet_erfasst_autorisiert_unter_parallelitaet; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::capture_fehler_laesst_buchung_bestaetigt; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::psp_timeout_unbestimmt_genau_eine_belastung; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::zwei_worker_gleiche_operation_fencing; geplant:db/tests/test_payment_intent.py::test_state_check_und_provider_ref_eindeutig; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::authorize_confirm_capture_gegen_psp_simulator; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::zahl_und_buchungsstatus_getrennt_gespeichert_und_abrufbar; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::autorisierung_abgelehnt_gibt_hold_frei_keine_buchung; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::abweichender_betrag_wird_abgewiesen; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::sca_laenger_als_hold_kein_abgelaufener_platz_autorisierung_aufgehoben; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::doppelte_sca_rueckkehr_und_webhook_parallel_zu_statusabfrage; geplant:backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt::prozessabbruch_nach_psp_erfolg_abgleich_ohne_zweite_belastung
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

@@ -23,10 +23,10 @@
 ## Tests
 
 - **Positiv:** alle fünf Profilbereiche ändern, abmelden, neu anmelden, abrufen (auch von einem zweiten Gerät) – unverändert.
-- **Negativ:** fremdes Profil (404); ungültige Sprache; nicht existierende Haltestellenreferenz; veralteter ETag (412); Betreibersicht zeigt Kontakt und Unterstützungsmerkmale nicht ohne Feldrecht und Zweck.
-- **Konkurrierend (Datentrennung):** parallele Änderung von zwei Sitzungen führt nicht zu stillem Überschreiben (412); Mandant A kann Profile von Mandant B nicht lesen (RLS).
+- **Negativ:** fremdes Profil (404); ungültige Sprache (zulässige Sprachwerte sind im Pflichtenheft nicht aufgelistet und im Profil-Schema festzulegen); nicht existierende Haltestellenreferenz; veralteter ETag (412); Betreibersicht zeigt Kontakt und Unterstützungsmerkmale nicht ohne Feldrecht und Zweck.
+- **Konkurrierend (Datentrennung):** parallele Änderung von zwei Sitzungen führt nicht zu stillem Überschreiben (412); Mandant A kann Profile von Mandant B nicht lesen (RLS, `passenger_preference` eingeschlossen).
 - **Referenztests:** keine Katalog-ID im WP genannt.
-- Testfälle: geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::aenderungen_nach_neuanmeldung_konsistent; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::fremdes_profil_ergibt_404; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::parallele_aenderung_zwei_sitzungen_412
+- Testfälle: geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::aenderungen_nach_neuanmeldung_konsistent; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::fremdes_profil_ergibt_404; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::ungueltige_sprache_und_unbekannte_haltestelle_abgewiesen; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::veralteter_etag_ergibt_412; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::betreibersicht_ohne_feldrecht_ohne_kontakt; geplant:backend/modules/identity/src/test/kotlin/de/taktovia/identity/PassengerProfileTest.kt::parallele_aenderung_zwei_sitzungen_412; geplant:db/tests/test_10_passenger_preference.py::test_rls_fremder_mandant_liest_keine_praeferenz; geplant:web/passenger/src/konto/konto.test.tsx::fuenf_profilbereiche_aenderbar_und_neu_geladen
 
 ## Reviews
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.invalid/schemas/partner-sandbox/capability-matrix.schema.json",
+  "title": "Capability-Matrix je Instanz und Dienst (Kap. 02 §9)",
+  "description": "Jedes Merkmal ist gesetzt oder ausdrücklich 'supported: false' (nicht unterstützt). Fehlende Merkmale sind unzulässig.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["standard", "discovery", "information", "binding_prices", "hold", "hold_extension", "confirm", "deduplicated_requests", "status_lookup", "cancel", "refund", "ticket_issuance", "realtime", "signature_scheme", "known_quotas", "sandbox_evidence"],
+  "properties": {
+    "standard": {"$ref": "#/$defs/feature", "description": "Standard und Version, z. B. name/version"},
+    "discovery": {"$ref": "#/$defs/feature"},
+    "information": {"$ref": "#/$defs/feature", "description": "Auskunft"},
+    "binding_prices": {"$ref": "#/$defs/feature"},
+    "hold": {"$ref": "#/$defs/feature"},
+    "hold_extension": {"$ref": "#/$defs/feature"},
+    "confirm": {"$ref": "#/$defs/feature"},
+    "deduplicated_requests": {"$ref": "#/$defs/feature"},
+    "status_lookup": {"$ref": "#/$defs/feature"},
+    "cancel": {"$ref": "#/$defs/feature"},
+    "refund": {"$ref": "#/$defs/feature"},
+    "ticket_issuance": {"$ref": "#/$defs/feature"},
+    "realtime": {"$ref": "#/$defs/feature"},
+    "signature_scheme": {"$ref": "#/$defs/feature"},
+    "known_quotas": {"$ref": "#/$defs/feature"},
+    "sandbox_evidence": {"$ref": "#/$defs/feature"}
+  },
+  "$defs": {
+    "feature": {
+      "type": "object",
+      "required": ["supported"],
+      "properties": {"supported": {"type": "boolean"}},
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,8 +1,8 @@
 # LH-6.9-GEO-001 – Bediengebiete als valide Polygone
 
-- **Verantwortlicher:** <Rolle/Person>
+- **Verantwortlicher:** Rolle Fachmodul `service-geo`
 - **Arbeitspaket:** WP-M2-04
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -13,27 +13,23 @@
 
 ## Vertrag
 
-- **Tabellen / DDL:** <Tabellen, Migration, RLS, Invarianten aus Kap. 04 §4.5>
-- **API:** <Pfade, Schemas, Statuscodes>
-- **Zustandsautomat:** <Verweis auf vertraege/zustaende/…>
-- **JSON-Schema / Ereignisse:** <Verweise>
-- **Parameter und Kennzahlen:** <Namen aus kataloge.csv>
-- **Oberfläche:** <UI-IDs, Zustände leer/Fehler/Rechte>
-- **Entscheidungen:** <D-01 … D-12 oder „keine“>
-- **Offene Punkte:** <konkret>
+- **Tabellen / DDL:** `service_area` (V1): `tenant_id`, `id`, `service_id` (FK `service`), `revision bigint`, `area geometry(MultiPolygon,4326) NOT NULL`, `valid_from timestamptz NOT NULL`, `valid_to timestamptz`, `CHECK(ST_IsValid(area))`, `CHECK(valid_to IS NULL OR valid_to>valid_from)`, Index `service_area_geo` (gist), RLS `tenant_isolation`. Invariante „nicht überlappende aktive Version je Dienst“ (Liefergegenstand WP-M2-04; Kap. 04 §4.5 nennt allgemein „nicht überlappende aktive Tarif-/Policy-/Dienstversion“) in neuer Migration (Exclusion Constraint oder Scope-Sperre; Wahl im Bau, Nachweis per Test). Das V1-DDL hat keinen stabilen Gebietsschlüssel (PK `(tenant_id,id)` je Zeile) und keine Eindeutigkeit von `revision`: die Migration ergänzt einen Gebietsschlüssel (Name im Bau) mit `UNIQUE(tenant_id,<Gebietsschlüssel>,revision)`, damit „Revision+1 desselben Gebiets“ und die Konkurrenz zweier Revisionen (412) in der Datenbank abgesichert sind. Wirksamkeit gilt für den Fahrtzeitpunkt (Ziel WP-M2-04). Wirksamkeit: `valid_from <= t < valid_to` (links geschlossen, rechts offen). Eine Bearbeitung legt eine neue Zeile mit `revision+1` an; alte Revisionen bleiben lesbar und werden nie überschrieben. Geometrievalidierung vor Persistenz: gültig, SRID 4326, geschlossene Ringe, keine Selbstüberschneidung.
+- **API:** `/v1/service-areas` (GeoJSON nach SRID-Konvention): `GET` Liste je Dienst, `POST` neues Gebiet, `GET /{id}` mit `ETag`, `PUT`/neue Revision mit `If-Match` (veraltet → 412 `REVISION_MISMATCH`, fehlend → 428 `PRECONDITION_REQUIRED`; Kap. 05 §5.4). Fehler als `application/problem+json` (`api/common.yaml` Problem, `violations[].pointer`). `/v1/service-areas` steht nur im Endpunktkatalog (Kap. 05 §5.7), nicht in `openapi.yaml`; die OpenAPI-Datei entsteht in WP-M2-01/WP-M2-04. Ungültige Geometrie, falsches SRID oder `valid_to <= valid_from` → 422 mit Feldverweis (JSON-Pointer) und ohne Speicherung. Fremder Mandant → 404 `NOT_FOUND`, Rolle ohne Stammdatenrecht → 403, jede Änderung als `audit_event`. Fachoperation „Punkt im wirksamen Gebiet zum Zeitpunkt t“ für die Angebotsprüfung (WP-M2-12): innerhalb → zulässig, außerhalb → abgelehnt.
+- **Zustandsautomat:** keiner eigener; Freigabe der Revision siehe Offene Punkte (OP-9).
+- **JSON-Schema / Ereignisse:** Outbox-Ereignis „Gebietsrevision wirksam“ (Schema unter `api/events/`, Name im Bau nach `<bereich.ereignis>.v1.schema.json`). GeoJSON-Schema mit Fehlerpointern in `api/` (OpenAPI-Ergänzung, WP-M2-04 „Detailverträge vorab“). ImpactProvider „Bediengebiet“ (Schnittstelle aus WP-M1-23): für eine Gebietsverkleinerung die bestätigten Buchungen mit Start oder Ziel außerhalb des neuen Gebiets.
+- **Parameter und Kennzahlen:** keine; `area_overlapping_priority` ist nicht Teil von P1 (M6).
+- **Oberfläche:** UI-17 „Gebiete/Stops/Tarife“, Aktion „Revision freigeben“: Gebiet zeichnen/importieren, Zustände „Ungültige Geometrie“ und „konkurrierende Version“ (412), gleichwertige Koordinatenliste neben der Karte; ohne Stammdatenrecht nur lesend.
+- **Entscheidungen:** D-05 (reales Pilotgebiet) blockiert nur Produktivdaten, nicht den Bau.
+- **Offene Punkte:** OP-8 (Behandlung bestätigter Buchungen bei Gebietsverkleinerung; der ImpactProvider nennt sie nur, ein Ablehnen/Umbuchen ist nicht festgelegt), OP-9 (Freigabeablauf in P1, `service_area` hat kein Freigabefeld; Annahme bis Klärung: Freigabe = Anlegen einer Revision durch Rolle mit Stammdatenrecht plus Audit), Regel für Punkte exakt auf der Grenze (Detailvertrag in WP-M2-01; Vorschlag: Grenze zählt als innerhalb, `ST_Covers`, nicht blockierend). Weitere Bauentscheidung ohne Pflichtenheft-Vorgabe: Geltungsbereich der Überlappungsprüfung „je Dienst“ gegenüber mehreren parallel wirksamen Gebieten eines Dienstes (Zonen nach GEO-003, OP-10); bis dahin gilt die Überlappung je Gebietsschlüssel einer Revisionskette und der Wortlaut des WP, die Abgrenzung wird in WP-M2-01 festgelegt. Ob ein GeoJSON-`Polygon` zusätzlich zu `MultiPolygon` angenommen wird, ist nicht festgelegt (Annahme: nur `MultiPolygon`, wie `area geometry(MultiPolygon,4326)`). Keine dieser Fragen blockiert den Bau.
 
 ## Tests
 
-- **Positiv:** …
-- **Negativ:** …
-- **Konkurrierend:** … (bei Geld, Kapazität, Sicherheit, Datentrennung Pflicht)
-- **Referenztests:** AT-…, E2E-…, PH-AT-…
+- **Positiv:** gültiges MultiPolygon mit Aktivierungszeitraum wird gespeichert und liefert Revision 1; Punkt im Gebiet zum Zeitpunkt t innerhalb `[valid_from, valid_to)` → zulässig, Punkt außerhalb → abgelehnt (Anbindung an WP-M2-12); Bearbeitung erzeugt Revision 2, Revision 1 bleibt lesbar; ImpactProvider „Bediengebiet“ nennt für eine Gebietsverkleinerung genau die bestätigten Buchungen mit Start oder Ziel außerhalb des neuen Gebiets (WP-M2-04 Kriterium 6) und keine innerhalb liegenden.
+- **Negativ:** selbstüberschneidendes Polygon und offener Ring → 422 mit Feldverweis, nichts gespeichert; falsches SRID; `valid_to <= valid_from`; direkter SQL-Insert mit ungültiger Geometrie verletzt `CHECK(ST_IsValid(area))`; Zeitpunkt vor `valid_from` und ab `valid_to` → Gebiet nicht berücksichtigt; zwei überlappende aktive Versionen je Dienst abgewiesen; fremder Mandant → 404; Rolle ohne Stammdatenrecht → 403; Audit je Änderung vorhanden (`audit_event`: `actor_ref`, `action`, `object_ref`); Mandantentrennung zusätzlich in der Datenbank: Zeile eines anderen Mandanten unter der Runtime-Rolle weder lesbar noch schreibbar (RLS `tenant_isolation`).
+- **Konkurrierend:** zwei parallele Veröffentlichungen mit überlappendem Aktivierungszeitraum für denselben Dienst → genau eine erfolgreich (Constraint/Sperre, nicht nur Anwendungsprüfung); zwei parallele Revisionen desselben Gebiets mit gleichem `If-Match` → genau eine erfolgreich, die andere 412 (Datentrennung/Version); Gebietswechsel parallel zur Angebotsprüfung nutzt vollständig die alte oder die neue Revision.
+- **Referenztests:** keine Katalog-ID im WP für diese Anforderung genannt; Nachweis über die geplanten Tests. Angebotsprüfung mit WP-M2-12.
+- Testfälle: geplant:db/tests/test_geo_service_area.py::test_ungueltiges_polygon_verletzt_check; geplant:backend/modules/service-geo/src/test/kotlin/de/taktovia/servicegeo/ServiceAreaApiTest.kt::selbstueberschneidendes_polygon_ergibt_422; geplant:backend/modules/service-geo/src/test/kotlin/de/taktovia/servicegeo/ServiceAreaApiTest.kt::parallele_revisionen_eine_erhaelt_412; geplant:backend/modules/service-geo/src/test/kotlin/de/taktovia/servicegeo/ServiceAreaApiTest.kt::punkt_im_wirksamen_gebiet_zum_zeitpunkt; geplant:db/tests/test_geo_service_area.py::test_ueberlappende_aktive_version_abgewiesen; geplant:backend/modules/service-geo/src/test/kotlin/de/taktovia/servicegeo/ServiceAreaApiTest.kt::fremder_mandant_404_ohne_recht_403_audit_je_aenderung; geplant:backend/modules/service-geo/src/test/kotlin/de/taktovia/servicegeo/ServiceAreaImpactProviderTest.kt::verkleinerung_nennt_betroffene_bestaetigte_buchungen
 
 ## Reviews
 
-| Rolle | Person | Datum | Ergebnis |
-|---|---|---|---|
-| Fachanalyse | | | |
-| Architektur | | | |
-| QA | | | |
-| Zweitprüfung (falls gefordert) | | | |
+Noch keine menschlichen Reviewer benannt (D-12). Vertrag aus WP-Dokument abgeleitet und gegen Originaltext/-abnahme geprüft (Agentenprüfung, ersetzt kein Fachreview). Zweitprüfung erforderlich.

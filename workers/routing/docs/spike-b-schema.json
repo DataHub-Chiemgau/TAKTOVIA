@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:taktovia:spike-b:insert-request",
+  "title": "Spike (b) WP-M0-27: Eingabe-/Ausgabeschema der Einfügeheuristik (nur Spike, kein Produktivvertrag)",
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["id", "pickup", "dropoff", "pu_e", "pu_l", "do_e", "do_l", "seats", "wc", "max_ride"],
+      "properties": {
+        "id": {"type": "integer"},
+        "pickup": {"type": "integer", "description": "Matrixknoten"},
+        "dropoff": {"type": "integer"},
+        "pu_e": {"type": "integer", "description": "Sekunden ab Planungsbeginn"},
+        "pu_l": {"type": "integer"},
+        "do_e": {"type": "integer"},
+        "do_l": {"type": "integer"},
+        "seats": {"type": "integer", "minimum": 0},
+        "wc": {"type": "integer", "minimum": 0},
+        "max_ride": {"type": "integer", "minimum": 0},
+        "service": {"type": "integer", "default": 60}
+      },
+      "additionalProperties": false
+    },
+    "stop": {
+      "type": "object",
+      "required": ["kind", "req"],
+      "properties": {
+        "kind": {"enum": ["PICKUP", "DROPOFF", "BREAK"]},
+        "req": {"type": "integer", "description": "-1 bei BREAK"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "input": {
+      "type": "object",
+      "required": ["request", "budget_ms"],
+      "properties": {
+        "request": {"$ref": "#/$defs/request"},
+        "budget_ms": {"type": "integer", "minimum": 0},
+        "fleet_snapshot": {"type": "string", "description": "Verweis auf Planrevision; im Spike im Speicher"}
+      }
+    },
+    "output": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["accepted", "vehicle_id", "stops", "starts", "delta_s"],
+          "properties": {
+            "accepted": {"const": true},
+            "vehicle_id": {"type": "integer"},
+            "stops": {"type": "array", "items": {"$ref": "#/$defs/stop"}},
+            "starts": {"type": "array", "items": {"type": "integer"}},
+            "delta_s": {"type": "integer", "description": "Zuwachs Fahrzeit in Sekunden"},
+            "validated": {"const": true}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["accepted", "reason"],
+          "properties": {
+            "accepted": {"const": false},
+            "reason": {"enum": ["NO_FEASIBLE_INSERTION", "TIMEOUT_NO_VALIDATED_PLAN", "VALIDATION_FAILED"]}
+          }
+        }
+      ]
+    }
+  }
+}

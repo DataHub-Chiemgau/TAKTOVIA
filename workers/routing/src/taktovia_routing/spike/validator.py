@@ -76,9 +76,7 @@ def validate_route(
     return errs
 
 
-def validate_commitments(
-    before: Sequence[Stop], after: Sequence[Stop]
-) -> list[str]:
+def validate_commitments(before: Sequence[Stop], after: Sequence[Stop]) -> list[str]:
     """Bestehende Zusagen bleiben erhalten: Stopfolge vorher ist Teilfolge der neuen."""
     it = iter(after)
     if not all(any(a == b for b in it) for a in before):
