@@ -1,0 +1,11 @@
+{
+ "schema": "taktovia.referenzregion.tarif-testrelationen/1",
+ "status": "VORLAEUFIG: Erwartete Preise fehlen absichtlich. Tarifstruktur, Steuersätze und Preise liefert der Auftraggeber (M2 OP-11, OP-12); sie werden hier nicht erfunden. WP-M2-18/-19 ergänzen `expected_price_minor` nach der Bestätigung.",
+ "map_version": "referenz-2026-11-01",
+ "relationen": [
+  {"id": "T1", "from": "H1", "to": "H4", "profile": "car", "distance_m": 1500, "time_s": 180, "persons": 1, "expected_price_minor": null},
+  {"id": "T2", "from": "H4", "to": "H1", "profile": "car", "distance_m": 2500, "time_s": 320, "persons": 2, "expected_price_minor": null},
+  {"id": "T3", "from": "H1", "to": "H2", "profile": "car", "distance_m": 2000, "time_s": 240, "persons": 1, "expected_price_minor": null},
+  {"id": "T4", "from": "H5", "to": "H6", "profile": "car", "distance_m": 1000, "time_s": 160, "persons": 3, "expected_price_minor": null}
+ ]
+}

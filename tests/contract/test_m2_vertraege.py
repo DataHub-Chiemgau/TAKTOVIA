@@ -214,11 +214,16 @@ class OpenApiM2(unittest.TestCase):
         for c in ['OFFER_EXPIRED', 'HOLD_EXPIRED', 'REQUOTE_REQUIRED', 'CAPACITY_UNAVAILABLE', 'OPERATION_IN_PROGRESS', 'REVISION_MISMATCH', 'PRECONDITION_REQUIRED', 'NOT_FOUND', 'PROVIDER_UNAVAILABLE', 'IDEMPOTENCY_CONFLICT']:
             self.assertIn(c, codes)
 
-    def test_unterstuetzungsbedarf_kennt_keine_diagnosefelder(self):
+    def test_unterstuetzungsbedarf_ist_katalogauswahl_ohne_diagnosefelder(self):
         doc = yaml.safe_load((ROOT / 'api/booking.yaml').read_text())
-        needs = doc['components']['schemas']['RideSupportNeeds']
-        self.assertFalse(needs['additionalProperties'])
-        self.assertFalse([k for k in needs['properties'] if re.search(r'(?i)diagn|krank|disease|condition', k)])
+        codes = doc['components']['schemas']['RideAssistanceCodes']
+        self.assertEqual(codes['type'], 'array')
+        self.assertTrue(codes['items']['enum'])
+        self.assertFalse([c for c in codes['items']['enum'] if re.search(r'(?i)diagn|krank|disease|condition', c)])
+        for name in ('RideOfferRequest', 'RideBooking'):
+            props = doc['components']['schemas'][name]['properties']
+            self.assertIn('assistance_codes', props)
+            self.assertFalse([k for k in props if re.search(r'(?i)diagn|support_?needs?', k)])
 
     def test_fehlerhaftes_beispiel_laesst_lint_fehlschlagen(self):
         from lint import lint_doc

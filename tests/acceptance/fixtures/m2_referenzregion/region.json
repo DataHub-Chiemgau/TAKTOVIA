@@ -1,0 +1,132 @@
+{
+ "schema": "taktovia.referenzregion.region/1",
+ "hinweis": "SYNTHETISCH: Bediengebiet und Haltepunkte der Referenzregion (WP-M2-02). Haltepunktkoordinaten sind die Knotenkoordinaten des Straßengraphen. Barrierefreiheit nach docs/umsetzungsplan/vertraege/schemas/stop-accessibility.v1.schema.json.",
+ "service_area": {
+  "type": "MultiPolygon",
+  "srid": 4326,
+  "coordinates": [
+   [
+    [
+     [
+      13.735,
+      51.0545
+     ],
+     [
+      13.7685,
+      51.0545
+     ],
+     [
+      13.7685,
+      51.0405
+     ],
+     [
+      13.735,
+      51.0405
+     ],
+     [
+      13.735,
+      51.0545
+     ]
+    ]
+   ]
+  ]
+ },
+ "services": [
+  {
+   "key": "nord",
+   "name": "Rufbus Nord",
+   "timezone": "Europe/Berlin"
+  },
+  {
+   "key": "sued",
+   "name": "Rufbus Süd",
+   "timezone": "Europe/Berlin"
+  }
+ ],
+ "stops": [
+  {
+   "id": "H1",
+   "node": "N1",
+   "name": "Rathaus",
+   "lat": 51.05,
+   "lon": 13.74,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "YES",
+    "wheelchair_boarding": "YES"
+   }
+  },
+  {
+   "id": "H2",
+   "node": "N3",
+   "name": "Bahnhof",
+   "lat": 51.05,
+   "lon": 13.7544,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "UNVERIFIED",
+    "wheelchair_boarding": "UNVERIFIED"
+   }
+  },
+  {
+   "id": "H3",
+   "node": "N4",
+   "name": "Marktplatz",
+   "lat": 51.0455,
+   "lon": 13.74,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "YES",
+    "wheelchair_boarding": "YES"
+   }
+  },
+  {
+   "id": "H4",
+   "node": "N6",
+   "name": "Schule",
+   "lat": 51.0455,
+   "lon": 13.7544,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "YES",
+    "wheelchair_boarding": "NO"
+   }
+  },
+  {
+   "id": "H5",
+   "node": "N7",
+   "name": "Klinik",
+   "lat": 51.041,
+   "lon": 13.74,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "NO",
+    "wheelchair_boarding": "NO"
+   }
+  },
+  {
+   "id": "H6",
+   "node": "N9",
+   "name": "Sportplatz",
+   "lat": 51.041,
+   "lon": 13.7544,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "YES",
+    "wheelchair_boarding": "YES"
+   }
+  },
+  {
+   "id": "H7",
+   "node": "N10",
+   "name": "Aussiedlerhof (nicht angebunden)",
+   "lat": 51.06,
+   "lon": 13.77,
+   "accessibility": {
+    "schema_version": "1.0",
+    "step_free": "UNVERIFIED",
+    "wheelchair_boarding": "UNVERIFIED"
+   }
+  }
+ ]
+}

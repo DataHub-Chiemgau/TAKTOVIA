@@ -34,14 +34,20 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/ride-offers/{ride_offer_id}:
     get:
       summary: Angebot lesen
@@ -50,11 +56,10 @@ paths:
       - oidc:
         - rides:read
       parameters:
-      - &id002
-        name: ride_offer_id
+      - name: ride_offer_id
         in: path
         required: true
-        schema: &id003
+        schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Angebots-ID.
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -71,12 +76,18 @@ paths:
                 type: string
                 pattern: ^"[0-9]+"$
               description: Starke Ressourcenrevision.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/ride-offers/{ride_offer_id}/hold:
     post:
       summary: Kapazität befristet halten
@@ -87,7 +98,12 @@ paths:
       - oidc:
         - rides:write
       parameters:
-      - *id002
+      - name: ride_offer_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Angebots-ID.
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/IfMatch
@@ -114,16 +130,26 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/ride-offers/{ride_offer_id}/hold/release:
     post:
       summary: Eigenen Hold freigeben
@@ -133,7 +159,12 @@ paths:
       - oidc:
         - rides:write
       parameters:
-      - *id002
+      - name: ride_offer_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Angebots-ID.
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/IfMatch
@@ -150,15 +181,24 @@ paths:
                 type: string
                 pattern: ^"[0-9]+"$
               description: Starke Ressourcenrevision.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/bookings:
     post:
       summary: Hold in Buchung bestätigen
@@ -194,14 +234,22 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     get:
       summary: Eigene Buchungen auflisten
       operationId: listBookings
@@ -219,12 +267,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RideBookingPage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/bookings/{booking_id}:
     get:
       summary: Buchung lesen
@@ -233,11 +287,11 @@ paths:
       - oidc:
         - rides:read
       parameters:
-      - &id004
-        name: booking_id
+      - name: booking_id
         in: path
         required: true
-        schema: *id003
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Buchungs-ID.
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
@@ -253,12 +307,18 @@ paths:
                 type: string
                 pattern: ^"[0-9]+"$
               description: Starke Ressourcenrevision.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/bookings/{booking_id}/cancel:
     post:
       summary: Buchung stornieren
@@ -267,7 +327,12 @@ paths:
       - oidc:
         - rides:write
       parameters:
-      - *id004
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID.
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/IfMatch
@@ -290,16 +355,26 @@ paths:
                 type: string
                 pattern: ^"[0-9]+"$
               description: Starke Ressourcenrevision.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     RideResourceVector:
@@ -324,7 +399,7 @@ components:
           uniqueItems: true
           items:
             type: string
-            enum: &id005
+            enum:
             - RAMP
             - LIFT
             - CHILD_SEAT
@@ -347,7 +422,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        stop_id: *id003
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
         point:
           $ref: common.yaml#/components/schemas/Point
         label:
@@ -358,28 +434,27 @@ components:
       - point
       description: Start oder Ziel; `stop_id` bindet an einen definierten Haltepunkt, ohne `stop_id` wird der nächste zulässige Haltepunkt
         gewählt (Fußweg `stop_walk_max_m`).
-    RideSupportNeeds:
-      type: object
-      additionalProperties: false
-      properties:
-        mobility_aid:
-          type: string
-          enum:
-          - NONE
-          - WALKING_AID
-          - FOLDABLE_WHEELCHAIR
-          - POWER_WHEELCHAIR
-        assistance_dog:
-          type: boolean
-        boarding_assistance:
-          type: boolean
-      required: []
-      description: Nur transportrelevante Merkmale, keine Diagnose (Kap. 06 §6.2). Jedes andere Feld ergibt 422 UNKNOWN_FIELD.
+    RideAssistanceCodes:
+      type: array
+      maxItems: 16
+      uniqueItems: true
+      items:
+        type: string
+        enum:
+        - BOARDING_HELP
+        - AUDIO_GUIDANCE
+        - LOW_FLOOR
+        - WHEELCHAIR_SPACE
+        - ASSISTANCE_ANIMAL
+        - ACCOMPANYING_PERSON
+      description: 'Transportrelevanter Unterstützungsbedarf als Auswahl aus dem Katalog (Feldschutz WP-M1-31, Kap. 06 §6.2): keine
+        Diagnose, kein Freitext. Jeder andere Wert ergibt 422 NOT_IN_ENUM, jedes Diagnosefeld 422 UNKNOWN_FIELD.'
     RideOfferRequest:
       type: object
       additionalProperties: false
       properties:
-        service_id: *id003
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
         origin:
           $ref: '#/components/schemas/RidePlace'
         destination:
@@ -407,9 +482,16 @@ components:
           uniqueItems: true
           items:
             type: string
-            enum: *id005
-        support_needs:
-          $ref: '#/components/schemas/RideSupportNeeds'
+            enum:
+            - RAMP
+            - LIFT
+            - CHILD_SEAT
+            - BOOSTER_SEAT
+            - LUGGAGE_SPACE
+            - ASSISTANCE_DOG_SPACE
+            - STRETCHER_FIXING
+        assistance_codes:
+          $ref: '#/components/schemas/RideAssistanceCodes'
       required:
       - service_id
       - origin
@@ -437,9 +519,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        earliest_at: &id006
+        earliest_at:
           $ref: common.yaml#/components/schemas/Timestamp
-        latest_at: *id006
+        latest_at:
+          $ref: common.yaml#/components/schemas/Timestamp
       required:
       - earliest_at
       - latest_at
@@ -447,9 +530,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id003
-        attempt_id: *id003
-        service_id: *id003
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        attempt_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
         state:
           type: string
           enum:
@@ -461,7 +547,8 @@ components:
           $ref: '#/components/schemas/RideWindow'
         arrival_window:
           $ref: '#/components/schemas/RideWindow'
-        expires_at: *id006
+        expires_at:
+          $ref: common.yaml#/components/schemas/Timestamp
         run_revision:
           type: integer
           format: int64
@@ -507,7 +594,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id003
+        id:
+          $ref: common.yaml#/components/schemas/UUID
         state:
           type: string
           enum:
@@ -515,7 +603,8 @@ components:
           - CONSUMED
           - RELEASED
           - EXPIRED
-        expires_at: *id006
+        expires_at:
+          $ref: common.yaml#/components/schemas/Timestamp
         capacity_vector:
           $ref: '#/components/schemas/RideResourceVector'
       required:
@@ -541,7 +630,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        hold_id: *id003
+        hold_id:
+          $ref: common.yaml#/components/schemas/UUID
         max_gross:
           $ref: common.yaml#/components/schemas/Money
         payment_reference:
@@ -563,9 +653,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id003
-        service_id: *id003
-        hold_id: *id003
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        hold_id:
+          $ref: common.yaml#/components/schemas/UUID
         state:
           type: string
           enum:
@@ -587,8 +680,8 @@ components:
           format: int64
           minimum: 0
           maximum: 20
-        support_needs:
-          $ref: '#/components/schemas/RideSupportNeeds'
+        assistance_codes:
+          $ref: '#/components/schemas/RideAssistanceCodes'
         promise:
           $ref: '#/components/schemas/RidePromise'
         revision:
@@ -609,10 +702,14 @@ components:
       type: object
       additionalProperties: false
       properties:
-        pickup_earliest: *id006
-        pickup_latest: *id006
-        arrival_earliest: *id006
-        arrival_latest: *id006
+        pickup_earliest:
+          $ref: common.yaml#/components/schemas/Timestamp
+        pickup_latest:
+          $ref: common.yaml#/components/schemas/Timestamp
+        arrival_earliest:
+          $ref: common.yaml#/components/schemas/Timestamp
+        arrival_latest:
+          $ref: common.yaml#/components/schemas/Timestamp
         gross:
           $ref: common.yaml#/components/schemas/Money
         cancellation_policy_ref:

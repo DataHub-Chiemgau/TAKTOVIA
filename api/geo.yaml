@@ -12,7 +12,7 @@ paths:
       - name: service_id
         in: query
         required: false
-        schema: &id002
+        schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Filter auf einen Dienst.
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -23,13 +23,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoServiceAreaPage'
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     post:
       summary: Bediengebiet anlegen (neue Revision)
       operationId: createServiceArea
@@ -62,14 +67,22 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/stops:
     get:
       summary: Haltepunkte auflisten
@@ -88,12 +101,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoStopPage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     post:
       summary: Haltepunkt anlegen (neue Revision)
       operationId: createStop
@@ -126,13 +145,20 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     GeoMultiPolygon:
@@ -168,8 +194,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        service_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
         revision:
           type: integer
           format: int64
@@ -177,11 +205,11 @@ components:
           maximum: 9007199254740991
         area:
           $ref: '#/components/schemas/GeoMultiPolygon'
-        valid_from: &id003
+        valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/Timestamp
           - type: 'null'
       required:
       - id
@@ -194,13 +222,15 @@ components:
       type: object
       additionalProperties: false
       properties:
-        service_id: *id002
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
         area:
           $ref: '#/components/schemas/GeoMultiPolygon'
-        valid_from: *id003
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/Timestamp
           - type: 'null'
       required:
       - service_id
@@ -284,8 +314,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        stop_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
         revision:
           type: integer
           format: int64
@@ -299,10 +331,11 @@ components:
           $ref: common.yaml#/components/schemas/Point
         accessibility:
           $ref: '#/components/schemas/GeoStopAccessibility'
-        valid_from: *id003
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/Timestamp
           - type: 'null'
       required:
       - id
@@ -319,7 +352,7 @@ components:
       properties:
         stop_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         name:
           type: string
@@ -329,10 +362,11 @@ components:
           $ref: common.yaml#/components/schemas/Point
         accessibility:
           $ref: '#/components/schemas/GeoStopAccessibility'
-        valid_from: *id003
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/Timestamp
           - type: 'null'
       required:
       - name

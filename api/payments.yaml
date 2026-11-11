@@ -16,8 +16,8 @@ paths:
         schema:
           type: string
           minLength: 2
-          maxLength: 32
-          pattern: ^[a-z][a-z0-9_-]+$
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9_-]+$
         description: Provider-Kennung des Zahlungsdienstleisters.
       - name: X-Provider-Timestamp
         in: header
@@ -46,14 +46,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderEventReceipt'
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     ProviderEvent:

@@ -1,0 +1,15 @@
+{
+ "schema": "taktovia.referenzregion.erwartungen/1",
+ "hinweis": "Von Hand aus dem Straßengraphen (strassengraph.json) berechnet, unabhängig von jeder Routingimplementierung. Konstruiert und SYNTHETISCH: beweist nur, dass ein Router die modellierten Restriktionen einhält, keine Eigenschaft einer realen Region.",
+ "map_version": "referenz-2026-11-01",
+ "relationen": [
+  {"id": "R1", "from": "H1", "to": "H4", "profile": "car", "time_s": 180, "distance_m": 1500, "weg": "N1-N2-N5-N6 (oder N1-N4-N5-N6)", "zweck": "Referenzroute ohne Restriktion"},
+  {"id": "R2", "from": "H4", "to": "H1", "profile": "car", "time_s": 320, "distance_m": 2500, "weg": "N6-N9-N8-N5-N2-N1 (oder über N4)", "zweck": "Einbahnstraße N5->N6 gegen die Richtung: Umweg statt Gegenrichtung (Hinrichtung R1: 180 s)", "verbotene_kante": "e56 gegen die Richtung"},
+  {"id": "R3", "from": "H1", "to": "H2", "profile": "car", "time_s": 240, "distance_m": 2000, "weg": "N1-N2-N5-N6-N3 (oder über N4)", "zweck": "gesperrter Abschnitt e23: Umfahrung (ohne Sperre 120 s, 1000 m)", "verbotene_kante": "e23", "zeit_ohne_sperre_s": 120},
+  {"id": "R4a", "from": "H3", "to": "H4", "profile": "car", "time_s": 120, "distance_m": 1000, "weg": "N4-N5-N6", "zweck": "Fahrzeugprofil ohne Höhenproblem nutzt die Unterführung e45"},
+  {"id": "R4b", "from": "H3", "to": "H4", "profile": "van_high", "time_s": 240, "distance_m": 2000, "weg": "N4-N1-N2-N5-N6", "zweck": "Fahrzeugprofil mit Restriktion (3,1 m > 2,5 m) erhält eine andere Route", "verbotene_kante": "e45"},
+  {"id": "R5", "from": "H1", "to": "H4", "profile": "walk", "time_s": 1000, "distance_m": 1200, "weg": "N1-(Fußweg f15)-N5-N6", "zweck": "Fußweg über die Fußgängerverbindung (Fußgänger ignorieren die Einbahnregel; 1,2 m/s)"},
+  {"id": "R6", "from": "H5", "to": "H6", "profile": "car", "time_s": 160, "distance_m": 1000, "weg": "N7-N8-N9", "zweck": "langsame Kanten e78/e89 (80 s)"},
+  {"id": "R7", "from": "H1", "to": "H7", "profile": "car", "time_s": null, "distance_m": null, "fehler": "NO_ROUTE", "zweck": "Haltepunkt auf nicht angebundenem Knoten N10: unerreichbar"}
+ ]
+}

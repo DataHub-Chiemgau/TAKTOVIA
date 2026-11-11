@@ -400,11 +400,7 @@ export interface RidePlace {
   label?: string;
 }
 
-export interface RideSupportNeeds {
-  mobility_aid?: 'NONE' | 'WALKING_AID' | 'FOLDABLE_WHEELCHAIR' | 'POWER_WHEELCHAIR';
-  assistance_dog?: boolean;
-  boarding_assistance?: boolean;
-}
+export type RideAssistanceCodes = ('BOARDING_HELP' | 'AUDIO_GUIDANCE' | 'LOW_FLOOR' | 'WHEELCHAIR_SPACE' | 'ASSISTANCE_ANIMAL' | 'ACCOMPANYING_PERSON')[];
 
 export interface RideOfferRequest {
   service_id: UUID;
@@ -415,7 +411,7 @@ export interface RideOfferRequest {
   passengers: number;
   wheelchair_spaces?: number;
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
-  support_needs?: RideSupportNeeds;
+  assistance_codes?: RideAssistanceCodes;
 }
 
 export interface RideWindow {
@@ -464,7 +460,7 @@ export interface RideBooking {
   state: 'CONFIRMING' | 'CONFIRMED' | 'RECONCILING' | 'COMPENSATING' | 'CANCEL_PENDING' | 'CANCELED' | 'COMPLETED' | 'FAILED';
   passengers: number;
   wheelchair_spaces: number;
-  support_needs?: RideSupportNeeds;
+  assistance_codes?: RideAssistanceCodes;
   promise: RidePromise;
   revision: number;
 }
