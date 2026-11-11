@@ -116,7 +116,7 @@ class Einzeloperationen(unittest.TestCase):
     def test_unbekannter_lauf_nicht_aktiv_und_sicherheitssperre(self):
         self.assertEqual(cap.hold(self.c, self.t, {"ref": "t8", "legs": [leg(uuid.uuid4())]}, ST).code, "UNKNOWN_RUN")
         cur = rs.tx(self.c, self.t)
-        cur.execute("UPDATE taktovia.vehicle_run SET state='CLOSED' WHERE tenant_id=%s AND id=%s", (self.t, self.run))
+        cur.execute("UPDATE taktovia.vehicle_run SET state='LOCKED' WHERE tenant_id=%s AND id=%s", (self.t, self.run))
         self.c.commit()
         self.assertEqual(cap.hold(self.c, self.t, {"ref": "t8b", "legs": [leg(self.run)]}, ST).code, "RUN_NOT_ACTIVE")
         run2 = runs.take("A")
