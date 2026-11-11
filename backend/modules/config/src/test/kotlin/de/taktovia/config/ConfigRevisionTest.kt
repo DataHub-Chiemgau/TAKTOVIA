@@ -266,9 +266,10 @@ class ConfigRevisionTest {
         assertEquals(r2.id, at("2026-05-31T23:59:59Z")!!.id)
         assertEquals(r3.id, at("2026-06-01T00:00:00Z")!!.id)
         assertEquals(30, at("2026-08-31T23:59:59Z")!!.values["max_wait_min"])
-        // r3 endet am 2026-09-01 (rechts offen); r2 hat kein Ende, ihr Wirken endet nicht durch r3, also gilt danach wieder r2
-        assertEquals(r2.id, at("2026-09-01T00:00:00Z")!!.id)
-        assertEquals(r2.id, at("2030-01-01T00:00:00Z")!!.id)
+        // Überlappungsverbot (§4.5, WP-M1-22): die Publikation von r3 schließt das offene Intervall von r2 zum 2026-06-01; r3 endet am 2026-09-01 (rechts offen), danach gilt keine Revision mehr
+        assertEquals(java.time.Instant.parse("2026-06-01T00:00:00Z"), fx.config.revisions.get(ctx, r2.id).effectiveTo)
+        assertNull(at("2026-09-01T00:00:00Z"))
+        assertNull(at("2030-01-01T00:00:00Z"))
         // jede Rekonstruktion nennt die Revisions-ID und die Nummer
         at("2026-04-01T00:00:00Z")!!.let { assertEquals(2L, it.revision); assertEquals(RevisionState.PUBLISHED, it.state); assertNotNull(it.publishedAt) }
         assertNull(fx.config.revisions.asOf(ctx, ScopeKind.REGION, UUID.randomUUID(), Instant.parse("2026-04-01T00:00:00Z")), "anderer Scope")

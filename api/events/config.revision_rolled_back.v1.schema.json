@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/config.revision_rolled_back.v1.schema.json",
+  "title": "Konfigurationsrevision zurückgenommen (WP-M1-22, LH-I.7-CFG-006)",
+  "description": "Genau dann, wenn eine Rücknahme (neue Revision mit den Werten einer früheren, `rolled_back_from` = fehlerhafte Revision) publiziert wurde; zusätzlich zu `config.revision_published` derselben Revision. Payload wie dort; die fehlerhafte Revision bleibt lesbar und unverändert, bestehende Zusagen bleiben bei ihrer gebundenen Version. Das Ereignis bleibt im Mandanten. Ereignisname und Felder sind Vorschlag (OP-33).",
+  "type": "object",
+  "required": [
+    "revision_id",
+    "scope_kind",
+    "scope_id",
+    "revision",
+    "state",
+    "schema_version",
+    "effective_from",
+    "effective_to",
+    "audit_event_id",
+    "predecessor_id",
+    "rolled_back_from"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "revision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "scope_kind": {
+      "type": "string",
+      "enum": [
+        "TENANT",
+        "REGION",
+        "DEPOT",
+        "SERVICE"
+      ]
+    },
+    "scope_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "state": {
+      "type": "string",
+      "const": "PUBLISHED"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,8}$"
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "effective_to": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "audit_event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "predecessor_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "rolled_back_from": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+}

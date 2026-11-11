@@ -12,6 +12,7 @@ import type { ResourceState } from '@taktovia/design-system';
 import { useEffect, useState } from 'react';
 import { DEFAULT_ZONE, useScreenContext } from '../ScreenContext';
 import { ImpactReportPanel } from './ImpactReportPanel';
+import { RevisionFreigabe } from './RevisionFreigabe';
 
 const SCOPE_KINDS: readonly ConfigScopeKind[] = ['TENANT', 'REGION', 'DEPOT', 'SERVICE', 'VEHICLE'];
 const SCOPE_LABEL: Record<ConfigScopeKind, string> = {
@@ -57,7 +58,7 @@ function range(p: ConfigParameter): string {
 /**
  * UI-17 Basis (Gebiete, Stops, Tarife, Konfiguration): Revisionsliste je Scope mit Ersteller, Zeitpunkt, Wirksamkeit, Grund und Diff Alt/Neu
  * (LH-I.7-CFG-003), Rekonstruktion „was galt zum Zeitpunkt T“ mit Revisions-ID (PH-AT-018) und der Parameterkatalog mit Einheit, Bereich und
- * Systemgrenze (LH-I.7-CFG-002/-004). Reine Anzeige: Anlegen, Prüfen und Freigeben folgen mit WP-M1-21 und -22. Der Mandant steht nie in einer Anfrage;
+ * Systemgrenze (LH-I.7-CFG-002/-004). Anlegen und Ändern von Entwürfen folgt im Konfigurationseditor; Prüfen, Freigeben und Veröffentlichen (WP-M1-22) übernimmt `RevisionFreigabe`. Der Mandant steht nie in einer Anfrage;
  * der Server bestimmt ihn aus der geprüften Mitgliedschaft. Rechte- und Fehlerzustand kommen aus dem Statuscode der Antwort, ohne Daten.
  */
 export function ConfigRevisions() {
@@ -81,6 +82,7 @@ export function ConfigRevisions() {
   const [asOfResult, setAsOfResult] = useState<string | undefined>(undefined);
   const [asOfError, setAsOfError] = useState<string | undefined>(undefined);
   const [tick, setTick] = useState(0);
+  const [release, setRelease] = useState<ConfigRevision | undefined>(undefined);
   const [impact, setImpact] = useState<
     { revision: ConfigRevision; state: ResourceState<ConfigImpactReport> } | undefined
   >(undefined);
@@ -281,12 +283,17 @@ export function ConfigRevisions() {
                 key: 'impact',
                 header: 'Wirkung',
                 render: (r) =>
-                  r.state === 'PUBLISHED' ? (
+                  r.state === 'PUBLISHED' || r.state === 'SUPERSEDED' ? (
                     <>–</>
                   ) : (
-                    <button type="button" onClick={() => analyze(r)}>
-                      Wirkung prüfen (Revision {r.revision})
-                    </button>
+                    <>
+                      <button type="button" onClick={() => analyze(r)}>
+                        Wirkung prüfen (Revision {r.revision})
+                      </button>{' '}
+                      <button type="button" onClick={() => setRelease(r)}>
+                        Freigabe öffnen (Revision {r.revision})
+                      </button>
+                    </>
                   ),
               },
             ]}
@@ -294,6 +301,13 @@ export function ConfigRevisions() {
           />
         )}
       </ResourceView>
+      {release ? (
+        <RevisionFreigabe
+          key={`${release.id}`}
+          revision={release}
+          onChanged={() => setTick((n) => n + 1)}
+        />
+      ) : null}
       {impact ? (
         <ImpactReportPanel
           revision={impact.revision.revision}

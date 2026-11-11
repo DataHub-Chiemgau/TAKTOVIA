@@ -52,7 +52,7 @@ class StructureFixture : AutoCloseable {
     val tx = TenantTransactions(ds)
     val ctxTx = ContextTransactions(tx, object : ContextRevalidator { override fun revalidate(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, lock: Boolean) {} })
     val audit = JdbcAuditPort()
-    val config: ConfigApi = ConfigApi.create(ctxTx, audit, Outbox())
+    val config: ConfigApi = ConfigApi.create(ctxTx, audit, Outbox(), revisionValidators = listOf(ServicegeoApi.offerModelValidator()))
     val geo: ServicegeoApi = ServicegeoApi.create(ctxTx, audit, config)
 
     /** Ein Mandant mit Rechtsträger und Betreiber-Organisation. */
@@ -70,7 +70,7 @@ class StructureFixture : AutoCloseable {
     }
 
     fun context(tenant: TenantId, subject: String = UUID.randomUUID().toString(), services: Set<UUID> = emptySet(),
-                scopes: Set<String> = setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write")) =
+                scopes: Set<String> = setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write", "config:publish")) =
         RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/structure", subject, "sid-$subject", true), tenant, setOf("tenant_admin"),
             scopes, services, UUID.randomUUID())
 
@@ -78,7 +78,10 @@ class StructureFixture : AutoCloseable {
     fun publishedRevision(ctx: RequestContext, kind: ScopeKind, scopeId: UUID, values: Map<String, Any?>, from: Instant = Instant.parse("2026-01-01T00:00:00Z")): ConfigRevisionView {
         val v = config.revisions.createDraft(ctx, CreateDraft(kind, scopeId, "1", values, from, null, "Testaufbau"))
         for ((state, extra) in listOf("VALIDATED" to "", "APPROVED" to ", approved_by = 'user:zweite-person'", "PUBLISHED" to ", published_at = clock_timestamp()")) {
-            tx.run(ctx.tenant) { j -> j.update("UPDATE taktovia.config_revision SET state = ?$extra WHERE id = ?", state, v.id) }
+            tx.run(ctx.tenant) { j ->
+                if (state == "PUBLISHED") j.update("UPDATE taktovia.config_revision p SET effective_to = n.effective_from FROM taktovia.config_revision n WHERE n.id = ? AND p.tenant_id = n.tenant_id AND p.scope_kind = n.scope_kind AND p.scope_id = n.scope_id AND p.state = 'PUBLISHED' AND p.effective_to IS NULL AND p.effective_from < n.effective_from", v.id)
+                j.update("UPDATE taktovia.config_revision SET state = ?$extra WHERE id = ?", state, v.id)
+            }
         }
         return config.revisions.get(ctx, v.id)
     }

@@ -21,6 +21,8 @@ object DbErrorMapper {
             state == "23514" && sql.message?.contains("policy_schema violation") == true -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein Konfigurationswert ist ungültig.", cause = e)
             state == "23514" -> ProblemException(ErrorCode.IMMUTABLE_RECORD, "Der Datensatz ist unveränderlich; eine Korrektur wird als neuer Datensatz angelegt.", cause = e)
             state == "23505" -> ProblemException(ErrorCode.CONFLICT, "Der Datensatz existiert bereits.", cause = e)
+            // Exclusion Constraint (z. B. überlappende publizierte Revisionen eines Scopes, Kap. 04 §4.5): gleichzeitig wirksame Version ausgeschlossen
+            state == "23P01" -> ProblemException(ErrorCode.CONFLICT, "Es gibt bereits eine überlappend wirksame Version; Stand neu lesen.", cause = e)
             state == "23503" -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein referenzierter Datensatz existiert nicht.", cause = e)
             state == "23502" || state == "22023" || state == "22P02" || state == "22001" || state == "22003" || state == "22007" || state == "22008" ->
                 ProblemException(ErrorCode.VALIDATION_FAILED, "Ein Wert ist ungültig.", cause = e)

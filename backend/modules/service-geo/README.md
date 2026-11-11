@@ -6,3 +6,5 @@ Paket `de.taktovia.servicegeo` mit `api` (öffentliche Ports) und `internal` (pr
 
 Regeln: schreibt nur eigene Tabellen (`db/table_owners.d/`); greift auf andere Module nur über deren `api`-Paket zu;
 hängt im Gradle-Build nur von `platform` ab.
+
+- **Dienstkonfiguration und Angebotsmodelle (WP-M1-25):** `ServicegeoApi.configurations` (wirksames Modell, Modellregeln und modellabhängige Werte über `ConfigApi.effective`), `OfferModelRules` (Planungsannahme PA-01, OP-28), `offerModelValidator()` als `RevisionValidator` für `ConfigApi`. Vertrag: [angebotsmodelle.md](../../../docs/umsetzungsplan/vertraege/angebotsmodelle.md). Test: `ServiceConfigOfferModelTest`.

@@ -28,7 +28,6 @@ listRetentionRules  # GET /v1/retention-rules
 listServiceAreas  # GET /v1/service-areas
 listStops  # GET /v1/stops
 planJourney  # POST /v1/federation/journeys/plan
-publishConfig  # POST /v1/config/revisions/{revision_id}/publish
 publishRoster  # POST /v1/rosters/{roster_id}/publish
 quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quotes
 receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
@@ -36,4 +35,3 @@ receiveProviderEvent  # POST /v1/payments/provider-events/{provider}
 recordDriverEvent  # POST /v1/driver/events
 releaseHold  # POST /v1/ride-offers/{ride_offer_id}/hold/release
 updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
-validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

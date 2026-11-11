@@ -11,6 +11,8 @@ listRetentionRules;retention:read;-;M1;N;N;N;N;N;N;J;N;N;N
 updateCompanyProfile;company:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateRetentionRule;retention:write;-;M1;N;N;N;N;N;N;J;N;N;N
 publishConfig;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
+approveConfigRevision;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
+rollbackConfigRevision;config:publish;-;M1;N;N;N;N;N;J;J;N;N;N
 recordDriverEvent;driver:events;-;M3;N;J;N;N;N;N;N;N;N;N
 cancelJourney;journeys:cancel;-;M2;J;N;J;N;N;N;N;N;N;N
 confirmJourney;journeys:book;-;M2;J;N;J;N;N;N;N;N;N;N
@@ -50,6 +52,7 @@ updateConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
 getConfigRevision;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 getConfigImpactReport;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 getEffectiveConfig;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
+getServiceConfiguration;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 listConfigRevisions;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 listConfigParameters;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 requestConfigImpact;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
@@ -57,6 +60,7 @@ validateConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
 publishRoster;rosters:publish;HR;M4;N;N;N;N;N;N;N;N;J;N
 createService;services:write;-;M1;N;N;N;N;N;J;J;N;N;N
 listServices;services:read;-;M1;N;N;J;J;J;J;J;N;N;N
+listServiceOfferModels;services:read;-;M1;N;N;J;J;J;J;J;N;N;N
 createWebhookSubscription;webhooks:write;-;M1;N;N;N;N;N;N;J;N;N;N
 listWebhookSubscriptions;webhooks:read;-;M1;N;N;N;N;N;N;J;N;N;N
 listOrganizations;organization:read;-;M1;N;N;N;J;J;J;J;J;N;N

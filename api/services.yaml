@@ -132,8 +132,168 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ServiceUpdate'
+  /v1/services/{service_id}/configuration:
+    get:
+      summary: Wirksame Dienstkonfiguration mit Angebotsmodell und Modellregeln lesen
+      description: 'Liefert zum Zeitpunkt at (Standard: jetzt) das wirksame Angebotsmodell (Bestandteil der veröffentlichten Dienstrevision), die zugehörigen Modellregeln und die modellabhängigen Werte, aufgelöst über den Konfigurationsport (WP-M1-25). Ohne veröffentlichte Dienstkonfiguration ist offer_model null. Unbekannter oder fremder Dienst: 404. Die Modellregeln sind Planungsannahme PA-01 (OP-28).'
+      operationId: getServiceConfiguration
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: at
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceConfiguration'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/service-offer-models:
+    get:
+      summary: Angebotsmodelle mit Modellregeln auflisten
+      description: 'Regeltabelle der drei Angebotsmodelle: je Modell die Pflichtparameter, die unzulässigen und die optionalen Parameter der Dienstrevision (Planungsannahme PA-01, OP-28, nicht fachlich freigegeben). Grundlage der Oberfläche Dienst anlegen.'
+      operationId: listServiceOfferModels
+      security:
+      - oidc:
+        - services:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceOfferModelList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    OfferModel:
+      type: string
+      description: Angebotsmodell des Dienstes (Planungsannahme PA-01); entspricht traffic_type der Dienstkonfiguration.
+      enum:
+      - AREA_ON_DEMAND
+      - LINE_ON_DEMAND
+      - STATION_FEEDER
+    ServiceOfferModelRules:
+      type: object
+      additionalProperties: false
+      properties:
+        model:
+          $ref: '#/components/schemas/OfferModel'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 100
+        required:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        forbidden:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        optional:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+      - model
+      - label
+      - required
+      - forbidden
+      - optional
+    ServiceOfferModelList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/ServiceOfferModelRules'
+      required:
+      - items
+    ServiceConfiguration:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        as_of:
+          type: string
+          format: date-time
+        offer_model:
+          oneOf:
+          - $ref: '#/components/schemas/OfferModel'
+          - type: 'null'
+        model_rules:
+          oneOf:
+          - $ref: '#/components/schemas/ServiceOfferModelRules'
+          - type: 'null'
+        parameters:
+          type: object
+          description: Wirksame Werte der modellabhängigen Parameter (pooling_allowed, max_detour_pct, stop_walk_max_m, advance_arrival_buffer_min); nur gesetzte Werte.
+        revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        effective_from:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - service_id
+      - as_of
+      - offer_model
+      - model_rules
+      - parameters
+      - revision_id
+      - effective_from
     Service:
       type: object
       additionalProperties: false

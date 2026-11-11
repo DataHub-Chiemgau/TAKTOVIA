@@ -289,6 +289,7 @@ paths:
   /v1/config/revisions/{revision_id}/validate:
     post:
       summary: Entwurf gegen das policy_schema und die Systemgrenzen prüfen
+      description: 'Prüft den Entwurf gegen die jetzt gültige Schema-Version (Systemgrenzen, Sicherheitsinvarianten) und die fachlichen Modellregeln der Module (WP-M1-22). Ist alles gültig, wird die Revision VALIDATED (neue Zeilenversion im ETag); sonst bleibt sie Entwurf und die Antwort nennt alle Feldverletzungen mit valid=false (200). Jede Prüfung steht im Audit (audit_event_id). Nur Entwürfe (sonst 409); If-Match = Zeilenversion. '
       operationId: validateConfigRevision
       security:
       - oidc:
@@ -305,6 +306,114 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConfigValidationReport'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Zeilenversion) nach der Prüfung.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/config/revisions/{revision_id}/approve:
+    post:
+      summary: Geprüfte Revision durch eine zweite Person freigeben
+      description: 'Vier-Augen-Freigabe (WP-M1-22): nur eine VALIDATED-Revision; der Freigeber muss ein Mensch und eine andere Person als der Ersteller sein (sonst 403). Die Freigabe gilt für genau diesen Stand einschließlich Wirksamkeitsbeginn. Audit config.revision.approved. If-Match = Zeilenversion. '
+      operationId: approveConfigRevision
+      security:
+      - oidc:
+        - config:publish
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/config/revisions/{revision_id}/rollback:
+    post:
+      summary: Fehlerhafte publizierte Revision als neue Revision zurücknehmen
+      description: 'Legt eine neue Revision (Entwurf) mit den Werten der Vorgängerrevision bzw. der gewählten früheren Revision desselben Scopes an (WP-M1-22, Rollback als neue Revision, rolled_back_from nennt die fehlerhafte Revision). Die fehlerhafte Revision bleibt unverändert und lesbar, bestehende Zusagen mit gebundener Revisionsreferenz bleiben bei ihrer Ursprungsversion. Die neue Revision geht denselben Weg (validieren, freigeben, publizieren), die Vier-Augen-Regel gilt auch für die Rücknahme. Nur für publizierte Revisionen (sonst 409). If-Match = Zeilenversion der fehlerhaften Revision. Audit config.revision.reverted. '
+      operationId: rollbackConfigRevision
+      security:
+      - oidc:
+        - config:publish
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRollbackRequest'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der neuen Revision.
+            Location:
+              schema:
+                type: string
+              description: URI der neuen Revision.
         '400':
           $ref: common.yaml#/components/responses/Problem
         '401':
@@ -884,6 +993,33 @@ components:
           - type: string
             format: date-time
           - type: 'null'
+        validated_by:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        validated_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        approved_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        published_by:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        rolled_back_from:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Die fehlerhafte publizierte Revision, die diese Revision zurücknimmt (Rollback als neue Revision); sonst null.
         change_log:
           $ref: '#/components/schemas/ConfigChangeLog'
       required:
@@ -954,6 +1090,16 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         valid:
           type: boolean
+        state:
+          $ref: '#/components/schemas/ConfigRevisionState'
+        row_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Zeilenversion nach der Prüfung (If-Match der Freigabe).
+        audit_event_id:
+          $ref: common.yaml#/components/schemas/UUID
         violations:
           type: array
           items:
@@ -981,6 +1127,22 @@ components:
       - revision_id
       - valid
       - violations
+    ConfigRollbackRequest:
+      type: object
+      additionalProperties: false
+      description: Rücknahme einer fehlerhaften publizierten Revision (WP-M1-22). Der Grund ist Pflicht; ohne target_revision_id gilt die Vorgängerrevision.
+      properties:
+        effective_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        target_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - effective_from
+      - reason
     ConfigImpactReport:
       type: object
       additionalProperties: false

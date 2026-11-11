@@ -460,6 +460,7 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+          description: Ressourcenrevision der publizierten Revision (Zeilenversion, zugleich der ETag). Die Nummer im Scope steht in ConfigRevision.revision.
         state:
           type: string
           enum:
