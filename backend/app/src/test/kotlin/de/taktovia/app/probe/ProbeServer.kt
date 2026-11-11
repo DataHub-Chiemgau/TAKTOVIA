@@ -55,9 +55,10 @@ class ProbeServer private constructor(val ctx: ConfigurableApplicationContext) {
         private fun start(probe: Boolean, props: List<String>): ProbeServer {
             TaktoviaTestSupport.requireDatabase()
             ProbeDb.ensure()
+            if (probe) PlatformBlocksDb.ensure()
             return servers.getOrPut((if (probe) "probe|" else "prod|") + props.joinToString("|")) {
                 val base = listOf("server.port=0", "taktovia.api.cursor-secret=test-cursor-secret-test-cursor-secret-1234") +
-                    if (probe) listOf("taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml") else emptyList()
+                    if (probe) listOf("taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml,classpath:probe/platform-blocks-api.yaml") else emptyList()
                 val ctx = SpringApplicationBuilder(TaktoviaApplication::class.java).run(*(base + props).map { "--$it" }.toTypedArray())
                 Runtime.getRuntime().addShutdownHook(Thread { ctx.close() })
                 ProbeServer(ctx)

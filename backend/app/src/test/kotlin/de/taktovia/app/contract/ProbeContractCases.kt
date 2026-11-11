@@ -13,6 +13,12 @@ class ProbeContractCases(private val server: ProbeServer) {
         return r.json["id"].asString() to r.header("ETag")!!
     }
 
+    private val payer = tenant + ("X-Test-Scopes" to "probe:payments:transition")
+    private fun newPayment(): Pair<String, String> {
+        val r = server.post("/v1/probe/payments", "{}", tenant)
+        return r.json["id"].asString() to r.header("ETag")!!
+    }
+
     val cases: Map<String, ContractCase> = listOf(
         ContractCase("listProbeItems", 200, { ContractRequest("GET", "/v1/probe/items?limit=2", headers = tenant) }, 422, { ContractRequest("GET", "/v1/probe/items?limit=0", headers = tenant) }),
         ContractCase("createProbeItem", 201, { ContractRequest("POST", "/v1/probe/items", """{"name":"Alpha","price":{"amount_minor":100,"currency":"EUR","exponent":2}}""", tenant) },
@@ -25,6 +31,11 @@ class ProbeContractCases(private val server: ProbeServer) {
         ContractCase("postProbeFree", 200, { ContractRequest("POST", "/v1/probe/free", """{"a":1}""", tenant) }, 415, { ContractRequest("POST", "/v1/probe/free", """{"a":1}""", tenant, contentType = "text/plain") }),
         ContractCase("createProbeAppointment", 201, { ContractRequest("POST", "/v1/probe/appointments", """{"at":{"desired_at":"2026-10-25T02:30:00+02:00","time_zone":"Europe/Berlin"}}""", tenant) },
             422, { ContractRequest("POST", "/v1/probe/appointments", """{"at":{"desired_at":"2026-10-25T02:30:00","time_zone":"Europe/Berlin"}}""", tenant) }),
+        ContractCase("createProbePayment", 201, { ContractRequest("POST", "/v1/probe/payments", "{}", tenant) }, 415, { ContractRequest("POST", "/v1/probe/payments", "{}", tenant, contentType = "text/plain") }),
+        ContractCase("getProbePayment", 200, { ContractRequest("GET", "/v1/probe/payments/${newPayment().first}", headers = tenant) },
+            404, { ContractRequest("GET", "/v1/probe/payments/${UUID.randomUUID()}", headers = tenant) }),
+        ContractCase("transitionProbePayment", 200, { val (id, etag) = newPayment(); ContractRequest("POST", "/v1/probe/payments/$id/transitions", """{"state":"AUTHORIZED"}""", payer + ("If-Match" to etag)) },
+            409, { val (id, etag) = newPayment(); ContractRequest("POST", "/v1/probe/payments/$id/transitions", """{"state":"CAPTURED"}""", payer + ("If-Match" to etag)) }),
         ContractCase("getProbeLeaky", 200, { ContractRequest("GET", "/v1/probe/leaky", headers = tenant) }, 403, { ContractRequest("GET", "/v1/probe/leaky?fail=1", headers = tenant) }),
     ).associateBy { it.operationId }
 
