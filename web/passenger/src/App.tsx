@@ -1,17 +1,30 @@
 import type { ReactNode } from 'react';
-import { rightsOf, useSession } from '@taktovia/api-client';
+import {
+  rightsOf,
+  useAuthOptional,
+  useMySessions,
+  useSession,
+  useSignOut,
+  useTenantSwitcherData,
+} from '@taktovia/api-client';
 import {
   AppFrame,
+  AuthStateView,
+  BusyButton,
   ErrorState,
   ScreenFrame,
+  SessionList,
   StateView,
+  TenantSwitcher,
   ResourceView,
   visibleNav,
   zeit,
 } from '@taktovia/design-system';
 import type { NavEntry, NavLinkProps, ScreenContext } from '@taktovia/design-system';
-import type { Right } from '@taktovia/api-client';
+import type { Right, SessionResource } from '@taktovia/api-client';
+import type { ResourceState } from '@taktovia/design-system';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Fragment } from 'react';
 
 const ZONE = 'Europe/Berlin';
 
@@ -68,6 +81,78 @@ function Placeholder({
   );
 }
 
+/** Konto ohne aktive Mitgliedschaft: verständlicher Zustand ohne Datenzugriff (WP-M1-44 AK 1). */
+function NoMembership() {
+  const auth = useAuthOptional();
+  return (
+    <AuthStateView
+      kind="noMembership"
+      action={
+        auth ? (
+          <button type="button" onClick={() => auth.signOut()}>
+            Abmelden
+          </button>
+        ) : undefined
+      }
+    />
+  );
+}
+
+/** UI-05 Basis (Konto): eigene Sitzungen, einzelne Geräte und alle Geräte abmelden (WP-M1-10, WP-M1-44). */
+function Konto() {
+  const sessions = useMySessions();
+  const context = useScreenContext({ tone: 'info', label: 'Basis: Sitzungen' });
+  if (!context) return null;
+  const state: ResourceState<SessionResource[]> =
+    sessions.state.status === 'ready'
+      ? { status: 'ready', data: sessions.state.items }
+      : sessions.state.status === 'error'
+        ? { status: 'error', error: sessions.state.error }
+        : { status: 'loading' };
+  return (
+    <ScreenFrame title="Konto" context={context}>
+      {sessions.notice ? <p role="status">{sessions.notice}</p> : null}
+      <ResourceView
+        state={state}
+        isEmpty={(d) => d.length === 0}
+        empty={{ title: 'Keine Sitzungen' }}
+        errorAction={
+          <button type="button" onClick={sessions.reload}>
+            Erneut versuchen
+          </button>
+        }
+      >
+        {(items) => (
+          <SessionList
+            sessions={items}
+            currentId={sessions.currentId}
+            formatTime={(iso) => zeit.toRfc3339(Date.parse(iso), ZONE)}
+            onRevoke={sessions.revoke}
+            onRevokeAll={sessions.revokeAll}
+          />
+        )}
+      </ResourceView>
+      <p>
+        Kontakt, Präferenzen und Vertreter (UI-05 im Vollausbau) folgen mit der Registrierung in M2.
+      </p>
+    </ScreenFrame>
+  );
+}
+
+/** Kopfbereich: Mandantenwähler (nur bei mehreren Mandanten), Abmelden. */
+function HeaderEnd() {
+  const data = useTenantSwitcherData();
+  const signOut = useSignOut();
+  const auth = useAuthOptional();
+  if (!data) return null;
+  return (
+    <>
+      <TenantSwitcher {...data} />
+      {auth ? <BusyButton onAction={signOut}>Abmelden</BusyButton> : null}
+    </>
+  );
+}
+
 function RequirePassenger({ children }: { children: ReactNode }) {
   const session = useSession();
   if (session.status !== 'ready' || !rightsOf(session.me).has('passenger.app'))
@@ -85,6 +170,7 @@ export function App() {
         <StateView kind="loading" level={1} />
       </main>
     );
+  if (session.status === 'error' && session.error.status === 403) return <NoMembership />;
   if (session.status === 'error')
     return (
       <main>
@@ -105,44 +191,43 @@ export function App() {
       nav={visibleNav(NAV, rightsOf(session.me))}
       currentHref={location.pathname}
       linkAs={RouterLink}
+      headerEnd={<HeaderEnd />}
     >
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Placeholder
-              title="Start"
-              emptyTitle="Noch keine Fahrtsuche"
-              hint="Fahrten suchen und buchen (UI-01 bis UI-03) folgt ab M2."
-            />
-          }
-        />
-        <Route
-          path="/reisen"
-          element={
-            <RequirePassenger>
+      <Fragment key={session.me.tenant_id}>
+        <Routes>
+          <Route
+            path="/"
+            element={
               <Placeholder
-                title="Meine Reisen"
-                emptyTitle="Keine Reisen"
-                hint="Aktive und vergangene Reisen (UI-04) folgen ab M2."
+                title="Start"
+                emptyTitle="Noch keine Fahrtsuche"
+                hint="Fahrten suchen und buchen (UI-01 bis UI-03) folgt ab M2."
               />
-            </RequirePassenger>
-          }
-        />
-        <Route
-          path="/konto"
-          element={
-            <RequirePassenger>
-              <Placeholder
-                title="Konto"
-                emptyTitle="Noch keine Kontodaten"
-                hint="UI-05 Basis: Kontakt, Präferenzen und Vertreter folgen mit der Registrierung."
-              />
-            </RequirePassenger>
-          }
-        />
-        <Route path="*" element={<StateView kind="notFound" level={1} />} />
-      </Routes>
+            }
+          />
+          <Route
+            path="/reisen"
+            element={
+              <RequirePassenger>
+                <Placeholder
+                  title="Meine Reisen"
+                  emptyTitle="Keine Reisen"
+                  hint="Aktive und vergangene Reisen (UI-04) folgen ab M2."
+                />
+              </RequirePassenger>
+            }
+          />
+          <Route
+            path="/konto"
+            element={
+              <RequirePassenger>
+                <Konto />
+              </RequirePassenger>
+            }
+          />
+          <Route path="*" element={<StateView kind="notFound" level={1} />} />
+        </Routes>
+      </Fragment>
     </AppFrame>
   );
 }

@@ -6,13 +6,21 @@ export class ApiError extends Error {
   readonly status: number;
   readonly problem: Problem | undefined;
   readonly retryAfterSeconds: number | undefined;
+  /** `WWW-Authenticate` der Antwort (z. B. `insufficient_user_authentication` für den Step-up zum zweiten Faktor). */
+  readonly wwwAuthenticate: string | undefined;
 
-  constructor(status: number, problem?: Problem, retryAfterSeconds?: number) {
+  constructor(
+    status: number,
+    problem?: Problem,
+    retryAfterSeconds?: number,
+    wwwAuthenticate?: string,
+  ) {
     super(problem?.code ?? `HTTP_${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.problem = problem;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.wwwAuthenticate = wwwAuthenticate;
   }
 }
 
@@ -21,6 +29,11 @@ export interface ApiClientOptions {
   fetch?: typeof fetch;
   /** Liefert das Zugriffstoken aus dem Arbeitsspeicher; es wird nie in Web-Speicher oder Cookies abgelegt. */
   getToken?: () => string | undefined;
+  /**
+   * Mandantenbindung dieses Tabs (`X-Taktovia-Context` aus dem Tenantwechsel). Sie verleiht keine Rechte: der Server prüft sie bei jeder Anfrage
+   * gegen die Mitgliedschaft; ohne Bindung gilt der Standardmandant.
+   */
+  getContext?: () => string | undefined;
   /** Erzeugt Idempotency-Keys; Standard `crypto.randomUUID`. */
   newKey?: () => string;
 }
@@ -84,6 +97,8 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         headers.set('If-Match', `"${String(args.revision)}"`);
       const token = options.getToken?.();
       if (token) headers.set('authorization', `Bearer ${token}`);
+      const context = options.getContext?.();
+      if (context) headers.set('x-taktovia-context', context);
       const init: RequestInit = { method: info.method, headers, credentials: 'omit' };
       if (info.hasBody && args.body !== undefined) {
         headers.set('content-type', 'application/json');
@@ -104,6 +119,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           response.status,
           parseProblem(text),
           Number.isFinite(retry) && retry > 0 ? retry : undefined,
+          response.headers.get('www-authenticate') ?? undefined,
         );
       }
       return (text ? JSON.parse(text) : undefined) as never;

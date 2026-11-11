@@ -27,6 +27,15 @@ async function navLinks() {
 }
 
 describe('operator Anwendungsrahmen', () => {
+  it('/v1/me mit Status 403 (keine Mitgliedschaft) zeigt einen verständlichen Zustand ohne Rahmen, Navigation und Daten', async () => {
+    setup(new ApiError(403));
+    const state = await screen.findByTestId('auth-state');
+    expect(state).toHaveAttribute('data-kind', 'noMembership');
+    expect(state).toHaveTextContent('Keine Mitgliedschaft');
+    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.queryByTestId('state-view')).toBeNull();
+  });
+
   it('zeigt den Ladezustand, danach den Rahmen mit Mandant aus /v1/me', async () => {
     setup(['ADMIN']);
     expect(screen.getByTestId('state-view')).toHaveAttribute('data-kind', 'loading');
@@ -120,7 +129,6 @@ describe('operator Anwendungsrahmen', () => {
 
   it.each([
     [401, 'unauthenticated'],
-    [403, 'forbidden'],
     [404, 'notFound'],
     [429, 'rateLimited'],
     [503, 'unavailable'],
