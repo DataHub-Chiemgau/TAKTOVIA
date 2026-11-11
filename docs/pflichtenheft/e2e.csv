@@ -16,13 +16,13 @@ AT-14;11.2;Anschlusswarnung;Zubringer verspätet, Pufferschwelle unterschritten;
 AT-15;11.2;Zahlungsfehler und Retry;PSP-Timeout, später identisches Event;Keine Doppelbelastung, klarer Status;Nicht ausgeführt;;;
 AT-16;11.2;Gutschein und Guthaben;Zweifach parallel eingelöster Gutschein;Einlösungsgrenze und Saldo transaktionssicher;Nicht ausgeführt;;;
 AT-17;11.2;Massen-Push Zielgruppe;Nachricht an ein Gebiet und Dienst;Keine andere Gruppe erhält sie;Nicht ausgeführt;;;
-AT-18;11.2;Rollen-/Mandantentest;Support/Disponent aus anderem Betreiber;Zugriff konsequent verweigert;Nicht ausgeführt;;;
+AT-18;11.2;Rollen-/Mandantentest;Support/Disponent aus anderem Betreiber;Zugriff konsequent verweigert;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-0194aabf61cf338d; tests/acceptance/evidence/m1/AT-18-run-0194aabf61cf338d.json";Ausstehend (Auftraggeber, D-12)
 AT-19;11.2;Barrierefreier Buchungsweg;Screenreader, Tastatur, Schriftvergrößerung;Ohne Kartenpflicht vollständig ausführbar;Nicht ausgeführt;;;
 AT-20;11.2;E-Reichweitenkonflikt;Niedriger SoC vor langem Umlauf;Fahrzeug nicht disponierbar, Ladealternative;Nicht ausgeführt;;;
 AT-21;11.2;Prognoseausfall;Prognosesystem abgeschaltet;Buchung und Disposition funktionieren ohne KI;Nicht ausgeführt;;;
 AT-22;11.2;Simulationsisolation;Planer startet große Szenariosimulation;Keine Änderung an Echt-Buchungen, SLOs bleiben gültig;Nicht ausgeführt;;;
 AT-23;11.2;Restore;Ausfall produktnaher Datenbank;Wiederherstellung mit vereinbartem RTO/RPO;Nicht ausgeführt;;;
-AT-24;11.2;API-/Webhook-Wiederholung;Doppelte und verspätete Events;Konsistenter Endstatus trotz Wiederholung;Nicht ausgeführt;;;
+AT-24;11.2;API-/Webhook-Wiederholung;Doppelte und verspätete Events;Konsistenter Endstatus trotz Wiederholung;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-d2c0de793ba27d98; tests/acceptance/evidence/m1/AT-24-run-d2c0de793ba27d98.json";Ausstehend (Auftraggeber, D-12)
 AT-25;11.2;PBefG-Datenexport;Testdaten für gesetzlich relevante Kategorien;Vollständigkeit nach Freigabecheckliste;Nicht ausgeführt;;;
 AT-26;11.2;Pflichtcheck vor Disposition;Schicht anlegen, Fahrer anmelden und Fahrzeug ohne Prüfung verfügbar schalten;"Keine Einsatzfreigabe; Liste der fehlenden Prüfschritte sichtbar";Nicht ausgeführt;;;
 AT-27;11.2;Bestandener Check;Pflichtprüfung komplett mit gültigem Fahrer/Fahrzeug absenden;"Prüfnachweis unveränderlich; Fahrzeug darf bei erfüllten Regeln starten";Nicht ausgeführt;;;
@@ -47,7 +47,7 @@ AT-45;11.2;Soll-/Ist-Zeiten;Fahrer stempelt vor Fahrzeugprüfung, legt Pause ein
 AT-46;11.2;Offline-Zeiterfassung;"Mobil offline ein- und ausstempeln; danach Daten synchronisieren";Ereignisse genau einmal, mit Zeitkonflikterkennung übernommen;Nicht ausgeführt;;;
 AT-47;11.2;DST-Nachtschicht;Schicht über Umstellung Sommer-/Winterzeit planen;Korrekte absolute Zeit, korrekte lokale Darstellung, keine stille Verschiebung;Nicht ausgeführt;;;
 AT-48;11.2;Zeitkorrektur;Mitarbeiter stellt Korrekturantrag, Manager lehnt/genehmigt abwechselnd ab;"Ist-Zeiten bleiben unverändert bis Freigabe; Historie vorhanden";Nicht ausgeführt;;;
-AT-49;11.2;Mandanten-/Datenschutzprüfung;Fremdmandant liest Fotos, Arbeitszeit oder Krankheitsdetails;Unberechtigter Zugriff serverseitig abgelehnt und protokolliert;Nicht ausgeführt;;;
+AT-49;11.2;Mandanten-/Datenschutzprüfung;Fremdmandant liest Fotos, Arbeitszeit oder Krankheitsdetails;Unberechtigter Zugriff serverseitig abgelehnt und protokolliert;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-5dd27e0bcd8ee027; tests/acceptance/evidence/m1/AT-49-run-5dd27e0bcd8ee027.json";Ausstehend (Auftraggeber, D-12)
 AT-50;11.2;Ende-zu-Ende-Fahrzeugausfall;Kritischer Schaden während Dienst, Ersatzfahrer/-fahrzeug disponieren;Neuer Dienst/Check, Sperre, Rebooking und Fahrgastkommunikation konsistent;Nicht ausgeführt;;;
 AT-51;11.2;Sicherheitsfreigabe;Leitstelle versucht kritische Sperre ohne Werkstattnachweis zu entfernen;"Serverseitig verhindert; Auditlog dokumentiert Fehlversuch";Nicht ausgeführt;;;
 AT-52;11.2;Veröffentlichungsdiff;Teilweise neue Dienstplanrevision veröffentlichen;"Betroffene Empfänger und Änderungen korrekt; keine doppelten Pushes";Nicht ausgeführt;;;
@@ -89,14 +89,14 @@ E2E-087;N.3;Anschluss an Linienbus;Rufbusfahrt endet an Haltestelle eines Linien
 E2E-088;N.3;Partner Timeout;Partner B antwortet nicht auf Verfügbarkeit.;Andere Angebote bleiben verfügbar, B wird als unverfügbar markiert.;Nicht ausgeführt;;;
 E2E-089;N.3;Buchung von zwei Betreibern;Teilsegment 1 ist reserviert, Segment 2 scheitert.;Kompensation und Kundennachricht nach definierter Reise-Policy.;Nicht ausgeführt;;;
 E2E-090;N.3;Partner-Doppelnachricht;Identische Bestätigung wird wiederholt zugestellt.;Genau ein Zustandsübergang und keine Doppelbelastung.;Nicht ausgeführt;;;
-E2E-091;N.3;Cross-Tenant Zugriff;Mandant A fordert Rechnung/Personalprofil von B an.;Serverseitige Abweisung und Sicherheitsprotokoll.;Nicht ausgeführt;;;
+E2E-091;N.3;Cross-Tenant Zugriff;Mandant A fordert Rechnung/Personalprofil von B an.;Serverseitige Abweisung und Sicherheitsprotokoll.;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-ac5a8c577bfb135f; tests/acceptance/evidence/m1/E2E-091-run-ac5a8c577bfb135f.json";Ausstehend (Auftraggeber, D-12)
 E2E-092;N.3;Fremdbeleg anderer Mandant;Fahrer ordnet Foto einem fremden Firmenfahrzeug zu.;"Zugriff wird verweigert; Original bleibt sicher im Entwurf des richtigen Mandanten.";Nicht ausgeführt;;;
 E2E-093;N.3;Partner-Tarifclearing;Eine Buchung umfasst zwei Tarife, zwei Beförderer, eine Zahlung.;Kundenbeleg, Segmentumsätze und monatliche Partnerforderung stimmen.;Nicht ausgeführt;;;
 E2E-094;N.3;Fahrzeug von anderem Eigentümer;Fahrzeug A gehört Firma X und fährt Dienst von Y.;"Kosten- und Leistungsträger korrekt getrennt; keine gegenseitige Stammdatenfreigabe.";Nicht ausgeführt;;;
 E2E-095;N.3;Schicht mit Partnerfahrzeug;Mandant nutzt vertraglich freigegebenes Drittanbieterfahrzeug.;Qualifikation, Fahrtschicht und Checkfreigabe werden vor Einsatz geprüft.;Nicht ausgeführt;;;
-E2E-096;N.3;Konfigurationsänderung Zukunft;Betreiber ändert Vorlaufzeit ab Montag.;"Sonntagsfahrten unverändert; künftige Angebote nutzen neuen Wert.";Nicht ausgeführt;;;
-E2E-097;N.4;Unzulässige Konfiguration;Admin setzt negative Wartezeit oder deaktiviert Pflichtkontrolle.;Schema und Sicherheitsinvariante weisen Änderung zurück.;Nicht ausgeführt;;;
-E2E-098;N.4;Konfigurations-Rollback;Freigegebene Tarifversion ist fehlerhaft.;"Vorherige Konfiguration wiederherstellbar; Audit und Buchungszusage bleiben korrekt.";Nicht ausgeführt;;;
+E2E-096;N.3;Konfigurationsänderung Zukunft;Betreiber ändert Vorlaufzeit ab Montag.;"Sonntagsfahrten unverändert; künftige Angebote nutzen neuen Wert.";Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-c0305b9f737adc43; tests/acceptance/evidence/m1/E2E-096-run-c0305b9f737adc43.json";Ausstehend (Auftraggeber, D-12)
+E2E-097;N.4;Unzulässige Konfiguration;Admin setzt negative Wartezeit oder deaktiviert Pflichtkontrolle.;Schema und Sicherheitsinvariante weisen Änderung zurück.;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-a7fe27beaef79465; tests/acceptance/evidence/m1/E2E-097-run-a7fe27beaef79465.json";Ausstehend (Auftraggeber, D-12)
+E2E-098;N.4;Konfigurations-Rollback;Freigegebene Tarifversion ist fehlerhaft.;"Vorherige Konfiguration wiederherstellbar; Audit und Buchungszusage bleiben korrekt.";Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-8cfa8674cfc14082; tests/acceptance/evidence/m1/E2E-098-run-8cfa8674cfc14082.json";Ausstehend (Auftraggeber, D-12)
 E2E-099;N.4;Nachfragealarm;In einem Gebiet häufen sich Kapazitätsablehnungen.;Schwellenwert erzeugt einen zentralen Alert und Kapazitätsvorschlag.;Nicht ausgeführt;;;
 E2E-100;N.4;Werkstattausfall;Fahrzeug wird wegen Schaden gesperrt und Partner hat Reserven.;Vertraglich zulässige Übernahme als Option, keine unautorisierte Zuweisung.;Nicht ausgeführt;;;
 E2E-101;N.4;Mehrgebietsauswertung;Aufgabenträger betreut drei Firmen und zwei Gebiete.;"Freigegebene Gesamt-KPIs stimmen; personenbezogene Partnerdaten verborgen.";Nicht ausgeführt;;;

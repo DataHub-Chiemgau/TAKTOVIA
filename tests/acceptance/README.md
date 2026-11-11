@@ -18,6 +18,8 @@ Testbibliothek unter [`../lib/`](../lib).
 | `taktovia_at/seed.py` | Seed „Mandanten A/B“ (PH-AT-001), [Seed-Verfahren](docs/seed-verfahren.md) |
 | `taktovia_at/evidence.py`, `schema/evidence.schema.json` | Evidenzschema, Personendatenprüfung, Ablage |
 | `taktovia_at/defects.py` | [Mangelklassen A/B/C](docs/mangelklassen.md) |
+| `m1_gate/` | **M1-Gate-Abnahmesuite (WP-M1-45):** die elf Gate-Tests (PH-AT-001/-011/-017/-018, AT-18/-24/-49, E2E-091/-096/-097/-098) als Szenarien unter der Runtime-Rolle; `run.py` (Lauf, Evidenz, `--write-e2e`), `traceability.py` (Gate-Regeln R1 bis R3), Umfang je Test: [docs/m1-gate-umfang.md](docs/m1-gate-umfang.md); Evidenz unter `evidence/m1/` |
+| `test_dsfa_gate.py`, `test_loeschjournal_restore.py` (in `security/`) | Release-Gate der DSFA (`tools/check_dsfa.py`, WP-M1-42) und Restore belebt Gelöschtes nicht wieder (WP-M1-33/-39) |
 | `catalog/scenarios.csv` | 106 + 22 Szenarien, Zielmeilenstein vorläufig (erzeugt mit `tools/build_catalog.py`) |
 | `taktovia_at/scenarios/smoke.py` | Rauchtest `TECH-SMOKE-001` |
 | [`docs/testzeit.md`](docs/testzeit.md) | Steuerbare Testzeit und ihre Grenze |
@@ -28,3 +30,14 @@ Testbibliothek unter [`../lib/`](../lib).
 - Simulator- und Sandbox-Anteile stehen in `environment.simulated_components`; sie sind kein Nachweis gegen einen realen PSP oder Partner.
 - Die 128 Katalogszenarien sind benannt, aber nicht implementiert (`NOT_IMPLEMENTED`); ein Aufruf liefert Exit-Code 2.
 - Nicht in CI verdrahtet (`.github/` gehört nicht zu diesem Paket): Aufruf siehe oben, Abhängigkeiten in `tests/requirements.txt`.
+
+## M1-Gate-Suite (WP-M1-45)
+
+```bash
+cd backend && ./gradlew build              # erzeugt die JUnit-Ergebnisse, auf die die Szenarien verweisen
+python tests/acceptance/m1_gate/run.py     # elf Szenarien, Evidenz nach tests/acceptance/evidence/m1/, Exit 0 nur bei allen grün
+python tests/acceptance/m1_gate/run.py --write-e2e   # trägt Build, Nachweis, Entscheidung (Ausstehend) aus dem Lauf in docs/pflichtenheft/e2e.csv ein
+python tests/acceptance/m1_gate/traceability.py [--strict]   # CI-Regeln: keine umgesetzte MUSS-Zeile ohne Testfall, e2e.csv nur aus Läufen
+```
+
+Die Szenarien prüfen den in M1 prüfbaren Umfang ([m1-gate-umfang.md](docs/m1-gate-umfang.md)); nicht prüfbare Teilschritte stehen dort mit Zielmeilenstein (OP-02). Die Abnahmeentscheidung bleibt `PENDING`/`Ausstehend`.
