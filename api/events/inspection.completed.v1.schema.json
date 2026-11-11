@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/inspection.completed.v1.schema.json",
+  "title": "Prüflauf abgeschlossen (WP-M3-14)",
+  "description": "Payload von `inspection.completed`. Aggregat: inspection_run / n. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "inspection_id",
+    "vehicle_id",
+    "shift_id",
+    "kind",
+    "outcome",
+    "defect_step_count",
+    "template_revision_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "inspection_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "enum": [
+        "PRE_SHIFT",
+        "FOLLOW_UP",
+        "VEHICLE_CHANGE"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "PASSED",
+        "PASSED_RESTRICTED",
+        "BLOCKED",
+        "CLARIFICATION_REQUIRED"
+      ]
+    },
+    "defect_step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "template_revision_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "examples": [
+    {
+      "inspection_id": "11111111-2222-4333-8444-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "shift_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "kind": "PRE_SHIFT",
+      "outcome": "PASSED",
+      "defect_step_count": 0,
+      "template_revision_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff"
+    }
+  ]
+}

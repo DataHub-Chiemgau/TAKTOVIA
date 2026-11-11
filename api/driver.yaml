@@ -32,15 +32,204 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
-      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete
-        Offline-Ereignisse überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte
-        Beförderungsbuchung.
+      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete Offline-Ereignisse
+        überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte Beförderungsbuchung. Das Ereignis ist
+        an das registrierte Gerät der Sitzung gebunden (`device_id`); eine gesperrte oder beendete Sitzung ergibt 401/403, der Client behält das
+        Ereignis dann in der Outbox. Die Serverempfangszeit (`received_at`) setzt der Server; die Gerätezeit ersetzt sie nie. `tenant_id` im Body
+        ist unzulässig (422).
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DriverEvent'
+  /v1/driver/positions:
+    post:
+      summary: Positionen der Fahrer-App melden
+      operationId: recordDriverPosition
+      security:
+      - oidc:
+        - driver:positions
+      description: 'Nimmt Messpunkte des eigenen, bestätigt zugeordneten Geräts entgegen; Rohpositionen unterliegen der Aufbewahrungsregel (OP-04).
+        Unbekannte oder fremde Schicht: 404.'
+      parameters:
+      - &id004
+        $ref: common.yaml#/components/parameters/IdempotencyKey
+      - &id002
+        $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPositionResult'
+        '400': &id001
+          $ref: common.yaml#/components/responses/Problem
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+        '429': *id001
+        '503': *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverPositionBatch'
+  /v1/driver/shifts/{shift_id}/run:
+    get:
+      summary: Dienst und Stoppliste lesen
+      operationId: getDriverRun
+      security:
+      - oidc:
+        - driver:run
+      description: 'Nur für die eigene, aktuell zugewiesene Schicht; fremde oder beendete Schicht: 404. ETag/`If-None-Match`: unverändert ergibt
+        304. Vor der Einsatzfreigabe keine Aufträge.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema: &id003
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - *id002
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverRun'
+          headers: &id005
+            ETag: &id006
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '422': *id001
+        '429': *id001
+        '503': *id001
+        '304':
+          description: Nicht verändert (If-None-Match stimmt mit dem ETag überein).
+  /v1/driver/shifts/{shift_id}/run/acknowledgements:
+    post:
+      summary: Planrevision bestätigen
+      operationId: acknowledgeDriverRunRevision
+      security:
+      - oidc:
+        - driver:run
+      description: 'If-Match trägt die Planrevision, die bestätigt wird; veraltet: 412. Je Fahrer und Revision ein Eintrag, zwei Geräte ergeben
+        einen Eintrag.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema: *id003
+        description: Schicht-ID.
+      - *id004
+      - &id007
+        $ref: common.yaml#/components/parameters/IfMatch
+      - *id002
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverRun'
+          headers: *id005
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '412': *id001
+        '422': *id001
+        '428': *id001
+        '429': *id001
+        '503': *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverRunAck'
+  /v1/driver/devices:
+    post:
+      summary: Gerät an die Sitzung binden
+      operationId: registerDriverDevice
+      security:
+      - oidc:
+        - driver:devices
+      description: 'Idempotent je `device_id` und Sitzung: wiederholtes Registrieren liefert dasselbe Gerät. Ein Gerät, das einer anderen Sitzung
+        oder einem anderen Konto gehört, ergibt 409 CONFLICT.'
+      parameters:
+      - *id004
+      - *id002
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverDevice'
+          headers:
+            ETag: *id006
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '409': *id001
+        '422': *id001
+        '429': *id001
+        '503': *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverDeviceRegister'
+  /v1/driver/devices/{device_id}:
+    delete:
+      summary: Gerätebindung beenden
+      operationId: revokeDriverDevice
+      security:
+      - oidc:
+        - driver:devices
+      description: 'Beendet die Bindung des eigenen Geräts (Abmeldung); danach lehnt der Server Ereignisse dieses Geräts ab. If-Match: Revision
+        der Bindung.'
+      parameters:
+      - name: device_id
+        in: path
+        required: true
+        schema: *id003
+        description: Geräte-ID.
+      - *id004
+      - *id007
+      - *id002
+      responses:
+        '204':
+          description: Erfolgreich, kein Inhalt.
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '412': *id001
+        '422': *id001
+        '428': *id001
+        '429': *id001
+        '503': *id001
 components:
   schemas:
     DriverEvent:
@@ -64,10 +253,22 @@ components:
           - CHECK_IN
           - CHECK_OUT
           - NO_SHOW
+          - ARRIVAL
+          - BREAK_START
+          - BREAK_END
+          - DISRUPTION
+          - SHIFT_END
+          description: 'Erweiterung nach OP-03: ARRIVAL (Ankunft am Stopp, startet die Wartefrist), BREAK_START/BREAK_END/DISRUPTION/SHIFT_END
+            (Dienststatus). CHECK_IN, CHECK_OUT und NO_SHOW verlangen `booking_id`; ARRIVAL und Statusereignisse nicht (Ankunft kann mehrere oder
+            keine Buchung betreffen).'
         booking_id:
-          $ref: common.yaml#/components/schemas/UUID
+          oneOf:
+          - *id003
+          - type: 'null'
         route_stop_id:
-          $ref: common.yaml#/components/schemas/UUID
+          oneOf:
+          - *id003
+          - type: 'null'
         occurred_at:
           type: string
           format: date-time
@@ -82,17 +283,46 @@ components:
           maximum: 100000
         offline_recorded:
           type: boolean
+        device_id: *id003
+        no_show_wait_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: Gewartete Zeit bei NO_SHOW (DRV-005).
+        no_show_reason:
+          type: string
+          enum:
+          - NOT_PRESENT
+          - REFUSED_TO_BOARD
+          - OTHER
       required:
       - event_id
       - shift_id
       - vehicle_id
       - plan_revision
       - event_type
-      - booking_id
-      - route_stop_id
       - occurred_at
       - device_recorded_at
       - offline_recorded
+      allOf:
+      - if:
+          properties:
+            event_type:
+              enum:
+              - CHECK_IN
+              - CHECK_OUT
+              - NO_SHOW
+          required:
+          - event_type
+        then:
+          required:
+          - booking_id
+          - route_stop_id
+          properties:
+            booking_id: *id003
+            route_stop_id: *id003
+      description: Fahrerereignis; `event_id` ist die `device_event_id` der Outbox (Idempotenzschlüssel auf Ereignisebene), `plan_revision` die
+        letzte dem Gerät bekannte Serverrevision, `device_recorded_at` die Gerätezeit. Die Serverempfangszeit steht nur in der Antwort.
     DriverEventResult:
       type: object
       additionalProperties: false
@@ -121,10 +351,261 @@ components:
             - OUTSIDE_STOP
             - CLOCK_SKEW
             - INVALID_ORDER
+            - RELEASE_REQUIRED
+            - SHIFT_ENDED
           - type: 'null'
+        original_state:
+          oneOf:
+          - type: string
+            enum:
+            - APPLIED
+            - REVIEW_REQUIRED
+          - type: 'null'
+          description: 'Nur bei DUPLICATE: Ergebnis der ersten Verarbeitung (REVIEW_REQUIRED bleibt bei Wiederholung erkennbar).'
       required:
       - event_id
       - state
       - received_at
       - current_plan_revision
       - reason_code
+      description: 'Ergebnis: APPLIED (wirksam), DUPLICATE (gleiche event_id und gleicher Inhalt: keine zweite Wirkung), REVIEW_REQUIRED (nicht
+        wirksam, Klärfall der Leitstelle). Gleiche event_id mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+    DriverPositionSample:
+      type: object
+      additionalProperties: false
+      properties:
+        position:
+          $ref: common.yaml#/components/schemas/Point
+        accuracy_meters:
+          type: number
+          minimum: 0
+          maximum: 100000
+        measured_at: &id008
+          type: string
+          format: date-time
+        speed_mps:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 100
+          - type: 'null'
+        heading_deg:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 360
+          - type: 'null'
+      required:
+      - position
+      - accuracy_meters
+      - measured_at
+    DriverPositionBatch:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id: *id003
+        vehicle_id: *id003
+        device_id: *id003
+        samples:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DriverPositionSample'
+      required:
+      - shift_id
+      - vehicle_id
+      - device_id
+      - samples
+      description: 'Positionsmeldung (OP-04, Ergänzungsvorschlag): `measured_at` ist die Gerätemesszeit, der Server hält Empfangszeit getrennt
+        und berechnet das Standortalter aus beiden.'
+    DriverPositionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        accepted:
+          type: integer
+          minimum: 0
+        rejected:
+          type: integer
+          minimum: 0
+        received_at: *id008
+      required:
+      - accepted
+      - rejected
+      - received_at
+    DriverRunStop:
+      type: object
+      additionalProperties: false
+      properties:
+        route_stop_id: *id003
+        sequence:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - PICKUP
+          - DROPOFF
+          - WAYPOINT
+        planned_at: *id008
+        forecast_at:
+          oneOf:
+          - *id008
+          - type: 'null'
+        stop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        position:
+          $ref: common.yaml#/components/schemas/Point
+        passenger_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+        booking_ids:
+          type: array
+          maxItems: 20
+          items: *id003
+        change:
+          oneOf:
+          - type: string
+            enum:
+            - NEW
+            - REMOVED
+            - MOVED
+            - TIME_CHANGED
+          - type: 'null'
+        support_hints:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+      - route_stop_id
+      - sequence
+      - kind
+      - planned_at
+      - forecast_at
+      - stop_name
+      - position
+      - passenger_count
+      - booking_ids
+      - change
+      - support_hints
+      description: Stopp der Fahrerprojektion. Keine Fahrgastkontakte, keine Zahlungsdaten; `support_hints` sind Codes nach Rolle und Zuordnung
+        (DRV-008).
+    DriverRun:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id: *id003
+        vehicle_id: *id003
+        release_state:
+          type: string
+          enum:
+          - NOT_RELEASED
+          - RELEASED
+          - BLOCKED
+          - RESTRICTED
+        missing_requirements:
+          type: array
+          maxItems: 50
+          items:
+            $ref: fleet-safety.yaml#/components/schemas/MissingRequirement
+        plan_revision:
+          oneOf:
+          - &id009
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        plan_as_of: *id008
+        stops:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/DriverRunStop'
+        acknowledged_revision:
+          oneOf:
+          - *id009
+          - type: 'null'
+      required:
+      - shift_id
+      - vehicle_id
+      - release_state
+      - missing_requirements
+      - plan_revision
+      - plan_as_of
+      - stops
+      - acknowledged_revision
+      description: Dienst und Stoppliste des Fahrers. Vor der serverseitigen Einsatzfreigabe sind `stops` leer und nur Dienst, Fahrzeug und `missing_requirements`
+        gefüllt (CHK-001).
+    DriverRunAck:
+      type: object
+      additionalProperties: false
+      properties:
+        plan_revision: *id009
+        acknowledged_at: *id008
+      required:
+      - plan_revision
+      - acknowledged_at
+      description: Bestätigung einer Planrevision durch den Fahrer (DRV-004); je Fahrer genau ein Eintrag je Revision.
+    DriverDeviceRegister:
+      type: object
+      additionalProperties: false
+      properties:
+        device_id: *id003
+        platform:
+          type: string
+          enum:
+          - ANDROID
+          - IOS
+        app_version:
+          type: string
+          minLength: 1
+          maxLength: 32
+        push_token_ref:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+      required:
+      - device_id
+      - platform
+      - app_version
+      description: Bindet ein Gerät an die aktuelle IdP-Sitzung (WP-M3-24). `device_id` erzeugt die App einmal je Installation (zufällig, kein
+        Hardwarebezug).
+    DriverDevice:
+      type: object
+      additionalProperties: false
+      properties:
+        device_id: *id003
+        session_id: *id003
+        platform:
+          type: string
+          enum:
+          - ANDROID
+          - IOS
+        app_version:
+          type: string
+          minLength: 1
+          maxLength: 32
+        registered_at: *id008
+        revoked_at:
+          oneOf:
+          - *id008
+          - type: 'null'
+        revision: *id009
+      required:
+      - device_id
+      - session_id
+      - platform
+      - app_version
+      - registered_at
+      - revoked_at
+      - revision

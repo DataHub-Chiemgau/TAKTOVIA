@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.vehicle_block_lifted.v1.schema.json",
+  "title": "Fahrzeugsperre aufgehoben (WP-M3-08, WP-M3-51)",
+  "description": "Payload von `fleet.vehicle_block_lifted`. Aggregat: vehicle_block / 2. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "vehicle_id",
+    "block_id",
+    "source",
+    "safety_revision",
+    "release_decision_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "block_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source": {
+      "enum": [
+        "OPERATIONS",
+        "SAFETY"
+      ]
+    },
+    "safety_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "release_decision_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "vehicle_id": "11111111-2222-4333-8444-555555555555",
+      "block_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "source": "OPERATIONS",
+      "safety_revision": 9,
+      "release_decision_id": null
+    }
+  ]
+}

@@ -10,7 +10,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `finance.yaml` | Kostenumlage, Belegfreigabe | `documents-finance` |
 | `config.yaml` | Konfigurationsrevision veröffentlichen | `config` |
 | `rosters.yaml` | Dienstplan veröffentlichen | `staff-time` |
-| `driver.yaml` | Fahrerereignisse (Offline-Queue) | `booking-dispatch` (Zuordnung vorläufig) |
+| `driver.yaml` | Fahrerereignisse (Offline-Queue), Positionen, Fahrerprojektion `…/run`, Planbestätigung, Geräte-/Sitzungsbindung (WP-M3-01, WP-M3-24) | `staff-time` (zuvor vorläufig `booking-dispatch`) |
 | `identity.yaml` | `/v1/me`, Mandantenwechsel, Mitgliedschaften, Rechtsträger, Organisationen (WP-M1-05), Plattformverwaltung (`/v1/platform/…`, WP-M1-05), Regionen, Betriebshöfe, Kostenstellen, Sitzungen (WP-M1-03) | `identity` |
 | `sessions.yaml` | eigene Sitzungen, „alle Geräte abmelden“, Kontosperre, Wiederherstellung (WP-M1-10; die Admin-Sitzungsoperationen stehen in `identity.yaml`) | `identity` |
 | `registry.yaml` | wirksame Konfiguration, Revisionen anlegen/lesen/prüfen, Wirkungsanalyse (Veröffentlichen steht in `config.yaml`) | `config` |
@@ -18,6 +18,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `compliance.yaml` | Auditabfrage, Unternehmensprofil (WP-M1-24, Feldliste in `docs/umsetzungsplan/vertraege/schemas/tenant-profile.v1.schema.json`), Aufbewahrungsregeln | `platform`/`config` |
 | `fleet.yaml` | Fahrzeugrollen (WP-M1-34), Fahrerfreigaben | `fleet-safety` |
 | `booking.yaml`, `geo.yaml`, `payments.yaml`, `notifications.yaml` | Einbetreiberbuchung (`/v1/ride-offers`, `/v1/bookings`), Bediengebiete und Haltepunkte, PSP-Ereignisse, Nachrichten (WP-M2-01; Detailverträge in `docs/umsetzungsplan/vertraege/m2-detailvertraege.md`) | `booking-dispatch`, `service-geo`, `fare-payment`, `communication-support` |
+| `fleet-safety.yaml`, `dispatch.yaml` | M3: Leitstellenfahrzeuge, Sperren, Prüfläufe, Schäden, Reparatur, Wiederfreigabe, Incidents; Planrevisionen (WP-M3-01; Detailverträge in `docs/umsetzungsplan/vertraege/m3-detailvertraege.md`) | `fleet-safety`, `booking-dispatch` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |
 

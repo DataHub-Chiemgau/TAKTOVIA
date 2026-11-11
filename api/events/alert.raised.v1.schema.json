@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/alert.raised.v1.schema.json",
+  "title": "Betriebsalarm ausgelöst (WP-M3-52)",
+  "description": "Payload von `alert.raised`. Aggregat: business_alert / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "alert_id",
+    "alert_kind",
+    "priority",
+    "vehicle_id",
+    "dedupe_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "alert_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "alert_kind": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "priority": {
+      "enum": [
+        "CRITICAL",
+        "HIGH",
+        "NORMAL"
+      ]
+    },
+    "vehicle_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dedupe_key": {
+      "type": "string",
+      "maxLength": 128
+    }
+  },
+  "examples": [
+    {
+      "alert_id": "11111111-2222-4333-8444-555555555555",
+      "alert_kind": "DEFECT_SAFETY_CRITICAL",
+      "priority": "CRITICAL",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "dedupe_key": "DEFECT_SAFETY_CRITICAL:66666666-7777-4888-8999-aaaaaaaaaaaa"
+    }
+  ]
+}

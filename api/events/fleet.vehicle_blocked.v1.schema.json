@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.vehicle_blocked.v1.schema.json",
+  "title": "Fahrzeugsperre gesetzt (WP-M3-08)",
+  "description": "Payload von `fleet.vehicle_blocked`. Aggregat: vehicle_block / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "vehicle_id",
+    "block_id",
+    "source",
+    "reason_code",
+    "safety_revision"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "block_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source": {
+      "enum": [
+        "OPERATIONS",
+        "SAFETY"
+      ]
+    },
+    "reason_code": {
+      "enum": [
+        "OPERATIONAL_DISRUPTION",
+        "DEFECT_CRITICAL",
+        "INSPECTION_FAILED",
+        "MANUAL",
+        "OTHER"
+      ]
+    },
+    "safety_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "examples": [
+    {
+      "vehicle_id": "11111111-2222-4333-8444-555555555555",
+      "block_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "source": "SAFETY",
+      "reason_code": "DEFECT_CRITICAL",
+      "safety_revision": 8
+    }
+  ]
+}

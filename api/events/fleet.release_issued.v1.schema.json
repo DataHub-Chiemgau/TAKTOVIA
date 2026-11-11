@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.release_issued.v1.schema.json",
+  "title": "Einsatzfreigabe erteilt (WP-M3-08)",
+  "description": "Payload von `fleet.release_issued`. Aggregat: resource_release / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "release_id",
+    "vehicle_id",
+    "shift_id",
+    "inspection_id",
+    "safety_revision",
+    "valid_until"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "inspection_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "safety_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "release_id": "11111111-2222-4333-8444-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "shift_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "inspection_id": "11111111-2222-4333-8444-555555555555",
+      "safety_revision": 8,
+      "valid_until": "2026-11-12T18:00:00Z"
+    }
+  ]
+}

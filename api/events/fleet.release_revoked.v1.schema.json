@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.release_revoked.v1.schema.json",
+  "title": "Einsatzfreigabe widerrufen (WP-M3-08)",
+  "description": "Payload von `fleet.release_revoked`. Aggregat: resource_release / 2. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "release_id",
+    "vehicle_id",
+    "shift_id",
+    "reason_code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason_code": {
+      "enum": [
+        "BLOCK_SET",
+        "VEHICLE_CHANGED",
+        "QUALIFICATION_REVOKED",
+        "MANUAL"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "release_id": "11111111-2222-4333-8444-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "shift_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "reason_code": "BLOCK_SET"
+    }
+  ]
+}

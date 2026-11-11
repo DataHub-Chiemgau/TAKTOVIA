@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.service_status_changed.v1.schema.json",
+  "title": "Dienststatus geändert (WP-M3-31)",
+  "description": "Payload von `vehicle.service_status_changed`. Aggregat: vehicle_service_status / n. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "vehicle_id",
+    "shift_id",
+    "previous",
+    "current",
+    "trigger"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "previous": {
+      "enum": [
+        "NOT_READY",
+        "AVAILABLE",
+        "EN_ROUTE",
+        "WAITING",
+        "BREAK",
+        "DISRUPTED",
+        "ENDED"
+      ]
+    },
+    "current": {
+      "enum": [
+        "NOT_READY",
+        "AVAILABLE",
+        "EN_ROUTE",
+        "WAITING",
+        "BREAK",
+        "DISRUPTED",
+        "ENDED"
+      ]
+    },
+    "trigger": {
+      "enum": [
+        "DRIVER",
+        "SYSTEM",
+        "DISPATCH"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "vehicle_id": "11111111-2222-4333-8444-555555555555",
+      "shift_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "previous": "AVAILABLE",
+      "current": "EN_ROUTE",
+      "trigger": "SYSTEM"
+    }
+  ]
+}
