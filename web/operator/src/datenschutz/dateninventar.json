@@ -5408,6 +5408,104 @@
       ]
     },
     {
+      "tabelle": "relation_rule",
+      "aggregat": "Version der erlaubten Zielpunkte eines Dienstes (WP-M2-06)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Verweise auf Haltepunkte, keine Personendaten",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "destination_stop_ids",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "resource_release",
       "aggregat": "Einsatzfreigabe",
       "loeschklasse": "LK_BETRIEB",
@@ -6116,6 +6214,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "zone_role",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zonenrolle ORIGIN, DESTINATION oder BOTH (WP-M2-06)"
         }
       ]
     },

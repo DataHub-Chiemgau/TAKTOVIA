@@ -29,6 +29,8 @@ interface ServicegeoApi {
     val areas: ServiceAreas
     /** Haltepunktrevisionen mit Aktivstatus und zulässigen Verkehrsprodukten (WP-M2-05). */
     val stops: Stops
+    /** Start-/Zielzulässigkeit nach Zonen und erlaubten Zielpunkten (WP-M2-06). */
+    val relations: RelationRules
 
     companion object {
         /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */

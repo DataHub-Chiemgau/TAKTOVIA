@@ -13,6 +13,7 @@ import de.taktovia.servicegeo.api.CreateServiceArea
 import de.taktovia.servicegeo.api.ReviseServiceArea
 import de.taktovia.servicegeo.api.ServiceAreaView
 import de.taktovia.servicegeo.api.ServicegeoApi
+import de.taktovia.servicegeo.api.ZoneRole
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -49,7 +50,7 @@ class ServiceAreaController(private val geo: ServicegeoApi, private val codec: C
     @PostMapping("/v1/service-areas")
     fun create(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<GeoResource> {
         val v = geo.areas.create(RequestContexts.require(request), CreateServiceArea(uuid(body, "service_id"), body["area"], GeoWeb.instant(body["valid_from"], "/valid_from"),
-            GeoWeb.optionalInstant(body["valid_to"], "/valid_to")))
+            GeoWeb.optionalInstant(body["valid_to"], "/valid_to"), role(body) ?: ZoneRole.BOTH))
         return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/service-areas/${v.id}")).body(GeoResource(json(v), v.revision))
     }
 
@@ -63,13 +64,15 @@ class ServiceAreaController(private val geo: ServicegeoApi, private val codec: C
     @PutMapping("/v1/service-areas/{area_id}")
     fun update(@PathVariable("area_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): GeoResource {
         val expected = Etag.parseIfMatch(ifMatch)
-        val v = geo.areas.revise(RequestContexts.require(request), id, expected, ReviseServiceArea(body["area"], GeoWeb.instant(body["valid_from"], "/valid_from"), GeoWeb.optionalInstant(body["valid_to"], "/valid_to")))
+        val v = geo.areas.revise(RequestContexts.require(request), id, expected, ReviseServiceArea(body["area"], GeoWeb.instant(body["valid_from"], "/valid_from"), GeoWeb.optionalInstant(body["valid_to"], "/valid_to"), role(body)))
         return GeoResource(json(v), v.revision)
     }
+
+    private fun role(body: Map<String, Any?>): ZoneRole? = body["zone_role"]?.let { r -> ZoneRole.entries.firstOrNull { it.name == r } ?: throw ProblemException.invalid(Violation("/zone_role", ViolationCode.NOT_IN_ENUM)) }
 
     private fun uuid(body: Map<String, Any?>, field: String): UUID =
         runCatching { UUID.fromString(GeoWeb.string(body, field)) }.getOrNull() ?: throw ProblemException.invalid(Violation("/$field", ViolationCode.INVALID_FORMAT))
 
-    private fun json(v: ServiceAreaView): Map<String, Any?> = linkedMapOf("id" to v.id.toString(), "revision_id" to v.revisionId.toString(), "service_id" to v.serviceId.toString(),
+    private fun json(v: ServiceAreaView): Map<String, Any?> = linkedMapOf("id" to v.id.toString(), "revision_id" to v.revisionId.toString(), "zone_role" to v.zoneRole.name, "service_id" to v.serviceId.toString(),
         "revision" to v.revision, "area" to v.area, "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString())
 }

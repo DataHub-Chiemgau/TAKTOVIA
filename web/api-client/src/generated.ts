@@ -984,6 +984,7 @@ export interface GeoMultiPolygon {
 export interface GeoServiceArea {
   id: UUID;
   revision_id: UUID;
+  zone_role: 'ORIGIN' | 'DESTINATION' | 'BOTH';
   service_id: UUID;
   revision: number;
   area: GeoMultiPolygon;
@@ -993,6 +994,7 @@ export interface GeoServiceArea {
 
 export interface GeoServiceAreaUpdate {
   area: GeoMultiPolygon;
+  zone_role?: 'ORIGIN' | 'DESTINATION' | 'BOTH';
   valid_from: Timestamp;
   valid_to?: Timestamp | null;
 }
@@ -1000,6 +1002,7 @@ export interface GeoServiceAreaUpdate {
 export interface GeoServiceAreaCreate {
   service_id: UUID;
   area: GeoMultiPolygon;
+  zone_role?: 'ORIGIN' | 'DESTINATION' | 'BOTH';
   valid_from: Timestamp;
   valid_to?: Timestamp | null;
 }
@@ -1008,6 +1011,32 @@ export interface GeoServiceAreaPage {
   items: GeoServiceArea[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export interface GeoRelationRuleInput {
+  destination_stop_ids: UUID[];
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+}
+
+export interface GeoRelationRule {
+  service_id: UUID;
+  revision: number;
+  destination_stop_ids: UUID[];
+  valid_from: Timestamp | null;
+  valid_to: Timestamp | null;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at?: Timestamp | null;
+}
+
+export interface GeoRelationCheck {
+  service_id: UUID;
+  at: string;
+  admissible: boolean;
+  reason: 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | null;
+  detail: string | null;
 }
 
 export interface GeoStopAccessibility {
@@ -2255,6 +2284,27 @@ export interface Operations {
     body: GeoStopUpdate;
     response: GeoStop;
   };
+  getServiceRelationRule: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoRelationRule;
+  };
+  putServiceRelationRule: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoRelationRuleInput;
+    response: GeoRelationRule;
+  };
+  checkServiceRelation: {
+    path: { service_id: UUID };
+    query: { origin_latitude: number; origin_longitude: number; destination_latitude: number; destination_longitude: number; destination_stop_id?: UUID; at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoRelationCheck;
+  };
   getMe: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -2828,6 +2878,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateStop: { method: 'PUT', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getServiceRelationRule: { method: 'GET', path: '/v1/services/{service_id}/relation-rules', pathParams: ['service_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  putServiceRelationRule: { method: 'PUT', path: '/v1/services/{service_id}/relation-rules', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  checkServiceRelation: { method: 'GET', path: '/v1/services/{service_id}/relation-check', pathParams: ['service_id'], query: ['origin_latitude', 'origin_longitude', 'destination_latitude', 'destination_longitude', 'destination_stop_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getMe: { method: 'GET', path: '/v1/me', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   switchTenant: { method: 'POST', path: '/v1/me/tenant-switch', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tenant:switch'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listMemberships: { method: 'GET', path: '/v1/memberships', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['memberships:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

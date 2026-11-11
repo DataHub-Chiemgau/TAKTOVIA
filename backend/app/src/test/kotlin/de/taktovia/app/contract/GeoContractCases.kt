@@ -58,5 +58,14 @@ internal object GeoContractCases {
         ContractCase("updateStop",
             200, { val w = GeoWorld(); val s = createStop(w); ContractRequest("PUT", "/v1/stops/$s", stopBody("Neu").replace("\"valid_from\":\"2026-01-01", "\"valid_from\":\"2027-01-01"), h(w, ifMatch = "1")) },
             428, { val w = GeoWorld(); val s = createStop(w); ContractRequest("PUT", "/v1/stops/$s", stopBody("Neu"), h(w)) }, server = { IdentityEnv.server }),
+        ContractCase("getServiceRelationRule",
+            200, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${w.service()}/relation-rules", headers = hg(w)) },
+            404, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${UUID.randomUUID()}/relation-rules", headers = hg(w)) }, server = { IdentityEnv.server }),
+        ContractCase("putServiceRelationRule",
+            200, { val w = GeoWorld(); ContractRequest("PUT", "/v1/services/${w.service()}/relation-rules", """{"destination_stop_ids":[],"valid_from":"2026-01-01T00:00:00+01:00","valid_to":null,"reason":"Keine Einschränkung"}""", h(w, ifMatch = "0")) },
+            422, { val w = GeoWorld(); ContractRequest("PUT", "/v1/services/${w.service()}/relation-rules", """{"destination_stop_ids":["00000000-0000-4000-8000-000000000099"],"valid_from":"2026-01-01T00:00:00+01:00","valid_to":null,"reason":"x"}""", h(w, ifMatch = "0")) }, server = { IdentityEnv.server }),
+        ContractCase("checkServiceRelation",
+            200, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${w.service()}/relation-check?origin_latitude=51.05&origin_longitude=13.05&destination_latitude=51.05&destination_longitude=14.05", headers = hg(w, w.passenger)) },
+            404, { val w = GeoWorld(); ContractRequest("GET", "/v1/services/${UUID.randomUUID()}/relation-check?origin_latitude=51.05&origin_longitude=13.05&destination_latitude=51.05&destination_longitude=14.05", headers = hg(w, w.passenger)) }, server = { IdentityEnv.server }),
     )
 }

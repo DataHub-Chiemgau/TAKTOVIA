@@ -414,6 +414,177 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/services/{service_id}/relation-rules:
+    get:
+      summary: Erlaubte Zielpunkte des Dienstes lesen
+      description: 'Jüngste Mengenversion der erlaubten Zielpunkte; ETag = Revision. Revision 0 = keine Regel (keine Einschränkung durch Zielpunkte). Die Zonenrollen stehen an den Bediengebieten (`zone_role`).'
+      operationId: getServiceRelationRule
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Erlaubte Zielpunkte als neue Mengenversion veröffentlichen
+      description: 'Legt eine neue Version der Zielpunktmenge an (If-Match = zuletzt gelesene Revision, 0 = noch keine). Jeder Zielpunkt muss ein Haltepunkt des Mandanten sein (sonst 422 mit Pointer). Eine leere Menge hebt die Einschränkung auf. Überlappende Wirksamkeit 409, veraltet 412, fehlend 428; `reason` wird auditiert.'
+      operationId: putServiceRelationRule
+      security:
+      - oidc:
+        - geo:write
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoRelationRuleInput'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/services/{service_id}/relation-check:
+    get:
+      summary: Relation auf Zulässigkeit prüfen (Zonen und Zielpunkte)
+      description: 'Fachoperation „Relation zulässig?“: Start in der wirksamen Startzone, Ziel in der Zielzone und, wenn eine Zielpunktmenge gilt, an einem erlaubten aktiven Zielpunkt. Die Ablehnung trägt genau einen Grund (OUTSIDE_AREA = Gebiet, RULE_FORBIDDEN = Regelverbot; Katalog von WP-M2-13). Die Rückrichtung wird unabhängig bewertet; Punkte auf der Zonengrenze gelten als innerhalb.'
+      operationId: checkServiceRelation
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: origin_latitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+      - name: origin_longitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: destination_latitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+      - name: destination_longitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: destination_stop_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: 'Ziel als Haltepunkt (stop_id): dann zählen dessen zum Zeitpunkt wirksame Koordinate (statt destination_latitude/-longitude) und die Zielpunktmenge; ohne Angabe ist das Ziel eine freie Koordinate.'
+      - name: at
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Zeitpunkt der Prüfung (Standard jetzt).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationCheck'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     GeoMultiPolygon:
@@ -454,6 +625,13 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         revision_id:
           $ref: common.yaml#/components/schemas/UUID
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
         service_id:
           $ref: common.yaml#/components/schemas/UUID
         revision:
@@ -472,6 +650,7 @@ components:
       required:
       - id
       - revision_id
+      - zone_role
       - service_id
       - revision
       - area
@@ -483,6 +662,13 @@ components:
       properties:
         area:
           $ref: '#/components/schemas/GeoMultiPolygon'
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -500,6 +686,14 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         area:
           $ref: '#/components/schemas/GeoMultiPolygon'
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          default: BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -549,6 +743,105 @@ components:
       - items
       - next_cursor
       - as_of
+    GeoRelationRuleInput:
+      type: object
+      additionalProperties: false
+      properties:
+        destination_stop_ids:
+          type: array
+          maxItems: 1000
+          uniqueItems: true
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Erlaubte Zielpunkte (`stop_id` von Haltepunkten); leer = keine Einschränkung durch Zielpunkte.
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Grund der Änderung (Audit).
+      required:
+      - destination_stop_ids
+      - valid_from
+      - reason
+    GeoRelationRule:
+      type: object
+      additionalProperties: false
+      description: Mengenversion der erlaubten Zielpunkte; Revision 0 = keine Regel (übrige Felder leer bzw. null).
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        destination_stop_ids:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        valid_from:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        created_by:
+          type:
+          - string
+          - 'null'
+        created_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+      required:
+      - service_id
+      - revision
+      - destination_stop_ids
+      - valid_from
+      - valid_to
+    GeoRelationCheck:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        at:
+          type: string
+          format: date-time
+        admissible:
+          type: boolean
+        reason:
+          oneOf:
+          - type: string
+            enum:
+            - OUTSIDE_AREA
+            - RULE_FORBIDDEN
+          - type: 'null'
+          description: Genau ein normierter Grund bei Ablehnung (Zuordnung zum Katalog von WP-M2-13, Vorschlag OP-14), sonst null.
+        detail:
+          type:
+          - string
+          - 'null'
+          description: Kurzer Text ohne Koordinaten.
+      required:
+      - service_id
+      - at
+      - admissible
+      - reason
+      - detail
     GeoStopAccessibility:
       type: object
       additionalProperties: false

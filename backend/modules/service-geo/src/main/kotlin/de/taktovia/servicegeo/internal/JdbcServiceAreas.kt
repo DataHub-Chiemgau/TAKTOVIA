@@ -18,6 +18,7 @@ import de.taktovia.servicegeo.api.GeoPoint
 import de.taktovia.servicegeo.api.ReviseServiceArea
 import de.taktovia.servicegeo.api.ServiceAreaView
 import de.taktovia.servicegeo.api.ServiceAreas
+import de.taktovia.servicegeo.api.ZoneRole
 import org.springframework.dao.DataAccessException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.jdbc.core.JdbcOperations
@@ -28,7 +29,7 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 
-private const val COLS = "a.area_key, a.id, a.service_id, a.revision, ST_AsGeoJSON(a.area)::text AS area_json, a.valid_from, a.valid_to, a.created_by, a.created_at"
+private const val COLS = "COALESCE(a.area_key, a.id) AS area_key, a.id, a.service_id, a.revision, ST_AsGeoJSON(a.area)::text AS area_json, a.valid_from, a.valid_to, a.created_by, a.created_at, a.zone_role"
 
 /**
  * Bediengebiete (WP-M2-04). Schreibende Operationen sperren die Dienstzeile (`FOR UPDATE`, Scope-Sperre wie bei den Dienstversionen), prüfen Geometrie und erwartete
@@ -48,7 +49,7 @@ internal class JdbcServiceAreas(
         lockService(j, ctx, cmd.serviceId)
         val areaJson = validated(j, cmd.area, cmd.validFrom, cmd.validTo)
         val id = UUID.randomUUID()
-        insert(j, ctx, id, id, cmd.serviceId, 1, areaJson, cmd.validFrom, cmd.validTo)
+        insert(j, ctx, id, id, cmd.serviceId, 1, areaJson, cmd.validFrom, cmd.validTo, cmd.zoneRole)
         val v = read(j, id, 1)
         audit.record(j, GeoSupport.entry(ctx, AuditActions.GEO_SERVICE_AREA_CHANGED, "service_area", v.id, 1, "created", changes(v)))
         emit(j, ctx, v)
@@ -59,7 +60,7 @@ internal class JdbcServiceAreas(
 
     @AuditRequired
     private fun doRevise(j: JdbcOperations, ctx: RequestContext, areaKey: UUID, expected: Long, cmd: ReviseServiceArea): ServiceAreaView {
-        val serviceId = j.query("SELECT a.service_id FROM taktovia.service_area a WHERE a.area_key = ? LIMIT 1", { rs, _ -> rs.getObject(1, UUID::class.java) }, areaKey).singleOrNull()
+        val serviceId = j.query("SELECT a.service_id FROM taktovia.service_area a WHERE COALESCE(a.area_key, a.id) = ? LIMIT 1", { rs, _ -> rs.getObject(1, UUID::class.java) }, areaKey).singleOrNull()
             ?: throw ProblemException.notFound()
         lockService(j, ctx, serviceId)
         val head = head(j, areaKey) ?: throw ProblemException.notFound()
@@ -69,7 +70,7 @@ internal class JdbcServiceAreas(
             j.update("UPDATE taktovia.service_area SET valid_to = ? WHERE id = ? AND valid_to IS NULL", Timestamp.from(cmd.validFrom), head.revisionId)
         val revision = expected + 1
         val id = UUID.randomUUID()
-        insert(j, ctx, id, areaKey, serviceId, revision, areaJson, cmd.validFrom, cmd.validTo)
+        insert(j, ctx, id, areaKey, serviceId, revision, areaJson, cmd.validFrom, cmd.validTo, cmd.zoneRole ?: head.zoneRole)
         val v = read(j, id, revision)
         audit.record(j, GeoSupport.entry(ctx, AuditActions.GEO_SERVICE_AREA_CHANGED, "service_area", areaKey, revision, "revised", changes(v)))
         emit(j, ctx, v)
@@ -77,19 +78,19 @@ internal class JdbcServiceAreas(
     }
 
     override fun get(ctx: RequestContext, areaKey: UUID, revision: Long?): ServiceAreaView = ctxTx.run(ctx, readOnly = true) { j ->
-        if (revision == null) head(j, areaKey) else j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.area_key = ? AND a.revision = ?", MAPPER, areaKey, revision).singleOrNull()
+        if (revision == null) head(j, areaKey) else j.query("SELECT $COLS FROM taktovia.service_area a WHERE COALESCE(a.area_key, a.id) = ? AND a.revision = ?", MAPPER, areaKey, revision).singleOrNull()
     } ?: throw ProblemException.notFound()
 
     override fun list(ctx: RequestContext, serviceId: UUID?, limit: Int, after: Pair<Instant, UUID>?): List<ServiceAreaView> = ctxTx.run(ctx, readOnly = true) { j ->
-        j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.revision = (SELECT max(b.revision) FROM taktovia.service_area b WHERE b.tenant_id = a.tenant_id AND b.area_key = a.area_key) " +
+        j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.revision = (SELECT max(b.revision) FROM taktovia.service_area b WHERE b.tenant_id = a.tenant_id AND COALESCE(b.area_key, b.id) = COALESCE(a.area_key, a.id)) " +
             "AND (CAST(? AS uuid) IS NULL OR a.service_id = CAST(? AS uuid)) AND (a.created_at, a.id) > (?, ?) ORDER BY a.created_at, a.id LIMIT ?",
             MAPPER, serviceId, serviceId, Timestamp.from(after?.first ?: Instant.EPOCH), after?.second ?: UUID(0, 0), limit + 1)
     }
 
-    override fun covering(ctx: RequestContext, serviceId: UUID, point: GeoPoint, at: Instant): ServiceAreaView? = ctxTx.run(ctx, readOnly = true) { j ->
+    override fun covering(ctx: RequestContext, serviceId: UUID, point: GeoPoint, at: Instant, role: ZoneRole?): ServiceAreaView? = ctxTx.run(ctx, readOnly = true) { j ->
         j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.service_id = ? AND a.valid_from <= ? AND (a.valid_to IS NULL OR ? < a.valid_to) " +
-            "AND ST_Covers(a.area, ST_SetSRID(ST_MakePoint(?, ?), 4326)) ORDER BY a.revision DESC LIMIT 1",
-            MAPPER, serviceId, Timestamp.from(at), Timestamp.from(at), point.longitude, point.latitude).singleOrNull()
+            "AND (CAST(? AS text) IS NULL OR a.zone_role IN (CAST(? AS text), 'BOTH')) AND ST_Covers(a.area, ST_SetSRID(ST_MakePoint(?, ?), 4326)) ORDER BY a.revision DESC LIMIT 1",
+            MAPPER, serviceId, Timestamp.from(at), Timestamp.from(at), role?.name, role?.name, point.longitude, point.latitude).singleOrNull()
     }
 
     // ---- intern ------------------------------------------------------------------------------------------------------------------------
@@ -115,28 +116,28 @@ internal class JdbcServiceAreas(
         return text
     }
 
-    private fun insert(j: JdbcOperations, ctx: RequestContext, id: UUID, areaKey: UUID, serviceId: UUID, revision: Long, areaJson: String, from: Instant, to: Instant?) {
+    private fun insert(j: JdbcOperations, ctx: RequestContext, id: UUID, areaKey: UUID, serviceId: UUID, revision: Long, areaJson: String, from: Instant, to: Instant?, role: ZoneRole) {
         try {
-            j.update("INSERT INTO taktovia.service_area (tenant_id, id, service_id, revision, area, valid_from, valid_to, area_key, created_by) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ST_SetSRID(ST_GeomFromGeoJSON(CAST(? AS text)), 4326), ?, ?, ?, ?)",
-                id, serviceId, revision, areaJson, Timestamp.from(from), to?.let { Timestamp.from(it) }, areaKey, GeoSupport.actor(ctx).value)
+            j.update("INSERT INTO taktovia.service_area (tenant_id, id, service_id, revision, area, valid_from, valid_to, area_key, created_by, zone_role) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ST_SetSRID(ST_GeomFromGeoJSON(CAST(? AS text)), 4326), ?, ?, ?, ?, ?)",
+                id, serviceId, revision, areaJson, Timestamp.from(from), to?.let { Timestamp.from(it) }, areaKey, GeoSupport.actor(ctx).value, role.name)
         } catch (_: DuplicateKeyException) { throw GeoSupport.revisionMismatch() }
         catch (e: DataAccessException) { throw DbErrorMapper.map(e) }   // Exclusion Constraint: überlappende Wirksamkeit je Dienst, 409
     }
 
     private fun head(j: JdbcOperations, areaKey: UUID): ServiceAreaView? =
-        j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.area_key = ? ORDER BY a.revision DESC LIMIT 1", MAPPER, areaKey).singleOrNull()
+        j.query("SELECT $COLS FROM taktovia.service_area a WHERE COALESCE(a.area_key, a.id) = ? ORDER BY a.revision DESC LIMIT 1", MAPPER, areaKey).singleOrNull()
 
     private fun read(j: JdbcOperations, id: UUID, revision: Long): ServiceAreaView =
         j.query("SELECT $COLS FROM taktovia.service_area a WHERE a.id = ? AND a.revision = ?", MAPPER, id, revision).single()
 
     private fun changes(v: ServiceAreaView) = linkedMapOf<String, Any?>("service_id" to v.serviceId.toString(), "revision_id" to v.revisionId.toString(),
-        "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString())
+        "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString(), "zone_role" to v.zoneRole.name)
 
     private fun emit(j: JdbcOperations, ctx: RequestContext, v: ServiceAreaView) {
         outbox.append(j, OutboxEvent(v.id, v.revision, "geo.service_area_revision_effective", linkedMapOf(
             "area_id" to v.id.toString(), "revision_id" to v.revisionId.toString(), "service_id" to v.serviceId.toString(), "revision" to v.revision,
-            "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString()), clock.instant(), correlationId = ctx.correlationId))
+            "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString(), "zone_role" to v.zoneRole.name), clock.instant(), correlationId = ctx.correlationId))
     }
 
     private companion object {
@@ -145,7 +146,7 @@ internal class JdbcServiceAreas(
         val MAPPER = RowMapper { rs, _ ->
             ServiceAreaView(rs.getObject("area_key", UUID::class.java), rs.getObject("id", UUID::class.java), rs.getObject("service_id", UUID::class.java), rs.getLong("revision"),
                 mapper.readValue(rs.getString("area_json"), Map::class.java) as Map<String, Any?>, rs.getTimestamp("valid_from").toInstant(), rs.getTimestamp("valid_to")?.toInstant(),
-                rs.getString("created_by"), rs.getTimestamp("created_at").toInstant())
+                rs.getString("created_by"), rs.getTimestamp("created_at").toInstant(), ZoneRole.valueOf(rs.getString("zone_role")))
         }
     }
 }

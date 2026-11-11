@@ -47,6 +47,8 @@ tasks.withType<Test>().configureEach {
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }
     systemProperty("taktovia.repoRoot", rootProject.projectDir.parentFile.absolutePath)
+    // Die Anwendungstests teilen sich eine JVM (mehrere Spring-Kontexte, ArchUnit-Import aller Module): mit dem Wachsen der Suite reicht der Standard-Heap (512 MB) nicht mehr.
+    maxHeapSize = "2g"
     // Datenbank-Integrationstests: Verbindungsdaten aus der Umgebung (Runtime-Rolle, nie Migrator)
     listOf("TAKTOVIA_DB_HOST", "TAKTOVIA_DB_PORT", "TAKTOVIA_DB_NAME", "TAKTOVIA_DB_RUNTIME_PASSWORD", "TAKTOVIA_DB_MIGRATOR_PASSWORD",
         "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_DB_FIELDS_PASSWORD", "TAKTOVIA_REQUIRE_DB")

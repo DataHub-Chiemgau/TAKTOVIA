@@ -32,7 +32,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
- * Testrepository mit Dienstbezug: Flächen eines Dienstes (`service_area`, Kernschema, `service_id`) werden **nur über den Port** gelesen und geändert. Es steht für
+ * Testrepository mit Dienstbezug: Kostenstellen eines Dienstes (`cost_object`, `service_id`; ersetzt die frühere Nutzung von `service_area`, deren Revisionen seit WP-M2-04 unveränderlich sind) werden **nur über den Port** gelesen und geändert. Es steht für
  * das echte Buchungsaggregat, den Nachweis dort liefert WP-M2-23 über denselben Port.
  */
 @ServiceScoped
@@ -40,7 +40,7 @@ class ScopedAreaRepository(private val ctxTx: ContextTransactions, private val a
     class Row(val id: UUID, val serviceId: UUID, val revision: Long)
 
     fun get(ctx: RequestContext, id: UUID): Row = ctxTx.run(ctx, readOnly = true) { j ->
-        val row = j.query("SELECT id, service_id, revision FROM taktovia.service_area WHERE id = ?", { rs, _ -> Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3)) }, id).firstOrNull()
+        val row = j.query("SELECT id, service_id, revision FROM taktovia.cost_object WHERE id = ?", { rs, _ -> Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3)) }, id).firstOrNull()
             ?: throw ProblemException.notFound()
         authorizer.requireRead(j, ctx, ScopedObject("service_area", row.id, ctx.tenant, row.serviceId))
         row
@@ -48,11 +48,11 @@ class ScopedAreaRepository(private val ctxTx: ContextTransactions, private val a
 
     /** Ändert die Fläche (Revision +1) nach der Prüfung in derselben Transaktion; [beforeWrite] liegt zwischen Prüfung und Schreiben (Test der Nebenläufigkeit). */
     fun touch(ctx: RequestContext, id: UUID, beforeWrite: () -> Unit = {}): Row = ctxTx.run(ctx) { j ->
-        val row = j.query("SELECT id, service_id, revision FROM taktovia.service_area WHERE id = ?", { rs, _ -> Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3)) }, id).firstOrNull()
+        val row = j.query("SELECT id, service_id, revision FROM taktovia.cost_object WHERE id = ?", { rs, _ -> Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3)) }, id).firstOrNull()
             ?: throw ProblemException.notFound()
         authorizer.requireWrite(j, ctx, ScopedObject("service_area", row.id, ctx.tenant, row.serviceId))
         beforeWrite()
-        j.update("UPDATE taktovia.service_area SET revision = revision + 1 WHERE id = ?", id)
+        j.update("UPDATE taktovia.cost_object SET revision = revision + 1 WHERE id = ?", id)
         Row(row.id, row.serviceId, row.revision + 1)
     }
 
@@ -63,7 +63,7 @@ class ScopedAreaRepository(private val ctxTx: ContextTransactions, private val a
         val after = cursor?.let { codec.decode(it, scope) }
         if (services != null && services.isEmpty()) return emptyList<Row>() to null
         val rows = ctxTx.run(ctx, readOnly = true) { j ->
-            j.query("SELECT id, service_id, revision, valid_from FROM taktovia.service_area WHERE service_id = ANY(CAST(? AS uuid[])) AND (CAST(? AS timestamptz) IS NULL OR (valid_from, id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY valid_from, id LIMIT ?",
+            j.query("SELECT id, service_id, revision, created_at FROM taktovia.cost_object WHERE service_id = ANY(CAST(? AS uuid[])) AND (CAST(? AS timestamptz) IS NULL OR (created_at, id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY created_at, id LIMIT ?",
                 { rs, _ -> Triple(Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3)), rs.getTimestamp(4).toInstant(), 0) },
                 services!!.joinToString(",", "{", "}"), after?.createdAt?.let(Timestamp::from), after?.createdAt?.let(Timestamp::from), after?.id, limit + 1)
         }
@@ -101,7 +101,7 @@ class ObjectAuthorizationTest {
         init {
             exec("INSERT INTO taktovia.tenant(id,name,status) VALUES (?,?,'ACTIVE')", tenant.value, "t-${tenant.value}")
             for ((a, s) in listOf(a1a to s1a, a1b to s1b, a2 to s2))
-                exec("INSERT INTO taktovia.service_area(tenant_id,id,service_id,revision,area,valid_from) VALUES (?,?,?,1,ST_Multi(ST_GeomFromText('POLYGON((0 0,0 1,1 1,1 0,0 0))',4326)),?)", tenant.value, a, s, Timestamp.from(Instant.parse("2026-01-01T00:00:00Z").plusSeconds(listOf(a1a, a1b, a2).indexOf(a).toLong())))
+                exec("INSERT INTO taktovia.cost_object(tenant_id,id,legal_entity_id,kind,business_ref,service_id,revision,created_at) VALUES (?,?,?,'COST_CENTER',?,?,1,?)", tenant.value, a, UUID.randomUUID(), "K-" + a.toString().take(8), s, Timestamp.from(Instant.parse("2026-01-01T00:00:00Z").plusSeconds(listOf(a1a, a1b, a2).indexOf(a).toLong())))
             exec("INSERT INTO taktovia.membership(tenant_id,id,issuer,subject,role_code,service_scope) VALUES (?,?,'https://idp.test/realms/authz',?,'dispatcher',CAST(? AS uuid[]))", tenant.value, membership, subject, "{$s1a,$s1b}")
         }
         fun ctx(services: Set<UUID> = setOf(s1a, s1b), tenant: TenantId = this.tenant, membershipIds: Set<UUID> = setOf(membership)) =
@@ -124,7 +124,7 @@ class ObjectAuthorizationTest {
         // Detail- und Änderungszugriff auf ein Objekt der Region 2 desselben Mandanten: 404, die Zeile bleibt unverändert
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { repo.get(ctx, w.a2) }.code)
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { repo.touch(ctx, w.a2) }.code)
-        assertEquals(1, count("SELECT revision FROM taktovia.service_area WHERE id = ?", w.a2))
+        assertEquals(1, count("SELECT revision FROM taktovia.cost_object WHERE id = ?", w.a2))
         // dasselbe Fehlerbild wie bei einer nicht vorhandenen Kennung (kein Hinweis auf Existenz)
         val missing = assertThrows<ProblemException> { repo.get(ctx, UUID.randomUUID()) }
         assertEquals(ErrorCode.NOT_FOUND, missing.code)
@@ -166,7 +166,7 @@ class ObjectAuthorizationTest {
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { repo.touch(ctx, b.a1a) }.code)
         assertFalse(ServiceScopeAuthorizer.canRead(ctx, ScopedObject("service_area", b.a1a, b.tenant, b.s1a)))
         assertFalse(ServiceScopeAuthorizer.canWrite(ctx, ScopedObject("service_area", b.a1a, b.tenant, b.s1a)))
-        assertEquals(1, count("SELECT revision FROM taktovia.service_area WHERE id = ?", b.a1a))
+        assertEquals(1, count("SELECT revision FROM taktovia.cost_object WHERE id = ?", b.a1a))
     }
 
     @Test
@@ -189,7 +189,7 @@ class ObjectAuthorizationTest {
         val w = World(); val ctx = w.ctx()
         w.setScope("{${w.s1b}}")
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { repo.touch(ctx, w.a1a) }.code)
-        assertEquals(1, count("SELECT revision FROM taktovia.service_area WHERE id = ?", w.a1a))
+        assertEquals(1, count("SELECT revision FROM taktovia.cost_object WHERE id = ?", w.a1a))
         // (2) Entzug parallel: die laufende Änderung hält die Mitgliedschaft; der Entzug wartet bis zu ihrem Ende, danach ist jede weitere Änderung abgewiesen
         w.setScope("{${w.s1a},${w.s1b}}")
         val pool = Executors.newFixedThreadPool(2); val checked = CountDownLatch(1); val proceed = CountDownLatch(1)
@@ -201,7 +201,7 @@ class ObjectAuthorizationTest {
         proceed.countDown()
         assertEquals(2L, change.get(30, TimeUnit.SECONDS)); revoke.get(30, TimeUnit.SECONDS); pool.shutdown()
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { repo.touch(ctx, w.a1a) }.code, "nach dem Commit des Entzugs abgewiesen")
-        assertEquals(2, count("SELECT revision FROM taktovia.service_area WHERE id = ?", w.a1a), "genau die eine Änderung vor dem Entzug")
+        assertEquals(2, count("SELECT revision FROM taktovia.cost_object WHERE id = ?", w.a1a), "genau die eine Änderung vor dem Entzug")
         assertNotEquals(w.s1a, w.s1b)
     }
 }

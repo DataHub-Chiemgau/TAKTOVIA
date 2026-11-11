@@ -113,7 +113,7 @@ class ServiceAreaApiTest {
         assertEquals(2, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action=? AND object_ref=? AND actor_ref=?", a.tenant.value,
             AuditActions.GEO_SERVICE_AREA_CHANGED, "service_area:${area.id}", "user:${ctxA.actor.subject}"), "je Änderung ein Auditeintrag")
         assertEquals(2, fx.adminCount("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND aggregate_id=? AND event_type='geo.service_area_revision_effective'", a.tenant.value, area.id))
-        assertEquals(1, fx.adminCount("SELECT count(*) FROM taktovia.service_area WHERE tenant_id=? AND area_key=? AND revision=2 AND id=?", a.tenant.value, area.id, r2.revisionId))
+        assertEquals(1, fx.adminCount("SELECT count(*) FROM taktovia.service_area WHERE tenant_id=? AND COALESCE(area_key, id)=? AND revision=2 AND id=?", a.tenant.value, area.id, r2.revisionId))
     }
 
     companion object {

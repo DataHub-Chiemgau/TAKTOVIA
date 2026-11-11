@@ -43,7 +43,7 @@ internal class ServiceAreaImpactProvider : ImpactProvider {
         if (rev.scopeKind != ScopeKind.SERVICE) return emptyList()
         val change = subject.impactRelevantChanges.firstOrNull { it.pointer == "/service_config/service_area_id" } ?: return emptyList()
         val areaKey = (change.newValue as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return emptyList()
-        val area = j.query("SELECT ST_AsGeoJSON(a.area)::text FROM taktovia.service_area a WHERE a.area_key = ? ORDER BY a.revision DESC LIMIT 1", { rs, _ -> rs.getString(1) }, areaKey)
+        val area = j.query("SELECT ST_AsGeoJSON(a.area)::text FROM taktovia.service_area a WHERE COALESCE(a.area_key, a.id) = ? ORDER BY a.revision DESC LIMIT 1", { rs, _ -> rs.getString(1) }, areaKey)
             .singleOrNull() ?: return emptyList()
         return AreaImpactQuery.finding(AreaImpactQuery.bookingsOutside(j, rev.scopeId, area, rev.effectiveFrom))
     }

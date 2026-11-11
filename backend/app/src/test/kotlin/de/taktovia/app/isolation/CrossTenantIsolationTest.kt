@@ -51,6 +51,9 @@ class CrossTenantIsolationTest {
         val le = create("/v1/legal-entities", """{"name":"Rechtstraeger B","country":"DE"}""").json["id"].asString()
         val org = create("/v1/organizations", """{"legal_entity_id":"$le","name":"Betreiber B","federation_ref":"f-${UUID.randomUUID()}","roles":["TRANSPORT_COMPANY"]}""").json["id"].asString()
         val service = create("/v1/services", """{"operator_id":"$org","name":"Rufbus B","timezone":"Europe/Berlin"}""").json["id"].asString()
+        // Geodaten (WP-M2-03 bis -06): Bediengebiet und Haltepunkt in B
+        val area = create("/v1/service-areas", """{"service_id":"$service","area":{"type":"MultiPolygon","coordinates":[[[[13.7,51.0],[13.8,51.0],[13.8,51.1],[13.7,51.1],[13.7,51.0]]]]},"valid_from":"2026-01-01T00:00:00Z","valid_to":null}""").json["id"].asString()
+        val stop = create("/v1/stops", """{"name":"Halt B","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"valid_from":"2026-01-01T00:00:00Z"}""").json["stop_id"].asString()
         val cost = create("/v1/cost-centers", """{"code":"KST-B","name":"Kostenstelle B","legal_entity_id":"$le"}""").json["id"].asString()
         val rev = create("/v1/config/revisions", """{"scope_kind":"TENANT","scope_id":"${b.tenant}","schema_version":"1","values":{"max_wait_min":20},"effective_from":"2030-01-01T00:00:00Z","reason":"Bestand B"}""").json["id"].asString()
         val report = env.server.send("POST", "/v1/config/revisions/$rev/impact", null, env.headers(b.adminToken, extra = idem() + ("If-Match" to "\"1\""))).json["id"].asString()
@@ -78,6 +81,7 @@ class CrossTenantIsolationTest {
         }.toString()
         return Ids(mapOf(
             "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
+            "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session,
@@ -112,6 +116,18 @@ class CrossTenantIsolationTest {
             "requestConfigImpact" to Probe("POST", "/v1/config/revisions/{revision_id}/impact", null, true),
             "getConfigImpactReport" to Probe("GET", "/v1/config/impact-reports/{impact_report_id}"),
             "getServiceConfiguration" to Probe("GET", "/v1/services/{service_id}/configuration"),
+            // Dienste und Geodaten (WP-M2-03 bis -06)
+            "getServiceOperatingHours" to Probe("GET", "/v1/services/{service_id}/operating-hours"),
+            "putServiceOperatingHours" to Probe("PUT", "/v1/services/{service_id}/operating-hours", """{"traffic_product":"AREA_ON_DEMAND","weekly_hours":[{"weekdays":["MON"],"from":"06:00","to":"22:00"}],"exceptions":[],"valid_from":"2026-01-01T00:00:00Z","valid_to":null,"reason":"Fremdversuch"}""", true),
+            "listServiceOperatingHoursRevisions" to Probe("GET", "/v1/services/{service_id}/operating-hours/revisions"),
+            "getServiceAvailability" to Probe("GET", "/v1/services/{service_id}/availability"),
+            "getServiceRelationRule" to Probe("GET", "/v1/services/{service_id}/relation-rules"),
+            "putServiceRelationRule" to Probe("PUT", "/v1/services/{service_id}/relation-rules", """{"destination_stop_ids":[],"valid_from":"2026-01-01T00:00:00Z","valid_to":null,"reason":"Fremdversuch"}""", true),
+            "checkServiceRelation" to Probe("GET", "/v1/services/{service_id}/relation-check?origin_latitude=51.05&origin_longitude=13.05&destination_latitude=51.05&destination_longitude=14.05"),
+            "getServiceArea" to Probe("GET", "/v1/service-areas/{area_id}"),
+            "updateServiceArea" to Probe("PUT", "/v1/service-areas/{area_id}", """{"area":{"type":"MultiPolygon","coordinates":[[[[13.7,51.0],[13.8,51.0],[13.8,51.1],[13.7,51.1],[13.7,51.0]]]]},"valid_from":"2027-01-01T00:00:00Z","valid_to":null}""", true),
+            "getStop" to Probe("GET", "/v1/stops/{stop_id}"),
+            "updateStop" to Probe("PUT", "/v1/stops/{stop_id}", """{"name":"Gekapert","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":false,"valid_from":"2027-01-01T00:00:00Z"}""", true),
             "updateService" to Probe("PUT", "/v1/services/{service_id}", """{"name":"Gekapert","timezone":"Europe/Berlin"}""", true),
             "revokeMySession" to Probe("DELETE", "/v1/me/sessions/{session_id}", null, true),
             "unlockAccount" to Probe("DELETE", "/v1/account-locks/{subject}", null, true),
@@ -129,7 +145,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
     )
     private val selfScoped = setOf(
         "getMe", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",

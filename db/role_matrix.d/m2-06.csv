@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+relation_rule;SELECT,INSERT;WP-M2-06: Version der erlaubten Zielpunkte eines Dienstes; UPDATE nur auf valid_to (Spaltenrecht, Trigger relation_rule_guard), kein DELETE

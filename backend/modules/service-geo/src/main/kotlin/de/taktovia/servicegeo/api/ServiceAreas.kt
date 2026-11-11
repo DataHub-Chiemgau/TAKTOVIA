@@ -15,12 +15,16 @@ data class GeoPoint(val longitude: Double, val latitude: Double) {
  */
 data class ServiceAreaView(
     val id: UUID, val revisionId: UUID, val serviceId: UUID, val revision: Long, val area: Map<String, Any?>, val validFrom: Instant, val validTo: Instant?,
-    val createdBy: String, val createdAt: Instant,
+    val createdBy: String, val createdAt: Instant, val zoneRole: ZoneRole = ZoneRole.BOTH,
 )
 
+/** Zonenrolle eines Bediengebiets (WP-M2-06, PA-04): nur Start, nur Ziel oder beides (Standard). Je Dienst und Zeitpunkt gibt es höchstens eine wirksame Start- und eine wirksame Zielzone. */
+enum class ZoneRole { ORIGIN, DESTINATION, BOTH }
+
 /** Eingabe einer Gebietsrevision; [area] in der JSON-Form eines GeoJSON-`MultiPolygon` (Map), wird vor der Speicherung geprüft. */
-data class CreateServiceArea(val serviceId: UUID, val area: Any?, val validFrom: Instant, val validTo: Instant?)
-data class ReviseServiceArea(val area: Any?, val validFrom: Instant, val validTo: Instant?)
+data class CreateServiceArea(val serviceId: UUID, val area: Any?, val validFrom: Instant, val validTo: Instant?, val zoneRole: ZoneRole = ZoneRole.BOTH)
+/** [zoneRole] `null` = Rolle der Vorgängerrevision beibehalten. */
+data class ReviseServiceArea(val area: Any?, val validFrom: Instant, val validTo: Instant?, val zoneRole: ZoneRole? = null)
 
 /**
  * Bediengebiete als valide Polygone mit Aktivierungszeitraum (WP-M2-04). Geometrievalidierung **vor** der Speicherung (Gültigkeit nach `ST_IsValid`, SRID 4326,
@@ -36,6 +40,6 @@ interface ServiceAreas {
     fun get(ctx: RequestContext, areaKey: UUID, revision: Long? = null): ServiceAreaView
     /** Jüngste Revision je Gebiet, optional eines Dienstes; stabil sortiert nach `(createdAt, revisionId)` der Revision. */
     fun list(ctx: RequestContext, serviceId: UUID?, limit: Int, after: Pair<Instant, UUID>?): List<ServiceAreaView>
-    /** Zum Zeitpunkt [at] wirksames Gebiet des Dienstes, das [point] enthält (Punkt auf der Grenze zählt als innerhalb, `ST_Covers`); `null` = außerhalb (Angebotsprüfung, WP-M2-12). */
-    fun covering(ctx: RequestContext, serviceId: UUID, point: GeoPoint, at: Instant): ServiceAreaView?
+    /** Zum Zeitpunkt [at] wirksames Gebiet des Dienstes, das [point] enthält (Punkt auf der Grenze zählt als innerhalb, `ST_Covers`); `null` = außerhalb (Angebotsprüfung, WP-M2-12). Mit [role] nur Zonen, die diese Rolle bedienen (`BOTH` zählt für beide). */
+    fun covering(ctx: RequestContext, serviceId: UUID, point: GeoPoint, at: Instant, role: ZoneRole? = null): ServiceAreaView?
 }

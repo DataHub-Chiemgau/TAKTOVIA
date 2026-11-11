@@ -45,11 +45,11 @@ class ServiceArea(unittest.TestCase):
         with self.assertRaises(psycopg.errors.ExclusionViolation):
             with tx(A) as c: add_area(c, A, svc, valid_from='2026-05-31Z', valid_to='2026-07-01Z')
 
-    def test_revision_je_gebietsschluessel_eindeutig_und_schluessel_default_ist_die_eigene_id(self):
+    def test_revision_je_gebietsschluessel_eindeutig_und_ohne_angabe_ist_die_eigene_id_der_schluessel(self):
         with tx(A) as c:
             svc = make_service(c, A)
             r1 = add_area(c, A, svc, valid_to='2026-06-01Z')
-            self.assertEqual(c.execute("SELECT area_key FROM taktovia.service_area WHERE id=%s", (r1,)).fetchone()[0], r1)
+            self.assertEqual(c.execute("SELECT COALESCE(area_key, id) FROM taktovia.service_area WHERE id=%s", (r1,)).fetchone()[0], r1)
             add_area(c, A, svc, revision=2, valid_from='2026-06-01Z', key=r1)
         with self.assertRaises(psycopg.errors.UniqueViolation):
             with tx(A) as c: add_area(c, A, svc, revision=2, valid_from='2027-01-01Z', key=r1)
