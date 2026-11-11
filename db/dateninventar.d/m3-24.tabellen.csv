@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+driver_device;Gerätebindung der Fahrer-App (WP-M3-24);LK_BETRIEB;Konto, Plattform, Sitzungsbindung
+driver_event;Fahrerereignis-Eingang (WP-M3-24);LK_BETRIEB;Dedupe über event_id, unveränderlich

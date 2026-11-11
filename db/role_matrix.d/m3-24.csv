@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+driver_device;SELECT,INSERT,UPDATE;WP-M3-24: Gerätebindung an Konto und Sitzung; Beendigung endgültig (Trigger), kein DELETE
+driver_event;SELECT,INSERT;WP-M3-24: Eingang der Fahrerereignisse mit Dedupe über (tenant_id,event_id); unveränderlich (Trigger), kein UPDATE/DELETE

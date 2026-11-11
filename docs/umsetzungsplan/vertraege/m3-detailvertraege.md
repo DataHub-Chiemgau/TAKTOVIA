@@ -10,7 +10,7 @@ Eingang für alle folgenden M3-WPs (Fahrer, Leitstelle, Flotte/Sicherheit). Alle
 | [`api/fleet-safety.yaml`](../../../api/fleet-safety.yaml) | `fleet-safety` | `listOperatorVehicles`, `createVehicleBlock`, `liftVehicleBlock`, `listChecklistTemplates`, `createInspection`, `getInspection`, `saveInspectionDraft`, `submitInspection`, `listDefects`, `createDefect`, `getDefect`, `triageDefect`, `listRepairOrders`, `createRepairOrder`, `createVehicleRelease`, `listOperatorIncidents`, `getOperatorIncident`, `transitionOperatorIncident` | Vertrag, nicht gebaut |
 | [`api/dispatch.yaml`](../../../api/dispatch.yaml) | `booking-dispatch` | `listRunRevisions`, `createRunRevision` (`/v1/runs/{run_id}/revisions`) | Vertrag, nicht gebaut |
 
-**Bewusste Abweichungen vom Katalog Kap. 05 §5.7:** (a) `/v1/operator/vehicles` wird um das Teilfeld `/blocks` und `/blocks/{block_id}/lift` ergänzt (operative Sperre, OPS-005; Entscheidung zu OP-01). (b) `/v1/checklist-templates` (nur lesen) ist neu: ohne ihn kennt die App die „exakt freigegebene Vorlage“ nicht (CHK-002, OP-14). (c) `/v1/driver/positions` ist neu (OP-04). (d) `/v1/driver/devices` ist neu (Geräte-/Sitzungsbindung, WP-M3-24). (e) `/v1/operator/incidents/{id}/transitions` ist neu: der Incident-Automat wird über benannte Ereignisse bedient, nie durch Setzen eines Zustands vom Client. `docs/pflichtenheft/api/openapi.yaml` bleibt unverändert; die Erweiterung von `recordDriverEvent` ist rein additiv (neue Enum-Werte, `booking_id`/`route_stop_id` nur für CHECK_IN/CHECK_OUT/NO_SHOW Pflicht, neue optionale Felder) und besteht `bundle.py --check`.
+**Bewusste Abweichungen vom Katalog Kap. 05 §5.7:** (a) `/v1/operator/vehicles` wird um das Teilfeld `/blocks` und `/blocks/{block_id}/lift` ergänzt (operative Sperre, OPS-005; Entscheidung zu OP-01). (b) `/v1/checklist-templates` (nur lesen) ist neu: ohne ihn kennt die App die „exakt freigegebene Vorlage“ nicht (CHK-002, OP-14). (c) `/v1/driver/positions` ist neu (OP-04). (d) `/v1/driver/devices` ist neu (Geräte-/Sitzungsbindung, WP-M3-24). (e) `/v1/operator/incidents/{id}/transitions` ist neu: der Incident-Automat wird über benannte Ereignisse bedient, nie durch Setzen eines Zustands vom Client. `docs/pflichtenheft/api/openapi.yaml` bleibt unverändert; die Erweiterung von `recordDriverEvent` ist rein additiv (neue Enum-Werte, `booking_id`/`route_stop_id` nur für CHECK_IN/CHECK_OUT/NO_SHOW Pflicht (fachliche Prüfung des Servers, nicht Teil des Schemas), neue optionale Felder) und besteht `bundle.py --check`.
 
 **Scopes** (neu in `common.yaml`, beide Scope-Listen): `operator:read`, `operator:write`, `dispatch:write`, `inspections:read`, `inspections:write`, `defects:read`, `defects:write`, `defects:triage`, `repair:read`, `repair:write`, `fleet:release`, `driver:run`, `driver:devices`, `driver:positions`.
 
@@ -19,11 +19,12 @@ Eingang für alle folgenden M3-WPs (Fahrer, Leitstelle, Flotte/Sicherheit). Alle
 Gemeinsame Regeln für **jede** Operation der drei Dateien:
 
 - **Fremder Mandant, fremdes Objekt, fremde Schicht eines anderen Fahrers:** 404 `NOT_FOUND`, ohne Hinweis auf die Existenz (Kap. 05 §5.4). Fehlender Scope oder fehlende Rolle: 403 `FORBIDDEN`.
-- **`tenant_id` im Body:** unzulässig; die Request-Schemas haben `additionalProperties: false` (422 `VALIDATION_FAILED`). Der Mandant folgt allein aus dem Token (`RequestContext`); es entstehen keine zusätzlichen Rechte.
+- **`tenant_id` im Body:** kein Recht. Ein Wert eines **fremden** Mandanten wird wie „nicht vorhanden“ behandelt (404 `NOT_FOUND`) und erzeugt das Sicherheitsereignis `security.tenant.mismatch` (Plattformregel `TenantClaimInspector`); der **eigene** Wert ist ein unbekanntes Feld (422 `VALIDATION_FAILED`, `additionalProperties: false`). Der Mandant folgt allein aus dem Token (`RequestContext`); es entstehen keine zusätzlichen Rechte.
 - **Idempotenz:** jede mutierende Operation trägt `Idempotency-Key`; derselbe Schlüssel mit anderem Inhalt: 409 `IDEMPOTENCY_CONFLICT`; laufende Erstverarbeitung: 409 `OPERATION_IN_PROGRESS` mit `Retry-After`. `recordDriverEvent` zusätzlich dauerhaft über die `event_id` (Fachschlüssel, überlebt die Frist des Registers).
 - **Revisionsschutz:** Operationen auf einem Pfad mit Ressourcenvariable verlangen `If-Match` (428 ohne, 412 veraltet); Lesen liefert `ETag`.
 - **Listen:** `{items,next_cursor,as_of}` mit `limit`/`cursor` (Kap. 05 §5.1), Cursor an Mandant, Akteur und Filter gebunden.
 - **Fehlerformat:** `application/problem+json`; M3 führt **keine neuen Fehlercodes** ein, sondern nutzt `INVALID_STATE_TRANSITION`, `IMMUTABLE_RECORD`, `CONFLICT`, `VALIDATION_FAILED`; fachliche Gründe stehen im Problem-Detail (`violations`, `missing_requirements`).
+- **`recordDriverEvent` ohne `device_id`:** gilt das eine an die aktuelle Sitzung gebundene, nicht beendete Gerät des Kontos, sonst 404 (das Feld bleibt im Vertrag optional, damit die Erweiterung gegenüber dem eingefrorenen Stand additiv ist).
 - **Fahrer-Endpunkte (`driver:*`):** wirken nur auf die eigene, aktuell zugewiesene Schicht und das eigene registrierte Gerät.
 
 | operationId | Methode, Pfad | Scope | Rollen (Rechtematrix) | Idempotency-Key | If-Match / ETag |
@@ -90,7 +91,8 @@ Der Entwurf steht in [m3-ddl-entwurf.sql](m3-ddl-entwurf.sql) (**kein** Migratio
 | `vehicle_release_decision` | `fleet-safety` | append-only | WP-M3-51 |
 | `vehicle_block` (OP-01) | `fleet-safety` | Zeilen nur schließen, nie öffnen | WP-M3-08 |
 | `vehicle_status_history` | `staff-time` | append-only | WP-M3-31 |
-| `driver_device`, `driver_event` (Eingang, Dedupe), `driver_plan_ack` | `staff-time` | `driver_event`, `driver_plan_ack` append-only | WP-M3-24/-27/-29 |
+| `driver_device`, `driver_event` (Eingang, Dedupe) | `staff-time` | `driver_event` append-only | **WP-M3-24 (gebaut, `V3240`)** |
+| `driver_plan_ack` | `staff-time` | append-only | WP-M3-27 |
 | `boarding_code` (nur Hash) | `staff-time` | – | WP-M3-30 |
 | `alert_policy_revision`, `business_alert`, `alert_acknowledgement` | `fleet-safety` | Revision und Quittierung append-only | WP-M3-52 |
 | `incident`, `incident_link`, `workflow_rule_revision`, `workflow_run_log` (OP-02) | `fleet-safety` | Regelrevision, Protokoll append-only | WP-M3-53/-55 |

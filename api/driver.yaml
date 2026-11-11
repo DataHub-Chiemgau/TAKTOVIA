@@ -32,11 +32,11 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
-      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete Offline-Ereignisse
+      description: 'Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete Offline-Ereignisse
         überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte Beförderungsbuchung. Das Ereignis ist
         an das registrierte Gerät der Sitzung gebunden (`device_id`); eine gesperrte oder beendete Sitzung ergibt 401/403, der Client behält das
         Ereignis dann in der Outbox. Die Serverempfangszeit (`received_at`) setzt der Server; die Gerätezeit ersetzt sie nie. `tenant_id` im Body
-        ist unzulässig (422).
+        gibt kein Recht (fremder Wert: 404 mit Sicherheitsereignis, eigener Wert: 422 als unbekanntes Feld).'
       requestBody:
         required: true
         content:
@@ -53,10 +53,8 @@ paths:
       description: 'Nimmt Messpunkte des eigenen, bestätigt zugeordneten Geräts entgegen; Rohpositionen unterliegen der Aufbewahrungsregel (OP-04).
         Unbekannte oder fremde Schicht: 404.'
       parameters:
-      - &id004
-        $ref: common.yaml#/components/parameters/IdempotencyKey
-      - &id002
-        $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -64,15 +62,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DriverPositionResult'
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -92,10 +97,10 @@ paths:
       - name: shift_id
         in: path
         required: true
-        schema: &id003
+        schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Schicht-ID.
-      - *id002
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -103,19 +108,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DriverRun'
-          headers: &id005
-            ETag: &id006
+          headers:
+            ETag:
               schema:
                 type: string
                 pattern: ^"[0-9]+"$
               description: Starke Ressourcenrevision.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
         '304':
           description: Nicht verändert (If-None-Match stimmt mit dem ETag überein).
   /v1/driver/shifts/{shift_id}/run/acknowledgements:
@@ -131,12 +143,12 @@ paths:
       - name: shift_id
         in: path
         required: true
-        schema: *id003
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Schicht-ID.
-      - *id004
-      - &id007
-        $ref: common.yaml#/components/parameters/IfMatch
-      - *id002
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -144,17 +156,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DriverRun'
-          headers: *id005
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -171,8 +198,8 @@ paths:
       description: 'Idempotent je `device_id` und Sitzung: wiederholtes Registrieren liefert dasselbe Gerät. Ein Gerät, das einer anderen Sitzung
         oder einem anderen Konto gehört, ergibt 409 CONFLICT.'
       parameters:
-      - *id004
-      - *id002
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -181,18 +208,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/DriverDevice'
           headers:
-            ETag: *id006
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
             Location:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -212,24 +250,35 @@ paths:
       - name: device_id
         in: path
         required: true
-        schema: *id003
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Geräte-ID.
-      - *id004
-      - *id007
-      - *id002
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '204':
           description: Erfolgreich, kein Inhalt.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     DriverEvent:
@@ -250,24 +299,24 @@ components:
         event_type:
           type: string
           enum:
+          - ARRIVAL
           - CHECK_IN
           - CHECK_OUT
           - NO_SHOW
-          - ARRIVAL
           - BREAK_START
           - BREAK_END
           - DISRUPTION
           - SHIFT_END
           description: 'Erweiterung nach OP-03: ARRIVAL (Ankunft am Stopp, startet die Wartefrist), BREAK_START/BREAK_END/DISRUPTION/SHIFT_END
-            (Dienststatus). CHECK_IN, CHECK_OUT und NO_SHOW verlangen `booking_id`; ARRIVAL und Statusereignisse nicht (Ankunft kann mehrere oder
-            keine Buchung betreffen).'
+            (Dienststatus). CHECK_IN, CHECK_OUT und NO_SHOW verlangen `booking_id` und `route_stop_id` (fachliche Prüfung des Servers, 422 mit
+            Pflichtfeldverletzung); ARRIVAL und Statusereignisse nicht (Ankunft kann mehrere oder keine Buchung betreffen).'
         booking_id:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         route_stop_id:
           oneOf:
-          - *id003
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         occurred_at:
           type: string
@@ -283,7 +332,8 @@ components:
           maximum: 100000
         offline_recorded:
           type: boolean
-        device_id: *id003
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
         no_show_wait_seconds:
           type: integer
           minimum: 0
@@ -304,23 +354,6 @@ components:
       - occurred_at
       - device_recorded_at
       - offline_recorded
-      allOf:
-      - if:
-          properties:
-            event_type:
-              enum:
-              - CHECK_IN
-              - CHECK_OUT
-              - NO_SHOW
-          required:
-          - event_type
-        then:
-          required:
-          - booking_id
-          - route_stop_id
-          properties:
-            booking_id: *id003
-            route_stop_id: *id003
       description: Fahrerereignis; `event_id` ist die `device_event_id` der Outbox (Idempotenzschlüssel auf Ereignisebene), `plan_revision` die
         letzte dem Gerät bekannte Serverrevision, `device_recorded_at` die Gerätezeit. Die Serverempfangszeit steht nur in der Antwort.
     DriverEventResult:
@@ -380,7 +413,7 @@ components:
           type: number
           minimum: 0
           maximum: 100000
-        measured_at: &id008
+        measured_at:
           type: string
           format: date-time
         speed_mps:
@@ -403,9 +436,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        shift_id: *id003
-        vehicle_id: *id003
-        device_id: *id003
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
         samples:
           type: array
           minItems: 1
@@ -429,7 +465,9 @@ components:
         rejected:
           type: integer
           minimum: 0
-        received_at: *id008
+        received_at:
+          type: string
+          format: date-time
       required:
       - accepted
       - rejected
@@ -438,7 +476,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        route_stop_id: *id003
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
         sequence:
           type: integer
           minimum: 1
@@ -448,10 +487,13 @@ components:
           - PICKUP
           - DROPOFF
           - WAYPOINT
-        planned_at: *id008
+        planned_at:
+          type: string
+          format: date-time
         forecast_at:
           oneOf:
-          - *id008
+          - type: string
+            format: date-time
           - type: 'null'
         stop_name:
           type: string
@@ -466,7 +508,8 @@ components:
         booking_ids:
           type: array
           maxItems: 20
-          items: *id003
+          items:
+            $ref: common.yaml#/components/schemas/UUID
         change:
           oneOf:
           - type: string
@@ -501,8 +544,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        shift_id: *id003
-        vehicle_id: *id003
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
         release_state:
           type: string
           enum:
@@ -517,13 +562,14 @@ components:
             $ref: fleet-safety.yaml#/components/schemas/MissingRequirement
         plan_revision:
           oneOf:
-          - &id009
-            type: integer
+          - type: integer
             format: int64
             minimum: 1
             maximum: 9007199254740991
           - type: 'null'
-        plan_as_of: *id008
+        plan_as_of:
+          type: string
+          format: date-time
         stops:
           type: array
           maxItems: 200
@@ -531,7 +577,10 @@ components:
             $ref: '#/components/schemas/DriverRunStop'
         acknowledged_revision:
           oneOf:
-          - *id009
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
           - type: 'null'
       required:
       - shift_id
@@ -548,8 +597,14 @@ components:
       type: object
       additionalProperties: false
       properties:
-        plan_revision: *id009
-        acknowledged_at: *id008
+        plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        acknowledged_at:
+          type: string
+          format: date-time
       required:
       - plan_revision
       - acknowledged_at
@@ -558,7 +613,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        device_id: *id003
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
         platform:
           type: string
           enum:
@@ -584,8 +640,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        device_id: *id003
-        session_id: *id003
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
+        session_id:
+          $ref: common.yaml#/components/schemas/UUID
         platform:
           type: string
           enum:
@@ -595,12 +653,19 @@ components:
           type: string
           minLength: 1
           maxLength: 32
-        registered_at: *id008
+        registered_at:
+          type: string
+          format: date-time
         revoked_at:
           oneOf:
-          - *id008
+          - type: string
+            format: date-time
           - type: 'null'
-        revision: *id009
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
       required:
       - device_id
       - session_id

@@ -91,16 +91,7 @@ CREATE TABLE vehicle_release_decision (
 );
 
 -- Fahrer: Geräte, Ereigniseingang, Positionen, Dienststatus
-CREATE TABLE driver_device (
-  tenant_id uuid NOT NULL REFERENCES tenant(id), id uuid NOT NULL, session_id uuid NOT NULL, subject text NOT NULL, platform text NOT NULL CHECK (platform IN ('ANDROID','IOS')),
-  app_version text NOT NULL, registered_at timestamptz NOT NULL DEFAULT clock_timestamp(), revoked_at timestamptz, revision bigint NOT NULL DEFAULT 1, PRIMARY KEY (tenant_id, id)
-);
-CREATE TABLE driver_event (
-  tenant_id uuid NOT NULL REFERENCES tenant(id), event_id uuid NOT NULL, device_id uuid NOT NULL, shift_id uuid NOT NULL, vehicle_id uuid NOT NULL, event_type text NOT NULL,
-  payload_sha256 text NOT NULL CHECK (length(payload_sha256) = 64), outcome text NOT NULL CHECK (outcome IN ('APPLIED','REVIEW_REQUIRED')), reason_code text,
-  plan_revision bigint NOT NULL, device_recorded_at timestamptz NOT NULL, occurred_at timestamptz NOT NULL, received_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  PRIMARY KEY (tenant_id, event_id), FOREIGN KEY (tenant_id, device_id) REFERENCES driver_device(tenant_id, id)
-);
+-- driver_device und driver_event: umgesetzt als db/migrations/V3240__fahrer_geraete_ereigniseingang.sql (WP-M3-24), hier nicht mehr Teil des Entwurfs.
 CREATE TABLE position_sample (
   tenant_id uuid NOT NULL REFERENCES tenant(id), id uuid NOT NULL, vehicle_id uuid NOT NULL, shift_id uuid NOT NULL, position geography(Point, 4326) NOT NULL,
   accuracy_m real NOT NULL, measured_at timestamptz NOT NULL, received_at timestamptz NOT NULL DEFAULT clock_timestamp(), PRIMARY KEY (tenant_id, id),
@@ -145,7 +136,7 @@ CREATE TABLE booking_change (
 
 DO $$ DECLARE t text; BEGIN
   FOREACH t IN ARRAY ARRAY['vehicle_block','checklist_template_revision','checklist_step','inspection_run','inspection_answer','inspection_amendment','defect_case','defect_evidence','defect_status_history',
-    'repair_order','vehicle_release_decision','driver_device','driver_event','position_sample','vehicle_status_history','alert_policy_revision','business_alert','workflow_rule_revision','incident','workflow_run_log','booking_change'] LOOP
+    'repair_order','vehicle_release_decision','position_sample','vehicle_status_history','alert_policy_revision','business_alert','workflow_rule_revision','incident','workflow_run_log','booking_change'] LOOP
     EXECUTE format('ALTER TABLE taktovia.%I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE taktovia.%I FORCE ROW LEVEL SECURITY', t);
     EXECUTE format('CREATE POLICY tenant_isolation ON taktovia.%I USING (tenant_id=taktovia.current_tenant()) WITH CHECK (tenant_id=taktovia.current_tenant())', t);

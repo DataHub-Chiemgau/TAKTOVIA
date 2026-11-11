@@ -369,7 +369,7 @@ export interface DriverEvent {
   shift_id: UUID;
   vehicle_id: UUID;
   plan_revision: number;
-  event_type: 'CHECK_IN' | 'CHECK_OUT' | 'NO_SHOW' | 'ARRIVAL' | 'BREAK_START' | 'BREAK_END' | 'DISRUPTION' | 'SHIFT_END';
+  event_type: 'ARRIVAL' | 'CHECK_IN' | 'CHECK_OUT' | 'NO_SHOW' | 'BREAK_START' | 'BREAK_END' | 'DISRUPTION' | 'SHIFT_END';
   booking_id?: UUID | null;
   route_stop_id?: UUID | null;
   occurred_at: string;

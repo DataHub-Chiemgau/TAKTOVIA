@@ -1,0 +1,35 @@
+# NICHT AUSGEFUEHRT und NICHT verdrahtet: Beispiel fuer Build und Verteilung der Fahrer-App auf Testgeraete (WP-M3-24 AK 8, Aufsatz auf WP-M0-06/-12).
+# Die echte Pipeline gehoert nach .github/workflows (Eigentum ausserhalb dieses Pakets). Signierschluessel und Zugangsdaten der Verteilung
+# kommen ausschliesslich aus den Secrets der CI, nie aus dem Repository. Reproduzierbar: feste Flutter-Version (.flutter-version), pubspec.lock eingecheckt.
+name: Fahrer-App verteilen
+on:
+  workflow_dispatch:
+  push:
+    tags: ['driver-v*']
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.47.9', channel: stable }
+      - run: flutter pub get --enforce-lockfile && flutter analyze && flutter test
+        working-directory: mobile/driver
+      - name: Keystore aus Secret
+        run: echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+        env: { ANDROID_KEYSTORE_B64: '${{ secrets.ANDROID_KEYSTORE_B64 }}' }
+      - run: flutter build appbundle --release --build-number=${{ github.run_number }}
+        working-directory: mobile/driver
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      - name: Verteilung an Testgeraete (Anbieter nach D-05 festzulegen)
+        run: echo "Upload an den gewaehlten Testverteilungsdienst; Anbieter und Testgeraeteliste stehen noch nicht fest (D-05)."
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.47.9', channel: stable }
+      - run: flutter pub get --enforce-lockfile && flutter build ipa --release --export-options-plist=ci/ExportOptions.plist
+        working-directory: mobile/driver

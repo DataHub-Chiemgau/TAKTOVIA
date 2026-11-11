@@ -18,15 +18,12 @@ paths:
       - name: depot_id
         in: query
         required: false
-        schema: &id002
+        schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Nur Fahrzeuge dieses Betriebshofs (OP-22).
-      - &id007
-        $ref: common.yaml#/components/parameters/Limit
-      - &id008
-        $ref: common.yaml#/components/parameters/Cursor
-      - &id003
-        $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -34,14 +31,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OperatorVehiclePage'
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/operator/vehicles/{vehicle_id}/blocks:
     post:
       summary: Operative Fahrzeugsperre setzen
@@ -56,13 +59,12 @@ paths:
       - name: vehicle_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Fahrzeug-ID.
-      - &id004
-        $ref: common.yaml#/components/parameters/IdempotencyKey
-      - &id005
-        $ref: common.yaml#/components/parameters/IfMatch
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -70,8 +72,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VehicleBlock'
-          headers: &id009
-            ETag: &id006
+          headers:
+            ETag:
               schema:
                 type: string
                 pattern: ^"[0-9]+"$
@@ -80,16 +82,26 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -109,16 +121,18 @@ paths:
       - name: vehicle_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Fahrzeug-ID.
       - name: block_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Sperr-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -126,18 +140,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VehicleBlock'
-          headers: &id010
-            ETag: *id006
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -170,9 +198,9 @@ paths:
           minLength: 1
           maxLength: 64
         description: Bedienart.
-      - *id007
-      - *id008
-      - *id003
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -180,13 +208,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChecklistTemplatePage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/inspections:
     post:
       summary: Prüflauf starten
@@ -198,8 +233,8 @@ paths:
         Fahrzeug: 404; Schicht eines anderen Fahrers: 404; Vorlagenrevision nicht die freigegebene: 422. Ein zweiter offener Prüflauf derselben
         Kombination liefert den ersten (200 ist nicht vorgesehen, daher 409 CONFLICT mit Verweis).'
       parameters:
-      - *id004
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -207,15 +242,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Inspection'
-          headers: *id009
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -234,9 +286,10 @@ paths:
       - name: inspection_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Prüflauf-ID.
-      - *id003
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -244,14 +297,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Inspection'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     put:
       summary: Prüfentwurf speichern
       operationId: saveInspectionDraft
@@ -264,11 +329,12 @@ paths:
       - name: inspection_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Prüflauf-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -276,17 +342,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Inspection'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -307,11 +388,12 @@ paths:
       - name: inspection_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Prüflauf-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -319,17 +401,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Inspection'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -348,7 +445,8 @@ paths:
       - name: vehicle_id
         in: query
         required: false
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Nur Akten dieses Fahrzeugs.
       - name: status
         in: query
@@ -369,9 +467,9 @@ paths:
         schema:
           $ref: '#/components/schemas/DefectSeverity'
         description: Nur Akten dieser Klasse.
-      - *id007
-      - *id008
-      - *id003
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -379,13 +477,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DefectPage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     post:
       summary: Schaden melden
       operationId: createDefect
@@ -395,8 +500,8 @@ paths:
       description: 'Legt die Akte mit Fallnummer im Status NEW an; wiederholte Meldung mit demselben Idempotency-Key oder derselben `device_event_id`
         liefert dieselbe Akte. Fremdes Fahrzeug: 404.'
       parameters:
-      - *id004
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -404,15 +509,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Defect'
-          headers: *id009
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -431,9 +553,10 @@ paths:
       - name: defect_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Schadenakten-ID.
-      - *id003
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -441,14 +564,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Defect'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/defects/{defect_id}/triage:
     post:
       summary: Schaden klassifizieren und zuweisen
@@ -462,11 +597,12 @@ paths:
       - name: defect_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Schadenakten-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -474,17 +610,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Defect'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -503,16 +654,18 @@ paths:
       - name: defect_id
         in: query
         required: false
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Nur Aufträge dieser Akte.
       - name: vehicle_id
         in: query
         required: false
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Nur Aufträge dieses Fahrzeugs.
-      - *id007
-      - *id008
-      - *id003
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -520,13 +673,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepairOrderPage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     post:
       summary: Reparaturauftrag anlegen
       operationId: createRepairOrder
@@ -535,8 +695,8 @@ paths:
         - repair:write
       description: 'Zulässig, wenn die Akte im Status IN_PROGRESS ist; setzt die Akte auf REPAIR. Fremde Akte: 404.'
       parameters:
-      - *id004
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -544,15 +704,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepairOrder'
-          headers: *id009
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -573,11 +750,12 @@ paths:
       - name: vehicle_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Fahrzeug-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -585,17 +763,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VehicleRelease'
-          headers: *id009
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -614,7 +811,7 @@ paths:
       - name: status
         in: query
         required: false
-        schema: &id012
+        schema:
           type: string
           enum:
           - OPEN
@@ -625,11 +822,12 @@ paths:
       - name: vehicle_id
         in: query
         required: false
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Nur Incidents dieses Fahrzeugs.
-      - *id007
-      - *id008
-      - *id003
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -637,13 +835,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IncidentPage'
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/operator/incidents/{incident_id}:
     get:
       summary: Incident lesen
@@ -656,9 +861,10 @@ paths:
       - name: incident_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Incident-ID.
-      - *id003
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -666,14 +872,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Incident'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/operator/incidents/{incident_id}/transitions:
     post:
       summary: Incident-Übergang auslösen
@@ -686,11 +904,12 @@ paths:
       - name: incident_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Incident-ID.
-      - *id004
-      - *id005
-      - *id003
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -698,17 +917,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Incident'
-          headers: *id010
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -750,7 +984,7 @@ components:
           - RELEASE_REVOKED
         inspection_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         step_codes:
           type: array
@@ -766,8 +1000,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        vehicle_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
         source:
           type: string
           enum:
@@ -781,7 +1017,7 @@ components:
           - INSPECTION_FAILED
           - MANUAL
           - OTHER
-        set_at: &id011
+        set_at:
           type: string
           format: date-time
         set_by:
@@ -790,7 +1026,8 @@ components:
           maxLength: 200
         lifted_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         lifted_by:
           oneOf:
@@ -818,7 +1055,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        vehicle_id: *id002
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
         vehicle_label:
           type: string
           minLength: 1
@@ -832,7 +1070,8 @@ components:
           maximum: 9007199254740991
         release_valid_until:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         missing_requirements:
           type: array
@@ -850,7 +1089,8 @@ components:
           - type: 'null'
         position_measured_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         position_age_seconds:
           oneOf:
@@ -864,7 +1104,7 @@ components:
           minimum: 0
         current_run_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         revision:
           type: integer
@@ -903,7 +1143,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id011
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor
@@ -939,8 +1181,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        template_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        template_id:
+          $ref: common.yaml#/components/schemas/UUID
         version:
           type: integer
           minimum: 1
@@ -952,7 +1196,9 @@ components:
           type: string
           minLength: 1
           maxLength: 64
-        published_at: *id011
+        published_at:
+          type: string
+          format: date-time
         steps:
           type: array
           maxItems: 200
@@ -1011,7 +1257,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id011
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor
@@ -1044,8 +1292,11 @@ components:
         evidence_ids:
           type: array
           maxItems: 10
-          items: *id002
-        answered_at: *id011
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        answered_at:
+          type: string
+          format: date-time
       required:
       - step_code
       - answer
@@ -1056,9 +1307,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        shift_id: *id002
-        vehicle_id: *id002
-        template_revision_id: *id002
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        template_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
         kind:
           type: string
           enum:
@@ -1077,7 +1331,9 @@ components:
             minimum: 0
             maximum: 100
           - type: 'null'
-        client_started_at: *id011
+        client_started_at:
+          type: string
+          format: date-time
       required:
       - shift_id
       - vehicle_id
@@ -1108,8 +1364,11 @@ components:
           maxItems: 200
           items:
             $ref: '#/components/schemas/InspectionAnswer'
-        device_event_id: *id002
-        client_submitted_at: *id011
+        device_event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        client_submitted_at:
+          type: string
+          format: date-time
       required:
       - answers
       - client_submitted_at
@@ -1118,11 +1377,16 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        shift_id: *id002
-        vehicle_id: *id002
-        driver_ref: *id002
-        template_revision_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        driver_ref:
+          $ref: common.yaml#/components/schemas/UUID
+        template_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
         kind:
           type: string
           enum:
@@ -1160,8 +1424,11 @@ components:
           - type: object
             additionalProperties: false
             properties:
-              release_id: *id002
-              valid_until: *id011
+              release_id:
+                $ref: common.yaml#/components/schemas/UUID
+              valid_until:
+                type: string
+                format: date-time
               safety_revision:
                 type: integer
                 format: int64
@@ -1171,14 +1438,18 @@ components:
             - valid_until
             - safety_revision
           - type: 'null'
-        started_at: *id011
+        started_at:
+          type: string
+          format: date-time
         completed_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         received_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         revision:
           type: integer
@@ -1214,8 +1485,11 @@ components:
       type: object
       additionalProperties: false
       properties:
-        vehicle_id: *id002
-        occurred_at: *id011
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        occurred_at:
+          type: string
+          format: date-time
         location_kind:
           type: string
           enum:
@@ -1237,7 +1511,7 @@ components:
           maxLength: 2000
         source_inspection_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         source_step_code:
           oneOf:
@@ -1248,8 +1522,10 @@ components:
         evidence_ids:
           type: array
           maxItems: 10
-          items: *id002
-        device_event_id: *id002
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        device_event_id:
+          $ref: common.yaml#/components/schemas/UUID
         severity_hint:
           $ref: '#/components/schemas/DefectSeverity'
       required:
@@ -1273,7 +1549,7 @@ components:
           - DISMISSED
         assignee_ref:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         reason:
           oneOf:
@@ -1290,15 +1566,22 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
         case_number:
           type: string
           minLength: 1
           maxLength: 32
-        vehicle_id: *id002
-        reported_by: *id002
-        reported_at: *id011
-        occurred_at: *id011
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reported_by:
+          $ref: common.yaml#/components/schemas/UUID
+        reported_at:
+          type: string
+          format: date-time
+        occurred_at:
+          type: string
+          format: date-time
         category_code:
           type: string
           minLength: 1
@@ -1318,14 +1601,15 @@ components:
           - DISMISSED
         assignee_ref:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         blocks_vehicle:
           type: boolean
         evidence_ids:
           type: array
           maxItems: 10
-          items: *id002
+          items:
+            $ref: common.yaml#/components/schemas/UUID
         description:
           oneOf:
           - type: string
@@ -1369,7 +1653,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id011
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor
@@ -1378,7 +1664,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        defect_id: *id002
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
         workshop_ref:
           oneOf:
           - type: string
@@ -1387,7 +1674,8 @@ components:
           - type: 'null'
         planned_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         cost_reference:
           oneOf:
@@ -1402,9 +1690,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        defect_id: *id002
-        vehicle_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
         status:
           type: string
           enum:
@@ -1420,7 +1711,8 @@ components:
           - type: 'null'
         planned_at:
           oneOf:
-          - *id011
+          - type: string
+            format: date-time
           - type: 'null'
         cost_reference:
           oneOf:
@@ -1428,7 +1720,9 @@ components:
             minLength: 1
             maxLength: 64
           - type: 'null'
-        created_at: *id011
+        created_at:
+          type: string
+          format: date-time
         revision:
           type: integer
           format: int64
@@ -1459,7 +1753,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id011
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor
@@ -1468,15 +1764,17 @@ components:
       type: object
       additionalProperties: false
       properties:
-        repair_order_id: *id002
-        follow_up_inspection_id: *id002
+        repair_order_id:
+          $ref: common.yaml#/components/schemas/UUID
+        follow_up_inspection_id:
+          $ref: common.yaml#/components/schemas/UUID
         reason:
           type: string
           minLength: 1
           maxLength: 500
         second_approver_ref:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
       required:
       - repair_order_id
@@ -1489,8 +1787,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
-        vehicle_id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
         decision:
           type: string
           enum:
@@ -1501,7 +1801,9 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-        decided_at: *id011
+        decided_at:
+          type: string
+          format: date-time
         safety_revision:
           type: integer
           format: int64
@@ -1509,7 +1811,8 @@ components:
         lifted_block_ids:
           type: array
           maxItems: 20
-          items: *id002
+          items:
+            $ref: common.yaml#/components/schemas/UUID
         revision:
           type: integer
           format: int64
@@ -1529,7 +1832,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *id002
+        id:
+          $ref: common.yaml#/components/schemas/UUID
         kind:
           type: string
           enum:
@@ -1539,26 +1843,37 @@ components:
           - CRITICAL_DELAY
         vehicle_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
-        status: *id012
+        status:
+          type: string
+          enum:
+          - OPEN
+          - REPLACEMENT_SEARCH
+          - RESOLVED
+          - CLOSED_NO_REPLACEMENT
         dedupe_key:
           type: string
           minLength: 1
           maxLength: 128
-        opened_at: *id011
-        updated_at: *id011
+        opened_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
         rule_revision_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         affected_run_ids:
           type: array
           maxItems: 100
-          items: *id002
+          items:
+            $ref: common.yaml#/components/schemas/UUID
         replacement_operation_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
         revision:
           type: integer
@@ -1593,7 +1908,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id011
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor

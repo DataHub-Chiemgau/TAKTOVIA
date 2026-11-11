@@ -51,11 +51,8 @@ publishRoster  # POST /v1/rosters/{roster_id}/publish
 quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quotes
 receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
 receiveProviderEvent  # POST /v1/payments/provider-events/{provider}
-recordDriverEvent  # POST /v1/driver/events
 recordDriverPosition  # POST /v1/driver/positions
-registerDriverDevice  # POST /v1/driver/devices
 releaseHold  # POST /v1/ride-offers/{ride_offer_id}/hold/release
-revokeDriverDevice  # DELETE /v1/driver/devices/{device_id}
 saveInspectionDraft  # PUT /v1/inspections/{inspection_id}
 submitInspection  # POST /v1/inspections/{inspection_id}/submit
 transitionOperatorIncident  # POST /v1/operator/incidents/{incident_id}/transitions

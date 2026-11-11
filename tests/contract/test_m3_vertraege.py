@@ -206,14 +206,14 @@ class OpenApiM3(unittest.TestCase):
             self.assertFalse(v.is_valid({**VALID[name], feld: wert}), f'{oid}: unzulässiger Wert für {feld}')
             self.assertFalse(v.is_valid({}), f'{oid}: leerer Körper') if self.doc['components']['schemas'][name].get('required') else None
 
-    def test_driver_event_erweiterung_ist_bedingt(self):
+    def test_driver_event_erweiterung_ist_additiv(self):
         v = schema_validator(self.doc, 'DriverEvent')
         basis = dict(VALID['DriverEvent'])
         arrival = {k: x for k, x in basis.items() if k not in ('booking_id', 'route_stop_id')} | {'event_type': 'ARRIVAL'}
         self.assertTrue(v.is_valid(arrival), 'ARRIVAL braucht keine Buchung')
-        ohne_buchung = {k: x for k, x in basis.items() if k != 'booking_id'}
-        self.assertFalse(v.is_valid(ohne_buchung), 'CHECK_IN ohne booking_id muss abgewiesen werden')
         self.assertTrue(v.is_valid(basis | {'event_type': 'BREAK_START', 'booking_id': None, 'route_stop_id': None}))
+        # Pflicht von booking_id/route_stop_id für CHECK_IN/OUT/NO_SHOW prüft der Server (DriverSyncTest.checkin_ohne_buchung_wird_abgewiesen)
+        self.assertIn('booking_id', self.doc['components']['schemas']['DriverEvent']['properties'])
 
     def test_fahrergeraet_und_status_sind_keine_clientgesetzten_zustaende(self):
         # Antworten tragen Zustände, Anfragen nie ein state/status-Feld (Request-Schema-Politik SYS-011)
@@ -265,7 +265,7 @@ class DdlEntwurfM3(unittest.TestCase):
             try:
                 c.execute(sql)
                 rows = c.execute("SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
-                                 "WHERE n.nspname = 'taktovia' AND c.relname = ANY(%s)", (['vehicle_block', 'inspection_run', 'defect_case', 'incident', 'booking_change', 'driver_event'],)).fetchall()
+                                 "WHERE n.nspname = 'taktovia' AND c.relname = ANY(%s)", (['vehicle_block', 'inspection_run', 'defect_case', 'incident', 'booking_change', 'position_sample'],)).fetchall()
                 self.assertEqual(len(rows), 6)
                 self.assertTrue(all(r[1] and r[2] for r in rows), rows)
             finally:

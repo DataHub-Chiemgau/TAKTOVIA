@@ -11,13 +11,12 @@ paths:
       - name: run_id
         in: path
         required: true
-        schema: &id002
+        schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Umlauf-ID.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
-      - &id003
-        $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
           description: Erfolgreich.
@@ -25,14 +24,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RunRevisionPage'
-        '400': &id001
+        '400':
           $ref: common.yaml#/components/responses/Problem
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '422': *id001
-        '429': *id001
-        '503': *id001
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
     post:
       summary: Manuelle Planänderung (Plan-CAS)
       operationId: createRunRevision
@@ -45,11 +50,12 @@ paths:
       - name: run_id
         in: path
         required: true
-        schema: *id002
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
         description: Umlauf-ID.
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/IfMatch
-      - *id003
+      - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
           description: Angelegt.
@@ -67,16 +73,26 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
-        '400': *id001
-        '401': *id001
-        '403': *id001
-        '404': *id001
-        '409': *id001
-        '412': *id001
-        '422': *id001
-        '428': *id001
-        '429': *id001
-        '503': *id001
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
       requestBody:
         required: true
         content:
@@ -89,7 +105,8 @@ components:
       type: object
       additionalProperties: false
       properties:
-        route_stop_id: *id002
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
         change:
           type: string
           enum:
@@ -103,7 +120,7 @@ components:
           - type: 'null'
         booking_id:
           oneOf:
-          - *id002
+          - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
       required:
       - route_stop_id
@@ -122,7 +139,7 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-        base_plan_revision: &id004
+        base_plan_revision:
           type: integer
           format: int64
           minimum: 1
@@ -140,11 +157,19 @@ components:
       type: object
       additionalProperties: false
       properties:
-        run_id: *id002
-        plan_revision: *id004
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
         previous_revision:
           oneOf:
-          - *id004
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
           - type: 'null'
         cause:
           type: string
@@ -159,7 +184,7 @@ components:
             minLength: 1
             maxLength: 500
           - type: 'null'
-        created_at: &id005
+        created_at:
           type: string
           format: date-time
         created_by:
@@ -173,7 +198,8 @@ components:
             type: object
             additionalProperties: false
             properties:
-              route_stop_id: *id002
+              route_stop_id:
+                $ref: common.yaml#/components/schemas/UUID
               kind:
                 type: string
                 enum:
@@ -224,7 +250,9 @@ components:
             minLength: 1
             maxLength: 512
           - type: 'null'
-        as_of: *id005
+        as_of:
+          type: string
+          format: date-time
       required:
       - items
       - next_cursor
