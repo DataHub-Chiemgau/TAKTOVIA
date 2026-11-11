@@ -12,12 +12,9 @@ createConfigRevision  # POST /v1/config/revisions
 createCostCenter  # POST /v1/cost-centers
 createDepot  # POST /v1/depots
 createDriverClearance  # POST /v1/driver-clearances
-createLegalEntity  # POST /v1/legal-entities
 createRegion  # POST /v1/regions
 createService  # POST /v1/services
-createVehicleRole  # POST /v1/vehicle-roles
 createWebhookSubscription  # POST /v1/webhook-subscriptions
-getCompanyProfile  # GET /v1/company-profile
 getConfigRevision  # GET /v1/config/revisions/{revision_id}
 getEffectiveConfig  # GET /v1/config/effective
 getJourney  # GET /v1/federation/journeys/{journey_id}
@@ -29,13 +26,11 @@ listConfigRevisions  # GET /v1/config/revisions
 listCostCenters  # GET /v1/cost-centers
 listDepots  # GET /v1/depots
 listDriverClearances  # GET /v1/driver-clearances
-listLegalEntities  # GET /v1/legal-entities
 listPassengers  # GET /v1/passengers
 listRegions  # GET /v1/regions
 listRetentionRules  # GET /v1/retention-rules
 listServices  # GET /v1/services
 listSessions  # GET /v1/sessions
-listVehicleRoles  # GET /v1/vehicle-roles
 listWebhookSubscriptions  # GET /v1/webhook-subscriptions
 planJourney  # POST /v1/federation/journeys/plan
 publishConfig  # POST /v1/config/revisions/{revision_id}/publish
@@ -46,7 +41,5 @@ recordDriverEvent  # POST /v1/driver/events
 registerPassenger  # POST /v1/passengers
 requestConfigImpact  # POST /v1/config/revisions/{revision_id}/impact
 revokeSession  # DELETE /v1/sessions/{session_id}
-updateCompanyProfile  # PUT /v1/company-profile
-updateLegalEntity  # PUT /v1/legal-entities/{legal_entity_id}
 updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
 validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

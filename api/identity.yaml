@@ -609,6 +609,253 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/organizations:
+    get:
+      summary: Organisationen auflisten
+      operationId: listOrganizations
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Organisation mit vertraglichen Rollen anlegen
+      operationId: createOrganization
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCreate'
+  /v1/organizations/{organization_id}:
+    get:
+      summary: Organisation lesen
+      operationId: getOrganization
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - name: organization_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Organisation und ihre Rollen ändern
+      operationId: updateOrganization
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: organization_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpdate'
+  /v1/platform/tenants:
+    post:
+      summary: Mandanten anlegen (Plattformbetreiber)
+      operationId: createTenant
+      security:
+      - oidc:
+        - platform:tenants:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantCreated'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+  /v1/platform/tenant-status-changes:
+    post:
+      summary: Mandantenstatus ändern (Plattformbetreiber)
+      operationId: changeTenantStatus
+      security:
+      - oidc:
+        - platform:tenants:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantStatusChanged'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantStatusChange'
 components:
   schemas:
     Me:
@@ -1173,3 +1420,284 @@ components:
       - items
       - next_cursor
       - as_of
+    OrganizationRole:
+      type: string
+      enum:
+      - PLATFORM_OPERATOR
+      - TRANSPORT_COMPANY
+      - TASK_AUTHORITY
+      - CLIENT
+      - BROKER
+      - ACTUAL_CARRIER
+      description: Vertragliche Rolle einer Organisation (LH-I.4-MUL-003; Werteliste Planungsannahme, OP-05). PLATFORM_OPERATOR = Plattformbetreiber,
+        TRANSPORT_COMPANY = Verkehrsunternehmen, TASK_AUTHORITY = Aufgabenträger, CLIENT = Auftraggeber, BROKER = Vermittler, ACTUAL_CARRIER = tatsächlicher
+        Beförderer. Getrennte Werte; keine Rolle wird aus einer anderen abgeleitet.
+    Organization:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        federation_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - legal_entity_id
+      - name
+      - federation_ref
+      - roles
+      - roles_valid_from
+      - roles_valid_to
+      - revision
+    OrganizationCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        federation_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Schlüssel der Organisation gegenüber Partnern; im Mandanten eindeutig (409), nach dem Anlegen unveränderlich.
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit der Rollenmenge; Standard jetzt.
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit (exklusiv); null oder fehlend = unbefristet.
+      required:
+      - legal_entity_id
+      - name
+      - federation_ref
+      - roles
+      examples:
+      - legal_entity_id: 00000000-0000-4000-8000-000000000010
+        name: Verkehrsbetriebe Beispiel
+        federation_ref: fed-vb-beispiel
+        roles:
+        - TRANSPORT_COMPANY
+        - ACTUAL_CARRIER
+    OrganizationUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - legal_entity_id
+      - name
+      - roles
+      examples:
+      - legal_entity_id: 00000000-0000-4000-8000-000000000010
+        name: Verkehrsbetriebe Beispiel
+        roles:
+        - TRANSPORT_COMPANY
+    OrganizationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    TenantCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_entity:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 200
+            country:
+              type: string
+              pattern: ^[A-Z]{2}$
+            tax_reference_token:
+              type: string
+              minLength: 1
+              maxLength: 200
+          required:
+          - name
+          - country
+        first_admin:
+          type: object
+          additionalProperties: false
+          properties:
+            issuer:
+              type: string
+              minLength: 1
+              maxLength: 512
+            subject:
+              type: string
+              minLength: 1
+              maxLength: 200
+          required:
+          - issuer
+          - subject
+        contact_email:
+          type: string
+          minLength: 3
+          maxLength: 254
+          description: Pflichtfeld des Unternehmensprofils (PA-11); die Anlage legt die erste Profilrevision an.
+        default_currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Standardwährung aus dem Währungskatalog; Standard EUR.
+      required:
+      - name
+      - legal_entity
+      - first_admin
+      - contact_email
+      description: Mandantenanlage durch die Plattformbetreiberrolle (OP-36, Planungsannahme). Legt Mandant, Rechtsträger, erste Administrator-Mitgliedschaft
+        und die erste Profilrevision in einer Transaktion an. Die Plattformbetreiberrolle erhält dadurch keine Fachdatensicht.
+      examples:
+      - name: Stadtwerke Beispiel
+        legal_entity:
+          name: Stadtwerke Beispiel GmbH
+          country: DE
+        first_admin:
+          issuer: https://identity.taktovia.example/realms/taktovia
+          subject: user-4711
+        contact_email: info@example.org
+    TenantCreated:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        admin_membership_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - id
+      - name
+      - status
+      - legal_entity_id
+      - admin_membership_id
+    TenantStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - CLOSED
+    TenantStatusChange:
+      type: object
+      additionalProperties: false
+      properties:
+        managed_tenant_id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+      required:
+      - managed_tenant_id
+      - status
+      description: Statuswechsel nach dem Automaten Mandant (ACTIVE und SUSPENDED wechselseitig, beide nach CLOSED, CLOSED endgültig); unzulässig ergibt 409.
+        In SUSPENDED und CLOSED schlägt jeder Fachzugriff des Mandanten fehl.
+      examples:
+      - managed_tenant_id: 00000000-0000-4000-8000-000000000001
+        status: SUSPENDED
+    TenantStatusChanged:
+      type: object
+      additionalProperties: false
+      properties:
+        managed_tenant_id:
+          $ref: common.yaml#/components/schemas/UUID
+        from:
+          $ref: '#/components/schemas/TenantStatus'
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+      required:
+      - managed_tenant_id
+      - from
+      - status

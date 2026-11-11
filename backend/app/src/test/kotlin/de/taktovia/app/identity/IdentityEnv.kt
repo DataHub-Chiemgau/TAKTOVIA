@@ -65,6 +65,18 @@ object IdentityEnv {
         "/v1/me/tenant-switch", """{"tenant_id":"$tenant"${if (service != null) ""","service_id":"$service"""" else ""}}""", token, context,
         mapOf("Idempotency-Key" to "switch-" + UUID.randomUUID()))
 
+    /** Legt ein Betreiberkonto der Plattformverwaltung an (Administration, nicht über die Anwendung) und liefert sein Subject. */
+    fun operator(): UUID {
+        val subject = UUID.randomUUID()
+        admin.connection.use { c -> c.prepareStatement("INSERT INTO taktovia.platform_operator_account(issuer, subject) VALUES (?, ?)").use { it.setString(1, idp.issuer); it.setString(2, subject.toString()); it.executeUpdate() } }
+        return subject
+    }
+
+    fun exec(sql: String, vararg args: Any?) { admin.connection.use { c -> c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeUpdate() } } }
+
+    fun put(path: String, body: String, token: String, ifMatch: String?, context: String? = null): Resp = server.send("PUT", path, body, headers(token, context,
+        buildMap { put("Idempotency-Key", "put-" + UUID.randomUUID()); if (ifMatch != null) put("If-Match", ifMatch) }))
+
     fun count(sql: String, vararg args: Any?): Int = admin.connection.use { c ->
         c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeQuery().use { it.next(); it.getInt(1) } }
     }

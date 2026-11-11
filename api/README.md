@@ -11,11 +11,11 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `config.yaml` | Konfigurationsrevision veröffentlichen | `config` |
 | `rosters.yaml` | Dienstplan veröffentlichen | `staff-time` |
 | `driver.yaml` | Fahrerereignisse (Offline-Queue) | `booking-dispatch` (Zuordnung vorläufig) |
-| `identity.yaml` | `/v1/me`, Mandantenwechsel, Mitgliedschaften, Rechtsträger, Regionen, Betriebshöfe, Kostenstellen, Sitzungen (WP-M1-03) | `identity` |
+| `identity.yaml` | `/v1/me`, Mandantenwechsel, Mitgliedschaften, Rechtsträger, Organisationen (WP-M1-05), Plattformverwaltung (`/v1/platform/…`, WP-M1-05), Regionen, Betriebshöfe, Kostenstellen, Sitzungen (WP-M1-03) | `identity` |
 | `registry.yaml` | wirksame Konfiguration, Revisionen anlegen/lesen/prüfen, Wirkungsanalyse (Veröffentlichen steht in `config.yaml`) | `config` |
 | `passengers.yaml`, `webhooks.yaml`, `services.yaml` | Fahrgäste, Webhook-Abonnements, Dienstkopf | `communication-support`, `service-geo` |
-| `compliance.yaml` | Auditabfrage, Unternehmensprofil, Aufbewahrungsregeln | `platform`/`config` |
-| `fleet.yaml` | Fahrzeugrollen, Fahrerfreigaben | `fleet-safety` |
+| `compliance.yaml` | Auditabfrage, Unternehmensprofil (WP-M1-24, Feldliste in `docs/umsetzungsplan/vertraege/schemas/tenant-profile.v1.schema.json`), Aufbewahrungsregeln | `platform`/`config` |
+| `fleet.yaml` | Fahrzeugrollen (WP-M1-34), Fahrerfreigaben | `fleet-safety` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |
 

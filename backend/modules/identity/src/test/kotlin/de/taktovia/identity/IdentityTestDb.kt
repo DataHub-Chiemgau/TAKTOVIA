@@ -74,6 +74,9 @@ class IdentityFixture(poolSize: Int = 8) : AutoCloseable {
         c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeQuery().use { it.next(); it.getInt(1) } }
     }
 
+    /** Administrator-SQL für Testaufbau (z. B. Betreiberkonto der Plattformverwaltung anlegen, Mandant sperren); nie in Produktionscode. */
+    fun adminExec(sql: String, vararg args: Any?) { admin.connection.use { c -> c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeUpdate() } } }
+
     fun adminStrings(sql: String, vararg args: Any?): List<String> = admin.connection.use { c ->
         c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } } }
     }

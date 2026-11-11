@@ -74,6 +74,19 @@ class RequestContextFilter(
         val principal = AuthenticatedPrincipal.of(request)
         try {
             if (principal == null) throw ProblemException(ErrorCode.UNAUTHENTICATED, "Anmeldung fehlt oder ist ungültig.")
+            if (op.operationId in PLATFORM_OPERATIONS) {
+                // Plattformverwaltung: kein Mandantenkontext und keine Mitgliedschaft; nur Betreiberkonten (Menschen), sonst 403 ohne Details.
+                if (principal.type != PrincipalType.HUMAN || !identity.platform.isOperator(principal.issuer, principal.subject.toString())) throw ProblemException(ErrorCode.FORBIDDEN)
+            } else authorize(request, principal, op)
+        } catch (e: ProblemException) {
+            return problems.write(request, response, e)
+        }
+        chain.doFilter(request, response)
+    }
+
+    /** Mandantenkontext bilden, zentral autorisieren (Rechtematrix) und Mandantenangaben der Anfrage prüfen; setzt den Kontext als Anfrageattribut. */
+    private fun authorize(request: HttpServletRequest, principal: AuthenticatedPrincipal, op: ApiOperation) {
+        run {
             val ctx = when (principal.type) { PrincipalType.HUMAN -> humanContext(request, principal, op); PrincipalType.SERVICE -> serviceContext(request, principal) }
             // Zentrale Autorisierung (WP-M1-07): Rechtematrix + Funktionsscope; ohne Eintrag oder Scope deny-by-default, ohne Details in der Antwort
             (identity.authorizer.decide(ctx, op.operationId, op.scopes) as? Decision.Denied)?.let { denial ->
@@ -85,10 +98,7 @@ class RequestContextFilter(
                 throw ProblemException.notFound()
             }
             request.setAttribute(RequestContexts.ATTRIBUTE, ctx)
-        } catch (e: ProblemException) {
-            return problems.write(request, response, e)
         }
-        chain.doFilter(request, response)
     }
 
     private fun humanContext(request: HttpServletRequest, p: AuthenticatedPrincipal, op: ApiOperation): RequestContext {
@@ -147,8 +157,12 @@ class RequestContextFilter(
         /**
          * Operationen mit eigener Authentisierung ohne Menschen-/Dienstkontext. Leer: auch die Partnersignatur-Operation (`receivePartnerEvent`)
          * ist bis M6 für jede Anmeldung verweigert (Matrixzeile ohne erlaubte Rolle); M6 trägt hier ausdrücklich ein, was eine eigene Prüfung hat.
+         * Die Operationen der Plattformverwaltung ([PLATFORM_OPERATIONS]) stehen nicht hier: Der Filter lässt nur Betreiberkonten durch (kein Mandantenkontext),
+         * das Modul `identity` prüft Betreiberkonto und zweiten Faktor beim Ausführen erneut; die Matrixzeilen verweigern sie jeder Mandantenrolle.
          */
         val EXEMPT: Set<String> = emptySet()
+        /** Operationen der Plattformverwaltung (WP-M1-05): kein Mandantenkontext; zugelassen sind nur Betreiberkonten, jedes andere Konto erhält 403 ohne Details. */
+        val PLATFORM_OPERATIONS: Set<String> = setOf("createTenant", "changeTenantStatus")
         private val HEADER_NAME = Regex("(?i)^(x-)?tenant(-?id)?$")
         private val QUERY_NAME = Regex("(?i)^tenant_?id$")
     }

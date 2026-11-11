@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Vertragsfälle der produktiven Endpunkte. Wer einen Endpunkt aus `api/<modul>.yaml` baut, streicht seine `operationId` aus
  * `api/contract-pending.txt` und trägt hier einen [ContractCase] mit positivem Fall und Fehlerfall ein; ohne Eintrag
- * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership).
+ * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil), WP-M1-34 (Fahrzeugrollen).
  * Fälle, die eine Anmeldung brauchen, laufen gegen die Instanz mit Ressourcenserver und Test-Issuer ([IdentityEnv]).
  */
 object M1ContractCases {
@@ -39,5 +39,85 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("DELETE", "/v1/memberships/${UUID.randomUUID()}", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = identityCases.associateBy { it.operationId }
+    private fun legalEntity(w: World): String =
+        w.env.post("/v1/legal-entities", """{"name":"LE","country":"DE"}""", w.adminToken, null, idem()).json["id"].asString()
+    private fun organization(w: World): String =
+        w.env.post("/v1/organizations", """{"legal_entity_id":"${legalEntity(w)}","name":"Org","federation_ref":"fed-${UUID.randomUUID()}","roles":["BROKER"]}""", w.adminToken, null, idem()).json["id"].asString()
+
+    /** Stammdaten (WP-M1-05): Rechtsträger, Organisationen, Plattformverwaltung. */
+    private val organizationCases: List<ContractCase> = listOf(
+        ContractCase("listLegalEntities",
+            200, { val w = World(); ContractRequest("GET", "/v1/legal-entities?limit=10", headers = w.env.headers(w.adminToken)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/legal-entities", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("createLegalEntity",
+            201, { val w = World(); ContractRequest("POST", "/v1/legal-entities", """{"name":"Stadtwerke GmbH","country":"DE"}""", w.env.headers(w.adminToken, extra = idem())) },
+            422, { val w = World(); ContractRequest("POST", "/v1/legal-entities", """{"name":"Stadtwerke GmbH","country":"Deutschland"}""", w.env.headers(w.adminToken, extra = idem())) }, server = { IdentityEnv.server }),
+        ContractCase("updateLegalEntity",
+            200, { val w = World(); ContractRequest("PUT", "/v1/legal-entities/${legalEntity(w)}", """{"name":"Neu","country":"AT"}""", w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) },
+            404, { val w = World(); ContractRequest("PUT", "/v1/legal-entities/${UUID.randomUUID()}", """{"name":"Neu","country":"AT"}""", w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("listOrganizations",
+            200, { val w = World(); ContractRequest("GET", "/v1/organizations?limit=10", headers = w.env.headers(w.adminToken)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/organizations", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("createOrganization",
+            201, { val w = World(); ContractRequest("POST", "/v1/organizations", """{"legal_entity_id":"${legalEntity(w)}","name":"Org","federation_ref":"fed-${UUID.randomUUID()}","roles":["TRANSPORT_COMPANY","ACTUAL_CARRIER"]}""", w.env.headers(w.adminToken, extra = idem())) },
+            422, { val w = World(); ContractRequest("POST", "/v1/organizations", """{"legal_entity_id":"${legalEntity(w)}","name":"Org","federation_ref":"f","roles":["UNBEKANNT"]}""", w.env.headers(w.adminToken, extra = idem())) }, server = { IdentityEnv.server }),
+        ContractCase("getOrganization",
+            200, { val w = World(); ContractRequest("GET", "/v1/organizations/${organization(w)}", headers = w.env.headers(w.adminToken)) },
+            404, { val w = World(); ContractRequest("GET", "/v1/organizations/${UUID.randomUUID()}", headers = w.env.headers(w.adminToken)) }, server = { IdentityEnv.server }),
+        ContractCase("updateOrganization",
+            200, { val w = World(); val le = legalEntity(w); val o = w.env.post("/v1/organizations", """{"legal_entity_id":"$le","name":"Org","federation_ref":"fed-${UUID.randomUUID()}","roles":["BROKER"]}""", w.adminToken, null, idem()).json["id"].asString()
+                ContractRequest("PUT", "/v1/organizations/$o", """{"legal_entity_id":"$le","name":"Neu","roles":["BROKER","CLIENT"]}""", w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) },
+            412, { val w = World(); val le = legalEntity(w); val o = w.env.post("/v1/organizations", """{"legal_entity_id":"$le","name":"Org","federation_ref":"fed-${UUID.randomUUID()}","roles":["BROKER"]}""", w.adminToken, null, idem()).json["id"].asString()
+                ContractRequest("PUT", "/v1/organizations/$o", """{"legal_entity_id":"$le","name":"Neu","roles":["BROKER"]}""", w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"7\""))) }, server = { IdentityEnv.server }),
+        ContractCase("createTenant",
+            201, { val op = IdentityEnv.operator(); ContractRequest("POST", "/v1/platform/tenants", """{"name":"Mandant ${UUID.randomUUID()}","legal_entity":{"name":"LE","country":"DE"},"first_admin":{"issuer":"${IdentityEnv.idp.issuer}","subject":"${UUID.randomUUID()}"},"contact_email":"info@example.org"}""", IdentityEnv.headers(IdentityEnv.token(op), extra = idem())) },
+            403, { val w = World(); ContractRequest("POST", "/v1/platform/tenants", """{"name":"x","legal_entity":{"name":"LE","country":"DE"},"first_admin":{"issuer":"i","subject":"s"},"contact_email":"info@example.org"}""", w.env.headers(w.adminToken, extra = idem())) }, server = { IdentityEnv.server }),
+        ContractCase("changeTenantStatus",
+            200, { val w = World(); val op = IdentityEnv.operator(); ContractRequest("POST", "/v1/platform/tenant-status-changes", """{"managed_tenant_id":"${w.tenant}","status":"SUSPENDED"}""", IdentityEnv.headers(IdentityEnv.token(op), extra = idem())) },
+            404, { val op = IdentityEnv.operator(); ContractRequest("POST", "/v1/platform/tenant-status-changes", """{"managed_tenant_id":"${UUID.randomUUID()}","status":"SUSPENDED"}""", IdentityEnv.headers(IdentityEnv.token(op), extra = idem())) }, server = { IdentityEnv.server }),
+    )
+
+    /** Unternehmensprofil (WP-M1-24); der Mandant kommt wie in der Produktion aus der Plattformverwaltung (Profilrevision 1). */
+    private fun profileTenant(): Pair<UUID, String> {
+        val admin = UUID.randomUUID(); val op = IdentityEnv.operator()
+        val r = IdentityEnv.post("/v1/platform/tenants", """{"name":"Profil-${UUID.randomUUID()}","legal_entity":{"name":"LE","country":"DE"},"first_admin":{"issuer":"${IdentityEnv.idp.issuer}","subject":"$admin"},"contact_email":"info@example.org"}""", IdentityEnv.token(op), null, idem())
+        check(r.status == 201) { r.text }
+        return admin to IdentityEnv.token(admin)
+    }
+    private val profileBody = """{"legal_name":"Stadtwerke GmbH","contact_email":"neu@example.org","default_currency":"CHF"}"""
+    private val profileCases: List<ContractCase> = listOf(
+        ContractCase("getCompanyProfile",
+            200, { val (_, t) = profileTenant(); ContractRequest("GET", "/v1/company-profile", headers = IdentityEnv.headers(t)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/company-profile", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("updateCompanyProfile",
+            200, { val (_, t) = profileTenant(); ContractRequest("PUT", "/v1/company-profile", profileBody, IdentityEnv.headers(t, extra = idem() + ("If-Match" to "\"1\""))) },
+            422, { val (_, t) = profileTenant(); ContractRequest("PUT", "/v1/company-profile", profileBody.replace("CHF", "XXY"), IdentityEnv.headers(t, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+    )
+
+    /** Fahrzeugrollen (WP-M1-34): Mandant mit Disponent, Organisation und Fixture-Fahrzeug (Stammteil, vom Administrator angelegt). */
+    private class FleetWorld {
+        val env = IdentityEnv; val tenant = env.tenant("Flotte-" + UUID.randomUUID()); val dispatcher = UUID.randomUUID(); val passenger = UUID.randomUUID()
+        val org = UUID.randomUUID(); val vehicle = UUID.randomUUID()
+        init {
+            env.grant(tenant, dispatcher, "dispatcher"); env.grant(tenant, passenger, "passenger")
+            val le = UUID.randomUUID()
+            env.tx.run(tenant) { j ->
+                j.update("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (?,?,'LE','DE')", tenant.value, le)
+                j.update("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (?,?,?,'Org',?,CAST(? AS text[]))", tenant.value, org, le, "f-$org", "{TRANSPORT_COMPANY}")
+                j.update("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config) VALUES (?,?,'fixture','{}')", tenant.value, vehicle)
+            }
+        }
+        val dispatcherToken = env.token(dispatcher); val passengerToken = env.token(passenger)
+        fun body(vehicleId: UUID = vehicle, from: String = "2026-01-01T00:00:00Z") = """{"vehicle_id":"$vehicleId","role_code":"OWNER","organization_id":"$org","valid_from":"$from"}"""
+    }
+    private val fleetCases: List<ContractCase> = listOf(
+        ContractCase("listVehicleRoles",
+            200, { val w = FleetWorld(); ContractRequest("GET", "/v1/vehicle-roles?vehicle_id=${w.vehicle}&as_of=2026-06-01T00:00:00Z", headers = w.env.headers(w.dispatcherToken)) },
+            403, { val w = FleetWorld(); ContractRequest("GET", "/v1/vehicle-roles", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("createVehicleRole",
+            201, { val w = FleetWorld(); ContractRequest("POST", "/v1/vehicle-roles", w.body(), w.env.headers(w.dispatcherToken, extra = idem())) },
+            404, { val w = FleetWorld(); ContractRequest("POST", "/v1/vehicle-roles", w.body(vehicleId = UUID.randomUUID()), w.env.headers(w.dispatcherToken, extra = idem())) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases + fleetCases).associateBy { it.operationId }
 }

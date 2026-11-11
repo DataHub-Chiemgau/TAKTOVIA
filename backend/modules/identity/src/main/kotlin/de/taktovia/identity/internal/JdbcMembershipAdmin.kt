@@ -32,8 +32,11 @@ internal class JdbcMembershipAdmin(
 
     override fun grant(ctx: RequestContext, cmd: GrantMembership): MembershipView {
         validate(cmd)
-        return ctxTx.run(ctx) { j -> doGrant(j, ctx, cmd) }
+        return ctxTx.run(ctx) { j -> doGrant(j, auditActor(ctx), ctx.correlationId, cmd) }
     }
+
+    /** Erteilen in der laufenden Transaktion des Aufrufers (Mandantenanlage der Plattformverwaltung: erste Administrator-Mitgliedschaft). */
+    fun grantIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, cmd: GrantMembership): MembershipView { validate(cmd); return doGrant(j, actor, correlationId, cmd) }
 
     override fun revoke(ctx: RequestContext, id: UUID, expectedRevision: Long) {
         ctxTx.run(ctx) { j -> doRevoke(j, ctx, id, expectedRevision) }
@@ -46,7 +49,7 @@ internal class JdbcMembershipAdmin(
     }
 
     @AuditRequired
-    private fun doGrant(j: JdbcOperations, ctx: RequestContext, cmd: GrantMembership): MembershipView {
+    private fun doGrant(j: JdbcOperations, actor: ActorRef, correlationId: UUID, cmd: GrantMembership): MembershipView {
         val id = UUID.randomUUID()
         val view = j.query(
             "INSERT INTO taktovia.membership AS m (tenant_id, id, issuer, subject, role_code, service_scope, valid_from, valid_to) " +
@@ -55,10 +58,10 @@ internal class JdbcMembershipAdmin(
             cmd.validFrom?.let(Timestamp::from), cmd.validTo?.let(Timestamp::from),
         ).single()
         audit.record(j, AuditEntry(
-            actor = auditActor(ctx), action = AuditActions.MEMBERSHIP_GRANTED, obj = ObjectRef("membership", id), correlationId = ctx.correlationId,
+            actor = actor, action = AuditActions.MEMBERSHIP_GRANTED, obj = ObjectRef("membership", id), correlationId = correlationId,
             changes = mapOf("role_code" to cmd.roleCode, "service_scope" to cmd.serviceScope?.map { it.toString() }, "valid_to" to cmd.validTo?.toString(), "revision" to view.revision),
         ))
-        outbox.append(j, OutboxEvent(id, view.revision, "membership.granted", payload(view), clock.instant(), correlationId = ctx.correlationId))
+        outbox.append(j, OutboxEvent(id, view.revision, "membership.granted", payload(view), clock.instant(), correlationId = correlationId))
         return view
     }
 

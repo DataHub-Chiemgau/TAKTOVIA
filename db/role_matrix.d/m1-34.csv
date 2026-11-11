@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+vehicle_assignment;SELECT,INSERT;WP-M1-34: Fahrzeugrollen mit Gültigkeitsintervall; UPDATE nur auf valid_to (Spaltenrecht, Trigger vehicle_assignment_guard), kein DELETE

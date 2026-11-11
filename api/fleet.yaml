@@ -7,6 +7,20 @@ paths:
       - oidc:
         - fleet:read
       parameters:
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur die Zuordnungen dieses Fahrzeugs.
+      - name: as_of
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Stichtag der As-of-Abfrage (RFC 3339 mit Offset); nur die zu diesem Zeitpunkt gültigen Zuordnungen (Intervall links geschlossen, rechts offen). Ohne Angabe alle.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -60,6 +74,8 @@ paths:
         '401':
           $ref: common.yaml#/components/responses/Problem
         '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
           $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
@@ -163,8 +179,14 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         role_code:
           type: string
-          minLength: 1
-          maxLength: 64
+          enum:
+          - OWNER
+          - OPERATOR
+          - DISPATCH_PROVIDER
+          - BILLING_PARTNER
+          description: Eigentümer, Betreiber (Einsatzbetreiber), Einsatzleister, Abrechnungspartner (Planungsannahme, OP-26); vier voneinander unabhängige Rollen.
+        organization_id:
+          $ref: common.yaml#/components/schemas/UUID
         valid_from:
           type: string
           format: date-time
@@ -182,6 +204,7 @@ components:
       - id
       - vehicle_id
       - role_code
+      - organization_id
       - valid_from
       - valid_to
       - revision
@@ -194,8 +217,14 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         role_code:
           type: string
-          minLength: 1
-          maxLength: 64
+          enum:
+          - OWNER
+          - OPERATOR
+          - DISPATCH_PROVIDER
+          - BILLING_PARTNER
+          description: Eigentümer, Betreiber (Einsatzbetreiber), Einsatzleister, Abrechnungspartner (Planungsannahme, OP-26); vier voneinander unabhängige Rollen.
+        organization_id:
+          $ref: common.yaml#/components/schemas/UUID
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -207,14 +236,19 @@ components:
       required:
       - vehicle_id
       - role_code
+      - organization_id
       - valid_from
       examples:
       - vehicle_id: 00000000-0000-4000-8000-000000000006
-        role_code: OPERATING
+        role_code: OWNER
+        organization_id: 00000000-0000-4000-8000-000000000010
         valid_from: '2026-12-01T00:00:00Z'
         valid_to: null
       x-time: interval
-      description: Gültigkeitsintervall links geschlossen, rechts offen; valid_to null = unbegrenzt.
+      description: 'Ordnet einem Fahrzeug eine Organisation in einer Rolle mit Gültigkeitsintervall zu (links geschlossen, rechts offen; valid_to null = unbegrenzt).
+        Ein Wechsel ist die Zuordnung einer anderen Organisation zum Stichtag: das laufende Intervall der Rolle wird zum Stichtag geschlossen. Überschneidung mit einem
+        laufenden oder künftigen Intervall derselben Rolle: 409; mit einem bereits abgeschlossenen (rückwirkend): 422; unbekanntes Fahrzeug oder Organisation eines
+        anderen Mandanten: 404.'
     VehicleRoleAssignmentPage:
       type: object
       additionalProperties: false

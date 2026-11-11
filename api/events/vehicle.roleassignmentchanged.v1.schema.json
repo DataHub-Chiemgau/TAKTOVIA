@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.roleassignmentchanged.v1.schema.json",
+  "title": "Fahrzeugrolle zugeordnet oder gewechselt, Ereignistyp vehicle.role_assignment_changed (WP-M1-34, LH-I.4-MUL-004; Dateiname ohne Unterstrich nach Namensschema, Vorbild platform.statechanged)",
+  "description": "Genau ein Ereignis je Änderung einer Fahrzeugrolle (Neuanlage; bei einem Wechsel zugleich das Schließen des bisherigen Intervalls zum Stichtag). Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist `assignment_id`, `aggregate_revision` die Revision des neuen Intervalls (1). Das Ereignis bleibt im Mandanten. Abrechnende Module lesen später nie live, sondern legen den Rollensnapshot zum Leistungszeitpunkt ab. Rollenwerte sind Planungsannahme (OP-26). Ereignisname und Felder sind Vorschlag (OP-33).",
+  "type": "object",
+  "required": ["vehicle_id", "role", "assignment_id", "organization_id", "valid_from", "valid_to", "closed_assignment_id", "closed_valid_to", "revision"],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": { "type": "string", "format": "uuid" },
+    "role": { "type": "string", "enum": ["OWNER", "OPERATOR", "DISPATCH_PROVIDER", "BILLING_PARTNER"] },
+    "assignment_id": { "type": "string", "format": "uuid" },
+    "organization_id": { "type": "string", "format": "uuid" },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "valid_to": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "closed_assignment_id": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }], "description": "Das bisherige laufende Intervall der Rolle, das zum Stichtag geschlossen wurde." },
+    "closed_valid_to": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }], "description": "Ende des geschlossenen Intervalls (= valid_from des neuen)." },
+    "revision": { "type": "integer", "const": 1 }
+  },
+  "examples": [
+    {
+      "vehicle_id": "00000000-0000-4000-8000-000000000006", "role": "OWNER", "assignment_id": "00000000-0000-4000-8000-0000000000c2",
+      "organization_id": "00000000-0000-4000-8000-0000000000f2", "valid_from": "2030-07-01T00:00:00Z", "valid_to": null,
+      "closed_assignment_id": "00000000-0000-4000-8000-0000000000c1", "closed_valid_to": "2030-07-01T00:00:00Z", "revision": 1
+    }
+  ]
+}
