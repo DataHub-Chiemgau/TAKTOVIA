@@ -546,6 +546,41 @@ export interface RetentionRulePage {
   as_of: string;
 }
 
+export interface DriverReleaseCreate {
+  driver_id: UUID;
+  recipient_tenant_id: UUID;
+  service_ids: UUID[];
+  valid_from: Timestamp;
+  valid_to: Timestamp;
+}
+
+export interface DriverRelease {
+  id: UUID;
+  driver_id: UUID;
+  recipient_tenant_id: UUID;
+  service_ids: UUID[];
+  valid_from: string;
+  valid_to: string;
+  revoked_at: string | null;
+  revision: number;
+}
+
+export interface DriverReleaseProjection {
+  id: UUID;
+  service_ids: UUID[];
+  valid_from: string;
+  valid_to: string;
+  qualifications: ({
+    code: string;
+    valid_from: string;
+    valid_to: string | null;
+  })[];
+  contact_channel: {
+    kind: 'PHONE' | 'EMAIL' | 'APP';
+    value: string;
+  };
+}
+
 export interface VehicleRoleAssignment {
   id: UUID;
   vehicle_id: UUID;
@@ -1509,6 +1544,27 @@ export interface Operations {
     body: RetentionRuleUpdate;
     response: RetentionRule;
   };
+  createDriverRelease: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: DriverReleaseCreate;
+    response: DriverRelease;
+  };
+  revokeDriverRelease: {
+    path: { release_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: undefined;
+  };
+  getDriverReleaseProjection: {
+    path: { release_id: UUID };
+    query: { service_id: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverReleaseProjection;
+  };
   listVehicleRoles: {
     path: Record<string, never>;
     query: { vehicle_id?: UUID; as_of?: string; limit?: number; cursor?: string };
@@ -2070,6 +2126,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateCompanyProfile: { method: 'PUT', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['company:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRetentionRules: { method: 'GET', path: '/v1/retention-rules', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   updateRetentionRule: { method: 'PUT', path: '/v1/retention-rules/{rule_id}', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  revokeDriverRelease: { method: 'DELETE', path: '/v1/driver-releases/{release_id}', pathParams: ['release_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['driver-releases:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getDriverReleaseProjection: { method: 'GET', path: '/v1/driver-releases/{release_id}/projection', pathParams: ['release_id'], query: ['service_id'], headers: ['traceparent'], hasBody: false, scopes: ['driver-releases:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listVehicleRoles: { method: 'GET', path: '/v1/vehicle-roles', pathParams: [], query: ['vehicle_id', 'as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverClearances: { method: 'GET', path: '/v1/driver-clearances', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

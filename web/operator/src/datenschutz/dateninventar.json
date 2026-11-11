@@ -1298,6 +1298,318 @@
       ]
     },
     {
+      "tabelle": "driver",
+      "aggregat": "Fahrerstamm minimal (WP-M1-35)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Fixture bis zum Fahrerstamm im Vollausbau (M3)",
+      "spalten": [
+        {
+          "spalte": "contact_channel",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "contact_value",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Kontaktkanal des Fahrers, Teil der Projektion (feste Feldliste), Feldschutz mit dem Fahrerstamm in M3"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "display_name",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Klarname des Fahrers, nie Teil einer Projektion"
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "driver_release",
+      "aggregat": "Fahrerfreigabe (WP-M1-35)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Nachweis der Weitergabe, nie gelöscht, nur widerrufen",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "driver_id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recipient_tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoked_at",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoked_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "service_ids",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "driver_release_projection",
+      "aggregat": "Fahrerfreigabe-Projektion (WP-M1-35)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "Kopie unter dem Empfänger, nach Ablauf oder Widerruf gesperrt",
+      "spalten": [
+        {
+          "spalte": "contact_channel",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "contact_value",
+          "personenbezogen": "ja",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Kopie des Kontaktkanals beim Empfänger, nur im Freigabezeitraum lesbar"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "owner_tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "qualifications",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoked_at",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_ids",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KOOPERATION_VERTRAG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "economic_event",
       "aggregat": "Wirtschaftsereignis",
       "loeschklasse": "LK_BELEG",
@@ -4124,6 +4436,95 @@
           "spalte": "tenant_id",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "qualification_revision",
+      "aggregat": "Qualifikationsrevision (WP-M1-35)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "append-only",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "driver_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "evidence_ref",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "interner Nachweisverweis, nie Teil einer Projektion"
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "qualification_code",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",

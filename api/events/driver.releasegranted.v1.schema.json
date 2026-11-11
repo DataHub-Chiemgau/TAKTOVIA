@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver.releasegranted.v1.schema.json",
+  "title": "Fahrerfreigabe erteilt, Ereignistyp driver.release_granted (WP-M1-35, LH-I.4-MUL-005; Dateiname ohne Unterstrich nach Namensschema)",
+  "description": "Genau ein Ereignis je Erteilung bzw. Widerruf einer Fahrerfreigabe. Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist `release_id`. Das Ereignis ist ausdrücklich an den Empfängermandanten adressiert (`recipient_tenant_id` der Hülle = `recipient_tenant_id` des Payloads, nie ein Rundruf) und enthält keine Angaben zum Fahrer (weder Name noch Fahrer-ID noch Kontakt); die Projektion liest der Empfänger über die API. Ereignisname und Felder sind Vorschlag (OP-26, OP-33).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release_id",
+    "recipient_tenant_id",
+    "service_ids",
+    "valid_from",
+    "valid_to",
+    "revision"
+  ],
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "recipient_tenant_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "service_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_to": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "examples": [
+    {
+      "release_id": "00000000-0000-4000-8000-0000000000a1",
+      "recipient_tenant_id": "00000000-0000-4000-8000-0000000000b1",
+      "service_ids": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "valid_from": "2026-12-01T06:00:00Z",
+      "valid_to": "2026-12-05T18:00:00Z",
+      "revision": 1
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
+import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -179,6 +180,14 @@ export function App() {
                   emptyTitle="Noch keine Inhalte"
                   hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
                 />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/personal/fahrerfreigabe"
+            element={
+              <RequireRight right="staff">
+                <Fahrerfreigabe />
               </RequireRight>
             }
           />

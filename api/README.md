@@ -17,6 +17,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `passengers.yaml`, `webhooks.yaml`, `services.yaml` | Fahrgäste, Webhook-Abonnements, Dienstkopf | `communication-support`, `service-geo` |
 | `compliance.yaml` | Auditabfrage, Unternehmensprofil (WP-M1-24, Feldliste in `docs/umsetzungsplan/vertraege/schemas/tenant-profile.v1.schema.json`), Aufbewahrungsregeln | `platform`/`config` |
 | `fleet.yaml` | Fahrzeugrollen (WP-M1-34), Fahrerfreigaben | `fleet-safety` |
+| `driver-releases.yaml` | zeitlich begrenzte Fahrerfreigabe und minimierte Projektion (WP-M1-35, LH-I.4-MUL-005; Feldliste in `docs/umsetzungsplan/vertraege/schemas/driver-release-projection.v1.schema.json`) | `identity` |
 | `booking.yaml`, `geo.yaml`, `payments.yaml`, `notifications.yaml` | Einbetreiberbuchung (`/v1/ride-offers`, `/v1/bookings`), Bediengebiete und Haltepunkte, PSP-Ereignisse, Nachrichten (WP-M2-01; Detailverträge in `docs/umsetzungsplan/vertraege/m2-detailvertraege.md`) | `booking-dispatch`, `service-geo`, `fare-payment`, `communication-support` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |

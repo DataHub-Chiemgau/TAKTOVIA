@@ -1,0 +1,42 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+driver;tenant_id;nein;PERSONALEINSATZ;;;;
+driver;id;nein;PERSONALEINSATZ;;;;
+driver;display_name;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_STAMM;Klarname des Fahrers, nie Teil einer Projektion
+driver;contact_channel;nein;PERSONALEINSATZ;;;;
+driver;contact_value;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_STAMM;Kontaktkanal des Fahrers, Teil der Projektion (feste Feldliste), Feldschutz mit dem Fahrerstamm in M3
+driver;status;nein;PERSONALEINSATZ;;;;
+driver;revision;nein;PERSONALEINSATZ;;;;
+driver;created_at;nein;PERSONALEINSATZ;;;;
+qualification_revision;tenant_id;nein;PERSONALEINSATZ;;;;
+qualification_revision;id;nein;PERSONALEINSATZ;;;;
+qualification_revision;driver_id;nein;PERSONALEINSATZ;;;;
+qualification_revision;qualification_code;nein;PERSONALEINSATZ;;;;
+qualification_revision;revision;nein;PERSONALEINSATZ;;;;
+qualification_revision;valid_from;nein;PERSONALEINSATZ;;;;
+qualification_revision;valid_to;nein;PERSONALEINSATZ;;;;
+qualification_revision;created_at;nein;PERSONALEINSATZ;;;;
+qualification_revision;evidence_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_STAMM;interner Nachweisverweis, nie Teil einer Projektion
+driver_release;tenant_id;nein;KOOPERATION_VERTRAG;;;;
+driver_release;id;nein;KOOPERATION_VERTRAG;;;;
+driver_release;driver_id;nein;KOOPERATION_VERTRAG;;;;
+driver_release;recipient_tenant_id;nein;KOOPERATION_VERTRAG;;;;
+driver_release;service_ids;nein;KOOPERATION_VERTRAG;;;;
+driver_release;valid_from;nein;KOOPERATION_VERTRAG;;;;
+driver_release;valid_to;nein;KOOPERATION_VERTRAG;;;;
+driver_release;revoked_at;nein;KOOPERATION_VERTRAG;;;;
+driver_release;revision;nein;KOOPERATION_VERTRAG;;;;
+driver_release;created_at;nein;KOOPERATION_VERTRAG;;;;
+driver_release;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+driver_release;revoked_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+driver_release_projection;tenant_id;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;id;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;owner_tenant_id;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;service_ids;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;valid_from;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;valid_to;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;revoked_at;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;qualifications;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;contact_channel;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;revision;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;created_at;nein;KOOPERATION_VERTRAG;;;;
+driver_release_projection;contact_value;ja;KOOPERATION_VERTRAG;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Kopie des Kontaktkanals beim Empfänger, nur im Freigabezeitraum lesbar
