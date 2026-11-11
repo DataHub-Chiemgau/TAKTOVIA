@@ -1,0 +1,57 @@
+# Dokumentierte, aber noch nicht gebaute Operationen (WP-M1-03, LH-6.17-INT-001).
+# Der Vertragslauf (ContractCoverageTest, api/tools/check_routes.py) verlangt: jede dokumentierte Operation ist entweder
+# geroutet UND hat einen Vertragsfall (positiv und Fehlerfall) oder steht hier. Wird eine Operation gebaut, wird sie hier
+# gestrichen; die Liste kann nur schrumpfen. Eine neue Operation im Vertrag ohne Umsetzung muss bewusst hier eingetragen werden.
+# Format: <operationId>  # <Methode> <Pfad>
+
+allocateCost  # POST /v1/cost-events/{cost_event_id}/allocations
+approveExpense  # POST /v1/expenses/{expense_id}/approve
+cancelJourney  # POST /v1/federation/journeys/{journey_id}/cancel
+confirmJourney  # POST /v1/federation/journeys/{journey_id}/confirm
+createConfigRevision  # POST /v1/config/revisions
+createCostCenter  # POST /v1/cost-centers
+createDepot  # POST /v1/depots
+createDriverClearance  # POST /v1/driver-clearances
+createLegalEntity  # POST /v1/legal-entities
+createMembership  # POST /v1/memberships
+createRegion  # POST /v1/regions
+createService  # POST /v1/services
+createVehicleRole  # POST /v1/vehicle-roles
+createWebhookSubscription  # POST /v1/webhook-subscriptions
+getCompanyProfile  # GET /v1/company-profile
+getConfigRevision  # GET /v1/config/revisions/{revision_id}
+getEffectiveConfig  # GET /v1/config/effective
+getJourney  # GET /v1/federation/journeys/{journey_id}
+getMe  # GET /v1/me
+getOffer  # GET /v1/federation/offers/{offer_id}
+getOperation  # GET /v1/operations/{operation_id}
+holdOffer  # POST /v1/federation/offers/{offer_id}/hold
+listAuditEvents  # GET /v1/audit-events
+listConfigRevisions  # GET /v1/config/revisions
+listCostCenters  # GET /v1/cost-centers
+listDepots  # GET /v1/depots
+listDriverClearances  # GET /v1/driver-clearances
+listLegalEntities  # GET /v1/legal-entities
+listMemberships  # GET /v1/memberships
+listPassengers  # GET /v1/passengers
+listRegions  # GET /v1/regions
+listRetentionRules  # GET /v1/retention-rules
+listServices  # GET /v1/services
+listSessions  # GET /v1/sessions
+listVehicleRoles  # GET /v1/vehicle-roles
+listWebhookSubscriptions  # GET /v1/webhook-subscriptions
+planJourney  # POST /v1/federation/journeys/plan
+publishConfig  # POST /v1/config/revisions/{revision_id}/publish
+publishRoster  # POST /v1/rosters/{roster_id}/publish
+quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quotes
+receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
+recordDriverEvent  # POST /v1/driver/events
+registerPassenger  # POST /v1/passengers
+requestConfigImpact  # POST /v1/config/revisions/{revision_id}/impact
+revokeMembership  # DELETE /v1/memberships/{membership_id}
+revokeSession  # DELETE /v1/sessions/{session_id}
+switchTenant  # POST /v1/me/tenant-switch
+updateCompanyProfile  # PUT /v1/company-profile
+updateLegalEntity  # PUT /v1/legal-entities/{legal_entity_id}
+updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
+validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

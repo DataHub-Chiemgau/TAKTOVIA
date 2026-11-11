@@ -1,0 +1,315 @@
+paths:
+  /v1/vehicle-roles:
+    get:
+      summary: Fahrzeugrollen auflisten
+      operationId: listVehicleRoles
+      security:
+      - oidc:
+        - fleet:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRoleAssignmentPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrzeugrolle mit Gültigkeitsintervall anlegen
+      operationId: createVehicleRole
+      security:
+      - oidc:
+        - fleet:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRoleAssignment'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRoleAssignmentCreate'
+  /v1/driver-clearances:
+    get:
+      summary: Fahrerfreigaben auflisten
+      operationId: listDriverClearances
+      security:
+      - oidc:
+        - fleet:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverClearancePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrerfreigabe erteilen
+      operationId: createDriverClearance
+      security:
+      - oidc:
+        - fleet:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverClearance'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverClearanceCreate'
+components:
+  schemas:
+    VehicleRoleAssignment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - vehicle_id
+      - role_code
+      - valid_from
+      - valid_to
+      - revision
+      description: Gültigkeitsintervall links geschlossen, rechts offen.
+    VehicleRoleAssignmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+      required:
+      - vehicle_id
+      - role_code
+      - valid_from
+      examples:
+      - vehicle_id: 00000000-0000-4000-8000-000000000006
+        role_code: OPERATING
+        valid_from: '2026-12-01T00:00:00Z'
+        valid_to: null
+      x-time: interval
+      description: Gültigkeitsintervall links geschlossen, rechts offen; valid_to null = unbegrenzt.
+    VehicleRoleAssignmentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleRoleAssignment'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DriverClearance:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        driver_ref:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - driver_ref
+      - vehicle_id
+      - valid_from
+      - valid_to
+      - revision
+    DriverClearanceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        driver_ref:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          type: string
+          format: date-time
+          maxLength: 40
+      required:
+      - driver_ref
+      - vehicle_id
+      - valid_from
+      - valid_to
+      description: Zeitlich begrenzte Freigabe; es wird nur das Nötigste projiziert.
+      examples:
+      - driver_ref: 00000000-0000-4000-8000-000000000007
+        vehicle_id: 00000000-0000-4000-8000-000000000006
+        valid_from: '2026-12-01T06:00:00Z'
+        valid_to: '2026-12-01T14:00:00Z'
+      x-time: interval
+    DriverClearancePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverClearance'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

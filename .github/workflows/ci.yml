@@ -33,6 +33,10 @@ jobs:
           python api/tools/bundle.py --check
           python api/tools/lint.py
           python api/tools/test_api.py
+      - name: API-Dokumentation und Vertragspipeline (WP-M1-03)
+        run: |
+          python api/tools/gen_docs.py --check
+          python -m unittest discover -s tests/acceptance/api -t . -p 'test_*.py'
       - name: Inkompatible API-Änderungen gegenüber dem Basiszweig
         if: github.event_name == 'pull_request'
         run: |
@@ -93,11 +97,21 @@ jobs:
         with: { distribution: temurin, java-version: '21' }
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
-      - run: pip install "psycopg[binary]==3.2.*"
+      - run: pip install "psycopg[binary]==3.2.*" PyYAML jsonschema openapi-spec-validator
+      - run: sudo apt-get update && sudo apt-get install -y redis-server && sudo systemctl stop redis-server || true
+        name: redis-server für den Rate-Limit-Speichertest (WP-M1-02)
       - run: python db/db.py bootstrap && python db/db.py migrate
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew build --console=plain
         working-directory: backend
+      - name: Route ohne Vertrag bricht den Build (WP-M1-03)
+        run: |
+          python api/tools/check_routes.py backend/app/build/contract/routes.json
+          python -m unittest discover -s tests/acceptance/api -t . -p 'test_contract_pipeline.py'
+      - name: Angriffskatalog gegen die gebaute Anwendung und Befund-Gate (WP-M1-38)
+        run: |
+          python tools/lint_sql.py
+          python -m unittest discover -s tests/acceptance/security -t . -p 'test_*.py'
 
   web:
     name: Web (WP-M0-05)

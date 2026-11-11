@@ -1,0 +1,440 @@
+paths:
+  /v1/config/effective:
+    get:
+      summary: Wirksame Konfiguration lesen
+      operationId: getEffectiveConfig
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - name: at
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveConfig'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/config/revisions:
+    get:
+      summary: Konfigurationsrevisionen auflisten
+      operationId: listConfigRevisions
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevisionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Entwurf einer Konfigurationsrevision anlegen
+      operationId: createConfigRevision
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRevisionCreate'
+  /v1/config/revisions/{revision_id}:
+    get:
+      summary: Konfigurationsrevision lesen
+      operationId: getConfigRevision
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/config/revisions/{revision_id}/validate:
+    post:
+      summary: Entwurf gegen das policy_schema und die Systemgrenzen prüfen
+      operationId: validateConfigRevision
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigValidationReport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/config/revisions/{revision_id}/impact:
+    post:
+      summary: Wirkungsanalyse für eine Revision anfordern
+      operationId: requestConfigImpact
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigImpactReport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    EffectiveConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        revision_ids:
+          type: array
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          maxItems: 50
+      required:
+      - as_of
+      - values
+      - revision_ids
+      description: Wirksame Konfiguration nach Präzedenzkette zum Zeitpunkt as_of.
+    ConfigRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        scope_kind:
+          type: string
+          enum:
+          - TENANT
+          - REGION
+          - DEPOT
+          - SERVICE
+        scope_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - DRAFT
+          - VALIDATED
+          - APPROVED
+          - PUBLISHED
+          - SUPERSEDED
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        effective_from:
+          type: string
+          format: date-time
+        effective_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        created_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        approved_by:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+      required:
+      - id
+      - scope_kind
+      - scope_id
+      - revision
+      - state
+      - schema_version
+      - values
+      - effective_from
+      - effective_to
+      - created_by
+      - approved_by
+    ConfigRevisionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        scope_kind:
+          type: string
+          enum:
+          - TENANT
+          - REGION
+          - DEPOT
+          - SERVICE
+        scope_id:
+          $ref: common.yaml#/components/schemas/UUID
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        effective_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+      required:
+      - scope_kind
+      - scope_id
+      - schema_version
+      - values
+      - effective_from
+      examples:
+      - scope_kind: TENANT
+        scope_id: 00000000-0000-4000-8000-000000000001
+        schema_version: '1'
+        values: {}
+        effective_from: '2026-12-01T00:00:00Z'
+    ConfigValidationReport:
+      type: object
+      additionalProperties: false
+      properties:
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        valid:
+          type: boolean
+        violations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              pointer:
+                type: string
+                minLength: 1
+                maxLength: 256
+              code:
+                type: string
+                minLength: 1
+                maxLength: 256
+              message:
+                type: string
+                minLength: 1
+                maxLength: 256
+            required:
+            - pointer
+            - code
+            - message
+          maxItems: 500
+      required:
+      - revision_id
+      - valid
+      - violations
+    ConfigImpactReport:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        generated_at:
+          type: string
+          format: date-time
+        affected:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              kind:
+                type: string
+                minLength: 1
+                maxLength: 64
+              count:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 9007199254740991
+            required:
+            - kind
+            - count
+          maxItems: 100
+      required:
+      - id
+      - revision_id
+      - generated_at
+      - affected
+    ConfigRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigRevision'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

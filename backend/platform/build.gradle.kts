@@ -6,6 +6,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api")                   // strukturierte Logzeile
     implementation("tools.jackson.core:jackson-databind")   // Ereignishülle, JSON-Verarbeitung (WP-M1-14, -46)
     implementation("com.rabbitmq:amqp-client")              // Relay-Adapter RabbitMQ (WP-M1-14), nicht ausgeführt ohne Broker
+    implementation("io.lettuce:lettuce-core")
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
 }

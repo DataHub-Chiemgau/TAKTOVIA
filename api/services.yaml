@@ -1,0 +1,146 @@
+paths:
+  /v1/services:
+    get:
+      summary: Dienste auflisten
+      operationId: listServices
+      security:
+      - oidc:
+        - services:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServicePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Dienstkopf anlegen
+      operationId: createService
+      security:
+      - oidc:
+        - services:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreate'
+components:
+  schemas:
+    Service:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          $ref: common.yaml#/components/schemas/TimeZone
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - operator_id
+      - name
+      - timezone
+      - revision
+    ServiceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          $ref: common.yaml#/components/schemas/TimeZone
+      required:
+      - operator_id
+      - name
+      - timezone
+      examples:
+      - operator_id: 00000000-0000-4000-8000-000000000005
+        name: Rufbus Nord
+        timezone: Europe/Berlin
+    ServicePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

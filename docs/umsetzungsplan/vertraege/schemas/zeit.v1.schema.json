@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.taktovia.example/schemas/zeit.v1.schema.json",
+  "title": "Zeittypen der Plattform (LH-6.1-SYS-006, WP-M1-18)",
+  "description": "Zeitpunkte sind RFC 3339 mit Offset, die Datenbank speichert UTC (timestamptz) und zusätzlich die IANA-Zone des Aggregats. Strukturprüfung hier; die fachlichen Prüfungen (nicht existente Ortszeit, Offset passt zur Zone, mehrdeutige Ortszeit, Intervallende nach Beginn) macht der Server mit den Feldfehlercodes OFFSET_REQUIRED, LOCAL_TIME_NONEXISTENT, LOCAL_TIME_AMBIGUOUS, ZONE_UNKNOWN, ZONE_OFFSET_MISMATCH, INTERVAL_INVALID. Regel zur Speicherung der Zone: Aggregate mit lokalen Regeln (Dienst, Schicht, Betriebstag) führen genau eine Zone (service.timezone, staff_shift.timezone); Zeitpunkte einer Anfrage tragen sie als time_zone.",
+  "$defs": {
+    "Timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "RFC 3339, Offset Pflicht. Der Offset unterscheidet die beiden gleichlautenden Ortszeiten der Herbstumstellung.",
+      "examples": ["2026-10-25T02:30:00+02:00", "2026-10-25T02:30:00+01:00", "2026-10-25T00:30:00Z"]
+    },
+    "TimeZone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^(UTC|[A-Z][A-Za-z_-]*(/[A-Za-z0-9_+-]+)+)$",
+      "description": "IANA-Zone der Region oder UTC; keine Abkürzungen, keine festen Offsets, kein Etc/.",
+      "examples": ["Europe/Berlin", "UTC"]
+    },
+    "ZonedMoment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["desired_at", "time_zone"],
+      "properties": {"desired_at": {"$ref": "#/$defs/Timestamp"}, "time_zone": {"$ref": "#/$defs/TimeZone"}},
+      "examples": [{"desired_at": "2026-10-25T02:30:00+01:00", "time_zone": "Europe/Berlin"}]
+    },
+    "LocalDateTimeInZone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local", "time_zone"],
+      "properties": {
+        "local": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"},
+        "time_zone": {"$ref": "#/$defs/TimeZone"},
+        "utc_offset": {"type": ["string", "null"], "pattern": "^[+-]\\d{2}:\\d{2}$"}
+      },
+      "examples": [{"local": "2026-10-25T02:30:00", "time_zone": "Europe/Berlin", "utc_offset": "+02:00"}]
+    },
+    "ValidityInterval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid_from"],
+      "description": "Links geschlossen, rechts offen: [valid_from, valid_to). valid_to fehlt oder null = unbegrenzt.",
+      "properties": {
+        "valid_from": {"$ref": "#/$defs/Timestamp"},
+        "valid_to": {"oneOf": [{"$ref": "#/$defs/Timestamp"}, {"type": "null"}]}
+      },
+      "examples": [{"valid_from": "2026-12-01T00:00:00+01:00", "valid_to": null}]
+    }
+  }
+}

@@ -5,12 +5,14 @@ spring-boot = "4.1.2"
 archunit = "1.5.1"
 postgresql = "42.7.14"
 testcontainers = "2.0.5"
+json-schema-validator = "3.0.9"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

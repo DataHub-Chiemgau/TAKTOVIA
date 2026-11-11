@@ -30,10 +30,12 @@ class TenantTransactions(dataSource: DataSource) {
     /** Eine Transaktion für [tenant]. Der Block darf nur die übergebene [JdbcOperations] verwenden. */
     fun <T> run(tenant: TenantId, readOnly: Boolean = false, block: (JdbcOperations) -> T): T {
         val t = TransactionTemplate(tx.transactionManager!!).also { it.isReadOnly = readOnly }
+        // Der Block darf null liefern (z. B. „nicht gefunden“); `execute` meldet dann null, das ist kein Fehler.
+        @Suppress("UNCHECKED_CAST")
         return t.execute {
             jdbc.queryForObject("SELECT set_config('app.tenant_id', ?, true)", String::class.java, tenant.toString())
             block(jdbc)
-        }!!
+        } as T
     }
 
     /**
