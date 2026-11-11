@@ -74,6 +74,9 @@ object AuditActions {
     const val TENANT_PROFILE_CHANGED = "config.tenant_profile.changed"
     /** Rolle am Fahrzeug zugeordnet oder gewechselt (WP-M1-34). */
     const val VEHICLE_ROLE_ASSIGNMENT_CHANGED = "fleet.vehicle_role.changed"
+    /** Fahrer-Gerät an Konto und Sitzung gebunden bzw. Bindung beendet (WP-M3-24); Objekt `driver_device:<id>`. */
+    const val DRIVER_DEVICE_REGISTERED = "driver.device.registered"
+    const val DRIVER_DEVICE_REVOKED = "driver.device.revoked"
     /** Fahrerfreigabe erteilt bzw. widerrufen (WP-M1-35); `details` nennen nie Fahrerdaten. */
     const val DRIVER_RELEASE_GRANTED = "staff.driver_release.granted"
     const val DRIVER_RELEASE_REVOKED = "staff.driver_release.revoked"
