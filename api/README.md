@@ -16,7 +16,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 Verweise zwischen Dateien: `common.yaml#/components/...`. Das Bündeln löst sie zu internen Verweisen auf.
 
 ```bash
-python api/tools/bundle.py --check       # api/ gebündelt == Pflichtenheft-Stand
+python api/tools/bundle.py --check       # api/ erweitert den Pflichtenheft-Stand nur kompatibel
 python api/tools/lint.py                 # Konventionen aus Kap. 05 §5.1
 python api/tools/test_api.py             # Selbsttests der Werkzeuge
 python api/tools/bundle.py --write-docs  # nur nach bewusster Vertragsänderung: Pflichtenheft-Datei neu erzeugen

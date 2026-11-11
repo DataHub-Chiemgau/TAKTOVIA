@@ -10,8 +10,8 @@ Inkompatibel (für bestehende Clients) ist:
   - geänderter Typ eines Feldes.
 Ohne Hochsetzen der Major-Version in info.version ist jede solche Änderung ein Fehler.
 
-Aufruf: breaking.py [Basisreferenz]   (Standard: HEAD; Vergleichsstand = docs/pflichtenheft/api/openapi.yaml dieser Referenz
-gegen die aus api/ gebündelte Datei im Arbeitsbaum)
+Aufruf: breaking.py [Basisreferenz]   (Standard: HEAD; Vergleichsstand = api/ dieser Referenz gebündelt, sonst die
+Pflichtenheft-Datei; verglichen wird gegen die aus api/ gebündelte Datei im Arbeitsbaum)
 """
 import subprocess, sys
 from pathlib import Path
@@ -67,7 +67,15 @@ def _schema(name, o, n):
 
 
 def baseline(ref: str) -> dict:
+    """Vergleichsstand: api/ der Basisreferenz gebündelt; gibt es dort noch kein api/, die Pflichtenheft-Datei."""
+    import io, tarfile, tempfile
     root = API.parent
+    tree = subprocess.run(['git', '-C', str(root), 'ls-tree', '-r', '--name-only', ref, 'api/'], capture_output=True, text=True).stdout
+    if 'api/common.yaml' in tree.split():
+        tar = subprocess.run(['git', '-C', str(root), 'archive', ref, 'api/'], capture_output=True, check=True).stdout
+        with tempfile.TemporaryDirectory() as d:
+            tarfile.open(fileobj=io.BytesIO(tar)).extractall(d)
+            return bundle(Path(d) / 'api')
     txt = subprocess.run(['git', '-C', str(root), 'show', f'{ref}:docs/pflichtenheft/api/openapi.yaml'], capture_output=True, text=True, check=True).stdout
     return yaml.safe_load(txt)
 

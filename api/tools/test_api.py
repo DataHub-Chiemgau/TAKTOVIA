@@ -9,13 +9,15 @@ API = bundle.API
 class ApiTools(unittest.TestCase):
     def doc(self): return copy.deepcopy(bundle.bundle())
 
-    def test_bundle_gleich_ausgangsstand(self):
-        self.assertEqual(bundle.bundle(), yaml.safe_load(bundle.DOCS.read_text()))
+    def test_bundle_erweitert_ausgangsstand_kompatibel(self):
+        import breaking
+        base = yaml.safe_load(bundle.DOCS.read_text())
+        self.assertEqual((len(base['paths']), len(base['components']['schemas'])), (14, 42))
+        self.assertEqual(breaking.compare(base, bundle.bundle()), [])
         d = self.doc()
-        self.assertEqual((len(d['paths']), len(d['components']['schemas'])), (14, 42))
+        self.assertGreaterEqual(len(d['paths']), 14)
         ids = [op['operationId'] for i in d['paths'].values() for m, op in i.items() if m in ('get', 'post', 'put', 'patch', 'delete')]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(sum(len(s.get('examples', [])) for s in d['components']['schemas'].values()), 9)
 
     def test_ausgangsstand_ist_lintfrei(self):
         self.assertEqual(lint.lint_doc(self.doc()), [])
@@ -75,7 +77,8 @@ class ApiTools(unittest.TestCase):
         f = t / 'config.yaml'; f.write_text(f.read_text().replace('Konfiguration', 'Konfig', 1) if 'Konfiguration' in f.read_text() else f.read_text() + '\n# x\n')
         d = yaml.safe_load(f.read_text()); d['paths']['/v1/config/revisions/{revision_id}/publish']['post']['summary'] = 'geändert'
         f.write_text(yaml.safe_dump(d, sort_keys=False, allow_unicode=True))
-        self.assertNotEqual(bundle.bundle(t), yaml.safe_load(bundle.DOCS.read_text()))
+        import breaking
+        self.assertTrue(any('geändert' in c or 'entfernt' in c or 'Pflicht' in c for c in breaking.compare(yaml.safe_load(bundle.DOCS.read_text()), bundle.bundle(t))) or bundle.bundle(t) != yaml.safe_load(bundle.DOCS.read_text()))
 
     def test_negativ_doppelter_pfad_bricht_buendeln(self):
         t = Path(tempfile.mkdtemp()) / 'api'; shutil.copytree(API, t, ignore=shutil.ignore_patterns('tools'))

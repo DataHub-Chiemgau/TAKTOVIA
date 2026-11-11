@@ -25,6 +25,20 @@ jobs:
       - run: pip install PyYAML jsonschema openapi-spec-validator pglast
       - run: python docs/pflichtenheft/validate_artifacts.py
       - run: python docs/umsetzungsplan/check_wp.py
+      - run: python docs/umsetzungsplan/check_tracking.py
+      - run: python docs/umsetzungsplan/test_check_tracking.py
+      - name: API-Verträge (WP-M0-04, -13)
+        run: |
+          python api/tools/bundle.py --check
+          python api/tools/lint.py
+          python api/tools/test_api.py
+      - name: Inkompatible API-Änderungen gegenüber dem Basiszweig
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          python api/tools/breaking.py origin/${{ github.base_ref }}
+      - name: Zwölf semantische Contract-Fälle (übersprungen bis zu ihrem Meilenstein)
+        run: python tests/contract/test_semantische_contract_faelle.py
 
   datenbank:
     name: Datenbankintegration (WP-M0-17)
@@ -83,3 +97,57 @@ jobs:
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew build --console=plain
         working-directory: backend
+
+  web:
+    name: Web (WP-M0-05)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+        working-directory: web
+      - run: npm run lint && npm test && npm run build
+        working-directory: web
+
+  workers:
+    name: Worker (WP-M0-07)
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix: { worker: [routing, documents] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -r requirements-dev.lock
+        working-directory: workers/${{ matrix.worker }}
+      - run: python -m pytest -q && python -m ruff check .
+        working-directory: workers/${{ matrix.worker }}
+
+  mobile:
+    name: Mobile Fahrer-App (WP-M0-06) – noch nicht verifiziert
+    runs-on: ubuntu-24.04
+    continue-on-error: true   # Flutter wurde in der Entwicklungsumgebung nicht ausgeführt; nach erstem grünen Lauf entfernen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.47.9', channel: stable }
+      - run: flutter pub get && flutter analyze && flutter test
+        working-directory: mobile/driver
+
+  lieferkette:
+    name: Lieferkette (WP-M0-14) – angelegt, nicht ausgeführt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Secret-Scan
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Schwachstellen und Lizenzen der festgeschriebenen Abhängigkeiten
+        uses: google/osv-scanner-action/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --lockfile=web/package-lock.json
+            --recursive
+            ./backend

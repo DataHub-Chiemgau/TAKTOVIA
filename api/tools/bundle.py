@@ -2,11 +2,13 @@
 """Bündelt api/*.yaml zu einer OpenAPI-3.1-Gesamtdatei (WP-M0-04).
 
   bundle.py                  Gesamtdatei nach stdout
-  bundle.py --check          vergleicht semantisch mit docs/pflichtenheft/api/openapi.yaml (Ausgangsstand), Exitcode 1 bei Abweichung
-  bundle.py --write-docs     schreibt die Pflichtenheft-Datei aus api/ neu (nur nach bewusster Änderung der Verträge)
+  bundle.py --check          api/ muss zum Ausgangsstand docs/pflichtenheft/api/openapi.yaml abwärtskompatibel sein
+                             (nur Erweiterungen; Entfernen/Ändern bestehender Verträge ist ein Fehler), Exitcode 1 sonst
+  bundle.py --check-equal    wie --check, aber verlangt semantische Gleichheit (galt bis zur ersten Erweiterung)
+  bundle.py --write-docs     schreibt die Pflichtenheft-Datei aus api/ neu (nur nach bewusster Entscheidung)
 
-Führend ist api/. docs/pflichtenheft/api/openapi.yaml ist der Ausgangsstand des Pflichtenhefts und wird nur aus
-api/ erzeugt, nicht von Hand gepflegt.
+Führend ist api/. docs/pflichtenheft/api/openapi.yaml bleibt der eingefrorene Ausgangsstand des Pflichtenhefts (Stand
+25.10.2026); neue Endpunkte entstehen nur in api/.
 """
 import re, sys
 from pathlib import Path
@@ -50,12 +52,19 @@ def bundle(api: Path = API) -> dict:
 
 if __name__ == '__main__':
     b = bundle()
-    if '--check' in sys.argv:
+    if '--check-equal' in sys.argv:
         base = yaml.safe_load(DOCS.read_text())
         if b != base:
-            print('FEHLER: gebündelte api/ weicht vom Pflichtenheft-Stand ab. Absicht? Dann: bundle.py --write-docs')
+            print('FEHLER: gebündelte api/ weicht vom Pflichtenheft-Stand ab.')
             sys.exit(1)
         print(f'api/ == Pflichtenheft-Stand ({len(b["paths"])} Pfade, {len(b["components"]["schemas"])} Schemas)')
+    elif '--check' in sys.argv:
+        from breaking import compare
+        base = yaml.safe_load(DOCS.read_text())
+        changes = compare(base, b)
+        for c in changes: print('FEHLER gegenüber dem Ausgangsstand inkompatibel:', c)
+        if changes: sys.exit(1)
+        print(f'api/ erweitert den Pflichtenheft-Stand kompatibel ({len(b["paths"])} Pfade, {len(b["components"]["schemas"])} Schemas)')
     elif '--write-docs' in sys.argv:
         DOCS.write_text(yaml.safe_dump(b, sort_keys=False, allow_unicode=True, width=120))
         print('geschrieben:', DOCS)
