@@ -48,7 +48,19 @@ const APPS = [
             '/gibt-es-nicht',
         ],
     },
-    { name: 'passenger', routes: ['/', '/reisen', '/konto', '/gibt-es-nicht'] },
+    {
+        name: 'passenger',
+        routes: [
+            '/',
+            '/angebote',
+            '/checkout/x',
+            '/reisen',
+            '/reisen/x',
+            '/konto',
+            '/hilfe',
+            '/gibt-es-nicht',
+        ],
+    },
 ];
 const VIEWPORTS = [
     { label: 'Desktop 1280x800', width: 1280, height: 800 },

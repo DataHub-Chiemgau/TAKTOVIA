@@ -20,15 +20,17 @@ function setup(roles: string[] | ApiError, path = '/') {
 }
 
 describe('passenger Anwendungsrahmen', () => {
-  it('Fahrgast sieht Start, Meine Reisen und Konto; Kontext benennt Mandant, Status und Datenstand', async () => {
+  it('Fahrgast sieht Meine Reisen und Hilfe; Kontext benennt Mandant, Status und Datenstand', async () => {
     const { container } = setup(['PASSENGER']);
-    expect(await screen.findByRole('heading', { level: 1, name: 'Start' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Fahrt suchen' }),
+    ).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
     expect(
       within(nav)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Start', 'Meine Reisen', 'Konto']);
+    ).toEqual(['Meine Reisen', 'Hilfe']);
     const ctx = screen.getByRole('region', { name: 'Arbeitskontext' });
     expect(ctx).toHaveTextContent('Verkehrsbetrieb Nord');
     expect(ctx).toHaveTextContent('Datenstand');

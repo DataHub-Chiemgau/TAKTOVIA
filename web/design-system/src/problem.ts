@@ -85,6 +85,7 @@ export function stateKindForStatus(status: number): StateKind {
       return 'forbidden';
     case 404:
       return 'notFound';
+    case 409:
     case 412:
       return 'conflict';
     case 428:
