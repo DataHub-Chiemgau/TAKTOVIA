@@ -1,0 +1,45 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+passenger_private;idp_issuer;nein;ZUGANG_ROLLEN;;;;Issuer des IdP-Kontos (WP-M1-28)
+passenger_private;idp_subject;ja;ZUGANG_ROLLEN;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Subject des IdP-Kontos, Bindung Konto-Fahrgast (WP-M1-28)
+passenger_private;status;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;Kontostatus PENDING_VERIFICATION/ACTIVE/BLOCKED
+passenger_private;locale;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;bevorzugte Sprache
+passenger_private;revision;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;Profilrevision (ETag)
+passenger_private;created_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_private;updated_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;tenant_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;passenger_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;channel;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;status;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;verified_at;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Zeitpunkt der Verifikation des Kanals
+passenger_contact;status_changed_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;revision;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_contact;contact_token;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;HMAC des normalisierten Kontakts, kein Klartext (Schlüssel aus der Secret-Verwaltung)
+contact_verification;tenant_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;passenger_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;channel;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;state;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;attempts;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;contact_token;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_TECHNISCH;HMAC des Kontakts, kein Klartext
+contact_verification;code_mac;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;HMAC des Verifikationscodes, der Code selbst wird nie gespeichert
+contact_verification;created_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;expires_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+contact_verification;closed_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;tenant_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;passenger_id;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;kind;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;position;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;created_at;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;
+passenger_preference;label;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Bezeichnung eines Ortsfavoriten (Freitext des Fahrgasts)
+passenger_preference;stop_id;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;bevorzugter Haltepunkt (Referenz)
+passenger_preference;channel;nein;KONTAKT_UND_UNTERSTUETZUNG;;;;Benachrichtigungskanal PUSH/EMAIL/SMS
+consent_revision;tenant_id;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;
+consent_revision;id;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;
+consent_revision;passenger_id;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;
+consent_revision;purpose;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;
+consent_revision;sequence;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;
+consent_revision;granted;ja;KOMMUNIKATIONSEINWILLIGUNG;ART6_1_A_EINWILLIGUNG;KONTAKT_UNTERSTUETZUNG;LK_PII;Einwilligung eingewilligt/widerrufen
+consent_revision;recorded_at;ja;KOMMUNIKATIONSEINWILLIGUNG;ART6_1_A_EINWILLIGUNG;KONTAKT_UNTERSTUETZUNG;LK_PII;Zeitpunkt der Einwilligung bzw. des Widerrufs
+consent_revision;text_version;nein;KOMMUNIKATIONSEINWILLIGUNG;;;;Version des gezeigten Einwilligungstexts

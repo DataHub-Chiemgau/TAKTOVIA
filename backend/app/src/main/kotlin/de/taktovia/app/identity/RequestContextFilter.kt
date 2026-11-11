@@ -62,6 +62,8 @@ class RequestContextFilter(
     private val identity: IdentityApi, private val registry: OpenApiRegistry, private val props: IdpProperties,
     private val tickets: ContextTicketCodec, private val tx: TenantTransactions, private val events: SecurityEventPort,
     private val mismatch: TenantMismatchReporter, private val problems: ProblemWriter, private val excludedFiles: Set<String>,
+    /** Selbstregistrierung von Fahrgästen (WP-M1-28): Mandant für Konten ohne Mitgliedschaft; ohne Richtlinie keine Selbstregistrierung. */
+    private val enrollment: EnrollmentPolicy? = null,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -127,7 +129,11 @@ class RequestContextFilter(
             throw ProblemException(ErrorCode.FORBIDDEN)
         }
         val membership: TenantMembership = (if (selection != null) identity.lookup.activeIn(who, selection.tenant) else identity.lookup.defaultTenant(who))
-            ?: run { events.reportWithoutTenant(denialEvent(p, op, "no_active_membership", Correlation.of(request))); throw ProblemException(ErrorCode.FORBIDDEN) }
+            ?: run {
+                // Selbstregistrierung: nur die Registrierungsoperation, nur ohne bestehende Mitgliedschaft; die Rolle ist fest `passenger`, die Mitgliedschaft entsteht erst durch die Registrierung
+                if (op.operationId in ENROLLMENT_OPERATIONS) enrollment?.tenantFor(p)?.let { return enrollmentContext(request, p, it) }
+                events.reportWithoutTenant(denialEvent(p, op, "no_active_membership", Correlation.of(request))); throw ProblemException(ErrorCode.FORBIDDEN)
+            }
         val services: Set<UUID> = when {
             selection?.service != null -> if (membership.serviceScope?.contains(selection.service) == true) setOf(selection.service) else throw ProblemException(ErrorCode.FORBIDDEN)
             else -> membership.serviceScope ?: emptySet()
@@ -136,6 +142,11 @@ class RequestContextFilter(
             Actor(ActorType.HUMAN, p.issuer, p.subject.toString(), p.sessionId, p.multiFactor), membership.tenant, membership.roles,
             identity.scopePolicy.scopesFor(membership.roles), services, Correlation.of(request), membershipIds = membership.membershipIds,
         )
+    }
+
+    private fun enrollmentContext(request: HttpServletRequest, p: AuthenticatedPrincipal, tenant: TenantId): RequestContext {
+        val roles = setOf("passenger")
+        return RequestContext(Actor(ActorType.HUMAN, p.issuer, p.subject.toString(), p.sessionId, p.multiFactor), tenant, roles, identity.scopePolicy.scopesFor(roles), emptySet(), Correlation.of(request))
     }
 
     private fun serviceContext(request: HttpServletRequest, p: AuthenticatedPrincipal): RequestContext {
@@ -181,6 +192,8 @@ class RequestContextFilter(
         val EXEMPT: Set<String> = emptySet()
         /** Operationen der Plattformverwaltung (WP-M1-05): kein Mandantenkontext; zugelassen sind nur Betreiberkonten, jedes andere Konto erhält 403 ohne Details. */
         val PLATFORM_OPERATIONS: Set<String> = setOf("createTenant", "changeTenantStatus")
+        /** Operationen, die ein angemeldetes Konto ohne Mitgliedschaft über die [EnrollmentPolicy] ausführen darf (WP-M1-28: Registrierung als Fahrgast). */
+        val ENROLLMENT_OPERATIONS: Set<String> = setOf("registerPassenger")
         private val HEADER_NAME = Regex("(?i)^(x-)?tenant(-?id)?$")
         private val QUERY_NAME = Regex("(?i)^tenant_?id$")
     }

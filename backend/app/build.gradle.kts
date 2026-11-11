@@ -49,6 +49,6 @@ tasks.withType<Test>().configureEach {
     systemProperty("taktovia.repoRoot", rootProject.projectDir.parentFile.absolutePath)
     // Datenbank-Integrationstests: Verbindungsdaten aus der Umgebung (Runtime-Rolle, nie Migrator)
     listOf("TAKTOVIA_DB_HOST", "TAKTOVIA_DB_PORT", "TAKTOVIA_DB_NAME", "TAKTOVIA_DB_RUNTIME_PASSWORD", "TAKTOVIA_DB_MIGRATOR_PASSWORD",
-        "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_REQUIRE_DB")
+        "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_DB_FIELDS_PASSWORD", "TAKTOVIA_REQUIRE_DB")
         .forEach { k -> System.getenv(k)?.let { environment(k, it) } }
 }

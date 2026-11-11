@@ -25,6 +25,9 @@ import type { Right, SessionResource } from '@taktovia/api-client';
 import type { ResourceState } from '@taktovia/design-system';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { Fragment } from 'react';
+import { Profil } from './konto/Profil';
+import { PrivacySettings } from './privacy/PrivacySettings';
+import { Registrierung } from './registrierung/Registrierung';
 
 const ZONE = 'Europe/Berlin';
 
@@ -82,19 +85,23 @@ function Placeholder({
 }
 
 /** Konto ohne aktive Mitgliedschaft: verständlicher Zustand ohne Datenzugriff (WP-M1-44 AK 1). */
-function NoMembership() {
+function NoMembership({ onRegistered }: { onRegistered: () => void }) {
   const auth = useAuthOptional();
   return (
-    <AuthStateView
-      kind="noMembership"
-      action={
-        auth ? (
-          <button type="button" onClick={() => auth.signOut()}>
-            Abmelden
-          </button>
-        ) : undefined
-      }
-    />
+    <>
+      <AuthStateView
+        kind="noMembership"
+        action={
+          auth ? (
+            <button type="button" onClick={() => auth.signOut()}>
+              Abmelden
+            </button>
+          ) : undefined
+        }
+      />
+      {/* WP-M1-28: ein Konto ohne Mitgliedschaft kann sich hier als Fahrgast registrieren */}
+      <Registrierung onDone={onRegistered} />
+    </>
   );
 }
 
@@ -132,9 +139,9 @@ function Konto() {
           />
         )}
       </ResourceView>
-      <p>
-        Kontakt, Präferenzen und Vertreter (UI-05 im Vollausbau) folgen mit der Registrierung in M2.
-      </p>
+      <Profil />
+      <PrivacySettings />
+      <p>Vertreter (UI-05 im Vollausbau) folgen mit M7.</p>
     </ScreenFrame>
   );
 }
@@ -170,7 +177,8 @@ export function App() {
         <StateView kind="loading" level={1} />
       </main>
     );
-  if (session.status === 'error' && session.error.status === 403) return <NoMembership />;
+  if (session.status === 'error' && session.error.status === 403)
+    return <NoMembership onRegistered={session.reload} />;
   if (session.status === 'error')
     return (
       <main>

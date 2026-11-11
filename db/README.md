@@ -8,6 +8,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V1__kernschema.sql` | Kernschema, Zeile für Zeile der Entwurfs-DDL aus `docs/pflichtenheft/schema/` (ohne `BEGIN`, `COMMIT`, `CREATE EXTENSION`) |
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
 | `migrations/V10100__sitzungsregister.sql` | WP-M1-10: `session_register` (Sitzungssperre) und `account_access` (Kontosperre, Abmeldezeitmarke), RLS, Trigger |
+| `migrations/V1280__fahrgast_registrierung.sql`, `V1290__fahrgastprofil.sql`, `V1300__einwilligung.sql` | Fahrgastkonto (WP-M1-28 bis -30): Kontaktkanal mit Verifikationsstatus und Verifikationsaufgabe, Präferenzen, Einwilligungsrevisionen (append-only); Rechte in `R__runtime_grants_m1_31_wp28/29/30.sql` (müssen hinter `R__runtime_grants_m1_31.sql` sortieren, die `passenger_private` neu vergibt) |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
 | `migrations/V1190__policy_schema.sql`, `V1200__config_revision_lebenszyklus.sql` | Parameterkatalog `policy_schema` mit Schema-Versionen und Wertprüfung, Lebenszyklus und Unveränderlichkeit von `config_revision` (WP-M1-19, -20) |

@@ -708,6 +708,104 @@ export interface TenantStatusChanged {
   status: TenantStatus;
 }
 
+export type ContactChannelCode = 'EMAIL' | 'PHONE';
+
+export type ChannelStatus = 'UNVERIFIED' | 'VERIFIED';
+
+export interface ContactChannelView {
+  value: string | null;
+  status: ChannelStatus;
+  verified_at: string | null;
+}
+
+export interface Profile {
+  id: UUID;
+  status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'BLOCKED';
+  locale: 'de-DE' | 'en-GB';
+  created_at: string;
+  revision: number;
+  contact: {
+    email: ContactChannelView | null;
+    phone: ContactChannelView | null;
+  };
+  favorites: Favorite[];
+  preferred_stops: UUID[];
+  notification_channels: NotificationChannel[];
+}
+
+export interface Favorite {
+  label: string;
+  stop_id: UUID;
+}
+
+export type NotificationChannel = 'PUSH' | 'EMAIL' | 'SMS';
+
+export interface ProfileUpdate {
+  locale?: string;
+  contact?: {
+    email?: string;
+    phone?: string;
+  };
+  favorites?: Favorite[];
+  preferred_stops?: UUID[];
+  notification_channels?: NotificationChannel[];
+}
+
+export interface ContactVerificationStart {
+  channel: ContactChannelCode;
+}
+
+export interface ContactVerification {
+  channel: ContactChannelCode;
+  expires_at: string;
+}
+
+export interface ContactVerificationConfirm {
+  channel: ContactChannelCode;
+  code: string;
+}
+
+export interface ContactChannelStatus {
+  channel: ContactChannelCode;
+  status: ChannelStatus;
+  verified_at: string;
+}
+
+export type ConsentPurpose = 'OPERATIONAL_SAFETY' | 'MARKETING';
+
+export interface ConsentState {
+  purpose: ConsentPurpose;
+  granted: boolean;
+  changeable: boolean;
+  recorded_at: string | null;
+  text_version: string | null;
+}
+
+export interface ConsentRevision {
+  id: UUID;
+  purpose: ConsentPurpose;
+  sequence: number;
+  granted: boolean;
+  recorded_at: string;
+  text_version: string;
+}
+
+export interface PrivacySettings {
+  current_text_version: string;
+  consents: ConsentState[];
+  history: ConsentRevision[];
+}
+
+export interface ConsentChange {
+  purpose: ConsentPurpose;
+  granted: boolean;
+  text_version: string;
+}
+
+export interface MyTransportSupport {
+  codes: ('BOARDING_HELP' | 'AUDIO_GUIDANCE' | 'LOW_FLOOR' | 'WHEELCHAIR_SPACE' | 'ASSISTANCE_ANIMAL' | 'ACCOMPANYING_PERSON')[];
+}
+
 export interface PassengerSupportNeeds {
   passenger_id: UUID;
   codes: ('BOARDING_HELP' | 'AUDIO_GUIDANCE' | 'LOW_FLOOR' | 'WHEELCHAIR_SPACE' | 'ASSISTANCE_ANIMAL' | 'ACCOMPANYING_PERSON')[];
@@ -1244,6 +1342,69 @@ export interface Operations {
     body: undefined;
     response: PassengerSupportNeeds;
   };
+  getPassenger: {
+    path: { passenger_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Passenger;
+  };
+  getMyProfile: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Profile;
+  };
+  updateMyProfile: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ProfileUpdate;
+    response: Profile;
+  };
+  startContactVerification: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ContactVerificationStart;
+    response: ContactVerification;
+  };
+  confirmContactVerification: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ContactVerificationConfirm;
+    response: ContactChannelStatus;
+  };
+  getMyPrivacySettings: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: PrivacySettings;
+  };
+  recordMyConsent: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ConsentChange;
+    response: ConsentRevision;
+  };
+  getMyTransportSupport: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: MyTransportSupport;
+  };
+  replaceMyTransportSupport: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: MyTransportSupport;
+    response: undefined;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string };
@@ -1448,6 +1609,15 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getPassenger: { method: 'GET', path: '/v1/passengers/{passenger_id}', pathParams: ['passenger_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getMyProfile: { method: 'GET', path: '/v1/me/profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateMyProfile: { method: 'PATCH', path: '/v1/me/profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['me:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  startContactVerification: { method: 'POST', path: '/v1/me/contact-verifications', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  confirmContactVerification: { method: 'POST', path: '/v1/me/contact-verifications/confirmations', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getMyPrivacySettings: { method: 'GET', path: '/v1/me/privacy', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  recordMyConsent: { method: 'POST', path: '/v1/me/privacy/consents', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

@@ -1,0 +1,15 @@
+role;table;column;privileges
+taktovia_runtime;passenger_private;idp_issuer;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;idp_subject;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;status;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;locale;SELECT,INSERT,UPDATE
+taktovia_runtime;passenger_private;revision;SELECT
+taktovia_runtime;passenger_private;created_at;SELECT
+taktovia_runtime;passenger_private;updated_at;SELECT,UPDATE
+taktovia_fields;passenger_private;idp_issuer;
+taktovia_fields;passenger_private;idp_subject;
+taktovia_fields;passenger_private;status;
+taktovia_fields;passenger_private;locale;
+taktovia_fields;passenger_private;revision;
+taktovia_fields;passenger_private;created_at;
+taktovia_fields;passenger_private;updated_at;

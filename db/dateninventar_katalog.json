@@ -16,6 +16,7 @@
     "TECHNISCHER_BETRIEB": "Zustellung von Ereignissen, Idempotenz, Wiederholung und Fehlerbehandlung",
     "SICHERHEITSPROTOKOLL": "Nachvollziehbarkeit sicherheits- und datenschutzrelevanter Vorgänge (Audit)",
     "KONTAKT_UND_UNTERSTUETZUNG": "Kontakt- und Unterstützungsdaten des Fahrgastkontos für Betrieb und Hilfe",
+    "KOMMUNIKATIONSEINWILLIGUNG": "Nachweis der Einwilligung in freiwillige Marketingkommunikation und Trennung von betrieblichen Mitteilungen (IAM-011)",
     "NACHFRAGEANALYSE": "grobe Auswertung abgelehnter Anfragen zur Angebotsplanung (nur grobe Auflösung)",
     "WAEHRUNGSKATALOG": "globaler Katalog der Währungen mit Exponent"
   },

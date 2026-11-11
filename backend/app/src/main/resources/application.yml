@@ -16,6 +16,10 @@ server:
     key-store-type: PKCS12
     key-store-password: ${TAKTOVIA_TLS_KEYSTORE_PASSWORD:}
 taktovia:
+  fields:
+    datasource:
+      # Modulzugang für sensible Felder (WP-M1-31): Passwort ausdrücklich (Secret-Verwaltung); nur Entwicklung/Test leiten es aus dem Runtime-Passwort ab.
+      password: ${TAKTOVIA_DB_FIELDS_PASSWORD:}
   # `local` nur für lokale Entwicklung und Tests; jede andere oder fehlende Angabe erzwingt TLS überall (TransportGuard).
   environment: ${TAKTOVIA_ENVIRONMENT:production}
   idp:

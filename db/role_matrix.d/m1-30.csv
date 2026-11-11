@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+consent_revision;SELECT,INSERT;WP-M1-30: append-only, Änderung und Löschung per Trigger verweigert
