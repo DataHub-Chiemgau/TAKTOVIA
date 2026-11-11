@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/pooling_allowed.v1.schema.json",
+  "title": "pooling_allowed",
+  "description": "Pooling aktiv",
+  "type": "boolean",
+  "x-unit": "BOOLEAN",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.1-pooling_allowed",
+  "x-catalog-range": "Bei AUS keine fremden Buchungen gemeinschaftlich disponieren"
+}

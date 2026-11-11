@@ -39,7 +39,7 @@ class AuditController(private val service: AuditQueryService, private val codec:
         val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "audit-events:" + filter.hashCode())
         val lim = Paging.limit(limit)
         val pos = Paging.position(cursor, codec, scope)
-        val rows = service.query(ctx, purpose, filter, lim, pos?.let { it.createdAt to it.id })
+        val rows = service.query(ctx, purpose, filter, lim, pos?.let { it.createdAt to it.id }) // sql-lint: ok Fachdienst-Methode, kein SQL
         return Paging.page(rows, lim, { CursorPosition(it.occurredAt, it.id) }, codec, scope, Instant.now()).toMap { json(it) }
     }
 

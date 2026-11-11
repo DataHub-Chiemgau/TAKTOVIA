@@ -35,6 +35,7 @@ components:
             memberships:write: memberships:write
             organization:read: organization:read
             organization:write: organization:write
+            platform:tenants:write: platform:tenants:write
             sessions:read: sessions:read
             sessions:write: sessions:write
             config:read: config:read
@@ -74,6 +75,7 @@ components:
             memberships:write: memberships:write
             organization:read: organization:read
             organization:write: organization:write
+            platform:tenants:write: platform:tenants:write
             sessions:read: sessions:read
             sessions:write: sessions:write
             config:read: config:read
@@ -542,6 +544,8 @@ components:
       - ZONE_OFFSET_MISMATCH
       - INTERVAL_INVALID
       - TARGET_NOT_ALLOWED
+      - UNIT_MISMATCH
+      - SAFETY_INVARIANT_VIOLATED
     Money:
       type: object
       additionalProperties: false

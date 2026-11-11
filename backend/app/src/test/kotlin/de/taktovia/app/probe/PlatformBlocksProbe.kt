@@ -103,7 +103,7 @@ class PromiseProbeController(private val tx: TenantTransactions, private val ide
     fun create(r: HttpServletRequest): RevisionedBody {
         val t = tenant(r); val id = UUID.randomUUID(); val cfg = UUID.randomUUID()
         return tx.run(t) { j ->
-            j.update("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by) VALUES (?,?,'tenant',?,1,'1.0','{}'::jsonb,now(),'user:probe')",
+            j.update("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason) VALUES (?,?,'TENANT',?,1,'1','{}'::jsonb,now(),'user:probe','Testdaten')",
                 t.value, cfg, UUID.randomUUID())
             body(procedure.bind(j, id, mapper.readTree(initial), cfg, ActorRef.service("probe"), UUID.randomUUID()))
         }

@@ -4,7 +4,7 @@ import psycopg
 from helpers import admin, tx, uid, seed_tenant
 
 A, B = uid(), uid()
-NO_TENANT_FK = {'tenant', 'currency'}   # globale Ziele, auf die ohne tenant_id verwiesen werden darf
+NO_TENANT_FK = {'tenant', 'currency', 'policy_schema_version'}   # globale Ziele, auf die ohne tenant_id verwiesen werden darf
 
 
 class Konvention(unittest.TestCase):

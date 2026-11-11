@@ -99,7 +99,7 @@ class OperationRunner(
         val handler = handlers[c.kind] ?: return OperationOutcome.ManualReview("NO_HANDLER")
         val ctx = OperationContext(this, c)
         return try {
-            if (c.status == OperationState.RECONCILING) handler.reconcile(ctx) else handler.execute(ctx)
+            if (c.status == OperationState.RECONCILING) handler.reconcile(ctx) else handler.execute(ctx) // sql-lint: ok Handler-Aufruf, kein SQL
         } catch (e: LeaseLostException) { throw e
         } catch (e: OperationRetryException) {
             if (c.status == OperationState.RUNNING) OperationOutcome.Retry(e.resultCode, e.delay ?: RetrySchedule.delay(c.attempt.coerceAtLeast(1))) else OperationOutcome.Unknown(e.resultCode, e.delay)

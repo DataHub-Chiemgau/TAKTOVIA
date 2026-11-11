@@ -17,6 +17,8 @@ object DbErrorMapper {
                 ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Der Zustandsübergang ist nicht erlaubt.", cause = e)
             // CHECK über die Wertemenge einer Zustandsspalte (harden_state_column): ein unzulässiger Wert ist ein Eingabefehler, kein unveränderlicher Datensatz
             state == "23514" && sql.message?.contains("_state_valid") == true -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein Wert ist ungültig.", cause = e)
+            // Wertprüfung gegen das policy_schema (V1200, Trigger config_revision_validate): Eingabefehler; die Anwendung prüft vorher und liefert die Feldverletzungen
+            state == "23514" && sql.message?.contains("policy_schema violation") == true -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein Konfigurationswert ist ungültig.", cause = e)
             state == "23514" -> ProblemException(ErrorCode.IMMUTABLE_RECORD, "Der Datensatz ist unveränderlich; eine Korrektur wird als neuer Datensatz angelegt.", cause = e)
             state == "23505" -> ProblemException(ErrorCode.CONFLICT, "Der Datensatz existiert bereits.", cause = e)
             state == "23503" -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein referenzierter Datensatz existiert nicht.", cause = e)

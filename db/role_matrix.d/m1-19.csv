@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+policy_schema;SELECT;WP-M1-19: Parameterkatalog mit Systemgrenzen; global, für jeden Mandanten lesbar, nur per Migration änderbar
+policy_schema_version;SELECT;WP-M1-19: Schema-Versionen des Parameterkatalogs; global, nur per Migration

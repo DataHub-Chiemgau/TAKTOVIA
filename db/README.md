@@ -10,6 +10,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V10100__sitzungsregister.sql` | WP-M1-10: `session_register` (Sitzungssperre) und `account_access` (Kontosperre, Abmeldezeitmarke), RLS, Trigger |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
+| `migrations/V1190__policy_schema.sql`, `V1200__config_revision_lebenszyklus.sql` | Parameterkatalog `policy_schema` mit Schema-Versionen und Wertprüfung, Lebenszyklus und Unveränderlichkeit von `config_revision` (WP-M1-19, -20) |
 | `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |
 | `dateninventar.d/*.csv`, `dateninventar_katalog.json`, `dateninventar.py` | Dateninventar mit Zweck, Rechtsgrundlage, Schutz- und Löschklasse je Spalte (WP-M1-32); `python db/dateninventar.py check` gleicht das Schema ab, `export --write` erzeugt den Export für UI-20 |
 | `role_matrix_spalten.d/*.csv` | Spaltenrechte (Rolle × Tabelle × Spalte), wo Tabellenrechte nicht genügen (WP-M1-31: `passenger_private` ohne Ciphertext-Spalten für `taktovia_runtime`, nur `taktovia_fields` liest sie); geprüft von `test_08_feldschutz.py` |

@@ -59,7 +59,7 @@ internal class JdbcSessionAdmin(
         val sql = "SELECT s.id, s.subject, s.created_at, s.last_seen_at, s.revoked_at, s.revision FROM taktovia.session_register s $where" +
             (if (after != null) " AND (s.created_at, s.id) > (?, ?)" else "") + " ORDER BY s.created_at, s.id LIMIT ?"
         val params = args + (if (after != null) listOf(Timestamp.from(after.first), after.second) else emptyList()) + (limit + 1)
-        return j.query(sql, VIEW, *params.toTypedArray())
+        return j.query(sql, VIEW, *params.toTypedArray()) // sql-lint: ok where nur feste Literale der Aufrufer (Zeilen 51, 55)
     }
 
     // ---------------------------------------------------------------- einzelne Sitzung
@@ -88,7 +88,7 @@ internal class JdbcSessionAdmin(
         val sql = "SELECT issuer, idp_session_id, revoked_at IS NOT NULL, revision FROM taktovia.session_register WHERE id = ?" +
             (if (own) " AND issuer = ? AND subject = ?" else "") + " FOR UPDATE"
         val args = if (own) arrayOf<Any>(id, ctx.actor.issuer, ctx.actor.subject) else arrayOf<Any>(id)
-        val row = j.query(sql, { rs, _ -> Triple(rs.getString(1) to rs.getString(2), rs.getBoolean(3), rs.getLong(4)) }, *args).firstOrNull()
+        val row = j.query(sql, { rs, _ -> Triple(rs.getString(1) to rs.getString(2), rs.getBoolean(3), rs.getLong(4)) }, *args).firstOrNull() // sql-lint: ok sql aus festen Literalen (Zeile 88), keine Werte
             ?: return RevokeSessionOutcome.NotFound
         if (row.second) return RevokeSessionOutcome.AlreadyRevoked
         if (row.third != expectedRevision) return RevokeSessionOutcome.StaleRevision

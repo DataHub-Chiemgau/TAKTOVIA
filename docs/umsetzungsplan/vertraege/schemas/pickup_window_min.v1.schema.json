@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/pickup_window_min.v1.schema.json",
+  "title": "pickup_window_min",
+  "description": "Abholzeitfenster",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 240,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-pickup_window_min",
+  "x-catalog-range": "Positiv; bei Änderung bereits bestätigte Buchungen prüfen"
+}

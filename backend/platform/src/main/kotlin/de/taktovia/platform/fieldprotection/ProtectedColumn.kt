@@ -34,7 +34,7 @@ class ProtectedColumnStore(private val cipher: EnvelopeCipher) {
     }
 
     fun read(jdbc: JdbcOperations, tenant: UUID, col: ProtectedColumn, rowId: UUID): Read {
-        val rows = jdbc.query("SELECT ${col.column} FROM taktovia.${col.table} WHERE tenant_id = taktovia.current_tenant() AND id = ?", { rs, _ -> rs.getBytes(1) }, rowId)
+        val rows = jdbc.query("SELECT ${col.column} FROM taktovia.${col.table} WHERE tenant_id = taktovia.current_tenant() AND id = ?", { rs, _ -> rs.getBytes(1) }, rowId) // sql-lint: ok Tabelle/Spalte stammen aus der festen Aufzaehlung ProtectedColumn
         if (rows.isEmpty()) return Read.Missing
         val blob = rows.single() ?: return Read.Empty
         return Read.Value(cipher.decrypt(blob, EnvelopeCipher.context(tenant, col, rowId)))
@@ -42,6 +42,6 @@ class ProtectedColumnStore(private val cipher: EnvelopeCipher) {
 
     /** Verschlüsselt und speichert; `false`, wenn die Zeile im Mandanten nicht existiert. */
     fun write(jdbc: JdbcOperations, tenant: UUID, col: ProtectedColumn, rowId: UUID, plaintext: ByteArray): Boolean =
-        jdbc.update("UPDATE taktovia.${col.table} SET ${col.column} = ? WHERE tenant_id = taktovia.current_tenant() AND id = ?",
+        jdbc.update("UPDATE taktovia.${col.table} SET ${col.column} = ? WHERE tenant_id = taktovia.current_tenant() AND id = ?", // sql-lint: ok Tabelle/Spalte stammen aus der festen Aufzaehlung ProtectedColumn
             cipher.encrypt(plaintext, EnvelopeCipher.context(tenant, col, rowId)), rowId) == 1
 }

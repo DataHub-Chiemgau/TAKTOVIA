@@ -1,10 +1,10 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
     implementation("org.slf4j:slf4j-api")
-    implementation("tools.jackson.core:jackson-databind")   // Profilwerte als JSON (WP-M1-24)
+    implementation("tools.jackson.core:jackson-databind")   // JSON-Werte der Revisionen, Schemas und Profilwerte (WP-M1-19, -20, -24)
+    implementation(libs.json.schema.validator)               // JSON Schema 2020-12 je Parameter (policy_schema)
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
-    testImplementation(libs.json.schema.validator)
 }
 
 tasks.withType<Test>().configureEach {

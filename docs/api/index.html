@@ -492,6 +492,13 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listConfigParameters"><h3><span class="m">GET</span> <code>/v1/config/parameters</code></h3><p>Parameterkatalog lesen</p><dl><dt>operationId</dt><dd><code>listConfigParameters</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listConfigRevisions"><h3><span class="m">GET</span> <code>/v1/config/revisions</code></h3><p>Konfigurationsrevisionen auflisten</p><dl><dt>operationId</dt><dd><code>listConfigRevisions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -513,7 +520,20 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateConfigRevision"><h3><span class="m">PATCH</span> <code>/v1/config/revisions/{revision_id}</code></h3><p>Entwurf einer Konfigurationsrevision ändern</p><dl><dt>operationId</dt><dd><code>updateConfigRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
@@ -635,6 +655,27 @@
 <li>403: <code>FORBIDDEN</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getWebhookSubscription"><h3><span class="m">GET</span> <code>/v1/webhook-subscriptions/{subscription_id}</code></h3><p>Webhook-Abonnement lesen</p><dl><dt>operationId</dt><dd><code>getWebhookSubscription</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>webhooks:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="deactivateWebhookSubscription"><h3><span class="m">POST</span> <code>/v1/webhook-subscriptions/{subscription_id}/deactivate</code></h3><p>Webhook-Abonnement deaktivieren</p><dl><dt>operationId</dt><dd><code>deactivateWebhookSubscription</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>webhooks:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

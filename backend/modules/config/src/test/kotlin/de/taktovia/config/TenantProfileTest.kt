@@ -55,13 +55,13 @@ class TenantProfileTest {
         val reloaded = fx.config.companyProfile.get(fx.context(t))
         assertEquals("neu@example.org", reloaded.input.contactEmail); assertEquals("CHF", reloaded.input.defaultCurrency); assertEquals(2, reloaded.revision)
         // die Vorgängerrevision bleibt erhalten (versionierte Konfiguration), beide veröffentlicht vom Administrator selbst
-        assertEquals(listOf("1", "2"), fx.strings("SELECT revision::text FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE' ORDER BY revision", t.value))
-        assertEquals(listOf("user:${ctx.actor.subject}"), fx.strings("SELECT DISTINCT approved_by FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE' AND revision=2", t.value))
+        assertEquals(listOf("1", "2"), fx.adminStrings("SELECT revision::text FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE' ORDER BY revision", t.value))
+        assertEquals(listOf("user:${ctx.actor.subject}"), fx.adminStrings("SELECT DISTINCT approved_by FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE' AND revision=2", t.value))
         // keine Betreiberbeteiligung: kein Betreiberkonto im System nötig, der Plattformbetrieb taucht nirgends als Akteur auf
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND actor_ref LIKE 'platform%'", t.value))
+        assertEquals(0, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND actor_ref LIKE 'platform%'", t.value))
         // Der Profilinhalt entspricht dem Schema der Feldliste
         val schema = registry.getSchema(Files.readString(repo.resolve("docs/umsetzungsplan/vertraege/schemas/tenant-profile.v1.schema.json")))
-        fx.strings("SELECT values_json::text FROM taktovia.config_revision WHERE tenant_id=?", t.value).forEach {
+        fx.adminStrings("SELECT values_json::text FROM taktovia.config_revision WHERE tenant_id=?", t.value).forEach {
             assertEquals(emptyList<String>(), schema.validate(it, InputFormat.JSON).map { m -> m.toString() }, it)
         }
     }
@@ -77,11 +77,11 @@ class TenantProfileTest {
         assertEquals(ErrorCode.VALIDATION_FAILED, assertThrows(ProblemException::class.java) { fx.config.companyProfile.update(ctx, 1, profile(email = "keine-mail")) }.code)
         // nichts wurde geschrieben: weiterhin Revision 1, kein Audit, kein Ereignis
         assertEquals(1, fx.config.companyProfile.get(ctx).revision)
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND redacted_changes->>'revision'='2'", t.value))
+        assertEquals(0, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND redacted_changes->>'revision'='2'", t.value))
         // unbekannte Währung schon bei der Erstausstattung: die Transaktion (z. B. Mandantenanlage) bricht ab
         val fresh = fx.tenant()
         assertThrows(ProblemException::class.java) { fx.tx.run(fresh) { j -> fx.config.companyProfile.seed(j, ActorRef.system("test"), UUID.randomUUID(), profile(currency = "XXY")) } }
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.config_revision WHERE tenant_id=?", fresh.value))
+        assertEquals(0, fx.adminCount("SELECT count(*) FROM taktovia.config_revision WHERE tenant_id=?", fresh.value))
     }
 
     @Test
@@ -93,20 +93,20 @@ class TenantProfileTest {
         val inB = fx.config.companyProfile.get(fx.context(b))
         assertEquals(1, inB.revision); assertEquals("info@example.org", inB.input.contactEmail); assertEquals("EUR", inB.input.defaultCurrency)
         // Audit: Akteur und Zeitpunkt, im Mandanten A; B hat keinen Eintrag der Änderung
-        assertEquals(1, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND actor_ref='user:admin-a' AND occurred_at IS NOT NULL AND redacted_changes->>'revision'='2'", a.value))
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND redacted_changes->>'revision'='2'", b.value))
+        assertEquals(1, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND actor_ref='user:admin-a' AND occurred_at IS NOT NULL AND redacted_changes->>'revision'='2'", a.value))
+        assertEquals(0, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed' AND redacted_changes->>'revision'='2'", b.value))
         // Personendaten stehen weder im Audit noch im Ereignis; genau ein Ereignis je Änderung, gültig gegen das Schema
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND redacted_changes::text LIKE '%example.org%'", a.value))
-        val events = fx.strings("SELECT payload::text FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed' AND aggregate_id=? ORDER BY aggregate_revision", a.value, a.value)
+        assertEquals(0, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND redacted_changes::text LIKE '%example.org%'", a.value))
+        val events = fx.adminStrings("SELECT payload::text FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed' AND aggregate_id=? ORDER BY aggregate_revision", a.value, a.value)
         assertEquals(2, events.size, "Revision 1 (Erstausstattung) und 2")
         val schema = registry.getSchema(Files.readString(repo.resolve("api/events/tenant.profilechanged.v1.schema.json")))
         events.forEach { assertEquals(emptyList<String>(), schema.validate(it, InputFormat.JSON).map { m -> m.toString() }, it) }
         assertTrue(events.last().contains("contact_email") && events.last().contains("default_currency") && !events.last().contains("example.org"), events.last())
-        assertEquals(1, fx.count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed'", b.value))
+        assertEquals(1, fx.adminCount("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed'", b.value))
         // eine Änderung ohne Wirkung ist keine Änderung
         val same = fx.config.companyProfile.update(ctxA, 2, profile(email = "a-neu@example.org", currency = "CHF"))
         assertEquals(2, same.revision)
-        assertEquals(2, fx.count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed'", a.value))
+        assertEquals(2, fx.adminCount("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='tenant.profile_changed'", a.value))
     }
 
     @Test
@@ -133,7 +133,7 @@ class TenantProfileTest {
         val r = results.map { it.get(60, TimeUnit.SECONDS) }; pool.shutdown()
         assertEquals(1, r.count { it == "ok" }, r.toString()); assertEquals(5, r.count { it == "REVISION_MISMATCH" }, r.toString())
         assertEquals(2, fx.config.companyProfile.get(ctx).revision)
-        assertEquals(2, fx.count("SELECT count(*) FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE'", t.value))
-        assertEquals(2, fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed'", t.value))
+        assertEquals(2, fx.adminCount("SELECT count(*) FROM taktovia.config_revision WHERE tenant_id=? AND scope_kind='TENANT_PROFILE'", t.value))
+        assertEquals(2, fx.adminCount("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='config.tenant_profile.changed'", t.value))
     }
 }

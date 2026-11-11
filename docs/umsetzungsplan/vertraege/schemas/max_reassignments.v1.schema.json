@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/max_reassignments.v1.schema.json",
+  "title": "max_reassignments",
+  "description": "Maximale Umbuchungen",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 20,
+  "x-unit": "COUNT",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-max_reassignments",
+  "x-catalog-range": "Zugesagte Fahrten schützen"
+}

@@ -69,8 +69,8 @@ internal class JdbcCompanyProfileService(
         val tenant = j.queryForObject("SELECT taktovia.current_tenant()", UUID::class.java)!!
         val revision = currentRevision + 1
         j.update(
-            "INSERT INTO taktovia.config_revision (tenant_id, id, scope_kind, scope_id, revision, schema_version, values_json, effective_from, created_by, approved_by, published_at) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, taktovia.current_tenant(), ?, ?, ?::jsonb, clock_timestamp(), ?, ?, clock_timestamp())",
+            "INSERT INTO taktovia.config_revision (tenant_id, id, scope_kind, scope_id, revision, schema_version, values_json, effective_from, created_by, approved_by, published_at, state, reason) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, taktovia.current_tenant(), ?, ?, ?::jsonb, clock_timestamp(), ?, ?, clock_timestamp(), 'PUBLISHED', 'Unternehmensprofil geändert')",
             UUID.randomUUID(), SCOPE_KIND, revision, SCHEMA_VERSION, mapper.writeValueAsString(values(input)), actor.value, actor.value,
         )
         val changed = changedFields(cur?.input, input)

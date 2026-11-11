@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/no_show_grace_min.v1.schema.json",
+  "title": "no_show_grace_min",
+  "description": "Wartefrist No-Show",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 120,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-no_show_grace_min",
+  "x-catalog-range": "Positiv und fahrgastgerecht; Ereignisprotokoll"
+}

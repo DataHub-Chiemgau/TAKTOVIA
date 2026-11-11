@@ -582,6 +582,15 @@
           "bemerkung": "Freigeber der Revision (Vier-Augen)"
         },
         {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "created_by",
           "personenbezogen": "ja",
           "zweck": "SICHERHEITSPROTOKOLL",
@@ -627,7 +636,25 @@
           "bemerkung": ""
         },
         {
+          "spalte": "reason",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Änderungsgrund (Freitext der Änderung) zum Änderungsprotokoll"
+        },
+        {
           "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "row_version",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
@@ -655,6 +682,15 @@
         },
         {
           "spalte": "scope_kind",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "state",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
@@ -2969,6 +3005,175 @@
           "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Kennung des Plattformbetreiberkontos beim Identitätsanbieter"
+        }
+      ]
+    },
+    {
+      "tabelle": "policy_schema",
+      "aggregat": "Parameterkatalog (WP-M1-19)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "globaler Katalog, nur per Migration",
+      "spalten": [
+        {
+          "spalte": "allowed_levels",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "const_value",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "default_value",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "description",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "json_schema",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "limit_source",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "max_value",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "min_value",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "parameter",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "schema_version",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "security_class",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "unit",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "value_format",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "value_type",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "policy_schema_version",
+      "aggregat": "Schema-Versionen des Parameterkatalogs (WP-M1-19)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "globaler Katalog, nur per Migration",
+      "spalten": [
+        {
+          "spalte": "description",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "schema_version",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         }
       ]
     },

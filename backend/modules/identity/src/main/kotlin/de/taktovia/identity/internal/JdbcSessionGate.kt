@@ -65,7 +65,7 @@ internal class JdbcSessionGate(
         var row = readSession(j, ref)
         if (row == null) {
             val predatesLogout = account.revokedBefore != null && ref.issuedAt.epochSecond <= account.revokedBefore.epochSecond
-            j.update(
+            j.update( // sql-lint: ok nur zwei feste Literal-Alternativen, keine Werte
                 "INSERT INTO taktovia.session_register (tenant_id, id, issuer, subject, idp_session_id, expires_at, revoked_at, revoke_reason) " +
                     "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, clock_timestamp() + (? * interval '1 second'), " +
                     (if (predatesLogout) "clock_timestamp(), 'LOGOUT_ALL'" else "NULL, NULL") + ") ON CONFLICT (tenant_id, issuer, idp_session_id) DO NOTHING",

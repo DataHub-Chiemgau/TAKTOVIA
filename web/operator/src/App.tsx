@@ -19,6 +19,7 @@ import type { NavLinkProps } from '@taktovia/design-system';
 import { Fragment } from 'react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { Konto } from './Konto';
+import { ConfigRevisions } from './config/ConfigRevisions';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
@@ -183,11 +184,7 @@ export function App() {
             path="/admin/gebiete"
             element={
               <RequireRight right="admin.ui17">
-                <PlaceholderScreen
-                  title="Gebiete, Stops, Tarife"
-                  emptyTitle="Noch keine Gebiete, Stops oder Tarife"
-                  hint="UI-17: Revisionen anlegen und freigeben folgt mit den Konfigurations- und Geodaten-Arbeitspaketen."
-                />
+                <ConfigRevisions />
               </RequireRight>
             }
           />

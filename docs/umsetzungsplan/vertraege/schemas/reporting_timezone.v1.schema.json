@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/reporting_timezone.v1.schema.json",
+  "title": "reporting_timezone",
+  "description": "Statistik-Zeitzone",
+  "type": "string",
+  "format": "iana-timezone",
+  "minLength": 1,
+  "maxLength": 64,
+  "x-unit": "IANA_TZ",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.7-reporting_timezone",
+  "x-catalog-range": "DST-sicher"
+}

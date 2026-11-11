@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/notification_quiet_hours.v1.schema.json",
+  "title": "notification_quiet_hours",
+  "description": "Ruhezeiten für Nachrichten",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "from",
+    "to"
+  ],
+  "properties": {
+    "from": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "to": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    }
+  },
+  "x-unit": "TIME_SPAN",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.7-notification_quiet_hours",
+  "x-catalog-range": "Sicherheitsalarme ausgenommen"
+}

@@ -21,7 +21,7 @@ object WebhookSignature {
 
     fun hmacHex(secret: ByteArray, timestamp: Instant, body: ByteArray): String {
         val mac = Mac.getInstance("HmacSHA256").also { it.init(SecretKeySpec(secret, "HmacSHA256")) }
-        mac.update("${timestamp.epochSecond}.".toByteArray(Charsets.US_ASCII))
+        mac.update("${timestamp.epochSecond}.".toByteArray(Charsets.US_ASCII)) // sql-lint: ok Mac.update (HMAC), kein SQL
         return mac.doFinal(body).joinToString("") { "%02x".format(it) }
     }
 

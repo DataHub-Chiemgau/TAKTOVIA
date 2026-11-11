@@ -33,9 +33,42 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/config/parameters:
+    get:
+      summary: Parameterkatalog lesen
+      description: Katalog der aktuell gültigen Schema-Version (policy_schema) für jeden Mandanten lesbar. Der Bereich minimum..maximum ist
+        zugleich die Systemgrenze, die keine Mandantenkonfiguration überschreibt; security_class SAFETY_INVARIANT kennzeichnet nicht abschaltbare
+        Sicherheitsparameter. Der Katalog ist über die API nicht änderbar (nur per Migration).
+      operationId: listConfigParameters
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigParameterCatalog'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/config/revisions:
     get:
       summary: Konfigurationsrevisionen auflisten
+      description: 'Revisionen des Mandanten, nach Anlage sortiert; Filter nach scope_kind, scope_id und state. Mit as_of (zusammen mit scope_kind
+        und scope_id) liefert die Liste genau die zum Zeitpunkt wirksame publizierte Revision samt Revisions-ID (Rekonstruktion für einen
+        historischen Fall, höchstens ein Eintrag, next_cursor null); ohne wirksame Revision ist die Liste leer. Jede Revision trägt ihr
+        Änderungsprotokoll (change_log) mit Benutzer, Zeitpunkt, Grund, Gültigkeitsbeginn und Altwert/Neuwert gegen die Vorgängerrevision.'
       operationId: listConfigRevisions
       security:
       - oidc:
@@ -44,6 +77,28 @@ paths:
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
+      - name: scope_kind
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ConfigScopeKind'
+      - name: scope_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ConfigRevisionState'
+      - name: as_of
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Zeitpunkt der Rekonstruktion (RFC 3339 mit Offset); verlangt scope_kind und scope_id.
       responses:
         '200':
           description: Erfolgreich.
@@ -112,6 +167,8 @@ paths:
   /v1/config/revisions/{revision_id}:
     get:
       summary: Konfigurationsrevision lesen
+      description: Revision mit Werten und Änderungsprotokoll; der ETag ist die Zeilenversion des Entwurfs (If-Match beim Ändern). Fremder Mandant
+        oder unbekannte ID ist 404.
       operationId: getConfigRevision
       security:
       - oidc:
@@ -138,12 +195,67 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '403':
           $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
         '422':
           $ref: common.yaml#/components/responses/Problem
         '429':
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+    patch:
+      summary: Entwurf einer Konfigurationsrevision ändern
+      description: Ändert Werte, Beginn, Ende oder Grund eines Entwurfs (JSON-Merge auf oberster Ebene; values ersetzt die Werte vollständig).
+        Nur Entwürfe sind änderbar; eine publizierte Revision ist unveränderlich (409 IMMUTABLE_RECORD), eine Änderung ist eine neue Revision.
+        Veralteter ETag ist 412 REVISION_MISMATCH, fehlender 428.
+      operationId: updateConfigRevision
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/revision_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRevisionUpdate'
   /v1/config/revisions/{revision_id}/validate:
     post:
       summary: Entwurf gegen das policy_schema und die Systemgrenzen prüfen
@@ -245,6 +357,197 @@ components:
       - values
       - revision_ids
       description: Wirksame Konfiguration nach Präzedenzkette zum Zeitpunkt as_of.
+    ConfigScopeKind:
+      type: string
+      enum:
+      - TENANT
+      - REGION
+      - DEPOT
+      - SERVICE
+    ConfigRevisionState:
+      type: string
+      enum:
+      - DRAFT
+      - VALIDATED
+      - APPROVED
+      - PUBLISHED
+      - SUPERSEDED
+    ConfigChange:
+      type: object
+      additionalProperties: false
+      description: Eine Änderung gegenüber der Vorgängerrevision. pointer ist ein JSON-Pointer in values; old_value und new_value sind beliebige
+        JSON-Werte (null bei hinzugefügt bzw. entfernt).
+      properties:
+        pointer:
+          type: string
+          minLength: 1
+          maxLength: 512
+        kind:
+          type: string
+          enum:
+          - ADDED
+          - CHANGED
+          - REMOVED
+        old_value:
+          description: Altwert (beliebiger JSON-Wert; null, wenn hinzugefügt).
+        new_value:
+          description: Neuwert (beliebiger JSON-Wert; null, wenn entfernt).
+      required:
+      - pointer
+      - kind
+    ConfigChangeLog:
+      type: object
+      additionalProperties: false
+      description: Änderungsprotokoll der Revision (LH-I.7-CFG-003) mit Benutzer, Zeitpunkt, Grund, Gültigkeitsbeginn und Diff Altwert/Neuwert gegen
+        die Vorgängerrevision (höchste publizierte Revision desselben Scopes mit kleinerer Nummer).
+      properties:
+        changed_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        changed_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        effective_from:
+          type: string
+          format: date-time
+        effective_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        predecessor_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        predecessor_revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        changes:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/ConfigChange'
+      required:
+      - changed_by
+      - changed_at
+      - reason
+      - effective_from
+      - effective_to
+      - predecessor_id
+      - predecessor_revision
+      - changes
+    ConfigParameter:
+      type: object
+      additionalProperties: false
+      description: Ein Parameter des Katalogs (policy_schema) mit Systemgrenzen.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 63
+        type:
+          type: string
+          enum:
+          - integer
+          - number
+          - boolean
+          - string
+          - object
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 40
+        minimum:
+          oneOf:
+          - type: number
+          - type: 'null'
+        maximum:
+          oneOf:
+          - type: number
+          - type: 'null'
+        default:
+          description: Vorgabewert oder null, solange kein Zielwert freigegeben ist (D-05).
+        allowed_levels:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/ConfigScopeKind'
+        security_class:
+          type: string
+          enum:
+          - STANDARD
+          - SAFETY_INVARIANT
+        limit_source:
+          type: string
+          enum:
+          - KATALOG
+          - PLANUNGSANNAHME
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        schema:
+          type: object
+          description: Das vollständige JSON-Schema (Draft 2020-12) des Parameters.
+      required:
+      - name
+      - type
+      - unit
+      - minimum
+      - maximum
+      - allowed_levels
+      - security_class
+      - limit_source
+      - description
+      - schema
+    ConfigParameterCatalog:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        valid_from:
+          type: string
+          format: date-time
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ConfigParameter'
+      required:
+      - schema_version
+      - valid_from
+      - items
+    ConfigRevisionUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Änderung eines Entwurfs; nicht gesendete Felder bleiben unverändert, values ersetzt die Werte vollständig, effective_to null löscht das Ende.
+      properties:
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der gültigen Schema-Version.
+        effective_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        effective_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
     ConfigRevision:
       type: object
       additionalProperties: false
@@ -299,6 +602,22 @@ components:
             minLength: 1
             maxLength: 200
           - type: 'null'
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          description: Änderungsgrund; immer vorhanden.
+        created_at:
+          type: string
+          format: date-time
+          description: Zeitpunkt der Änderung (Anlage der Revision); immer vorhanden.
+        published_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        change_log:
+          $ref: '#/components/schemas/ConfigChangeLog'
       required:
       - id
       - scope_kind
@@ -334,6 +653,16 @@ components:
             serverseitig.
         effective_from:
           $ref: common.yaml#/components/schemas/Timestamp
+        effective_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          description: Änderungsgrund; Pflichtfeld (fehlt er, 422 mit Feldverletzung REQUIRED). Im Schema nicht als required geführt, damit die
+            Erweiterung gegenüber dem Ausgangsstand kompatibel bleibt. Der Ersteller wird nie aus der Anfrage übernommen, sondern aus dem Principal.
       required:
       - scope_kind
       - scope_id
@@ -344,8 +673,10 @@ components:
       - scope_kind: TENANT
         scope_id: 00000000-0000-4000-8000-000000000001
         schema_version: '1'
-        values: {}
+        values:
+          max_wait_min: 20
         effective_from: '2026-12-01T00:00:00Z'
+        reason: Wartezeit für den Winterfahrplan angepasst
     ConfigValidationReport:
       type: object
       additionalProperties: false

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/stop_dwell_sec.v1.schema.json",
+  "title": "stop_dwell_sec",
+  "description": "Standard-Haltestellenaufenthalt",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 3600,
+  "x-unit": "SECONDS",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.1-stop_dwell_sec",
+  "x-catalog-range": "Nicht unter sichere Haltestellenabfertigung"
+}

@@ -126,3 +126,9 @@ Lang laufende Befehle werden als `operation` persistiert (`OperationService.enqu
 | `max-attempts` / `timeout-seconds` | 12 / 10 |
 | `worker-enabled` (Zeitgeber nur mit `taktovia.secrets.dir` und `TenantSource`-Bean) / `poll-seconds` | `false` / 5 |
 | `taktovia.secrets.domain` (Geheimnisdomäne für `secret_ref`; sonst `taktovia-<umgebung>-secrets`) | – |
+## Konfigurationskatalog und Revisionen (WP-M1-19, WP-M1-20)
+
+Modul `config`: Parameterkatalog mit Systemgrenzen (`policy_schema`, `GET /v1/config/parameters`) und Konfigurationsrevisionen (`/v1/config/revisions`: anlegen, lesen, auflisten, Entwurf ändern, `as_of`-Rekonstruktion).
+Werte außerhalb von Name, Typ, Einheit, Bereich oder Sicherheitsinvariante werden vor dem Speichern mit 422 abgewiesen; publizierte Revisionen sind in der Datenbank unveränderlich. Andere Module lesen
+Konfiguration nur über `de.taktovia.config.api.ConfigApi`. Neue Katalogversionen sind Migrationen (`db/migrations/`), nie Laufzeitänderungen. Entscheidungen und Grenzen:
+[konfigurationsrevisionen.md](../docs/umsetzungsplan/vertraege/konfigurationsrevisionen.md).

@@ -51,8 +51,8 @@ def _load_tenant(name, label):
         x = c.execute
         x("SET LOCAL search_path = taktovia, public")
         x("SELECT setseed(0.42)")
-        x("""INSERT INTO config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
-             VALUES (%s, md5(%s||'cfg')::uuid, 'SERVICE', md5(%s||'cfgscope')::uuid, 1, '0', '{}', '2026-01-01', 'spike')""", (t, t, t))
+        x("""INSERT INTO config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
+             VALUES (%s, md5(%s||'cfg')::uuid, 'SERVICE', md5(%s||'cfgscope')::uuid, 1, '1', '{}', '2026-01-01', 'user:spike', 'Lasttestdaten')""", (t, t, t))
         x("""INSERT INTO service(tenant_id,id,operator_id,name,timezone,config_revision_id)
              SELECT %s, md5(%s||'svc'||g)::uuid, %s, 'Dienst '||g, 'Europe/Berlin', md5(%s||'cfg')::uuid FROM generate_series(0,%s) g""",
           (t, t, ids["organization"], t, SERVICES_PER_TENANT))

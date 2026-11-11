@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/customer_notify_before_pickup_min.v1.schema.json",
+  "title": "customer_notify_before_pickup_min",
+  "description": "Push vor Abholung",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 240,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.7-customer_notify_before_pickup_min",
+  "x-catalog-range": "Reale ETA-Änderungen priorisiert"
+}
