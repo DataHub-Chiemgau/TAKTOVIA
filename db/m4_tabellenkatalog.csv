@@ -1,0 +1,30 @@
+tabelle;modul;klasse;hr_finanz_spalten;wp;bemerkung
+roster_revision;staff-time;FREIGABE_UNVERAENDERLICH;;WP-M4-04;veröffentlichte Revision unveränderlich (Entwurf veränderlich)
+time_event;staff-time;APPEND_ONLY;person_ref,occurred_at,device_recorded_at;WP-M4-08;Ist-Arbeitszeit, nur anhängen
+absence_request;staff-time;VERAENDERLICH;kind;WP-M4-06;Art nur für die Personalrolle, Dispositionssichten nur als Restriktion
+staff_shift;staff-time;VERAENDERLICH;;WP-M4-65;Kernschema, in M4 fachlich führend
+driver_device;staff-time;VERAENDERLICH;subject;WP-M3-24;Gerätebindung
+driver_event;staff-time;APPEND_ONLY;device_recorded_at,occurred_at;WP-M3-24;Ereigniseingang
+document_revision;documents-finance;APPEND_ONLY;;WP-M4-23;Belegversionen
+extraction_run;documents-finance;VERAENDERLICH;;WP-M4-27;OCR-Lauf
+extracted_field;documents-finance;VERAENDERLICH;;WP-M4-27;OCR-Vorschlag bis zur Bestätigung
+approval_step;documents-finance;APPEND_ONLY;;WP-M4-34;Freigabeschritte
+fuel_transaction;documents-finance;VERAENDERLICH;;WP-M4-30;Tankbeleg-Fachdaten
+evidence_link;documents-finance;APPEND_ONLY;;WP-M4-32;Evidenzverknüpfung
+cost_category;documents-finance;VERAENDERLICH;;WP-M4-39;Kostenklassifikation
+accounting_mapping;documents-finance;VERAENDERLICH;;WP-M4-33;Kontenzuordnung
+allocation_activation;documents-finance;VERAENDERLICH;;WP-M4-35;Aktivierung der Aufteilung
+upload_ticket;documents-finance;VERAENDERLICH;;WP-M4-21;Uploadticket, einmal verbrauchbar
+expense_document;documents-finance;VERAENDERLICH;;WP-M4-21;Kernschema, erweitert um Ticketbezug und Quarantäne
+cost_object;documents-finance;VERAENDERLICH;;WP-M1-09;Kernschema
+economic_event;documents-finance;APPEND_ONLY;;WP-M4-33;Kernschema, Korrektur nur per Gegenereignis
+allocation_set;documents-finance;VERAENDERLICH;;WP-M4-35;Kernschema
+allocation_line;documents-finance;VERAENDERLICH;;WP-M4-35;Kernschema
+fiscal_period;documents-finance;VERAENDERLICH;;WP-M4-36;Kernschema
+journal;documents-finance;VERAENDERLICH;;WP-M4-33;Kernschema, gebuchte Journale gesperrt
+journal_line;documents-finance;VERAENDERLICH;;WP-M4-33;Kernschema
+settlement_line;documents-finance;VERAENDERLICH;;WP-M5;Kernschema
+metric_definition_revision;analytics;FREIGABE_UNVERAENDERLICH;;WP-M4-46;freigegebene Definition unveränderlich
+aggregate_snapshot;analytics;VERAENDERLICH;;WP-M4-45;Faktenbasis
+dataset_watermark;analytics;VERAENDERLICH;;WP-M4-45;Datenstand
+eta_model_revision;analytics;FREIGABE_UNVERAENDERLICH;;WP-M4-62;freigegebene Modellrevision unveränderlich

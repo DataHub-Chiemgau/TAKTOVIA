@@ -24,6 +24,8 @@ from psycopg import sql
 HERE = Path(__file__).resolve().parent
 MIG = HERE / 'migrations'
 ROLES = ('taktovia_migrator', 'taktovia_runtime', 'taktovia_fields')
+# Modulzugänge der M4-Module (WP-M4-64): eigene Anmeldung je Modul, DML nur auf die eigenen Tabellen (R__runtime_grants_m4_64.sql)
+MODULE_ROLES = {'taktovia_mod_stafftime': 'STAFFTIME', 'taktovia_mod_docsfin': 'DOCSFIN', 'taktovia_mod_analytics': 'ANALYTICS'}
 GROUPS = ('taktovia_pii', 'taktovia_hr', 'taktovia_finance')
 
 
@@ -59,6 +61,19 @@ def fields_password(role_exists=False):
     return hashlib.sha256(('taktovia_fields:' + env('TAKTOVIA_DB_RUNTIME_PASSWORD')).encode()).hexdigest()
 
 
+def module_password(role, role_exists=False):
+    """Passwort eines Modulzugangs (WP-M4-64): ausdrücklich `TAKTOVIA_DB_MODULE_PASSWORD_<MODUL>`; nur außerhalb von Staging/Produktion
+    ersatzweise aus dem Runtime-Passwort abgeleitet, in Staging/Produktion bleibt eine vorhandene Rolle unverändert, eine fehlende bricht ab."""
+    explicit = os.environ.get('TAKTOVIA_DB_MODULE_PASSWORD_' + MODULE_ROLES[role])
+    if explicit:
+        return explicit
+    if os.environ.get('TAKTOVIA_ENVIRONMENT', 'development') in ('staging', 'production'):
+        if role_exists:
+            return None
+        sys.exit(f'Umgebungsvariable TAKTOVIA_DB_MODULE_PASSWORD_{MODULE_ROLES[role]} fehlt (Modulzugang {role})')
+    return hashlib.sha256((role + ':' + env('TAKTOVIA_DB_RUNTIME_PASSWORD')).encode()).hexdigest()
+
+
 def bootstrap():
     name = env('TAKTOVIA_DB_NAME', 'taktovia')
     with admin('postgres') as c:
@@ -72,6 +87,13 @@ def bootstrap():
             verb = 'ALTER' if exists else 'CREATE'
             c.execute(sql.SQL(verb + ' ROLE {} LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOINHERIT '
                               'PASSWORD {}').format(sql.Identifier(role), sql.Literal(pw)))
+        for role in MODULE_ROLES:
+            exists = c.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone()
+            pw = module_password(role, bool(exists))
+            if pw is None:
+                continue
+            c.execute(sql.SQL(('ALTER' if exists else 'CREATE') + ' ROLE {} LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOINHERIT '
+                              'PASSWORD {}').format(sql.Identifier(role), sql.Literal(pw)))
         for g in GROUPS:
             if not c.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (g,)).fetchone():
                 c.execute(sql.SQL('CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS').format(sql.Identifier(g)))
@@ -79,15 +101,49 @@ def bootstrap():
             c.execute(sql.SQL('CREATE DATABASE {} OWNER taktovia_migrator').format(sql.Identifier(name)))
     with admin(name) as c:
         c.execute(sql.SQL('REVOKE ALL ON DATABASE {} FROM PUBLIC').format(sql.Identifier(name)))
-        c.execute(sql.SQL('GRANT CONNECT ON DATABASE {} TO taktovia_migrator, taktovia_runtime, taktovia_fields').format(sql.Identifier(name)))
+        c.execute(sql.SQL('GRANT CONNECT ON DATABASE {} TO taktovia_migrator, taktovia_runtime, taktovia_fields, '
+                           + ', '.join(MODULE_ROLES)).format(sql.Identifier(name)))
         c.execute('CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public')
         c.execute('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
         c.execute('CREATE SCHEMA IF NOT EXISTS taktovia_meta AUTHORIZATION taktovia_migrator')
     print(f'bootstrap ok: {name}')
 
 
+# Wiederholbare Skripte mit dieser Zeile laufen bei jedem `migrate` erneut (z. B. Rechte, die sich aus später hinzukommenden Tabellen ergeben, WP-M4-64).
+ALWAYS = re.compile(r'^-- repeat: always\s*$', re.M)
+
+
+def state_signature(c, files):
+    """Zustand, von dem Skripte mit `-- repeat: always` abhängen: vorhandene Tabellen, Tabellenbesitz und Prüfsummen der übrigen wiederholbaren Skripte."""
+    h = hashlib.sha256()
+    for r in c.execute("SELECT relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='taktovia' AND c.relkind='r' ORDER BY 1"):
+        h.update(r[0].encode())
+    for r in c.execute('SELECT tabelle, modul FROM taktovia_meta.table_owner ORDER BY 1'):
+        h.update(('|'.join(r)).encode())
+    for p in files:
+        if p.name.startswith('R__') and not ALWAYS.search(p.read_text()):
+            h.update(f'{p.name}:{checksum(p)}'.encode())
+    return int.from_bytes(h.digest()[:4], 'big') % (2 ** 30)
+
+
 def checksum(p):
     return int.from_bytes(hashlib.sha256(p.read_bytes()).digest()[:4], 'big', signed=True)
+
+
+def sync_table_owners(c):
+    """WP-M4-64: spiegelt db/table_owners.d/*.csv nach taktovia_meta.table_owner (nur Migrator), damit Rechte der Modulzugänge aus dem Tabellenbesitz folgen
+    und neue Tabellen eines Moduls keine Änderung an der Rechtedatei brauchen. Quelle der Wahrheit bleibt die CSV-Datei."""
+    import csv
+    c.execute('CREATE TABLE IF NOT EXISTS taktovia_meta.table_owner (tabelle text PRIMARY KEY, modul text NOT NULL)')
+    rows = {}
+    for f in sorted((HERE / 'table_owners.d').glob('*.csv')):
+        with f.open(encoding='utf-8', newline='') as fh:
+            for r in csv.DictReader(fh, delimiter=';'):
+                rows[r['table']] = r['owner']
+    with c.transaction():
+        c.execute('DELETE FROM taktovia_meta.table_owner')
+        for t, o in sorted(rows.items()):
+            c.execute('INSERT INTO taktovia_meta.table_owner(tabelle, modul) VALUES (%s,%s)', (t, o))
 
 
 def migrate():
@@ -98,9 +154,12 @@ def migrate():
         c.execute('CREATE TABLE IF NOT EXISTS taktovia_meta.schema_history ('
                   'script text PRIMARY KEY, checksum integer NOT NULL, installed_on timestamptz NOT NULL DEFAULT now())')
         applied = dict(c.execute('SELECT script, checksum FROM taktovia_meta.schema_history').fetchall())
+        sync_table_owners(c)
         for p in files:
             cs = checksum(p)
             repeatable = p.name.startswith('R__')
+            if repeatable and ALWAYS.search(p.read_text()):
+                cs = (cs + state_signature(c, files)) % (2 ** 31)   # läuft erneut, sobald sich Tabellen, Besitz oder andere Rechtedateien ändern
             if p.name in applied:
                 if applied[p.name] != cs and not repeatable:
                     sys.exit(f'Prüfsummenfehler: {p.name} wurde nach Auslieferung geändert')

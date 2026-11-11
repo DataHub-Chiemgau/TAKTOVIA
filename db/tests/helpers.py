@@ -17,6 +17,25 @@ def fields():
     return dbtool.conn('taktovia_fields', dbtool.fields_password(), autocommit=False)
 
 
+def module(role):
+    """Modulzugang eines M4-Moduls (WP-M4-64): `taktovia_mod_stafftime`, `taktovia_mod_docsfin`, `taktovia_mod_analytics`."""
+    return dbtool.conn(role, dbtool.module_password(role, True), autocommit=False)
+
+
+@contextmanager
+def module_tx(role, tenant):
+    c = module(role)
+    try:
+        set_tenant(c, tenant)
+        yield c
+        c.commit()
+    except BaseException:
+        c.rollback()
+        raise
+    finally:
+        c.close()
+
+
 def migrator():
     return dbtool.conn('taktovia_migrator', dbtool.env('TAKTOVIA_DB_MIGRATOR_PASSWORD'), autocommit=True)
 
