@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+passenger_contact;SELECT,INSERT,UPDATE;WP-M1-28: Verifikationsstatus je Kanal; Rücksetzen bei Kontaktänderung per Trigger, kein DELETE
+contact_verification;SELECT,INSERT,UPDATE;WP-M1-28: Verifikationsaufgabe; nur Zustand und Versuchszähler änderbar (Trigger), kein DELETE

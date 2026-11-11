@@ -100,12 +100,12 @@ class IdentityConfiguration {
     @Bean @ConditionalOnProperty("taktovia.idp.enabled", havingValue = "true", matchIfMissing = true)
     fun tenantRequestContextFilter(
         identity: IdentityApi, registry: OpenApiRegistry, props: IdpProperties, tickets: ContextTicketCodec, tx: TenantTransactions, events: SecurityEventPort,
-        mismatch: TenantMismatchReporter, problems: ProblemWriter, env: Environment,
+        mismatch: TenantMismatchReporter, problems: ProblemWriter, env: Environment, enrollment: EnrollmentPolicy,
     ): FilterRegistrationBean<RequestContextFilter> {
         // Zusatzverträge (nur Tests, `taktovia.api.extra-specs`) tragen eigene Prüfidentitäten und keinen Mitgliedschaftskontext.
         val excluded = (env.getProperty("taktovia.api.extra-specs")?.split(',')?.map { it.trim().substringAfterLast('/') }?.filter { it.isNotEmpty() } ?: emptyList()).toSet()
         // nach Token-Prüfung (+5) und Quote (+10), vor der Eingabeprüfung (+20)
-        return FilterRegistrationBean(RequestContextFilter(identity, registry, props, tickets, tx, events, mismatch, problems, excluded)).apply { order = Ordered.HIGHEST_PRECEDENCE + 15 }
+        return FilterRegistrationBean(RequestContextFilter(identity, registry, props, tickets, tx, events, mismatch, problems, excluded, enrollment)).apply { order = Ordered.HIGHEST_PRECEDENCE + 15 }
     }
 }
 

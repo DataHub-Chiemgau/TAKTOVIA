@@ -113,6 +113,16 @@ object AuditActions {
     /** Sitzung oder Konto gesperrt bzw. entsperrt (WP-M1-10). */
     const val SECURITY_ACCOUNT_LOCKED = "security.account.locked"
     const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
+    /** Fahrgastkonto, Kontaktverifikation, Profil und Einwilligung (WP-M1-28, -29, -30); nie mit Kontaktwert oder Code. */
+    const val PASSENGER_REGISTERED = "identity.passenger.registered"
+    const val PASSENGER_VERIFICATION_STARTED = "identity.passenger.verification_started"
+    const val PASSENGER_CONTACT_VERIFIED = "identity.passenger.contact_verified"
+    const val PASSENGER_PROFILE_CHANGED = "identity.passenger.profile_changed"
+    const val PASSENGER_SUPPORT_NEEDS_CHANGED = "passenger.support_needs.changed"
+    const val CONSENT_RECORDED = "identity.consent.recorded"
+    /** Verifikationsversuch falsch bzw. Versuchs-/Startlimit überschritten (WP-M1-28, AK 4). */
+    const val SECURITY_CONTACT_VERIFICATION_FAILED = "security.contact.verification_failed"
+    const val SECURITY_CONTACT_VERIFICATION_LIMITED = "security.contact.verification_limited"
     /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
     const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(POLICY_CHECKED, REGION_CHANGED, DEPOT_CHANGED, SERVICE_CHANGED, COST_CENTER_CHANGED, MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
@@ -121,7 +131,9 @@ object AuditActions {
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
         SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,
         SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED,
-        SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, AUDIT_READ)
+        SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, AUDIT_READ,
+        PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
+        SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED)
 }
 
 /**

@@ -124,8 +124,676 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/passengers/{passenger_id}:
+    get:
+      summary: "Eigenes Fahrgastkonto lesen (Objektbindung: fremde Kennung ergibt 404)"
+      description: Ein Konto liest ausschließlich sein eigenes Fahrgastkonto (WP-M1-29, IAM-006). Jede andere Kennung, auch die eines Fahrgasts desselben oder eines anderen Mandanten, ergibt 404. Die minimierte Betreibersicht ist `listPassengers`.
+      operationId: getPassenger
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - name: passenger_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Passenger'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/me/profile:
+    get:
+      summary: Eigenes Fahrgastprofil lesen
+      description: Kontakt (mit Verifikationsstatus je Kanal), Sprache, Favoriten, bevorzugte Haltestellen und Benachrichtigungskanäle (WP-M1-29, IAM-006; Verifikationsstatus IAM-001). Das Unterstützungsmerkmal gehört nicht zum Profil (WP-M1-31).
+      operationId: getMyProfile
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    patch:
+      summary: Eigenes Fahrgastprofil ändern
+      description: Nur die gesetzten Bereiche ändern sich, Listen ersetzen den Bereich. Veralteter ETag 412, fehlender 428. Ein geänderter Kontakt ist bis zur erneuten Verifikation `UNVERIFIED`.
+      operationId: updateMyProfile
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+  /v1/me/contact-verifications:
+    post:
+      summary: Verifikation eines Kontaktkanals starten
+      description: Sendet einen einmaligen, zeitlich begrenzten Code an den Kontakt des Kanals (WP-M1-28). Ersetzt eine offene Aufgabe. Über dem Limit 429.
+      operationId: startContactVerification
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactVerification'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactVerificationStart'
+  /v1/me/contact-verifications/confirmations:
+    post:
+      summary: Verifikationscode einlösen
+      description: Ein falscher, abgelaufener oder verbrauchter Code ergibt 422; zu viele Fehlversuche 429 (Sicherheitsereignis).
+      operationId: confirmContactVerification
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactChannelStatus'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactVerificationConfirm'
+  /v1/me/privacy:
+    get:
+      summary: Datenschutzeinstellungen lesen (Betriebsmitteilung getrennt von Marketing)
+      description: Aktueller Stand je Zweck und bisherige Revisionen (WP-M1-30, IAM-011). Marketing ist standardmäßig nicht eingewilligt.
+      operationId: getMyPrivacySettings
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacySettings'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/me/privacy/consents:
+    post:
+      summary: Einwilligung oder Widerruf als neue Revision anlegen
+      description: Ändert nie eine bestehende Revision. Nur `MARKETING` ist änderbar; `OPERATIONAL_SAFETY` und unbekannte Felder ergeben 422.
+      operationId: recordMyConsent
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRevision'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentChange'
+  /v1/me/transport-support:
+    get:
+      summary: Eigene Auswahl des Unterstützungsbedarfs lesen
+      description: Eigene Daten des Fahrgasts (WP-M1-31/-29). Betreiber lesen das Merkmal nur über `getPassengerSupportNeeds` mit Feldrecht und Zweck.
+      operationId: getMyTransportSupport
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTransportSupport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Eigene Auswahl des Unterstützungsbedarfs ersetzen
+      description: Nur Auswahl aus dem Katalog, kein Freitext, keine Diagnosen; verschlüsselt gespeichert.
+      operationId: replaceMyTransportSupport
+      security:
+      - oidc:
+        - me:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '204':
+          description: Gespeichert.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MyTransportSupport'
 components:
   schemas:
+    ContactChannelCode:
+      type: string
+      enum:
+      - EMAIL
+      - PHONE
+    ChannelStatus:
+      type: string
+      enum:
+      - UNVERIFIED
+      - VERIFIED
+    ContactChannelView:
+      type: object
+      additionalProperties: false
+      properties:
+        value:
+          oneOf:
+          - type: string
+            minLength: 3
+            maxLength: 254
+          - type: 'null'
+        status:
+          $ref: '#/components/schemas/ChannelStatus'
+        verified_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - value
+      - status
+      - verified_at
+    Profile:
+      type: object
+      additionalProperties: false
+      description: Eigenes Profil des Fahrgasts. Kontakt nur mit Verifikationsstatus je Kanal; Favoriten und bevorzugte Haltestellen verweisen auf Haltepunkte
+        (M1 Fixture-Haltepunkte, gepflegter Stamm mit M2).
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - PENDING_VERIFICATION
+          - ACTIVE
+          - BLOCKED
+        locale:
+          type: string
+          enum:
+          - de-DE
+          - en-GB
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        contact:
+          type: object
+          additionalProperties: false
+          properties:
+            email:
+              oneOf:
+              - $ref: '#/components/schemas/ContactChannelView'
+              - type: 'null'
+            phone:
+              oneOf:
+              - $ref: '#/components/schemas/ContactChannelView'
+              - type: 'null'
+          required:
+          - email
+          - phone
+        favorites:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Favorite'
+        preferred_stops:
+          type: array
+          maxItems: 10
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        notification_channels:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+      required:
+      - id
+      - status
+      - locale
+      - created_at
+      - revision
+      - contact
+      - favorites
+      - preferred_stops
+      - notification_channels
+    Favorite:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - label
+      - stop_id
+    NotificationChannel:
+      type: string
+      enum:
+      - PUSH
+      - EMAIL
+      - SMS
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Nur gesetzte Bereiche ändern sich; Listen ersetzen den Bereich vollständig. Ungültige Sprache, unbekannte Haltestelle oder unzulässiger
+        Kontakt ergeben 422 mit `violations[].pointer`.
+      properties:
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+        contact:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            email:
+              type: string
+              minLength: 3
+              maxLength: 254
+            phone:
+              type: string
+              minLength: 7
+              maxLength: 30
+        favorites:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Favorite'
+        preferred_stops:
+          type: array
+          maxItems: 10
+          uniqueItems: true
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        notification_channels:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+      examples:
+      - locale: en-GB
+        notification_channels:
+        - PUSH
+    ContactVerificationStart:
+      type: object
+      additionalProperties: false
+      properties:
+        channel:
+          $ref: '#/components/schemas/ContactChannelCode'
+      required:
+      - channel
+    ContactVerification:
+      type: object
+      additionalProperties: false
+      properties:
+        channel:
+          $ref: '#/components/schemas/ContactChannelCode'
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - channel
+      - expires_at
+    ContactVerificationConfirm:
+      type: object
+      additionalProperties: false
+      properties:
+        channel:
+          $ref: '#/components/schemas/ContactChannelCode'
+        code:
+          type: string
+          minLength: 6
+          maxLength: 10
+          pattern: ^[0-9]+$
+      required:
+      - channel
+      - code
+    ContactChannelStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        channel:
+          $ref: '#/components/schemas/ContactChannelCode'
+        status:
+          $ref: '#/components/schemas/ChannelStatus'
+        verified_at:
+          type: string
+          format: date-time
+      required:
+      - channel
+      - status
+      - verified_at
+    ConsentPurpose:
+      type: string
+      description: Feste Zweckklassen. OPERATIONAL_SAFETY (betrieblich/sicherheitsrelevant) wird immer zugestellt und ist nicht änderbar.
+      enum:
+      - OPERATIONAL_SAFETY
+      - MARKETING
+    ConsentState:
+      type: object
+      additionalProperties: false
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        granted:
+          type: boolean
+        changeable:
+          type: boolean
+        recorded_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        text_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - purpose
+      - granted
+      - changeable
+      - recorded_at
+      - text_version
+    ConsentRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        granted:
+          type: boolean
+        recorded_at:
+          type: string
+          format: date-time
+        text_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+      - id
+      - purpose
+      - sequence
+      - granted
+      - recorded_at
+      - text_version
+    PrivacySettings:
+      type: object
+      additionalProperties: false
+      properties:
+        current_text_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+        consents:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/ConsentState'
+        history:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ConsentRevision'
+      required:
+      - current_text_version
+      - consents
+      - history
+    ConsentChange:
+      type: object
+      additionalProperties: false
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        granted:
+          type: boolean
+        text_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+      - purpose
+      - granted
+      - text_version
+      examples:
+      - purpose: MARKETING
+        granted: true
+        text_version: marketing-2026-1
+    MyTransportSupport:
+      type: object
+      additionalProperties: false
+      description: Eigene Auswahl des Fahrgasts aus dem Katalog transportrelevanter Unterstützung (Kap. 02 §3). Kein Freitext, keine Diagnosen.
+      properties:
+        codes:
+          type: array
+          maxItems: 16
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - BOARDING_HELP
+            - AUDIO_GUIDANCE
+            - LOW_FLOOR
+            - WHEELCHAIR_SPACE
+            - ASSISTANCE_ANIMAL
+            - ACCOMPANYING_PERSON
+      required:
+      - codes
     PassengerSupportNeeds:
       type: object
       additionalProperties: false

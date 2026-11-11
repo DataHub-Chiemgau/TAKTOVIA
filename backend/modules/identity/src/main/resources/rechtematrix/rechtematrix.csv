@@ -78,3 +78,12 @@ updateRegion;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateDepot;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateCostCenter;organization:write;-;M1;N;N;N;N;N;N;J;N;N;N
 updateService;services:write;-;M1;N;N;N;N;N;J;J;N;N;N
+getPassenger;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+getMyProfile;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+updateMyProfile;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+startContactVerification;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+confirmContactVerification;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+getMyPrivacySettings;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+recordMyConsent;me:write;-;M1;J;J;J;J;J;J;J;J;J;J
+getMyTransportSupport;me:read;-;M1;J;J;J;J;J;J;J;J;J;J
+replaceMyTransportSupport;me:write;-;M1;J;J;J;J;J;J;J;J;J;J

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+passenger_preference;SELECT,INSERT,DELETE;WP-M1-29: Präferenzmenge wird ersetzt (Löschen und Neuanlegen in einer Transaktion), kein UPDATE

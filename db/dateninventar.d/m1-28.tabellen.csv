@@ -1,0 +1,5 @@
+tabelle;aggregat;loeschklasse;bemerkung
+passenger_contact;Kontaktkanal mit Verifikationsstatus (WP-M1-28);LK_PII;wird mit dem Fahrgastkonto gelöscht
+contact_verification;Verifikationsaufgabe (WP-M1-28);LK_TECHNISCH;kurzlebig, Codes nur als HMAC
+passenger_preference;Fahrgastpräferenz (WP-M1-29);LK_PII;wird mit dem Fahrgastkonto gelöscht
+consent_revision;Einwilligungsrevision (WP-M1-30);LK_PII;append-only, Nachweis der Einwilligung, Löschung nur mit dem Konto nach Aufbewahrungsregel (D-11)

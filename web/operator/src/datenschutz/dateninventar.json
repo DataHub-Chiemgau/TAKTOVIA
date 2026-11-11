@@ -18,6 +18,7 @@
       "TECHNISCHER_BETRIEB": "Zustellung von Ereignissen, Idempotenz, Wiederholung und Fehlerbehandlung",
       "SICHERHEITSPROTOKOLL": "Nachvollziehbarkeit sicherheits- und datenschutzrelevanter Vorgänge (Audit)",
       "KONTAKT_UND_UNTERSTUETZUNG": "Kontakt- und Unterstützungsdaten des Fahrgastkontos für Betrieb und Hilfe",
+      "KOMMUNIKATIONSEINWILLIGUNG": "Nachweis der Einwilligung in freiwillige Marketingkommunikation und Trennung von betrieblichen Mitteilungen (IAM-011)",
       "NACHFRAGEANALYSE": "grobe Auswertung abgelehnter Anfragen zur Angebotsplanung (nur grobe Auflösung)",
       "WAEHRUNGSKATALOG": "globaler Katalog der Währungen mit Exponent"
     },
@@ -719,24 +720,185 @@
       ]
     },
     {
-      "tabelle": "config_vehicle_override_release",
-      "aggregat": "Freigabe Fahrzeug-Override (WP-M1-21)",
-      "loeschklasse": "LK_KATALOG",
-      "bemerkung": "globaler Katalog ohne Mandantenbezug, nur per Migration gepflegt",
+      "tabelle": "consent_revision",
+      "aggregat": "Einwilligungsrevision (WP-M1-30)",
+      "loeschklasse": "LK_PII",
+      "bemerkung": "append-only, Nachweis der Einwilligung, Löschung nur mit dem Konto nach Aufbewahrungsregel (D-11)",
       "spalten": [
         {
-          "spalte": "description",
+          "spalte": "granted",
+          "personenbezogen": "ja",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "ART6_1_A_EINWILLIGUNG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Einwilligung eingewilligt/widerrufen"
+        },
+        {
+          "spalte": "id",
           "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
         },
         {
-          "spalte": "parameter",
+          "spalte": "passenger_id",
           "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "purpose",
+          "personenbezogen": "nein",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_at",
+          "personenbezogen": "ja",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "ART6_1_A_EINWILLIGUNG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Zeitpunkt der Einwilligung bzw. des Widerrufs"
+        },
+        {
+          "spalte": "sequence",
+          "personenbezogen": "nein",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "text_version",
+          "personenbezogen": "nein",
+          "zweck": "KOMMUNIKATIONSEINWILLIGUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Version des gezeigten Einwilligungstexts"
+        }
+      ]
+    },
+    {
+      "tabelle": "contact_verification",
+      "aggregat": "Verifikationsaufgabe (WP-M1-28)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "kurzlebig, Codes nur als HMAC",
+      "spalten": [
+        {
+          "spalte": "attempts",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "channel",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "closed_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "code_mac",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "HMAC des Verifikationscodes, der Code selbst wird nie gespeichert"
+        },
+        {
+          "spalte": "contact_token",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_TECHNISCH",
+          "bemerkung": "HMAC des Kontakts, kein Klartext"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "expires_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "passenger_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "state",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",
@@ -867,24 +1029,6 @@
           "bemerkung": ""
         },
         {
-          "spalte": "created_at",
-          "personenbezogen": "nein",
-          "zweck": "ABRECHNUNG_CLEARING",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_by",
-          "personenbezogen": "ja",
-          "zweck": "SICHERHEITSPROTOKOLL",
-          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
-          "schutzklasse": "SECURITY_AUDIT",
-          "loeschklasse": "LK_STAMM",
-          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
-        },
-        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "ABRECHNUNG_CLEARING",
@@ -904,42 +1048,6 @@
         },
         {
           "spalte": "legal_entity_id",
-          "personenbezogen": "nein",
-          "zweck": "ABRECHNUNG_CLEARING",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "name",
-          "personenbezogen": "nein",
-          "zweck": "ABRECHNUNG_CLEARING",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "region_id",
-          "personenbezogen": "nein",
-          "zweck": "ABRECHNUNG_CLEARING",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "revision",
-          "personenbezogen": "nein",
-          "zweck": "ABRECHNUNG_CLEARING",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "service_id",
           "personenbezogen": "nein",
           "zweck": "ABRECHNUNG_CLEARING",
           "rechtsgrundlage": "",
@@ -977,77 +1085,6 @@
           "spalte": "exponent",
           "personenbezogen": "nein",
           "zweck": "WAEHRUNGSKATALOG",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        }
-      ]
-    },
-    {
-      "tabelle": "depot",
-      "aggregat": "Betriebshof (WP-M1-09)",
-      "loeschklasse": "LK_STAMM",
-      "bemerkung": "",
-      "spalten": [
-        {
-          "spalte": "created_at",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_by",
-          "personenbezogen": "ja",
-          "zweck": "SICHERHEITSPROTOKOLL",
-          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
-          "schutzklasse": "SECURITY_AUDIT",
-          "loeschklasse": "LK_STAMM",
-          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
-        },
-        {
-          "spalte": "id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "name",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "region_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "revision",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "tenant_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",
@@ -1682,122 +1719,6 @@
           "spalte": "tenant_id",
           "personenbezogen": "nein",
           "zweck": "TECHNISCHER_BETRIEB",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        }
-      ]
-    },
-    {
-      "tabelle": "impact_report",
-      "aggregat": "Wirkungsbericht der Konfigurationspublikation (WP-M1-23)",
-      "loeschklasse": "LK_TECHNISCH",
-      "bemerkung": "unveraenderlich, nur Objektverweise und Anzahlen",
-      "spalten": [
-        {
-          "spalte": "affected",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "affected_digest",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "config_revision_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "conflict_count",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_at",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_by",
-          "personenbezogen": "ja",
-          "zweck": "SICHERHEITSPROTOKOLL",
-          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
-          "schutzklasse": "SECURITY_AUDIT",
-          "loeschklasse": "LK_STAMM",
-          "bemerkung": "Urheber der Analyse (Pseudonym user:<uuid>)"
-        },
-        {
-          "spalte": "highest_severity",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "revision_row_version",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "schema_version",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "tenant_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "values_hash",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",
@@ -3063,6 +2984,184 @@
       ]
     },
     {
+      "tabelle": "passenger_contact",
+      "aggregat": "Kontaktkanal mit Verifikationsstatus (WP-M1-28)",
+      "loeschklasse": "LK_PII",
+      "bemerkung": "wird mit dem Fahrgastkonto gelöscht",
+      "spalten": [
+        {
+          "spalte": "channel",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "contact_token",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "HMAC des normalisierten Kontakts, kein Klartext (Schlüssel aus der Secret-Verwaltung)"
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "passenger_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status_changed_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "verified_at",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Zeitpunkt der Verifikation des Kanals"
+        }
+      ]
+    },
+    {
+      "tabelle": "passenger_preference",
+      "aggregat": "Fahrgastpräferenz (WP-M1-29)",
+      "loeschklasse": "LK_PII",
+      "bemerkung": "wird mit dem Fahrgastkonto gelöscht",
+      "spalten": [
+        {
+          "spalte": "channel",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Benachrichtigungskanal PUSH/EMAIL/SMS"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "kind",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "label",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Bezeichnung eines Ortsfavoriten (Freitext des Fahrgasts)"
+        },
+        {
+          "spalte": "passenger_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "position",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "stop_id",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "bevorzugter Haltepunkt (Referenz)"
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "passenger_private",
       "aggregat": "Fahrgast-PII",
       "loeschklasse": "LK_PII",
@@ -3078,6 +3177,15 @@
           "bemerkung": "nur verschlüsselt; Kontaktdaten im Klartext nie in der Datenbank"
         },
         {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
@@ -3087,6 +3195,33 @@
           "bemerkung": ""
         },
         {
+          "spalte": "idp_issuer",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Issuer des IdP-Kontos (WP-M1-28)"
+        },
+        {
+          "spalte": "idp_subject",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Subject des IdP-Kontos, Bindung Konto-Fahrgast (WP-M1-28)"
+        },
+        {
+          "spalte": "locale",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "bevorzugte Sprache"
+        },
+        {
           "spalte": "retention_until",
           "personenbezogen": "ja",
           "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
@@ -3094,6 +3229,24 @@
           "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
           "loeschklasse": "LK_PII",
           "bemerkung": "Löschzeitpunkt des Fahrgastkontos nach Aufbewahrungsregel (WP-M1-33)"
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Profilrevision (ETag)"
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Kontostatus PENDING_VERIFICATION/ACTIVE/BLOCKED"
         },
         {
           "spalte": "subject_token",
@@ -3115,6 +3268,15 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
           "personenbezogen": "nein",
           "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
           "rechtsgrundlage": "",
@@ -3569,68 +3731,6 @@
       ]
     },
     {
-      "tabelle": "region",
-      "aggregat": "Region (WP-M1-09)",
-      "loeschklasse": "LK_STAMM",
-      "bemerkung": "",
-      "spalten": [
-        {
-          "spalte": "created_at",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_by",
-          "personenbezogen": "ja",
-          "zweck": "SICHERHEITSPROTOKOLL",
-          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
-          "schutzklasse": "SECURITY_AUDIT",
-          "loeschklasse": "LK_STAMM",
-          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
-        },
-        {
-          "spalte": "id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "name",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "revision",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "tenant_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        }
-      ]
-    },
-    {
       "tabelle": "resource_release",
       "aggregat": "Einsatzfreigabe",
       "loeschklasse": "LK_BETRIEB",
@@ -3948,24 +4048,6 @@
           "bemerkung": ""
         },
         {
-          "spalte": "created_at",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "created_by",
-          "personenbezogen": "ja",
-          "zweck": "SICHERHEITSPROTOKOLL",
-          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
-          "schutzklasse": "SECURITY_AUDIT",
-          "loeschklasse": "LK_STAMM",
-          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
-        },
-        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
@@ -3985,24 +4067,6 @@
         },
         {
           "spalte": "operator_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "region_id",
-          "personenbezogen": "nein",
-          "zweck": "KONFIGURATION",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "revision",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",

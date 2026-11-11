@@ -1,0 +1,3 @@
+table;owner;quelle
+passenger_contact;identity;WP-M1-28, Kontaktkanal mit Verifikationsstatus (OP-23)
+contact_verification;identity;WP-M1-28, Verifikationsaufgabe (Code nur als HMAC)
