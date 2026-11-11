@@ -460,6 +460,18 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="updateRegion"><h3><span class="m">PUT</span> <code>/v1/regions/{region_id}</code></h3><p>Region ändern</p><dl><dt>operationId</dt><dd><code>updateRegion</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>organization:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listDepots"><h3><span class="m">GET</span> <code>/v1/depots</code></h3><p>Betriebshöfe auflisten</p><dl><dt>operationId</dt><dd><code>listDepots</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>organization:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -472,8 +484,21 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateDepot"><h3><span class="m">PUT</span> <code>/v1/depots/{depot_id}</code></h3><p>Betriebshof ändern</p><dl><dt>operationId</dt><dd><code>updateDepot</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>organization:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
@@ -489,8 +514,21 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateCostCenter"><h3><span class="m">PUT</span> <code>/v1/cost-centers/{cost_center_id}</code></h3><p>Kostenstelle ändern</p><dl><dt>operationId</dt><dd><code>updateCostCenter</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>organization:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
@@ -615,6 +653,88 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="getPassenger"><h3><span class="m">GET</span> <code>/v1/passengers/{passenger_id}</code></h3><p>Eigenes Fahrgastkonto lesen (Objektbindung: fremde Kennung ergibt 404)</p><dl><dt>operationId</dt><dd><code>getPassenger</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getMyProfile"><h3><span class="m">GET</span> <code>/v1/me/profile</code></h3><p>Eigenes Fahrgastprofil lesen</p><dl><dt>operationId</dt><dd><code>getMyProfile</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateMyProfile"><h3><span class="m">PATCH</span> <code>/v1/me/profile</code></h3><p>Eigenes Fahrgastprofil ändern</p><dl><dt>operationId</dt><dd><code>updateMyProfile</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="startContactVerification"><h3><span class="m">POST</span> <code>/v1/me/contact-verifications</code></h3><p>Verifikation eines Kontaktkanals starten</p><dl><dt>operationId</dt><dd><code>startContactVerification</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="confirmContactVerification"><h3><span class="m">POST</span> <code>/v1/me/contact-verifications/confirmations</code></h3><p>Verifikationscode einlösen</p><dl><dt>operationId</dt><dd><code>confirmContactVerification</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getMyPrivacySettings"><h3><span class="m">GET</span> <code>/v1/me/privacy</code></h3><p>Datenschutzeinstellungen lesen (Betriebsmitteilung getrennt von Marketing)</p><dl><dt>operationId</dt><dd><code>getMyPrivacySettings</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="recordMyConsent"><h3><span class="m">POST</span> <code>/v1/me/privacy/consents</code></h3><p>Einwilligung oder Widerruf als neue Revision anlegen</p><dl><dt>operationId</dt><dd><code>recordMyConsent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getMyTransportSupport"><h3><span class="m">GET</span> <code>/v1/me/transport-support</code></h3><p>Eigene Auswahl des Unterstützungsbedarfs lesen</p><dl><dt>operationId</dt><dd><code>getMyTransportSupport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="replaceMyTransportSupport"><h3><span class="m">PUT</span> <code>/v1/me/transport-support</code></h3><p>Eigene Auswahl des Unterstützungsbedarfs ersetzen</p><dl><dt>operationId</dt><dd><code>replaceMyTransportSupport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="payments">payments.yaml</h2>
 <article id="receiveProviderEvent"><h3><span class="m">POST</span> <code>/v1/payments/provider-events/{provider}</code></h3><p>Signierte PSP-Benachrichtigung zustellen</p><dl><dt>operationId</dt><dd><code>receiveProviderEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>(Partnersignatur)</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
@@ -630,6 +750,7 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
@@ -691,6 +812,15 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="getConfigImpactReport"><h3><span class="m">GET</span> <code>/v1/config/impact-reports/{impact_report_id}</code></h3><p>Wirkungsbericht über seine ID lesen</p><dl><dt>operationId</dt><dd><code>getConfigImpactReport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="requestConfigImpact"><h3><span class="m">POST</span> <code>/v1/config/revisions/{revision_id}/impact</code></h3><p>Wirkungsanalyse für eine Revision anfordern</p><dl><dt>operationId</dt><dd><code>requestConfigImpact</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -716,8 +846,21 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateService"><h3><span class="m">PUT</span> <code>/v1/services/{service_id}</code></h3><p>Dienstkopf ändern</p><dl><dt>operationId</dt><dd><code>updateService</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>services:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
