@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+role_catalog;Rollenkatalog (WP-M1-07);LK_TECHNISCH;globaler Katalog, nur per Migration
+rights_matrix_rollout;Ausrollprotokoll der Rechtematrix (WP-M1-07);LK_TECHNISCH;nur anhängen, Änderungen an der Matrix nachvollziehbar

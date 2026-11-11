@@ -39,7 +39,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 ## Parallele Arbeit ohne Merge-Konflikte
 
 - **Migrationsnummern:** Arbeitspaket `WP-M<m>-<nn>` verwendet Versionen ab `V<m>0<nn>0` (z. B. WP-M1-02 → `V1020`, `V1021`, …; WP-M2-05 → `V2050`). V1–V3 gehören dem Kernschema.
-- **Rechte:** je Arbeitspaket eine eigene `R__grants_<wp>.sql` (wiederholbar) statt Änderungen an `R__runtime_grants.sql`.
+- **Rechte:** je Arbeitspaket eine eigene wiederholbare Datei statt Änderungen an `R__runtime_grants.sql`. **Achtung Reihenfolge:** `db.py` führt `R__*.sql` alphabetisch aus und `R__runtime_grants.sql` beginnt mit `REVOKE ALL`; der Dateiname muss dahinter sortieren (`R__runtime_grants_<wp>.sql`, nicht `R__grants_<wp>.sql`), sonst gehen die Rechte auf frischen Datenbanken verloren.
 - **Rollenmatrix und Tabellenbesitz:** je Arbeitspaket eine eigene Datei `db/role_matrix.d/<wp>.csv` und `db/table_owners.d/<wp>.csv`; Tabellennamen dürfen nicht doppelt vorkommen.
 
 ## Umgebungskennung und Dump-Import (WP-M1-40)

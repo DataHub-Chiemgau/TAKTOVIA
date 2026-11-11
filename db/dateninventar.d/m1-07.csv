@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+role_catalog;role_code;nein;ZUGANG_ROLLEN;;;;
+role_catalog;label_de;nein;ZUGANG_ROLLEN;;;;
+role_catalog;placeholder;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;id;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;matrix_version;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;matrix_sha256;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;previous_sha256;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;role_count;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;operation_count;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;rolled_out_at;nein;ZUGANG_ROLLEN;;;;
+rights_matrix_rollout;rolled_out_by;nein;ZUGANG_ROLLEN;;;;

@@ -46,7 +46,8 @@ class BackendStartTest {
     @Test
     fun `nur health ist exponiert und es gibt keine Fachendpunkte`() {
         assertEquals(404, get("/actuator/env").statusCode())
-        assertEquals(404, get("/v1/me").statusCode())
+        assertEquals(404, get("/v1/gibt-es-nicht").statusCode())
+        assertEquals(401, get("/v1/me").statusCode(), "ohne Anmeldung kein Kontext: deny-by-default (WP-M1-06)")
     }
 
     @Test

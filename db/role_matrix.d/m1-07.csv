@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+role_catalog;SELECT;WP-M1-07: globaler Rollenkatalog, nur per Migration gepflegt
+rights_matrix_rollout;SELECT,INSERT;WP-M1-07: Protokoll des Ausrollens der Rechtematrix, nur anhängen (Trigger rights_matrix_rollout_immutable)

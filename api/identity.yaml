@@ -663,6 +663,26 @@ components:
             - tenant_id
             - name
           maxItems: 100
+        scopes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 200
+          description: Wirksame Funktionsscopes des aktiven Mandanten, abgeleitet aus den Rollen der Mitgliedschaft über die Rechtematrix. Nur
+            zur Anzeige (Navigation); die Prüfung erfolgt serverseitig bei jeder Anfrage.
+        context_token:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: 'Nur in der Antwort des Tenantwechsels: serverseitig signierte Kontextbindung (Mandant und optional Dienst, an Konto und
+            Sitzung gebunden). Der Client sendet sie als Header X-Taktovia-Context, je Tab/Client ein eigener Wert. Sie verleiht keine Rechte; die
+            Mitgliedschaft wird bei jeder Anfrage erneut geprüft.'
+        context_expires_at:
+          type: string
+          format: date-time
+          description: Ablauf von context_token.
       required:
       - subject
       - issuer
@@ -681,7 +701,7 @@ components:
         tenant_id: 00000000-0000-4000-8000-000000000001
         tenant_name: Stadtwerke Beispiel
         roles:
-        - DISPATCHER
+        - dispatcher
         service_scope: null
         session_id: 00000000-0000-4000-8000-000000000002
         mfa: true
@@ -694,9 +714,12 @@ components:
       properties:
         tenant_id:
           $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
       required:
       - tenant_id
-      description: Wechsel in einen Mandanten, in dem eine gültige Mitgliedschaft besteht; sonst 404.
+      description: Wechsel in einen Mandanten, in dem eine aktuelle Mitgliedschaft besteht, optional mit einem für diese Mitgliedschaft freigegebenen
+        Dienst (service_scope); sonst einheitlich 403. tenant_id ist die gewünschte Auswahl, kein Nachweis.
       examples:
       - tenant_id: 00000000-0000-4000-8000-000000000001
     Membership:
@@ -724,6 +747,16 @@ components:
               $ref: common.yaml#/components/schemas/UUID
             maxItems: 500
           - type: 'null'
+        valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit (zeitlich begrenzte Mitgliedschaft, OP-04).
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit; null = unbefristet.
         revoked_at:
           oneOf:
           - type: string
@@ -756,8 +789,21 @@ components:
           maxLength: 200
         role_code:
           type: string
-          minLength: 1
+          minLength: 2
           maxLength: 64
+          enum:
+          - passenger
+          - driver
+          - callcenter
+          - support
+          - dispatcher
+          - planner
+          - tenant_admin
+          - finance
+          - staff_planning
+          - workshop
+          description: Rollencode des Rollenkatalogs (WP-M1-07, IAM-004); die Pflichtrollen sind Fahrgast, Fahrer, Callcenter, Support, Disponent, Verkehrsplaner
+            und Administrator, finance, staff_planning und workshop sind Platzhalter für M3/M4 (OP-10).
         service_scope:
           oneOf:
           - type: array
@@ -765,6 +811,16 @@ components:
               $ref: common.yaml#/components/schemas/UUID
             maxItems: 500
           - type: 'null'
+        valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit; Standard jetzt.
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit; null oder fehlend = unbefristet. Muss nach valid_from liegen.
       required:
       - issuer
       - subject
@@ -772,7 +828,7 @@ components:
       examples:
       - issuer: https://identity.taktovia.example/realms/taktovia
         subject: user-4712
-        role_code: DISPATCHER
+        role_code: dispatcher
     LegalEntity:
       type: object
       additionalProperties: false

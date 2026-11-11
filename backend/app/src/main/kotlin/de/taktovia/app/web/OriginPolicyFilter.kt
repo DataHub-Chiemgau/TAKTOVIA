@@ -19,7 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 class OriginPolicyFilter(allowedOrigins: Collection<String>, private val problems: ProblemWriter) : OncePerRequestFilter() {
     private val allowed = allowedOrigins.map { normalize(it) ?: error("ungültige CORS-Herkunft: $it") }.toSet()
     private val allowedMethods = "GET, POST, PUT, PATCH, DELETE"
-    private val allowedHeaders = setOf("authorization", "content-type", "if-match", "idempotency-key", "traceparent", "accept")
+    private val allowedHeaders = setOf("authorization", "content-type", "if-match", "idempotency-key", "traceparent", "accept", "x-taktovia-context")
     private val safe = setOf("GET", "HEAD", "OPTIONS")
 
     override fun shouldNotFilter(request: HttpServletRequest) = !request.requestURI.startsWith("/v1/")
@@ -44,7 +44,7 @@ class OriginPolicyFilter(allowedOrigins: Collection<String>, private val problem
         if (preflight) {
             response.status = HttpServletResponse.SC_NO_CONTENT
             response.setHeader("Access-Control-Allow-Methods", allowedMethods)
-            response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, traceparent, Accept")
+            response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, traceparent, Accept, X-Taktovia-Context")
             response.setHeader("Access-Control-Max-Age", "600")
             return
         }

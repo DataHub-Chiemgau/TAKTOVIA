@@ -1,0 +1,8 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+membership;valid_from;nein;ZUGANG_ROLLEN;;;;
+membership;valid_to;nein;ZUGANG_ROLLEN;;;;
+membership;revision;nein;ZUGANG_ROLLEN;;;;
+membership;created_at;nein;ZUGANG_ROLLEN;;;;
+membership_subject_index;tenant_id;nein;ZUGANG_ROLLEN;;;;
+membership_subject_index;issuer;nein;ZUGANG_ROLLEN;;;;
+membership_subject_index;subject;ja;ZUGANG_ROLLEN;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_STAMM;Kennung des Nutzers beim Identitätsanbieter, nur zur Mandantenermittlung vor dem Tenantkontext

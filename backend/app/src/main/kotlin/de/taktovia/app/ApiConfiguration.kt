@@ -11,6 +11,7 @@ import de.taktovia.app.web.RateLimitFilter
 import de.taktovia.app.web.RemoteAddressIdentity
 import de.taktovia.app.web.RequestIdentityResolver
 import de.taktovia.app.web.RequestLimits
+import de.taktovia.app.web.RequestBodyInspector
 import de.taktovia.app.web.RequestValidationFilter
 import de.taktovia.app.web.SecurityHeadersFilter
 import de.taktovia.platform.api.CursorCodec
@@ -122,8 +123,8 @@ class ApiConfiguration {
     @Bean fun rateLimitFilter(limiter: RateLimiter, identity: ObjectProvider<RequestIdentityResolver>, problems: ProblemWriter) =
         FilterRegistrationBean(RateLimitFilter(limiter, { identity.getIfAvailable { RemoteAddressIdentity } }, problems)).apply { order = Ordered.HIGHEST_PRECEDENCE + 10 }
 
-    @Bean fun requestValidationFilter(registry: OpenApiRegistry, limits: RequestLimits, problems: ProblemWriter, apiJson: JsonMapper) =
-        FilterRegistrationBean(RequestValidationFilter(registry, limits, problems, apiJson)).apply { order = Ordered.HIGHEST_PRECEDENCE + 20 }
+    @Bean fun requestValidationFilter(registry: OpenApiRegistry, limits: RequestLimits, problems: ProblemWriter, apiJson: JsonMapper, inspectors: ObjectProvider<RequestBodyInspector>) =
+        FilterRegistrationBean(RequestValidationFilter(registry, limits, problems, apiJson, inspectors.orderedStream().toList())).apply { order = Ordered.HIGHEST_PRECEDENCE + 20 }
 }
 
 /** Erweiterungspunkt für weitere semantische Schema-Schlüsselwörter (z. B. `x-time`, WP-M1-18). */

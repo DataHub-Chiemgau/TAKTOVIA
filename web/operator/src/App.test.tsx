@@ -67,10 +67,7 @@ describe('operator Anwendungsrahmen', () => {
     expect(screen.queryByRole('heading', { name: 'Datenschutz, Audit, Support' })).toBeNull();
   });
 
-  it.each([
-    ['/admin/gebiete', 'Gebiete, Stops, Tarife', 'UI-17'],
-    ['/admin/kooperation', 'Kooperation und Rollen', 'UI-18'],
-  ])(
+  it.each([['/admin/gebiete', 'Gebiete, Stops, Tarife', 'UI-17']])(
     'Adminbereich %s ist ein Grundgerüst mit Leerzustand und benennt Mandant, Dienst, Status, Datenstand',
     async (path, title, ui) => {
       const { container } = setup(['ADMIN'], path);

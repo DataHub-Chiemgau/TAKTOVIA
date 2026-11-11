@@ -39,6 +39,29 @@ class TenantTransactions(dataSource: DataSource) {
     }
 
     /**
+     * Transaktion **ohne** Mandanten- oder Subjektkontext für globale Plattformtabellen ohne `tenant_id` (z. B. Ausrollprotokoll der
+     * Rechtematrix, WP-M1-07). Mandantenlokale Tabellen bleiben dabei durch RLS unsichtbar. Nicht für Fachoperationen verwenden.
+     */
+    fun <T> runGlobal(block: (JdbcOperations) -> T): T {
+        @Suppress("UNCHECKED_CAST")
+        return TransactionTemplate(tx.transactionManager!!).execute { block(jdbc) } as T
+    }
+
+    /**
+     * Lookup vor gesetztem Tenantkontext (WP-M1-06, OP-06): setzt **transaktionslokal** `app.subject_key` auf das geprüfte Subject
+     * (`issuer`, `subject` aus dem verifizierten Token). Nur damit liefert `membership_subject_index` Zeilen, und zwar ausschließlich die
+     * dieses Subjects. Es gibt keinen Tenantkontext; alle anderen Tabellen bleiben unsichtbar. Nur für den Identitätsbaustein gedacht.
+     */
+    fun <T> runForSubject(issuer: String, subject: String, block: (JdbcOperations) -> T): T {
+        val t = TransactionTemplate(tx.transactionManager!!).also { it.isReadOnly = true }
+        @Suppress("UNCHECKED_CAST")
+        return t.execute {
+            jdbc.queryForObject("SELECT set_config('app.subject_key', ?, true)", String::class.java, issuer + "\n" + subject)
+            block(jdbc)
+        } as T
+    }
+
+    /**
      * Worker-/Batchvariante: iteriert begrenzt über die übergebenen Mandanten, je Mandant eine eigene Transaktion mit
      * neuem Kontext. Ein Fehler bei einem Mandanten bricht dessen Transaktion ab und lässt keinen Kontext zurück;
      * die Fehler werden gesammelt zurückgegeben, die übrigen Mandanten laufen weiter.

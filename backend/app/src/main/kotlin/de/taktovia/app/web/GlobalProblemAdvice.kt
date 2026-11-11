@@ -49,6 +49,8 @@ class GlobalProblemAdvice(private val problems: ProblemWriter) {
 
     private fun map(e: Exception, request: HttpServletRequest): ProblemException = when (e) {
         is ProblemException -> e
+        // Die Mitgliedschaft des Kontexts wurde zwischen Anfragefilter und Fachtransaktion entzogen (WP-M1-06): 403 ohne Details.
+        is de.taktovia.platform.context.ContextRevokedException -> ProblemException(ErrorCode.FORBIDDEN)
         is NoResourceFoundException, is NoHandlerFoundException -> ProblemException(ErrorCode.NOT_FOUND)
         is HttpRequestMethodNotSupportedException ->
             ProblemException(ErrorCode.METHOD_NOT_ALLOWED, headers = e.supportedMethods?.let { mapOf("Allow" to it.joinToString(", ")) } ?: emptyMap())

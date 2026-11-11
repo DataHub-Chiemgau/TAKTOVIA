@@ -29,7 +29,7 @@ import db as dbtool  # noqa: E402
 MARKER = 'taktovia_meta.environment_marker'
 VALUES = ('development', 'staging', 'performance', 'production')
 # Tabellen, deren Inhalt die Migrationen selbst anlegen (Kennung, Historie, Waehrungskatalog): ihre Daten werden nie aus einem Dump uebernommen
-MIGRATION_OWNED = r'TABLE DATA (taktovia_meta (environment_marker|schema_history)|taktovia (currency|state_transition_rule)) '
+MIGRATION_OWNED = r'TABLE DATA (taktovia_meta (environment_marker|schema_history)|taktovia (currency|state_transition_rule|role_catalog|rights_matrix_rollout)) '
 LOCK_KEY = 4_0_1_2  # Advisory-Lock "Import" je Datenbank
 
 

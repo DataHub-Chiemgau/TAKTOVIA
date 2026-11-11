@@ -54,8 +54,8 @@ class ContractCoverageTest {
         // Negativ: zwei Routen auf dieselbe operationId; dokumentierte Operation ohne Route und ohne Pending-Eintrag; gebaute Operation noch in Pending
         val dup = RouteContract.verify(routes(probe) + RegisteredRoute("GET", "/v1/probe/items/{andere_id}"), probe.registry, pending)
         assertTrue(dup.errors.any { it.contains("getProbeItem") && it.contains("doppelt") }, dup.errors.toString())
-        val missingPending = RouteContract.verify(routes(probe), probe.registry, pending - "getMe")
-        assertTrue(missingPending.errors.any { it.contains("getMe") && it.contains("nicht in contract-pending.txt") }, missingPending.errors.toString())
+        val missingPending = RouteContract.verify(routes(probe), probe.registry, pending - "getOffer")
+        assertTrue(missingPending.errors.any { it.contains("getOffer") && it.contains("nicht in contract-pending.txt") }, missingPending.errors.toString())
         val staleness = RouteContract.verify(routes(probe), probe.registry, pending + "getProbeItem")
         assertTrue(staleness.errors.any { it.contains("getProbeItem") && it.contains("gebaut") }, staleness.errors.toString())
     }

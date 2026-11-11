@@ -3,6 +3,7 @@ import { AppFrame, ErrorState, ScreenFrame, StateView, visibleNav } from '@takto
 import type { NavLinkProps } from '@taktovia/design-system';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
+import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
 import { useScreenContext } from './ScreenContext';
@@ -140,11 +141,7 @@ export function App() {
           path="/admin/kooperation"
           element={
             <RequireRight right="admin.ui18">
-              <PlaceholderScreen
-                title="Kooperation und Rollen"
-                emptyTitle="Noch keine Mitgliedschaften oder Kooperationen"
-                hint="UI-18: Grants erteilen und entziehen folgt mit Mitgliedschaft und Organisation."
-              />
+              <MembershipAdmin />
             </RequireRight>
           }
         />

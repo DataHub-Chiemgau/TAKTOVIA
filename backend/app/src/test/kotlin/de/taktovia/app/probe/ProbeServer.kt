@@ -50,7 +50,7 @@ class ProbeServer private constructor(val ctx: ConfigurableApplicationContext) {
 
         /** Die Anwendung ohne Prüf-Endpunkte und ohne Zusatzverträge: genau die produktiven Routen. */
         @Synchronized
-        fun production(): ProbeServer = start(false, emptyList())
+        fun production(vararg props: String): ProbeServer = start(false, props.toList())
 
         private fun start(probe: Boolean, props: List<String>): ProbeServer {
             TaktoviaTestSupport.requireDatabase()

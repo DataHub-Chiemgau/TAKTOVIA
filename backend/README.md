@@ -54,3 +54,20 @@ Jede Anfrage außer `/actuator/health` braucht ein gültiges Bearer-Token (`secu
 | `service-clients.<client>` (Scope-Obergrenze je Adapter) | – (kein Dienstkonto zugelassen) |
 
 `EnvironmentGuard`: `taktovia.environment` (`local`=`development`, `staging`, `performance`, `production`) muss der unveränderlichen Umgebungskennung der Datenbank entsprechen, sonst kein Start. Die bestehenden Gerüsttests laufen mit `taktovia.idp.enabled=false` (Testkonfiguration); die Sicherheitstests starten die Anwendung gegen einen lokalen JWT-Test-Issuer (`TestIdp`).
+
+## Identität, Anfragekontext und Mandantenwechsel (WP-M1-06)
+
+Nach der Token-Prüfung bildet der `RequestContextFilter` (`app.identity`) je Anfrage den unveränderlichen `platform.context.RequestContext`: der Mandant folgt **nur** aus einer serverseitig geprüften aktiven Mitgliedschaft (`membership`, Modul `identity`), nie aus Header, Pfad, Query oder Body. Abweichende Tenant-Angaben ergeben 404 plus Sicherheitsereignis, fehlende Mitgliedschaft oder fehlender Funktionsscope 403 ohne Details. Fachoperationen laufen über `platform.context.ContextTransactions` (Mitgliedschaft in derselben Transaktion erneut prüfen, schreibend mit `FOR SHARE`), damit ein Widerruf linearisiert wirkt. Endpunkte: `/v1/me`, `/v1/me/tenant-switch`, `/v1/memberships`. Vertrag: [identitaet-kontext.md](../docs/umsetzungsplan/vertraege/identitaet-kontext.md).
+
+| Einstellung (`taktovia.identity.…`, Planungsdefaults) | Standard |
+|---|---|
+| `context-secret` (mind. 32 Byte; Signatur der Mandantenbindung; ohne Wert zufällig je Instanz, nur für Entwicklung) | – |
+| `context-ttl-seconds` (Gültigkeit der Mandantenbindung) | 3600 |
+
+Für andere Module: `RequestContext` aus `platform.context` verwenden und Datenbankzugriffe über `ContextTransactions.run(ctx) { jdbc -> … }`; den Mandanten nie aus Anfrage-DTOs lesen (Architekturregel `RequestContextRules`: kein `tenant_id` in `*Request`-DTOs oder `@RequestBody`-Typen, Kontexte entstehen nur im Filter).
+
+## Rollenmodell und Rechtematrix (WP-M1-07)
+
+Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `planner`, `tenant_admin` plus Platzhalter `finance`, `staff_planning`, `workshop`) und die versionierte **Rechtematrix** `modules/identity/src/main/resources/rechtematrix/rechtematrix.csv` sind die einzige Rechtequelle: Funktionsscopes folgen aus der Matrix, die zentrale Autorisierung (`identity.api.Authorizer`) entscheidet im `RequestContextFilter`. Eine Operation der API-Verträge ohne Matrixzeile lässt den Build scheitern; Änderungen der Matrix brauchen Versionsanhebung und `rechtematrix.lock` und werden beim Start in `rights_matrix_rollout` protokolliert. Der Administrator hat keinen Zugriff auf PII-/HR-/Finanz-Tätigkeiten ohne gesonderte Fachrolle. Details und offene Punkte (OP-10): [rechtematrix.md](../docs/umsetzungsplan/vertraege/rechtematrix.md).
+
+**Neue Route bauen:** Operation in `api/<modul>.yaml` mit `security: oidc: [<scope>]` deklarieren, Zeile in `rechtematrix.csv` ergänzen (Scope muss zu den übrigen Zeilen desselben Scopes passen), `# matrix_version` erhöhen und `rechtematrix.lock` erneuern (Test nennt den `sha256`-Wert).
