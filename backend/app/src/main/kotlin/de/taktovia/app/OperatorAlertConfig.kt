@@ -2,7 +2,6 @@ package de.taktovia.app
 
 import de.taktovia.platform.alert.AlertChannel
 import de.taktovia.platform.alert.HttpsWebhookChannel
-import de.taktovia.platform.alert.OperatorAlertPort
 import de.taktovia.platform.alert.OperatorAlertService
 import de.taktovia.platform.secret.SecretRef
 import de.taktovia.platform.secret.SecretResolver
@@ -36,7 +35,4 @@ class OperatorAlertConfig {
             .scheduleWithFixedDelay({ runCatching { svc.flush() } }, 5, 5, TimeUnit.SECONDS)
         return svc
     }
-
-    @Bean
-    fun operatorAlertPort(svc: OperatorAlertService): OperatorAlertPort = svc
 }
