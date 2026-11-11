@@ -98,6 +98,8 @@ def _seed_runtime_rows(dbname, label, ids):
         c.close()
 
 
+# Spalten, die die Datenbank mit der Uhrzeit des Einfügens belegt: gehören nicht zum deterministischen Datenstand.
+CLOCK_COLUMNS = {"created_at", "updated_at", "roles_valid_from", "valid_from"}
 STATE_COLUMNS = {"passenger_private": "tenant_id, id, subject_token, retention_until"}
 
 
@@ -115,7 +117,8 @@ def data_state(dbname):
                 # passenger_private: die Runtime-Rolle sieht die Ciphertext-Spalten nicht (WP-M1-31), also nur die freigegebenen Spalten hashen
                 src = f"(SELECT {STATE_COLUMNS[t]} FROM taktovia.{t})" if t in STATE_COLUMNS else f"taktovia.{t}"
                 rows = c.execute(f"SELECT row_to_json(t)::text FROM {src} t WHERE {col} = ANY(%s::uuid[]) ORDER BY {col}", (own,)).fetchall()
-                h.update(json.dumps([t, [json.loads(r[0]) for r in rows]], sort_keys=True).encode())
+                decoded = [{k: v for k, v in json.loads(r[0]).items() if k not in CLOCK_COLUMNS} for r in rows]
+                h.update(json.dumps([t, decoded], sort_keys=True).encode())
         finally:
             c.close()
     return h.hexdigest()

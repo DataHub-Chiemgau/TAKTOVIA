@@ -103,6 +103,10 @@ def sample(doc, schema, depth=0):
         out = {}
         for name in node.get('required', []):
             out[name] = sample(doc, node['properties'][name], depth + 1)
+        for name, sub in node.get('properties', {}).items():     # minProperties: fehlende Eigenschaften mit gültigen Mustern auffüllen
+            if len(out) >= node.get('minProperties', 0):
+                break
+            out.setdefault(name, sample(doc, sub, depth + 1))
         return out
     if t == 'array':
         n = max(node.get('minItems', 0), 0)
