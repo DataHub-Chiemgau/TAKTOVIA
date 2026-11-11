@@ -20,7 +20,7 @@ class PlatformPortsConfig {
     fun auditPort(): AuditPort = JdbcAuditPort()
 
     @Bean @ConditionalOnMissingBean
-    fun securityEventPort(audit: AuditPort) = SecurityEventPort(audit)
+    fun securityEventPort(audit: AuditPort, tx: TenantTransactions) = SecurityEventPort(audit, tx)
 
     @Bean @ConditionalOnMissingBean
     fun outbox() = Outbox()

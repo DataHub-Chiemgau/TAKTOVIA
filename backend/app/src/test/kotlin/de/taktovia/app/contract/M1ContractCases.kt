@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Vertragsfälle der produktiven Endpunkte. Wer einen Endpunkt aus `api/<modul>.yaml` baut, streicht seine `operationId` aus
  * `api/contract-pending.txt` und trägt hier einen [ContractCase] mit positivem Fall und Fehlerfall ein; ohne Eintrag
- * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil), WP-M1-34 (Fahrzeugrollen). Sitzungen (WP-M1-10, `sessionCases`).
+ * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil), WP-M1-34 (Fahrzeugrollen). Sitzungen (WP-M1-10, `sessionCases`). WP-M1-12 (listAuditEvents).
  * Fälle, die eine Anmeldung brauchen, laufen gegen die Instanz mit Ressourcenserver und Test-Issuer ([IdentityEnv]).
  */
 object M1ContractCases {
@@ -37,6 +37,9 @@ object M1ContractCases {
         ContractCase("revokeMembership",
             204, { val w = World(); val m = w.env.grant(w.tenant, UUID.randomUUID(), "support"); ContractRequest("DELETE", "/v1/memberships/$m", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) },
             404, { val w = World(); ContractRequest("DELETE", "/v1/memberships/${UUID.randomUUID()}", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("listAuditEvents",
+            200, { val w = World(); ContractRequest("GET", "/v1/audit-events?limit=10&purpose=security_review", headers = w.env.headers(w.adminToken)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/audit-events?purpose=security_review", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
     )
 
     private fun legalEntity(w: World): String =

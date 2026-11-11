@@ -14,6 +14,11 @@ value class TenantId(val value: UUID) {
     companion object { fun parse(s: String) = TenantId(UUID.fromString(s)) }
 }
 
+/** Reservierte Plattformmandanten (WP-M1-12): der Systemmandant trägt Ereignisse ohne Mandantenkontext, ist `SUSPENDED` und nie Fachmandant. Der Plattformbetrieb legt ihn an (`python db/db.py provision-system-tenant`); die Runtime-Rolle kann keine Mandanten anlegen. */
+object PlatformTenants {
+    val SYSTEM = TenantId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+}
+
 /**
  * Führt Fachoperationen in genau einer Transaktion mit genau einem Mandantenkontext aus (Kap. 04 §4.6, WP-M1-01).
  *

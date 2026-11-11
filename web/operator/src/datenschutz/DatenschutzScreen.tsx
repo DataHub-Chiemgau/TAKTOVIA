@@ -1,13 +1,17 @@
 import { ResourceView, ScreenFrame } from '@taktovia/design-system';
 import type { ResourceState } from '@taktovia/design-system';
 import { useEffect, useState } from 'react';
+import { AuditList } from '../audit/AuditList';
 import { useScreenContext } from '../ScreenContext';
 import { DateninventarExport } from './DateninventarExport';
 import type { Dateninventar } from './DateninventarExport';
 
-/** UI-20 Basis (Datenschutz, Audit, Support): bisher der Export des Dateninventars; Audit und Fälle folgen mit WP-M1-12/-33/-42. */
+/** UI-20 Basis (Datenschutz, Audit, Support): Export des Dateninventars und lesende Auditliste mit Zweckangabe (WP-M1-12); Fälle folgen mit WP-M1-33/-42. */
 export function DatenschutzScreen() {
-  const context = useScreenContext({ tone: 'info', label: 'Basis: nur lesender Inventar-Export' });
+  const context = useScreenContext({
+    tone: 'info',
+    label: 'Basis: lesender Inventar-Export und Auditliste',
+  });
   const [state, setState] = useState<ResourceState<Dateninventar>>({ status: 'loading' });
 
   useEffect(() => {
@@ -37,6 +41,7 @@ export function DatenschutzScreen() {
       >
         {(d) => <DateninventarExport inventar={d} />}
       </ResourceView>
+      <AuditList />
     </ScreenFrame>
   );
 }

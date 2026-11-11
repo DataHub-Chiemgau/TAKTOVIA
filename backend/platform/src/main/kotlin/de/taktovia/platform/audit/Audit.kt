@@ -81,15 +81,25 @@ object AuditActions {
     const val SECURITY_SESSION_LOGOUT = "security.session.logout"
     const val SECURITY_SESSION_LOGOUT_ALL = "security.session.logout_all"
     const val SECURITY_SESSION_REVOKED = "security.session.revoked"
-    const val SECURITY_ACCOUNT_LOCKED = "security.account.locked"
-    const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
     const val SECURITY_ACCOUNT_RECOVERY_STARTED = "security.account.recovery_started"
     const val SECURITY_ACCOUNT_RECOVERY_DENIED = "security.account.recovery_denied"
+    // WP-M1-12: Anmeldeereignisse des IdP (Keycloak-Ereignisschnittstelle), Sperre und der Auditzugriff selbst.
+    const val SECURITY_LOGIN_SUCCEEDED = "security.auth.login_succeeded"
+    const val SECURITY_LOGIN_FAILED = "security.auth.login_failed"
+    const val SECURITY_LOGOUT = "security.auth.logout"
+    /** Zweiter Faktor falsch eingegeben (WP-M1-04), im Unterschied zu [SECURITY_MFA_MISSING] (zweiter Faktor fehlt im Token). */
+    const val SECURITY_MFA_FAILED = "security.auth.mfa_failed"
+    /** Sitzung oder Konto gesperrt bzw. entsperrt (WP-M1-10). */
+    const val SECURITY_ACCOUNT_LOCKED = "security.account.locked"
+    const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
+    /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
+    const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
         SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,
-        SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED)
+        SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED,
+        SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, AUDIT_READ)
 }
 
 /**

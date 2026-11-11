@@ -12,14 +12,56 @@ paths:
       - name: object_ref
         in: query
         required: false
+        description: Objekt, Format `<typ>:<kennung>` (exakt).
         schema:
           type: string
           minLength: 1
           maxLength: 256
+      - name: actor_ref
+        in: query
+        required: false
+        description: Akteur, Format `<art>:<kennung>` (exakt).
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - name: action
+        in: query
+        required: false
+        description: Aktion, Format `bereich.objekt.verb` (exakt).
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - name: from
+        in: query
+        required: false
+        description: Beginn des Zeitraums (einschließlich), UTC-Zeitpunkt mit Offset.
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: false
+        description: Ende des Zeitraums (einschließlich), UTC-Zeitpunkt mit Offset.
+        schema:
+          type: string
+          format: date-time
+      - name: purpose
+        in: query
+        required: true
+        description: Zweck der Abfrage (Pflicht). Ohne gültigen Zweck wird nicht gelesen (422). Der Zugriff wird selbst auditiert (`audit.events.read`).
+        schema:
+          type: string
+          enum:
+          - security_review
+          - incident_response
+          - support_case
+          - compliance_check
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
-          description: Erfolgreich.
+          description: Erfolgreich. Sortierung nach `occurred_at`, `id` aufsteigend; nur Zeilen des Mandanten des Kontexts.
           content:
             application/json:
               schema:
@@ -231,6 +273,10 @@ components:
           format: date-time
         correlation_id:
           $ref: common.yaml#/components/schemas/UUID
+        redacted_changes:
+          type: object
+          description: Maskierte Änderungen nach `audit-redacted-changes.v1`; nie Passwörter, Token oder Inhalte anderer Mandanten.
+          additionalProperties: true
       required:
       - id
       - actor_ref

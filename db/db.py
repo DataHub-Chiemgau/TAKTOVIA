@@ -4,6 +4,7 @@
   db.py bootstrap   als Administrator: Rollen, Datenbank, PostGIS (einmalig, idempotent)
   db.py migrate     als Migrator: V*.sql in Versionsreihenfolge, R__*.sql bei geänderter Prüfsumme
   db.py reset       als Administrator: Datenbank verwerfen und neu bootstrappen
+  db.py provision-system-tenant   als Administrator: reservierten Systemmandanten für Auditereignisse ohne Mandant anlegen (WP-M1-12, idempotent)
   db.py import-dump <datei>   Dump nach Importpruefung einspielen (WP-M1-40: Produktionsdump nie in Nicht-Produktion), siehe dumpguard.py
 
 Konfiguration ausschließlich über Umgebungsvariablen (keine Secrets im Repository):
@@ -118,6 +119,18 @@ def reset():
     bootstrap()
 
 
+SYSTEM_TENANT = '00000000-0000-0000-0000-000000000001'
+
+
+def provision_system_tenant():
+    """WP-M1-12 (OP-14): legt den reservierten Systemmandanten für Auditereignisse ohne Mandantenkontext an (idempotent, Plattformbetrieb).
+    Status SUSPENDED: nie Fachmandant, kein Wechsel, keine Mitgliedschaft."""
+    with admin(env('TAKTOVIA_DB_NAME', 'taktovia')) as c:
+        c.execute("SELECT set_config('app.tenant_id', %s, false)", (SYSTEM_TENANT,))
+        c.execute("INSERT INTO taktovia.tenant(id,name,status) VALUES (%s,'platform-system','SUSPENDED') ON CONFLICT (id) DO NOTHING", (SYSTEM_TENANT,))
+    print('Systemmandant bereitgestellt')
+
+
 def import_dump():
     import dumpguard
     sys.exit(dumpguard.main(sys.argv[2:]))
@@ -125,4 +138,5 @@ def import_dump():
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
-    {'bootstrap': bootstrap, 'migrate': migrate, 'reset': reset, 'import-dump': import_dump}.get(cmd, lambda: sys.exit(__doc__))()
+    {'bootstrap': bootstrap, 'migrate': migrate, 'reset': reset, 'import-dump': import_dump,
+            'provision-system-tenant': provision_system_tenant}.get(cmd, lambda: sys.exit(__doc__))()

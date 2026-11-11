@@ -27,7 +27,8 @@ def scan(dbname, allow_environments=('development',)):
         if len(mark) != 1 or mark[0][0] not in allow_environments:
             found.append(f'Umgebungskennung {mark[0][0] if mark else None!r} ist keine Entwicklungsumgebung ({", ".join(allow_environments)})')
         checks = [
-            ('tenant', 'SELECT id::text, name FROM taktovia.tenant', lambda r: SYNTHETIC_NAME.search(r[1]), 'Name ohne Synthetik-Markierung'),
+            ('tenant', "SELECT id::text, name FROM taktovia.tenant WHERE id <> '00000000-0000-0000-0000-000000000001'",   # reservierter Systemmandant (V1120, WP-M1-12)
+             lambda r: SYNTHETIC_NAME.search(r[1]), 'Name ohne Synthetik-Markierung'),
             ('legal_entity', 'SELECT id::text, name FROM taktovia.legal_entity', lambda r: SYNTHETIC_NAME.search(r[1]), 'Name ohne Synthetik-Markierung'),
             ('organization', 'SELECT id::text, name FROM taktovia.organization', lambda r: SYNTHETIC_NAME.search(r[1]), 'Name ohne Synthetik-Markierung'),
             ('passenger_private', 'SELECT id::text, subject_token, contact_ciphertext IS NOT NULL OR support_ciphertext IS NOT NULL FROM taktovia.passenger_private',
