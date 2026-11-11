@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -708,6 +708,11 @@ export interface TenantStatusChanged {
   status: TenantStatus;
 }
 
+export interface PassengerSupportNeeds {
+  passenger_id: UUID;
+  codes: ('BOARDING_HELP' | 'AUDIO_GUIDANCE' | 'LOW_FLOOR' | 'WHEELCHAIR_SPACE' | 'ASSISTANCE_ANIMAL' | 'ACCOMPANYING_PERSON')[];
+}
+
 export interface Passenger {
   id: UUID;
   status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'BLOCKED';
@@ -831,12 +836,14 @@ export interface WebhookSubscription {
   url: string;
   event_types: string[];
   active: boolean;
+  secret_ref: string;
   revision: number;
 }
 
 export interface WebhookSubscriptionCreate {
   url: string;
   event_types: string[];
+  secret_ref?: string;
 }
 
 export interface WebhookSubscriptionPage {
@@ -1175,6 +1182,13 @@ export interface Operations {
     body: PassengerRegistration;
     response: Passenger;
   };
+  getPassengerSupportNeeds: {
+    path: { passenger_id: UUID };
+    query: Record<string, never>;
+    headers: { 'X-Access-Purpose': 'BOOKING_ASSISTANCE' | 'SUPPORT_CASE' | 'TRANSPORT_PLANNING'; traceparent?: string };
+    body: undefined;
+    response: PassengerSupportNeeds;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string };
@@ -1287,6 +1301,20 @@ export interface Operations {
     body: WebhookSubscriptionCreate;
     response: WebhookSubscription;
   };
+  getWebhookSubscription: {
+    path: { subscription_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: WebhookSubscription;
+  };
+  deactivateWebhookSubscription: {
+    path: { subscription_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: WebhookSubscription;
+  };
 }
 
 export type OperationId = keyof Operations;
@@ -1350,6 +1378,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   changeTenantStatus: { method: 'POST', path: '/v1/platform/tenant-status-changes', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['platform:tenants:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createConfigRevision: { method: 'POST', path: '/v1/config/revisions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['config:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
@@ -1366,4 +1395,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getWebhookSubscription: { method: 'GET', path: '/v1/webhook-subscriptions/{subscription_id}', pathParams: ['subscription_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  deactivateWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions/{subscription_id}/deactivate', pathParams: ['subscription_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['webhooks:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
 };

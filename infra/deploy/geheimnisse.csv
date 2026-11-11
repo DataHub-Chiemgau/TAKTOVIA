@@ -7,3 +7,5 @@ objectstore_credential;backend/app;Laufzeit;nur Laufzeit;Geheimnisverwaltung der
 keycloak_admin_credential;Betrieb/Realm-Import;Bereitstellung (Realm);nur Bereitstellung;Geheimnisverwaltung der Umgebung
 adapter_client_secrets;Adapter (Client Credentials);Laufzeit;nur Laufzeit je Adapter;Geheimnisverwaltung der Umgebung
 image_signature_key;Signaturpruefung;Signaturpruefung;nur oeffentlicher Schluessel/Identitaetsregel, kein Geheimnis;Konfiguration
+db_fields_credential;backend/app (Feldschutzbaustein);Laufzeit;nur Laufzeit (Modulzugang taktovia_fields, WP-M1-31);Geheimnisverwaltung der Umgebung
+field_kek;backend/app (Feldschutzbaustein);Laufzeit;nur Laufzeit (Schluesselverschluesselungsschluessel je Kennung, WP-M1-31);Geheimnisverwaltung der Umgebung

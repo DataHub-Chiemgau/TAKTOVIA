@@ -74,6 +74,11 @@ object AuditActions {
     const val WEBHOOK_SUBSCRIPTION_DEACTIVATED = "webhook.subscription.deactivated"
     const val PROMISE_SNAPSHOT_BOUND = "promise.snapshot.bound"
     const val PROMISE_SNAPSHOT_CHANGED = "promise.snapshot.changed"
+    /** Lesezugriff auf ein geschütztes Fahrgastfeld mit Zweck (WP-M1-31, SEC-005): `<feld>.read`; Details Akteur, Zweck. */
+    const val PASSENGER_SUPPORT_NEEDS_READ = "passenger.support_needs.read"
+    const val PASSENGER_CONTACT_READ = "passenger.contact.read"
+    /** Eingabe mit kartennummernähnlichem Muster abgewiesen (WP-M1-37, SEC-008); nie mit dem Wert. */
+    const val SECURITY_CARD_DATA_REJECTED = "security.input.card_data_rejected"
     const val SECURITY_TENANT_MISMATCH = "security.tenant.mismatch"
     const val SECURITY_PAYLOAD_HASH_MISMATCH = "security.event.payload_hash_mismatch"
     const val SECURITY_RECIPIENT_MISMATCH = "security.event.recipient_mismatch"
@@ -98,7 +103,7 @@ object AuditActions {
     /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
     const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
-        WEBHOOK_SUBSCRIPTION_CREATED, WEBHOOK_SUBSCRIPTION_DEACTIVATED,
+        WEBHOOK_SUBSCRIPTION_CREATED, WEBHOOK_SUBSCRIPTION_DEACTIVATED, PASSENGER_SUPPORT_NEEDS_READ, PASSENGER_CONTACT_READ, SECURITY_CARD_DATA_REJECTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
         SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,

@@ -9,7 +9,7 @@
 
 Konfiguration ausschließlich über Umgebungsvariablen (keine Secrets im Repository):
   TAKTOVIA_DB_HOST/PORT/NAME, TAKTOVIA_DB_ADMIN_USER/PASSWORD,
-  TAKTOVIA_DB_MIGRATOR_PASSWORD, TAKTOVIA_DB_RUNTIME_PASSWORD,
+  TAKTOVIA_DB_MIGRATOR_PASSWORD, TAKTOVIA_DB_RUNTIME_PASSWORD, TAKTOVIA_DB_FIELDS_PASSWORD (Modulzugang sensible Felder, WP-M1-31),
   TAKTOVIA_ENVIRONMENT (development|staging|performance|production, Vorgabe development): Umgebungskennung der Datenbank (WP-M1-40)
 
 Die Fachmigrationen sind Flyway-kompatibel benannt (V<n>__name.sql, R__name.sql). Dieses Werkzeug ist ein
@@ -23,7 +23,7 @@ from psycopg import sql
 
 HERE = Path(__file__).resolve().parent
 MIG = HERE / 'migrations'
-ROLES = ('taktovia_migrator', 'taktovia_runtime')
+ROLES = ('taktovia_migrator', 'taktovia_runtime', 'taktovia_fields')
 GROUPS = ('taktovia_pii', 'taktovia_hr', 'taktovia_finance')
 
 
@@ -44,11 +44,30 @@ def admin(dbname):
     return conn(env('TAKTOVIA_DB_ADMIN_USER', 'dev_admin'), env('TAKTOVIA_DB_ADMIN_PASSWORD'), dbname)
 
 
+def fields_password(role_exists=False):
+    """Passwort des Modulzugangs für sensible Felder (WP-M1-31, `taktovia_fields`): ausdrücklich `TAKTOVIA_DB_FIELDS_PASSWORD`.
+    Nur außerhalb von Staging/Produktion wird ersatzweise ein Wert aus dem Runtime-Passwort abgeleitet (Entwicklung/Test, kein Klartext im
+    Repository). In Staging/Produktion ohne ausdrückliches Passwort bleibt eine vorhandene Rolle unverändert (None), eine fehlende bricht ab:
+    die Runtime-Rolle darf den Modulzugang nie erraten können."""
+    explicit = os.environ.get('TAKTOVIA_DB_FIELDS_PASSWORD')
+    if explicit:
+        return explicit
+    if os.environ.get('TAKTOVIA_ENVIRONMENT', 'development') in ('staging', 'production'):
+        if role_exists:
+            return None
+        sys.exit('Umgebungsvariable TAKTOVIA_DB_FIELDS_PASSWORD fehlt (Modulzugang für sensible Felder)')
+    return hashlib.sha256(('taktovia_fields:' + env('TAKTOVIA_DB_RUNTIME_PASSWORD')).encode()).hexdigest()
+
+
 def bootstrap():
     name = env('TAKTOVIA_DB_NAME', 'taktovia')
     with admin('postgres') as c:
+        fields_exists = bool(c.execute("SELECT 1 FROM pg_roles WHERE rolname='taktovia_fields'").fetchone())
         for role, pw in (('taktovia_migrator', env('TAKTOVIA_DB_MIGRATOR_PASSWORD')),
-                         ('taktovia_runtime', env('TAKTOVIA_DB_RUNTIME_PASSWORD'))):
+                         ('taktovia_runtime', env('TAKTOVIA_DB_RUNTIME_PASSWORD')),
+                         ('taktovia_fields', fields_password(fields_exists))):
+            if pw is None:
+                continue
             exists = c.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone()
             verb = 'ALTER' if exists else 'CREATE'
             c.execute(sql.SQL(verb + ' ROLE {} LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOINHERIT '
@@ -60,7 +79,7 @@ def bootstrap():
             c.execute(sql.SQL('CREATE DATABASE {} OWNER taktovia_migrator').format(sql.Identifier(name)))
     with admin(name) as c:
         c.execute(sql.SQL('REVOKE ALL ON DATABASE {} FROM PUBLIC').format(sql.Identifier(name)))
-        c.execute(sql.SQL('GRANT CONNECT ON DATABASE {} TO taktovia_migrator, taktovia_runtime').format(sql.Identifier(name)))
+        c.execute(sql.SQL('GRANT CONNECT ON DATABASE {} TO taktovia_migrator, taktovia_runtime, taktovia_fields').format(sql.Identifier(name)))
         c.execute('CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public')
         c.execute('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
         c.execute('CREATE SCHEMA IF NOT EXISTS taktovia_meta AUTHORIZATION taktovia_migrator')

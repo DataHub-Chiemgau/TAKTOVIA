@@ -98,6 +98,9 @@ def _seed_runtime_rows(dbname, label, ids):
         c.close()
 
 
+STATE_COLUMNS = {"passenger_private": "tenant_id, id, subject_token, retention_until"}
+
+
 def data_state(dbname):
     """Hash über die geseedeten Zeilen (Datenstand). Reihenfolge und Inhalt deterministisch."""
     h = hashlib.sha256()
@@ -109,7 +112,9 @@ def data_state(dbname):
             own = [str(v) for v in ids[label].values()]
             for t in [OWN_TENANT_TABLE] + SEEDED_TABLES:
                 col = "id"
-                rows = c.execute(f"SELECT row_to_json(t)::text FROM taktovia.{t} t WHERE {col} = ANY(%s::uuid[]) ORDER BY {col}", (own,)).fetchall()
+                # passenger_private: die Runtime-Rolle sieht die Ciphertext-Spalten nicht (WP-M1-31), also nur die freigegebenen Spalten hashen
+                src = f"(SELECT {STATE_COLUMNS[t]} FROM taktovia.{t})" if t in STATE_COLUMNS else f"taktovia.{t}"
+                rows = c.execute(f"SELECT row_to_json(t)::text FROM {src} t WHERE {col} = ANY(%s::uuid[]) ORDER BY {col}", (own,)).fetchall()
                 h.update(json.dumps([t, [json.loads(r[0]) for r in rows]], sort_keys=True).encode())
         finally:
             c.close()

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/feldrechte.v1.schema.json",
+  "title": "Rollen×Feld-Matrix des Feldschutzbausteins (WP-M1-31, LH-6.18-SEC-005)",
+  "description": "Quelle: backend/platform/src/main/resources/fieldprotection/feldrechte.json. Ohne ausdrückliches Recht gilt fail-closed: kein Zugriff.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "status", "purposes", "fields"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "status": { "type": "string" },
+    "purposes": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "class", "scope", "grants"],
+        "properties": {
+          "field": { "type": "string", "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$" },
+          "class": { "enum": ["PII", "HR", "FINANCE", "SUPPORT", "PAYMENT_TOKEN"] },
+          "scope": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*(:[a-z][a-z0-9_-]*)+$" },
+          "description": { "type": "string" },
+          "grants": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object", "additionalProperties": false, "required": ["actor", "role", "purposes"],
+                  "properties": {
+                    "actor": { "const": "HUMAN" },
+                    "role": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" },
+                    "purposes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+                  }
+                },
+                {
+                  "type": "object", "additionalProperties": false, "required": ["actor", "purposes"],
+                  "properties": {
+                    "actor": { "const": "SERVICE" },
+                    "purposes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

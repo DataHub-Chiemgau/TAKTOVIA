@@ -18,3 +18,10 @@ Pakete (Platzhalter bis M1): `tenant`, `rls`, `outbox`, `idempotency`, `audit`, 
 | `outbox` | `Outbox.append`, `OutboxRelay` (Lease, Retry-Staffel, Dead-Letter), `InboxProcessor` (Dedupe, Revision, Snapshot), `EventEnvelope`, RabbitMQ-Anbindung (nicht ausgeführt) |
 
 Verträge: `docs/umsetzungsplan/vertraege/{audit-katalog,betriebsalarmkanal,event-topologie}.md`.
+
+## Feldschutz und Zahlungsdatentrennung (WP-M1-31, WP-M1-37)
+
+| Paket | Inhalt |
+|---|---|
+| `fieldprotection` | `FieldRights` (Rollen×Feld-Matrix `fieldprotection/feldrechte.json`, fail-closed, Feldscope + Rolle + Zweck), `EnvelopeCipher` (AES-256-GCM-Envelope, KEK aus der Secret-Verwaltung, AAD an Mandant/Spalte/Zeile), `ProtectedColumnStore`, `FieldAccess` (einziger Lesepfad: Audit mit Akteur und Zweck in der Fachtransaktion, Lesen über den Modulzugang `taktovia_fields`), `SupportNeeds` (Katalog, keine Diagnosen), `FieldAccessRoleGuard`. Vertrag: `docs/umsetzungsplan/vertraege/feldschutz.md` |
+| `carddata` | `CardData` (Luhn + Netzwerkpräfix, Maskierung), `CardDataFilter` (Query, Header, Body; `requireNoCardData` für Ereignis-Payloads, aufgerufen von `Outbox.append`), `CardDataIncidents` (asynchrone Meldung als Log und Sicherheitsereignis). Nachweis: `docs/umsetzungsplan/vertraege/psp-trennung.md` |

@@ -21,6 +21,8 @@ getConfigRevision  # GET /v1/config/revisions/{revision_id}
 getEffectiveConfig  # GET /v1/config/effective
 getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
+getOperation  # GET /v1/operations/{operation_id}
+getPassengerSupportNeeds  # GET /v1/passengers/{passenger_id}/support-needs
 holdOffer  # POST /v1/federation/offers/{offer_id}/hold
 listConfigRevisions  # GET /v1/config/revisions
 listCostCenters  # GET /v1/cost-centers

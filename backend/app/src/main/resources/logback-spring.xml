@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WP-M1-37 (SEC-008): Konsolenlog mit Maskierung kartennummernähnlicher Muster in Nachricht und Ausnahmetext.
+     Sonst entspricht das Format den Spring-Boot-Vorgaben (Pegel, Thread, Logger). Logger-Pegel stehen in application.yml. -->
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <conversionRule conversionWord="safeMsg" converterClass="de.taktovia.app.logging.CardDataMaskingMessageConverter"/>
+  <conversionRule conversionWord="safeEx" converterClass="de.taktovia.app.logging.CardDataMaskingThrowableConverter"/>
+  <property name="TAKTOVIA_LOG_PATTERN"
+            value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} ${LOG_LEVEL_PATTERN:-%5p} [%t] [%X{correlation_id:-}] %logger{39} : %safeMsg%n%safeEx"/>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>${TAKTOVIA_LOG_PATTERN}</pattern><charset>UTF-8</charset></encoder>
+  </appender>
+  <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+</configuration>

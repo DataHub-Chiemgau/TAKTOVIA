@@ -70,3 +70,4 @@ unlockAccount;accounts:write;-;M1;N;N;N;N;N;N;J;N;N;N
 startAccountRecovery;accounts:write;-;M1;N;N;N;N;N;N;J;N;N;N
 getWebhookSubscription;webhooks:read;-;M1;N;N;N;N;N;N;J;N;N;N
 deactivateWebhookSubscription;webhooks:write;-;M1;N;N;N;N;N;N;J;N;N;N
+getPassengerSupportNeeds;passengers:support:read;PII;M1;N;N;J;J;J;N;N;N;N;N

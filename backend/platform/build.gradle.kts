@@ -9,6 +9,7 @@ dependencies {
     implementation("io.lettuce:lettuce-core")
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
+    testImplementation("ch.qos.logback:logback-classic")    // Log-Scan der Feldschutz- und Kartendatentests (WP-M1-31, -37)
 }
 
 tasks.withType<Test>().configureEach {
@@ -16,6 +17,6 @@ tasks.withType<Test>().configureEach {
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }
     listOf("TAKTOVIA_DB_HOST", "TAKTOVIA_DB_PORT", "TAKTOVIA_DB_NAME", "TAKTOVIA_DB_RUNTIME_PASSWORD",
-        "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_REQUIRE_DB")
+        "TAKTOVIA_DB_ADMIN_USER", "TAKTOVIA_DB_ADMIN_PASSWORD", "TAKTOVIA_DB_FIELDS_PASSWORD", "TAKTOVIA_REQUIRE_DB")
         .forEach { k -> System.getenv(k)?.let { environment(k, it) } }
 }

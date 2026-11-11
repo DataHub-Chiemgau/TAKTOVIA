@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "status": "Entwurf, fachlich nicht freigegeben (OP-10, OP-24, D-11). Ohne ausdrückliches Feldrecht gilt fail-closed: kein Zugriff.",
+  "purposes": {
+    "BOOKING_ASSISTANCE": "Buchung oder Beförderung für den Fahrgast unterstützen (Callcenter)",
+    "SUPPORT_CASE": "Konkreten Supportfall des Fahrgasts bearbeiten",
+    "TRANSPORT_PLANNING": "Beförderung disponieren (zugesagte Unterstützung einplanen)",
+    "PAYMENT_PROCESSING": "Zahlung abwickeln oder abstimmen (PSP-Referenz)"
+  },
+  "fields": [
+    {
+      "field": "passenger.support_needs",
+      "class": "SUPPORT",
+      "scope": "passengers:support:read",
+      "description": "Transportrelevanter Unterstützungsbedarf des Fahrgasts (Auswahl ohne Diagnose), passenger_private.support_ciphertext",
+      "grants": [
+        { "actor": "HUMAN", "role": "callcenter", "purposes": ["BOOKING_ASSISTANCE"] },
+        { "actor": "HUMAN", "role": "support", "purposes": ["SUPPORT_CASE"] },
+        { "actor": "HUMAN", "role": "dispatcher", "purposes": ["TRANSPORT_PLANNING"] }
+      ]
+    },
+    {
+      "field": "passenger.contact",
+      "class": "PII",
+      "scope": "passengers:contact:read",
+      "description": "Kontaktdaten des Fahrgasts, passenger_private.contact_ciphertext",
+      "grants": [
+        { "actor": "HUMAN", "role": "callcenter", "purposes": ["BOOKING_ASSISTANCE"] },
+        { "actor": "HUMAN", "role": "support", "purposes": ["SUPPORT_CASE"] }
+      ]
+    },
+    {
+      "field": "payment.provider_ref",
+      "class": "PAYMENT_TOKEN",
+      "scope": "payments:reference:read",
+      "description": "PSP-Referenz (payment_intent.provider_ref); nur Rollen mit Zahlungsbezug und der Zahlungsadapter",
+      "grants": [
+        { "actor": "HUMAN", "role": "finance", "purposes": ["PAYMENT_PROCESSING"] },
+        { "actor": "SERVICE", "purposes": ["PAYMENT_PROCESSING"] }
+      ]
+    }
+  ]
+}
