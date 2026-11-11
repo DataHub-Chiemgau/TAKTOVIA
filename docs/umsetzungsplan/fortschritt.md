@@ -41,7 +41,7 @@ Stand 11.11.2026. Ein WP gilt nur als umgesetzt, wenn die unter „Tests“ gena
 
 ## Phase 1, Meilenstein M1 (Plattformkern)
 
-Stand der 202 Phase-1-Anforderungen (`arbeitspakete.csv`): 18 Umgesetzt, 10 In Umsetzung, 174 Bereit. „Umgesetzt“ heißt: alle im Detailvertrag genannten Tests laufen grün (`tools/import_wave.py` übernimmt nur vorhandene Tests). Nicht ausführbar in dieser Umgebung (kein Docker, kein Keycloak, kein Flutter, keine CI): Browser-E2E, Container-Läufe und echte IdP-Anmeldung; die Ersatzläufe stehen im jeweiligen WP-Nachweis.
+Stand der 202 Phase-1-Anforderungen (`arbeitspakete.csv`): 22 Umgesetzt, 17 In Umsetzung, 163 Bereit/Geplant. „Umgesetzt“ heißt: alle im Detailvertrag genannten Tests laufen grün (`tools/import_wave.py` übernimmt nur vorhandene Tests). Nicht ausführbar in dieser Umgebung (kein Docker, kein Keycloak, kein Flutter, keine CI): Browser-E2E, Container-Läufe und echte IdP-Anmeldung; die Ersatzläufe stehen im jeweiligen WP-Nachweis.
 
 | Welle | Pakete (WP-M1-…) | Inhalt |
 |---|---|---|
@@ -49,8 +49,9 @@ Stand der 202 Phase-1-Anforderungen (`arbeitspakete.csv`): 18 Umgesetzt, 10 In U
 | 2 | 03, 04, 27 | OIDC-Ressourcenserver, zweiter Faktor, Umgebungstrennung, Zusage-Snapshot |
 | 3 | 06, 07 | Anfragekontext, Mitgliedschaft, Mandantenwechsel, Rechtematrix |
 | 4 | 05, 10, 12, 13, 15, 16, 19, 20, 24, 31, 34, 37, 44 | Mandant/Organisation/Rollen, Sitzungen und Kontosperre, Audit und Sicherheitsereignisse, Idempotenz, operation/Lease, Webhooks, Parameterkatalog und Konfigurationsrevisionen, Unternehmensprofil, Feldschutz, Zahlungsdatentrennung, Fahrzeugrollen, Web-Anmeldung |
+| 5 | 08, 09, 21, 23, 26, 28, 29, 30, 41 (+ M2: 01, 02, 10, 14) | Organisationsstruktur, Dienst-/Objektberechtigung, Präzedenz und wirksame Konfiguration, Policy-Port, Wirkungsanalyse, Fahrgastregistrierung/-profil/Datenschutz, Sicherheitsvorfallprozess (Übung mit Menschen steht aus), M2-Detailverträge, Referenzfixtures, Routingadapter, Mehrpersonenbuchung |
 
-Prüfstand nach Welle 4 (lokal, PostgreSQL 16): `./gradlew build` grün, DB-Tests 224 OK, Web 202 Tests (Lint, Build grün), API-Lint/Bündel/Client/Doku PASS, Query-Lint, Secret-Scan, `check_repo`, `check_tracking` PASS.
+Prüfstand nach Welle 5 (lokal, PostgreSQL 16): `./gradlew build` grün, DB-Tests 252 OK, Web (Operator 75, api-client 26 u. a.) Tests (Lint, Build grün), API-Lint/Bündel/Client/Doku PASS, Query-Lint, Secret-Scan, `check_repo`, `check_tracking` PASS.
 
 Abweichungen vom Plan:
 - Die Datenbankprüfung (Rollen, Migration, RLS, Trigger) bleibt vorerst in Python; Flyway und Testcontainers sind im Gradle-Projekt nicht eingebunden, weil in der Entwicklungsumgebung kein Docker läuft. Die JVM-Tests verwenden eine vorhandene Datenbank (Umgebung oder CI-Service).
@@ -58,3 +59,4 @@ Abweichungen vom Plan:
 - Kotlin meldet für Gradle 8.14.3 eine Veraltungswarnung (ab Kotlin 2.5 wird 8.14.4 verlangt).
 - Welle 4, Integration: Das Unternehmensprofil (WP-M1-24) liegt als Scope `TENANT_PROFILE` in `config_revision` (PA-11), die Revisionsverwaltung (WP-M1-20) kennt nur TENANT/REGION/DEPOT/SERVICE. `V1250` führt beides zusammen (zusätzlicher Scope, eigenes Schema `tenant-profile.v1` statt Katalogprüfung, Schema-Version-Prüfung im Trigger statt Fremdschlüssel). Die Rechtematrix steht auf Version 3 (zwei Zweige hatten unabhängig auf 2 erhöht).
 - Der Zweig von WP-M1-05 hatte `docs/pflichtenheft/api/openapi.yaml` (eingefrorener Ausgangsstand) aus `api/` neu erzeugt; das ist zurückgenommen, die Kompatibilitätsprüfung (`bundle.py --check`) läuft wieder gegen den Stand vom 25.10.2026. Neue Scopes gehören in `api/common.yaml`.
+- Welle 5, Integration: Der Agent von WP-M1-41 lieferte keinen gültigen Strukturbericht; Stand aus Branch und Agentenbericht: Technik, Betriebsdokument, Drehbuch, Protokollvorlage und Trockenlauf gebaut, echte Übung mit Menschen und Freigabe (OP-32, D-11, D-05) fehlen, daher „In Umsetzung“. Die Rechtematrix bleibt Version 3 (neue Zeilen, Lock erneuert). `api/contract-pending.txt` enthält die M2-Operationen aus WP-M2-01 (dokumentiert, noch nicht gebaut).
