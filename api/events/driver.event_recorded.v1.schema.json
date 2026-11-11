@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver.event_recorded.v1.schema.json",
+  "title": "Fahrerereignis verarbeitet (WP-M3-29)",
+  "description": "Payload von `driver.event_recorded`. Aggregat: driver_event / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "shift_id",
+    "vehicle_id",
+    "event_type",
+    "outcome",
+    "route_stop_id",
+    "received_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_type": {
+      "enum": [
+        "CHECK_IN",
+        "CHECK_OUT",
+        "NO_SHOW",
+        "ARRIVAL",
+        "BREAK_START",
+        "BREAK_END",
+        "DISRUPTION",
+        "SHIFT_END"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "APPLIED",
+        "REVIEW_REQUIRED"
+      ]
+    },
+    "route_stop_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "event_id": "11111111-2222-4333-8444-555555555555",
+      "shift_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "vehicle_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "event_type": "CHECK_IN",
+      "outcome": "APPLIED",
+      "route_stop_id": "11111111-2222-4333-8444-555555555555",
+      "received_at": "2026-11-12T08:15:00Z"
+    }
+  ]
+}

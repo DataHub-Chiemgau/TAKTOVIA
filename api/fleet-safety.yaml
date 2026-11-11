@@ -1,0 +1,1936 @@
+paths:
+  /v1/operator/vehicles:
+    get:
+      summary: Fahrzeuge der Leitstelle mit Zustand, Standortalter und Prüfstatus
+      operationId: listOperatorVehicles
+      security:
+      - oidc:
+        - operator:read
+      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`, `depot_id`. Fremdmandanten sind nie sichtbar. Der Standort
+        trägt `measured_at` und `position_age_seconds`; ab `position_stale_after_sec` ist `position_stale` wahr (OP-04).
+      parameters:
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/VehicleOperationalState'
+        description: Nur Fahrzeuge in diesem Betriebszustand.
+      - name: depot_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Fahrzeuge dieses Betriebshofs (OP-22).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorVehiclePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/vehicles/{vehicle_id}/blocks:
+    post:
+      summary: Operative Fahrzeugsperre setzen
+      operationId: createVehicleBlock
+      security:
+      - oidc:
+        - operator:write
+      description: 'Setzt eine Sperre der Quelle OPERATIONS und erhöht `safety_revision` im selben Commit; das Fahrzeug ist danach nicht mehr
+        Kandidat neuer Zuweisungen (OPS-005). If-Match: Revision des Fahrzeugs (`OperatorVehicle.revision`). Fremdes Fahrzeug: 404. Wiederholter
+        Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleBlock'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleBlockCreate'
+  /v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift:
+    post:
+      summary: Operative Fahrzeugsperre aufheben
+      operationId: liftVehicleBlock
+      security:
+      - oidc:
+        - operator:write
+      description: 'Hebt nur eine Sperre der Quelle OPERATIONS auf; eine Sperre der Quelle SAFETY ergibt 409 INVALID_STATE_TRANSITION (Aufhebung
+        nur über `createVehicleRelease`). If-Match: Revision der Sperre.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - name: block_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Sperr-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleBlock'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleBlockLift'
+  /v1/checklist-templates:
+    get:
+      summary: Freigegebene Checklistenvorlagen lesen
+      operationId: listChecklistTemplates
+      security:
+      - oidc:
+        - inspections:read
+      description: Nur freigegebene Revisionen, optional gefiltert nach Fahrzeugklasse und Bedienart (CHK-002, Ergänzungsvorschlag zu OP-14).
+        Die App cached die Revision, die der Prüflauf verwendet.
+      parameters:
+      - name: vehicle_class
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Fahrzeugklasse.
+      - name: service_mode
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Bedienart.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplatePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/inspections:
+    post:
+      summary: Prüflauf starten
+      operationId: createInspection
+      security:
+      - oidc:
+        - inspections:write
+      description: 'Legt einen Prüflauf für genau die Kombination Fahrer (aus dem Token), Fahrzeug und Schicht an. Fremde Schicht oder fremdes
+        Fahrzeug: 404; Schicht eines anderen Fahrers: 404; Vorlagenrevision nicht die freigegebene: 422. Ein zweiter offener Prüflauf derselben
+        Kombination liefert den ersten (200 ist nicht vorgesehen, daher 409 CONFLICT mit Verweis).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionCreate'
+  /v1/inspections/{inspection_id}:
+    get:
+      summary: Prüflauf lesen
+      operationId: getInspection
+      security:
+      - oidc:
+        - inspections:read
+      description: 'Mit Antworten, fehlenden Voraussetzungen und, nach serverseitiger Bestätigung, der Einsatzfreigabe. Fremde Prüfung: 404.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Prüfentwurf speichern
+      operationId: saveInspectionDraft
+      security:
+      - oidc:
+        - inspections:write
+      description: 'Speichert den Entwurf der Antworten (CHK-006); nur im Zustand IN_PROGRESS, danach 409 IMMUTABLE_RECORD. If-Match: Revision
+        des Prüflaufs; veraltet: 412.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionDraft'
+  /v1/inspections/{inspection_id}/submit:
+    post:
+      summary: Prüflauf abschließen
+      operationId: submitInspection
+      security:
+      - oidc:
+        - inspections:write
+      description: 'Schließt den Lauf ab; Pflichtschritte fehlen: 422 VALIDATION_FAILED; abgelaufen: 409 INVALID_STATE_TRANSITION. Die Antwort
+        enthält Ergebnis und Freigabe, die allein der Server entscheidet (CHK-001, CHK-013). Wiederholung mit demselben Idempotency-Key liefert
+        dieselbe Antwort.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionSubmit'
+  /v1/defects:
+    get:
+      summary: Schadenakten auflisten
+      operationId: listDefects
+      security:
+      - oidc:
+        - defects:read
+      description: Filter `vehicle_id`, `status`, `severity`; Fahrer sehen nur eigene Meldungen (DMG-011).
+      parameters:
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Akten dieses Fahrzeugs.
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - NEW
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        description: Nur Akten in diesem Status.
+      - name: severity
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/DefectSeverity'
+        description: Nur Akten dieser Klasse.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Schaden melden
+      operationId: createDefect
+      security:
+      - oidc:
+        - defects:write
+      description: 'Legt die Akte mit Fallnummer im Status NEW an; wiederholte Meldung mit demselben Idempotency-Key oder derselben `device_event_id`
+        liefert dieselbe Akte. Fremdes Fahrzeug: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectCreate'
+  /v1/defects/{defect_id}:
+    get:
+      summary: Schadenakte lesen
+      operationId: getDefect
+      security:
+      - oidc:
+        - defects:read
+      description: 'Mit ETag. Fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/triage:
+    post:
+      summary: Schaden klassifizieren und zuweisen
+      operationId: triageDefect
+      security:
+      - oidc:
+        - defects:triage
+      description: 'Setzt Klasse, Zuständigen und Folgestatus nach defect_case.md. Sicherheitskritisch sperrt das Fahrzeug im selben Commit (DMG-005/-006).
+        Unzulässiger Statussprung: 409 INVALID_STATE_TRANSITION; veraltete Revision: 412.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectTriage'
+  /v1/repair-orders:
+    get:
+      summary: Reparaturaufträge auflisten
+      operationId: listRepairOrders
+      security:
+      - oidc:
+        - repair:read
+      description: Filter `defect_id`, `vehicle_id`.
+      parameters:
+      - name: defect_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Aufträge dieser Akte.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Aufträge dieses Fahrzeugs.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepairOrderPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Reparaturauftrag anlegen
+      operationId: createRepairOrder
+      security:
+      - oidc:
+        - repair:write
+      description: 'Zulässig, wenn die Akte im Status IN_PROGRESS ist; setzt die Akte auf REPAIR. Fremde Akte: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepairOrder'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepairOrderCreate'
+  /v1/vehicles/{vehicle_id}/release:
+    post:
+      summary: Fahrzeug nach Sicherheitssperre wieder freigeben
+      operationId: createVehicleRelease
+      security:
+      - oidc:
+        - fleet:release
+      description: 'Verlangt Reparaturnachweis, bestandene Folgeprüfung und die berechtigte Rolle; ohne zweite Person: Entscheidung PENDING_SECOND_APPROVAL
+        (Vieraugenpflicht). Der Aufrufer mit gleicher Identität wie der Erstfreigeber kann nicht zweiter Freigeber sein (403). If-Match: Revision
+        des Fahrzeugs.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRelease'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleReleaseCreate'
+  /v1/operator/incidents:
+    get:
+      summary: Incidents auflisten
+      operationId: listOperatorIncidents
+      security:
+      - oidc:
+        - operator:read
+      description: Filter `status`, `vehicle_id`.
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - REPLACEMENT_SEARCH
+          - RESOLVED
+          - CLOSED_NO_REPLACEMENT
+        description: Nur Incidents in diesem Status.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Incidents dieses Fahrzeugs.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/incidents/{incident_id}:
+    get:
+      summary: Incident lesen
+      operationId: getOperatorIncident
+      security:
+      - oidc:
+        - operator:read
+      description: 'Mit ETag. Fremder Incident: 404.'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/incidents/{incident_id}/transitions:
+    post:
+      summary: Incident-Übergang auslösen
+      operationId: transitionOperatorIncident
+      security:
+      - oidc:
+        - operator:write
+      description: 'Löst ein Ereignis des Incident-Automaten aus; unzulässig: 409 INVALID_STATE_TRANSITION. If-Match: Revision des Incidents.'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentTransition'
+components:
+  schemas:
+    VehicleOperationalState:
+      type: string
+      description: Betriebszustand des Fahrzeugs aus Sicht der Leitstelle (Zustandsautomat fahrzeug_dienststatus.md, abgeleitet aus Sperren, Einsatzfreigabe
+        und Dienststatus).
+      enum:
+      - NOT_READY
+      - RELEASE_PENDING
+      - AVAILABLE
+      - EN_ROUTE
+      - WAITING
+      - BREAK
+      - DISRUPTED
+      - BLOCKED
+      - RESTRICTED
+      - ENDED
+    MissingRequirement:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - NO_INSPECTION
+          - INSPECTION_OPEN
+          - INSPECTION_EXPIRED
+          - DEFECT_BLOCK
+          - OPERATIONAL_BLOCK
+          - SAFETY_REVISION_CHANGED
+          - QUALIFICATION_MISSING
+          - VEHICLE_CHANGED
+          - RELEASE_REVOKED
+        inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        step_codes:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+      - code
+      description: Eine noch fehlende Voraussetzung der Einsatzfreigabe (LH-6.21-CHK-001); keine Diagnosetexte, nur Codes.
+    VehicleBlock:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        source:
+          type: string
+          enum:
+          - OPERATIONS
+          - SAFETY
+        reason_code:
+          type: string
+          enum:
+          - OPERATIONAL_DISRUPTION
+          - DEFECT_CRITICAL
+          - INSPECTION_FAILED
+          - MANUAL
+          - OTHER
+        set_at:
+          type: string
+          format: date-time
+        set_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lifted_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        lifted_by:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - vehicle_id
+      - source
+      - reason_code
+      - set_at
+      - set_by
+      - lifted_at
+      - lifted_by
+      - revision
+      description: Sperrgrund je Quelle (OP-01); eine operative Aufhebung ändert eine sicherheitskritische Sperre nie.
+    OperatorVehicle:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_label:
+          type: string
+          minLength: 1
+          maxLength: 64
+        operational_state:
+          $ref: '#/components/schemas/VehicleOperationalState'
+        safety_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        release_valid_until:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        missing_requirements:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MissingRequirement'
+        active_blocks:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/VehicleBlock'
+        position:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Point
+          - type: 'null'
+        position_measured_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        position_age_seconds:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        position_stale:
+          type: boolean
+        open_defect_count:
+          type: integer
+          minimum: 0
+        current_run_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - vehicle_id
+      - vehicle_label
+      - operational_state
+      - safety_revision
+      - release_valid_until
+      - missing_requirements
+      - active_blocks
+      - position
+      - position_measured_at
+      - position_age_seconds
+      - position_stale
+      - open_defect_count
+      - current_run_id
+      - revision
+      description: Fahrzeug in der Leitstellenansicht (OPS-001, CHK-016). Das Standortalter berechnet der Server aus `measured_at` (Messzeit)
+        und seiner Uhr; `position_stale` folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s).
+    OperatorVehiclePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatorVehicle'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    VehicleBlockCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        reason_code:
+          type: string
+          enum:
+          - OPERATIONAL_DISRUPTION
+          - MANUAL
+          - OTHER
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason_code
+      description: Operative Sperre durch die Leitstelle (OPS-005). Sicherheitskritische Sperren setzt nur der Server (Mangel, Schaden), nie dieser
+        Endpunkt; die Quelle `OPERATIONS` steht fest.
+    VehicleBlockLift:
+      type: object
+      additionalProperties: false
+      properties:
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 500
+      description: Aufhebung einer operativen Sperre; eine Sperre der Quelle SAFETY lässt sich hier nie aufheben (409).
+    ChecklistTemplate:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        template_id:
+          $ref: common.yaml#/components/schemas/UUID
+        version:
+          type: integer
+          minimum: 1
+        vehicle_class:
+          type: string
+          minLength: 1
+          maxLength: 64
+        service_mode:
+          type: string
+          minLength: 1
+          maxLength: 64
+        published_at:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              step_code:
+                type: string
+                minLength: 1
+                maxLength: 64
+              title:
+                type: string
+                minLength: 1
+                maxLength: 200
+              mandatory:
+                type: boolean
+              safety_critical:
+                type: boolean
+              answer_kind:
+                type: string
+                enum:
+                - OK_DEFECT_NA
+                - NUMBER
+                - TEXT_SHORT
+              photo_required_on_defect:
+                type: boolean
+            required:
+            - step_code
+            - title
+            - mandatory
+            - safety_critical
+            - answer_kind
+            - photo_required_on_defect
+      required:
+      - id
+      - template_id
+      - version
+      - vehicle_class
+      - service_mode
+      - published_at
+      - steps
+      description: Freigegebene, unveränderliche Vorlagenrevision (CHK-002).
+    ChecklistTemplatePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplate'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    InspectionAnswer:
+      type: object
+      additionalProperties: false
+      properties:
+        step_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        answer:
+          type: string
+          enum:
+          - OK
+          - DEFECT
+          - NOT_APPLICABLE
+          - NOT_CHECKABLE
+        number_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        note:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        evidence_ids:
+          type: array
+          maxItems: 10
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        answered_at:
+          type: string
+          format: date-time
+      required:
+      - step_code
+      - answer
+      - answered_at
+      description: Antwort auf einen Prüfschritt; `NOT_CHECKABLE` führt zu „technisch ungeklärt" (Annahme OP-16). `answered_at` ist die Gerätezeit,
+        die Serverzeit steht getrennt in der Antwort.
+    InspectionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        template_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - PRE_SHIFT
+          - FOLLOW_UP
+          - VEHICLE_CHANGE
+        odometer_km:
+          oneOf:
+          - type: integer
+            minimum: 0
+            maximum: 5000000
+          - type: 'null'
+        battery_soc_pct:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 100
+          - type: 'null'
+        client_started_at:
+          type: string
+          format: date-time
+      required:
+      - shift_id
+      - vehicle_id
+      - template_revision_id
+      - kind
+      - client_started_at
+      description: Prüflauf starten (CHK-004); der Server prüft, dass die Vorlagenrevision genau die für Fahrzeugklasse und Bedienart freigegebene
+        ist.
+    InspectionDraft:
+      type: object
+      additionalProperties: false
+      properties:
+        answers:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/InspectionAnswer'
+      required:
+      - answers
+      description: Entwurfsstand der Antworten; nicht rechtswirksam, bis `submitInspection` sie abschließt (CHK-006).
+    InspectionSubmit:
+      type: object
+      additionalProperties: false
+      properties:
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/InspectionAnswer'
+        device_event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        client_submitted_at:
+          type: string
+          format: date-time
+      required:
+      - answers
+      - client_submitted_at
+      description: 'Abschluss: die Antworten werden unveränderlich gespeichert; Ergebnis und Freigabe entscheidet allein der Server.'
+    Inspection:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        driver_ref:
+          $ref: common.yaml#/components/schemas/UUID
+        template_revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - PRE_SHIFT
+          - FOLLOW_UP
+          - VEHICLE_CHANGE
+        status:
+          type: string
+          enum:
+          - IN_PROGRESS
+          - COMPLETED
+          - EXPIRED
+          - CANCELED
+        outcome:
+          oneOf:
+          - type: string
+            enum:
+            - PASSED
+            - PASSED_RESTRICTED
+            - BLOCKED
+            - CLARIFICATION_REQUIRED
+          - type: 'null'
+        missing_requirements:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MissingRequirement'
+        answers:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/InspectionAnswer'
+        release:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              release_id:
+                $ref: common.yaml#/components/schemas/UUID
+              valid_until:
+                type: string
+                format: date-time
+              safety_revision:
+                type: integer
+                format: int64
+                minimum: 0
+            required:
+            - release_id
+            - valid_until
+            - safety_revision
+          - type: 'null'
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        received_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - shift_id
+      - vehicle_id
+      - driver_ref
+      - template_revision_id
+      - kind
+      - status
+      - outcome
+      - missing_requirements
+      - answers
+      - release
+      - started_at
+      - completed_at
+      - received_at
+      - revision
+      description: Prüflauf. `release` ist nur gesetzt, wenn der Server die Einsatzfreigabe erteilt hat; `received_at` ist die Serverzeit des
+        Abschlusses, nie die Gerätezeit.
+    DefectSeverity:
+      type: string
+      enum:
+      - SAFETY_CRITICAL
+      - OPERATIONALLY_RELEVANT
+      - COSMETIC
+      - OTHER
+    DefectCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        occurred_at:
+          type: string
+          format: date-time
+        location_kind:
+          type: string
+          enum:
+          - COORDINATE
+          - ADDRESS_TEXT
+          - FREE_TEXT
+          - DEPOT
+        location_value:
+          type: string
+          minLength: 1
+          maxLength: 200
+        category_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        source_inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        source_step_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        evidence_ids:
+          type: array
+          maxItems: 10
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        device_event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        severity_hint:
+          $ref: '#/components/schemas/DefectSeverity'
+      required:
+      - vehicle_id
+      - occurred_at
+      - category_code
+      - description
+      description: Schaden melden (DMG-001 bis DMG-004). Keine Unfall- oder Gesundheitsangaben in diesem Schema (DMG-011, OP-23); `severity_hint`
+        ist ein Vorschlag, die Klassifikation setzt die Triage.
+    DefectTriage:
+      type: object
+      additionalProperties: false
+      properties:
+        severity:
+          $ref: '#/components/schemas/DefectSeverity'
+        decision:
+          type: string
+          enum:
+          - REVIEWED
+          - IN_PROGRESS
+          - DISMISSED
+        assignee_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+      required:
+      - severity
+      - decision
+      description: Klassifikation und Zuständigkeit (DMG-005, DMG-006). `DISMISSED` verlangt `reason`; die Sperrwirkung entscheidet der Server
+        aus `severity` (SAFETY_CRITICAL sperrt, siehe Vertrag DMG-005).
+    Defect:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        case_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reported_by:
+          $ref: common.yaml#/components/schemas/UUID
+        reported_at:
+          type: string
+          format: date-time
+        occurred_at:
+          type: string
+          format: date-time
+        category_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        severity:
+          oneOf:
+          - $ref: '#/components/schemas/DefectSeverity'
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - NEW
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        assignee_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        blocks_vehicle:
+          type: boolean
+        evidence_ids:
+          type: array
+          maxItems: 10
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        description:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 2000
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - case_number
+      - vehicle_id
+      - reported_by
+      - reported_at
+      - occurred_at
+      - category_code
+      - severity
+      - status
+      - assignee_ref
+      - blocks_vehicle
+      - evidence_ids
+      - description
+      - revision
+      description: Schadenakte. `description` ist nur mit dem Recht `defects:read` im Vertraulichkeitsbereich der Akte sichtbar (DMG-011), sonst
+        `null`.
+    DefectPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Defect'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    RepairOrderCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        workshop_ref:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        planned_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        cost_reference:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - defect_id
+      description: Reparaturauftrag zu einer Schadenakte (WP-M3-51); `cost_reference` ist ein Verweis auf eine Kostenstelle/-träger, keine Betragsangabe.
+    RepairOrder:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - OPEN
+          - IN_PROGRESS
+          - PROOF_RECORDED
+          - CANCELED
+        workshop_ref:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        planned_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        cost_reference:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - defect_id
+      - vehicle_id
+      - status
+      - workshop_ref
+      - planned_at
+      - cost_reference
+      - created_at
+      - revision
+    RepairOrderPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepairOrder'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    VehicleReleaseCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        repair_order_id:
+          $ref: common.yaml#/components/schemas/UUID
+        follow_up_inspection_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        second_approver_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - repair_order_id
+      - follow_up_inspection_id
+      - reason
+      description: 'Wiederfreigabe nach Sicherheitssperre (Kap. 05 §5.7): Reparaturnachweis, bestandene Folgeprüfung und berechtigte technische
+        Freigabe; die Vieraugenpflicht erfüllt eine zweite, andere Person über `second_approver_ref` oder eine zweite Anfrage (Vertrag WP-M3-51).
+        Der Server entscheidet nach Rolle, nie nach Clientangabe.'
+    VehicleRelease:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        decision:
+          type: string
+          enum:
+          - RELEASED
+          - PENDING_SECOND_APPROVAL
+          - REJECTED
+        decided_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        decided_at:
+          type: string
+          format: date-time
+        safety_revision:
+          type: integer
+          format: int64
+          minimum: 0
+        lifted_block_ids:
+          type: array
+          maxItems: 20
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - vehicle_id
+      - decision
+      - decided_by
+      - decided_at
+      - safety_revision
+      - lifted_block_ids
+      - revision
+      description: Unveränderliche Freigabeentscheidung.
+    Incident:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - VEHICLE_OUTAGE
+          - DEFECT
+          - REJECTION
+          - CRITICAL_DELAY
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - OPEN
+          - REPLACEMENT_SEARCH
+          - RESOLVED
+          - CLOSED_NO_REPLACEMENT
+        dedupe_key:
+          type: string
+          minLength: 1
+          maxLength: 128
+        opened_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        rule_revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        affected_run_ids:
+          type: array
+          maxItems: 100
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        replacement_operation_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - kind
+      - vehicle_id
+      - status
+      - dedupe_key
+      - opened_at
+      - updated_at
+      - rule_revision_id
+      - affected_run_ids
+      - replacement_operation_id
+      - revision
+      description: Incident (AUT-001, OP-02). Je Dedupe-Schlüssel (Fahrzeug, Ursache, offener Zeitraum) höchstens ein offener Incident.
+    IncidentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    IncidentTransition:
+      type: object
+      additionalProperties: false
+      properties:
+        event:
+          type: string
+          enum:
+          - START_REPLACEMENT_SEARCH
+          - RESOLVE
+          - CLOSE_WITHOUT_REPLACEMENT
+        comment:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+      required:
+      - event
+      description: Übergang des Incident-Automaten (incident.md). Das Ziel ergibt sich aus dem Ereignis, der Client setzt keinen Zustand.

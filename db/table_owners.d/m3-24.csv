@@ -1,0 +1,3 @@
+table;owner;quelle
+driver_device;staff-time;WP-M3-24 (Geräte-/Sitzungsbindung der Fahrer-App)
+driver_event;staff-time;WP-M3-24 (Eingang der Fahrerereignisse, Dedupe)

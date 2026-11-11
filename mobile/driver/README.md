@@ -36,6 +36,10 @@ flutter test                                                 # Widget-Test und O
 
 Negativtest Lint (WP-M0-06): eine unbenutzte Variable oder einen unbenutzten Import einfügen; `flutter analyze` muss mit Exit-Code ungleich 0 enden (`analysis_options.yaml` setzt diese Befunde auf `error`). Noch nicht ausgeführt.
 
+## Driver-App-Basis (WP-M3-24)
+
+Anmeldung (`lib/auth`: PKCE, OIDC-Ablauf, `SessionGate`), Offline-Aktionsliste (`lib/offline/offline_actions.dart`), Schluessel und Abraeumen (`lib/offline/local_data.dart`), HTTP-Adapter fuer `recordDriverEvent` (`lib/net/driver_http.dart`), Rahmen mit Offlinebanner und Barrierefreiheitsgrundlagen (`lib/main.dart`, `lib/ui`). Protokoll, Datenmodell und Verschluesselungskonzept: [docs/driver-app-basis.md](docs/driver-app-basis.md); Verteilung: [ci/distribute.yml.example](ci/distribute.yml.example). **Nicht ausgefuehrt**; die Serverseite ist durch Backend-Tests belegt.
+
 ## Aufbau
 
 - `lib/main.dart` – App-Gerüst ohne Bildschirme (UI-09 ff. ab M3).

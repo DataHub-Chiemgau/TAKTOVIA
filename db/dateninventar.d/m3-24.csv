@@ -1,0 +1,27 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+driver_device;tenant_id;nein;PERSONALEINSATZ;;;;
+driver_device;id;nein;PERSONALEINSATZ;;;;
+driver_device;issuer;nein;ZUGANG_ROLLEN;;;;
+driver_device;subject;ja;ZUGANG_ROLLEN;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Konto des Fahrers (IdP-Subject), kein Klarname
+driver_device;idp_session_id;nein;ZUGANG_ROLLEN;;;;
+driver_device;platform;nein;TECHNISCHER_BETRIEB;;;;
+driver_device;app_version;nein;TECHNISCHER_BETRIEB;;;;
+driver_device;push_token_ref;nein;TECHNISCHER_BETRIEB;;;;
+driver_device;registered_at;nein;PERSONALEINSATZ;;;;
+driver_device;revoked_at;nein;PERSONALEINSATZ;;;;
+driver_device;revision;nein;PERSONALEINSATZ;;;;
+driver_event;tenant_id;nein;PERSONALEINSATZ;;;;
+driver_event;event_id;nein;PERSONALEINSATZ;;;;
+driver_event;device_id;nein;PERSONALEINSATZ;;;;
+driver_event;shift_id;nein;PERSONALEINSATZ;;;;
+driver_event;vehicle_id;nein;PERSONALEINSATZ;;;;
+driver_event;event_type;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;route_stop_id;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;payload_sha256;nein;TECHNISCHER_BETRIEB;;;;
+driver_event;outcome;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;reason_code;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;plan_revision;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;device_recorded_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Gerätezeit des Ereignisses (Tätigkeitsnachweis des Fahrers)
+driver_event;occurred_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zeitpunkt der Tätigkeit
+driver_event;received_at;nein;TECHNISCHER_BETRIEB;;;;

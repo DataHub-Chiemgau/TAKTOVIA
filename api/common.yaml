@@ -63,6 +63,20 @@ components:
             notifications:read: notifications:read
             driver-releases:read: driver-releases:read
             driver-releases:write: driver-releases:write
+            operator:read: operator:read
+            operator:write: operator:write
+            dispatch:write: dispatch:write
+            inspections:read: inspections:read
+            inspections:write: inspections:write
+            defects:read: defects:read
+            defects:write: defects:write
+            defects:triage: defects:triage
+            repair:read: repair:read
+            repair:write: repair:write
+            fleet:release: fleet:release
+            driver:run: driver:run
+            driver:devices: driver:devices
+            driver:positions: driver:positions
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -110,6 +124,20 @@ components:
             notifications:read: notifications:read
             driver-releases:read: driver-releases:read
             driver-releases:write: driver-releases:write
+            operator:read: operator:read
+            operator:write: operator:write
+            dispatch:write: dispatch:write
+            inspections:read: inspections:read
+            inspections:write: inspections:write
+            defects:read: defects:read
+            defects:write: defects:write
+            defects:triage: defects:triage
+            repair:read: repair:read
+            repair:write: repair:write
+            fleet:release: fleet:release
+            driver:run: driver:run
+            driver:devices: driver:devices
+            driver:positions: driver:positions
     partnerSignature:
       type: apiKey
       in: header

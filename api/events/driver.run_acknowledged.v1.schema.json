@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver.run_acknowledged.v1.schema.json",
+  "title": "Planrevision vom Fahrer bestätigt (WP-M3-27)",
+  "description": "Payload von `driver.run_acknowledged`. Aggregat: staff_shift_plan_ack / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "shift_id",
+    "plan_revision",
+    "driver_ref"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "plan_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "driver_ref": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "examples": [
+    {
+      "shift_id": "11111111-2222-4333-8444-555555555555",
+      "plan_revision": 5,
+      "driver_ref": "66666666-7777-4888-8999-aaaaaaaaaaaa"
+    }
+  ]
+}

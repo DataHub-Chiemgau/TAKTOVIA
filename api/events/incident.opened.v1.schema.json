@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/incident.opened.v1.schema.json",
+  "title": "Incident eröffnet (WP-M3-53)",
+  "description": "Payload von `incident.opened`. Aggregat: incident / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "incident_id",
+    "kind",
+    "vehicle_id",
+    "dedupe_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "enum": [
+        "VEHICLE_OUTAGE",
+        "DEFECT",
+        "REJECTION",
+        "CRITICAL_DELAY"
+      ]
+    },
+    "vehicle_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dedupe_key": {
+      "type": "string",
+      "maxLength": 128
+    }
+  },
+  "examples": [
+    {
+      "incident_id": "11111111-2222-4333-8444-555555555555",
+      "kind": "VEHICLE_OUTAGE",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "dedupe_key": "VEHICLE_OUTAGE:66666666-7777-4888-8999-aaaaaaaaaaaa"
+    }
+  ]
+}

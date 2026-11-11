@@ -165,6 +165,58 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="recordDriverPosition"><h3><span class="m">POST</span> <code>/v1/driver/positions</code></h3><p>Positionen der Fahrer-App melden</p><dl><dt>operationId</dt><dd><code>recordDriverPosition</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:positions</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getDriverRun"><h3><span class="m">GET</span> <code>/v1/driver/shifts/{shift_id}/run</code></h3><p>Dienst und Stoppliste lesen</p><dl><dt>operationId</dt><dd><code>getDriverRun</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:run</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="acknowledgeDriverRunRevision"><h3><span class="m">POST</span> <code>/v1/driver/shifts/{shift_id}/run/acknowledgements</code></h3><p>Planrevision bestätigen</p><dl><dt>operationId</dt><dd><code>acknowledgeDriverRunRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:run</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="registerDriverDevice"><h3><span class="m">POST</span> <code>/v1/driver/devices</code></h3><p>Gerät an die Sitzung binden</p><dl><dt>operationId</dt><dd><code>registerDriverDevice</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:devices</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="revokeDriverDevice"><h3><span class="m">DELETE</span> <code>/v1/driver/devices/{device_id}</code></h3><p>Gerätebindung beenden</p><dl><dt>operationId</dt><dd><code>revokeDriverDevice</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:devices</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="booking">booking.yaml</h2>
 <article id="createRideOffer"><h3><span class="m">POST</span> <code>/v1/ride-offers</code></h3><p>Fahrtanfrage stellen und Angebot erhalten</p><dl><dt>operationId</dt><dd><code>createRideOffer</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rides:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
@@ -294,18 +346,17 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
-<h2 id="driver-releases">driver-releases.yaml</h2>
-<article id="createDriverRelease"><h3><span class="m">POST</span> <code>/v1/driver-releases</code></h3><p>Fahrer befristet für Dienste eines anderen Mandanten freigeben</p><dl><dt>operationId</dt><dd><code>createDriverRelease</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver-releases:write</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
+<h2 id="dispatch">dispatch.yaml</h2>
+<article id="listRunRevisions"><h3><span class="m">GET</span> <code>/v1/runs/{run_id}/revisions</code></h3><p>Planrevisionen eines Umlaufs lesen</p><dl><dt>operationId</dt><dd><code>listRunRevisions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
 <li>404: <code>NOT_FOUND</code></li>
-<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
-<article id="revokeDriverRelease"><h3><span class="m">DELETE</span> <code>/v1/driver-releases/{release_id}</code></h3><p>Fahrerfreigabe widerrufen</p><dl><dt>operationId</dt><dd><code>revokeDriverRelease</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver-releases:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<article id="createRunRevision"><h3><span class="m">POST</span> <code>/v1/runs/{run_id}/revisions</code></h3><p>Manuelle Planänderung (Plan-CAS)</p><dl><dt>operationId</dt><dd><code>createRunRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>dispatch:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
@@ -314,15 +365,6 @@
 <li>412: <code>REVISION_MISMATCH</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>428: <code>PRECONDITION_REQUIRED</code></li>
-<li>429: <code>RATE_LIMITED</code></li>
-<li>503: <code>SERVICE_UNAVAILABLE</code></li>
-</ul></dd></dl></article>
-<article id="getDriverReleaseProjection"><h3><span class="m">GET</span> <code>/v1/driver-releases/{release_id}/projection</code></h3><p>Minimierte Projektion einer Fahrerfreigabe lesen</p><dl><dt>operationId</dt><dd><code>getDriverReleaseProjection</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver-releases:read</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
-<li>401: <code>UNAUTHENTICATED</code></li>
-<li>403: <code>FORBIDDEN</code></li>
-<li>404: <code>NOT_FOUND</code></li>
-<li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
@@ -359,6 +401,193 @@
 <li>403: <code>FORBIDDEN</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<h2 id="fleet-safety">fleet-safety.yaml</h2>
+<article id="listOperatorVehicles"><h3><span class="m">GET</span> <code>/v1/operator/vehicles</code></h3><p>Fahrzeuge der Leitstelle mit Zustand, Standortalter und Prüfstatus</p><dl><dt>operationId</dt><dd><code>listOperatorVehicles</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createVehicleBlock"><h3><span class="m">POST</span> <code>/v1/operator/vehicles/{vehicle_id}/blocks</code></h3><p>Operative Fahrzeugsperre setzen</p><dl><dt>operationId</dt><dd><code>createVehicleBlock</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="liftVehicleBlock"><h3><span class="m">POST</span> <code>/v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift</code></h3><p>Operative Fahrzeugsperre aufheben</p><dl><dt>operationId</dt><dd><code>liftVehicleBlock</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listChecklistTemplates"><h3><span class="m">GET</span> <code>/v1/checklist-templates</code></h3><p>Freigegebene Checklistenvorlagen lesen</p><dl><dt>operationId</dt><dd><code>listChecklistTemplates</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createInspection"><h3><span class="m">POST</span> <code>/v1/inspections</code></h3><p>Prüflauf starten</p><dl><dt>operationId</dt><dd><code>createInspection</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getInspection"><h3><span class="m">GET</span> <code>/v1/inspections/{inspection_id}</code></h3><p>Prüflauf lesen</p><dl><dt>operationId</dt><dd><code>getInspection</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="saveInspectionDraft"><h3><span class="m">PUT</span> <code>/v1/inspections/{inspection_id}</code></h3><p>Prüfentwurf speichern</p><dl><dt>operationId</dt><dd><code>saveInspectionDraft</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="submitInspection"><h3><span class="m">POST</span> <code>/v1/inspections/{inspection_id}/submit</code></h3><p>Prüflauf abschließen</p><dl><dt>operationId</dt><dd><code>submitInspection</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listDefects"><h3><span class="m">GET</span> <code>/v1/defects</code></h3><p>Schadenakten auflisten</p><dl><dt>operationId</dt><dd><code>listDefects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createDefect"><h3><span class="m">POST</span> <code>/v1/defects</code></h3><p>Schaden melden</p><dl><dt>operationId</dt><dd><code>createDefect</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getDefect"><h3><span class="m">GET</span> <code>/v1/defects/{defect_id}</code></h3><p>Schadenakte lesen</p><dl><dt>operationId</dt><dd><code>getDefect</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="triageDefect"><h3><span class="m">POST</span> <code>/v1/defects/{defect_id}/triage</code></h3><p>Schaden klassifizieren und zuweisen</p><dl><dt>operationId</dt><dd><code>triageDefect</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:triage</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listRepairOrders"><h3><span class="m">GET</span> <code>/v1/repair-orders</code></h3><p>Reparaturaufträge auflisten</p><dl><dt>operationId</dt><dd><code>listRepairOrders</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>repair:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createRepairOrder"><h3><span class="m">POST</span> <code>/v1/repair-orders</code></h3><p>Reparaturauftrag anlegen</p><dl><dt>operationId</dt><dd><code>createRepairOrder</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>repair:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createVehicleRelease"><h3><span class="m">POST</span> <code>/v1/vehicles/{vehicle_id}/release</code></h3><p>Fahrzeug nach Sicherheitssperre wieder freigeben</p><dl><dt>operationId</dt><dd><code>createVehicleRelease</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>fleet:release</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listOperatorIncidents"><h3><span class="m">GET</span> <code>/v1/operator/incidents</code></h3><p>Incidents auflisten</p><dl><dt>operationId</dt><dd><code>listOperatorIncidents</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getOperatorIncident"><h3><span class="m">GET</span> <code>/v1/operator/incidents/{incident_id}</code></h3><p>Incident lesen</p><dl><dt>operationId</dt><dd><code>getOperatorIncident</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="transitionOperatorIncident"><h3><span class="m">POST</span> <code>/v1/operator/incidents/{incident_id}/transitions</code></h3><p>Incident-Übergang auslösen</p><dl><dt>operationId</dt><dd><code>transitionOperatorIncident</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>operator:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
@@ -773,7 +1002,6 @@
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
 <li>409: <code>CONFLICT</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
-<li>413: <code>PAYLOAD_TOO_LARGE</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
@@ -845,30 +1073,6 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
-<article id="approveConfigRevision"><h3><span class="m">POST</span> <code>/v1/config/revisions/{revision_id}/approve</code></h3><p>Geprüfte Revision durch eine zweite Person freigeben</p><dl><dt>operationId</dt><dd><code>approveConfigRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:publish</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
-<li>401: <code>UNAUTHENTICATED</code></li>
-<li>403: <code>FORBIDDEN</code></li>
-<li>404: <code>NOT_FOUND</code></li>
-<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
-<li>412: <code>REVISION_MISMATCH</code></li>
-<li>422: <code>VALIDATION_FAILED</code></li>
-<li>428: <code>PRECONDITION_REQUIRED</code></li>
-<li>429: <code>RATE_LIMITED</code></li>
-<li>503: <code>SERVICE_UNAVAILABLE</code></li>
-</ul></dd></dl></article>
-<article id="rollbackConfigRevision"><h3><span class="m">POST</span> <code>/v1/config/revisions/{revision_id}/rollback</code></h3><p>Fehlerhafte publizierte Revision als neue Revision zurücknehmen</p><dl><dt>operationId</dt><dd><code>rollbackConfigRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:publish</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
-<li>401: <code>UNAUTHENTICATED</code></li>
-<li>403: <code>FORBIDDEN</code></li>
-<li>404: <code>NOT_FOUND</code></li>
-<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
-<li>412: <code>REVISION_MISMATCH</code></li>
-<li>422: <code>VALIDATION_FAILED</code></li>
-<li>428: <code>PRECONDITION_REQUIRED</code></li>
-<li>429: <code>RATE_LIMITED</code></li>
-<li>503: <code>SERVICE_UNAVAILABLE</code></li>
-</ul></dd></dl></article>
 <article id="getConfigImpactReport"><h3><span class="m">GET</span> <code>/v1/config/impact-reports/{impact_report_id}</code></h3><p>Wirkungsbericht über seine ID lesen</p><dl><dt>operationId</dt><dd><code>getConfigImpactReport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -918,22 +1122,6 @@
 <li>412: <code>REVISION_MISMATCH</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>428: <code>PRECONDITION_REQUIRED</code></li>
-<li>429: <code>RATE_LIMITED</code></li>
-<li>503: <code>SERVICE_UNAVAILABLE</code></li>
-</ul></dd></dl></article>
-<article id="getServiceConfiguration"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/configuration</code></h3><p>Wirksame Dienstkonfiguration mit Angebotsmodell und Modellregeln lesen</p><dl><dt>operationId</dt><dd><code>getServiceConfiguration</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:read</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
-<li>401: <code>UNAUTHENTICATED</code></li>
-<li>403: <code>FORBIDDEN</code></li>
-<li>404: <code>NOT_FOUND</code></li>
-<li>422: <code>VALIDATION_FAILED</code></li>
-<li>429: <code>RATE_LIMITED</code></li>
-<li>503: <code>SERVICE_UNAVAILABLE</code></li>
-</ul></dd></dl></article>
-<article id="listServiceOfferModels"><h3><span class="m">GET</span> <code>/v1/service-offer-models</code></h3><p>Angebotsmodelle mit Modellregeln auflisten</p><dl><dt>operationId</dt><dd><code>listServiceOfferModels</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>services:read</code></dd><dt>Fehlercodes</dt><dd><ul>
-<li>400: <code>BAD_REQUEST</code></li>
-<li>401: <code>UNAUTHENTICATED</code></li>
-<li>403: <code>FORBIDDEN</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

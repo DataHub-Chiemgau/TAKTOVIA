@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/defect.triaged.v1.schema.json",
+  "title": "Schaden klassifiziert (WP-M3-45)",
+  "description": "Payload von `defect.triaged`. Aggregat: defect_case / n. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "defect_id",
+    "vehicle_id",
+    "severity",
+    "blocks_vehicle"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "defect_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "severity": {
+      "enum": [
+        "SAFETY_CRITICAL",
+        "OPERATIONALLY_RELEVANT",
+        "COSMETIC",
+        "OTHER"
+      ]
+    },
+    "blocks_vehicle": {
+      "type": "boolean"
+    }
+  },
+  "examples": [
+    {
+      "defect_id": "11111111-2222-4333-8444-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "severity": "SAFETY_CRITICAL",
+      "blocks_vehicle": true
+    }
+  ]
+}

@@ -1,0 +1,259 @@
+paths:
+  /v1/runs/{run_id}/revisions:
+    get:
+      summary: Planrevisionen eines Umlaufs lesen
+      operationId: listRunRevisions
+      security:
+      - oidc:
+        - operator:read
+      description: 'Absteigend nach Revision; Fremder Umlauf: 404.'
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Umlauf-ID.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunRevisionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Manuelle Planänderung (Plan-CAS)
+      operationId: createRunRevision
+      security:
+      - oidc:
+        - dispatch:write
+      description: 'If-Match trägt die gelesene Planrevision; veraltet: 412 REVISION_MISMATCH mit Planvergleich im Problem-Detail. Gesperrtes
+        Fahrzeug (Sicherheitsrevision im Commit): 409 CONFLICT. Begründung ist Pflicht (OPS-003).'
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Umlauf-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunRevisionCreate'
+components:
+  schemas:
+    RunStopChange:
+      type: object
+      additionalProperties: false
+      properties:
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        change:
+          type: string
+          enum:
+          - MOVE
+          - REMOVE
+          - INSERT
+        new_sequence:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+        booking_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - route_stop_id
+      - change
+    RunRevisionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/RunStopChange'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        base_plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        compare_only:
+          type: boolean
+      required:
+      - changes
+      - reason
+      - base_plan_revision
+      description: Manuelle Planänderung mit Begründung (OPS-003). `base_plan_revision` ist die gelesene Planrevision (Plan-CAS); `compare_only`
+        liefert nur den Planvergleich ohne Commit. Der Server prüft im Commit die Sicherheitsrevision (Sperre) und verschlechtert keine bestehende
+        Zusage ohne Klärfall.
+    RunRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        previous_revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        cause:
+          type: string
+          enum:
+          - BOOKING_INSERTED
+          - BOOKING_REMOVED
+          - MANUAL_CHANGE
+          - REPLAN
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        diff:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              route_stop_id:
+                $ref: common.yaml#/components/schemas/UUID
+              kind:
+                type: string
+                enum:
+                - ADDED
+                - REMOVED
+                - MOVED
+                - TIME_CHANGED
+              old_sequence:
+                oneOf:
+                - type: integer
+                  minimum: 1
+                - type: 'null'
+              new_sequence:
+                oneOf:
+                - type: integer
+                  minimum: 1
+                - type: 'null'
+            required:
+            - route_stop_id
+            - kind
+            - old_sequence
+            - new_sequence
+        committed:
+          type: boolean
+      required:
+      - run_id
+      - plan_revision
+      - previous_revision
+      - cause
+      - reason
+      - created_at
+      - created_by
+      - diff
+      - committed
+      description: Planrevision mit Planvergleich (Kap. 05 §5.7).
+    RunRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunRevision'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
