@@ -7,6 +7,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `db.py` | `bootstrap` (Rollen, Datenbank, PostGIS), `migrate`, `reset` |
 | `migrations/V1__kernschema.sql` | Kernschema, Zeile für Zeile der Entwurfs-DDL aus `docs/pflichtenheft/schema/` (ohne `BEGIN`, `COMMIT`, `CREATE EXTENSION`) |
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
+| `migrations/V10100__sitzungsregister.sql` | WP-M1-10: `session_register` (Sitzungssperre) und `account_access` (Kontosperre, Abmeldezeitmarke), RLS, Trigger |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
 | `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |

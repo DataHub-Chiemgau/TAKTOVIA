@@ -491,6 +491,67 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<h2 id="sessions">sessions.yaml</h2>
+<article id="listMySessions"><h3><span class="m">GET</span> <code>/v1/me/sessions</code></h3><p>Eigene Sitzungen im aktiven Mandanten auflisten</p><dl><dt>operationId</dt><dd><code>listMySessions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="revokeAllMySessions"><h3><span class="m">POST</span> <code>/v1/me/sessions/revoke-all</code></h3><p>Von allen Geräten abmelden</p><dl><dt>operationId</dt><dd><code>revokeAllMySessions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="revokeMySession"><h3><span class="m">DELETE</span> <code>/v1/me/sessions/{session_id}</code></h3><p>Eigene Sitzung abmelden</p><dl><dt>operationId</dt><dd><code>revokeMySession</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>me:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="lockAccount"><h3><span class="m">POST</span> <code>/v1/account-locks</code></h3><p>Konto im Mandanten sperren</p><dl><dt>operationId</dt><dd><code>lockAccount</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>accounts:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="unlockAccount"><h3><span class="m">DELETE</span> <code>/v1/account-locks/{subject}</code></h3><p>Kontosperre aufheben</p><dl><dt>operationId</dt><dd><code>unlockAccount</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>accounts:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="startAccountRecovery"><h3><span class="m">POST</span> <code>/v1/account-recoveries</code></h3><p>Zugangswiederherstellung anstoßen</p><dl><dt>operationId</dt><dd><code>startAccountRecovery</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>accounts:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="webhooks">webhooks.yaml</h2>
 <article id="listWebhookSubscriptions"><h3><span class="m">GET</span> <code>/v1/webhook-subscriptions</code></h3><p>Webhook-Abonnements auflisten</p><dl><dt>operationId</dt><dd><code>listWebhookSubscriptions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>webhooks:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>

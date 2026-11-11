@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Vertragsfälle der produktiven Endpunkte. Wer einen Endpunkt aus `api/<modul>.yaml` baut, streicht seine `operationId` aus
  * `api/contract-pending.txt` und trägt hier einen [ContractCase] mit positivem Fall und Fehlerfall ein; ohne Eintrag
- * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership).
+ * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität (Sitzungen: WP-M1-10, `sessionCases`): getMe, switchTenant, listMemberships, createMembership, revokeMembership).
  * Fälle, die eine Anmeldung brauchen, laufen gegen die Instanz mit Ressourcenserver und Test-Issuer ([IdentityEnv]).
  */
 object M1ContractCases {
@@ -39,5 +39,40 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("DELETE", "/v1/memberships/${UUID.randomUUID()}", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = identityCases.associateBy { it.operationId }
+    /** WP-M1-10: Sitzungen, Kontosperre, Wiederherstellung. Das IdP-Admin-Verhalten steht im Ersatzserver [IdentityEnv.keycloak]. */
+    private fun sessionHeaders(w: World, token: String, extra: Map<String, String> = emptyMap()) = w.env.headers(token, extra = idem() + extra)
+    private fun mySessionId(w: World, token: String): Pair<String, Long> {
+        val id = w.env.get("/v1/me", token).json["session_id"].asString()
+        return id to w.env.get("/v1/me/sessions", token).json["items"].first { it["id"].asString() == id }["revision"].asLong()
+    }
+
+    private val sessionCases: List<ContractCase> = listOf(
+        ContractCase("listMySessions",
+            200, { val w = World(); w.env.get("/v1/me", w.passengerToken); ContractRequest("GET", "/v1/me/sessions?limit=10", headers = w.env.headers(w.passengerToken)) },
+            401, { ContractRequest("GET", "/v1/me/sessions") }, server = { IdentityEnv.server }),
+        ContractCase("revokeAllMySessions",
+            204, { val w = World(); ContractRequest("POST", "/v1/me/sessions/revoke-all", "{}", sessionHeaders(w, w.passengerToken)) },
+            401, { ContractRequest("POST", "/v1/me/sessions/revoke-all", "{}", idem()) }, server = { IdentityEnv.server }),
+        ContractCase("revokeMySession",
+            204, { val w = World(); val (id, rev) = mySessionId(w, w.passengerToken); ContractRequest("DELETE", "/v1/me/sessions/$id", null, sessionHeaders(w, w.passengerToken, mapOf("If-Match" to "\"$rev\""))) },
+            404, { val w = World(); w.env.get("/v1/me", w.passengerToken); ContractRequest("DELETE", "/v1/me/sessions/${UUID.randomUUID()}", null, sessionHeaders(w, w.passengerToken, mapOf("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("listSessions",
+            200, { val w = World(); w.env.get("/v1/me", w.passengerToken); ContractRequest("GET", "/v1/sessions?limit=10", headers = w.env.headers(w.adminToken)) },
+            403, { val w = World(); ContractRequest("GET", "/v1/sessions", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("revokeSession",
+            204, { val w = World(); val (id, rev) = mySessionId(w, w.passengerToken); ContractRequest("DELETE", "/v1/sessions/$id", null, sessionHeaders(w, w.adminToken, mapOf("If-Match" to "\"$rev\""))) },
+            404, { val w = World(); ContractRequest("DELETE", "/v1/sessions/${UUID.randomUUID()}", null, sessionHeaders(w, w.adminToken, mapOf("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("lockAccount",
+            201, { val w = World(); ContractRequest("POST", "/v1/account-locks", """{"subject":"${w.passenger}","reason":"Vertragsfall"}""", sessionHeaders(w, w.adminToken)) },
+            403, { val w = World(); ContractRequest("POST", "/v1/account-locks", """{"subject":"${w.admin}","reason":"x"}""", sessionHeaders(w, w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("unlockAccount",
+            204, { val w = World(); val rev = w.env.postIdem("/v1/account-locks", """{"subject":"${w.passenger}","reason":"Vertragsfall"}""", w.adminToken).json["revision"].asLong()
+                ContractRequest("DELETE", "/v1/account-locks/${w.passenger}", null, sessionHeaders(w, w.adminToken, mapOf("If-Match" to "\"$rev\""))) },
+            404, { val w = World(); ContractRequest("DELETE", "/v1/account-locks/${UUID.randomUUID()}", null, sessionHeaders(w, w.adminToken, mapOf("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("startAccountRecovery",
+            201, { val w = World(); ContractRequest("POST", "/v1/account-recoveries", """{"subject":"${w.passenger}"}""", sessionHeaders(w, w.adminToken)) },
+            404, { val w = World(); ContractRequest("POST", "/v1/account-recoveries", """{"subject":"${UUID.randomUUID()}"}""", sessionHeaders(w, w.adminToken)) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + sessionCases).associateBy { it.operationId }
 }

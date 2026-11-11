@@ -717,6 +717,28 @@ export interface ServicePage {
   as_of: string;
 }
 
+export interface AccountLockCreate {
+  subject: UUID;
+  reason: string;
+}
+
+export interface AccountAccess {
+  subject: UUID;
+  status: 'ACTIVE' | 'LOCKED';
+  status_changed_at: string;
+  revision: number;
+  idp_synced?: boolean;
+}
+
+export interface AccountRecoveryCreate {
+  subject: UUID;
+}
+
+export interface AccountRecovery {
+  subject: UUID;
+  started_at: string;
+}
+
 export interface WebhookSubscription {
   id: UUID;
   url: string;
@@ -1080,6 +1102,48 @@ export interface Operations {
     body: ServiceCreate;
     response: Service;
   };
+  listMySessions: {
+    path: Record<string, never>;
+    query: { limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: SessionPage;
+  };
+  revokeAllMySessions: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: undefined;
+    response: undefined;
+  };
+  revokeMySession: {
+    path: { session_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: undefined;
+  };
+  lockAccount: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: AccountLockCreate;
+    response: AccountAccess;
+  };
+  unlockAccount: {
+    path: { subject: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: undefined;
+  };
+  startAccountRecovery: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: AccountRecoveryCreate;
+    response: AccountRecovery;
+  };
   listWebhookSubscriptions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -1159,6 +1223,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
+  revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
 };

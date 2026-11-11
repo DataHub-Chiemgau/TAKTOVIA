@@ -829,6 +829,22 @@
       ],
       "defaultClientScopes": [],
       "secret": "dev-only-adapter-notification"
+    },
+    {
+      "clientId": "taktovia-idp-admin",
+      "name": "IdP-Administration des Backends (Sitzungen, Sperre, Wiederherstellung)",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "defaultClientScopes": [],
+      "secret": "dev-only-idp-admin"
     }
   ],
   "users": [
@@ -1190,6 +1206,26 @@
         "passenger"
       ],
       "requiredActions": []
+    },
+    {
+      "username": "service-account-taktovia-idp-admin",
+      "enabled": true,
+      "serviceAccountClientId": "taktovia-idp-admin",
+      "email": "idp-admin@example.test",
+      "realmRoles": [],
+      "credentials": [],
+      "attributes": {
+        "mfa_required": [
+          "false"
+        ],
+        "tenant_ids": []
+      },
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "manage-users"
+        ]
+      }
     }
   ]
 }

@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+session_register;SELECT,INSERT,UPDATE;WP-M1-10: Sitzungsregister mit Sperrstatus; Sperre endgültig (Trigger session_register_guard), kein DELETE
+account_access;SELECT,INSERT,UPDATE;WP-M1-10: Kontosperre und Zeitmarke Alle-Geräte-Abmeldung je Konto und Mandant; Revision per Trigger

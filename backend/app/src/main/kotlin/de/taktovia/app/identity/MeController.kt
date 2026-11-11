@@ -2,6 +2,7 @@ package de.taktovia.app.identity
 
 import de.taktovia.app.security.AuthenticatedPrincipal
 import de.taktovia.identity.api.IdentityApi
+import de.taktovia.identity.api.SessionIds
 import de.taktovia.identity.api.SubjectRef
 import de.taktovia.identity.api.SwitchOutcome
 import de.taktovia.identity.api.TenantMembership
@@ -63,6 +64,5 @@ class MeController(private val identity: IdentityApi, private val tickets: Conte
         "tenants" to tenants.map { mapOf("tenant_id" to it.tenant.toString(), "name" to it.tenantName) },
     )
 
-    private fun sessionUuid(sid: String?): String = sid?.let { runCatching { UUID.fromString(it) }.getOrNull() ?: UUID.nameUUIDFromBytes(it.toByteArray()) }?.toString()
-        ?: throw ProblemException(ErrorCode.UNAUTHENTICATED)
+    private fun sessionUuid(sid: String?): String = sid?.let { SessionIds.of(it) }?.toString() ?: throw ProblemException(ErrorCode.UNAUTHENTICATED)
 }

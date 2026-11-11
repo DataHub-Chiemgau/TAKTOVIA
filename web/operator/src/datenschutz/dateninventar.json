@@ -51,6 +51,104 @@
   },
   "tabellen": [
     {
+      "tabelle": "account_access",
+      "aggregat": "Konto-Zugangsstatus (WP-M1-10)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "eine Zeile je Konto und Mandant (Sperre, Abmeldezeitmarke)",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "issuer",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "lock_reason",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "sessions_revoked_before",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status_changed_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status_changed_by",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "subject",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "allocation_line",
       "aggregat": "Kostenumlage-Zeile",
       "loeschklasse": "LK_BELEG",
@@ -3211,6 +3309,122 @@
           "spalte": "valid_to",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "session_register",
+      "aggregat": "Sitzungsregister mit Sperrstatus (WP-M1-10)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "nur Kennungen, keine Tokens, Sperre endgültig",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "expires_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "idp_session_id",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "issuer",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "last_seen_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoke_reason",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoked_at",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revoked_by",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "subject",
+          "personenbezogen": "ja",
+          "zweck": "ZUGANG_ROLLEN",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "ZUGANG_ROLLEN",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",

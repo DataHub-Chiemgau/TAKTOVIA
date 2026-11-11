@@ -9,6 +9,9 @@ import de.taktovia.app.web.Correlation
 import de.taktovia.app.web.ProblemWriter
 import de.taktovia.identity.api.Decision
 import de.taktovia.identity.api.IdentityApi
+import de.taktovia.identity.api.SessionCheckUnavailableException
+import de.taktovia.identity.api.SessionRef
+import de.taktovia.identity.api.SessionVerdict
 import de.taktovia.identity.api.SubjectRef
 import de.taktovia.identity.api.TenantMembership
 import de.taktovia.platform.audit.ActorRef
@@ -75,6 +78,8 @@ class RequestContextFilter(
         try {
             if (principal == null) throw ProblemException(ErrorCode.UNAUTHENTICATED, "Anmeldung fehlt oder ist ungültig.")
             val ctx = when (principal.type) { PrincipalType.HUMAN -> humanContext(request, principal, op); PrincipalType.SERVICE -> serviceContext(request, principal) }
+            // Sitzungsstatus in jeder Anfrage (WP-M1-10, Kap. 05 §5.1): gesperrte Sitzung oder Konto -> 401 trotz gültigem Token; nicht prüfbar -> verweigert
+            if (principal.type == PrincipalType.HUMAN) checkSession(ctx, principal, request)
             // Zentrale Autorisierung (WP-M1-07): Rechtematrix + Funktionsscope; ohne Eintrag oder Scope deny-by-default, ohne Details in der Antwort
             (identity.authorizer.decide(ctx, op.operationId, op.scopes) as? Decision.Denied)?.let { denial ->
                 denied(ctx, op, denial.reason)
@@ -89,6 +94,19 @@ class RequestContextFilter(
             return problems.write(request, response, e)
         }
         chain.doFilter(request, response)
+    }
+
+    private fun checkSession(ctx: RequestContext, p: AuthenticatedPrincipal, request: HttpServletRequest) {
+        val sid = p.sessionId ?: throw ProblemException(ErrorCode.UNAUTHENTICATED, "Anmeldung fehlt oder ist ungültig.")
+        val verdict = try { identity.sessionGate.check(ctx.tenant, SessionRef(p.issuer, p.subject.toString(), sid, p.issuedAt)) } catch (e: SessionCheckUnavailableException) {
+            log.error("Sitzungsstatus nicht prüfbar, Zugriff verweigert correlation_id={}", Correlation.of(request))   // fail-closed
+            throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Die Anmeldung kann gerade nicht geprüft werden.", headers = mapOf("Retry-After" to "5"))
+        }
+        if (verdict != SessionVerdict.ACTIVE) {
+            log.info("Gesperrte Sitzung abgewiesen grund={} correlation_id={}", verdict, Correlation.of(request))
+            throw ProblemException(ErrorCode.UNAUTHENTICATED, "Die Sitzung ist beendet oder gesperrt; bitte neu anmelden.",
+                headers = mapOf("WWW-Authenticate" to """Bearer realm="taktovia", error="invalid_token", error_description="session revoked""""))
+        }
     }
 
     private fun humanContext(request: HttpServletRequest, p: AuthenticatedPrincipal, op: ApiOperation): RequestContext {

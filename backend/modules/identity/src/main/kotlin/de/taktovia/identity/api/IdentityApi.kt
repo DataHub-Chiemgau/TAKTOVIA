@@ -2,6 +2,7 @@ package de.taktovia.identity.api
 
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.audit.SecurityEventPort
+import de.taktovia.platform.cache.SessionBlockCache
 import de.taktovia.platform.context.ContextRevalidator
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
@@ -32,12 +33,17 @@ interface IdentityApi {
     val authorizer: Authorizer
     /** Protokoll des Ausrollens der Rechtematrix. */
     val rollout: RightsMatrixRollout
+    /** Prüfung „session status“ je Anfrage (WP-M1-10). */
+    val sessionGate: SessionGate
+    /** Sitzungsverwaltung, Kontosperre, Wiederherstellung (WP-M1-10). */
+    val sessions: SessionAdmin
 
     companion object {
         fun create(
             tx: TenantTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox,
             clock: Clock = Clock.systemUTC(), rights: RightsMatrix = RightsMatrix.load(),
-        ): IdentityApi = IdentityServicesFactory.create(tx, audit, security, outbox, clock, rights)
+            idp: IdpAdmin = IdpAdmin.Unconfigured, blockCache: SessionBlockCache = SessionBlockCache.None, sessionSettings: SessionSettings = SessionSettings(),
+        ): IdentityApi = IdentityServicesFactory.create(tx, audit, security, outbox, clock, rights, idp, blockCache, sessionSettings)
     }
 }
 

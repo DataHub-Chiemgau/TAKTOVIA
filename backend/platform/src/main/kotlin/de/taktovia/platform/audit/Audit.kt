@@ -70,9 +70,19 @@ object AuditActions {
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
+    /** Sitzungsverwaltung und Kontosperre (WP-M1-10, LH-6.2-IAM-009). */
+    const val SECURITY_SESSION_LOGOUT = "security.session.logout"
+    const val SECURITY_SESSION_LOGOUT_ALL = "security.session.logout_all"
+    const val SECURITY_SESSION_REVOKED = "security.session.revoked"
+    const val SECURITY_ACCOUNT_LOCKED = "security.account.locked"
+    const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
+    const val SECURITY_ACCOUNT_RECOVERY_STARTED = "security.account.recovery_started"
+    const val SECURITY_ACCOUNT_RECOVERY_DENIED = "security.account.recovery_denied"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
-        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
+        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
+        SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,
+        SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED)
 }
 
 /**

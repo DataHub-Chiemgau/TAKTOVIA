@@ -71,3 +71,14 @@ Für andere Module: `RequestContext` aus `platform.context` verwenden und Datenb
 Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `planner`, `tenant_admin` plus Platzhalter `finance`, `staff_planning`, `workshop`) und die versionierte **Rechtematrix** `modules/identity/src/main/resources/rechtematrix/rechtematrix.csv` sind die einzige Rechtequelle: Funktionsscopes folgen aus der Matrix, die zentrale Autorisierung (`identity.api.Authorizer`) entscheidet im `RequestContextFilter`. Eine Operation der API-Verträge ohne Matrixzeile lässt den Build scheitern; Änderungen der Matrix brauchen Versionsanhebung und `rechtematrix.lock` und werden beim Start in `rights_matrix_rollout` protokolliert. Der Administrator hat keinen Zugriff auf PII-/HR-/Finanz-Tätigkeiten ohne gesonderte Fachrolle. Details und offene Punkte (OP-10): [rechtematrix.md](../docs/umsetzungsplan/vertraege/rechtematrix.md).
 
 **Neue Route bauen:** Operation in `api/<modul>.yaml` mit `security: oidc: [<scope>]` deklarieren, Zeile in `rechtematrix.csv` ergänzen (Scope muss zu den übrigen Zeilen desselben Scopes passen), `# matrix_version` erhöhen und `rechtematrix.lock` erneuern (Test nennt den `sha256`-Wert).
+
+## Sitzungsverwaltung und Sitzungssperre (WP-M1-10)
+
+Jede Anfrage eines Menschen prüft nach der Mandantenermittlung den Sitzungsstatus (`identity.api.SessionGate`, im `RequestContextFilter`): gesperrte Sitzung oder gesperrtes Konto ergibt 401 trotz gültigem Token, Nichtprüfbarkeit 503 (fail-closed). PostgreSQL führt (`session_register`, `account_access`); Redis ist nur Cache der **Sperrliste** (kein positiver Cache). Operationen: eigene Sitzungen, „alle Geräte abmelden“, Sitzungen und Konten sperren/entsperren, Wiederherstellung nur über im IdP verifizierten Kontakt (`api/sessions.yaml`, `identity.yaml`). IdP-Schritte laufen über den Port `IdpAdmin` (Keycloak-Admin-REST, Dienstkonto `taktovia-idp-admin`) nach dem Commit. Vertrag: [LH-6.2-IAM-009](../docs/umsetzungsplan/vertraege/LH-6.2-IAM-009.md).
+
+| Einstellung (Planungswerte, OP-13) | Standard |
+|---|---|
+| `taktovia.identity.session.redis-url` (Cache der Sperrliste; ohne Wert entscheidet immer die Datenbank) | – |
+| `taktovia.identity.session.max-age-seconds` / `block-ttl-seconds` / `cache-ttl-seconds` (Kontosperren, höchstens 60) | 36000 / 86400 / 60 |
+| `taktovia.idp.admin.base-url`, `realm` (Standard: letztes Issuer-Segment), `client-id` | –, –, `taktovia-idp-admin` |
+| `taktovia.idp.admin.client-secret-file` (oder `client-secret` aus der Umgebung; nie im Repository) | – |

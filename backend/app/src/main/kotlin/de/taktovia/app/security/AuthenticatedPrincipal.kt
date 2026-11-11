@@ -23,6 +23,8 @@ data class AuthenticatedPrincipal(
     val scopes: Set<String>,
     val roles: Set<String>,
     val tenantIds: List<UUID>,
+    /** Ausstellungszeit des Tokens (`iat`); Grundlage des Vergleichs mit der Abmeldezeitmarke (WP-M1-10). */
+    val issuedAt: java.time.Instant = java.time.Instant.EPOCH,
 ) {
     val multiFactor: Boolean get() = acr == ACR_MFA
 

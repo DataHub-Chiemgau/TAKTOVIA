@@ -98,6 +98,6 @@ class AuthenticationFilter(
 
     companion object {
         /** Endpunkte, die eine Menschen-Sitzung voraussetzen: Konto, Mandantenwechsel, Sitzungen. */
-        private val HUMAN_ONLY = listOf(Regex("^/v1/me(/.*)?$"), Regex("^/v1/sessions(/.*)?$"))
+        private val HUMAN_ONLY = listOf(Regex("^/v1/me(/.*)?$"), Regex("^/v1/sessions(/.*)?$"), Regex("^/v1/account-(locks|recoveries)(/.*)?$"))
     }
 }

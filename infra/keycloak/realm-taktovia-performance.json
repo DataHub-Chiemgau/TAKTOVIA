@@ -825,6 +825,21 @@
         }
       ],
       "defaultClientScopes": []
+    },
+    {
+      "clientId": "taktovia-idp-admin",
+      "name": "IdP-Administration des Backends (Sitzungen, Sperre, Wiederherstellung)",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "defaultClientScopes": []
     }
   ],
   "users": []

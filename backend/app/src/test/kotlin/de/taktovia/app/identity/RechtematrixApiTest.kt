@@ -40,7 +40,8 @@ class RechtematrixApiTest {
         val ops = env.server.registry.operations.associateBy { it.operationId }
         val tokens = matrix.roles.associateWith { role -> UUID.randomUUID().let { sub -> env.grant(tenant, sub, role); env.token(sub) } }
         val failures = mutableListOf<String>(); var allowedCells = 0; var deniedCells = 0
-        for (row in matrix.operations) {
+        // „Alle Geräte abmelden“ beendet die Sitzung des Tokens (WP-M1-10): zuletzt aufrufen, sonst sähen die übrigen Tätigkeiten 401
+        for (row in matrix.operations.sortedBy { it.operationId == "revokeAllMySessions" }) {
             val op = ops[row.operationId] ?: continue.also { failures += "${row.operationId}: nicht im Vertrag" }
             for (role in matrix.roles) {
                 val c = call(op, tenant)

@@ -17,14 +17,20 @@ object IdentityEnv {
     val idp = TestIdp()
     const val CONTEXT_SECRET = "test-context-secret-test-context-secret-123456"
 
+    /** Ersatz der Keycloak-Admin-REST-API (nicht ausgeführt: echter Keycloak) und lokaler Redis als Cache der Sperrliste (fehlt die Binärdatei: nur Datenbank). */
+    val keycloak = FakeKeycloakAdmin(idp.realm)
+    val redis: LocalRedis? by lazy { LocalRedis.startOrNull() }
+
     val server: ProbeServer by lazy {
         TaktoviaTestSupport.requireDatabase()
-        Runtime.getRuntime().addShutdownHook(Thread { idp.close() })
+        Runtime.getRuntime().addShutdownHook(Thread { idp.close(); keycloak.close() })
         ProbeServer.production(
             "taktovia.idp.enabled=true", "taktovia.idp.issuer-uri=${idp.issuer}", "taktovia.idp.jwks-uri=${idp.jwksUri}", "taktovia.idp.audience=${idp.audience}",
             "taktovia.idp.jwks-min-refresh-seconds=0", "taktovia.idp.privileged-roles=tenant_admin,dispatcher,finance",
             "taktovia.idp.service-clients.adapter-psp=memberships:read", "taktovia.api.rate-limit.requests=1000000",
             "taktovia.identity.context-secret=$CONTEXT_SECRET",
+            "taktovia.idp.admin.base-url=${keycloak.baseUrl}", "taktovia.idp.admin.client-secret=test-admin-secret",
+            *(redis?.let { arrayOf("taktovia.identity.session.redis-url=${it.url}") } ?: emptyArray()),
         )
     }
 
@@ -60,6 +66,11 @@ object IdentityEnv {
 
     fun get(path: String, token: String, context: String? = null, extra: Map<String, String> = emptyMap()): Resp = server.get(path, headers(token, context, extra))
     fun post(path: String, body: String, token: String, context: String? = null, extra: Map<String, String> = emptyMap()): Resp = server.post(path, body, headers(token, context, extra))
+
+    fun delete(path: String, token: String, ifMatch: Long? = null, context: String? = null, extra: Map<String, String> = emptyMap()): Resp = server.send(
+        "DELETE", path, null, headers(token, context, mapOf("Idempotency-Key" to "del-" + UUID.randomUUID()) + (if (ifMatch != null) mapOf("If-Match" to "\"$ifMatch\"") else emptyMap()) + extra))
+
+    fun postIdem(path: String, body: String, token: String, context: String? = null): Resp = post(path, body, token, context, mapOf("Idempotency-Key" to "post-" + UUID.randomUUID()))
 
     fun switchTo(token: String, tenant: TenantId, service: UUID? = null, context: String? = null): Resp = post(
         "/v1/me/tenant-switch", """{"tenant_id":"$tenant"${if (service != null) ""","service_id":"$service"""" else ""}}""", token, context,
