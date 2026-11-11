@@ -81,7 +81,7 @@ class SecretScan(unittest.TestCase):
     def test_git_historie_des_repositories(self):
         rc, out = run("history", REPO)
         self.assertEqual(rc, 0, out)
-        self.assertIn("1 genutzte Ausnahmen", out, "jede Ausnahme wird im Lauf aufgeführt")
+        self.assertIn("2 genutzte Ausnahmen", out, "jede Ausnahme wird im Lauf aufgeführt (Allowlist: zwei Einträge)")
 
     def test_image_mit_env_datei_wird_abgewiesen(self):
         layer = io.BytesIO()

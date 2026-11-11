@@ -130,7 +130,7 @@ OCC_SQL = """SELECT s.seg, coalesce(sum((h.capacity_vector->>'seats')::int), 0),
 
 def _outbox(cur, tenant, aggregate_id, revision, etype, payload="{}"):
     cur.execute("INSERT INTO taktovia.outbox(tenant_id,event_id,aggregate_id,aggregate_revision,event_type,schema_version,occurred_at,payload) "
-                "VALUES (%s,%s,%s,%s,%s,'1',clock_timestamp(),%s::jsonb)",
+                "VALUES (%s,%s,%s,%s,%s,'1.0',clock_timestamp(),%s::jsonb)",
                 (tenant, uuid.uuid5(NS, f"{aggregate_id}|{revision}|{etype}"), aggregate_id, revision, etype, payload))
 
 

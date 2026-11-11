@@ -87,7 +87,9 @@ class EvidenzTest(unittest.TestCase):
         ev.validate(r)
         self.assertTrue(self.path.exists())
         self.assertTrue(r["software_build"]["build_id"])
-        self.assertEqual(r["migration_state"]["latest"], "V3__tenant_id_unveraenderlich.sql")
+        import re as _re
+        newest = max((p.name for p in (Path(__file__).resolve().parents[2] / "db/migrations").glob("V*__*.sql")), key=lambda n: int(_re.match(r"V(\d+)__", n).group(1)))
+        self.assertEqual(r["migration_state"]["latest"], newest)
         self.assertEqual(r["acceptance_decision"], "PENDING")
         self.assertEqual(r["source_key"], ["ENABLER:WP-M0-22"])
         self.assertIn("psp-simulator", r["environment"]["simulated_components"])

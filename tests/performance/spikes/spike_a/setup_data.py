@@ -80,7 +80,7 @@ def _load_tenant(name, label):
              SELECT tenant_id, md5(id::text||'bk')::uuid, id, md5(%s||'svc0')::uuid, 'bk-'||federation_ref, 'CONFIRMED', '{}', 1
              FROM capacity_hold WHERE tenant_id=%s AND state='CONSUMED' AND federation_ref LIKE 'seed-%%'""", (t, t))
         x("""INSERT INTO outbox(tenant_id,event_id,aggregate_id,aggregate_revision,event_type,schema_version,occurred_at,payload,published_at)
-             SELECT tenant_id, md5(id::text||'ob')::uuid, id, 1, 'CapacityHeld', '1', expires_at, '{}', expires_at FROM capacity_hold
+             SELECT tenant_id, md5(id::text||'ob')::uuid, id, 1, 'CapacityHeld', '1.0', expires_at, '{}', expires_at FROM capacity_hold
              WHERE tenant_id=%s AND federation_ref LIKE 'seed-%%'""", (t,))
         # Geodaten: Haltepunkte (20 % mit zweiter Revision) und Bediengebiete (3 Revisionen je Dienst, ~200 Stützpunkte)
         lo, la, hi, ha = BBOX

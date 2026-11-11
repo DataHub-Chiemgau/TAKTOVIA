@@ -28,6 +28,8 @@ SECURITY_HEADERS = {
 
 # Pro Testlauf zufällig erzeugt, nie im Quelltext (Secret-Scan, LH-6.18-SEC-003).
 CURSOR_SECRET = __import__('secrets').token_urlsafe(32)
+# Lokaler Testlauf ohne TLS auf Loopback und ohne Anmeldung (die Produktivvorgaben der application.yml sind streng, WP-M1-36).
+LOCAL_ARGS = ['--taktovia.environment=local', '--server.ssl.enabled=false', '--taktovia.idp.enabled=false']
 
 
 class Resp:
@@ -106,8 +108,8 @@ class RunningApp:
         self.log = REPO / 'backend/app/build/security-test-app.log'
         self._log = open(self.log, 'w')
         self.proc = subprocess.Popen(
-            ['java', '-jar', str(JAR), f'--server.port={self.port}', f'--taktovia.api.cursor-secret={CURSOR_SECRET}', *self.args],
-            stdout=self._log, stderr=subprocess.STDOUT, cwd=REPO)
+            ['java', '-jar', str(JAR), f'--server.port={self.port}', f'--taktovia.api.cursor-secret={CURSOR_SECRET}', *LOCAL_ARGS, *self.args],
+            stdout=self._log, stderr=subprocess.STDOUT, cwd=REPO, env={**os.environ, 'TAKTOVIA_DB_SSLMODE': 'disable'})
         deadline = time.time() + 120
         while time.time() < deadline:
             if self.proc.poll() is not None:
