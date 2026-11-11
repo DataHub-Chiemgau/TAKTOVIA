@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+impact_report;tenant_id;nein;KONFIGURATION;;;;
+impact_report;id;nein;KONFIGURATION;;;;
+impact_report;config_revision_id;nein;KONFIGURATION;;;;
+impact_report;revision_row_version;nein;KONFIGURATION;;;;
+impact_report;values_hash;nein;KONFIGURATION;;;;
+impact_report;schema_version;nein;KONFIGURATION;;;;
+impact_report;affected_digest;nein;KONFIGURATION;;;;
+impact_report;highest_severity;nein;KONFIGURATION;;;;
+impact_report;conflict_count;nein;KONFIGURATION;;;;
+impact_report;affected;nein;KONFIGURATION;;;;
+impact_report;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber der Analyse (Pseudonym user:<uuid>)
+impact_report;created_at;nein;KONFIGURATION;;;;

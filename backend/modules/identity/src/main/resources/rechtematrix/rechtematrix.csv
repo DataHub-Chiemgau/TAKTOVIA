@@ -48,6 +48,7 @@ registerPassenger;passengers:write;PII;M1;J;N;J;N;N;N;N;N;N;N
 createConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
 updateConfigRevision;config:write;-;M1;N;N;N;N;N;J;J;N;N;N
 getConfigRevision;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
+getConfigImpactReport;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 getEffectiveConfig;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 listConfigRevisions;config:read;-;M1;N;N;N;J;J;J;J;N;N;N
 listConfigParameters;config:read;-;M1;N;N;N;J;J;J;J;N;N;N

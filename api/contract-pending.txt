@@ -32,6 +32,5 @@ quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quot
 receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
 recordDriverEvent  # POST /v1/driver/events
 registerPassenger  # POST /v1/passengers
-requestConfigImpact  # POST /v1/config/revisions/{revision_id}/impact
 updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
 validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

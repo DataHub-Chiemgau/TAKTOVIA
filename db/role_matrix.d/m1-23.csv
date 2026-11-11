@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+impact_report;SELECT,INSERT;WP-M1-23: Wirkungsbericht, unveraenderlich (Trigger impact_report_immutable), nur Objektverweise und Anzahlen

@@ -23,11 +23,14 @@ interface ConfigApi {
     val companyProfile: CompanyProfileService
     val parameters: ParameterRegistry
     val revisions: ConfigRevisions
+    /** Wirkungsanalyse vor Publikation (WP-M1-23). */
+    val impact: ImpactAnalysis
 
     companion object {
         /** [clock] bestimmt, welche Schema-Version „jetzt“ gilt (Tests setzen eine feste Uhr). */
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): ConfigApi =
-            ConfigServicesFactory.create(ctxTx, audit, outbox, clock)
+        fun create(
+            ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), impactProviders: List<ImpactProvider> = emptyList(),
+        ): ConfigApi = ConfigServicesFactory.create(ctxTx, audit, outbox, clock, impactProviders)
     }
 }
 
@@ -55,6 +58,13 @@ data class ParameterDefinition(
     val description: String,
     /** Das vollständige JSON-Schema (Draft 2020-12) des Parameters. */
     val schema: Map<String, Any?>,
+    /**
+     * Kennzeichen „wichtig/impact-pflichtig“ (WP-M1-23): eine Änderung kann bestehende Zusagen berühren und löst die Wirkungsanalyse aus.
+     * Die Liste ist vorläufig (OP-19); ein späteres Schema darf sie als `x-impact-required` im JSON-Schema führen (wird dann bevorzugt gelesen).
+     */
+    val impactRequired: Boolean = false,
+    /** Hinweistext zur Prüfung, z. B. „bei Änderung bereits bestätigte Buchungen prüfen“. */
+    val impactHint: String? = null,
 )
 
 data class ParameterCatalog(val schemaVersion: String, val validFrom: Instant, val parameters: List<ParameterDefinition>)

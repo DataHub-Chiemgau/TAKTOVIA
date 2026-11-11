@@ -29,7 +29,18 @@
 - **Konkurrierend:** Revision wird nach Berichtserstellung geändert – Publikation scheitert; neue betroffene Objekte zwischen Bericht und Publikation werden über die Revisionsbindung erkannt.
 - **Referenztests:** keine Katalog-ID im WP genannt; Nachweis über geplanten Test.
 
-Testfälle: geplant:backend/config/src/test/kotlin/de/taktovia/config/ImpactAnalysisTest.kt::verkleinerung_bediengebiet_loest_konfliktpruefung_aus
+Testfälle: backend/modules/config/src/test/kotlin/de/taktovia/config/ImpactAnalysisTest.kt::verkleinerung_bediengebiet_loest_konfliktpruefung_aus; backend/modules/config/src/test/kotlin/de/taktovia/config/ImpactAnalysisTest.kt::publikation_mit_veraltetem_bericht_wird_abgewiesen; backend/modules/config/src/test/kotlin/de/taktovia/config/ImpactAnalysisTest.kt::neue_betroffene_objekte_zwischen_bericht_und_publikation_werden_erkannt; backend/modules/config/src/test/kotlin/de/taktovia/config/ImpactAnalysisTest.kt::revision_wird_nach_berichtserstellung_geaendert_publikation_scheitert
+
+## Umsetzung M1 (WP-M1-23)
+
+- **Tabelle:** `impact_report` (V10230): `(tenant_id,id)`, `config_revision_id` (zusammengesetzter FK), `revision_row_version` (Stand bei der Analyse, informativ), `values_hash` (SHA-256 über kanonisches JSON aus Scope, Schema-Version, Werten und Gültigkeit; Grund und Zeilenversion zählen nicht, weil Prüfen und Freigeben die Zeilenversion erhöhen), `affected_digest`, `highest_severity` (`NONE|INFO|WARNING|BLOCKING`), `conflict_count`, `affected` (nur Art, Schweregrad, Anzahl, Verweise `{kind,id}`), `created_by`, `created_at`; unveränderlich (Trigger), RLS.
+- **Bindungsregel:** Der Bericht gilt nur für die Revision mit identischem `values_hash`. `ImpactAnalysis.confirmForPublication` (von WP-M1-22 in der Publikationstransaktion aufzurufen) sperrt die Revisionszeile `FOR SHARE` und weist ab: fehlender Bericht 422 (`/impact_report_id` REQUIRED), unbekannter oder fremder Bericht 422 (INVALID_VALUE, nicht von „unbekannt“ unterscheidbar), Bericht einer anderen Revision oder geänderte Werte 409 `CONFLICT`.
+- **Neue betroffene Objekte** (festgelegte Regel zur offenen Frage): Die Revisionsbindung erkennt Änderungen an der Revision. Änderungen am Bestand (neue Buchung nach der Analyse) erkennt `confirmForPublication`, indem es die Anbieter erneut befragt und das Ergebnis über `affected_digest`-Berechnung mit dem Bericht vergleicht; Abweichung 409, neue Analyse nötig.
+- **Provider-Port:** `ImpactProvider.analyze(j, ctx, ImpactSubject)` je Fachmodul, in der Transaktion der Analyse mit Mandantenkontext; fällt ein Anbieter aus oder liefert er ungültige Befunde, entsteht kein Bericht (503). Bis M2/M4 gibt es nur Test-Anbieter.
+- **API:** `POST /v1/config/revisions/{id}/impact` (`requestConfigImpact`, `config:write`, `If-Match` = Zeilenversion), neu `GET /v1/config/impact-reports/{id}` (`getConfigImpactReport`, `config:read`); `ConfigRevision.row_version` und `ConfigParameter.impact_required/impact_hint` ergänzt. M1 arbeitet synchron (die asynchrone Variante über `operation` `IMPACT_ANALYSIS` ist nicht gebaut, Umfang in M1 klein).
+- **Impact-pflichtige Parameter** (vorläufig, OP-19): `pickup_window_min`, `max_wait_min`, `min_booking_lead_min`, `max_booking_horizon_days`, `protected_stop_horizon_min`, `min_capacity_reserve`, `service_config`; geführt in `ImpactRequiredParameters` (die Schema-Version 1 ist unveränderlich; die nächste Version führt `x-impact-required`).
+- **Audit:** `config.impact.analyzed` (Analyse) und `config.impact.bound` (Bindung bei der Publikation, mit Bericht-ID und Hash).
+- **Offen für Vollabnahme:** `publishConfig` selbst (WP-M1-22) ruft die Sperre auf; echte Anbieter für Bediengebiete/Buchungen (WP-M2-04, WP-M2-23) und Schichten (WP-M4-17).
 
 ## Reviews
 

@@ -775,6 +775,8 @@ export interface ConfigParameter {
   limit_source: 'KATALOG' | 'PLANUNGSANNAHME';
   description: string;
   schema: Record<string, unknown>;
+  impact_required?: boolean;
+  impact_hint?: string | null;
 }
 
 export interface ConfigParameterCatalog {
@@ -791,6 +793,7 @@ export interface ConfigRevisionUpdate {
 }
 
 export interface ConfigRevision {
+  row_version?: number;
   id: UUID;
   scope_kind: 'TENANT' | 'REGION' | 'DEPOT' | 'SERVICE';
   scope_id: UUID;
@@ -831,12 +834,24 @@ export interface ConfigValidationReport {
 export interface ConfigImpactReport {
   id: UUID;
   revision_id: UUID;
+  revision_row_version: number;
+  values_hash: string;
   generated_at: string;
+  created_by: string;
+  highest_severity: ImpactSeverity;
+  conflict_count: number;
   affected: ({
     kind: string;
+    severity: ImpactSeverity;
     count: number;
+    object_refs: ({
+      kind: string;
+      id: UUID;
+    })[];
   })[];
 }
+
+export type ImpactSeverity = 'NONE' | 'INFO' | 'WARNING' | 'BLOCKING';
 
 export interface ConfigRevisionPage {
   items: ConfigRevision[];
@@ -1293,6 +1308,13 @@ export interface Operations {
     body: undefined;
     response: ConfigValidationReport;
   };
+  getConfigImpactReport: {
+    path: { impact_report_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ConfigImpactReport;
+  };
   requestConfigImpact: {
     path: { revision_id: UUID };
     query: Record<string, never>;
@@ -1455,6 +1477,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getConfigRevision: { method: 'GET', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateConfigRevision: { method: 'PATCH', path: '/v1/config/revisions/{revision_id}', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   validateConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/validate', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getConfigImpactReport: { method: 'GET', path: '/v1/config/impact-reports/{impact_report_id}', pathParams: ['impact_report_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
