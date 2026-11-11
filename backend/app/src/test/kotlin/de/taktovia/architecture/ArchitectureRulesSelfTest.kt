@@ -32,4 +32,11 @@ class ArchitectureRulesSelfTest {
     @Test fun `Geld als Double bricht`() = rules.noFloatingPointMoney().forEach { (n, r) -> mustFail(n, r) }
 
     @Test fun `Adapteraufruf in Transaktion bricht`() = rules.noAdapterCallInTransaction().forEach { (n, r) -> mustFail(n, r) }
+
+    @Test fun `auditpflichtiger Befehl ohne Audit-Aufruf bricht, mit Aufruf (direkt oder ueber Hilfsmethode) nicht`() {
+        mustFail("@AuditRequired", rules.auditRequiredCallsAuditPort())
+        val good = ClassFileImporter().importPackages("de.taktovia.archfixtures.good")
+        rules.auditRequiredCallsAuditPort().check(good)
+        org.junit.jupiter.api.Assertions.assertTrue(good.any { it.simpleName == "AuditedCommands" }, "gute Fixture wurde importiert")
+    }
 }

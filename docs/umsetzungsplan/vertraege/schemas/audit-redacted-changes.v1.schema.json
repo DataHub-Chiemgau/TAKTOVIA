@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/audit-redacted-changes.v1.schema.json",
+  "title": "audit_event.redacted_changes (WP-M1-46)",
+  "description": "Maskierte Änderungsangaben. Schlüssel: Kleinbuchstaben, Ziffern, Unterstrich, Punkt. Geheimnisse, Token, Kartendaten und Personendaten sind durch \"[redacted]\" ersetzt, Mandantenkennungen anderer Mandanten durch \"[foreign-tenant]\". Pfade der Maskierungen stehen unter _redacted. Durchgesetzt von platform.audit.AuditRedactor.",
+  "type": "object",
+  "propertyNames": { "pattern": "^[a-z_][a-z0-9_.]{0,62}$" },
+  "properties": {
+    "_redacted": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  },
+  "additionalProperties": { "$ref": "#/$defs/value" },
+  "$defs": {
+    "value": {
+      "oneOf": [
+        { "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string", "maxLength": 501 },
+        { "type": "array", "maxItems": 50, "items": { "$ref": "#/$defs/value" } },
+        { "type": "object", "propertyNames": { "pattern": "^[a-z_][a-z0-9_.]{0,62}$" }, "additionalProperties": { "$ref": "#/$defs/value" } }
+      ]
+    }
+  },
+  "examples": [
+    { "status": "ACTIVE", "role_code": "dispatcher", "email": "[redacted]", "_redacted": ["email"] }
+  ]
+}

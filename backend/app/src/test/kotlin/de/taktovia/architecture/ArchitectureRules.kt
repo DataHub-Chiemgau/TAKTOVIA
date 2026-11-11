@@ -30,6 +30,8 @@ class ArchitectureRules(
         )
         val ADAPTERS = listOf("psp", "partnertomp", "partnerosdm", "timetablegtfs", "erpexport", "ocr", "notification")
         const val TRANSACTIONAL = "org.springframework.transaction.annotation.Transactional"
+        const val AUDIT_REQUIRED = "de.taktovia.platform.audit.AuditRequired"
+        const val AUDIT_PORT = "de.taktovia.platform.audit.AuditPort"
     }
 
     private val modulePackages get() = modules.map { "$root.$it.." }.toTypedArray()
@@ -92,8 +94,28 @@ class ArchitectureRules(
         }
     }
 
+    /**
+     * WP-M1-46: ein als auditpflichtig markierter Befehl (`@AuditRequired`) ruft `AuditPort.record` auf, direkt oder über Methoden derselben
+     * Klasse. Sonst scheitert der Build. Bezug auf die platform-Typen ist fest (nicht über `root` parametrisiert).
+     */
+    fun auditRequiredCallsAuditPort(): ArchRule = methods().that().areAnnotatedWith(AUDIT_REQUIRED)
+        .should(callAuditRecord()).allowEmptyShould(true)
+
+    private fun callAuditRecord() = object : ArchCondition<JavaMethod>("AuditPort.record aufrufen (direkt oder über Methoden derselben Klasse)") {
+        private fun callsRecord(m: JavaMethod, seen: MutableSet<JavaMethod>): Boolean {
+            if (!seen.add(m)) return false
+            return m.methodCallsFromSelf.any { c ->
+                (c.target.name == "record" && c.targetOwner.isAssignableTo(AUDIT_PORT)) ||
+                    (c.targetOwner == m.owner && c.target.resolveMember().orElse(null)?.let { callsRecord(it, seen) } == true)
+            }
+        }
+        override fun check(method: JavaMethod, events: ConditionEvents) {
+            if (!callsRecord(method, mutableSetOf())) events.add(SimpleConditionEvent.violated(method, "${method.fullName} ist @AuditRequired, ruft aber AuditPort.record nicht auf"))
+        }
+    }
+
     fun all(): Map<String, ArchRule> = internalIsolation() + layering() + ("Redis nur in platform.cache" to redisOnlyInCachePackage()) +
-        noFloatingPointMoney() + noAdapterCallInTransaction()
+        noFloatingPointMoney() + noAdapterCallInTransaction() + ("@AuditRequired ruft AuditPort.record" to auditRequiredCallsAuditPort())
 }
 
 fun Map<String, ArchRule>.checkAll(classes: JavaClasses) = forEach { (name, rule) ->
