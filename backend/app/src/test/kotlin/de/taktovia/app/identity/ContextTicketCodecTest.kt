@@ -36,8 +36,10 @@ class ContextTicketCodecTest {
         invalid(ticket, principal(sub = UUID.randomUUID()))                       // anderes Konto
         invalid(ticket, principal(sub = p.subject, sid = "andere-sitzung-1"))     // andere Sitzung
         invalid(ticket, issuer = "https://anderer-issuer")                        // anderer Issuer
-        invalid(ticket.dropLast(1) + (if (ticket.last() == 'A') 'B' else 'A'))    // Signatur verändert
         val parts = ticket.split('.')
+        // Signatur verändert: ein Zeichen in der Mitte (das letzte Base64-Zeichen trägt Füllbits; A/B dort kann dieselben Bytes ergeben)
+        val sig = parts[2]; val mid = sig.length / 2
+        invalid("${parts[0]}.${parts[1]}." + sig.substring(0, mid) + (if (sig[mid] == 'A') 'B' else 'A') + sig.substring(mid + 1))
         invalid("${parts[0]}.${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("${UUID.randomUUID()}|-|${exp.epochSecond}".toByteArray())}.${parts[2]}")  // Nutzdaten ausgetauscht
         invalid("garbage"); invalid(""); invalid("v2.${parts[1]}.${parts[2]}"); invalid("a".repeat(1000))
         // anderer Schlüssel (andere Instanz mit anderem Geheimnis)

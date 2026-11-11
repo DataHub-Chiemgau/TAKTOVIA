@@ -28,6 +28,8 @@ class EnvironmentGuard(private val env: Environment, private val dataSource: Dat
         else -> null
     }
 
+    private var lastReadError: String? = null
+
     fun databaseEnvironment(): String? = runCatching {
         dataSource.connection.use { c ->
             c.createStatement().use { st ->
@@ -37,11 +39,11 @@ class EnvironmentGuard(private val env: Environment, private val dataSource: Dat
                 }
             }
         }
-    }.getOrNull()
+    }.onFailure { lastReadError = "${it.javaClass.simpleName}: ${it.message?.take(160)}" }.getOrNull()
 
     fun violations(): List<String> {
         val app = applicationEnvironment() ?: return listOf("taktovia.environment='${env.getProperty("taktovia.environment")}' ist keine bekannte Umgebung (${KNOWN.joinToString("|")}|local)")
-        val db = databaseEnvironment() ?: return listOf("die Datenbank hat keine lesbare Umgebungskennung (taktovia_meta.environment_marker)")
+        val db = databaseEnvironment() ?: return listOf("die Datenbank hat keine lesbare Umgebungskennung (taktovia_meta.environment_marker)" + (lastReadError?.let { ": $it" } ?: ""))
         return if (app == db) emptyList()
         else listOf("Umgebungskennung der Anwendung ($app) ist nicht die der Datenbank ($db)")
     }
