@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+legal_entity;revision;nein;MANDANTENTRENNUNG;;;;
+legal_entity;created_at;nein;MANDANTENTRENNUNG;;;;
+legal_entity;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+organization;revision;nein;MANDANTENTRENNUNG;;;;
+organization;created_at;nein;MANDANTENTRENNUNG;;;;
+organization;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+organization;roles_valid_from;nein;MANDANTENTRENNUNG;;;;
+organization;roles_valid_to;nein;MANDANTENTRENNUNG;;;;
+platform_operator_account;issuer;nein;ZUGANG_ROLLEN;;;;
+platform_operator_account;subject;ja;ZUGANG_ROLLEN;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_STAMM;Kennung des Plattformbetreiberkontos beim Identitätsanbieter
+platform_operator_account;created_at;nein;ZUGANG_ROLLEN;;;;
+platform_operator_account;revoked_at;nein;ZUGANG_ROLLEN;;;;

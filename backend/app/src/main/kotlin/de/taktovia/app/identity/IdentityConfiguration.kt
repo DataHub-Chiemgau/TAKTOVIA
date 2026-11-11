@@ -46,6 +46,10 @@ class IdentityConfiguration {
     /** Protokolliert das Ausrollen der Rechtematrix beim Start (IAM-004 AK 4); schlägt es fehl, startet die Anwendung nicht. */
     @Bean fun rightsMatrixRolloutRecorder(identity: IdentityApi, env: Environment) = RightsMatrixRolloutRecorder(identity, env.getProperty("spring.application.name") ?: "taktovia")
 
+    /** Erstausstattung eines neuen Mandanten in derselben Transaktion; die Verdrahtung des Unternehmensprofils (WP-M1-24) ersetzt diese Vorgabe. */
+    @Bean @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(TenantSeed::class)
+    fun tenantSeed(): TenantSeed = TenantSeed { _, _, _, _, _, _, _ -> }
+
     @Bean fun tenantMismatchReporter(tx: TenantTransactions, events: SecurityEventPort) = TenantMismatchReporter(tx, events)
 
     @Bean fun tenantClaimInspector(m: TenantMismatchReporter): RequestBodyInspector = TenantClaimInspector(m)

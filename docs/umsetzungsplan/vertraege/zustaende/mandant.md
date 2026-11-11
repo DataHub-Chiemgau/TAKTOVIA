@@ -5,7 +5,7 @@
 - **Quelle der Zustände:** Kern-DDL (`ACTIVE`, `SUSPENDED`, `CLOSED`)
 - **Status der Übergangstabelle:** Entwurf der Umsetzung. Das Pflichtenheft nennt die Zustandsmenge, aber nur teilweise die Übergänge; die Kanten unten sind aus den dokumentierten Pfaden und Fehlerverträgen (Kap. 02 §7.4, Kap. 03 §4.2) abgeleitet und **vor Abnahme fachlich zu bestätigen** (Review Fachanalyse).
 - **Regeln:** Übergang nur laut Tabelle, sonst 409 `INVALID_STATE_TRANSITION`; Revision/CAS mit `If-Match` (fehlend 428, veraltet 412 `REVISION_MISMATCH`); je Übergang ein Outbox-Ereignis `tenant.state_changed` ([Schema](../../../../api/events/platform.statechanged.v1.schema.json)); ältere Revision bewirkt keinen Rücksprung. Kein Gleichlauf mit anderen Automaten.
-- **Hinweis:** Keine Revisionsspalte (OP-33): die Revision des Ereignisses ist die laufende Nummer der `tenant.state_changed`-Ereignisse. Geändert wird nur von der Plattformverwaltung (die Runtime-Rolle hat kein UPDATE auf `tenant`). `CLOSED` ist endgültig.
+- **Hinweis:** Keine Revisionsspalte (OP-33): die Revision des Ereignisses ist die laufende Nummer der `tenant.state_changed`-Ereignisse. Geändert wird nur von der Plattformverwaltung: seit WP-M1-05 hat die Runtime-Rolle spaltenweise `INSERT (id, name, status)` und `UPDATE (status)` auf `tenant` (kein Recht auf `name`/`id`, kein DELETE); wer das auslösen darf, prüft der Server (`platform_operator_account`, zweiter Faktor), die Datenbank erzwingt zusätzlich Übergangsregeln und Mandantenkontext (RLS `own_tenant`). `CLOSED` ist endgültig.
 
 | von | erlaubte Folgezustände |
 |---|---|

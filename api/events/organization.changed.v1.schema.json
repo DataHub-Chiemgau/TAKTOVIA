@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/organization.changed.v1.schema.json",
+  "title": "Organisation oder Rechtsträger geändert (WP-M1-05, LH-I.4-MUL-003)",
+  "description": "Genau ein Ereignis je Änderung an einer Organisation, ihren vertraglichen Rollen oder einem Rechtsträger (Anlegen und Ändern). Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist `id`, `aggregate_revision` die Revision der Organisation bzw. des Rechtsträgers. Das Ereignis bleibt im Mandanten. Ereignisname und Felder sind Vorschlag (OP-33); die Rollenwerte sind Planungsannahme (OP-05).",
+  "type": "object",
+  "required": ["entity", "id", "change", "name", "country", "legal_entity_id", "federation_ref", "roles", "roles_valid_from", "roles_valid_to", "revision"],
+  "additionalProperties": false,
+  "properties": {
+    "entity": { "type": "string", "enum": ["organization", "legal_entity"] },
+    "id": { "type": "string", "format": "uuid" },
+    "change": { "type": "string", "enum": ["created", "updated"] },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "country": { "oneOf": [{ "type": "string", "pattern": "^[A-Z]{2}$" }, { "type": "null" }], "description": "Nur für Rechtsträger." },
+    "legal_entity_id": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }], "description": "Nur für Organisationen." },
+    "federation_ref": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 200 }, { "type": "null" }] },
+    "roles": {
+      "oneOf": [
+        {
+          "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true,
+          "items": { "type": "string", "enum": ["PLATFORM_OPERATOR", "TRANSPORT_COMPANY", "TASK_AUTHORITY", "CLIENT", "BROKER", "ACTUAL_CARRIER"] }
+        },
+        { "type": "null" }
+      ]
+    },
+    "roles_valid_from": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "roles_valid_to": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "revision": { "type": "integer", "minimum": 1 }
+  },
+  "examples": [
+    {
+      "entity": "organization", "id": "00000000-0000-4000-8000-0000000000f1", "change": "created", "name": "Verkehrsbetriebe Beispiel",
+      "country": null, "legal_entity_id": "00000000-0000-4000-8000-0000000000f2", "federation_ref": "fed-vb-beispiel",
+      "roles": ["TRANSPORT_COMPANY", "ACTUAL_CARRIER"], "roles_valid_from": "2026-11-02T08:00:00Z", "roles_valid_to": null, "revision": 1
+    }
+  ]
+}

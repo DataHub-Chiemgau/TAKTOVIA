@@ -232,7 +232,7 @@ class Trigger(unittest.TestCase):
                 cfg, svc, org = uid(), uid(), uid()
                 c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by)
                              VALUES (%s,%s,'SERVICE',%s,1,'1','{}',now(),'u')""", (T, cfg, svc))
-                c.execute("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (%s,%s,%s,'o',%s,'{OPERATOR}')", (T, org, LE, str(uid())))
+                c.execute("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (%s,%s,%s,'o',%s,'{TRANSPORT_COMPANY}')", (T, org, LE, str(uid())))
                 c.execute("INSERT INTO taktovia.service(tenant_id,id,operator_id,name,timezone,config_revision_id) VALUES (%s,%s,%s,'s','Europe/Berlin',%s)", (T, svc, org, cfg))
                 bowtie = 'SRID=4326;MULTIPOLYGON(((0 0,1 1,1 0,0 1,0 0)))'  # selbstschneidend
                 c.execute("INSERT INTO taktovia.service_area(tenant_id,id,service_id,revision,area,valid_from) VALUES (%s,%s,%s,1,%s,now())", (T, uid(), svc, bowtie))

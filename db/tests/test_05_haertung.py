@@ -41,10 +41,12 @@ class Haertung(unittest.TestCase):
             exec_('UPDATE taktovia.fiscal_period SET id=%s WHERE id=%s', (uid(), self.open_))
 
     def test_b02_runtime_aendert_mandantenstamm_nicht(self):
-        for stmt in ("UPDATE taktovia.tenant SET status='CLOSED'", "UPDATE taktovia.tenant SET name='x'",
-                     'DELETE FROM taktovia.tenant'):
+        # WP-M1-05: Mandantenanlage/Statuswechsel durch die Plattformverwaltung brauchen spaltenweise Rechte (INSERT id/name/status, UPDATE status).
+        # Name, Kennung und Löschen bleiben der Runtime-Rolle verwehrt (B-02), ebenso jede Änderung eines fremden Mandanten (RLS).
+        for stmt in ("UPDATE taktovia.tenant SET name='x'", "UPDATE taktovia.tenant SET id=gen_random_uuid()", 'DELETE FROM taktovia.tenant'):
             with self.assertRaises(psycopg.errors.InsufficientPrivilege, msg=stmt):
                 exec_(stmt)
+        self.assertEqual(exec_("UPDATE taktovia.tenant SET status='ACTIVE' WHERE id=%s", (uid(),)), 0)  # fremder Mandant: unsichtbar
         self.assertEqual(exec_('SELECT 1 FROM taktovia.tenant'), 1)  # Lesen des eigenen Mandanten bleibt möglich
 
 

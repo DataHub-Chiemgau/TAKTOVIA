@@ -32,6 +32,10 @@ interface IdentityApi {
     val authorizer: Authorizer
     /** Protokoll des Ausrollens der Rechtematrix. */
     val rollout: RightsMatrixRollout
+    /** Rechtsträger und Organisationen mit vertraglichen Rollen (WP-M1-05). */
+    val organizations: OrganizationAdmin
+    /** Mandantenanlage und Statuswechsel durch die Plattformverwaltung (WP-M1-05). */
+    val platform: PlatformAdmin
 
     companion object {
         fun create(

@@ -4,6 +4,7 @@ import type { NavLinkProps } from '@taktovia/design-system';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { MembershipAdmin } from './identity/MembershipAdmin';
+import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
 import { useScreenContext } from './ScreenContext';
@@ -134,6 +135,14 @@ export function App() {
                 emptyTitle="Noch keine Gebiete, Stops oder Tarife"
                 hint="UI-17: Revisionen anlegen und freigeben folgt mit den Konfigurations- und Geodaten-Arbeitspaketen."
               />
+            </RequireRight>
+          }
+        />
+        <Route
+          path="/admin/organisationen"
+          element={
+            <RequireRight right="admin.ui18">
+              <OrganizationAdmin />
             </RequireRight>
           }
         />

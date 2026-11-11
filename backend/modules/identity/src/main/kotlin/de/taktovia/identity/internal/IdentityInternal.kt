@@ -7,6 +7,8 @@ import de.taktovia.identity.api.RightsMatrix
 import de.taktovia.identity.api.RightsMatrixRollout
 import de.taktovia.identity.api.MembershipAdmin
 import de.taktovia.identity.api.MembershipLookup
+import de.taktovia.identity.api.OrganizationAdmin
+import de.taktovia.identity.api.PlatformAdmin
 import de.taktovia.identity.api.ScopePolicy
 import de.taktovia.identity.api.TenantSwitch
 import de.taktovia.platform.audit.AuditPort
@@ -26,12 +28,15 @@ internal object IdentityServicesFactory {
         return object : IdentityApi {
             override val lookup: MembershipLookup = lookup
             override val tenantSwitch: TenantSwitch = JdbcTenantSwitch(tx, lookup, audit, security, clock)
-            override val admin: MembershipAdmin = JdbcMembershipAdmin(ctxTx, audit, outbox, clock)
+            private val membershipAdmin = JdbcMembershipAdmin(ctxTx, audit, outbox, clock)
+            override val admin: MembershipAdmin = membershipAdmin
             override val revalidator: ContextRevalidator = revalidator
             override val scopePolicy: ScopePolicy = policy
             override val rights: RightsMatrix = rights
             override val authorizer: Authorizer = MatrixAuthorizer(rights)
             override val rollout: RightsMatrixRollout = JdbcRightsMatrixRollout(tx, rights)
+            override val organizations: OrganizationAdmin = JdbcOrganizationAdmin(ctxTx, audit, outbox, clock)
+            override val platform: PlatformAdmin = JdbcPlatformAdmin(tx, audit, outbox, clock, membershipAdmin)
         }
     }
 }

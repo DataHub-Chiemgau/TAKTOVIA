@@ -76,7 +76,7 @@ def _seed_runtime_rows(dbname, label, ids):
         x("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (%s,%s,%s,'DE') ON CONFLICT DO NOTHING",
           (tid, ids["legal_entity"], f"Rechtsträger {label} (synthetisch)"))
         x("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-          (tid, ids["organization"], ids["legal_entity"], f"Betreiber {label} (synthetisch)", f"fed-org-{label.lower()}", ["OPERATOR"]))
+          (tid, ids["organization"], ids["legal_entity"], f"Betreiber {label} (synthetisch)", f"fed-org-{label.lower()}", ["TRANSPORT_COMPANY"]))
         for r in ROLES:
             x("INSERT INTO taktovia.membership(tenant_id,id,issuer,subject,role_code) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
               (tid, ids["membership_" + r], ISSUER, f"{label.lower()}.{r}", r))

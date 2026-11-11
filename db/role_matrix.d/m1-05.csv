@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+platform_operator_account;SELECT;WP-M1-05: Konten der Plattformbetreiber (OP-36), nur durch die Administration gepflegt; ohne tenant_id, keine Mitgliedschaft

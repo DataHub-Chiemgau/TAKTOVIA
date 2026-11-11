@@ -12,7 +12,6 @@ createConfigRevision  # POST /v1/config/revisions
 createCostCenter  # POST /v1/cost-centers
 createDepot  # POST /v1/depots
 createDriverClearance  # POST /v1/driver-clearances
-createLegalEntity  # POST /v1/legal-entities
 createRegion  # POST /v1/regions
 createService  # POST /v1/services
 createVehicleRole  # POST /v1/vehicle-roles
@@ -29,7 +28,6 @@ listConfigRevisions  # GET /v1/config/revisions
 listCostCenters  # GET /v1/cost-centers
 listDepots  # GET /v1/depots
 listDriverClearances  # GET /v1/driver-clearances
-listLegalEntities  # GET /v1/legal-entities
 listPassengers  # GET /v1/passengers
 listRegions  # GET /v1/regions
 listRetentionRules  # GET /v1/retention-rules
@@ -47,6 +45,5 @@ registerPassenger  # POST /v1/passengers
 requestConfigImpact  # POST /v1/config/revisions/{revision_id}/impact
 revokeSession  # DELETE /v1/sessions/{session_id}
 updateCompanyProfile  # PUT /v1/company-profile
-updateLegalEntity  # PUT /v1/legal-entities/{legal_entity_id}
 updateRetentionRule  # PUT /v1/retention-rules/{rule_id}
 validateConfigRevision  # POST /v1/config/revisions/{revision_id}/validate

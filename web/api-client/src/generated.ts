@@ -621,6 +621,78 @@ export interface SessionPage {
   as_of: string;
 }
 
+export type OrganizationRole = 'PLATFORM_OPERATOR' | 'TRANSPORT_COMPANY' | 'TASK_AUTHORITY' | 'CLIENT' | 'BROKER' | 'ACTUAL_CARRIER';
+
+export interface Organization {
+  id: UUID;
+  legal_entity_id: UUID;
+  name: string;
+  federation_ref: string;
+  roles: OrganizationRole[];
+  roles_valid_from: string;
+  roles_valid_to: string | null;
+  revision: number;
+}
+
+export interface OrganizationCreate {
+  legal_entity_id: UUID;
+  name: string;
+  federation_ref: string;
+  roles: OrganizationRole[];
+  roles_valid_from?: string;
+  roles_valid_to?: string | null;
+}
+
+export interface OrganizationUpdate {
+  legal_entity_id: UUID;
+  name: string;
+  roles: OrganizationRole[];
+  roles_valid_from?: string;
+  roles_valid_to?: string | null;
+}
+
+export interface OrganizationPage {
+  items: Organization[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface TenantCreate {
+  name: string;
+  legal_entity: {
+    name: string;
+    country: string;
+    tax_reference_token?: string;
+  };
+  first_admin: {
+    issuer: string;
+    subject: string;
+  };
+  contact_email: string;
+  default_currency?: string;
+}
+
+export interface TenantCreated {
+  id: UUID;
+  name: string;
+  status: TenantStatus;
+  legal_entity_id: UUID;
+  admin_membership_id: UUID;
+}
+
+export type TenantStatus = 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+
+export interface TenantStatusChange {
+  managed_tenant_id: UUID;
+  status: TenantStatus;
+}
+
+export interface TenantStatusChanged {
+  managed_tenant_id: UUID;
+  from: TenantStatus;
+  status: TenantStatus;
+}
+
 export interface Passenger {
   id: UUID;
   status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'BLOCKED';
@@ -1010,6 +1082,48 @@ export interface Operations {
     body: undefined;
     response: undefined;
   };
+  listOrganizations: {
+    path: Record<string, never>;
+    query: { limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OrganizationPage;
+  };
+  createOrganization: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: OrganizationCreate;
+    response: Organization;
+  };
+  getOrganization: {
+    path: { organization_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Organization;
+  };
+  updateOrganization: {
+    path: { organization_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: OrganizationUpdate;
+    response: Organization;
+  };
+  createTenant: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TenantCreate;
+    response: TenantCreated;
+  };
+  changeTenantStatus: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TenantStatusChange;
+    response: TenantStatusChanged;
+  };
   listPassengers: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -1149,6 +1263,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createCostCenter: { method: 'POST', path: '/v1/cost-centers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   listSessions: { method: 'GET', path: '/v1/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['sessions:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeSession: { method: 'DELETE', path: '/v1/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['sessions:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listOrganizations: { method: 'GET', path: '/v1/organizations', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createOrganization: { method: 'POST', path: '/v1/organizations', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['organization:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getOrganization: { method: 'GET', path: '/v1/organizations/{organization_id}', pathParams: ['organization_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['organization:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateOrganization: { method: 'PUT', path: '/v1/organizations/{organization_id}', pathParams: ['organization_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createTenant: { method: 'POST', path: '/v1/platform/tenants', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['platform:tenants:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  changeTenantStatus: { method: 'POST', path: '/v1/platform/tenant-status-changes', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['platform:tenants:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

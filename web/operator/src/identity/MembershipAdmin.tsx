@@ -11,6 +11,7 @@ import {
 } from '@taktovia/design-system';
 import type { ProblemLike, ResourceState } from '@taktovia/design-system';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DEFAULT_ZONE, useScreenContext } from '../ScreenContext';
 import { useSession } from '@taktovia/api-client';
 
@@ -118,6 +119,9 @@ export function MembershipAdmin() {
   return (
     <ScreenFrame title="Kooperation und Rollen" context={context}>
       {notice ? <p role="status">{notice}</p> : null}
+      <p>
+        <Link to="/admin/organisationen">Organisationen und Rechtsträgerrollen</Link>
+      </p>
       <ResourceView
         state={rows}
         isEmpty={(d) => d.length === 0}

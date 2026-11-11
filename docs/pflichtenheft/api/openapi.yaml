@@ -3,8 +3,8 @@ jsonSchemaDialect: https://spec.openapis.org/oas/3.1/dialect/base
 info:
   title: TAKTOVIA – Kernverträge Pflichtenheft
   version: 0.1.0
-  description: Entwurf vom 25.10.2026. Vertragsartefakt, keine laufende Implementierung. Ergänzender Endpunktkatalog
-    in 05-api-vertraege.md. URLs unter .example sind Platzhalter; Produktion ist deploymentabhängig.
+  description: Entwurf vom 25.10.2026. Vertragsartefakt, keine laufende Implementierung. Ergänzender Endpunktkatalog in 05-api-vertraege.md.
+    URLs unter .example sind Platzhalter; Produktion ist deploymentabhängig.
 servers:
 - url: https://api.taktovia.example
   description: Dokumentationsplatzhalter, kein produktiver Dienst
@@ -42,9 +42,9 @@ paths:
           $ref: '#/components/responses/Problem'
         '503':
           $ref: '#/components/responses/Problem'
-      description: Erzeugt TravelRequestAttempt genau einmal pro Idempotenzschlüssel. Keine Kapazitätszusage. Leere
-        offers mit reject_reason sind fachliches 200, ungültige Anfrage 422. Zeitbudget 5 s; Teilverfügbarkeit einzelner
-        Partner bleibt sichtbar.
+      description: Erzeugt TravelRequestAttempt genau einmal pro Idempotenzschlüssel. Keine Kapazitätszusage. Leere offers
+        mit reject_reason sind fachliches 200, ungültige Anfrage 422. Zeitbudget 5 s; Teilverfügbarkeit einzelner Partner
+        bleibt sichtbar.
       requestBody:
         required: true
         content:
@@ -125,9 +125,9 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: 'Erzeugt eine Journey und Saga. Gleiche Offer-Revision, Preise, Terms und kooperierende Partner
-        prüfen. Abgelaufenes Angebot: 409 OFFER_EXPIRED. Operation SUCCEEDED bedeutet nur alle erforderlichen Holds
-        vorhanden, nicht endgültig gebucht.'
+      description: 'Erzeugt eine Journey und Saga. Gleiche Offer-Revision, Preise, Terms und kooperierende Partner prüfen.
+        Abgelaufenes Angebot: 409 OFFER_EXPIRED. Operation SUCCEEDED bedeutet nur alle erforderlichen Holds vorhanden, nicht
+        endgültig gebucht.'
       requestBody:
         required: true
         content:
@@ -208,9 +208,9 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Erforderliche Holds müssen bis zum abgesicherten Commit-Zeitpunkt gültig sein. max_authorized_amount
-        muss exakt pay_at_platform entsprechen; Preisänderung führt zu 409 REQUOTE_REQUIRED. PSP-Authentifizierung
-        wird als ACTION_REQUIRED über Journey angezeigt. HTTP 202 ist keine Bestätigung.
+      description: Erforderliche Holds müssen bis zum abgesicherten Commit-Zeitpunkt gültig sein. max_authorized_amount muss
+        exakt pay_at_platform entsprechen; Preisänderung führt zu 409 REQUOTE_REQUIRED. PSP-Authentifizierung wird als ACTION_REQUIRED
+        über Journey angezeigt. HTTP 202 ist keine Bestätigung.
       requestBody:
         required: true
         content:
@@ -256,8 +256,8 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Keine Stornowirkung. Prüft auch Erreichbarkeit der verbleibenden Reisekette; Tarif-/Erstattungsregeln
-        je Segment snapshotten.
+      description: Keine Stornowirkung. Prüft auch Erreichbarkeit der verbleibenden Reisekette; Tarif-/Erstattungsregeln je
+        Segment snapshotten.
       requestBody:
         required: true
         content:
@@ -299,15 +299,71 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Cancel exakt der im gültigen cancellation_quote gespeicherten Segmente. Neue Gebühren werden
-        nie still akzeptiert. UNKNOWN bleibt offen bis Providerabgleich; Erstattung und Reservierungsstorno werden
-        getrennt nachgewiesen.
+      description: Cancel exakt der im gültigen cancellation_quote gespeicherten Segmente. Neue Gebühren werden nie still
+        akzeptiert. UNKNOWN bleibt offen bis Providerabgleich; Erstattung und Reservierungsstorno werden getrennt nachgewiesen.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CancelRequest'
+  /v1/federation/partners/{partner_id}/events:
+    post:
+      summary: Signiertes Partnerereignis zustellen
+      operationId: receivePartnerEvent
+      description: HMAC-SHA256 über timestamp + Punkt + exakte Request-Bytes. Zeitfenster ±300 s. Schlüsselbindung legt Partner
+        und zulässige tenant_id fest. Replay-Ledger und Zustandsversion prüfen. 202 erst nach durable Inbox-Commit; Duplikat
+        liefert 200. OAuth allein ersetzt die Nachrichtensignatur nicht.
+      security:
+      - partnerSignature: []
+      parameters:
+      - $ref: '#/components/parameters/partner_id'
+      - name: X-Partner-Key-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 256
+      - name: X-Partner-Timestamp
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9]{10}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerEvent'
+      responses:
+        '202':
+          description: Neu in dauerhafte Inbox aufgenommen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventReceipt'
+        '200':
+          description: Identisches Ereignis bereits gespeichert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventReceipt'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
   /v1/operations/{operation_id}:
     get:
       summary: Dauerhaften Bearbeitungsstatus lesen
@@ -387,8 +443,8 @@ paths:
         '428':
           $ref: '#/components/responses/Problem'
       description: Atomare vollständige Allokationsrevision innerhalb eigener Rechtseinheit. Exakte Summe und freigegebene
-        offene Periode prüfen; 409 PERIOD_CLOSED oder ALREADY_ALLOCATED. Keine neue Quellkostenwirkung; Korrekturen
-        erfolgen über gesonderte Gegenbuchung.
+        offene Periode prüfen; 409 PERIOD_CLOSED oder ALREADY_ALLOCATED. Keine neue Quellkostenwirkung; Korrekturen erfolgen
+        über gesonderte Gegenbuchung.
       requestBody:
         required: true
         content:
@@ -440,8 +496,8 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen.
-        POSTED erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED.
+      description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen. POSTED
+        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED.
       requestBody:
         required: true
         content:
@@ -493,8 +549,8 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Mandant aus Berechtigungskontext; Wirkungsanalyse, Freigaben und Sicherheitsinvarianten müssen
-        zu unveränderter Revision passen. Keine rückwirkende Änderung bestätigter Zusagen.
+      description: Mandant aus Berechtigungskontext; Wirkungsanalyse, Freigaben und Sicherheitsinvarianten müssen zu unveränderter
+        Revision passen. Keine rückwirkende Änderung bestätigter Zusagen.
       requestBody:
         required: true
         content:
@@ -546,8 +602,8 @@ paths:
           $ref: '#/components/responses/Problem'
         '428':
           $ref: '#/components/responses/Problem'
-      description: Ruhezeit, Qualifikation, Abwesenheit, Doppelbelegung und Fahrzeugfreigabe serverseitig prüfen.
-        Publikation einer neuen Revision, kein Überschreiben der alten.
+      description: Ruhezeit, Qualifikation, Abwesenheit, Doppelbelegung und Fahrzeugfreigabe serverseitig prüfen. Publikation
+        einer neuen Revision, kein Überschreiben der alten.
       requestBody:
         required: true
         content:
@@ -587,58 +643,276 @@ paths:
           $ref: '#/components/responses/Problem'
         '503':
           $ref: '#/components/responses/Problem'
-      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft.
-        Verspätete Offline-Ereignisse überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED
-        ist keine ausgeführte Beförderungsbuchung.
+      description: Objektberechtigung auf aktuelle zugewiesene Schicht/Route. Ereignis-ID dedupliziert dauerhaft. Verspätete
+        Offline-Ereignisse überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte
+        Beförderungsbuchung.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DriverEvent'
-  /v1/federation/partners/{partner_id}/events:
-    post:
-      summary: Signiertes Partnerereignis zustellen
-      operationId: receivePartnerEvent
-      description: HMAC-SHA256 über timestamp + Punkt + exakte Request-Bytes. Zeitfenster ±300 s. Schlüsselbindung
-        legt Partner und zulässige tenant_id fest. Replay-Ledger und Zustandsversion prüfen. 202 erst nach durable
-        Inbox-Commit; Duplikat liefert 200. OAuth allein ersetzt die Nachrichtensignatur nicht.
+  /v1/audit-events:
+    get:
+      summary: Auditereignisse abfragen (nur lesend)
+      operationId: listAuditEvents
       security:
-      - partnerSignature: []
+      - oidc:
+        - audit:read
       parameters:
-      - $ref: '#/components/parameters/partner_id'
-      - name: X-Partner-Key-Id
-        in: header
-        required: true
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: object_ref
+        in: query
+        required: false
         schema:
           type: string
           minLength: 1
           maxLength: 256
-      - name: X-Partner-Timestamp
-        in: header
-        required: true
-        schema:
-          type: string
-          pattern: ^[0-9]{10}$
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/company-profile:
+    get:
+      summary: Unternehmensprofil lesen
+      operationId: getCompanyProfile
+      security:
+      - oidc:
+        - company:read
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyProfile'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    put:
+      summary: Unternehmensprofil ändern
+      operationId: updateCompanyProfile
+      security:
+      - oidc:
+        - company:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyProfile'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PartnerEvent'
+              $ref: '#/components/schemas/CompanyProfileUpdate'
+  /v1/retention-rules:
+    get:
+      summary: Aufbewahrungsregeln auflisten
+      operationId: listRetentionRules
+      security:
+      - oidc:
+        - retention:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
       responses:
-        '202':
-          description: Neu in dauerhafte Inbox aufgenommen.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventReceipt'
         '200':
-          description: Identisches Ereignis bereits gespeichert.
+          description: Erfolgreich.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventReceipt'
+                $ref: '#/components/schemas/RetentionRulePage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/retention-rules/{rule_id}:
+    put:
+      summary: Aufbewahrungsregel ändern
+      operationId: updateRetentionRule
+      security:
+      - oidc:
+        - retention:write
+      parameters:
+      - name: rule_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionRuleUpdate'
+  /v1/vehicle-roles:
+    get:
+      summary: Fahrzeugrollen auflisten
+      operationId: listVehicleRoles
+      security:
+      - oidc:
+        - fleet:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRoleAssignmentPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Fahrzeugrolle mit Gültigkeitsintervall anlegen
+      operationId: createVehicleRole
+      security:
+      - oidc:
+        - fleet:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRoleAssignment'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
         '400':
           $ref: '#/components/responses/Problem'
         '401':
@@ -653,12 +927,1402 @@ paths:
           $ref: '#/components/responses/Problem'
         '503':
           $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRoleAssignmentCreate'
+  /v1/driver-clearances:
+    get:
+      summary: Fahrerfreigaben auflisten
+      operationId: listDriverClearances
+      security:
+      - oidc:
+        - fleet:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverClearancePage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Fahrerfreigabe erteilen
+      operationId: createDriverClearance
+      security:
+      - oidc:
+        - fleet:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverClearance'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverClearanceCreate'
+  /v1/me:
+    get:
+      summary: Sitzungskontext lesen (Mandant, Rollen, Dienstumfang)
+      operationId: getMe
+      security:
+      - oidc:
+        - me:read
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/me/tenant-switch:
+    post:
+      summary: Serverseitig den aktiven Mandanten wechseln
+      operationId: switchTenant
+      security:
+      - oidc:
+        - tenant:switch
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantSwitchRequest'
+  /v1/memberships:
+    get:
+      summary: Mitgliedschaften des Mandanten auflisten
+      operationId: listMemberships
+      security:
+      - oidc:
+        - memberships:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Mitgliedschaft anlegen
+      operationId: createMembership
+      security:
+      - oidc:
+        - memberships:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipCreate'
+  /v1/memberships/{membership_id}:
+    delete:
+      summary: Mitgliedschaft entziehen
+      operationId: revokeMembership
+      security:
+      - oidc:
+        - memberships:write
+      parameters:
+      - name: membership_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/legal-entities:
+    get:
+      summary: Rechtsträger auflisten
+      operationId: listLegalEntities
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalEntityPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Rechtsträger anlegen
+      operationId: createLegalEntity
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalEntity'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalEntityCreate'
+  /v1/legal-entities/{legal_entity_id}:
+    put:
+      summary: Rechtsträger ändern
+      operationId: updateLegalEntity
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: legal_entity_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalEntity'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalEntityUpdate'
+  /v1/regions:
+    get:
+      summary: Regionen auflisten
+      operationId: listRegions
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Region anlegen
+      operationId: createRegion
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionCreate'
+  /v1/depots:
+    get:
+      summary: Betriebshöfe auflisten
+      operationId: listDepots
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Betriebshof anlegen
+      operationId: createDepot
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Depot'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepotCreate'
+  /v1/cost-centers:
+    get:
+      summary: Kostenstellen auflisten
+      operationId: listCostCenters
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCenterPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Kostenstelle anlegen
+      operationId: createCostCenter
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCenter'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostCenterCreate'
+  /v1/sessions:
+    get:
+      summary: Sitzungen auflisten
+      operationId: listSessions
+      security:
+      - oidc:
+        - sessions:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/sessions/{session_id}:
+    delete:
+      summary: Sitzung sperren
+      operationId: revokeSession
+      security:
+      - oidc:
+        - sessions:write
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Erfolgreich.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/organizations:
+    get:
+      summary: Organisationen auflisten
+      operationId: listOrganizations
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Organisation mit vertraglichen Rollen anlegen
+      operationId: createOrganization
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCreate'
+  /v1/organizations/{organization_id}:
+    get:
+      summary: Organisation lesen
+      operationId: getOrganization
+      security:
+      - oidc:
+        - organization:read
+      parameters:
+      - name: organization_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    put:
+      summary: Organisation und ihre Rollen ändern
+      operationId: updateOrganization
+      security:
+      - oidc:
+        - organization:write
+      parameters:
+      - name: organization_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpdate'
+  /v1/platform/tenants:
+    post:
+      summary: Mandanten anlegen (Plattformbetreiber)
+      operationId: createTenant
+      security:
+      - oidc:
+        - platform:tenants:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantCreated'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+  /v1/platform/tenant-status-changes:
+    post:
+      summary: Mandantenstatus ändern (Plattformbetreiber)
+      operationId: changeTenantStatus
+      security:
+      - oidc:
+        - platform:tenants:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantStatusChanged'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantStatusChange'
+  /v1/passengers:
+    get:
+      summary: Fahrgäste auflisten
+      operationId: listPassengers
+      security:
+      - oidc:
+        - passengers:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Fahrgast registrieren
+      operationId: registerPassenger
+      security:
+      - oidc:
+        - passengers:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Passenger'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassengerRegistration'
+  /v1/config/effective:
+    get:
+      summary: Wirksame Konfiguration lesen
+      operationId: getEffectiveConfig
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - name: at
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveConfig'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/config/revisions:
+    get:
+      summary: Konfigurationsrevisionen auflisten
+      operationId: listConfigRevisions
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevisionPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Entwurf einer Konfigurationsrevision anlegen
+      operationId: createConfigRevision
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRevisionCreate'
+  /v1/config/revisions/{revision_id}:
+    get:
+      summary: Konfigurationsrevision lesen
+      operationId: getConfigRevision
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: '#/components/parameters/revision_id'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/config/revisions/{revision_id}/validate:
+    post:
+      summary: Entwurf gegen das policy_schema und die Systemgrenzen prüfen
+      operationId: validateConfigRevision
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: '#/components/parameters/revision_id'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigValidationReport'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/config/revisions/{revision_id}/impact:
+    post:
+      summary: Wirkungsanalyse für eine Revision anfordern
+      operationId: requestConfigImpact
+      security:
+      - oidc:
+        - config:write
+      parameters:
+      - $ref: '#/components/parameters/revision_id'
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigImpactReport'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '412':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '428':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+  /v1/services:
+    get:
+      summary: Dienste auflisten
+      operationId: listServices
+      security:
+      - oidc:
+        - services:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServicePage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Dienstkopf anlegen
+      operationId: createService
+      security:
+      - oidc:
+        - services:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreate'
+  /v1/webhook-subscriptions:
+    get:
+      summary: Webhook-Abonnements auflisten
+      operationId: listWebhookSubscriptions
+      security:
+      - oidc:
+        - webhooks:read
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionPage'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+    post:
+      summary: Webhook-Abonnement anlegen
+      operationId: createWebhookSubscription
+      security:
+      - oidc:
+        - webhooks:write
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscription'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookSubscriptionCreate'
 components:
   securitySchemes:
     oidc:
       type: oauth2
-      description: OIDC-login/PKCE für Personen; kurzlebige OAuth Access Tokens, issuer/audience/tenant Mitgliedschaft
-        serverseitig geprüft. Deployment ersetzt example-URLs. Machine-to-machine über freigegebene Serviceidentitäten.
+      description: OIDC-login/PKCE für Personen; kurzlebige OAuth Access Tokens, issuer/audience/tenant Mitgliedschaft serverseitig
+        geprüft. Deployment ersetzt example-URLs. Machine-to-machine über freigegebene Serviceidentitäten.
       flows:
         authorizationCode:
           authorizationUrl: https://identity.taktovia.example/oauth2/authorize
@@ -674,6 +2338,29 @@ components:
             config:publish: config:publish
             rosters:publish: rosters:publish
             driver:events: driver:events
+            me:read: me:read
+            tenant:switch: tenant:switch
+            memberships:read: memberships:read
+            memberships:write: memberships:write
+            organization:read: organization:read
+            organization:write: organization:write
+            sessions:read: sessions:read
+            sessions:write: sessions:write
+            config:read: config:read
+            config:write: config:write
+            audit:read: audit:read
+            passengers:read: passengers:read
+            passengers:write: passengers:write
+            webhooks:read: webhooks:read
+            webhooks:write: webhooks:write
+            services:read: services:read
+            services:write: services:write
+            company:read: company:read
+            company:write: company:write
+            retention:read: retention:read
+            retention:write: retention:write
+            fleet:read: fleet:read
+            fleet:write: fleet:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -687,6 +2374,29 @@ components:
             config:publish: config:publish
             rosters:publish: rosters:publish
             driver:events: driver:events
+            me:read: me:read
+            tenant:switch: tenant:switch
+            memberships:read: memberships:read
+            memberships:write: memberships:write
+            organization:read: organization:read
+            organization:write: organization:write
+            sessions:read: sessions:read
+            sessions:write: sessions:write
+            config:read: config:read
+            config:write: config:write
+            audit:read: audit:read
+            passengers:read: passengers:read
+            passengers:write: passengers:write
+            webhooks:read: webhooks:read
+            webhooks:write: webhooks:write
+            services:read: services:read
+            services:write: services:write
+            company:read: company:read
+            company:write: company:write
+            retention:read: retention:read
+            retention:write: retention:write
+            fleet:read: fleet:read
+            fleet:write: fleet:write
     partnerSignature:
       type: apiKey
       in: header
@@ -703,8 +2413,8 @@ components:
         minLength: 16
         maxLength: 128
         pattern: ^[A-Za-z0-9._:-]+$
-      description: 'Stabil pro logischem Befehl. Scope = principal + tenant + operation; anderer Payload zu gleichem
-        Schlüssel: 409.'
+      description: 'Stabil pro logischem Befehl. Scope = principal + tenant + operation; anderer Payload zu gleichem Schlüssel:
+        409.'
     IfMatch:
       name: If-Match
       in: header
@@ -720,6 +2430,27 @@ components:
       schema:
         type: string
         pattern: ^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Seitengröße der Liste, 1 bis 100 (Standard 50).
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+      description: Opaker, signierter Cursor aus next_cursor der vorigen Seite; gebunden an Mandant, Akteur und Liste. Manipuliert
+        ergibt 400 INVALID_CURSOR.
     offer_id:
       name: offer_id
       in: path
@@ -796,9 +2527,325 @@ components:
     UUID:
       type: string
       format: uuid
+    SignedMoney:
+      type: object
+      additionalProperties: false
+      x-money: signed
+      description: Vorzeichenbehafteter Geldbetrag in kleinster Einheit (Rabatt, Korrektur, Gegenereignis). Ganzzahl im Bereich
+        ±9.007.199.254.740.991; Exponent wird serverseitig gegen den Währungskatalog (Tabelle currency) geprüft. Keine binären
+        Gleitkommazahlen.
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        exponent:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4
+      required:
+      - amount_minor
+      - currency
+      - exponent
+    Timestamp:
+      type: string
+      format: date-time
+      maxLength: 40
+      x-time: instant
+      description: Zeitpunkt nach RFC 3339 mit UTC-Offset (`2026-10-25T02:30:00+02:00` oder `…Z`). Ohne Offset gibt es keinen
+        Zeitpunkt (422 OFFSET_REQUIRED); der Offset unterscheidet die beiden gleichlautenden Ortszeiten der Zeitumstellung
+        im Herbst. Die Datenbank speichert UTC (timestamptz).
+      examples:
+      - '2026-10-25T02:30:00+02:00'
+    TimeZone:
+      type: string
+      minLength: 1
+      maxLength: 64
+      x-time: zone
+      description: IANA-Zeitzone der Region (`Europe/Berlin`, `UTC`). Abkürzungen (`CET`), feste Offsets und `Etc/…` sind
+        keine Dienstzonen (422 ZONE_UNKNOWN).
+      examples:
+      - Europe/Berlin
+    ZonedMoment:
+      type: object
+      additionalProperties: false
+      x-time: zoned-moment
+      description: Zeitpunkt mit lokaler Zone. `desired_at` und `time_zone` müssen denselben lokalen Zeitpunkt beschreiben.
+        Abgelehnt werden Offset fehlt (OFFSET_REQUIRED), unbekannte Zone (ZONE_UNKNOWN), nicht existente Ortszeit in der Frühjahrslücke
+        (LOCAL_TIME_NONEXISTENT) und ein Offset, der zur Zone und Ortszeit nicht passt (ZONE_OFFSET_MISMATCH).
+      properties:
+        desired_at:
+          $ref: '#/components/schemas/Timestamp'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+      required:
+      - desired_at
+      - time_zone
+      examples:
+      - desired_at: '2026-10-25T02:30:00+01:00'
+        time_zone: Europe/Berlin
+    LocalDateTimeInZone:
+      type: object
+      additionalProperties: false
+      x-time: local-moment
+      description: Lokale Eingabe ohne Offset in einer Zone. Bei mehrdeutiger Ortszeit (Herbstumstellung) ist `utc_offset`
+        Pflicht (LOCAL_TIME_AMBIGUOUS), eine nicht existente Ortszeit wird abgewiesen (LOCAL_TIME_NONEXISTENT).
+      properties:
+        local:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        utc_offset:
+          type:
+          - string
+          - 'null'
+          pattern: ^[+-]\d{2}:\d{2}$
+      required:
+      - local
+      - time_zone
+      examples:
+      - local: '2026-10-25T02:30:00'
+        time_zone: Europe/Berlin
+        utc_offset: +02:00
+    ValidityInterval:
+      type: object
+      additionalProperties: false
+      x-time: interval
+      description: Gültigkeitsintervall links geschlossen, rechts offen `[valid_from, valid_to)`. `valid_to` fehlt oder ist
+        null für unbegrenzt; ein Ende vor oder gleich dem Beginn wird abgewiesen (INTERVAL_INVALID).
+      properties:
+        valid_from:
+          $ref: '#/components/schemas/Timestamp'
+        valid_to:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+      required:
+      - valid_from
+      examples:
+      - valid_from: '2026-12-01T00:00:00+01:00'
+        valid_to: null
+    Point:
+      type: object
+      additionalProperties: false
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+      required:
+      - latitude
+      - longitude
+    Operation:
+      type: object
+      additionalProperties: false
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/UUID'
+        kind:
+          type: string
+          enum:
+          - HOLD
+          - CONFIRM
+          - CANCEL
+          - RECONCILE
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - RECONCILING
+          - SUCCEEDED
+          - FAILED
+          - MANUAL_REVIEW
+        journey_id:
+          oneOf:
+          - $ref: '#/components/schemas/UUID'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        result_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 256
+          - type: 'null'
+        retry_after_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 300
+      required:
+      - operation_id
+      - kind
+      - status
+      - journey_id
+      - created_at
+      - updated_at
+      - result_code
+      - retry_after_seconds
+      examples:
+      - operation_id: 00000000-0000-4000-8000-000000000050
+        kind: CONFIRM
+        status: RECONCILING
+        journey_id: 00000000-0000-4000-8000-000000000020
+        created_at: '2026-11-02T06:59:00Z'
+        updated_at: '2026-11-02T06:59:05Z'
+        result_code: PARTNER_RESULT_UNKNOWN
+        retry_after_seconds: 3
+    PublishRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        effective_from:
+          $ref: '#/components/schemas/Timestamp'
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        impact_report_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - effective_from
+      - reason
+      - impact_report_id
+    PublishedRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        resource_id:
+          $ref: '#/components/schemas/UUID'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - PUBLISHED
+        effective_from:
+          type: string
+          format: date-time
+        audit_event_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - resource_id
+      - revision
+      - state
+      - effective_from
+      - audit_event_id
+    ErrorCode:
+      type: string
+      description: Stabiler, maschinenlesbarer Fehlercode (Feld code des Schemas Problem). Der HTTP-Status je Code steht in
+        x-http-status. Neue Codes kommen nur additiv hinzu; bestehende ändern sich nie ohne neue Major-Version.
+      enum:
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - UNAUTHENTICATED
+      - FORBIDDEN
+      - COOPERATION_NOT_ALLOWED
+      - NOT_FOUND
+      - METHOD_NOT_ALLOWED
+      - NOT_ACCEPTABLE
+      - CONFLICT
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_IN_PROGRESS
+      - OFFER_EXPIRED
+      - HOLD_EXPIRED
+      - REQUOTE_REQUIRED
+      - CAPACITY_UNAVAILABLE
+      - IMMUTABLE_RECORD
+      - INVALID_STATE_TRANSITION
+      - REVISION_MISMATCH
+      - PAYLOAD_TOO_LARGE
+      - UNSUPPORTED_MEDIA_TYPE
+      - VALIDATION_FAILED
+      - PRECONDITION_REQUIRED
+      - RATE_LIMITED
+      - INTERNAL_ERROR
+      - SERVICE_UNAVAILABLE
+      - PROVIDER_UNAVAILABLE
+      x-http-status:
+        BAD_REQUEST: 400
+        INVALID_CURSOR: 400
+        UNAUTHENTICATED: 401
+        FORBIDDEN: 403
+        COOPERATION_NOT_ALLOWED: 403
+        NOT_FOUND: 404
+        METHOD_NOT_ALLOWED: 405
+        NOT_ACCEPTABLE: 406
+        CONFLICT: 409
+        IDEMPOTENCY_CONFLICT: 409
+        OPERATION_IN_PROGRESS: 409
+        OFFER_EXPIRED: 409
+        HOLD_EXPIRED: 409
+        REQUOTE_REQUIRED: 409
+        CAPACITY_UNAVAILABLE: 409
+        IMMUTABLE_RECORD: 409
+        INVALID_STATE_TRANSITION: 409
+        REVISION_MISMATCH: 412
+        PAYLOAD_TOO_LARGE: 413
+        UNSUPPORTED_MEDIA_TYPE: 415
+        VALIDATION_FAILED: 422
+        PRECONDITION_REQUIRED: 428
+        RATE_LIMITED: 429
+        INTERNAL_ERROR: 500
+        SERVICE_UNAVAILABLE: 503
+        PROVIDER_UNAVAILABLE: 503
+    ViolationCode:
+      type: string
+      description: Katalog der Feldverletzungscodes (violations[].code). Feld und Fehlerart sind aus pointer und code erkennbar,
+        ohne message auszuwerten. pointer ist ein JSON-Pointer; Wurzel des Bodys ist '/', Query-Parameter tragen /$query/<name>,
+        Header /$header/<name>.
+      enum:
+      - REQUIRED
+      - UNKNOWN_FIELD
+      - TYPE_MISMATCH
+      - TOO_SHORT
+      - TOO_LONG
+      - BELOW_MINIMUM
+      - ABOVE_MAXIMUM
+      - PATTERN_MISMATCH
+      - INVALID_FORMAT
+      - NOT_IN_ENUM
+      - TOO_FEW_ITEMS
+      - TOO_MANY_ITEMS
+      - NOT_UNIQUE
+      - INVALID_VALUE
+      - NESTING_TOO_DEEP
+      - MONEY_NOT_INTEGER
+      - MONEY_OUT_OF_RANGE
+      - MONEY_NEGATIVE
+      - CURRENCY_UNKNOWN
+      - EXPONENT_MISMATCH
+      - OFFSET_REQUIRED
+      - LOCAL_TIME_NONEXISTENT
+      - LOCAL_TIME_AMBIGUOUS
+      - ZONE_UNKNOWN
+      - ZONE_OFFSET_MISMATCH
+      - INTERVAL_INVALID
+      - TARGET_NOT_ALLOWED
     Money:
       type: object
       additionalProperties: false
+      x-money: unsigned
       properties:
         amount_minor:
           type: integer
@@ -819,46 +2866,66 @@ components:
       - exponent
       description: Nichtnegativer Geldbetrag in kleinster Einheit. EUR 12,50 = {amount_minor:1250,currency:EUR,exponent:2}.
         ISO-4217-Exponent serverseitig prüfen. Keine binären Gleitkommazahlen.
-    SignedMoney:
+    Problem:
       type: object
       additionalProperties: false
       properties:
-        amount_minor:
-          type: integer
-          format: int64
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-        currency:
+        type:
           type: string
-          pattern: ^[A-Z]{3}$
-        exponent:
+          format: uri
+        title:
+          type: string
+          minLength: 1
+          maxLength: 256
+        status:
           type: integer
           format: int64
-          minimum: 0
-          maximum: 4
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          minLength: 1
+          maxLength: 256
+        detail:
+          type: string
+          maxLength: 2000
+        correlation_id:
+          $ref: '#/components/schemas/UUID'
+        violations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              pointer:
+                type: string
+                minLength: 1
+                maxLength: 256
+              code:
+                type: string
+                minLength: 1
+                maxLength: 256
+              message:
+                type: string
+                minLength: 1
+                maxLength: 256
+            required:
+            - pointer
+            - code
+            - message
       required:
-      - amount_minor
-      - currency
-      - exponent
-    DecimalQuantity:
-      type: string
-      pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$
-      description: Exakte Dezimalzeichenfolge, maximal sechs Nachkommastellen; nicht als Binary Float verarbeiten.
-    Point:
-      type: object
-      additionalProperties: false
-      properties:
-        latitude:
-          type: number
-          minimum: -90
-          maximum: 90
-        longitude:
-          type: number
-          minimum: -180
-          maximum: 180
-      required:
-      - latitude
-      - longitude
+      - type
+      - title
+      - status
+      - code
+      - correlation_id
+      examples:
+      - type: https://api.taktovia.example/problems/offer-expired
+        title: Angebot abgelaufen
+        status: 409
+        code: OFFER_EXPIRED
+        detail: Bitte eine neue Reiseauskunft anfordern. Es wurde keine neue Buchung angelegt.
+        correlation_id: 00000000-0000-4000-8000-000000000070
     Place:
       type: object
       additionalProperties: false
@@ -907,8 +2974,8 @@ components:
       - wheelchair_places
       - child_seats
       - assistance_codes
-      description: wheelchair_places/child_seats sind Teilmengen von persons; keine Diagnosen. Fahrzeugspezifische
-        Kapazitätsmatrix serverseitig.
+      description: wheelchair_places/child_seats sind Teilmengen von persons; keine Diagnosen. Fahrzeugspezifische Kapazitätsmatrix
+        serverseitig.
     PlanRequest:
       type: object
       additionalProperties: false
@@ -1262,9 +3329,8 @@ components:
       - accessibility_confirmed
       - pickup_window
       - arrival_window
-      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im
-        bestätigten JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs
-        dürfen null liefern.'
+      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im bestätigten
+        JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs dürfen null liefern.'
       allOf:
       - if:
           properties:
@@ -1299,9 +3365,8 @@ components:
       - external_unknown_leg_ids
       - total_known_amount
       - is_complete_total
-      description: total_known_amount = pay_at_platform + external_known. is_complete_total nur true ohne unbekannte
-        externe Preise; externe Beträge sind nicht Bestandteil des Checkout. Dieselbe Währung/Exponent im gesamten
-        Objekt.
+      description: total_known_amount = pay_at_platform + external_known. is_complete_total nur true ohne unbekannte externe
+        Preise; externe Beträge sind nicht Bestandteil des Checkout. Dieselbe Währung/Exponent im gesamten Objekt.
       examples:
       - pay_at_platform:
           amount_minor: 1800
@@ -1382,8 +3447,8 @@ components:
       - terms_bundle_sha256
       - booking_policy
       - fully_platform_bookable
-      description: ' Angebot bindet serverseitig den geprüften BookingSubject und die Entitlementrevisionen aus
-        der Planung. Hold/Confirm dürfen weder Fahrgast noch Anspruch still wechseln; Vertretung wird erneut geprüft.'
+      description: ' Angebot bindet serverseitig den geprüften BookingSubject und die Entitlementrevisionen aus der Planung.
+        Hold/Confirm dürfen weder Fahrgast noch Anspruch still wechseln; Vertretung wird erneut geprüft.'
     HoldRequest:
       type: object
       additionalProperties: false
@@ -1408,74 +3473,13 @@ components:
       - accepted_terms_sha256
       - acknowledged_external_leg_ids
       - partial_booking_consent
-      description: Alle nicht plattformbuchbaren Legs explizit quittieren. consent false als UI-Default. Änderungen
-        von Preis/Terms erzeugen neues Angebot statt stiller Anpassung.
+      description: Alle nicht plattformbuchbaren Legs explizit quittieren. consent false als UI-Default. Änderungen von Preis/Terms
+        erzeugen neues Angebot statt stiller Anpassung.
       examples:
       - offer_revision: 1
         accepted_terms_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         acknowledged_external_leg_ids: []
         partial_booking_consent: false
-    Operation:
-      type: object
-      additionalProperties: false
-      properties:
-        operation_id:
-          $ref: '#/components/schemas/UUID'
-        kind:
-          type: string
-          enum:
-          - HOLD
-          - CONFIRM
-          - CANCEL
-          - RECONCILE
-        status:
-          type: string
-          enum:
-          - QUEUED
-          - RUNNING
-          - RECONCILING
-          - SUCCEEDED
-          - FAILED
-          - MANUAL_REVIEW
-        journey_id:
-          oneOf:
-          - $ref: '#/components/schemas/UUID'
-          - type: 'null'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        result_code:
-          oneOf:
-          - type: string
-            minLength: 1
-            maxLength: 256
-          - type: 'null'
-        retry_after_seconds:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 300
-      required:
-      - operation_id
-      - kind
-      - status
-      - journey_id
-      - created_at
-      - updated_at
-      - result_code
-      - retry_after_seconds
-      examples:
-      - operation_id: 00000000-0000-4000-8000-000000000050
-        kind: CONFIRM
-        status: RECONCILING
-        journey_id: 00000000-0000-4000-8000-000000000020
-        created_at: '2026-11-02T06:59:00Z'
-        updated_at: '2026-11-02T06:59:05Z'
-        result_code: PARTNER_RESULT_UNKNOWN
-        retry_after_seconds: 3
     PaymentAction:
       type: object
       additionalProperties: false
@@ -1514,8 +3518,8 @@ components:
       required:
       - max_authorized_amount
       - accepted_terms_sha256
-      description: payment_method_token nur erforderlich bei positivem Betrag und fehlender hinterlegter PSP-Methode;
-        keine Zahlungsdaten. return_uri muss freigegebene Client-URI sein.
+      description: payment_method_token nur erforderlich bei positivem Betrag und fehlender hinterlegter PSP-Methode; keine
+        Zahlungsdaten. return_uri muss freigegebene Client-URI sein.
       examples:
       - payment_method_token: psp_test_token_not_a_real_credential
         max_authorized_amount:
@@ -1627,9 +3631,8 @@ components:
       - pickup_window
       - arrival_window
       - execution_state
-      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im
-        bestätigten JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs
-        dürfen null liefern.'
+      description: ' Für PLATFORM_BOOKABLE enthält das Angebot konkrete vorgeschlagene Abhol-/Ankunftsfenster. Im bestätigten
+        JourneyLeg sind sie die gebundene Zusage; nominale Zeitpunkte sind davon getrennt. Externe Legs dürfen null liefern.'
       allOf:
       - if:
           properties:
@@ -1739,8 +3742,8 @@ components:
       - updated_at
       - execution_state
       - transfer_risks
-      description: CONFIRMED bezieht sich nur auf PLATFORM_BOOKABLE Legs. coverage kennzeichnet explizit eventuell
-        verbleibende extern zu beschaffende Tickets.
+      description: CONFIRMED bezieht sich nur auf PLATFORM_BOOKABLE Legs. coverage kennzeichnet explizit eventuell verbleibende
+        extern zu beschaffende Tickets.
     CancellationQuoteRequest:
       type: object
       additionalProperties: false
@@ -1874,8 +3877,8 @@ components:
       - aggregate_id
       - aggregate_version
       - data
-      description: tenant_id ist Ausstellerkontext und muss zur verifizierten Partnerbindung passen; darf niemals
-        allein die Zugriffsberechtigung bestimmen.
+      description: tenant_id ist Ausstellerkontext und muss zur verifizierten Partnerbindung passen; darf niemals allein die
+        Zugriffsberechtigung bestimmen.
       examples:
       - event_id: 00000000-0000-4000-8000-000000000090
         event_type: partner.booking_confirmed
@@ -1937,8 +3940,7 @@ components:
       - hold_expires_at
       - estimated_arrival_at
       - failure_code
-      description: Keine vollständigen Fahrgast-, Personal- oder Zahlungsprofile. event_type und state müssen kompatibel
-        sein.
+      description: Keine vollständigen Fahrgast-, Personal- oder Zahlungsprofile. event_type und state müssen kompatibel sein.
     EventReceipt:
       type: object
       additionalProperties: false
@@ -1953,6 +3955,100 @@ components:
       required:
       - event_id
       - status
+    TimeWindow:
+      type: object
+      additionalProperties: false
+      properties:
+        earliest_at:
+          type: string
+          format: date-time
+        latest_at:
+          type: string
+          format: date-time
+      required:
+      - earliest_at
+      - latest_at
+      description: Verbindliche Grenzen bei bestätigtem buchbarem Leg; im Angebot vorgeschlagene Zusage. Server prüft earliest_at
+        <= latest_at und Reise-/Umstiegsconstraints.
+    BookingSubject:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          enum:
+          - SELF
+          - DELEGATED
+        passenger_ref:
+          oneOf:
+          - $ref: '#/components/schemas/UUID'
+          - type: 'null'
+        delegation_ref:
+          oneOf:
+          - $ref: '#/components/schemas/UUID'
+          - type: 'null'
+      required:
+      - mode
+      - passenger_ref
+      - delegation_ref
+      allOf:
+      - if:
+          properties:
+            mode:
+              const: DELEGATED
+        then:
+          properties:
+            passenger_ref:
+              $ref: '#/components/schemas/UUID'
+            delegation_ref:
+              $ref: '#/components/schemas/UUID'
+        else:
+          properties:
+            passenger_ref:
+              type: 'null'
+            delegation_ref:
+              type: 'null'
+      description: SELF wird aus verifizierter Sitzung bestimmt. DELEGATED benötigt serverseitig gültige, zweck-/fahrgastgebundene
+        Vertretung einschließlich dokumentierter Callcenter-Legitimation; IDs verleihen keine Rechte.
+    TransferRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        from_leg_id:
+          $ref: '#/components/schemas/UUID'
+        to_leg_id:
+          $ref: '#/components/schemas/UUID'
+        state:
+          type: string
+          enum:
+          - UNKNOWN
+          - ON_TRACK
+          - AT_RISK
+          - MISSED
+        predicted_margin_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: -86400
+          maximum: 86400
+          description: Restzeit nach vollständiger Mindestwechselzeit; negativ = voraussichtlich verpasst.
+        observed_at:
+          type: string
+          format: date-time
+        reason_code:
+          type: string
+          maxLength: 80
+      required:
+      - from_leg_id
+      - to_leg_id
+      - state
+      - predicted_margin_seconds
+      - observed_at
+      - reason_code
+    DecimalQuantity:
+      type: string
+      pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$
+      description: Exakte Dezimalzeichenfolge, maximal sechs Nachkommastellen; nicht als Binary Float verarbeiten.
     CostAllocationLine:
       type: object
       additionalProperties: false
@@ -2016,8 +4112,8 @@ components:
       - allocation_policy_revision
       - reason
       - lines
-      description: Summe amount = allokierbare Kostenbasis des Quellereignisses; gleiche Währung/Exponent. Keine
-        Fremdmandanten-Kostenstelle. Umlage über Rechtsträgergrenzen erzeugt separaten vertraglichen Intercompany-Vorgang.
+      description: Summe amount = allokierbare Kostenbasis des Quellereignisses; gleiche Währung/Exponent. Keine Fremdmandanten-Kostenstelle.
+        Umlage über Rechtsträgergrenzen erzeugt separaten vertraglichen Intercompany-Vorgang.
       examples:
       - allocation_policy_revision: vehicle-km-v1
         reason: Tageskosten nach belegten Fahrzeugkilometern
@@ -2112,49 +4208,6 @@ components:
       - revision
       - state
       - posting_id
-    PublishRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        effective_from:
-          type: string
-          format: date-time
-        reason:
-          type: string
-          minLength: 3
-          maxLength: 1000
-        impact_report_id:
-          $ref: '#/components/schemas/UUID'
-      required:
-      - effective_from
-      - reason
-      - impact_report_id
-    PublishedRevision:
-      type: object
-      additionalProperties: false
-      properties:
-        resource_id:
-          $ref: '#/components/schemas/UUID'
-        revision:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 9007199254740991
-        state:
-          type: string
-          enum:
-          - PUBLISHED
-        effective_from:
-          type: string
-          format: date-time
-        audit_event_id:
-          $ref: '#/components/schemas/UUID'
-      required:
-      - resource_id
-      - revision
-      - state
-      - effective_from
-      - audit_event_id
     DriverEvent:
       type: object
       additionalProperties: false
@@ -2240,31 +4293,1402 @@ components:
       - received_at
       - current_plan_revision
       - reason_code
-    Problem:
+    AuditEvent:
       type: object
       additionalProperties: false
       properties:
-        type:
+        id:
+          $ref: '#/components/schemas/UUID'
+        actor_ref:
           type: string
-          format: uri
-        title:
+          minLength: 1
+          maxLength: 200
+        action:
+          type: string
+          minLength: 1
+          maxLength: 128
+        object_ref:
           type: string
           minLength: 1
           maxLength: 256
-        status:
+        occurred_at:
+          type: string
+          format: date-time
+        correlation_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - id
+      - actor_ref
+      - action
+      - object_ref
+      - occurred_at
+      - correlation_id
+    AuditEventPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CompanyProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address:
+          type: string
+          minLength: 1
+          maxLength: 500
+        contact_email:
+          type: string
+          minLength: 3
+          maxLength: 254
+        revision:
           type: integer
           format: int64
-          minimum: 400
-          maximum: 599
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - legal_name
+      - address
+      - contact_email
+      - revision
+    CompanyProfileUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address:
+          type: string
+          minLength: 1
+          maxLength: 500
+        contact_email:
+          type: string
+          minLength: 3
+          maxLength: 254
+      required:
+      - legal_name
+      - address
+      - contact_email
+      examples:
+      - legal_name: Stadtwerke Beispiel GmbH
+        address: Musterstraße 1, 12345 Musterstadt
+        contact_email: info@example.org
+    RetentionRule:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        data_category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        retention_days:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 36500
+        action:
+          type: string
+          enum:
+          - ARCHIVE
+          - DELETE
+          - ANONYMIZE
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - data_category
+      - retention_days
+      - action
+      - revision
+    RetentionRuleUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        retention_days:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 36500
+        action:
+          type: string
+          enum:
+          - ARCHIVE
+          - DELETE
+          - ANONYMIZE
+      required:
+      - retention_days
+      - action
+      examples:
+      - retention_days: 365
+        action: ANONYMIZE
+    RetentionRulePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetentionRule'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    VehicleRoleAssignment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        vehicle_id:
+          $ref: '#/components/schemas/UUID'
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - vehicle_id
+      - role_code
+      - valid_from
+      - valid_to
+      - revision
+      description: Gültigkeitsintervall links geschlossen, rechts offen.
+    VehicleRoleAssignmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: '#/components/schemas/UUID'
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        valid_from:
+          $ref: '#/components/schemas/Timestamp'
+        valid_to:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+      required:
+      - vehicle_id
+      - role_code
+      - valid_from
+      examples:
+      - vehicle_id: 00000000-0000-4000-8000-000000000006
+        role_code: OPERATING
+        valid_from: '2026-12-01T00:00:00Z'
+        valid_to: null
+      x-time: interval
+      description: Gültigkeitsintervall links geschlossen, rechts offen; valid_to null = unbegrenzt.
+    VehicleRoleAssignmentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleRoleAssignment'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DriverClearance:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        driver_ref:
+          $ref: '#/components/schemas/UUID'
+        vehicle_id:
+          $ref: '#/components/schemas/UUID'
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - driver_ref
+      - vehicle_id
+      - valid_from
+      - valid_to
+      - revision
+    DriverClearanceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        driver_ref:
+          $ref: '#/components/schemas/UUID'
+        vehicle_id:
+          $ref: '#/components/schemas/UUID'
+        valid_from:
+          $ref: '#/components/schemas/Timestamp'
+        valid_to:
+          type: string
+          format: date-time
+          maxLength: 40
+      required:
+      - driver_ref
+      - vehicle_id
+      - valid_from
+      - valid_to
+      description: Zeitlich begrenzte Freigabe; es wird nur das Nötigste projiziert.
+      examples:
+      - driver_ref: 00000000-0000-4000-8000-000000000007
+        vehicle_id: 00000000-0000-4000-8000-000000000006
+        valid_from: '2026-12-01T06:00:00Z'
+        valid_to: '2026-12-01T14:00:00Z'
+      x-time: interval
+    DriverClearancePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverClearance'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    Me:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        issuer:
+          type: string
+          minLength: 1
+          maxLength: 512
+        tenant_id:
+          $ref: '#/components/schemas/UUID'
+        tenant_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        roles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 50
+        service_scope:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/UUID'
+            maxItems: 500
+          - type: 'null'
+        session_id:
+          $ref: '#/components/schemas/UUID'
+        mfa:
+          type: boolean
+        tenants:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              tenant_id:
+                $ref: '#/components/schemas/UUID'
+              name:
+                type: string
+                minLength: 1
+                maxLength: 200
+            required:
+            - tenant_id
+            - name
+          maxItems: 100
+        scopes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+          maxItems: 200
+          description: Wirksame Funktionsscopes des aktiven Mandanten, abgeleitet aus den Rollen der Mitgliedschaft über die
+            Rechtematrix. Nur zur Anzeige (Navigation); die Prüfung erfolgt serverseitig bei jeder Anfrage.
+        context_token:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: 'Nur in der Antwort des Tenantwechsels: serverseitig signierte Kontextbindung (Mandant und optional
+            Dienst, an Konto und Sitzung gebunden). Der Client sendet sie als Header X-Taktovia-Context, je Tab/Client ein
+            eigener Wert. Sie verleiht keine Rechte; die Mitgliedschaft wird bei jeder Anfrage erneut geprüft.'
+        context_expires_at:
+          type: string
+          format: date-time
+          description: Ablauf von context_token.
+      required:
+      - subject
+      - issuer
+      - tenant_id
+      - tenant_name
+      - roles
+      - service_scope
+      - session_id
+      - mfa
+      - tenants
+      description: Serverseitig aufgelöster Sitzungskontext. Mandant, Rollen und Dienstumfang stammen aus der geprüften Mitgliedschaft,
+        nie aus Request-Feldern.
+      examples:
+      - subject: user-4711
+        issuer: https://identity.taktovia.example/realms/taktovia
+        tenant_id: 00000000-0000-4000-8000-000000000001
+        tenant_name: Stadtwerke Beispiel
+        roles:
+        - dispatcher
+        service_scope: null
+        session_id: 00000000-0000-4000-8000-000000000002
+        mfa: true
+        tenants:
+        - tenant_id: 00000000-0000-4000-8000-000000000001
+          name: Stadtwerke Beispiel
+    TenantSwitchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        tenant_id:
+          $ref: '#/components/schemas/UUID'
+        service_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - tenant_id
+      description: Wechsel in einen Mandanten, in dem eine aktuelle Mitgliedschaft besteht, optional mit einem für diese Mitgliedschaft
+        freigegebenen Dienst (service_scope); sonst einheitlich 403. tenant_id ist die gewünschte Auswahl, kein Nachweis.
+      examples:
+      - tenant_id: 00000000-0000-4000-8000-000000000001
+    Membership:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        issuer:
+          type: string
+          minLength: 1
+          maxLength: 512
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        service_scope:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/UUID'
+            maxItems: 500
+          - type: 'null'
+        valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit (zeitlich begrenzte Mitgliedschaft, OP-04).
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit; null = unbefristet.
+        revoked_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - issuer
+      - subject
+      - role_code
+      - service_scope
+      - revoked_at
+      - revision
+    MembershipCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        issuer:
+          type: string
+          minLength: 1
+          maxLength: 512
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        role_code:
+          type: string
+          minLength: 2
+          maxLength: 64
+          enum:
+          - passenger
+          - driver
+          - callcenter
+          - support
+          - dispatcher
+          - planner
+          - tenant_admin
+          - finance
+          - staff_planning
+          - workshop
+          description: Rollencode des Rollenkatalogs (WP-M1-07, IAM-004); die Pflichtrollen sind Fahrgast, Fahrer, Callcenter,
+            Support, Disponent, Verkehrsplaner und Administrator, finance, staff_planning und workshop sind Platzhalter für
+            M3/M4 (OP-10).
+        service_scope:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/UUID'
+            maxItems: 500
+          - type: 'null'
+        valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit; Standard jetzt.
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit; null oder fehlend = unbefristet. Muss nach valid_from liegen.
+      required:
+      - issuer
+      - subject
+      - role_code
+      examples:
+      - issuer: https://identity.taktovia.example/realms/taktovia
+        subject: user-4712
+        role_code: dispatcher
+    LegalEntity:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        country:
+          type: string
+          pattern: ^[A-Z]{2}$
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - name
+      - country
+      - revision
+    LegalEntityCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        country:
+          type: string
+          pattern: ^[A-Z]{2}$
+        tax_reference_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - name
+      - country
+      examples:
+      - name: Stadtwerke Beispiel GmbH
+        country: DE
+    LegalEntityUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        country:
+          type: string
+          pattern: ^[A-Z]{2}$
+      required:
+      - name
+      - country
+      examples:
+      - name: Stadtwerke Beispiel AG
+        country: DE
+    Region:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - name
+      - revision
+    RegionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - name
+      examples:
+      - name: Region Nord
+    Depot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        region_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - region_id
+      - name
+      - revision
+    DepotCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        region_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - region_id
+      - name
+      examples:
+      - region_id: 00000000-0000-4000-8000-000000000003
+        name: Betriebshof Mitte
+    CostCenter:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
         code:
           type: string
           minLength: 1
-          maxLength: 256
-        detail:
+          maxLength: 40
+        name:
           type: string
-          maxLength: 2000
-        correlation_id:
+          minLength: 1
+          maxLength: 200
+        legal_entity_id:
           $ref: '#/components/schemas/UUID'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - code
+      - name
+      - legal_entity_id
+      - revision
+    CostCenterCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_entity_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - code
+      - name
+      - legal_entity_id
+      examples:
+      - code: KST-100
+        name: Linienverkehr
+        legal_entity_id: 00000000-0000-4000-8000-000000000004
+    Session:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        revoked_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - subject
+      - created_at
+      - last_seen_at
+      - revoked_at
+      - revision
+    MembershipPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    LegalEntityPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalEntity'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    RegionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Region'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DepotPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Depot'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CostCenterPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostCenter'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    SessionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    OrganizationRole:
+      type: string
+      enum:
+      - PLATFORM_OPERATOR
+      - TRANSPORT_COMPANY
+      - TASK_AUTHORITY
+      - CLIENT
+      - BROKER
+      - ACTUAL_CARRIER
+      description: Vertragliche Rolle einer Organisation (LH-I.4-MUL-003; Werteliste Planungsannahme, OP-05). PLATFORM_OPERATOR
+        = Plattformbetreiber, TRANSPORT_COMPANY = Verkehrsunternehmen, TASK_AUTHORITY = Aufgabenträger, CLIENT = Auftraggeber,
+        BROKER = Vermittler, ACTUAL_CARRIER = tatsächlicher Beförderer. Getrennte Werte; keine Rolle wird aus einer anderen
+        abgeleitet.
+    Organization:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        legal_entity_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        federation_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - legal_entity_id
+      - name
+      - federation_ref
+      - roles
+      - roles_valid_from
+      - roles_valid_to
+      - revision
+    OrganizationCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        federation_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Schlüssel der Organisation gegenüber Partnern; im Mandanten eindeutig (409), nach dem Anlegen unveränderlich.
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+          description: Beginn der Gültigkeit der Rollenmenge; Standard jetzt.
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende der Gültigkeit (exklusiv); null oder fehlend = unbefristet.
+      required:
+      - legal_entity_id
+      - name
+      - federation_ref
+      - roles
+      examples:
+      - legal_entity_id: 00000000-0000-4000-8000-000000000010
+        name: Verkehrsbetriebe Beispiel
+        federation_ref: fed-vb-beispiel
+        roles:
+        - TRANSPORT_COMPANY
+        - ACTUAL_CARRIER
+    OrganizationUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRole'
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+        roles_valid_from:
+          type: string
+          format: date-time
+        roles_valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - legal_entity_id
+      - name
+      - roles
+      examples:
+      - legal_entity_id: 00000000-0000-4000-8000-000000000010
+        name: Verkehrsbetriebe Beispiel
+        roles:
+        - TRANSPORT_COMPANY
+    OrganizationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    TenantCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_entity:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 200
+            country:
+              type: string
+              pattern: ^[A-Z]{2}$
+            tax_reference_token:
+              type: string
+              minLength: 1
+              maxLength: 200
+          required:
+          - name
+          - country
+        first_admin:
+          type: object
+          additionalProperties: false
+          properties:
+            issuer:
+              type: string
+              minLength: 1
+              maxLength: 512
+            subject:
+              type: string
+              minLength: 1
+              maxLength: 200
+          required:
+          - issuer
+          - subject
+        contact_email:
+          type: string
+          minLength: 3
+          maxLength: 254
+          description: Pflichtfeld des Unternehmensprofils (PA-11); die Anlage legt die erste Profilrevision an.
+        default_currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Standardwährung aus dem Währungskatalog; Standard EUR.
+      required:
+      - name
+      - legal_entity
+      - first_admin
+      - contact_email
+      description: Mandantenanlage durch die Plattformbetreiberrolle (OP-36, Planungsannahme). Legt Mandant, Rechtsträger,
+        erste Administrator-Mitgliedschaft und die erste Profilrevision in einer Transaktion an. Die Plattformbetreiberrolle
+        erhält dadurch keine Fachdatensicht.
+      examples:
+      - name: Stadtwerke Beispiel
+        legal_entity:
+          name: Stadtwerke Beispiel GmbH
+          country: DE
+        first_admin:
+          issuer: https://identity.taktovia.example/realms/taktovia
+          subject: user-4711
+        contact_email: info@example.org
+    TenantCreated:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+        legal_entity_id:
+          $ref: '#/components/schemas/UUID'
+        admin_membership_id:
+          $ref: '#/components/schemas/UUID'
+      required:
+      - id
+      - name
+      - status
+      - legal_entity_id
+      - admin_membership_id
+    TenantStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - CLOSED
+    TenantStatusChange:
+      type: object
+      additionalProperties: false
+      properties:
+        managed_tenant_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+      required:
+      - managed_tenant_id
+      - status
+      description: Statuswechsel nach dem Automaten Mandant (ACTIVE und SUSPENDED wechselseitig, beide nach CLOSED, CLOSED
+        endgültig); unzulässig ergibt 409. In SUSPENDED und CLOSED schlägt jeder Fachzugriff des Mandanten fehl.
+      examples:
+      - managed_tenant_id: 00000000-0000-4000-8000-000000000001
+        status: SUSPENDED
+    TenantStatusChanged:
+      type: object
+      additionalProperties: false
+      properties:
+        managed_tenant_id:
+          $ref: '#/components/schemas/UUID'
+        from:
+          $ref: '#/components/schemas/TenantStatus'
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+      required:
+      - managed_tenant_id
+      - from
+      - status
+    Passenger:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          type: string
+          enum:
+          - PENDING_VERIFICATION
+          - ACTIVE
+          - BLOCKED
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - status
+      - locale
+      - created_at
+      - revision
+    PassengerRegistration:
+      type: object
+      additionalProperties: false
+      properties:
+        contact:
+          type: object
+          additionalProperties: false
+          properties:
+            channel:
+              type: string
+              enum:
+              - EMAIL
+              - PHONE
+            value:
+              type: string
+              minLength: 3
+              maxLength: 254
+          required:
+          - channel
+          - value
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+      required:
+      - contact
+      - locale
+      description: Registrierung mit Kontaktverifikation; der Fahrgast ist bis zur Verifikation PENDING_VERIFICATION.
+      examples:
+      - contact:
+          channel: EMAIL
+          value: fahrgast@example.org
+        locale: de-DE
+    PassengerPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passenger'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    EffectiveConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        revision_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/UUID'
+          maxItems: 50
+      required:
+      - as_of
+      - values
+      - revision_ids
+      description: Wirksame Konfiguration nach Präzedenzkette zum Zeitpunkt as_of.
+    ConfigRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        scope_kind:
+          type: string
+          enum:
+          - TENANT
+          - REGION
+          - DEPOT
+          - SERVICE
+        scope_id:
+          $ref: '#/components/schemas/UUID'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - DRAFT
+          - VALIDATED
+          - APPROVED
+          - PUBLISHED
+          - SUPERSEDED
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        effective_from:
+          type: string
+          format: date-time
+        effective_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        created_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        approved_by:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+      required:
+      - id
+      - scope_kind
+      - scope_id
+      - revision
+      - state
+      - schema_version
+      - values
+      - effective_from
+      - effective_to
+      - created_by
+      - approved_by
+    ConfigRevisionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        scope_kind:
+          type: string
+          enum:
+          - TENANT
+          - REGION
+          - DEPOT
+          - SERVICE
+        scope_id:
+          $ref: '#/components/schemas/UUID'
+        schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        values:
+          type: object
+          description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
+            serverseitig.
+        effective_from:
+          $ref: '#/components/schemas/Timestamp'
+      required:
+      - scope_kind
+      - scope_id
+      - schema_version
+      - values
+      - effective_from
+      examples:
+      - scope_kind: TENANT
+        scope_id: 00000000-0000-4000-8000-000000000001
+        schema_version: '1'
+        values: {}
+        effective_from: '2026-12-01T00:00:00Z'
+    ConfigValidationReport:
+      type: object
+      additionalProperties: false
+      properties:
+        revision_id:
+          $ref: '#/components/schemas/UUID'
+        valid:
+          type: boolean
         violations:
           type: array
           items:
@@ -2287,106 +5711,213 @@ components:
             - pointer
             - code
             - message
+          maxItems: 500
       required:
-      - type
-      - title
-      - status
-      - code
-      - correlation_id
+      - revision_id
+      - valid
+      - violations
+    ConfigImpactReport:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        revision_id:
+          $ref: '#/components/schemas/UUID'
+        generated_at:
+          type: string
+          format: date-time
+        affected:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              kind:
+                type: string
+                minLength: 1
+                maxLength: 64
+              count:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 9007199254740991
+            required:
+            - kind
+            - count
+          maxItems: 100
+      required:
+      - id
+      - revision_id
+      - generated_at
+      - affected
+    ConfigRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigRevision'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    Service:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        operator_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - operator_id
+      - name
+      - timezone
+      - revision
+    ServiceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        operator_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+      required:
+      - operator_id
+      - name
+      - timezone
       examples:
-      - type: https://api.taktovia.example/problems/offer-expired
-        title: Angebot abgelaufen
-        status: 409
-        code: OFFER_EXPIRED
-        detail: Bitte eine neue Reiseauskunft anfordern. Es wurde keine neue Buchung angelegt.
-        correlation_id: 00000000-0000-4000-8000-000000000070
-    TimeWindow:
+      - operator_id: 00000000-0000-4000-8000-000000000005
+        name: Rufbus Nord
+        timezone: Europe/Berlin
+    ServicePage:
       type: object
       additionalProperties: false
       properties:
-        earliest_at:
-          type: string
-          format: date-time
-        latest_at:
-          type: string
-          format: date-time
-      required:
-      - earliest_at
-      - latest_at
-      description: Verbindliche Grenzen bei bestätigtem buchbarem Leg; im Angebot vorgeschlagene Zusage. Server
-        prüft earliest_at <= latest_at und Reise-/Umstiegsconstraints.
-    BookingSubject:
-      type: object
-      additionalProperties: false
-      properties:
-        mode:
-          type: string
-          enum:
-          - SELF
-          - DELEGATED
-        passenger_ref:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+          maxItems: 100
+        next_cursor:
           oneOf:
-          - $ref: '#/components/schemas/UUID'
+          - type: string
+            minLength: 1
+            maxLength: 512
           - type: 'null'
-        delegation_ref:
-          oneOf:
-          - $ref: '#/components/schemas/UUID'
-          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
       required:
-      - mode
-      - passenger_ref
-      - delegation_ref
-      allOf:
-      - if:
-          properties:
-            mode:
-              const: DELEGATED
-        then:
-          properties:
-            passenger_ref:
-              $ref: '#/components/schemas/UUID'
-            delegation_ref:
-              $ref: '#/components/schemas/UUID'
-        else:
-          properties:
-            passenger_ref:
-              type: 'null'
-            delegation_ref:
-              type: 'null'
-      description: SELF wird aus verifizierter Sitzung bestimmt. DELEGATED benötigt serverseitig gültige, zweck-/fahrgastgebundene
-        Vertretung einschließlich dokumentierter Callcenter-Legitimation; IDs verleihen keine Rechte.
-    TransferRisk:
+      - items
+      - next_cursor
+      - as_of
+    WebhookSubscription:
       type: object
       additionalProperties: false
       properties:
-        from_leg_id:
+        id:
           $ref: '#/components/schemas/UUID'
-        to_leg_id:
-          $ref: '#/components/schemas/UUID'
-        state:
+        url:
           type: string
-          enum:
-          - UNKNOWN
-          - ON_TRACK
-          - AT_RISK
-          - MISSED
-        predicted_margin_seconds:
-          type:
-          - integer
-          - 'null'
-          minimum: -86400
-          maximum: 86400
-          description: Restzeit nach vollständiger Mindestwechselzeit; negativ = voraussichtlich verpasst.
-        observed_at:
+          format: uri
+          maxLength: 2000
+        event_types:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 128
+          maxItems: 50
+        active:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - url
+      - event_types
+      - active
+      - revision
+    WebhookSubscriptionCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 2000
+          pattern: ^https://
+          x-url: public-https
+          description: Nur https mit öffentlicher Adresse auf Port 443. Loopback, private und Link-Local-Adressen, interne
+            Namen, Zugangsdaten in der URL und ungewöhnliche IP-Schreibweisen werden abgewiesen (422 TARGET_NOT_ALLOWED);
+            vor jedem Aufruf wird erneut aufgelöst und geprüft.
+        event_types:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 128
+          maxItems: 50
+          minItems: 1
+      required:
+      - url
+      - event_types
+      description: Nur https; Ziele werden gegen SSRF geprüft (interne und Loopback-Adressen sind unzulässig).
+      examples:
+      - url: https://partner.example.org/hooks/taktovia
+        event_types:
+        - booking.confirmed
+    WebhookSubscriptionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookSubscription'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
           type: string
           format: date-time
-        reason_code:
-          type: string
-          maxLength: 80
       required:
-      - from_leg_id
-      - to_leg_id
-      - state
-      - predicted_margin_seconds
-      - observed_at
-      - reason_code
+      - items
+      - next_cursor
+      - as_of

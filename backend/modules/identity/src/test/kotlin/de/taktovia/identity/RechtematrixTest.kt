@@ -130,7 +130,7 @@ class RechtematrixTest {
         val lock = Files.readAllLines(lockFile).filter { it.isNotBlank() }.associate { it.substringBefore(':').trim() to it.substringAfter(':').trim() }
         assertEquals(matrix.version.toString(), lock["version"], "rechtematrix.lock: Version stimmt nicht mit der Matrixdatei überein (Version erhöhen)")
         assertEquals(matrix.sha256, lock["sha256"], "rechtematrix.lock: Matrix geändert, aber Sperrdatei nicht erneuert (sha256 der neuen Matrix: ${matrix.sha256})")
-        val changed = RightsMatrix.parse(Files.readString(matrixFile).replace("# matrix_version: 1", "# matrix_version: 2"))
+        val changed = RightsMatrix.parse(Files.readString(matrixFile).replace("# matrix_version: ${matrix.version}", "# matrix_version: ${matrix.version + 1}"))
         assertNotEquals(matrix.sha256, changed.sha256, "jede Änderung ändert die Prüfsumme")
 
         // 2. Auditiert beim Ausrollen: eine Zeile je Änderung (Version, Prüfsumme, Vorgänger), nie doppelt, nur anhängbar.
@@ -140,7 +140,7 @@ class RechtematrixTest {
         val count0 = fx.adminCount("SELECT count(*) FROM taktovia.rights_matrix_rollout")
         val v2 = IdentityApi.create(fx.tx, audit, SecurityEventPort(audit), Outbox(), rights = changed)
         val r = v2.rollout.record("service:test-b")
-        assertTrue(r.recorded); assertEquals(2, r.version); assertEquals(matrix.sha256, r.previousSha256)
+        assertTrue(r.recorded); assertEquals(matrix.version + 1, r.version); assertEquals(matrix.sha256, r.previousSha256)
         assertEquals(false, v2.rollout.record("service:test-b").recorded)
         assertEquals(count0 + 1, fx.adminCount("SELECT count(*) FROM taktovia.rights_matrix_rollout"))
         // Rückkehr zur Matrix der Repository-Version ist wieder eine Änderung und wird protokolliert; die Folge bleibt lückenlos.
