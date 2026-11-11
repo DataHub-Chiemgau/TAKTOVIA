@@ -1223,6 +1223,30 @@ export interface ConfigRevisionPage {
   as_of: string;
 }
 
+export type OfferModel = 'AREA_ON_DEMAND' | 'LINE_ON_DEMAND' | 'STATION_FEEDER';
+
+export interface ServiceOfferModelRules {
+  model: OfferModel;
+  label: string;
+  required: string[];
+  forbidden: string[];
+  optional: string[];
+}
+
+export interface ServiceOfferModelList {
+  items: ServiceOfferModelRules[];
+}
+
+export interface ServiceConfiguration {
+  service_id: UUID;
+  as_of: string;
+  offer_model: OfferModel | null;
+  model_rules: ServiceOfferModelRules | null;
+  parameters: Record<string, unknown>;
+  revision_id: UUID | null;
+  effective_from: string | null;
+}
+
 export interface Service {
   id: UUID;
   operator_id: UUID;
@@ -1919,6 +1943,20 @@ export interface Operations {
     body: ServiceUpdate;
     response: Service;
   };
+  getServiceConfiguration: {
+    path: { service_id: UUID };
+    query: { at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceConfiguration;
+  };
+  listServiceOfferModels: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOfferModelList;
+  };
   listMySessions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -2094,6 +2132,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getServiceConfiguration: { method: 'GET', path: '/v1/services/{service_id}/configuration', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listServiceOfferModels: { method: 'GET', path: '/v1/service-offer-models', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
   revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

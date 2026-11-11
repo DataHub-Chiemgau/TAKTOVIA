@@ -21,6 +21,7 @@ import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { Konto } from './Konto';
 import { ConfigEditor } from './config/ConfigEditor';
 import { ConfigRevisions } from './config/ConfigRevisions';
+import { DienstKonfiguration } from './config/DienstKonfiguration';
 import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
@@ -200,6 +201,14 @@ export function App() {
             element={
               <RequireRight right="admin.ui17">
                 <ConfigEditor />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/dienstkonfiguration"
+            element={
+              <RequireRight right="admin.ui17">
+                <DienstKonfiguration />
               </RequireRight>
             }
           />

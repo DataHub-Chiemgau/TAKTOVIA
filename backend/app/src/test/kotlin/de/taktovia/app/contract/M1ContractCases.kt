@@ -186,5 +186,5 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("POST", "/v1/webhook-subscriptions/${UUID.randomUUID()}/deactivate", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases + fleetCases + sessionCases + platformCases + webhookCases + ConfigContractCases.cases + StructureContractCases.cases + ImpactContractCases.cases + PassengerContractCases.cases + PublicationContractCases.cases).associateBy { it.operationId }
+    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases + fleetCases + sessionCases + platformCases + webhookCases + ConfigContractCases.cases + StructureContractCases.cases + ImpactContractCases.cases + PassengerContractCases.cases + PublicationContractCases.cases + ServiceConfigContractCases.cases).associateBy { it.operationId }
 }

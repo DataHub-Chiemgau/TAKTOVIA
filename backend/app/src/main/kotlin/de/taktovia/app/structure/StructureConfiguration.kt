@@ -1,6 +1,7 @@
 package de.taktovia.app.structure
 
 import de.taktovia.config.api.ConfigApi
+import de.taktovia.config.api.RevisionValidator
 import de.taktovia.documentsfinance.api.DocumentsfinanceApi
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.context.ContextTransactions
@@ -12,5 +13,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class StructureConfiguration {
     @Bean fun servicegeoApi(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi): ServicegeoApi = ServicegeoApi.create(ctxTx, audit, config)
+    /** Modellregeln der Dienstkonfiguration (WP-M1-25): laufen bei Validierung und Publikation jeder Dienstrevision; ohne Abhängigkeit von `ConfigApi` (kein Verdrahtungszyklus). */
+    @Bean fun offerModelRevisionValidator(): RevisionValidator = ServicegeoApi.offerModelValidator()
     @Bean fun documentsfinanceApi(ctxTx: ContextTransactions, audit: AuditPort): DocumentsfinanceApi = DocumentsfinanceApi.create(ctxTx, audit)
 }

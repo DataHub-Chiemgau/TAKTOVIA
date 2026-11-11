@@ -52,7 +52,7 @@ class StructureFixture : AutoCloseable {
     val tx = TenantTransactions(ds)
     val ctxTx = ContextTransactions(tx, object : ContextRevalidator { override fun revalidate(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, lock: Boolean) {} })
     val audit = JdbcAuditPort()
-    val config: ConfigApi = ConfigApi.create(ctxTx, audit, Outbox())
+    val config: ConfigApi = ConfigApi.create(ctxTx, audit, Outbox(), revisionValidators = listOf(ServicegeoApi.offerModelValidator()))
     val geo: ServicegeoApi = ServicegeoApi.create(ctxTx, audit, config)
 
     /** Ein Mandant mit Rechtsträger und Betreiber-Organisation. */
@@ -70,7 +70,7 @@ class StructureFixture : AutoCloseable {
     }
 
     fun context(tenant: TenantId, subject: String = UUID.randomUUID().toString(), services: Set<UUID> = emptySet(),
-                scopes: Set<String> = setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write")) =
+                scopes: Set<String> = setOf("organization:read", "organization:write", "services:read", "services:write", "config:read", "config:write", "config:publish")) =
         RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/structure", subject, "sid-$subject", true), tenant, setOf("tenant_admin"),
             scopes, services, UUID.randomUUID())
 

@@ -1,6 +1,7 @@
 package de.taktovia.servicegeo.api
 
 import de.taktovia.config.api.ConfigApi
+import de.taktovia.config.api.RevisionValidator
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.authz.ObjectAuthorizer
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
@@ -17,8 +18,13 @@ import java.util.UUID
  */
 interface ServicegeoApi {
     val structure: OrganizationStructure
+    /** Dienstkonfiguration und Angebotsmodelle (WP-M1-25). */
+    val configurations: ServiceConfigurations
 
     companion object {
+        /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */
+        fun offerModelValidator(): RevisionValidator = de.taktovia.servicegeo.internal.ServicegeoServicesFactory.offerModelValidator()
+
         /** [config] liefert die erste Konfigurationsrevision eines neuen Dienstes (OP-35) in derselben Transaktion. */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer): ServicegeoApi =
             ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer)
