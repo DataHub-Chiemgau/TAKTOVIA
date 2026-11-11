@@ -88,3 +88,21 @@ fun interface RecipientPolicy {
 
     companion object { val OWNER_ONLY = RecipientPolicy { owner, recipient -> owner == recipient } }
 }
+
+/**
+ * Adressierungsprüfung der Ereignishülle (WP-M1-11, LH-6.1-SYS-001): jedes Ereignis trägt den **Eigentümer** (`owner_tenant_id`) und eine **explizite Empfängeradressierung**;
+ * ohne Empfänger oder mit einem Empfänger, den die [RecipientPolicy] für den Eigentümer nicht erlaubt, wird nicht zugestellt. [deliverableTo] ist die Zustellprüfung je Empfänger:
+ * ein Ereignis des Mandanten A erreicht nie einen Empfänger des Mandanten B, solange keine Kooperationsfreigabe (M6) das erlaubt.
+ */
+object EnvelopeAddressing {
+    /** Wirft [IllegalArgumentException] (ohne Inhalte), wenn die Hülle nicht zustellbar adressiert ist. */
+    fun requireAddressed(e: EventEnvelope, policy: RecipientPolicy = RecipientPolicy.OWNER_ONLY): UUID {
+        val recipient = e.recipientTenantId ?: throw IllegalArgumentException("Ereignishülle ohne Empfängeradressierung")
+        require(policy.allowed(e.ownerTenantId, recipient)) { "Empfänger für diesen Eigentümer nicht zulässig" }
+        return recipient
+    }
+
+    /** `true`, wenn [receiver] der adressierte und zulässige Empfänger ist. */
+    fun deliverableTo(e: EventEnvelope, receiver: UUID, policy: RecipientPolicy = RecipientPolicy.OWNER_ONLY): Boolean =
+        e.recipientTenantId == receiver && policy.allowed(e.ownerTenantId, receiver)
+}
