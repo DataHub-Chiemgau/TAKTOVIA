@@ -37,7 +37,9 @@ class ContractPipeline(unittest.TestCase):
         self.assertIn('GET /v1/undokumentiert', out)
         self.assertIn('keine operationId', out)
         # Ohne Fremdroute: die Pipeline ist grün (Betriebsendpunkte sind erlaubt).
-        rc, out = run_cli([{'method': 'GET', 'path': '/actuator/health'}, {'method': 'ANY', 'path': '/error'}])
+        # (alle dokumentierten Operationen gelten dabei als „noch nicht gebaut“, unabhängig vom Baustand in contract-pending.txt)
+        all_ids = sorted(i['operationId'] for item in bundle()['paths'].values() for m, i in item.items() if m in ('get', 'post', 'put', 'patch', 'delete'))
+        rc, out = run_cli([{'method': 'GET', 'path': '/actuator/health'}, {'method': 'ANY', 'path': '/error'}], pending=all_ids)
         self.assertEqual(rc, 0, out)
 
     def test_weitere_verstoesse_bricht_build(self):
