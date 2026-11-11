@@ -449,7 +449,8 @@ export interface RetentionRulePage {
 export interface VehicleRoleAssignment {
   id: UUID;
   vehicle_id: UUID;
-  role_code: string;
+  role_code: 'OWNER' | 'OPERATOR' | 'DISPATCH_PROVIDER' | 'BILLING_PARTNER';
+  organization_id: UUID;
   valid_from: string;
   valid_to: string | null;
   revision: number;
@@ -457,7 +458,8 @@ export interface VehicleRoleAssignment {
 
 export interface VehicleRoleAssignmentCreate {
   vehicle_id: UUID;
-  role_code: string;
+  role_code: 'OWNER' | 'OPERATOR' | 'DISPATCH_PROVIDER' | 'BILLING_PARTNER';
+  organization_id: UUID;
   valid_from: Timestamp;
   valid_to?: string | null;
 }
@@ -956,7 +958,7 @@ export interface Operations {
   };
   listVehicleRoles: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string };
+    query: { vehicle_id?: UUID; as_of?: string; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: VehicleRoleAssignmentPage;
@@ -1255,8 +1257,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateCompanyProfile: { method: 'PUT', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['company:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRetentionRules: { method: 'GET', path: '/v1/retention-rules', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   updateRetentionRule: { method: 'PUT', path: '/v1/retention-rules/{rule_id}', pathParams: ['rule_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['retention:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  listVehicleRoles: { method: 'GET', path: '/v1/vehicle-roles', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  listVehicleRoles: { method: 'GET', path: '/v1/vehicle-roles', pathParams: [], query: ['vehicle_id', 'as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverClearances: { method: 'GET', path: '/v1/driver-clearances', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createDriverClearance: { method: 'POST', path: '/v1/driver-clearances', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getMe: { method: 'GET', path: '/v1/me', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

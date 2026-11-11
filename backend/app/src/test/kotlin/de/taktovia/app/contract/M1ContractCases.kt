@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Vertragsfälle der produktiven Endpunkte. Wer einen Endpunkt aus `api/<modul>.yaml` baut, streicht seine `operationId` aus
  * `api/contract-pending.txt` und trägt hier einen [ContractCase] mit positivem Fall und Fehlerfall ein; ohne Eintrag
- * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil).
+ * scheitert `ContractCoverageTest`. Stand: WP-M1-06 (Identität: getMe, switchTenant, listMemberships, createMembership, revokeMembership), WP-M1-05 (Rechtsträger, Organisationen, Plattformverwaltung), WP-M1-24 (Unternehmensprofil), WP-M1-34 (Fahrzeugrollen).
  * Fälle, die eine Anmeldung brauchen, laufen gegen die Instanz mit Ressourcenserver und Test-Issuer ([IdentityEnv]).
  */
 object M1ContractCases {
@@ -94,5 +94,30 @@ object M1ContractCases {
             422, { val (_, t) = profileTenant(); ContractRequest("PUT", "/v1/company-profile", profileBody.replace("CHF", "XXY"), IdentityEnv.headers(t, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases).associateBy { it.operationId }
+    /** Fahrzeugrollen (WP-M1-34): Mandant mit Disponent, Organisation und Fixture-Fahrzeug (Stammteil, vom Administrator angelegt). */
+    private class FleetWorld {
+        val env = IdentityEnv; val tenant = env.tenant("Flotte-" + UUID.randomUUID()); val dispatcher = UUID.randomUUID(); val passenger = UUID.randomUUID()
+        val org = UUID.randomUUID(); val vehicle = UUID.randomUUID()
+        init {
+            env.grant(tenant, dispatcher, "dispatcher"); env.grant(tenant, passenger, "passenger")
+            val le = UUID.randomUUID()
+            env.tx.run(tenant) { j ->
+                j.update("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (?,?,'LE','DE')", tenant.value, le)
+                j.update("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (?,?,?,'Org',?,CAST(? AS text[]))", tenant.value, org, le, "f-$org", "{TRANSPORT_COMPANY}")
+                j.update("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config) VALUES (?,?,'fixture','{}')", tenant.value, vehicle)
+            }
+        }
+        val dispatcherToken = env.token(dispatcher); val passengerToken = env.token(passenger)
+        fun body(vehicleId: UUID = vehicle, from: String = "2026-01-01T00:00:00Z") = """{"vehicle_id":"$vehicleId","role_code":"OWNER","organization_id":"$org","valid_from":"$from"}"""
+    }
+    private val fleetCases: List<ContractCase> = listOf(
+        ContractCase("listVehicleRoles",
+            200, { val w = FleetWorld(); ContractRequest("GET", "/v1/vehicle-roles?vehicle_id=${w.vehicle}&as_of=2026-06-01T00:00:00Z", headers = w.env.headers(w.dispatcherToken)) },
+            403, { val w = FleetWorld(); ContractRequest("GET", "/v1/vehicle-roles", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
+        ContractCase("createVehicleRole",
+            201, { val w = FleetWorld(); ContractRequest("POST", "/v1/vehicle-roles", w.body(), w.env.headers(w.dispatcherToken, extra = idem())) },
+            404, { val w = FleetWorld(); ContractRequest("POST", "/v1/vehicle-roles", w.body(vehicleId = UUID.randomUUID()), w.env.headers(w.dispatcherToken, extra = idem())) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + organizationCases + profileCases + fleetCases).associateBy { it.operationId }
 }

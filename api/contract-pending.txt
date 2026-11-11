@@ -14,7 +14,6 @@ createDepot  # POST /v1/depots
 createDriverClearance  # POST /v1/driver-clearances
 createRegion  # POST /v1/regions
 createService  # POST /v1/services
-createVehicleRole  # POST /v1/vehicle-roles
 createWebhookSubscription  # POST /v1/webhook-subscriptions
 getConfigRevision  # GET /v1/config/revisions/{revision_id}
 getEffectiveConfig  # GET /v1/config/effective
@@ -32,7 +31,6 @@ listRegions  # GET /v1/regions
 listRetentionRules  # GET /v1/retention-rules
 listServices  # GET /v1/services
 listSessions  # GET /v1/sessions
-listVehicleRoles  # GET /v1/vehicle-roles
 listWebhookSubscriptions  # GET /v1/webhook-subscriptions
 planJourney  # POST /v1/federation/journeys/plan
 publishConfig  # POST /v1/config/revisions/{revision_id}/publish

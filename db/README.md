@@ -51,3 +51,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 - Personenbezogene Felder (`ja`) brauchen Rechtsgrundlage, Schutzklasse und Löschklasse; Zweck und Werte müssen im Katalog `dateninventar_katalog.json` stehen. Der Katalog ist **vorläufig und nicht freigegeben** (OP-24, D-11).
 - Nach Änderungen am Inventar den UI-Export erneuern: `python db/dateninventar.py export --write` (Test `test_ui_export_entspricht_dem_inventar` hält ihn synchron).
 - Felder ohne nachgewiesenen Zweck werden nicht angelegt (z. B. keine feinere Herkunft als `travel_attempt.coarse_origin`).
+
+## Erweiterung `btree_gist` (WP-M1-34)
+
+`V1340__fahrzeugrollen.sql` legt `btree_gist` an (`CREATE EXTENSION IF NOT EXISTS`, vertrauenswürdige Erweiterung, der Migrator ist Datenbankeigentümer). Sie wird für den Exclusion Constraint `vehicle_assignment_no_overlap` (Überlappungsverbot je Fahrzeug und Rolle) gebraucht; das PostgreSQL-Abbild muss die contrib-Module enthalten (das PostGIS-Abbild und die lokale Installation tun das).

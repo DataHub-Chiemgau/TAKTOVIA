@@ -15,7 +15,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `registry.yaml` | wirksame Konfiguration, Revisionen anlegen/lesen/prüfen, Wirkungsanalyse (Veröffentlichen steht in `config.yaml`) | `config` |
 | `passengers.yaml`, `webhooks.yaml`, `services.yaml` | Fahrgäste, Webhook-Abonnements, Dienstkopf | `communication-support`, `service-geo` |
 | `compliance.yaml` | Auditabfrage, Unternehmensprofil (WP-M1-24, Feldliste in `docs/umsetzungsplan/vertraege/schemas/tenant-profile.v1.schema.json`), Aufbewahrungsregeln | `platform`/`config` |
-| `fleet.yaml` | Fahrzeugrollen, Fahrerfreigaben | `fleet-safety` |
+| `fleet.yaml` | Fahrzeugrollen (WP-M1-34), Fahrerfreigaben | `fleet-safety` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |
 
