@@ -23,6 +23,29 @@ NO_IF_MATCH = {'planJourney', 'recordDriverEvent'}
 EVENT_NAME = re.compile(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+\.v\d+\.schema\.json$')
 
 
+# WP-M1-37 (LH-6.18-SEC-008): rohe Kartendaten erreichen die API nie. Kein Schema, Parameter oder Header mit Kartendatenfeld;
+# `payment_method_token` und `provider_ref` sind PSP-Referenzwerte und bleiben erlaubt (Kap. 05 §5.3).
+CARD_FIELD = re.compile(r'(?i)^(pan|primary_?account_?number|card_?(number|no|num)|cc_?(number|num)|cvc2?|cvv2?|cid|card_?(security_?code|verification\w*)|'
+                        r'(card_?)?expir(y|ation)\w*|exp_?(month|year|date)|card_?holder\w*|cardholder_?name)$')
+
+
+def card_data_violations(node, path='') -> list[str]:
+    """Findet Kartendatenfelder in Schemaeigenschaften und Parameternamen (rekursiv über das gesamte Dokument)."""
+    out = []
+    if isinstance(node, dict):
+        props = node.get('properties')
+        if isinstance(props, dict):
+            out += [f'{path}/properties/{k}: Kartendatenfeld' for k in props if CARD_FIELD.match(str(k))]
+        if 'in' in node and isinstance(node.get('name'), str) and CARD_FIELD.match(node['name']):
+            out.append(f"{path}: Parameter {node['name']} ist ein Kartendatenfeld")
+        for k, v in node.items():
+            out += card_data_violations(v, f'{path}/{k}')
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            out += card_data_violations(v, f'{path}/{i}')
+    return out
+
+
 def _param_names(op):
     return {p.get('$ref', '').split('/')[-1] or p.get('name') for p in op.get('parameters', [])}
 
@@ -51,6 +74,7 @@ def lint_doc(doc: dict) -> list[str]:
                 if str(code)[0] in '45' and '$ref' not in resp:
                     if 'application/problem+json' not in resp.get('content', {}):
                         errs.append(f'{where}: Fehlerantwort {code} nicht als application/problem+json')
+    errs += [f'SEC-008: {v}' for v in card_data_violations(doc)]
     dup = {i for i in ids if ids.count(i) > 1}
     if dup: errs.append(f'operationId doppelt: {sorted(dup)}')
     try:

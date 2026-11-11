@@ -31,6 +31,8 @@ class Outbox {
     fun append(jdbc: JdbcOperations, e: OutboxEvent): UUID {
         require(Regex("[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+").matches(e.eventType)) { "ungültiger Ereignistyp" }
         require(e.aggregateRevision >= 1) { "aggregateRevision >= 1" }
+        // WP-M1-37 (SEC-008): keine kartennummernähnlichen Daten in Ereignis-Payloads (Fehlertext nennt den Wert nicht)
+        de.taktovia.platform.carddata.CardDataFilter.requireNoCardData(e.payload, "Ereignis-Payload")
         jdbc.update(
             "INSERT INTO taktovia.outbox(tenant_id,event_id,aggregate_id,aggregate_revision,event_type,schema_version,occurred_at,payload,recipient_tenant_id,correlation_id) " +
                 "VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?::jsonb,COALESCE(?, taktovia.current_tenant()),?)",

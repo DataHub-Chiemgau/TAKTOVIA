@@ -39,7 +39,7 @@ object AuditRedactor {
         return Result(out, paths.toList())
     }
 
-    private fun normKey(k: String): String = k.lowercase().replace(Regex("[^a-z0-9_.]"), "_").let { if (KEY_FORMAT.matches(it)) it else "key_" + it.take(55).ifEmpty { "x" } }
+    private fun normKey(k: String): String = if (de.taktovia.platform.carddata.CardData.contains(k)) "key_card_data_removed" else k.lowercase().replace(Regex("[^a-z0-9_.]"), "_").let { if (KEY_FORMAT.matches(it)) it else "key_" + it.take(55).ifEmpty { "x" } }
 
     private fun node(path: String, v: Any?, depth: Int, tenant: UUID, paths: MutableSet<String>): Any? {
         val key = path.substringAfterLast('.')
@@ -56,14 +56,15 @@ object AuditRedactor {
                 for ((ck, cv) in v) { if (++n > MAX_ENTRIES) { paths.add("$path._truncated"); break }; val nk = normKey(ck.toString()); m[nk] = node("$path.$nk", cv, depth + 1, tenant, paths) }
             }
             v is Iterable<*> -> v.take(MAX_ENTRIES).mapIndexed { i, e -> node("$path[$i]", e, depth + 1, tenant, paths) }
-            v is Boolean || v is Number -> v
+            v is Number -> if (de.taktovia.platform.carddata.CardData.contains(v.toString())) { paths.add(path); MASK } else v
+            v is Boolean -> v
             v is UUID || v is Enum<*> || v is java.time.temporal.TemporalAccessor -> v.toString()
             else -> maskString(path, v.toString(), paths)
         }
     }
 
     private fun maskString(path: String, s: String, paths: MutableSet<String>): String {
-        if (EMAIL.containsMatchIn(s) || JWT.containsMatchIn(s) || BEARER.containsMatchIn(s) || IBAN.containsMatchIn(s) || cardLike(s)) { paths.add(path); return MASK }
+        if (EMAIL.containsMatchIn(s) || JWT.containsMatchIn(s) || BEARER.containsMatchIn(s) || IBAN.containsMatchIn(s) || cardLike(s) || de.taktovia.platform.carddata.CardData.contains(s)) { paths.add(path); return MASK }
         return if (s.length > MAX_STRING) s.take(MAX_STRING) + "…" else s
     }
 
