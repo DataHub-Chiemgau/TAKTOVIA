@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+absence_request;tenant_id;nein;PERSONALEINSATZ;;;;
+absence_request;id;nein;PERSONALEINSATZ;;;;
+absence_request;person_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;IdP-Subject der abwesenden Person, kein Klarname
+absence_request;starts_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Beginn der Abwesenheit
+absence_request;ends_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Ende der Abwesenheit (exklusiv)
+absence_request;kind;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;neutrale Art (Urlaub, Schulung, sonstige), nur Personalrolle, Dispositionssichten zeigen nur nicht verfügbar
+absence_request;state;nein;PERSONALEINSATZ;;;;
+absence_request;created_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;erfassende Person (Subject)
+absence_request;created_at;nein;TECHNISCHER_BETRIEB;;;;
+absence_request;revision;nein;PERSONALEINSATZ;;;;

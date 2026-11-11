@@ -13,6 +13,8 @@ import java.util.UUID
 interface StafftimeApi {
     val driverDevices: DriverDevices
     val driverEvents: DriverEvents
+    /** Abwesenheit als Verfügbarkeitsrestriktion (WP-M4-06). */
+    val absences: Absences
 
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): StafftimeApi =

@@ -70,6 +70,8 @@ class CrossTenantIsolationTest {
         val release = create("/v1/driver-releases", """{"driver_id":"$driverRef","recipient_tenant_id":"${recipientTenant.value}","service_ids":["${UUID.randomUUID()}"],"valid_from":"2026-01-01T00:00:00Z","valid_to":"2099-01-01T00:00:00Z"}""", b.plannerToken).json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
+        // WP-M4-06: Abwesenheit in B (Personalrolle)
+        val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
         val recipient = UUID.randomUUID()
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
@@ -80,7 +82,7 @@ class CrossTenantIsolationTest {
             "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence,
         ), subject = b.passenger.toString())
     }
 
@@ -121,6 +123,8 @@ class CrossTenantIsolationTest {
             "getDriverReleaseProjection" to Probe("GET", "/v1/driver-releases/{release_id}/projection?service_id=${UUID.randomUUID()}", role = "dispatcher"),
             "revokeDriverDevice" to Probe("DELETE", "/v1/driver/devices/{device_id}", null, true, role = "driver"),
             "getNotification" to Probe("GET", "/v1/notifications/{notification_id}"),
+            "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
+            "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -128,7 +132,7 @@ class CrossTenantIsolationTest {
     private val listPaths = mapOf(
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
-        "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
+        "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
     )
     private val selfScoped = setOf(
@@ -178,13 +182,14 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, if (op == "listPassengers") a.ccToken else a.adminToken)
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listAbsences" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
                 assertFalse(r.text.contains(b.tenant.toString()), "$op: Liste von A nennt Mandant B")
             }
         }
+        assertEquals(1, env.count("SELECT count(*) FROM taktovia.absence_request WHERE tenant_id=? AND state='APPROVED' AND revision=1", b.tenant.value), "Abwesenheit in B unverändert (Rücknahme aus A wirkungslos)")
         assertEquals(before, snapshot(b), "Mandant B ist nach allen Fremdversuchen unverändert (Änderung und Löschung wirkungslos)")
     }
 

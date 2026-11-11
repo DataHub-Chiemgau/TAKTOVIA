@@ -134,3 +134,7 @@ triageDefect;defects:triage;-;M3;N;N;N;N;J;N;N;N;N;J
 listRepairOrders;repair:read;-;M3;N;N;N;N;J;N;J;N;N;J
 createRepairOrder;repair:write;-;M3;N;N;N;N;N;N;N;N;N;J
 createVehicleRelease;fleet:release;-;M3;N;N;N;N;N;N;J;N;N;J
+createAbsence;absences:write;HR;M4;N;N;N;N;N;N;N;N;J;N
+withdrawAbsence;absences:write;HR;M4;N;N;N;N;N;N;N;N;J;N
+listAbsences;absences:read;HR;M4;N;N;N;N;J;J;N;N;J;N
+getAbsence;absences:detail;HR;M4;N;N;N;N;N;N;N;N;J;N

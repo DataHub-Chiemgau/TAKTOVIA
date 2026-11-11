@@ -20,6 +20,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `driver-releases.yaml` | zeitlich begrenzte Fahrerfreigabe und minimierte Projektion (WP-M1-35, LH-I.4-MUL-005; Feldliste in `docs/umsetzungsplan/vertraege/schemas/driver-release-projection.v1.schema.json`) | `identity` |
 | `booking.yaml`, `geo.yaml`, `payments.yaml`, `notifications.yaml` | Einbetreiberbuchung (`/v1/ride-offers`, `/v1/bookings`), Bediengebiete und Haltepunkte, PSP-Ereignisse, Nachrichten (WP-M2-01; Detailverträge in `docs/umsetzungsplan/vertraege/m2-detailvertraege.md`) | `booking-dispatch`, `service-geo`, `fare-payment`, `communication-support` |
 | `fleet-safety.yaml`, `dispatch.yaml` | M3: Leitstellenfahrzeuge, Sperren, Prüfläufe, Schäden, Reparatur, Wiederfreigabe, Incidents; Planrevisionen (WP-M3-01; Detailverträge in `docs/umsetzungsplan/vertraege/m3-detailvertraege.md`) | `fleet-safety`, `booking-dispatch` |
+| `absences.yaml` | Abwesenheit als Verfügbarkeitsrestriktion: Personalrolle legt an und nimmt zurück, Planer und Disposition lesen nur „nicht verfügbar“ (WP-M4-06) | `staff-time` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |
 

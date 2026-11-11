@@ -459,6 +459,39 @@ export interface DriverDevice {
   revision: number;
 }
 
+export interface AbsenceCreate {
+  person_ref: string;
+  from: string;
+  to: string;
+  kind: 'LEAVE' | 'TRAINING' | 'OTHER';
+}
+
+export interface Absence {
+  id: UUID;
+  person_ref: string;
+  from: string;
+  to: string;
+  kind: 'LEAVE' | 'TRAINING' | 'OTHER';
+  state: 'APPROVED' | 'WITHDRAWN';
+  created_by: string;
+  created_at: string;
+  revision: number;
+}
+
+export interface AvailabilityRestriction {
+  id: UUID;
+  person_ref: string;
+  from: string;
+  to: string;
+  availability: 'UNAVAILABLE';
+}
+
+export interface AvailabilityRestrictionPage {
+  items: AvailabilityRestriction[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface RideResourceVector {
   schema_version?: '1.0';
   seats: number;
@@ -1838,6 +1871,34 @@ export interface Operations {
     body: undefined;
     response: undefined;
   };
+  listAbsences: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: AvailabilityRestrictionPage;
+  };
+  createAbsence: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: AbsenceCreate;
+    response: Absence;
+  };
+  getAbsence: {
+    path: { absence_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Absence;
+  };
+  withdrawAbsence: {
+    path: { absence_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: Absence;
+  };
   createRideOffer: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -2643,6 +2704,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   acknowledgeDriverRunRevision: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/run/acknowledgements', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   registerDriverDevice: { method: 'POST', path: '/v1/driver/devices', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:devices'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   revokeDriverDevice: { method: 'DELETE', path: '/v1/driver/devices/{device_id}', pathParams: ['device_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['driver:devices'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  withdrawAbsence: { method: 'POST', path: '/v1/absences/{absence_id}/withdraw', pathParams: ['absence_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['absences:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
