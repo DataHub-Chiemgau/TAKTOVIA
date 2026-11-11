@@ -3,6 +3,9 @@ package de.taktovia.app.isolation
 import de.taktovia.TaktoviaTestSupport
 import de.taktovia.app.identity.IdentityEnv
 import de.taktovia.app.probe.Resp
+import de.taktovia.communicationsupport.api.CommunicationsupportApi
+import de.taktovia.communicationsupport.api.NotificationChannel
+import de.taktovia.communicationsupport.api.NotificationRequest
 import de.taktovia.platform.operation.OperationService
 import de.taktovia.platform.tenant.TenantId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,12 +30,15 @@ class CrossTenantIsolationTest {
     private val pending: Set<String> = Files.readAllLines(repo.resolve("api/contract-pending.txt")).map { it.substringBefore('#').trim() }.filter { it.isNotEmpty() }.toSet()
     private fun idem() = mapOf("Idempotency-Key" to "iso-" + UUID.randomUUID())
 
-    private class Side(val tenant: TenantId, val admin: UUID, val adminToken: String, val callcenter: UUID, val ccToken: String, val passenger: UUID, val passengerToken: String)
+    private class Side(val tenant: TenantId, val admin: UUID, val adminToken: String, val callcenter: UUID, val ccToken: String, val passenger: UUID, val passengerToken: String,
+        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String)
 
     private fun side(): Side {
         val t = env.tenant("Iso-" + UUID.randomUUID()); val a = UUID.randomUUID(); val c = UUID.randomUUID(); val p = UUID.randomUUID()
         env.grant(t, a, "tenant_admin"); env.grant(t, c, "callcenter"); env.grant(t, p, "passenger")
-        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p))
+        val pl = UUID.randomUUID(); val di = UUID.randomUUID(); val dr = UUID.randomUUID()
+        env.grant(t, pl, "staff_planning"); env.grant(t, di, "dispatcher"); env.grant(t, dr, "driver")
+        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr))
     }
 
     private class Ids(val map: Map<String, String>, val subject: String)
@@ -56,7 +62,22 @@ class CrossTenantIsolationTest {
         val membership = env.get("/v1/memberships", b.adminToken).json["items"].values().first { it["subject"].asString() == b.passenger.toString() }["id"].asString()
         env.get("/v1/me", b.passengerToken)
         val session = env.get("/v1/me", b.passengerToken).json["session_id"].asString()
+        // Fahrerfreigabe (Eigentümer B, Empfänger C), Fahrergerät und Nachricht in B
+        val recipientTenant = env.tenant("Iso-Empf-" + UUID.randomUUID())
+        val driverRef = UUID.randomUUID()
+        env.exec("INSERT INTO taktovia.driver(tenant_id,id,display_name,contact_channel,contact_value) VALUES (?,?,'Erika Muster','PHONE','+491701234567')", b.tenant.value, driverRef)
+        env.exec("INSERT INTO taktovia.qualification_revision(tenant_id,id,driver_id,qualification_code,revision,valid_from,evidence_ref) VALUES (?,?,?,'PBEF',1,now()-interval '1 year','akte-1')", b.tenant.value, UUID.randomUUID(), driverRef)
+        val release = create("/v1/driver-releases", """{"driver_id":"$driverRef","recipient_tenant_id":"${recipientTenant.value}","service_ids":["${UUID.randomUUID()}"],"valid_from":"2026-01-01T00:00:00Z","valid_to":"2099-01-01T00:00:00Z"}""", b.plannerToken).json["id"].asString()
+        val deviceId = UUID.randomUUID().toString()
+        create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
+        val recipient = UUID.randomUUID()
+        val notification = env.tx.run(b.tenant) { j ->
+            j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
+            env.server.ctx.getBean(CommunicationsupportApi::class.java).notifications
+                .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
+        }.toString()
         return Ids(mapOf(
+            "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session,
@@ -64,7 +85,7 @@ class CrossTenantIsolationTest {
     }
 
     /** Anfrage je Endpunkt mit Pfadparameter: Pfadvorlage, Body, Rolle des Aufrufers aus Mandant A. */
-    private class Probe(val method: String, val path: String, val body: String? = null, val ifMatch: Boolean = false, val cc: Boolean = false, val purpose: Boolean = false)
+    private class Probe(val method: String, val path: String, val body: String? = null, val ifMatch: Boolean = false, val cc: Boolean = false, val purpose: Boolean = false, val role: String? = null)
 
     private fun probes(a: Side): Map<String, Probe> {
         val aRegion = env.post("/v1/regions", """{"name":"Region A"}""", a.adminToken, extra = idem()).json["id"].asString()
@@ -96,6 +117,10 @@ class CrossTenantIsolationTest {
             "unlockAccount" to Probe("DELETE", "/v1/account-locks/{subject}", null, true),
             "getWebhookSubscription" to Probe("GET", "/v1/webhook-subscriptions/{subscription_id}"),
             "deactivateWebhookSubscription" to Probe("POST", "/v1/webhook-subscriptions/{subscription_id}/deactivate", null, true),
+            "revokeDriverRelease" to Probe("DELETE", "/v1/driver-releases/{release_id}", null, true, role = "planner"),
+            "getDriverReleaseProjection" to Probe("GET", "/v1/driver-releases/{release_id}/projection?service_id=${UUID.randomUUID()}", role = "dispatcher"),
+            "revokeDriverDevice" to Probe("DELETE", "/v1/driver/devices/{device_id}", null, true, role = "driver"),
+            "getNotification" to Probe("GET", "/v1/notifications/{notification_id}"),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -104,18 +129,25 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers",
+        "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
     )
     private val selfScoped = setOf(
         "getMe", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
     )
+
+    /**
+     * Per Signatur (HMAC) authentifizierter Provider-Eingang ohne Mandantentoken: der Mandant wird aus dem verifizierten Signaturschlüssel/der Konfiguration abgeleitet,
+     * der Pfadparameter `{provider}` ist kein Mandantenobjekt (kein fremdes Objekt adressierbar). Isolation ist nachgewiesen durch
+     * `payment/ProviderEventApiTest.manipulierte_tenant_id_ist_wirkungslos_der_mandant_folgt_dem_schluessel` (und `PspSimulatorWebhookTest`).
+     */
+    private val providerAuthenticated = setOf("receiveProviderEvent")
 
     private fun normalized(r: Resp): String {
         val j = r.json
         return listOf(r.status, j["type"]?.asString(), j["code"]?.asString(), j["title"]?.asString(), j["detail"]?.asString()).joinToString("|")
     }
 
-    private fun call(a: Side, p: Probe, path: String, token: String = if (p.cc) a.ccToken else a.adminToken): Resp =
+    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
         env.server.send(p.method, path, p.body, env.headers(token, extra = (if (p.method != "GET") idem() else emptyMap()) + (if (p.ifMatch) mapOf("If-Match" to "\"1\"") else emptyMap()) + (if (p.purpose) mapOf("X-Access-Purpose" to "BOOKING_ASSISTANCE") else emptyMap())))
 
     private fun snapshot(b: Side): String = listOf("/v1/regions", "/v1/depots", "/v1/legal-entities", "/v1/organizations", "/v1/services", "/v1/cost-centers", "/v1/config/revisions", "/v1/memberships", "/v1/webhook-subscriptions")
@@ -128,7 +160,7 @@ class CrossTenantIsolationTest {
         val built = registry.operations.filter { it.operationId !in pending && it.path.startsWith("/v1/") }
         // Vollständigkeit: jeder gebaute Endpunkt mit Pfadparameter steht im Scan, jeder Listenweg ebenfalls
         val withParams = built.filter { '{' in it.path }.map { it.operationId }.toSet()
-        assertEquals(emptySet<String>(), withParams - probes.keys, "gebaute Endpunkte mit Pfadparameter ohne Isolationsfall (CrossTenantIsolationTest.probes ergänzen)")
+        assertEquals(emptySet<String>(), withParams - probes.keys - providerAuthenticated, "gebaute Endpunkte mit Pfadparameter ohne Isolationsfall (CrossTenantIsolationTest.probes ergänzen)")
         val noParams = built.filter { '{' !in it.path && it.method == "GET" }.map { it.operationId }.toSet()
         assertEquals(emptySet<String>(), noParams - listPaths.keys - selfScoped, "gebaute Leseendpunkte ohne Pfadparameter ohne Isolationsfall")
         val before = snapshot(b)
