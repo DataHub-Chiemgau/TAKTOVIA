@@ -228,6 +228,8 @@ enum class ConfigLevel { GLOBAL, TENANT, REGION, SERVICE, VEHICLE }
  */
 data class EffectiveRequest(
     val parameter: String? = null, val regionId: UUID? = null, val serviceId: UUID? = null, val vehicleId: UUID? = null, val at: Instant? = null,
+    /** Teilmenge des Katalogs (Regelprüfung): ohne [parameter] und ohne [parameters] werden alle Parameter aufgelöst. */
+    val parameters: Set<String>? = null,
 )
 
 enum class EffectiveStatus { EFFECTIVE, NO_VALUE }

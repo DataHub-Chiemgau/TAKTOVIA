@@ -87,7 +87,7 @@ function setup(
 }
 
 describe('UI-17 Basis: Strukturbaum Mandant, Region, Dienst', () => {
-  it('strukturbaum_mandant_region_dienst_zeigt_leer_fehler_und_rechtezustand: Baum mit zwei Gebieten und Kontextzeile', async () => {
+  it('strukturbaum_mandant_region_dienst_zeigt_leer_fehler_und_rechtezustand', async () => {
     const { container, calls } = setup({
       regions: [NORD, SUED],
       services: [service(3, 'Rufbus Nord', NORD.id), service(4, 'Rufbus Süd', SUED.id)],

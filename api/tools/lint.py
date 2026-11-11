@@ -50,6 +50,50 @@ def _param_names(op):
     return {p.get('$ref', '').split('/')[-1] or p.get('name') for p in op.get('parameters', [])}
 
 
+POLICY_FILE = API / 'request-schema-policy.json'
+KATALOG = API.parent / 'docs' / 'pflichtenheft' / 'kataloge.csv'
+
+
+def load_request_policy(policy_file: Path = POLICY_FILE, katalog: Path = KATALOG) -> dict:
+    """Konvention für Request-Schemas (WP-M1-26): verbotene Feldnamen (Muster und Katalogparameter) und begründete Ausnahmen."""
+    import csv
+    pol = json.loads(policy_file.read_text())
+    params = {r['name_original'] for r in csv.DictReader(katalog.open(encoding='utf-8'), delimiter=';') if r['katalogtyp'] == 'Parameter'}
+    return {'patterns': [re.compile(p) for p in pol['verbotene_feldnamen']], 'params': params,
+            'allow': {(a['schema'], a['feld']) for a in pol['ausnahmen']}}
+
+
+def request_schema_violations(doc: dict, policy: dict | None = None) -> list[str]:
+    """WP-M1-26 / LH-6.1-SYS-011: Request-Schemas haben an jedem Objekt mit Eigenschaften additionalProperties:false und enthalten kein vom Client
+    setzbares Regel-, Preis-, Revisions- oder Statusfeld (siehe api/request-schema-policy.json; Ausnahmen sind dort begründet)."""
+    policy = policy or load_request_policy()
+    schemas, errs = doc['components']['schemas'], []
+
+    def walk(node, where, named, seen):
+        if not isinstance(node, dict): return
+        if '$ref' in node:
+            name = node['$ref'].split('/')[-1]
+            if name in seen or name not in schemas: return
+            return walk(schemas[name], where, name, seen | {name})
+        props = node.get('properties')
+        if props is not None and node.get('additionalProperties') is not False:
+            errs.append(f'{where}: Request-Schema {named} ohne additionalProperties:false')
+        for field, sub in (props or {}).items():
+            if (named, field) not in policy['allow'] and (any(p.match(field) for p in policy['patterns']) or field in policy['params']):
+                errs.append(f'{where}: Request-Schema {named} enthält das vom Client setzbare Regel-, Preis- oder Statusfeld "{field}"')
+            walk(sub, where, named, seen)
+        if 'items' in node: walk(node['items'], where, named, seen)
+        for key in ('allOf', 'oneOf', 'anyOf'):
+            for sub in node.get(key, []): walk(sub, where, named, seen)
+
+    for path, item in doc['paths'].items():
+        for method, op in item.items():
+            body = op.get('requestBody') if method in {'post', 'put', 'patch', 'delete'} else None
+            schema = (body or {}).get('content', {}).get('application/json', {}).get('schema')
+            if schema: walk(schema, f'{method.upper()} {path} ({op.get("operationId")})', None, frozenset())
+    return errs
+
+
 def lint_doc(doc: dict) -> list[str]:
     errs, ids = [], []
     for path, item in doc['paths'].items():
@@ -75,6 +119,7 @@ def lint_doc(doc: dict) -> list[str]:
                     if 'application/problem+json' not in resp.get('content', {}):
                         errs.append(f'{where}: Fehlerantwort {code} nicht als application/problem+json')
     errs += [f'SEC-008: {v}' for v in card_data_violations(doc)]
+    errs += [f'SYS-011: {v}' for v in request_schema_violations(doc)]
     dup = {i for i in ids if ids.count(i) > 1}
     if dup: errs.append(f'operationId doppelt: {sorted(dup)}')
     try:

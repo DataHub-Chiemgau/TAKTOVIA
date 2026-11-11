@@ -1,0 +1,18 @@
+{
+  "titel": "Konvention für Request-Schemas (WP-M1-26, LH-6.1-SYS-011): vom Client gelieferte Regel-, Preis- oder Statusfelder sind nie Entscheidungsgrundlage",
+  "regel": "Jedes Request-Schema (requestBody der Operationen unter api/*.yaml) trägt additionalProperties:false an jedem Objekt mit Eigenschaften (unbekannte Felder ergeben 422) und enthält kein Feld, das eine Regel, einen Preis, eine Regelrevision oder einen Status vom Client setzen ließe. Geprüft von api/tools/lint.py und von RequestSchemaLintTest (Backend); beide lesen diese Datei.",
+  "verbotene_feldnamen": [
+    "^(price|fare|tariff|rate)(_[a-z0-9_]+)?$",
+    "^[a-z0-9_]*_minor$",
+    "^[a-z0-9_]*(config|policy|rule|tariff|fare|price)_revision(_id)?$",
+    "^(status|state)$"
+  ],
+  "verbotene_feldnamen_aus_katalog": "docs/pflichtenheft/kataloge.csv, Zeilen mit katalogtyp = Parameter (name_original): ein Regelparameter wie max_wait_min ist nie ein Eingabefeld",
+  "ausnahmen": [
+    { "schema": "Money", "feld": "amount_minor", "grund": "Betrag in kleinster Einheit als Eingabe des Fahrgasts (maximal autorisierter Betrag): Grenze, die der Server gegen sein eigenes Angebot prüft, nie ein Preis" },
+    { "schema": "SignedMoney", "feld": "amount_minor", "grund": "Betrag einer Kostenumlagezeile, gesetzt von einer berechtigten Finanzrolle (M4); der Server prüft die Summe gegen den Beleg" },
+    { "schema": "AllocationRequest", "feld": "allocation_policy_revision", "grund": "Optimistisches Konkurrenzmerkmal: die Revision der Umlageregel, auf der der Vorschlag beruht; der Server löst die geltende Revision selbst auf und weist eine abweichende ab, nie wird sie übernommen" },
+    { "schema": "TenantStatusChange", "feld": "status", "grund": "Zielzustand eines Befehls der Plattformverwaltung (Zustandsautomat tenant, Server prüft den Übergang), kein vom Client gesetzter Objektzustand" },
+    { "schema": "PartnerEventData", "feld": "state", "grund": "Zustand, den ein signierter Partner für sein eigenes Objekt meldet (Ereigniseingang, M6); wird nie als Zustand eines TAKTOVIA-Objekts übernommen" }
+  ]
+}

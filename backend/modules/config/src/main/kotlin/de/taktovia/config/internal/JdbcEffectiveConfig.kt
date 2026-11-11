@@ -87,8 +87,8 @@ internal class JdbcEffectiveConfig(
         val now = clock.instant(); val at = req.at ?: now
         val version = catalogs.currentVersion(j, at) ?: catalogs.currentVersion(j, now) ?: throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Kein Parameterkatalog gültig.")
         val catalog = catalogs.load(j, version) ?: throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Parameterkatalog nicht ladbar.")
-        val names = req.parameter?.let { listOf(it) } ?: catalog.parameters.keys.sorted()
-        req.parameter?.let { if (it !in catalog.parameters) throw ProblemException.notFound() }
+        val names = req.parameter?.let { listOf(it) } ?: req.parameters?.sorted() ?: catalog.parameters.keys.sorted()
+        names.forEach { if (it !in catalog.parameters) throw ProblemException.notFound() }
 
         // Lesestand: je Scope des Kontexts die zu `at` wirksame veröffentlichte Revision (spätester Beginn, dann höchste Nummer) und der jüngste unveröffentlichte Stand
         val scopes = listOfNotNull(ScopeKind.TENANT to ctx.tenant.value, context.regionId?.let { ScopeKind.REGION to it }, context.serviceId?.let { ScopeKind.SERVICE to it }, context.vehicleId?.let { ScopeKind.VEHICLE to it })
@@ -177,7 +177,7 @@ internal class JdbcEffectiveConfig(
     }
 
     private fun cacheKey(ctx: RequestContext, req: EffectiveRequest, context: Context, at: Instant, version: String, effective: Map<Pair<ScopeKind, UUID>, Row>, proposals: Map<Pair<ScopeKind, UUID>, Row>): String {
-        val parts = listOf(ctx.tenant.toString(), req.parameter ?: "*", context.regionId, context.serviceId, context.vehicleId, version,
+        val parts = listOf(ctx.tenant.toString(), req.parameter ?: req.parameters?.sorted()?.joinToString(",") ?: "*", context.regionId, context.serviceId, context.vehicleId, version,
             effective.values.map { it.id.toString() }.sorted().joinToString(","), proposals.values.map { it.id.toString() + ":" + it.state }.sorted().joinToString(","),
             // Aufgelöst wird gegen die zu `at` gültige Revisionsmenge; ohne wirksame Revision hängt die Antwort nur von `at` selbst nicht ab, die Katalogauswahl schon (Version im Schlüssel).
         )
