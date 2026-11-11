@@ -1,0 +1,18 @@
+# Alarmweiterleitung (WP-M1-47). STATUS: statisch geprüft (infra/check.py), NICHT gestartet (kein Docker).
+# Genau ein Empfängerkanal je Umgebung; Adresse ausschließlich aus der eingehängten Secret-Datei (Secret-Referenz
+# secret://taktovia-<umgebung>-secrets/alert_channel_credential), nie als Klartext in dieser Datei.
+# Lokal und in CI zeigt die Secret-Datei auf den Test-Empfänger (infra/alerting/test_receiver.py).
+route:
+  receiver: betreiber
+  group_by: [source, kind]          # gleichartige Warnungen -> ein Alarm
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: betreiber
+    webhook_configs:
+      - url_file: /run/secrets/alert_channel_credential
+        send_resolved: true
+        max_alerts: 20
+        http_config:
+          tls_config: { min_version: TLS12 }

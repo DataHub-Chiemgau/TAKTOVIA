@@ -42,6 +42,15 @@ class CheckTests(unittest.TestCase):
             f.write_text(orig.replace(old, new))
             self.assertTrue(any(needle in e for e in check.run(d)[0]), needle)
 
+    def test_alerting_klartextadresse_und_zweiter_kanal_werden_rot(self):
+        d = self.copy()
+        f = d / "alerting/alertmanager.yml"
+        orig = f.read_text()
+        f.write_text(orig.replace("url_file: /run/secrets/alert_channel_credential", "url: https://hooks.example/x"))
+        self.assertTrue(any("url_file" in e for e in check.run(d)[0]))
+        f.write_text(orig + "  - name: zweiter\n    webhook_configs: [{ url_file: /x }]\n")
+        self.assertTrue(any("nicht genau ein Empfaengerkanal" in e for e in check.run(d)[0]))
+
     def test_shared_secret_domain(self):
         d = self.copy()
         f = d / "terraform/envs/production/terraform.tfvars.example"

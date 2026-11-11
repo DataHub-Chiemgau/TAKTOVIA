@@ -1,0 +1,16 @@
+# Regelgerüst für Betreiberwarnungen (WP-M1-47). Nur Minimalfähigkeit; der Alarmkatalog des Gesamtbetriebs ist M5.
+# Metriken: platform.alert.OperatorAlertService (Labels nur source, kind, severity, result).
+groups:
+  - name: betreiberwarnungen
+    rules:
+      - alert: BetreiberWarnung
+        expr: increase(taktovia_operator_warnings_total{severity=~"warning|critical"}[5m]) > 0
+        labels: { severity: warning, channel: betreiber }
+        annotations:
+          summary: "Betreiberwarnung von {{ $labels.source }} ({{ $labels.kind }})"
+      - alert: BetreiberZustellungStockt
+        expr: taktovia_operator_alert_pending_deliveries > 0
+        for: 10m
+        labels: { severity: critical, channel: betreiber }
+        annotations:
+          summary: "Alarmzustellung an den Empfängerkanal seit 10 min nicht möglich"

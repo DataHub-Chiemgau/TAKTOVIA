@@ -4,7 +4,6 @@ import de.taktovia.TaktoviaTestSupport
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -113,15 +112,32 @@ class TransportSecurityTest {
         assertEquals(1, TransportGuard(env("taktovia.environment" to "staging", "server.ssl.enabled" to "false", "taktovia.transport.tls-at-gateway" to "false")).violations().size)
     }
 
+    /** Staging-Konfiguration mit Secret-Verwaltung und Empfängerkanal; einzelne Eigenschaften werden je Test überschrieben. */
+    private fun staging(vararg override: String): Array<String> {
+        val d = Files.createTempDirectory("secrets"); val dom = "taktovia-staging-secrets"; Files.createDirectories(d.resolve(dom))
+        Files.writeString(d.resolve(dom).resolve("db_runtime_credential"), "taktovia_runtime\n${System.getenv("TAKTOVIA_DB_RUNTIME_PASSWORD")}\n")
+        Files.writeString(d.resolve(dom).resolve("alert_channel_credential"), "https://localhost:9/alert\n")
+        val base = mapOf("server.port" to "0", "taktovia.environment" to "staging", "server.ssl.enabled" to "true", "server.ssl.key-store" to ks.path,
+            "server.ssl.key-store-password" to pw, "taktovia.secrets.dir" to d.toString(), "taktovia.secrets.domain" to dom,
+            "taktovia.secrets.db-credential" to "secret://$dom/db_runtime_credential", "taktovia.alert.channel-credential" to "secret://$dom/alert_channel_credential",
+            "spring.datasource.url" to "jdbc:postgresql://127.0.0.1:5432/${System.getenv("TAKTOVIA_DB_NAME") ?: "taktovia"}?sslmode=verify-full")
+        val o = override.associate { it.substringBefore("=") to it.substringAfter("=") }
+        return (base + o).map { "--${it.key}=${it.value}" }.toTypedArray()
+    }
+
+    private fun startFailure(args: Array<String>): String {
+        val e = assertThrows<Exception> { SpringApplicationBuilder(TaktoviaApplication::class.java).run(*args).close() }
+        return generateSequence<Throwable>(e) { it.cause }.mapNotNull { it.message }.joinToString(" | ")
+    }
+
     @Test fun `die Anwendung startet in staging nicht mit Klartext-Datenbankverbindung`() {
-        val e = assertThrows<Exception> {
-            SpringApplicationBuilder(TaktoviaApplication::class.java).run("--server.port=0", "--taktovia.environment=staging",
-                "--server.ssl.enabled=true", "--server.ssl.key-store=${ks.path}", "--server.ssl.key-store-password=$pw",
-                "--TAKTOVIA_DB_SSLMODE=disable").close()
-        }
-        var c: Throwable? = e; var found = false
-        while (c != null) { if (c.message?.contains("Klartext-Konfiguration abgewiesen") == true) found = true; c = c.cause }
-        assertTrue(found, "Startabbruch wegen Klartext erwartet, war: ${e.message}")
-        assertNotNull(e)
+        val msg = startFailure(staging("spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/x?sslmode=disable"))
+        assertTrue(msg.contains("Klartext-Konfiguration abgewiesen"), msg)
+    }
+
+    @Test fun `die Anwendung startet in staging nicht ohne konfigurierten Empfaengerkanal`() {
+        val args = staging().filter { !it.startsWith("--taktovia.alert.channel-credential") }.toTypedArray()
+        val msg = startFailure(args)
+        assertTrue(msg.contains("Kein Betreiber-Empfängerkanal konfiguriert"), msg)
     }
 }

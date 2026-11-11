@@ -1,0 +1,9 @@
+# Detailvertrag Betriebsalarmkanal (WP-M1-47, Enabler)
+
+- **Port:** `platform.alert.OperatorAlertPort.report(OperatorWarning)`; Schema: [schemas/operator-warning.v1.schema.json](schemas/operator-warning.v1.schema.json).
+- **Zusammenfassungsregel (Vorschlag, im Pflichtenheft nicht beziffert):** gleichartig = gleiche Quelle und Art. Ein Alarm bleibt offen, solange binnen 15 Minuten (Ruhefenster) eine weitere gleichartige Warnung eintrifft. Zustellung genau einmal bei Öffnung; höhere Schwere eskaliert (erneute Zustellung). `dedupKey` = `<quelle>/<art>` für die Zusammenfassung beim Empfänger über mehrere Instanzen.
+- **Metriken (nur Labels `source`, `kind`, `severity`, `result`):** `taktovia_operator_warnings_total`, `taktovia_operator_alerts_open`, `taktovia_operator_alert_pending_deliveries`, `taktovia_operator_alert_deliveries_total{result}`. Logzeilen `operator_warning`, `operator_alert_delivered`, `operator_alert_delivery_failed` (JSON, ohne Empfängeradresse).
+- **Wiederholung:** 1 s, 5 s, 30 s, 2 min, danach 10 min bis zur Zustellung; nichts wird verworfen. Zusätzlich wiederholt Alertmanager (`infra/alerting/`).
+- **Empfängerkanal:** genau einer je Umgebung, als HTTPS-Webhook; Adresse ausschließlich als Secret-Referenz `alert_channel_credential`. Lokal und in CI: Test-Empfänger `infra/alerting/test_receiver.py`.
+- **Offen:** Empfänger und Erreichbarkeit je Umgebung (OP-32, OP-39) vom Betreiber/Auftraggeber zu benennen. Der Zustand offener Alarme liegt im Prozess (WP: keine neuen Tabellen); nach Neustart gehen offene Alarme verloren, bis die nächste Warnung eintrifft (Metrik- und Logverlauf bleiben).
+- **Tests:** `backend/platform/src/test/kotlin/de/taktovia/platform/alert/OperatorAlertServiceTest.kt`, `tests/acceptance/security/test_alert_receiver.py`, `infra/test_check.py`.

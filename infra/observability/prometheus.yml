@@ -5,6 +5,7 @@ global:
 
 rule_files:
   - /etc/prometheus/alert-rules.yml
+  - /etc/prometheus/operator-alert-rules.yml
 
 # Alarmkanal: PLATZHALTER. Alarmierung ist erst M5; bewusst kein Alertmanager-Ziel konfiguriert.
 # alerting:
