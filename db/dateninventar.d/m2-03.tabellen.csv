@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+service_revision;Dienstversion mit Betriebszeiten (WP-M2-03);LK_STAMM;Betriebszeiten ohne Personenbezug, bestehende Zusagen referenzieren ihre Version, daher keine Löschung

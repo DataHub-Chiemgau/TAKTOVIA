@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+service_revision;SELECT,INSERT;WP-M2-03: Dienstversion mit Betriebszeiten; UPDATE nur auf valid_to (Spaltenrecht, Trigger service_revision_guard), kein DELETE

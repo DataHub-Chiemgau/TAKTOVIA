@@ -2,7 +2,7 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.ethlo.time:itu:1.17.0=runtimeClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.21=runtimeClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.networknt:json-schema-validator:3.0.9=runtimeClasspath,testRuntimeClasspath
 com.rabbitmq:amqp-client:5.30.0=runtimeClasspath,testRuntimeClasspath
 com.zaxxer:HikariCP:7.0.2=testCompileClasspath,testRuntimeClasspath
@@ -76,8 +76,11 @@ org.springframework:spring-core:7.0.10=compileClasspath,runtimeClasspath,testCom
 org.springframework:spring-jdbc:7.0.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.springframework:spring-tx:7.0.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 redis.clients.authentication:redis-authx-core:0.1.1-beta2=runtimeClasspath,testRuntimeClasspath
+tools.jackson.core:jackson-core:3.1.7=compileClasspath,testCompileClasspath
 tools.jackson.core:jackson-core:3.1.8=runtimeClasspath,testRuntimeClasspath
+tools.jackson.core:jackson-databind:3.1.7=compileClasspath,testCompileClasspath
 tools.jackson.core:jackson-databind:3.1.8=runtimeClasspath,testRuntimeClasspath
 tools.jackson.dataformat:jackson-dataformat-yaml:3.1.8=runtimeClasspath,testRuntimeClasspath
+tools.jackson:jackson-bom:3.1.7=compileClasspath,testCompileClasspath
 tools.jackson:jackson-bom:3.1.8=runtimeClasspath,testRuntimeClasspath
 empty=annotationProcessor,implementationDependenciesMetadata,kotlinCompilerPluginClasspath,kotlinNativeCompilerPluginClasspath,kotlinScriptDefExtensions,testAnnotationProcessor,testImplementationDependenciesMetadata,testKotlinScriptDefExtensions

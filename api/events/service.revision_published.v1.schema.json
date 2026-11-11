@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/service.revision_published.v1.schema.json",
+  "title": "Dienstrevision veröffentlicht (WP-M2-03)",
+  "description": "Payload von `service.revision_published`. Aggregat: service (Revision = Revision der Dienstversion). Keine personenbezogenen Daten.",
+  "type": "object",
+  "required": ["service_id", "revision", "traffic_product", "timezone", "valid_from", "valid_to"],
+  "additionalProperties": false,
+  "properties": {
+    "service_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "traffic_product": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"},
+    "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+  }
+}

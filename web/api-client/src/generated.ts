@@ -1661,6 +1661,61 @@ export interface ServicePage {
   as_of: string;
 }
 
+export interface HoursWindow {
+  from: string;
+  to: string;
+}
+
+export interface WeeklyHours {
+  weekdays: ('MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN')[];
+  from: string;
+  to: string;
+}
+
+export interface ExceptionDay {
+  date: string;
+  windows: HoursWindow[];
+  note?: string;
+}
+
+export interface ServiceOperatingHoursInput {
+  traffic_product: string;
+  weekly_hours: WeeklyHours[];
+  exceptions?: ExceptionDay[];
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+}
+
+export interface ServiceOperatingHours {
+  service_id: UUID;
+  revision: number;
+  traffic_product: string | null;
+  timezone: string | null;
+  weekly_hours: WeeklyHours[] | null;
+  exceptions: ExceptionDay[] | null;
+  valid_from: Timestamp | null;
+  valid_to: Timestamp | null;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at?: Timestamp | null;
+}
+
+export interface ServiceOperatingHoursRevisionPage {
+  items: ServiceOperatingHours[];
+  next_before_revision: number | null;
+  as_of: string;
+}
+
+export interface ServiceAvailability {
+  service_id: UUID;
+  at: string;
+  in_operation: boolean;
+  next_opening: string | null;
+  timezone: TimeZone;
+  traffic_product: string | null;
+}
+
 export interface AccountLockCreate {
   subject: UUID;
   reason: string;
@@ -2538,6 +2593,34 @@ export interface Operations {
     body: undefined;
     response: ServiceOfferModelList;
   };
+  getServiceOperatingHours: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOperatingHours;
+  };
+  putServiceOperatingHours: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ServiceOperatingHoursInput;
+    response: ServiceOperatingHours;
+  };
+  listServiceOperatingHoursRevisions: {
+    path: { service_id: UUID };
+    query: { limit?: number; before_revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOperatingHoursRevisionPage;
+  };
+  getServiceAvailability: {
+    path: { service_id: UUID };
+    query: { at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceAvailability;
+  };
   listMySessions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -2743,6 +2826,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getServiceConfiguration: { method: 'GET', path: '/v1/services/{service_id}/configuration', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listServiceOfferModels: { method: 'GET', path: '/v1/service-offer-models', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 429, 503] },
+  getServiceOperatingHours: { method: 'GET', path: '/v1/services/{service_id}/operating-hours', pathParams: ['service_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  putServiceOperatingHours: { method: 'PUT', path: '/v1/services/{service_id}/operating-hours', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listServiceOperatingHoursRevisions: { method: 'GET', path: '/v1/services/{service_id}/operating-hours/revisions', pathParams: ['service_id'], query: ['limit', 'before_revision'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getServiceAvailability: { method: 'GET', path: '/v1/services/{service_id}/availability', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
   revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

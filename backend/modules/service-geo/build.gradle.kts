@@ -2,6 +2,7 @@
 dependencies {
     implementation(project(":modules:config"))
     implementation("org.slf4j:slf4j-api")
+    implementation("tools.jackson.core:jackson-databind")   // JSON-Werte der Dienstversionen und Gebiete (WP-M2-03, -04)
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
 }
