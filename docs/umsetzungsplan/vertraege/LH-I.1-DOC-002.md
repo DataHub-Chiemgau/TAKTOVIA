@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Finanzen/Belege (Modul `documents-finance`, Worker `workers/documents`)
 - **Arbeitspaket:** WP-M4-27
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-10, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** Prüfansicht je Feld (Belegdatum, Betrag, Währung, Händler, Belegnummer, Mehrwertsteuerbeträge) mit Konfidenz und Fundstelle; je Feld bestätigen/korrigieren; erkannter Text wird neutralisiert dargestellt (keine Anweisungen, Formeln oder Markup wirksam); nicht sichtbare Felder bleiben leer.
 - **Entscheidungen:** D-06 (zulässige OCR-/Verarbeitungsdienste nicht ausdrücklich geregelt; blockiert nur Produktivschaltung).
 - **Offene Punkte:** OCR-Engine, Unsicherheitsschwelle und Datenschutz bei externem Dienst sind nicht festgelegt (WP-M4 Offener Punkt 11, D-06); Feldkatalog, Normalisierung und Adaptervertrag OCR sind laut WP vorab zu definieren. Der Testsatz unterschiedlicher Kassenbelege und die erwartete Feldtrefferliste sind nicht vorhanden und vom Auftraggeber bzw. QA bereitzustellen; ohne Testsatz ist die Originalabnahme nicht prüfbar. Der Vertrag bleibt deshalb „Vertrag in Arbeit“; der Bau von Adapter-Schnittstelle und Datenmodell ist nicht blockiert, die Engine-Auswahl nur für die Produktivschaltung.
+
+- **Planungsannahme:** PA-10 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

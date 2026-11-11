@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Personal/Zeit (Modul `staff-time`)
 - **Arbeitspaket:** WP-M4-13
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-09, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** Warnhinweis in Dienstplan und Zeitübersicht mit Regel, Sollwert, Istwert; kein automatischer Rechtsentscheid; Anzeige nur für Planer mit Depotrecht und betroffene Person.
 - **Entscheidungen:** D-10 (Mitbestimmung; blockiert nur Produktivschaltung).
 - **Offene Punkte:** Regelmatrix für AT-40 fehlt (WP-M4 Offener Punkt 3): wer sie liefert (AG-Freigabe), Pausenregel ohne Katalogparameter, und ob eine Ruhezeitverletzung in P1 die Publikation sperrt (Warnung oder Sperre). Das blockiert den Bau der Pausen- und Publikationsregel (Akzeptanzkriterium 2 und 4 des WP) bis zur Freigabe; Ruhezeit- und Tagesarbeitszeit-Hinweise mit den Katalogparametern sind baubar. Der Testfall zur fehlenden Pflichtpause (Akzeptanzkriterium 2, Teil Pause) wird erst nach Freigabe der Regelmatrix benannt. Deshalb bleibt der Status „Vertrag in Arbeit“.
+
+- **Planungsannahme:** PA-09 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

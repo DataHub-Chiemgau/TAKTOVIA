@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Fachmodul `fare-payment`
 - **Arbeitspaket:** WP-M2-07
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-05, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-17 „Gebiete/Stops/Tarife“, Aktion „Revision freigeben“: Tarifrevision anlegen, prüfen, freigeben; Zustand „konkurrierende Version“; ohne Recht nur lesend.
 - **Entscheidungen:** D-05 (realer Pilottarif) blockiert nur Produktivdaten.
 - **Offene Punkte:** OP-11 (Pfad der Tarifpflege; Vorschlag `/v1/tariffs` bleibt Entwurf), OP-12 (Preisstichtag: Anfrage- oder Fahrtzeitpunkt, und Tarifklassen in P1), Steuersätze vom Auftraggeber. **Blockiert den Bau:** OP-12 (Preisstichtag) muss in WP-M2-01 festgelegt werden, weil die Auswahl der wirksamen Revision davon abhängt; bis dahin bleibt der Vertrag in Arbeit.
+
+- **Planungsannahme:** PA-05 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

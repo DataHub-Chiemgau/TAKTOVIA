@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Plattform (Module `config`/`identity`)
 - **Arbeitspaket:** WP-M1-24
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-11, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -19,6 +19,8 @@
 - **Parameter und Kennzahlen:** keine. **Oberfläche:** UI-18 Basis, Formular Unternehmensprofil; Zustände fehlendes Recht, 412-Konflikt, Feldfehler Währung.
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-27 – Datenmodell und Feldliste des Profils (Kontakt, Abrechnung, Betriebsart, Rechtsinformationen, Pflichtfelder), Ablage (Variante a/b) und Standardwährung sind nicht festgelegt. Das blockiert den Bau (Migration und Schema) bis zur Entscheidung; der Vertrag bleibt deshalb „in Arbeit". Abrechnung/Kontenrahmen gehören nach M4 (D-06).
+
+- **Planungsannahme:** PA-11 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

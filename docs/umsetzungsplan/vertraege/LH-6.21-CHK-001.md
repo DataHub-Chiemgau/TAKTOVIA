@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Flotte/Sicherheit (Modul `fleet-safety`, Readiness-Domänendienst)
 - **Arbeitspaket:** WP-M3-09
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-07, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-09 „Fahrzeugfreigabe: Prüfung erforderlich" mit Liste fehlender Schritte, Zustände Offline, Mangel, andere Fahrzeugrevision (Kap. 06 §6.9); UI-07 Fahrzeug als nicht einsatzbereit mit Grund (Zustand „Sperre"). Die App zeigt „freigegeben" erst nach Serverantwort; Arbeitszeitbeginn und technische Einsatzfreigabe sind getrennt (Kap. 06 §6.7).
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-09 (was `false` von `vehicle_readiness_require_checks` zulässig abschaltet; `inspection_ref` ist NOT NULL); OP-33 (Regel für `valid_until`, Neuprüfung nach Pause innerhalb derselben Schicht; Originaltext verlangt Prüfung nur vor dem „ersten Bereitstatus"); OP-01 (Bedeutung `active_block` Default `true`). OP-09 und OP-33 blockieren die Parameterwirkung und die Gültigkeitsregel („gültige" Prüfung), nicht den Kern „ohne bestätigte Prüfung keine Freigabe"; Vertrag bleibt bis zur Klärung in Arbeit.
+
+- **Planungsannahme:** PA-07 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

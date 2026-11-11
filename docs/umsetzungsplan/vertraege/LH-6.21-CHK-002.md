@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Flotte/Sicherheit (Modul `fleet-safety`, Inspection)
 - **Arbeitspaket:** WP-M3-13
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-08, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-09 „Pflichtprüfung starten", geführte Schrittfolge „Prüfung 3 / 8" (Schrittzahl = Anzahl Prüfelemente der gewählten Revision); Zustände Offline, Mangel, andere Fahrzeugrevision (Kap. 06 §6.9).
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-14 (Attribute Fahrzeugklasse und Bedienart sind weder im Schema noch in einem Katalog definiert; die Auswahlregel ist nicht baubar, bis geklärt; blockiert den Bau der Vorlagenauswahl). Vertrag bleibt deshalb in Arbeit. Offline-Start gehört zu WP-M3-33.
+
+- **Planungsannahme:** PA-08 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Flotte/Sicherheit (Modul Staff/Time, Schichtzuweisung)
 - **Arbeitspaket:** WP-M3-07
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-03, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** Zuweisungsdialog mit Konfliktanzeige im Web-Anwendungsrahmen (WP-M1-43), erreichbar aus UI-11; Navigationseinbindung UI-07 mit WP-M3-36; Konfliktanzeige nennt Ursache (Fahrer oder Fahrzeug) und die kollidierende Schicht.
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-07 (Umgang mit `roster_revision NOT NULL` vor M4; Definition und Verfahren der „Ausnahme": wer genehmigt eine Doppelschicht, wie dokumentiert). Blockiert den Bau der Ausnahme-Funktion und die Festlegung des Wertes von `roster_revision`; der Konfliktkern (Kriterien ohne Ausnahme) ist baubar. Offen außerdem: Zustandswerte `staff_shift.state` und welche Zustände das Überlappungsverbot ausnehmen (WP-M3-01). Aus diesen Gründen bleibt der Vertrag in Arbeit. Vollabnahme für Schichten aus veröffentlichtem Dienstplan erst mit WP-M4-04, WP-M4-13, WP-M4-14, WP-M4-65; AT-39 gehört zu M4 und ist nicht Teil dieses Vertrags.
+
+- **Planungsannahme:** PA-03 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

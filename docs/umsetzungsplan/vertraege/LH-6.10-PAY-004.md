@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Fachmodul `fare-payment`
 - **Arbeitspaket:** WP-M2-30
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-06, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** Zahlstatus und Klärfall in UI-03 (Checkout) und UI-04 (Buchungsdetail), getrennt vom Buchungsstatus; Fehlerzustand bei abgelehnter Zahlung.
 - **Entscheidungen:** D-03 (Teil: PSP und Capture-Zeitpunkt): Bau gegen PSP-Simulator mit Testannahme, blockiert nur die Produktivschaltung.
 - **Offene Punkte:** OP-3 (`journey`-Hülle für Einbetreiberbuchungen, betrifft `payment_intent.journey_id`), OP-5 (Reihenfolge Zahlung/Confirm, ob Bestätigung ohne erfolgreiche Autorisierung zulässig ist, und Capture-Zeitpunkt), OP-27 (Zahlungsplan bei Vorausbuchungen). `DISPUTED` und `REFUND_PENDING → REFUNDED` sind nicht Umfang dieses Vertrags (M6 bzw. WP-M2-31). **Blockiert den Bau:** OP-3 und OP-5 sind in WP-M2-01 zu entscheiden und hier nachzutragen; ohne die Entscheidung kann die Kopplung Hold/Confirm/Authorize nicht abschließend codiert werden. Vertrag bleibt daher in Arbeit.
+
+- **Planungsannahme:** PA-06 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

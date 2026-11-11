@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Plattform (Modul `service-geo`)
 - **Arbeitspaket:** WP-M1-25
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-01, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-17 Basis – Dienst anlegen, Angebotsmodell wählen, modellabhängige Felder; Zustände leer/Fehler (Validierungsfehler je Feld)/fehlende Rechte.
 - **Entscheidungen:** D-05 (Pilotdienste und Genehmigungsmodell) – blockiert nur die Produktivkonfiguration.
 - **Offene Punkte:** OP-28 – Das Pflichtenheft beschreibt die Modellregeln der drei Angebotsmodelle nicht (unterscheidende Regeln, Pflichtparameter, unzulässige Parameter). Ohne diese Festlegung kann der Modellregel-Validator inhaltlich nicht gebaut und die Originalabnahme ("gemäß Modellregeln") nicht geprüft werden: **blockiert den Bau des Validators** bis der Auftraggeber die Modellregeln festlegt; Bausteinrahmen (Enum, Schema, API) kann vorher entstehen. OP-01/OP-38: Testfahrt je Modell erst mit M2 (Vollabnahme WP-M2-04, -05, -07, -21, -23); M1 liefert je Modell eine publizierte Fixture-Konfiguration. Auflösung von `service_area`, `stop_revision`, Tarifverknüpfung erst M2.
+
+- **Planungsannahme:** PA-01 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

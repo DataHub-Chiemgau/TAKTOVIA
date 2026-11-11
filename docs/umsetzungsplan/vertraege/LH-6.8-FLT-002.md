@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Flotte/Sicherheit (Modul `fleet-safety`, Port zu `booking-dispatch`)
 - **Arbeitspaket:** WP-M3-06
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-02, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-11 Zuordnungstabelle je Fahrzeug (Leer-, Fehler-, Rechtezustand).
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-25 (Abbildung „geografisch": Bediengebiet `service_area`, Betriebshof oder eigene Geometrie; Felder von `vehicle_assignment` sind im Pflichtenheft nur umrissen). Der Vertrag sieht vorläufig `service_area` als Gebietsbezug vor; Bau der DDL und des Gebietsfilters bis zur Klärung blockiert, der zeitliche Teil nicht. Zusätzlich offen und im WP nicht festgelegt: (a) was an einer Fahrt im Gebiet liegen muss (Abholung, Ziel oder beides) und (b) wie die „Eignung" eines Dienstes für das Fahrzeug (Originaltext: „geeigneten Diensten") geprüft wird (hängt an OP-14, Wertekatalog Fahrzeugtyp/Ausstattung); (c) Namens- und Zweckkollision `vehicle_assignment` zwischen WP-M1-34 (Rollen/Nutzungsintervalle, OP-26 des M1-Dokuments) und WP-M3-06 (Dienstzuordnung). Aus diesen Gründen bleibt der Vertrag in Arbeit.
+
+- **Planungsannahme:** PA-02 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 

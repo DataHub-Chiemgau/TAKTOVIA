@@ -2,7 +2,7 @@
 
 - **Verantwortlicher:** Rolle Fachmodul `service-geo`
 - **Arbeitspaket:** WP-M2-06
-- **Status:** Vertrag in Arbeit
+- **Status:** Bereit (unter Planungsannahme PA-04, siehe planungsannahmen.md; keine Entscheidung des Auftraggebers)
 - **Phase / Priorität (unverändert aus Lastenheft):** P1 / MUSS
 
 ## Originaltext (unverändert)
@@ -21,6 +21,8 @@
 - **Oberfläche:** UI-17: Zonenrolle und erlaubte Zielpunkte pflegen; Zustände leer/Fehler/konkurrierende Version; nur lesend ohne Stammdatenrecht.
 - **Entscheidungen:** keine.
 - **Offene Punkte:** OP-10 (Datenmodell für Zonen und Zielpunkte), Verhalten für Punkte exakt auf der Zonengrenze (Detailvertrag; Vorschlag wie GEO-001 `ST_Covers`), Semantik „Zielpunktmenge leer“ (Vorschlag: keine Einschränkung) und Behandlung eines Zielpunkts, der auf einen inaktiven Haltepunkt verweist (Vorschlag: nicht zulässig). Abgrenzung: Sperrbereiche (GEO-004) und Parallelfahrtenverbot (OPT-012) nicht im Umfang (OP-2). **Blockiert den Bau:** OP-10 muss in WP-M2-01 entschieden und DDL/OpenAPI hier nachgetragen werden; bis dahin bleibt der Vertrag in Arbeit.
+
+- **Planungsannahme:** PA-04 in [planungsannahmen.md](../planungsannahmen.md) gilt als Arbeitsstand; offene Punkte oben bleiben bis zur Entscheidung des Auftraggebers bestehen.
 
 ## Tests
 
