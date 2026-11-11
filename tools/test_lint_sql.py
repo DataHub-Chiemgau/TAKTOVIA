@@ -80,5 +80,13 @@ class QueryLint(unittest.TestCase):
             self.assertIn('Repo.kt', r.stdout)
 
 
+class PlusImSqlText(unittest.TestCase):
+    def test_plus_im_literal_ist_keine_verkettung(self):
+        self.assertEqual(scan_kotlin('fun a() { jdbc.update("UPDATE t SET n = n + 1 WHERE id = ?", 1) }'), [])
+
+    def test_echte_verkettung_wird_weiter_gefunden(self):
+        self.assertEqual(len(scan_kotlin('fun a(x: String) { jdbc.update("UPDATE t SET n = 1 WHERE id = " + x) }')), 1)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -31,7 +31,9 @@ class Migration(unittest.TestCase):
         with admin() as c:
             tabs = [r[0] for r in c.execute("SELECT tablename FROM pg_tables WHERE schemaname='taktovia'")]
         self.assertEqual(sorted(t for t in tabs if t in EXPECTED), sorted(EXPECTED))
-        self.assertEqual(sorted(t for t in tabs if t not in EXPECTED), sorted(declared - set(EXPECTED)))
+        with admin() as c:
+            meta = {r[0] for r in c.execute("SELECT tablename FROM pg_tables WHERE schemaname='taktovia_meta'")}
+        self.assertEqual(sorted(t for t in tabs if t not in EXPECTED), sorted(declared - set(EXPECTED) - meta))
         self.assertGreaterEqual(len(tabs), 38)
 
     def test_rls_erzwungen(self):

@@ -53,13 +53,32 @@ def kotlin_arg_ok(arg, consts):
         return True                                           # Lambda (z. B. TransactionTemplate.execute { … }), kein SQL
     if a in consts:
         return True
-    parts = re.split(r'\s*\+\s*', a) if '"' in a else [a]
+    parts = split_plus(a) if '"' in a else [a]
     for p in parts:
         p = re.sub(r'\.(trimIndent|trimMargin|replace|lowercase|uppercase)\([^)]*\)$', '', p.strip())
         m = re.fullmatch(r'"""(.*)"""', p, re.S) or re.fullmatch(r'"((?:[^"\\]|\\.)*)"', p, re.S)
         if not m or INTERPOLATION.search(m.group(1)):
             return p in consts
     return True
+
+
+def split_plus(a):
+    """Teilt an '+' außerhalb von Stringliteralen (ein '+' im SQL-Text, z. B. `revision + 1`, ist keine Verkettung)."""
+    parts, cur, i, n = [], [], 0, len(a)
+    while i < n:
+        if a.startswith('"""', i):
+            j = a.find('"""', i + 3); j = n if j < 0 else j + 3
+            cur.append(a[i:j]); i = j; continue
+        if a[i] == '"':
+            j = i + 1
+            while j < n and a[j] != '"':
+                j += 2 if a[j] == '\\' else 1
+            cur.append(a[i:j + 1]); i = j + 1; continue
+        if a[i] == '+':
+            parts.append(''.join(cur).strip()); cur = []; i += 1; continue
+        cur.append(a[i]); i += 1
+    parts.append(''.join(cur).strip())
+    return parts
 
 
 def scan_kotlin(path):

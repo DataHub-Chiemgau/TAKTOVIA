@@ -26,6 +26,10 @@ SECURITY_HEADERS = {
 }
 
 
+# Pro Testlauf zufällig erzeugt, nie im Quelltext (Secret-Scan, LH-6.18-SEC-003).
+CURSOR_SECRET = __import__('secrets').token_urlsafe(32)
+
+
 class Resp:
     def __init__(self, status, headers, body):
         self.status, self.headers, self.body = status, {k.lower(): v for k, v in headers}, body
@@ -102,7 +106,7 @@ class RunningApp:
         self.log = REPO / 'backend/app/build/security-test-app.log'
         self._log = open(self.log, 'w')
         self.proc = subprocess.Popen(
-            ['java', '-jar', str(JAR), f'--server.port={self.port}', '--taktovia.api.cursor-secret=schwarzkasten-test-schluessel-1234567890', *self.args],
+            ['java', '-jar', str(JAR), f'--server.port={self.port}', f'--taktovia.api.cursor-secret={CURSOR_SECRET}', *self.args],
             stdout=self._log, stderr=subprocess.STDOUT, cwd=REPO)
         deadline = time.time() + 120
         while time.time() < deadline:

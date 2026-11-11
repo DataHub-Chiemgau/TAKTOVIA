@@ -65,7 +65,7 @@ class StateTransitioner(private val outbox: Outbox = Outbox(), private val clock
     private fun <S : Enum<S>> lock(jdbc: JdbcOperations, m: StateMachine<S>, id: UUID): Row {
         val rev = m.revisionColumn ?: "0"
         // Bezeichner stammen ausschließlich aus der geprüften Definition (StateMachine.init), Werte sind gebunden.
-        return jdbc.query("SELECT ${m.stateColumn}, $rev FROM ${m.table} WHERE ${m.tenantColumn} = taktovia.current_tenant() AND " +
+        return jdbc.query("SELECT ${m.stateColumn}, $rev FROM ${m.table} WHERE ${m.tenantColumn} = taktovia.current_tenant() AND " + // sql-lint: ok Bezeichner stammen aus der geprüften Automatendefinition, Werte sind gebunden
             (if (m.tenantColumn == "id") "TRUE" else "id = ?") + " FOR UPDATE", { rs, _ -> Row(rs.getString(1), rs.getLong(2)) },
             *(if (m.tenantColumn == "id") emptyArray() else arrayOf<Any>(id))).firstOrNull() ?: throw ProblemException.notFound()
     }
@@ -79,7 +79,7 @@ class StateTransitioner(private val outbox: Outbox = Outbox(), private val clock
         val cas = if (m.revisionColumn != null) "${m.revisionColumn} = ?" else "${m.stateColumn} = ?"
         val tenantAndId = if (m.tenantColumn == "id") "id = taktovia.current_tenant()" else "${m.tenantColumn} = taktovia.current_tenant() AND id = ?"
         val args = listOfNotNull<Any>(to.name, if (m.tenantColumn == "id") null else id, if (m.revisionColumn != null) row.revision else row.state)
-        val updated = jdbc.update("UPDATE ${m.table} SET $sets WHERE $tenantAndId AND $cas", *args.toTypedArray())
+        val updated = jdbc.update("UPDATE ${m.table} SET $sets WHERE $tenantAndId AND $cas", *args.toTypedArray()) // sql-lint: ok Bezeichner stammen aus der geprüften Automatendefinition, Werte sind gebunden
         Etag.requireUpdated(updated) { true }
 
         val newRevision = if (m.revisionColumn != null) row.revision + 1 else nextSequence(jdbc, m, id)

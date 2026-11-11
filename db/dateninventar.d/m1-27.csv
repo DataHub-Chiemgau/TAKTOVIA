@@ -1,0 +1,17 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+promise_test_aggregate;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_aggregate;id;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_aggregate;revision;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_aggregate;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;promise_id;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;revision;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;schema_version;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;content;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;content_hash;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;config_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+promise_test_snapshot;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+state_transition_rule;machine;nein;TECHNISCHER_BETRIEB;;;;
+state_transition_rule;version;nein;TECHNISCHER_BETRIEB;;;;
+state_transition_rule;from_state;nein;TECHNISCHER_BETRIEB;;;;
+state_transition_rule;to_state;nein;TECHNISCHER_BETRIEB;;;;

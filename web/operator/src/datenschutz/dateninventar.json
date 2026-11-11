@@ -2589,6 +2589,130 @@
       ]
     },
     {
+      "tabelle": "promise_test_aggregate",
+      "aggregat": "Testaggregat der Zusage (WP-M1-27)",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "Testobjekt bis zum echten Buchungsaggregat (M2)",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "promise_test_snapshot",
+      "aggregat": "Zusage-Snapshot des Testaggregats",
+      "loeschklasse": "LK_TECHNISCH",
+      "bemerkung": "unveränderlich, Ablösung durch booking.promise_snapshot (M2)",
+      "spalten": [
+        {
+          "spalte": "config_revision_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "content",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "content_hash",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "promise_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "schema_version",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "resource_release",
       "aggregat": "Einsatzfreigabe",
       "loeschklasse": "LK_BETRIEB",
@@ -3097,6 +3221,50 @@
           "spalte": "vehicle_id",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "state_transition_rule",
+      "aggregat": "Übergangsregeln der Zustandsautomaten",
+      "loeschklasse": "LK_KATALOG",
+      "bemerkung": "global, ohne tenant_id (WP-M1-17)",
+      "spalten": [
+        {
+          "spalte": "from_state",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "machine",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "to_state",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "version",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",

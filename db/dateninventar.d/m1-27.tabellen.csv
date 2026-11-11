@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+promise_test_aggregate;Testaggregat der Zusage (WP-M1-27);LK_TECHNISCH;Testobjekt bis zum echten Buchungsaggregat (M2)
+promise_test_snapshot;Zusage-Snapshot des Testaggregats;LK_TECHNISCH;unveränderlich, Ablösung durch booking.promise_snapshot (M2)
+state_transition_rule;Übergangsregeln der Zustandsautomaten;LK_KATALOG;global, ohne tenant_id (WP-M1-17)
