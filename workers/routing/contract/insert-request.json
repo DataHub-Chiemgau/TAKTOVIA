@@ -1,0 +1,23 @@
+{
+  "_comment": "Beispiel der Schnittstelle Kern -> Worker (POST /v1/insert, WP-M2-17). Zeiten in Epochensekunden, Knoten sind Indizes der Fahrzeitmatrix (Sekunden, null = nicht erreichbar). Antwort: variants[] mit plan_revision je Variante, rejection (NO_FEASIBLE_POSITION | TIMEOUT_NO_VALIDATED_PLAN | NO_CANDIDATE_VEHICLE), grounds (Ablehnungsgründe mit Anzahl), partial (Zeitbudget überschritten).",
+  "tenant_id": "00000000-0000-4000-8000-00000000000a",
+  "budget_ms": 800,
+  "candidate_vehicle_ids": ["veh-1"],
+  "request": {
+    "booking_id": "bk-new", "pickup_node": 1, "dropoff_node": 2,
+    "pickup_earliest": 1000, "pickup_latest": 1900, "arrival_earliest": 1000, "arrival_latest": 4000,
+    "seats": 1, "wheelchair": 0, "equipment": []
+  },
+  "params": {
+    "pooling_allowed": true, "stop_dwell_s": 60, "wheelchair_boarding_s": 120,
+    "max_wait_s": 1200, "max_detour_pct": 50, "arrival_grace_s": 300, "config_revision_id": "rev-1"
+  },
+  "vehicles": [
+    {
+      "vehicle_id": "veh-1", "tenant_id": "00000000-0000-4000-8000-00000000000a", "run_id": null, "plan_revision": 0,
+      "capacity": {"seats": 4, "wheelchair": 1, "equipment": ["RAMP"]},
+      "start_node": 0, "available_from": 0, "available_until": 36000, "stops": [], "commitments": []
+    }
+  ],
+  "matrix": [[0, 300, 600], [300, 0, 300], [600, 300, 0]]
+}

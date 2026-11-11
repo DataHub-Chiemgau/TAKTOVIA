@@ -88,7 +88,14 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
     private fun movementsJson(list: List<StopMovement>): String =
         json.writeValueAsString(list.map { linkedMapOf("booking_id" to it.bookingId.toString(), "vector" to it.vector.toMap()) })
 
-    override fun appendRevision(ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan = ctxTx.run(ctx) { j ->
+    override fun appendRevision(ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan =
+        ctxTx.run(ctx) { j -> appendIn(j, ctx, runId, expectedRevision, stops, cause, affectedBookingIds) }
+
+    /** Plan der Revision in der laufenden Transaktion des Aufrufers (Hold unter dem Lock des Umlaufs, WP-M2-19). */
+    internal fun planIn(j: JdbcOperations, runId: UUID, revision: Long): RunPlan = readPlan(j, runId, revision)
+
+    /** Wie [appendRevision], aber in der Transaktion des Aufrufers; der Zeilenlock des Umlaufs wird (erneut) genommen. */
+    internal fun appendIn(j: JdbcOperations, ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan {
         val run = load(j, runId, true)
         if (run.revision != expectedRevision) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Fahrtenplan wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (run.state !in RunState.PLAN_CHANGEABLE) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Im Zustand ${run.state} ist keine Planänderung möglich.")
@@ -118,6 +125,6 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
             "run_id" to runId.toString(), "previous_revision" to run.revision, "revision" to next, "cause" to cause.name,
             "affected_booking_ids" to affectedBookingIds.map { it.toString() },
         ), clock.instant(), correlationId = ctx.correlationId))
-        RunPlan(runId, next, ordered)
+        return RunPlan(runId, next, ordered)
     }
 }

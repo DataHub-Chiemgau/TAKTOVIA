@@ -7,7 +7,11 @@ import de.taktovia.bookingdispatch.api.Dimension
 import de.taktovia.bookingdispatch.api.HoldOutcome
 import de.taktovia.bookingdispatch.api.HoldView
 import de.taktovia.bookingdispatch.api.PlaceHold
+import de.taktovia.bookingdispatch.api.PlanViolationCode
 import de.taktovia.bookingdispatch.api.PromiseCore
+import de.taktovia.bookingdispatch.api.PromiseWindow
+import de.taktovia.bookingdispatch.api.PromiseWindowGuard
+import de.taktovia.bookingdispatch.api.RevisionCause
 import de.taktovia.bookingdispatch.api.RejectionReason
 import de.taktovia.bookingdispatch.api.ResourceAvailability
 import de.taktovia.bookingdispatch.api.ResourceVector
@@ -31,7 +35,7 @@ import java.util.UUID
  * Hold-Zeile; gleiche Reihenfolge überall, damit es keine Deadlocks gibt. Belegung je Abschnitt: `CONSUMED` plus `HELD` mit `now < expires_at`. Kapazität steht nur in PostgreSQL.
  */
 internal class JdbcCapacityHolds(
-    private val ctxTx: ContextTransactions, private val resources: ResourceAvailability, private val outbox: Outbox, private val clock: Clock,
+    private val ctxTx: ContextTransactions, private val resources: ResourceAvailability, private val outbox: Outbox, private val clock: Clock, private val plans: JdbcRunPlans,
 ) : CapacityHolds {
     private val json = JsonMapper.builder().build()
 
@@ -54,6 +58,7 @@ internal class JdbcCapacityHolds(
         // 4. Ausstattung ist keine verbrauchbare Größe; ein Fahrzeug ohne Rollstuhlplatz fehlt die Ausstattung (Kategorie Ausstattung)
         if (!capacity.equipment.containsAll(cmd.demand.equipment)) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.EQUIPMENT)
         if (cmd.demand.wheelchair > 0 && capacity.wheelchair == 0) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.WHEELCHAIR)
+        if (cmd.proposal != null) return@run placeWithPlan(j, ctx, cmd, run.revision, capacity)
         // 5. Belegung je Abschnitt und Dimension unter dem Lock prüfen (gemeinsamer Validator der Routeninvarianten, WP-M2-16): bestehende Belegung + geschützte Reserve + neuer Bedarf
         val existing = occupancy(j, cmd.runId, cmd.intervalFrom, cmd.intervalTo)
         val projected = existing.map { (s, w) -> (s + cmd.reserve.seats + cmd.demand.seats) to (w + cmd.reserve.wheelchair + cmd.demand.wheelchair) }
@@ -75,6 +80,46 @@ internal class JdbcCapacityHolds(
         HoldOutcome.Placed(view, replayed = false)
     }
 
+    /**
+     * Planbasierter Hold (WP-M2-19), aufzurufen unter dem Lock des Umlaufs nach Revisions-, Zustands- und Einsatzprüfung: Routeninvarianten und alle Zusagefenster und harten Grenzen
+     * (bestätigte und aktiv gehaltene Buchungen, ihre Fenster stehen unveränderlich in `capacity_hold.promise_window`) gegen den neuen Plan; dann Revision speichern und Hold anlegen.
+     */
+    private fun placeWithPlan(j: JdbcOperations, ctx: RequestContext, cmd: PlaceHold, currentRevision: Long, capacity: ResourceVector): HoldOutcome {
+        val p = cmd.proposal!!
+        val planViolations = RunPlanValidator.validate(capacity, p.stops)
+        if (planViolations.isNotEmpty()) {
+            val over = planViolations.filter { it.code == PlanViolationCode.OVER_CAPACITY }
+            return when {
+                over.any { it.dimension == Dimension.WHEELCHAIR } -> HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_WHEELCHAIR, Dimension.WHEELCHAIR)
+                over.any { it.dimension == Dimension.SEATS } -> HoldOutcome.Rejected(RejectionReason.NO_CAPACITY_SEATS, Dimension.SEATS)
+                planViolations.any { it.code == PlanViolationCode.EQUIPMENT_MISSING } -> HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.EQUIPMENT)
+                else -> HoldOutcome.Rejected(RejectionReason.PLAN_INVALID, null)
+            }
+        }
+        if (PromiseWindowGuard.check(p.stops, protectedWindows(j, cmd.runId) + p.window).isNotEmpty()) return HoldOutcome.Rejected(RejectionReason.PROMISE_WINDOW_VIOLATION, null)
+        val plan = plans.appendIn(j, ctx, cmd.runId, currentRevision, p.stops, RevisionCause.BOOKING_INSERTED, listOf(p.window.bookingId))
+        val (from, to) = plan.intervalOf(p.window.bookingId) ?: throw IllegalArgumentException("Die Buchung des Zusagefensters steht nicht im Plan")
+        val id = UUID.randomUUID()
+        val expires = j.queryForObject(
+            "INSERT INTO taktovia.capacity_hold(tenant_id, id, run_id, run_revision, federation_ref, capacity_vector, interval_from, interval_to, expires_at, state, promise_window) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?::jsonb, ?, ?, clock_timestamp() + make_interval(secs => ?), 'HELD', ?::jsonb) RETURNING expires_at",
+            Timestamp::class.java, id, cmd.runId, plan.revision, cmd.reference, cmd.demand.toJson(), from, to, cmd.ttl.toMillis() / 1000.0, p.window.toJson(),
+        )!!.toInstant()
+        outbox.append(j, OutboxEvent(id, 1, "booking.hold_placed", linkedMapOf(
+            "hold_id" to id.toString(), "run_id" to cmd.runId.toString(), "run_revision" to plan.revision, "interval_from" to from, "interval_to" to to,
+            "capacity_vector" to cmd.demand.toMap(), "expires_at" to expires.toString(),
+        ), clock.instant(), correlationId = ctx.correlationId))
+        return HoldOutcome.Placed(HoldView(id, cmd.runId, plan.revision, from, to, cmd.demand, expires, "HELD"), replayed = false)
+    }
+
+    override fun protectedWindows(ctx: RequestContext, runId: UUID): List<PromiseWindow> = ctxTx.run(ctx, readOnly = true) { j -> protectedWindows(j, runId) }
+
+    /** Zusagefenster aller bestätigten und aktiv gehaltenen (nicht abgelaufenen) Buchungen des Umlaufs; für Prüfungen unter dem Lock des Umlaufs. */
+    private fun protectedWindows(j: JdbcOperations, runId: UUID): List<PromiseWindow> = j.query(
+        "SELECT promise_window::text FROM taktovia.capacity_hold WHERE run_id = ? AND promise_window IS NOT NULL AND (state = 'CONSUMED' OR (state = 'HELD' AND expires_at > clock_timestamp()))",
+        { rs, _ -> PromiseWindow.parse(rs.getString(1)) }, runId,
+    )
+
     /** Belegung (Sitze, Rollstuhlplätze) je Abschnitt `[from, to)`: bestätigte Holds plus gültige gehaltene (Serverzeit); aufzurufen unter dem Lock des Umlaufs. */
     private fun occupancy(j: JdbcOperations, runId: UUID, from: Int, to: Int): List<Pair<Int, Int>> = j.query(
         "SELECT s.seg, coalesce(sum((h.capacity_vector->>'seats')::int), 0), coalesce(sum((h.capacity_vector->>'wheelchair')::int), 0) " +
@@ -93,10 +138,10 @@ internal class JdbcCapacityHolds(
         // Sperrreihenfolge wie beim Hold: erst der Lauf, dann die Hold-Zeile
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).firstOrNull() ?: throw ProblemException.notFound()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
-        class HoldRow(val state: String, val expired: Boolean, val vector: String, val runRevision: Long, val reference: String, val from: Int, val to: Int)
+        class HoldRow(val state: String, val expired: Boolean, val vector: String, val runRevision: Long, val reference: String, val from: Int, val to: Int, val window: String?)
         val hold = j.query(
-            "SELECT state, expires_at <= clock_timestamp(), capacity_vector::text, run_revision, federation_ref, interval_from, interval_to FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE",
-            { rs, _ -> HoldRow(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getLong(4), rs.getString(5), rs.getInt(6), rs.getInt(7)) }, holdId,
+            "SELECT state, expires_at <= clock_timestamp(), capacity_vector::text, run_revision, federation_ref, interval_from, interval_to, promise_window::text FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE",
+            { rs, _ -> HoldRow(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getLong(4), rs.getString(5), rs.getInt(6), rs.getInt(7), rs.getString(8)) }, holdId,
         ).first()
         existingBooking(j, holdId)?.let { return@run it }
         when {
@@ -106,8 +151,19 @@ internal class JdbcCapacityHolds(
         // Routeninvariante (gemeinsamer Validator, WP-M2-16): die Belegung der Abschnitte des Holds liegt unter dem Lock innerhalb der Fahrzeugkapazität
         val capacity = ResourceVector.parse(j.queryForObject(
             "SELECT v.capacity_config::text FROM taktovia.vehicle_run r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id WHERE r.id = ?", String::class.java, runId)!!, "/vehicle/capacity_config")
-        if (RunPlanValidator.checkSegmentOccupancy(capacity, occupancy(j, runId, hold.from, hold.to), hold.from).isNotEmpty())
-            throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Die Kapazität des Fahrzeugs ist auf dem Abschnitt nicht mehr verfügbar.")
+        val window = hold.window?.let { PromiseWindow.parse(it) }
+        if (window == null) {
+            if (RunPlanValidator.checkSegmentOccupancy(capacity, occupancy(j, runId, hold.from, hold.to), hold.from).isNotEmpty())
+                throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Die Kapazität des Fahrzeugs ist auf dem Abschnitt nicht mehr verfügbar.")
+        } else {
+            // planbasierter Hold (WP-M2-19): erneute Prüfung gegen die dann aktuelle Planrevision, Routeninvarianten sowie alle Zusagefenster und harten Grenzen
+            val current = plans.planIn(j, runId, j.queryForObject("SELECT revision FROM taktovia.vehicle_run WHERE id = ?", Long::class.java, runId)!!)
+            if (RunPlanValidator.validate(capacity, current.stops).isNotEmpty() || PromiseWindowGuard.check(current.stops, protectedWindows(j, runId) + window).isNotEmpty())
+                throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Der aktuelle Fahrtenplan verletzt eine Kapazität oder ein zugesagtes Zeitfenster.")
+            fun at(s: String) = java.time.OffsetDateTime.parse(s).toInstant()
+            require(at(promise.pickupEarliest) == window.pickupEarliest && at(promise.pickupLatest) == window.pickupLatest &&
+                at(promise.arrivalEarliest) == window.arrivalEarliest && at(promise.arrivalLatest) == window.arrivalLatest) { "Zusage weicht vom gehaltenen Zusagefenster ab" }
+        }
         // Zusage: Kernfelder plus Ressourcenvektor des Holds, geprüft gegen das Zusage-Schema; danach unveränderlich
         val vector = ResourceVector.parse(hold.vector)
         require(vector == demand.vector) { "Bedarf der Buchung weicht vom gehaltenen Vektor ab" }
@@ -121,7 +177,7 @@ internal class JdbcCapacityHolds(
         val violations = PromiseSnapshotSchema.validate(PromiseSnapshotSchema.CURRENT, snapshot)
         if (violations.isNotEmpty()) throw ProblemException.invalid(*violations.toTypedArray())
         j.update("UPDATE taktovia.capacity_hold SET state = 'CONSUMED' WHERE id = ?", holdId)
-        val bookingId = UUID.randomUUID(); val snapshotText = json.writeValueAsString(snapshot)
+        val bookingId = window?.bookingId ?: UUID.randomUUID(); val snapshotText = json.writeValueAsString(snapshot)
         j.update(
             "INSERT INTO taktovia.booking(tenant_id, id, hold_id, service_id, federation_ref, state, promise_snapshot, revision) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, 'CONFIRMING', ?::jsonb, 1)",
             bookingId, holdId, serviceId, hold.reference, snapshotText,

@@ -530,6 +530,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "promise_window",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-19: Zusagefenster und harte Grenzen der Buchung, unveraenderlich"
+        },
+        {
           "spalte": "run_id",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",

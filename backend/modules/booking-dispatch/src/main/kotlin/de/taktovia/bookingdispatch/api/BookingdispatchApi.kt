@@ -23,10 +23,16 @@ interface BookingdispatchApi {
     /** Fahrtenplan (Aggregat RunPlanRevision, WP-M2-16): Umlauf je Schicht, Stoppfolgen je Revision, Routeninvarianten; lesende Schnittstelle für M3. */
     val runs: RunPlans
 
+    /** Einfügeheuristik mit Prüfung im Kern (WP-M2-17 bis -19); nur vorhanden, wenn ein Routing-Worker konfiguriert ist. */
+    val insertion: InsertionService?
+
+    /** Automatischer Prüfer harter Grenzen und zugesagter Fenster über bestätigte Buchungen und alle Planrevisionen (WP-M2-18/-19). */
+    val audit: ConfirmedRideAudit
+
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
-            plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null },
+            plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null }, insertionWorker: InsertionWorker? = null,
         ): BookingdispatchApi =
-            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis, plannedPositions)
+            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis, plannedPositions, insertionWorker)
     }
 }

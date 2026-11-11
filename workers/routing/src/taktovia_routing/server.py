@@ -8,6 +8,9 @@ POST /v1/matrix  {"tenant_id","from":[...],"to":[...],"profile"}         -> 200
 GET  /v1/map-version                                                       -> 200 {"map_version"}
 POST /v1/walk    {"tenant_id","from","to"}                                -> wie /v1/route mit
     Profil walk
+POST /v1/insert  {"tenant_id","request","vehicles","matrix","params","candidate_vehicle_ids",
+    "budget_ms"} -> 200 {"variants":[...],"rejection","grounds","partial","stats"} (WP-M2-17, siehe
+    insertion.py, contract/insert-request.json); Plan eines fremden Mandanten: 422 SCOPE_VIOLATION.
 Fehler: {"error":{"code","message"}} mit 422 (NOT_A_STOP, NO_ROUTE, UNKNOWN_PROFILE), 503
     (PROVIDER_UNAVAILABLE), 504 (PROVIDER_TIMEOUT), 400 (Anfrage).
 Der Mandant kommt vom Kern und dient nur dem Cache-Schlüssel; der Worker hat keinen
@@ -22,6 +25,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
 from .adapter import RoutingAdapter
+from .insertion import InputError, ScopeViolation, handle_insert
 from .port import (
     MatrixResult,
     NoRoute,
@@ -95,8 +99,14 @@ def make_handler(adapter: RoutingAdapter) -> type[BaseHTTPRequestHandler]:
                     out = _matrix_json(
                         adapter.matrix(tenant, body["from"], body["to"], body["profile"])
                     )
+                elif self.path == "/v1/insert":
+                    out = handle_insert(body)
                 else:
                     return self._error(404, "NOT_FOUND", "unbekannter Pfad")
+            except ScopeViolation as e:
+                return self._error(422, "SCOPE_VIOLATION", str(e))
+            except InputError as e:
+                return self._error(400, "BAD_REQUEST", str(e))
             except RoutingError as e:
                 return self._error(STATUS.get(type(e), 500), e.code, str(e))
             except (KeyError, ValueError, TypeError):

@@ -9,6 +9,10 @@ import java.util.UUID
 enum class RejectionReason(val primaryReason: String) {
     EQUIPMENT_MISSING("EQUIPMENT_MISSING"), NO_CAPACITY_SEATS("NO_CAPACITY"), NO_CAPACITY_WHEELCHAIR("NO_CAPACITY"),
     RESOURCE_UNUSABLE("NO_CAPACITY"), RUN_NOT_ACTIVE("NO_CAPACITY"), REVISION_CONFLICT("NO_CAPACITY"),
+    /** Plan würde ein zugesagtes Fenster oder eine harte Grenze einer bestätigten oder gehaltenen Buchung verletzen (WP-M2-19; API: `409 CAPACITY_UNAVAILABLE`). */
+    PROMISE_WINDOW_VIOLATION("NO_CAPACITY"),
+    /** Plan verletzt eine Routeninvariante (WP-M2-16). */
+    PLAN_INVALID("NO_CAPACITY"),
 }
 
 /**
@@ -18,7 +22,16 @@ enum class RejectionReason(val primaryReason: String) {
 data class PlaceHold(
     val runId: UUID, val expectedRunRevision: Long, val serviceId: UUID, val window: TimeWindow, val intervalFrom: Int, val intervalTo: Int,
     val demand: ResourceVector, val reserve: ReserveRule = ReserveRule.NONE, val reference: String, val ttl: Duration = Duration.ofSeconds(180),
+    val proposal: PlanProposal? = null,
 )
+
+/**
+ * Planbasierter Hold (WP-M2-19): [stops] ist die vom Einfügen berechnete neue Stoppfolge für `expectedRunRevision + 1` (Variante aus [InsertionService]), [window] das Zusagefenster
+ * der neuen Buchung. Unter dem Lock des Umlaufs werden Revision, Routeninvarianten und alle Zusagefenster und harten Grenzen (bestätigte und aktiv gehaltene Buchungen) gegen den
+ * neuen Plan geprüft; erst dann wird die Revision gespeichert und der Hold angelegt (Revision, Abschnitte und Fenster des Holds stammen aus dem Plan, `intervalFrom/-To` und die
+ * Belegung bereits gehaltener Abschnitte werden nicht herangezogen: der Plan enthält alle Buchungen). Verletzung: [HoldOutcome.Rejected] mit [RejectionReason.PROMISE_WINDOW_VIOLATION].
+ */
+data class PlanProposal(val stops: List<PlanStop>, val window: PromiseWindow)
 
 data class HoldView(val id: UUID, val runId: UUID, val runRevision: Long, val intervalFrom: Int, val intervalTo: Int, val vector: ResourceVector, val expiresAt: Instant, val state: String)
 
@@ -45,4 +58,7 @@ interface CapacityHolds {
 
     /** Wandelt einen gültigen Hold in eine Buchung (`CONFIRMING`) mit unveränderlicher Zusage inklusive Ressourcenvektor; abgelaufen: 409 `HOLD_EXPIRED`. Wiederholung findet dieselbe Buchung. */
     fun confirm(ctx: RequestContext, holdId: UUID, serviceId: UUID, promise: PromiseCore, demand: BookingDemand): BookingView
+
+    /** Zusagefenster aller bestätigten und aktiv gehaltenen Buchungen des Umlaufs (WP-M2-19): Eingang der Einfügeheuristik ([InsertionVehicle.protectedWindows]). */
+    fun protectedWindows(ctx: RequestContext, runId: UUID): List<PromiseWindow>
 }
