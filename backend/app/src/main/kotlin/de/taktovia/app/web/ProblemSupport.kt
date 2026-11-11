@@ -22,7 +22,7 @@ class ProblemWriter(private val json: JsonMapper) {
         json.writeValueAsString(Problem(e.code, Correlation.of(request), e.detail, e.violations).toMap())
 
     fun write(request: HttpServletRequest, response: HttpServletResponse, e: ProblemException) {
-        response.reset()
+        response.resetBuffer()
         response.status = e.code.status
         response.contentType = MEDIA_TYPE
         response.characterEncoding = "UTF-8"

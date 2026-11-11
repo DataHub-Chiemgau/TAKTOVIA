@@ -1,0 +1,133 @@
+name: Sicherheit
+# WP-M1-38 (LH-6.18-SEC-009): SAST, Abhängigkeits-/Image-Scan, DAST und Befund-Gate. Klasse-A-Befunde (kritisch) blockieren.
+# Nicht lokal ausgeführt: dieser Workflow läuft erst mit der ersten CI-Ausführung (Dienste GitHub, OSV und Staging waren in der Entwicklungsumgebung nicht erreichbar).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  haertung:
+    name: Eingabehärtung, Query-Lint, npm audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: python tools/lint_sql.py
+      - run: python tools/test_lint_sql.py
+      - run: npm ci && npm audit --omit=dev --audit-level=critical
+        working-directory: web
+
+  sast:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { language: java-kotlin, build-mode: manual }
+          - { language: javascript-typescript, build-mode: none }
+          - { language: python, build-mode: none }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        if: matrix.language == 'java-kotlin'
+        with: { distribution: temurin, java-version: '21' }
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - run: ./gradlew assemble --console=plain
+        if: matrix.language == 'java-kotlin'
+        working-directory: backend
+      - uses: github/codeql-action/analyze@v3
+        with: { output: sarif-results, upload: always }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Befund-Gate (Klasse A blockiert)
+        run: python tools/findings_gate.py --report scan-sast-${{ matrix.language }}.md sarif-results/*.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: 'scan-sast-${{ matrix.language }}', path: 'scan-sast-*.md' }
+
+  abhaengigkeiten:
+    name: 'Abhängigkeitsscan (OSV, Gradle-Lockfiles, npm, Python-Locks)'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.0
+        with:
+          scan-args: |-
+            --format=sarif
+            --output=osv.sarif
+            --recursive
+            ./
+        continue-on-error: true   # Befunde entscheidet das Gate unten, nicht der Exitcode des Scanners
+      - run: python tools/findings_gate.py --report scan-osv.md osv.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: scan-osv, path: scan-osv.md }
+
+  image:
+    name: Image-Scan (Trivy) der Worker-Images
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix: { worker: [routing, documents] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: docker build -t taktovia-${{ matrix.worker }}:scan workers/${{ matrix.worker }}
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: taktovia-${{ matrix.worker }}:scan
+          format: sarif
+          output: trivy-${{ matrix.worker }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+      - run: python tools/findings_gate.py --report scan-image-${{ matrix.worker }}.md trivy-${{ matrix.worker }}.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: 'scan-image-${{ matrix.worker }}', path: 'scan-image-*.md' }
+
+  dast:
+    name: DAST gegen Staging (OpenAPI-Dateien)
+    # Läuft nur, wenn eine Staging-URL konfiguriert ist (Repository-Variable STAGING_URL, WP-M0-35); sonst bewusst übersprungen und im Bericht ausgewiesen.
+    if: ${{ vars.STAGING_URL != '' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install PyYAML jsonschema openapi-spec-validator
+      - name: gebündelte OpenAPI-Datei
+        run: python api/tools/bundle.py > openapi.bundled.yaml
+      - name: Angriffskatalog gegen Staging (aus den OpenAPI-Dateien generiert)
+        run: python -m unittest tests/acceptance/security/test_angriffskatalog.py
+        env: { TAKTOVIA_BASE_URL: '${{ vars.STAGING_URL }}' }
+      - name: OWASP ZAP API-Scan
+        run: |
+          docker run --rm -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-api-scan.py -t /zap/wrk/openapi.bundled.yaml -f openapi -O "${{ vars.STAGING_URL }}" -J zap.json -r zap.html -I
+      - name: Befund-Gate
+        run: python tools/findings_gate.py --report scan-dast.md zap.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-dast
+          path: |
+            scan-dast.md
+            zap.json
+            zap.html

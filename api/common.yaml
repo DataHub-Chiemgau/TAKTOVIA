@@ -529,6 +529,7 @@ components:
       - ZONE_UNKNOWN
       - ZONE_OFFSET_MISMATCH
       - INTERVAL_INVALID
+      - TARGET_NOT_ALLOWED
     Money:
       type: object
       additionalProperties: false

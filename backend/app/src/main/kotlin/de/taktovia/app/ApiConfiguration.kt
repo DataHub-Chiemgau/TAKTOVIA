@@ -5,11 +5,14 @@ import de.taktovia.app.openapi.SemanticKeyword
 import de.taktovia.app.openapi.TimeKeyword
 import de.taktovia.app.web.CorrelationFilter
 import de.taktovia.app.web.ProblemWriter
+import de.taktovia.app.web.OriginPolicyFilter
+import de.taktovia.app.web.PathHardeningFilter
 import de.taktovia.app.web.RateLimitFilter
 import de.taktovia.app.web.RemoteAddressIdentity
 import de.taktovia.app.web.RequestIdentityResolver
 import de.taktovia.app.web.RequestLimits
 import de.taktovia.app.web.RequestValidationFilter
+import de.taktovia.app.web.SecurityHeadersFilter
 import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.InMemoryRateLimitStore
 import de.taktovia.platform.api.Quota
@@ -19,9 +22,13 @@ import de.taktovia.platform.cache.RedisRateLimitStore
 import de.taktovia.platform.money.CurrencyCatalog
 import de.taktovia.platform.money.JdbcCurrencyCatalog
 import de.taktovia.platform.money.MoneyValidator
+import de.taktovia.platform.net.SsrfGuard
 import de.taktovia.platform.tenant.TenantTransactions
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
+import de.taktovia.app.web.ProblemErrorValveCustomizer
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory
+import org.springframework.boot.web.server.WebServerFactoryCustomizer
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -48,7 +55,9 @@ class ApiConfiguration {
         val factory = JsonFactory.builder().streamReadConstraints(
             StreamReadConstraints.builder().maxNestingDepth(depth).maxStringLength(env.getProperty("taktovia.api.max-string-length", Int::class.java, 100_000))
                 .maxNumberLength(50).build()).build()
-        return JsonMapper.builder(factory).build()
+        // Doppelte Schlüssel (`{"role":"a","role":"b"}`) und Text nach dem JSON-Wert sind Angriffsmuster: abweisen statt „letzter gewinnt“.
+        return JsonMapper.builder(factory).enable(tools.jackson.core.StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+            .enable(tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build()
     }
 
     @Bean fun requestLimits(env: Environment) = RequestLimits(
@@ -58,17 +67,24 @@ class ApiConfiguration {
 
     @Bean fun currencyCatalog(dataSource: DataSource): CurrencyCatalog = JdbcCurrencyCatalog(dataSource)
 
+    /** Zulässige Ziele ausgehender Aufrufe (Webhooks): https, öffentliche Adressen, freigegebene Ports (`taktovia.security.ssrf.*`). */
+    @Bean fun ssrfGuard(env: Environment) = SsrfGuard(
+        allowedPorts = (env.getProperty("taktovia.security.ssrf.allowed-ports") ?: "443").split(',').map { it.trim().toInt() }.toSet(),
+        allowHttp = env.getProperty("taktovia.security.ssrf.allow-http", Boolean::class.java, false),
+    )
+
     @Bean fun moneyValidator(catalog: CurrencyCatalog) = MoneyValidator(catalog)
 
     @Bean fun tenantTransactions(dataSource: DataSource) = TenantTransactions(dataSource)
 
-    @Bean fun openApiRegistry(money: MoneyValidator, env: Environment, semantic: ObjectProvider<SemanticKeywords>): OpenApiRegistry {
+    @Bean fun openApiRegistry(money: MoneyValidator, ssrf: SsrfGuard, env: Environment, semantic: ObjectProvider<SemanticKeywords>): OpenApiRegistry {
         val resolver = PathMatchingResourcePatternResolver()
         val patterns = listOf("classpath:api/*.yaml") + (env.getProperty("taktovia.api.extra-specs")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList())
         val docs = patterns.flatMap { resolver.getResources(it).toList() }.associate { r -> r.filename!! to r.inputStream.use { String(it.readAllBytes(), Charsets.UTF_8) } }
         val keywords = listOf(
             SemanticKeyword("x-money") { node, arg, pointer -> money.validate(de.taktovia.app.openapi.JsonPlain.of(node), pointer, arg == "signed") },
             SemanticKeyword("x-time", TimeKeyword::check),
+            SemanticKeyword("x-url") { node, _, pointer -> if (node.isString) ssrf.checkLiteral(node.asString(), pointer.ifEmpty { "/" }) else emptyList() },
         ) + (semantic.getIfAvailable()?.keywords ?: emptyList())
         return OpenApiRegistry(docs, keywords)
     }
@@ -90,7 +106,18 @@ class ApiConfiguration {
     @Bean fun rateLimiter(store: RateLimitStore, env: Environment) = RateLimiter(store,
         Quota(env.getProperty("taktovia.api.rate-limit.requests", Int::class.java, 600), env.getProperty("taktovia.api.rate-limit.window-seconds", Int::class.java, 60)))
 
+    /** Container-Fehler (vor allen Filtern) als Problem statt HTML-Seite. */
+    @Bean fun problemErrorValve() = WebServerFactoryCustomizer<TomcatServletWebServerFactory> { it.addContextCustomizers(ProblemErrorValveCustomizer()) }
+
     @Bean fun correlationFilter() = FilterRegistrationBean(CorrelationFilter()).apply { order = Ordered.HIGHEST_PRECEDENCE }
+
+    @Bean fun securityHeadersFilter() = FilterRegistrationBean(SecurityHeadersFilter()).apply { order = Ordered.HIGHEST_PRECEDENCE + 1 }
+
+    @Bean fun pathHardeningFilter(problems: ProblemWriter) = FilterRegistrationBean(PathHardeningFilter(problems)).apply { order = Ordered.HIGHEST_PRECEDENCE + 2 }
+
+    @Bean fun originPolicyFilter(env: Environment, problems: ProblemWriter) = FilterRegistrationBean(
+        OriginPolicyFilter(env.getProperty("taktovia.security.cors.allowed-origins")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(), problems),
+    ).apply { order = Ordered.HIGHEST_PRECEDENCE + 3 }
 
     @Bean fun rateLimitFilter(limiter: RateLimiter, identity: ObjectProvider<RequestIdentityResolver>, problems: ProblemWriter) =
         FilterRegistrationBean(RateLimitFilter(limiter, { identity.getIfAvailable { RemoteAddressIdentity } }, problems)).apply { order = Ordered.HIGHEST_PRECEDENCE + 10 }

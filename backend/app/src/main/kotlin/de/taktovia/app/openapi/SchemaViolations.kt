@@ -26,7 +26,9 @@ object SchemaViolations {
         val base = e.instanceLocation.toString()
         val prop = e.property
         val p = when (e.keyword) {
-            "required", "additionalProperties", "unevaluatedProperties" -> if (prop != null) "$base/${escape(prop)}" else base
+            "required" -> if (prop != null) "$base/${escape(prop)}" else base
+            // Namen unbekannter Felder stammen vom Client: nur unauffällige Namen werden in die Antwort übernommen (kein Reflektieren von Angriffsdaten).
+            "additionalProperties", "unevaluatedProperties" -> if (prop != null && SAFE_NAME.matches(prop)) "$base/${escape(prop)}" else base
             else -> base
         }
         return p.ifEmpty { "/" }
@@ -48,6 +50,8 @@ object SchemaViolations {
         "uniqueItems" -> ViolationCode.NOT_UNIQUE
         else -> ViolationCode.INVALID_VALUE
     }
+
+    private val SAFE_NAME = Regex("^[A-Za-z0-9_.-]{1,64}$")
 
     private fun escape(s: String) = s.replace("~", "~0").replace("/", "~1")
 }

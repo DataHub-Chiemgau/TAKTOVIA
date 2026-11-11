@@ -77,6 +77,8 @@ enum class ViolationCode(val message: String) {
     ZONE_UNKNOWN("Unbekannte Zeitzone"),
     ZONE_OFFSET_MISMATCH("Offset passt nicht zur Zeitzone"),
     INTERVAL_INVALID("Intervallende liegt nicht nach dem Beginn"),
+    // Eingabehärtung (SEC-009)
+    TARGET_NOT_ALLOWED("Ziel-URL nicht zulässig"),
 }
 
 /** Eine Feldverletzung: `pointer` ist ein JSON-Pointer (RFC 6901); Nicht-Body-Orte tragen `/$query/…` bzw. `/$header/…`. */

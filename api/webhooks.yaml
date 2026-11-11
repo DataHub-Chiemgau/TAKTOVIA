@@ -116,6 +116,10 @@ components:
           format: uri
           maxLength: 2000
           pattern: ^https://
+          x-url: public-https
+          description: Nur https mit öffentlicher Adresse auf Port 443. Loopback, private und Link-Local-Adressen, interne
+            Namen, Zugangsdaten in der URL und ungewöhnliche IP-Schreibweisen werden abgewiesen (422 TARGET_NOT_ALLOWED);
+            vor jedem Aufruf wird erneut aufgelöst und geprüft.
         event_types:
           type: array
           items:

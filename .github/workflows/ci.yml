@@ -35,7 +35,7 @@ jobs:
       - name: API-Dokumentation und Vertragspipeline (WP-M1-03)
         run: |
           python api/tools/gen_docs.py --check
-          python -m unittest discover -s tests/acceptance/api -t . -p 'test_api_documentation.py'
+          python -m unittest discover -s tests/acceptance/api -t . -p 'test_*.py'
       - name: Inkompatible API-Änderungen gegenüber dem Basiszweig
         if: github.event_name == 'pull_request'
         run: |
@@ -107,6 +107,10 @@ jobs:
         run: |
           python api/tools/check_routes.py backend/app/build/contract/routes.json
           python -m unittest discover -s tests/acceptance/api -t . -p 'test_contract_pipeline.py'
+      - name: Angriffskatalog gegen die gebaute Anwendung und Befund-Gate (WP-M1-38)
+        run: |
+          python tools/lint_sql.py
+          python -m unittest discover -s tests/acceptance/security -t . -p 'test_*.py'
 
   web:
     name: Web (WP-M0-05)
