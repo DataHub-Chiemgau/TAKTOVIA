@@ -17,6 +17,9 @@ interface BookingdispatchApi {
     /** Kapazitätshold und Bestätigung mit Ressourcenvektor (Kernel, WP-M2-14; Vervollständigung in WP-M2-22/-23). */
     val holds: CapacityHolds
 
+    /** Fahrtenplan (Aggregat RunPlanRevision, WP-M2-16): Umlauf je Schicht, Stoppfolgen je Revision, Routeninvarianten; lesende Schnittstelle für M3. */
+    val runs: RunPlans
+
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900): BookingdispatchApi =
             BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis)

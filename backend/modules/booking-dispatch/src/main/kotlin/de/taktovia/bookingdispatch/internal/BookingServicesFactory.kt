@@ -4,6 +4,7 @@ import de.taktovia.bookingdispatch.api.BookingdispatchApi
 import de.taktovia.bookingdispatch.api.CapacityHolds
 import de.taktovia.bookingdispatch.api.ResourceAvailability
 import de.taktovia.bookingdispatch.api.RoutingPort
+import de.taktovia.bookingdispatch.api.RunPlans
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.outbox.Outbox
 import java.time.Clock
@@ -18,6 +19,7 @@ internal object BookingServicesFactory {
             override val resources: ResourceAvailability = resources
             override val routing: RoutingPort? = routingPort
             override val holds: CapacityHolds = JdbcCapacityHolds(ctxTx, resources, outbox, clock)
+            override val runs: RunPlans = JdbcRunPlans(ctxTx, outbox, clock)
         }
     }
 }
