@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.sql.ResultSet
 import java.time.Instant
@@ -115,6 +116,17 @@ class ProbeController(private val tx: TenantTransactions, private val codec: Cur
             j.update("UPDATE taktovia.legal_entity SET tenant_id = ? WHERE tenant_id = ? AND id = ?", UUID.randomUUID(), t.value, id)
         }
         return mapOf("unreachable" to true)
+    }
+
+    /** Zeittypen: die Schema-Prüfung (x-time) hat Zeitpunkt, Zone und Intervall bereits validiert; hier nur Ableitungen für die Antwort. */
+    @PostMapping("/appointments")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun appointment(@RequestBody body: Map<String, Any?>): Map<String, Any?> {
+        @Suppress("UNCHECKED_CAST") val at = body["at"] as Map<String, String>
+        val moment = de.taktovia.platform.time.ZonedMoments.parse(at["desired_at"], at["time_zone"]).orThrow()
+        val dayZone = (body["service_zone"] as String?)?.let { java.time.ZoneId.of(it) } ?: moment.zone
+        return mapOf("instant" to moment.instant.toString(), "local" to moment.toRfc3339(), "offset" to moment.offset.id,
+            "operating_day" to de.taktovia.platform.time.OperatingDay.of(moment.instant, dayZone).toString())
     }
 
     /** Antwort mit einem Feld, das der Vertrag (`additionalProperties:false`) nicht kennt: der Vertragslauf muss das erkennen. */

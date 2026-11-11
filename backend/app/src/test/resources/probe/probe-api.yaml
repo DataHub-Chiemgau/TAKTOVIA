@@ -167,6 +167,28 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '415':
           $ref: common.yaml#/components/responses/Problem
+  /v1/probe/appointments:
+    post:
+      summary: Zeittypen (Zeitpunkt mit Zone, lokale Eingabe, Intervall)
+      operationId: createProbeAppointment
+      security:
+      - oidc:
+        - probe:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeAppointment'
+      responses:
+        '201':
+          description: angelegt
+          content:
+            application/json:
+              schema:
+                type: object
+        '422':
+          $ref: common.yaml#/components/responses/Problem
   /v1/probe/leaky:
     get:
       summary: Antwort enthält absichtlich ein Feld, das der Vertrag nicht kennt
@@ -191,6 +213,20 @@ paths:
                 $ref: '#/components/schemas/ProbeLeaky'
 components:
   schemas:
+    ProbeAppointment:
+      type: object
+      additionalProperties: false
+      properties:
+        at:
+          $ref: common.yaml#/components/schemas/ZonedMoment
+        local:
+          $ref: common.yaml#/components/schemas/LocalDateTimeInZone
+        slot:
+          $ref: common.yaml#/components/schemas/ValidityInterval
+        service_zone:
+          $ref: common.yaml#/components/schemas/TimeZone
+      required:
+      - at
     ProbeLeaky:
       type: object
       additionalProperties: false

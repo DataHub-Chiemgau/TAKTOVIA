@@ -2,6 +2,7 @@ package de.taktovia.app
 
 import de.taktovia.app.openapi.OpenApiRegistry
 import de.taktovia.app.openapi.SemanticKeyword
+import de.taktovia.app.openapi.TimeKeyword
 import de.taktovia.app.web.CorrelationFilter
 import de.taktovia.app.web.ProblemWriter
 import de.taktovia.app.web.RateLimitFilter
@@ -67,6 +68,7 @@ class ApiConfiguration {
         val docs = patterns.flatMap { resolver.getResources(it).toList() }.associate { r -> r.filename!! to r.inputStream.use { String(it.readAllBytes(), Charsets.UTF_8) } }
         val keywords = listOf(
             SemanticKeyword("x-money") { node, arg, pointer -> money.validate(de.taktovia.app.openapi.JsonPlain.of(node), pointer, arg == "signed") },
+            SemanticKeyword("x-time", TimeKeyword::check),
         ) + (semantic.getIfAvailable()?.keywords ?: emptyList())
         return OpenApiRegistry(docs, keywords)
     }

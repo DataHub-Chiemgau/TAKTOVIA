@@ -333,8 +333,7 @@ components:
           description: Konfigurationswerte; Form und Bereiche bestimmt das policy_schema der Schema-Version, die Prüfung geschieht
             serverseitig.
         effective_from:
-          type: string
-          format: date-time
+          $ref: common.yaml#/components/schemas/Timestamp
       required:
       - scope_kind
       - scope_id

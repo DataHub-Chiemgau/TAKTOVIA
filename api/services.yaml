@@ -90,9 +90,7 @@ components:
           minLength: 1
           maxLength: 200
         timezone:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: common.yaml#/components/schemas/TimeZone
         revision:
           type: integer
           format: int64
@@ -115,9 +113,7 @@ components:
           minLength: 1
           maxLength: 200
         timezone:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: common.yaml#/components/schemas/TimeZone
       required:
       - operator_id
       - name

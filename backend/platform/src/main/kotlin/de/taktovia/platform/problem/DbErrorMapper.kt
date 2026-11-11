@@ -15,7 +15,7 @@ object DbErrorMapper {
             state == "23514" -> ProblemException(ErrorCode.IMMUTABLE_RECORD, "Der Datensatz ist unveränderlich; eine Korrektur wird als neuer Datensatz angelegt.", cause = e)
             state == "23505" -> ProblemException(ErrorCode.CONFLICT, "Der Datensatz existiert bereits.", cause = e)
             state == "23503" -> ProblemException(ErrorCode.VALIDATION_FAILED, "Ein referenzierter Datensatz existiert nicht.", cause = e)
-            state == "23502" || state == "22P02" || state == "22001" || state == "22003" || state == "22007" || state == "22008" ->
+            state == "23502" || state == "22023" || state == "22P02" || state == "22001" || state == "22003" || state == "22007" || state == "22008" ->
                 ProblemException(ErrorCode.VALIDATION_FAILED, "Ein Wert ist ungültig.", cause = e)
             // 42501: unzureichende Rechte bzw. Verstoß gegen eine RLS-Policy (WITH CHECK): nie preisgeben, welches Objekt betroffen ist.
             state == "42501" -> ProblemException(ErrorCode.FORBIDDEN, cause = e)

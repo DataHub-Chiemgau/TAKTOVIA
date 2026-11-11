@@ -197,13 +197,13 @@ components:
           minLength: 1
           maxLength: 64
         valid_from:
-          type: string
-          format: date-time
+          $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
-          oneOf:
-          - type: string
-            format: date-time
-          - type: 'null'
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
       required:
       - vehicle_id
       - role_code
@@ -213,6 +213,8 @@ components:
         role_code: OPERATING
         valid_from: '2026-12-01T00:00:00Z'
         valid_to: null
+      x-time: interval
+      description: Gültigkeitsintervall links geschlossen, rechts offen; valid_to null = unbegrenzt.
     VehicleRoleAssignmentPage:
       type: object
       additionalProperties: false
@@ -272,11 +274,11 @@ components:
         vehicle_id:
           $ref: common.yaml#/components/schemas/UUID
         valid_from:
-          type: string
-          format: date-time
+          $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
           type: string
           format: date-time
+          maxLength: 40
       required:
       - driver_ref
       - vehicle_id
@@ -288,6 +290,7 @@ components:
         vehicle_id: 00000000-0000-4000-8000-000000000006
         valid_from: '2026-12-01T06:00:00Z'
         valid_to: '2026-12-01T14:00:00Z'
+      x-time: interval
     DriverClearancePage:
       type: object
       additionalProperties: false

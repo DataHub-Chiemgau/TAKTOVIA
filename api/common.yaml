@@ -242,6 +242,87 @@ components:
       - amount_minor
       - currency
       - exponent
+    Timestamp:
+      type: string
+      format: date-time
+      maxLength: 40
+      x-time: instant
+      description: Zeitpunkt nach RFC 3339 mit UTC-Offset (`2026-10-25T02:30:00+02:00` oder `…Z`). Ohne Offset gibt es keinen Zeitpunkt
+        (422 OFFSET_REQUIRED); der Offset unterscheidet die beiden gleichlautenden Ortszeiten der Zeitumstellung im Herbst.
+        Die Datenbank speichert UTC (timestamptz).
+      examples:
+      - '2026-10-25T02:30:00+02:00'
+    TimeZone:
+      type: string
+      minLength: 1
+      maxLength: 64
+      x-time: zone
+      description: IANA-Zeitzone der Region (`Europe/Berlin`, `UTC`). Abkürzungen (`CET`), feste Offsets und `Etc/…` sind keine Dienstzonen
+        (422 ZONE_UNKNOWN).
+      examples:
+      - Europe/Berlin
+    ZonedMoment:
+      type: object
+      additionalProperties: false
+      x-time: zoned-moment
+      description: Zeitpunkt mit lokaler Zone. `desired_at` und `time_zone` müssen denselben lokalen Zeitpunkt beschreiben. Abgelehnt werden
+        Offset fehlt (OFFSET_REQUIRED), unbekannte Zone (ZONE_UNKNOWN), nicht existente Ortszeit in der Frühjahrslücke
+        (LOCAL_TIME_NONEXISTENT) und ein Offset, der zur Zone und Ortszeit nicht passt (ZONE_OFFSET_MISMATCH).
+      properties:
+        desired_at:
+          $ref: '#/components/schemas/Timestamp'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+      required:
+      - desired_at
+      - time_zone
+      examples:
+      - desired_at: '2026-10-25T02:30:00+01:00'
+        time_zone: Europe/Berlin
+    LocalDateTimeInZone:
+      type: object
+      additionalProperties: false
+      x-time: local-moment
+      description: Lokale Eingabe ohne Offset in einer Zone. Bei mehrdeutiger Ortszeit (Herbstumstellung) ist `utc_offset` Pflicht
+        (LOCAL_TIME_AMBIGUOUS), eine nicht existente Ortszeit wird abgewiesen (LOCAL_TIME_NONEXISTENT).
+      properties:
+        local:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        utc_offset:
+          type:
+          - string
+          - 'null'
+          pattern: ^[+-]\d{2}:\d{2}$
+      required:
+      - local
+      - time_zone
+      examples:
+      - local: '2026-10-25T02:30:00'
+        time_zone: Europe/Berlin
+        utc_offset: '+02:00'
+    ValidityInterval:
+      type: object
+      additionalProperties: false
+      x-time: interval
+      description: Gültigkeitsintervall links geschlossen, rechts offen `[valid_from, valid_to)`. `valid_to` fehlt oder ist null für
+        unbegrenzt; ein Ende vor oder gleich dem Beginn wird abgewiesen (INTERVAL_INVALID).
+      properties:
+        valid_from:
+          $ref: '#/components/schemas/Timestamp'
+        valid_to:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+      required:
+      - valid_from
+      examples:
+      - valid_from: '2026-12-01T00:00:00+01:00'
+        valid_to: null
     Point:
       type: object
       additionalProperties: false
@@ -323,8 +404,7 @@ components:
       additionalProperties: false
       properties:
         effective_from:
-          type: string
-          format: date-time
+          $ref: '#/components/schemas/Timestamp'
         reason:
           type: string
           minLength: 3

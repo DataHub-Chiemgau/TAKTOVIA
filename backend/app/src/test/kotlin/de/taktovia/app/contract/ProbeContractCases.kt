@@ -23,6 +23,8 @@ class ProbeContractCases(private val server: ProbeServer) {
             428, { ContractRequest("PUT", "/v1/probe/items/${UUID.randomUUID()}", """{"value":"neu"}""", tenant) }),
         ContractCase("getProbeAdmin", 200, { ContractRequest("GET", "/v1/probe/admin", headers = tenant + ("X-Test-Scopes" to "probe:admin")) }, 403, { ContractRequest("GET", "/v1/probe/admin", headers = tenant) }),
         ContractCase("postProbeFree", 200, { ContractRequest("POST", "/v1/probe/free", """{"a":1}""", tenant) }, 415, { ContractRequest("POST", "/v1/probe/free", """{"a":1}""", tenant, contentType = "text/plain") }),
+        ContractCase("createProbeAppointment", 201, { ContractRequest("POST", "/v1/probe/appointments", """{"at":{"desired_at":"2026-10-25T02:30:00+02:00","time_zone":"Europe/Berlin"}}""", tenant) },
+            422, { ContractRequest("POST", "/v1/probe/appointments", """{"at":{"desired_at":"2026-10-25T02:30:00","time_zone":"Europe/Berlin"}}""", tenant) }),
         ContractCase("getProbeLeaky", 200, { ContractRequest("GET", "/v1/probe/leaky", headers = tenant) }, 403, { ContractRequest("GET", "/v1/probe/leaky?fail=1", headers = tenant) }),
     ).associateBy { it.operationId }
 
