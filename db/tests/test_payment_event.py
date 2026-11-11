@@ -57,18 +57,24 @@ class PaymentEvent(unittest.TestCase):
 
     def test_100_parallele_identische_einfuegungen_genau_eine_zeile(self):
         wins, conflicts, errors = [], [], []
-        start = threading.Barrier(100)
+        threads, total = 30, 100   # 100 Einfügungen über 30 gleichzeitige Verbindungen (max_connections der Testdatenbank ist 100, andere Clients belegen Plätze)
+        start = threading.Barrier(threads)
+        counter = iter(range(total)); lock = threading.Lock()
 
         def worker():
             try:
                 start.wait()
-                with tx(A) as c:
-                    n = c.execute(INSERT + " ON CONFLICT (tenant_id, provider, event_id) DO NOTHING", row(A, event_id='evt_par')).rowcount
-                (wins if n == 1 else conflicts).append(1)
+                while True:
+                    with lock:
+                        if next(counter, None) is None:
+                            return
+                    with tx(A) as c:
+                        n = c.execute(INSERT + " ON CONFLICT (tenant_id, provider, event_id) DO NOTHING", row(A, event_id='evt_par')).rowcount
+                    (wins if n == 1 else conflicts).append(1)
             except Exception as e:  # noqa: BLE001
                 errors.append(e)
 
-        ts = [threading.Thread(target=worker) for _ in range(100)]
+        ts = [threading.Thread(target=worker) for _ in range(threads)]
         [t.start() for t in ts]; [t.join() for t in ts]
         self.assertEqual(errors, [])
         self.assertEqual((len(wins), len(conflicts)), (1, 99))
