@@ -10,3 +10,11 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Ressourcen-Leseport (WP-M2-02)
 
 `BookingdispatchApi.resources` (`ResourceAvailability`) liest Fahrzeug, `capacity_config`, `active_block`, `safety_revision`, Schicht, Einsatzfreigabe und Fahrzeugpool je Dienst in **einem** SQL-Statement (konsistenter Datenstand je Abfrage, nur lesend, nur der Mandant des Kontexts). Ein Fahrzeug ist nicht einsetzbar bei: Sperre (`VEHICLE_BLOCKED`), fehlender deckender Schicht (`NO_SHIFT`), fehlender, widerrufener, abgelaufener oder gegen eine veraltete `safety_revision` ausgestellter Freigabe (`NO_VALID_RELEASE`) oder Pool-Fremdheit (`NOT_IN_POOL`). Bis M3/M4 stammen die Zeilen aus dem Seed [`tests/acceptance/fixtures/m2_referenzregion/`](../../../tests/acceptance/fixtures/m2_referenzregion/README.md); die Schnittstelle bleibt bei der Ablösung unverändert (Vollabnahme mit WP-M3-03/-06/-08, WP-M4-03/-65). Die Tabelle `vehicle_pool_assignment` (Besitzer `fleet-safety`) ist Fixture-Stand bis WP-M3-06.
+
+## Routing (WP-M2-10)
+
+`BookingdispatchApi.routing` (`RoutingPort`) ruft den Worker `workers/routing` synchron mit hartem Zeitbudget (`HttpRoutingClient`, Standard 0,9 s) und cached mandantengebunden: flüchtig (Schlüssel `RoutingCacheKey`, Redis-Anbindung **nicht gebaut**) und PostgreSQL `route_matrix_cache` (RLS). Die Kartendatenversion fragt der Port vor jedem Cachezugriff ab; Einträge anderer Versionen werden nie gelesen und beim Stand-Wechsel gelöscht. Fehler sind definiert (`RoutingException`: `NOT_A_STOP`, `NO_ROUTE`, `UNKNOWN_PROFILE`, `PROVIDER_TIMEOUT`, `PROVIDER_UNAVAILABLE`), nie ein Schätzwert. Tests gegen einen Stub des Workers; die Antwortform steht in `workers/routing/contract/route-response.json`.
+
+## Ressourcenvektor und Kapazitätshold (WP-M2-14)
+
+`ResourceVector` (Sitz, Rollstuhlplatz, Ausstattung getrennt), `BookingDemand` (Personen, Rollstuhlplätze, Ausstattung, `assistance_codes`), `ReserveRule` (`min_capacity_reserve` je Dimension) und der Kernel `BookingdispatchApi.holds` (`CapacityHolds`: Hold und Bestätigung in je einer Transaktion unter dem Lock auf `vehicle_run`). Festlegungen: [m2-detailvertraege.md §8](../../../docs/umsetzungsplan/vertraege/m2-detailvertraege.md). Die Tabelle `passenger_trip` hält Personen und Plätze je Buchung; `booking.promise_snapshot` ist unveränderlich und enthält den Vektor.

@@ -69,6 +69,38 @@ class BookingFixture : AutoCloseable {
         }
     }
 
+    /** Frischer, isolierter Fahrtenplan (eigenes Fahrzeug mit [capacityJson], Schicht 04:00-14:00Z, gültige Freigabe, Pool von „nord“) – der Seed der Fixture legt ihn mit der Migrator-Rolle an. */
+    class RunRef(val runId: UUID, val vehicleId: UUID, val serviceId: UUID, val revision: Long = 1)
+
+    fun createRun(capacityJson: String, tenant: TenantId = tenantA, blocked: Boolean = false): RunRef {
+        val label = if (tenant == tenantA) "a" else "b"
+        val vehicle = UUID.randomUUID(); val shift = UUID.randomUUID(); val run = UUID.randomUUID(); val service = fixtureId(label, "svc-buchung")
+        BookingTestDb.migrator().use { m ->
+            m.connection.use { c ->
+                c.autoCommit = false
+                fun exec(sql: String, vararg a: Any?) = c.prepareStatement(sql).use { ps -> a.forEachIndexed { i, v -> ps.setObject(i + 1, v) }; ps.execute() }
+                exec("SELECT set_config('app.tenant_id', ?, true)", tenant.toString())
+                exec("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config,active_block,safety_revision) VALUES (?,?,'fed-org-m2-$label',CAST(? AS jsonb),?,1)", tenant.value, vehicle, capacityJson, blocked)
+                exec("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?,'2026-12-01 04:00:00+00','2026-12-01 14:00:00+00','Europe/Berlin',1,'PUBLISHED')", tenant.value, shift, UUID.randomUUID(), vehicle)
+                exec("INSERT INTO taktovia.resource_release(tenant_id,id,vehicle_id,shift_id,safety_revision,inspection_ref,qualification_revision,valid_until) VALUES (?,?,?,?,1,?,1,'2026-12-01 14:00:00+00')", tenant.value, UUID.randomUUID(), vehicle, shift, UUID.randomUUID())
+                exec("INSERT INTO taktovia.vehicle_pool_assignment(tenant_id,id,service_id,vehicle_id,valid_from,created_by) VALUES (?,?,?,?,'2026-01-01T00:00:00Z','system:test')", tenant.value, UUID.randomUUID(), service, vehicle)
+                exec("INSERT INTO taktovia.vehicle_run(tenant_id,id,vehicle_id,shift_id,revision,state) VALUES (?,?,?,?,1,'ACTIVE')", tenant.value, run, vehicle, shift)
+                c.commit()
+            }
+        }
+        return RunRef(run, vehicle, service)
+    }
+
+    /** Eine einzelne SQL-Anweisung unter der Migrator-Rolle im Mandanten (nur Testaufbau und Gegenproben). */
+    fun migratorExec(tenant: TenantId, sql: String, vararg args: Any?) {
+        BookingTestDb.migrator().use { m -> m.connection.use { c ->
+            c.autoCommit = false
+            c.prepareStatement("SELECT set_config('app.tenant_id', ?, true)").use { it.setString(1, tenant.toString()); it.execute() }
+            c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, v -> ps.setObject(i + 1, v) }; ps.execute() }
+            c.commit()
+        } }
+    }
+
     fun context(tenant: TenantId, subject: String = "dispatcher-" + UUID.randomUUID()) =
         RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/booking", subject, "sid-$subject", true), tenant, setOf("dispatcher"), setOf("rides:read", "rides:write"), emptySet(), UUID.randomUUID())
 

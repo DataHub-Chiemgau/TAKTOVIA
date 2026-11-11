@@ -73,10 +73,11 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
         )
     }
 
-    override fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability {
-        val row = ctxTx.run(ctx, readOnly = true) { j -> query(j, serviceId, vehicleId, window) }.firstOrNull()
-        return row?.verdict() ?: VehicleAvailability.NotUsable(vehicleId, Unusable.UNKNOWN_VEHICLE)
-    }
+    override fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability =
+        ctxTx.run(ctx, readOnly = true) { j -> check(j, vehicleId, serviceId, window) }
+
+    override fun check(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability =
+        query(jdbc, serviceId, vehicleId, window).firstOrNull()?.verdict() ?: VehicleAvailability.NotUsable(vehicleId, Unusable.UNKNOWN_VEHICLE)
 
     companion object {
         const val SOURCE = "FIXTURE"

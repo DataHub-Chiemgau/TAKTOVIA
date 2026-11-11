@@ -41,6 +41,11 @@
    "key": "sued",
    "name": "Rufbus Süd",
    "timezone": "Europe/Berlin"
+  },
+  {
+   "key": "buchung",
+   "name": "Rufbus Buchung (Testdienst für Hold- und Bestätigungsläufe)",
+   "timezone": "Europe/Berlin"
   }
  ],
  "stops": [

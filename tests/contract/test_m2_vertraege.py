@@ -225,6 +225,17 @@ class OpenApiM2(unittest.TestCase):
             self.assertIn('assistance_codes', props)
             self.assertFalse([k for k in props if re.search(r'(?i)diagn|support_?needs?', k)])
 
+    def test_anfrage_weist_diagnosefelder_und_unbekannte_codes_ab(self):
+        from bundle import bundle
+        doc = bundle()
+        v = Draft202012Validator({'$ref': '#/components/schemas/RideOfferRequest', 'components': doc['components']}, format_checker=FormatChecker())
+        ok = dict(doc['components']['schemas']['RideOfferRequest']['examples'][0])
+        v.validate(ok)
+        v.validate({**ok, 'assistance_codes': ['BOARDING_HELP', 'ASSISTANCE_ANIMAL']})
+        for bad in ({**ok, 'diagnosis': 'x'}, {**ok, 'assistance_codes': ['DIABETES']}, {**ok, 'assistance_codes': ['BOARDING_HELP', 'BOARDING_HELP']},
+                    {**ok, 'passengers': 0}, {**ok, 'wheelchair_spaces': 21}, {**ok, 'equipment': ['TELEPORTER']}):
+            with self.assertRaises(ValidationError, msg=str(bad)): v.validate(bad)
+
     def test_fehlerhaftes_beispiel_laesst_lint_fehlschlagen(self):
         from lint import lint_doc
         from bundle import bundle

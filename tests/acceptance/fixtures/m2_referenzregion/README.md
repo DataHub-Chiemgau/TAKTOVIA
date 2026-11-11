@@ -4,7 +4,7 @@ Deterministische, **synthetische** Referenzregion für M2 (Buchung, Disposition,
 
 | Datei | Inhalt |
 |---|---|
-| `region.json` | Bediengebiet (MultiPolygon, SRID 4326), zwei Dienste (`nord`, `sued`), sieben Haltepunkte `H1`–`H7` mit Barrierefreiheit nach `stop-accessibility.v1` |
+| `region.json` | Bediengebiet (MultiPolygon, SRID 4326), drei Dienste (`nord`, `sued` und der Testdienst `buchung` für Hold- und Bestätigungsläufe), sieben Haltepunkte `H1`–`H7` mit Barrierefreiheit nach `stop-accessibility.v1` |
 | `strassengraph.json` | Straßengraph-Ausschnitt (10 Knoten, 13 Kanten): ein gesperrter Abschnitt (`e23`), eine Einbahnstraße (`e56`), eine Höhenrestriktion (`e45`, 2,5 m), eine Fußwegverbindung (`f15`), eine nicht angebundene Insel (`N10`); Kartenstand `referenz-2026-11-01` |
 | `erwartete-fahrzeiten.json` | von Hand berechnete Fahrzeiten und Distanzen je Relation und Profil (Fixturebeschreibung), unabhängig von jeder Routingimplementierung |
 | `tarif-testrelationen.json` | Relationen für die Tarifprüfung; erwartete Preise fehlen absichtlich (Beistellung des Auftraggebers, M2 OP-11/OP-12) |

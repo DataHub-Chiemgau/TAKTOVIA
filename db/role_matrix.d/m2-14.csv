@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+passenger_trip;SELECT,INSERT;WP-M2-14: Personen und Plätze einer Buchung; unveränderlich (Trigger), kein UPDATE/DELETE

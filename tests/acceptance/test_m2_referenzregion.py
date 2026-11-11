@@ -44,7 +44,7 @@ class ReferenzregionDb(unittest.TestCase):
         self.assertEqual(first["role"], "taktovia_migrator")
         self.assertFalse(first["privileged"])
         a = first["counts"]["a"]
-        self.assertEqual((a["service"], a["vehicle"], a["staff_shift"], a["resource_release"], a["vehicle_pool_assignment"]), (2, 9, 9, 8, 9))
+        self.assertEqual((a["service"], a["vehicle"], a["staff_shift"], a["resource_release"], a["vehicle_pool_assignment"]), (3, 9, 9, 8, 9))
         self.assertEqual(first["counts"]["b"]["vehicle"], 2)
         h1 = _state_hash(DB)
         second = rr.load(DB)   # zweites Laden ändert nichts

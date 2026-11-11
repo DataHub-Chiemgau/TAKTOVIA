@@ -1,6 +1,7 @@
 package de.taktovia.bookingdispatch.api
 
 import de.taktovia.platform.context.RequestContext
+import org.springframework.jdbc.core.JdbcOperations
 import java.time.Instant
 import java.util.UUID
 
@@ -61,4 +62,7 @@ interface ResourceAvailability {
 
     /** Einsetzbarkeit eines einzelnen Fahrzeugs für den Dienst und das Fenster. */
     fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability
+
+    /** Wie [check] innerhalb einer laufenden Transaktion des Aufrufers (Hold prüft unter dem Kapazitätslock erneut, Kap. 01 §1.4 Schritt 5); der Mandant ist der der Transaktion. */
+    fun check(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability
 }

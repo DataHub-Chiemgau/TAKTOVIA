@@ -22,7 +22,7 @@ object PromiseSnapshotSchema {
     const val CURRENT = "1.0"
     val KNOWN_VERSIONS = setOf(CURRENT)
 
-    enum class Kind { TIMESTAMP, MONEY_MINOR, CURRENCY, TEXT }
+    enum class Kind { TIMESTAMP, MONEY_MINOR, CURRENCY, TEXT, RESOURCE_VECTOR }
     data class Field(val name: String, val kind: Kind, val required: Boolean, val passengerRelevant: Boolean, val maxLength: Int = 64)
 
     val FIELDS_V1: List<Field> = listOf(
@@ -32,6 +32,8 @@ object PromiseSnapshotSchema {
         Field("cancellation_policy_ref", Kind.TEXT, true, true, 64),
         Field("vehicle_class", Kind.TEXT, true, false, 32),
         Field("internal_note", Kind.TEXT, false, false, 200),
+        // WP-M2-14: Ressourcenvektor der Buchung (Sitz, Rollstuhlplatz, Ausstattung) ist nach der Bestätigung Teil der Zusage; Änderungen betreffen den Fahrgast.
+        Field("resource_vector", Kind.RESOURCE_VECTOR, false, true),
     )
 
     fun fields(version: String): List<Field> = when (version) { "1.0" -> FIELDS_V1; else -> throw unknownVersion() }
@@ -56,11 +58,26 @@ object PromiseSnapshotSchema {
                     else if (v.asLong() < 0) out += Violation(p, ViolationCode.MONEY_NEGATIVE)
                     else if (v.asLong() > MAX_SAFE) out += Violation(p, ViolationCode.MONEY_OUT_OF_RANGE)
                 Kind.CURRENCY -> if (!v.isString || !Regex("[A-Z]{3}").matches(v.asString())) out += Violation(p, ViolationCode.PATTERN_MISMATCH)
+                Kind.RESOURCE_VECTOR -> out += resourceVector(p, v)
                 Kind.TEXT -> if (!v.isString) out += Violation(p, ViolationCode.TYPE_MISMATCH)
                     else if (v.asString().isEmpty()) out += Violation(p, ViolationCode.TOO_SHORT)
                     else if (v.asString().length > f.maxLength) out += Violation(p, ViolationCode.TOO_LONG)
             }
         }
+        return out
+    }
+
+    /** Struktur des Ressourcenvektors (Schema `resource-vector.v1`); die Merkmalskataloge prüft `booking-dispatch` (`ResourceVector.parse`). */
+    private fun resourceVector(p: String, v: JsonNode): List<Violation> {
+        if (!v.isObject) return listOf(Violation(p, ViolationCode.TYPE_MISMATCH))
+        val out = mutableListOf<Violation>()
+        v.propertyNames().filter { it !in setOf("schema_version", "seats", "wheelchair", "equipment") }.forEach { out += Violation("$p/$it", ViolationCode.UNKNOWN_FIELD) }
+        for (dim in listOf("seats", "wheelchair")) {
+            val n = v.get(dim) ?: continue
+            if (!n.isIntegralNumber) out += Violation("$p/$dim", ViolationCode.TYPE_MISMATCH) else if (n.asLong() < 0) out += Violation("$p/$dim", ViolationCode.BELOW_MINIMUM)
+            else if (n.asLong() > 99) out += Violation("$p/$dim", ViolationCode.ABOVE_MAXIMUM)
+        }
+        v.get("equipment")?.let { e -> if (!e.isArray) out += Violation("$p/equipment", ViolationCode.TYPE_MISMATCH) }
         return out
     }
 
