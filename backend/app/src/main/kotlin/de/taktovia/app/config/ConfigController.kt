@@ -9,6 +9,7 @@ import de.taktovia.config.api.EffectiveConfigView
 import de.taktovia.config.api.EffectiveParameter
 import de.taktovia.config.api.EffectiveRequest
 import de.taktovia.config.api.EffectiveStatus
+import de.taktovia.config.api.ImpactReportView
 import de.taktovia.config.api.ParameterDefinition
 import de.taktovia.config.api.RevisionFilter
 import de.taktovia.config.api.RevisionState
@@ -146,12 +147,22 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
         return resource(config.revisions.updateDraft(ctx, id, expected, cmd))
     }
 
+    /** Wirkungsanalyse für den Revisionsstand im `If-Match` (WP-M1-23); erfordert `config:write`, die Matrix prüft die Operation `requestConfigImpact`. */
+    @PostMapping("/revisions/{revision_id}/impact")
+    fun requestImpact(@PathVariable("revision_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): Map<String, Any?> =
+        impactJson(config.impact.analyze(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch)))
+
+    /** Gespeicherten Wirkungsbericht über seine ID lesen (WP-M1-23). */
+    @GetMapping("/impact-reports/{impact_report_id}")
+    fun getImpactReport(@PathVariable("impact_report_id") id: UUID, request: HttpServletRequest): Map<String, Any?> =
+        impactJson(config.impact.get(RequestContexts.require(request), id))
+
     // ---- Darstellung ------------------------------------------------------------------------------------------------------------------------
 
     private fun resource(v: ConfigRevisionView) = ConfigRevisionResource(revisionJson(v), v.rowVersion)
 
     private fun revisionJson(v: ConfigRevisionView): Map<String, Any?> = linkedMapOf(
-        "id" to v.id.toString(), "scope_kind" to v.scopeKind.name, "scope_id" to v.scopeId.toString(), "revision" to v.revision, "state" to v.state.name,
+        "id" to v.id.toString(), "scope_kind" to v.scopeKind.name, "scope_id" to v.scopeId.toString(), "revision" to v.revision, "row_version" to v.rowVersion, "state" to v.state.name,
         "schema_version" to v.schemaVersion, "values" to v.values, "effective_from" to v.effectiveFrom.toString(), "effective_to" to v.effectiveTo?.toString(),
         "created_by" to v.createdBy, "approved_by" to v.approvedBy, "reason" to v.reason, "created_at" to v.createdAt.toString(), "published_at" to v.publishedAt?.toString(),
         "change_log" to linkedMapOf(
@@ -162,10 +173,18 @@ class ConfigController(private val config: ConfigApi, private val codec: CursorC
         ),
     )
 
+    private fun impactJson(r: ImpactReportView): Map<String, Any?> = linkedMapOf(
+        "id" to r.id.toString(), "revision_id" to r.revisionId.toString(), "revision_row_version" to r.revisionRowVersion, "values_hash" to r.valuesHash,
+        "generated_at" to r.createdAt.toString(), "created_by" to r.createdBy, "highest_severity" to r.highestSeverity.name, "conflict_count" to r.conflictCount,
+        "affected" to r.affected.map { a ->
+            linkedMapOf("kind" to a.kind, "severity" to a.severity.name, "count" to a.count, "object_refs" to a.refs.map { linkedMapOf("kind" to it.kind, "id" to it.id.toString()) })
+        },
+    )
+
     private fun parameterJson(p: ParameterDefinition): Map<String, Any?> = linkedMapOf(
         "name" to p.name, "type" to p.type, "unit" to p.unit, "minimum" to p.minimum, "maximum" to p.maximum, "default" to p.default,
         "allowed_levels" to p.allowedLevels.map { it.name }.sorted(), "security_class" to p.securityClass, "limit_source" to p.limitSource,
-        "description" to p.description, "schema" to p.schema,
+        "description" to p.description, "schema" to p.schema, "impact_required" to p.impactRequired, "impact_hint" to p.impactHint,
     )
 
     @Suppress("UNCHECKED_CAST")

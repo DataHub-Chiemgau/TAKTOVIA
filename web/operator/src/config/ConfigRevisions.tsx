@@ -1,6 +1,7 @@
 import { ApiError, useApi, useSession } from '@taktovia/api-client';
 import type {
   ConfigChange,
+  ConfigImpactReport,
   ConfigParameter,
   ConfigParameterCatalog,
   ConfigRevision,
@@ -10,6 +11,7 @@ import { DataTable, ResourceView, ScreenFrame, StatusBadge, zeit } from '@taktov
 import type { ResourceState } from '@taktovia/design-system';
 import { useEffect, useState } from 'react';
 import { DEFAULT_ZONE, useScreenContext } from '../ScreenContext';
+import { ImpactReportPanel } from './ImpactReportPanel';
 
 const SCOPE_KINDS: readonly ConfigScopeKind[] = ['TENANT', 'REGION', 'DEPOT', 'SERVICE', 'VEHICLE'];
 const SCOPE_LABEL: Record<ConfigScopeKind, string> = {
@@ -79,6 +81,26 @@ export function ConfigRevisions() {
   const [asOfResult, setAsOfResult] = useState<string | undefined>(undefined);
   const [asOfError, setAsOfError] = useState<string | undefined>(undefined);
   const [tick, setTick] = useState(0);
+  const [impact, setImpact] = useState<
+    { revision: ConfigRevision; state: ResourceState<ConfigImpactReport> } | undefined
+  >(undefined);
+
+  /** Löst die Wirkungsanalyse für genau den gelesenen Revisionsstand aus (`If-Match` = Zeilenversion); der Bericht ist unveränderlich. */
+  const analyze = (r: ConfigRevision) => {
+    setImpact({ revision: r, state: { status: 'loading' } });
+    api
+      .call('requestConfigImpact', {
+        path: { revision_id: r.id },
+        ...(r.row_version === undefined ? {} : { revision: r.row_version }),
+      })
+      .then((report) => setImpact({ revision: r, state: { status: 'ready', data: report } }))
+      .catch((e: unknown) =>
+        setImpact({
+          revision: r,
+          state: { status: 'error', error: e instanceof ApiError ? e : { status: 0 } },
+        }),
+      );
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -255,11 +277,30 @@ export function ConfigRevisions() {
                   r.change_log ? <Diff changes={r.change_log.changes} /> : <>nicht verfügbar</>,
               },
               { key: 'id', header: 'Revisions-ID', render: (r) => <code>{r.id}</code> },
+              {
+                key: 'impact',
+                header: 'Wirkung',
+                render: (r) =>
+                  r.state === 'PUBLISHED' ? (
+                    <>–</>
+                  ) : (
+                    <button type="button" onClick={() => analyze(r)}>
+                      Wirkung prüfen (Revision {r.revision})
+                    </button>
+                  ),
+              },
             ]}
             page={{ nextCursor, loading: loadingMore, onLoadMore: loadMore }}
           />
         )}
       </ResourceView>
+      {impact ? (
+        <ImpactReportPanel
+          revision={impact.revision.revision}
+          state={impact.state}
+          onRetry={() => analyze(impact.revision)}
+        />
+      ) : null}
       <h2>Was galt zu einem Zeitpunkt?</h2>
       <label>
         Zeitpunkt (RFC 3339 mit Offset)
@@ -290,6 +331,16 @@ export function ConfigRevisions() {
               { key: 'unit', header: 'Einheit', render: (p) => p.unit },
               { key: 'range', header: 'Bereich (Systemgrenze)', render: range },
               { key: 'desc', header: 'Beschreibung', render: (p) => p.description },
+              {
+                key: 'impact',
+                header: 'Wirkungsanalyse',
+                render: (p) =>
+                  p.impact_required ? (
+                    <StatusBadge tone="warning">impact-pflichtig</StatusBadge>
+                  ) : (
+                    <>–</>
+                  ),
+              },
               {
                 key: 'safe',
                 header: 'Sicherheit',

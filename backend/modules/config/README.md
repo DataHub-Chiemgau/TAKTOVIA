@@ -11,9 +11,10 @@ Paket `de.taktovia.config` mit `api` (öffentliche Ports) und `internal` (privat
 - **Revisionen (WP-M1-20):** `ConfigApi.revisions` legt Entwürfe an und ändert sie (Ersteller aus dem Principal, Grund und Beginn Pflicht, `If-Match`), liest, listet, liefert das
   Änderungsprotokoll mit Diff Alt/Neu und rekonstruiert den zu einem Zeitpunkt wirksamen Stand (`asOf`). Publizierte Revisionen sind in der Datenbank unveränderlich. `revalidate` prüft einen Entwurf
   gegen die jetzt gültige Schema-Version (Baustein für die Publikation, WP-M1-22).
+- **Wirkungsanalyse (WP-M1-23):** `ConfigApi.impact` befragt `ImpactProvider` der Fachmodule, speichert den unveränderlichen Wirkungsbericht (`impact_report`, an Revision und Hash der Werte gebunden) und liefert die Publikationssperre `confirmForPublication` für WP-M1-22. Details: [LH-I.7-CFG-007.md](../../../docs/umsetzungsplan/vertraege/LH-I.7-CFG-007.md).
 - Details und Entscheidungen (OP-03, OP-08, OP-18): [konfigurationsrevisionen.md](../../../docs/umsetzungsplan/vertraege/konfigurationsrevisionen.md).
 
-Tests: `ParameterRegistryTest`, `ParameterRegisterTest`, `ConfigRevisionTest` (echte Datenbank, Runtime-Rolle; Zugangsdaten wie `backend/README.md`), dazu `db/tests/test_policy_schema.py`,
+Tests: `ImpactAnalysisTest`, `ParameterRegistryTest`, `ParameterRegisterTest`, `ConfigRevisionTest` (echte Datenbank, Runtime-Rolle; Zugangsdaten wie `backend/README.md`), dazu `db/tests/test_policy_schema.py`,
 `db/tests/test_config_revision.py` und in der Anwendung `ConfigApiTest`.
 
 Regeln: schreibt nur eigene Tabellen (`db/table_owners.d/`); greift auf andere Module nur über deren `api`-Paket zu;

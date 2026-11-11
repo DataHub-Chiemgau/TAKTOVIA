@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiError, SessionProvider } from '@taktovia/api-client';
 import type {
   ApiClient,
+  ConfigImpactReport,
   ConfigParameterCatalog,
   ConfigRevision,
   OperationId,
@@ -73,12 +74,50 @@ const CATALOG: ConfigParameterCatalog = {
   ],
 };
 
+const REPORT: ConfigImpactReport = {
+  id: '00000000-0000-4000-8000-0000000000d1',
+  revision_id: '00000000-0000-4000-8000-0000000000c2',
+  revision_row_version: 3,
+  values_hash: 'ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12',
+  generated_at: '2026-11-02T08:00:00Z',
+  created_by: 'user:alice',
+  highest_severity: 'BLOCKING',
+  conflict_count: 4,
+  affected: [
+    {
+      kind: 'BOOKING',
+      severity: 'BLOCKING',
+      count: 3,
+      object_refs: [
+        { kind: 'BOOKING', id: '00000000-0000-4000-8000-0000000000b1' },
+        { kind: 'BOOKING', id: '00000000-0000-4000-8000-0000000000b2' },
+        { kind: 'BOOKING', id: '00000000-0000-4000-8000-0000000000b3' },
+      ],
+    },
+    {
+      kind: 'SHIFT',
+      severity: 'WARNING',
+      count: 1,
+      object_refs: [{ kind: 'SHIFT', id: '00000000-0000-4000-8000-0000000000a1' }],
+    },
+  ],
+};
+
+const DRAFT = REV({
+  id: '00000000-0000-4000-8000-0000000000c2',
+  revision: 2,
+  state: 'DRAFT',
+  row_version: 3,
+  reason: 'Bediengebiet verkleinert',
+});
+
 type Call = { id: OperationId; args: Record<string, unknown> };
 
 function setup(
   revisions: ConfigRevision[] | ApiError,
   roles = ['tenant_admin'],
   catalog: ConfigParameterCatalog | ApiError = CATALOG,
+  impact: ConfigImpactReport | ApiError = REPORT,
 ) {
   const calls: Call[] = [];
   const client = {
@@ -110,6 +149,8 @@ function setup(
           as_of: '2026-11-02T08:00:00Z',
         });
       }
+      if (id === 'requestConfigImpact')
+        return impact instanceof ApiError ? Promise.reject(impact) : Promise.resolve(impact);
       if (id === 'listConfigParameters')
         return catalog instanceof ApiError ? Promise.reject(catalog) : Promise.resolve(catalog);
       return Promise.reject(new ApiError(404));
@@ -255,5 +296,76 @@ describe('UI-17 Basis: Konfigurationsrevisionen und Parameterkatalog', () => {
     expect(
       calls.some((c) => c.id === 'listConfigRevisions' || c.id === 'listConfigParameters'),
     ).toBe(false);
+  });
+
+  it('ui17_wirkungspruefung_zeigt_konfliktliste_und_bindet_den_geprueften_stand', async () => {
+    const { calls, container } = setup([REV({}), DRAFT]);
+    const table = await screen.findByRole('table', { name: /Revisionen/ });
+    // publizierte Revisionen brauchen keine Analyse
+    expect(within(table).getAllByRole('button', { name: /Wirkung prüfen/ })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Wirkung prüfen (Revision 2)' }));
+    const panel = await screen.findByRole('region', { name: 'Wirkungsbericht' });
+    expect(
+      within(panel).getByRole('heading', { name: 'Wirkungsbericht zu Revision 2' }),
+    ).toBeInTheDocument();
+    expect(await within(panel).findByRole('status')).toHaveTextContent('4 bestehende Objekte');
+    const list = within(panel).getByRole('table', { name: /Konfliktliste/ });
+    const rows = within(list).getAllByRole('row');
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toHaveTextContent('Bestätigte Buchungen');
+    expect(rows[1]).toHaveTextContent('blockierend');
+    expect(rows[1]).toHaveTextContent('00000000-0000-4000-8000-0000000000b1');
+    expect(rows[2]).toHaveTextContent('Schichten');
+    expect(panel).toHaveTextContent('unverändert gebundene Version');
+    expect(panel).toHaveTextContent('00000000-0000-4000-8000-0000000000d1');
+    // die Anfrage trägt die Zeilenversion der gelesenen Revision (If-Match) und keinen Mandanten
+    const call = calls.find((c) => c.id === 'requestConfigImpact');
+    expect(call?.args).toMatchObject({ path: { revision_id: DRAFT.id }, revision: 3 });
+    expect(JSON.stringify(call?.args)).not.toMatch(/tenant_id/);
+    expect(formatViolations(await runAxe(container))).toBe('');
+  });
+
+  it('ui17_wirkungsbericht_ohne_konflikte_fehler_und_fehlende_rechte', async () => {
+    const none: ConfigImpactReport = {
+      ...REPORT,
+      highest_severity: 'NONE',
+      conflict_count: 0,
+      affected: [],
+    };
+    const ok = setup([DRAFT], ['tenant_admin'], CATALOG, none);
+    fireEvent.click(await screen.findByRole('button', { name: 'Wirkung prüfen (Revision 2)' }));
+    expect(
+      await screen.findByText(/keine bestehenden Buchungen, Angebote oder Schichten/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: /Konfliktliste/ })).toBeNull();
+    ok.unmount();
+
+    const stale = setup([DRAFT], ['tenant_admin'], CATALOG, new ApiError(412));
+    fireEvent.click(await screen.findByRole('button', { name: 'Wirkung prüfen (Revision 2)' }));
+    const panel = await screen.findByRole('region', { name: 'Wirkungsbericht' });
+    await waitFor(() => expect(within(panel).getByTestId('state-view')).toBeInTheDocument());
+    expect(within(panel).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    stale.unmount();
+
+    setup([DRAFT], ['tenant_admin'], CATALOG, new ApiError(403));
+    fireEvent.click(await screen.findByRole('button', { name: 'Wirkung prüfen (Revision 2)' }));
+    const p2 = await screen.findByRole('region', { name: 'Wirkungsbericht' });
+    await waitFor(() =>
+      expect(within(p2).getByTestId('state-view')).toHaveAttribute('data-kind', 'forbidden'),
+    );
+  });
+
+  it('ui17_parameterkatalog_kennzeichnet_impact_pflichtige_parameter', async () => {
+    const flagged: ConfigParameterCatalog = {
+      ...CATALOG,
+      items: CATALOG.items.map((p, i) =>
+        i === 0 ? { ...p, impact_required: true, impact_hint: 'Bestätigte Buchungen prüfen' } : p,
+      ),
+    };
+    setup([REV({})], ['tenant_admin'], flagged);
+    const table = await screen.findByRole('table', { name: /Parameterkatalog, Schema-Version 1/ });
+    const rows = within(table).getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('impact-pflichtig');
+    expect(rows[2]).not.toHaveTextContent('impact-pflichtig');
   });
 });

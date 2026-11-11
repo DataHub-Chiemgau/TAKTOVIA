@@ -59,6 +59,8 @@ internal class PolicyCatalogRepository {
             default = node.get("default")?.let { mapper.treeToValue(it, Any::class.java) }, allowedLevels = if (vehicleReleased) levels + ScopeKind.VEHICLE else levels,
             securityClass = node.path("x-security-class").asString(), limitSource = node.path("x-limit-source").asString(),
             description = node.path("description").asString(), schema = mapper.readValue(text, Map::class.java).toStringKeyed(),
+            impactRequired = node.path("x-impact-required").asBoolean(ImpactRequiredParameters.hint(name) != null),
+            impactHint = node.get("x-impact-hint")?.asString() ?: ImpactRequiredParameters.hint(name),
         )
         return LoadedParameter(def, registry.getSchema(text), node.get("const"))
     }

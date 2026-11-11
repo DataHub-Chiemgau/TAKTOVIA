@@ -139,6 +139,10 @@ internal class JdbcConfigRevisions(
         return view(j, updated)
     }
 
+    /** Liest eine Revision und sperrt die Zeile gegen Änderungen bis zum Ende der Transaktion (`FOR SHARE`); für Wirkungsanalyse und Publikationssperre (WP-M1-23). */
+    internal fun getShared(j: JdbcOperations, id: UUID): ConfigRevisionView? =
+        j.query("SELECT $COLUMNS FROM taktovia.config_revision r WHERE r.id = ? FOR SHARE", ROW, id).firstOrNull()?.let { view(j, it) }
+
     override fun get(ctx: RequestContext, id: UUID): ConfigRevisionView = ctxTx.run(ctx, readOnly = true) { j ->
         view(j, j.query("SELECT $COLUMNS FROM taktovia.config_revision r WHERE r.id = ?", ROW, id).firstOrNull() ?: throw ProblemException.notFound())
     }

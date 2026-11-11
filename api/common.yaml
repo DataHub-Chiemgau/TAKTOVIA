@@ -191,6 +191,12 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/UUID'
+    impact_report_id:
+      name: impact_report_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
     roster_id:
       name: roster_id
       in: path

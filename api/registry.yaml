@@ -325,9 +325,45 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/config/impact-reports/{impact_report_id}:
+    get:
+      summary: Wirkungsbericht über seine ID lesen
+      description: Liefert den gespeicherten, unveränderlichen Wirkungsbericht (z. B. den, auf den eine Publikation verweist). Bericht eines anderen
+        Mandanten oder unbekannte ID ist 404.
+      operationId: getConfigImpactReport
+      security:
+      - oidc:
+        - config:read
+      parameters:
+      - $ref: common.yaml#/components/parameters/impact_report_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigImpactReport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/config/revisions/{revision_id}/impact:
     post:
       summary: Wirkungsanalyse für eine Revision anfordern
+      description: Löst die Konfliktprüfung der Fachmodule (ImpactProvider) für den im If-Match genannten Revisionsstand aus und speichert den Wirkungsbericht
+        (unveränderlich, gebunden an Revision, Zeilenversion und Hash der Werte). Nur für Entwürfe und noch nicht publizierte Revisionen; veralteter ETag ist 412.
+        Die Publikation verlangt einen Bericht zum unveränderten Revisionsstand. M1 arbeitet synchron; die asynchrone Variante über operation (IMPACT_ANALYSIS) folgt mit M2/M4.
       operationId: requestConfigImpact
       security:
       - oidc:
@@ -714,6 +750,15 @@ components:
         schema:
           type: object
           description: Das vollständige JSON-Schema (Draft 2020-12) des Parameters.
+        impact_required:
+          type: boolean
+          description: 'Wichtiger, impact-pflichtiger Parameter (WP-M1-23): Änderungen lösen die Wirkungsanalyse mit Konfliktprüfung aus (Liste vorläufig, OP-19).'
+        impact_hint:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
       required:
       - name
       - type
@@ -768,6 +813,12 @@ components:
       type: object
       additionalProperties: false
       properties:
+        row_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: 'Zeilenversion des Entwurfs; zugleich der ETag und der Wert für If-Match (Ändern, Wirkungsanalyse).'
         id:
           $ref: common.yaml#/components/schemas/UUID
         scope_kind:
@@ -933,14 +984,36 @@ components:
     ConfigImpactReport:
       type: object
       additionalProperties: false
+      description: 'Wirkungsbericht (WP-M1-23). Unveränderlich und an genau einen Revisionsstand gebunden (revision_id, revision_row_version, values_hash);
+        enthält nur Objektverweise (Art und ID) und Anzahlen, keine Personendaten.'
       properties:
         id:
           $ref: common.yaml#/components/schemas/UUID
         revision_id:
           $ref: common.yaml#/components/schemas/UUID
+        revision_row_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        values_hash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: SHA-256 über die geprüften Werte (Scope, Schema-Version, Werte, Gültigkeit) in kanonischer Form.
         generated_at:
           type: string
           format: date-time
+        created_by:
+          type: string
+          minLength: 3
+          maxLength: 200
+        highest_severity:
+          $ref: '#/components/schemas/ImpactSeverity'
+        conflict_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
         affected:
           type: array
           items:
@@ -951,20 +1024,54 @@ components:
                 type: string
                 minLength: 1
                 maxLength: 64
+              severity:
+                $ref: '#/components/schemas/ImpactSeverity'
               count:
                 type: integer
                 format: int64
                 minimum: 0
                 maximum: 9007199254740991
+              object_refs:
+                type: array
+                maxItems: 100
+                description: Verweise auf betroffene Objekte (höchstens 100; count nennt die Gesamtzahl).
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    kind:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                    id:
+                      $ref: common.yaml#/components/schemas/UUID
+                  required:
+                  - kind
+                  - id
             required:
             - kind
+            - severity
             - count
+            - object_refs
           maxItems: 100
       required:
       - id
       - revision_id
+      - revision_row_version
+      - values_hash
       - generated_at
+      - created_by
+      - highest_severity
+      - conflict_count
       - affected
+    ImpactSeverity:
+      type: string
+      description: 'Schweregrad eines Befunds; BLOCKING heißt: die Publikation berührt bestätigte Zusagen oder Schichten und braucht eine bewusste Entscheidung.'
+      enum:
+      - NONE
+      - INFO
+      - WARNING
+      - BLOCKING
     ConfigRevisionPage:
       type: object
       additionalProperties: false
