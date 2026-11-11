@@ -71,3 +71,16 @@ Für andere Module: `RequestContext` aus `platform.context` verwenden und Datenb
 Rollenkatalog (`passenger`, `driver`, `callcenter`, `support`, `dispatcher`, `planner`, `tenant_admin` plus Platzhalter `finance`, `staff_planning`, `workshop`) und die versionierte **Rechtematrix** `modules/identity/src/main/resources/rechtematrix/rechtematrix.csv` sind die einzige Rechtequelle: Funktionsscopes folgen aus der Matrix, die zentrale Autorisierung (`identity.api.Authorizer`) entscheidet im `RequestContextFilter`. Eine Operation der API-Verträge ohne Matrixzeile lässt den Build scheitern; Änderungen der Matrix brauchen Versionsanhebung und `rechtematrix.lock` und werden beim Start in `rights_matrix_rollout` protokolliert. Der Administrator hat keinen Zugriff auf PII-/HR-/Finanz-Tätigkeiten ohne gesonderte Fachrolle. Details und offene Punkte (OP-10): [rechtematrix.md](../docs/umsetzungsplan/vertraege/rechtematrix.md).
 
 **Neue Route bauen:** Operation in `api/<modul>.yaml` mit `security: oidc: [<scope>]` deklarieren, Zeile in `rechtematrix.csv` ergänzen (Scope muss zu den übrigen Zeilen desselben Scopes passen), `# matrix_version` erhöhen und `rechtematrix.lock` erneuern (Test nennt den `sha256`-Wert).
+
+## Idempotenzregister (WP-M1-13)
+
+Jede schreibende Operation, die `Idempotency-Key` verlangt, läuft durch den `IdempotencyFilter` (`app.web`, nach Authentisierung, Mandantenkontext, Rechtematrix und Eingabeprüfung, vor dem Controller) über `platform.idempotency` (`IdempotencyService`, `IdempotencyRegistry`, `RequestFingerprint`): je `(Akteur, Mandant, operationId, Schlüssel)` genau eine Ausführung, Wiederholung liefert das gespeicherte 2xx-Ergebnis (`Idempotent-Replayed: true`), anderer Fingerprint `409 IDEMPOTENCY_CONFLICT`, laufende Erstverarbeitung `409 OPERATION_IN_PROGRESS`. Fehlerantworten werden nicht gespeichert. Vertrag, Kanonisierungsregel und Grenzen: [idempotenz-register.md](../docs/umsetzungsplan/vertraege/idempotenz-register.md).
+
+| Einstellung (`taktovia.idempotency.…`, Planungsdefaults) | Standard |
+|---|---|
+| `response-ttl-hours` (Antwortcache) | 72 |
+| `lease-seconds` (Erstverarbeitung gilt danach als abgebrochen) | 120 |
+| `in-progress-wait-millis` (Wartezeit eines parallelen Retransmits) | 10000 |
+| `cleanup-minutes` (nur mit einer `TenantSource`-Bean) | 10 |
+
+Für Controller: nichts tun (der Filter wirkt über den Vertrag); die entstandene `operation` optional über das Anfrageattribut `IdempotencyFilter.OPERATION_ID_ATTRIBUTE` melden. Die Fachwirkung muss zusätzlich durch einen fachlichen Unique-Schlüssel einmalig sein (Antwortcache läuft ab).

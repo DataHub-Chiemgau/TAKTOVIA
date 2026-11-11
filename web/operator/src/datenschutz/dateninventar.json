@@ -1286,6 +1286,24 @@
           "bemerkung": ""
         },
         {
+          "spalte": "completed_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "expires_at",
           "personenbezogen": "nein",
           "zweck": "TECHNISCHER_BETRIEB",
@@ -1295,6 +1313,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "http_status",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "gespeicherter HTTP-Status (nur 2xx)"
+        },
+        {
           "spalte": "key",
           "personenbezogen": "nein",
           "zweck": "TECHNISCHER_BETRIEB",
@@ -1302,6 +1329,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "locked_until",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Lease der Erstverarbeitung"
         },
         {
           "spalte": "operation_id",
@@ -1331,6 +1367,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "response_headers",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "nur Location, ETag, Content-Type, Retry-After"
+        },
+        {
           "spalte": "response_json",
           "personenbezogen": "ja",
           "zweck": "TECHNISCHER_BETRIEB",
@@ -1338,6 +1383,15 @@
           "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
           "loeschklasse": "LK_TECHNISCH",
           "bemerkung": "gespeicherte Antwort kann Personendaten enthalten; kurzlebig (expires_at)"
+        },
+        {
+          "spalte": "state",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "IN_PROGRESS oder COMPLETED"
         },
         {
           "spalte": "tenant_id",

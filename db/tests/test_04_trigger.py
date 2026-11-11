@@ -226,6 +226,33 @@ class Trigger(unittest.TestCase):
                 c.execute("""INSERT INTO taktovia.idempotency_record(tenant_id,principal_ref,command_scope,key,request_sha256,expires_at)
                              VALUES (%s,%s,%s,'k2',%s,now())""", (T, p, s, 'c' * 64))
 
+    def test_idempotenz_zustand_lease_und_ergebnis_konsistent(self):  # WP-M1-13
+        with tx(T) as c:
+            c.execute("""INSERT INTO taktovia.idempotency_record(tenant_id,principal_ref,command_scope,key,request_sha256,expires_at)
+                         VALUES (%s,'p','confirm','k-state-default',%s,now())""", (T, 'd' * 64))
+            self.assertEqual(c.execute("SELECT state FROM taktovia.idempotency_record WHERE key='k-state-default'").fetchone()[0], 'IN_PROGRESS')
+        with self.assertRaises(psycopg.errors.CheckViolation):   # COMPLETED ohne gespeicherten Status
+            with tx(T) as c:
+                c.execute("""UPDATE taktovia.idempotency_record SET state='COMPLETED' WHERE key='k-state-default'""")
+        with self.assertRaises(psycopg.errors.CheckViolation):   # nur angenommene (2xx) Ergebnisse werden gespeichert
+            with tx(T) as c:
+                c.execute("""UPDATE taktovia.idempotency_record SET state='COMPLETED', http_status=500, completed_at=now() WHERE key='k-state-default'""")
+        with self.assertRaises(psycopg.errors.CheckViolation):   # Fingerprint ist ein SHA-256-Hex
+            with tx(T) as c:
+                c.execute("""INSERT INTO taktovia.idempotency_record(tenant_id,principal_ref,command_scope,key,request_sha256,expires_at)
+                             VALUES (%s,'p','confirm','k-bad-sha',%s,now())""", (T, 'XYZ'))
+        with tx(T) as c:
+            c.execute("""UPDATE taktovia.idempotency_record SET state='COMPLETED', http_status=201, completed_at=now(), response_json='{"id":1}'::jsonb
+                         WHERE key='k-state-default'""")
+
+    def test_idempotenz_fremder_mandant_sieht_keinen_eintrag(self):  # WP-M1-13, RLS
+        other = uid(); seed_tenant(other, 'idem-fremd')
+        with tx(T) as c:
+            c.execute("""INSERT INTO taktovia.idempotency_record(tenant_id,principal_ref,command_scope,key,request_sha256,expires_at)
+                         VALUES (%s,'p','confirm','k-rls-sichtbar',%s,now())""", (T, 'e' * 64))
+        with tx(other) as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM taktovia.idempotency_record WHERE key='k-rls-sichtbar'").fetchone()[0], 0)
+
     def test_geometrie_ungueltig_wird_abgewiesen(self):
         with self.assertRaises(psycopg.errors.CheckViolation):
             with tx(T) as c:
