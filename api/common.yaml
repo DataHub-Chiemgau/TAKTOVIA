@@ -351,6 +351,10 @@ components:
           - CONFIRM
           - CANCEL
           - RECONCILE
+          - PUBLISH_CONFIG
+          - IMPACT_ANALYSIS
+          - RETENTION_RUN
+          - TEST_COMMAND
         status:
           type: string
           enum:

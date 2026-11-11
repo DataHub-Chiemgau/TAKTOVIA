@@ -84,3 +84,12 @@ Jede schreibende Operation, die `Idempotency-Key` verlangt, läuft durch den `Id
 | `cleanup-minutes` (nur mit einer `TenantSource`-Bean) | 10 |
 
 Für Controller: nichts tun (der Filter wirkt über den Vertrag); die entstandene `operation` optional über das Anfrageattribut `IdempotencyFilter.OPERATION_ID_ATTRIBUTE` melden. Die Fachwirkung muss zusätzlich durch einen fachlichen Unique-Schlüssel einmalig sein (Antwortcache läuft ab).
+
+## Operation mit Lease und Fencing (WP-M1-15)
+
+Lang laufende Befehle werden als `operation` persistiert (`OperationService.enqueue` in der Fachtransaktion, Antwort `202 OperationAccepted` über `OperationResponses.accepted`) und vom `OperationRunner` über `OperationHandler` je Art bearbeitet: Aufnahme per Lease (`lease_until`) mit monoton steigendem `fencing_token`, jede Schreibwirkung gefenced (`LeaseLostException`), Unbestimmtes wird abgeglichen (`RECONCILING`), nie zu Erfolg/Fehler verkürzt. Abfrage: `GET /v1/operations/{operation_id}`. Vertrag, Zustände, Lease/Backoff: [operation-ressource.md](../docs/umsetzungsplan/vertraege/operation-ressource.md).
+
+| Einstellung (`taktovia.operations.…`, Planungsdefaults) | Standard |
+|---|---|
+| `lease-seconds` / `default-retry-after-seconds` / `reconcile-delay-seconds` | 60 / 3 / 5 |
+| `worker-enabled` (Zeitgeber nur mit `TenantSource`-Bean des Betriebs) / `poll-seconds` | `false` / 2 |

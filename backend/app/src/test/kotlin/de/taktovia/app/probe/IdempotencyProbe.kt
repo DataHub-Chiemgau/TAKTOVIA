@@ -66,3 +66,18 @@ class IdempotencyProbeController(private val tx: TenantTransactions, private val
         }
     }
 }
+
+/** Nur in Tests: Befehl, der eine persistierte Operation anlegt und `202 OperationAccepted` liefert; meldet sie dem Idempotenzfilter (WP-M1-13/-15). */
+@RestController
+@RequestMapping("/v1/probe/operations")
+@ConditionalOnProperty("taktovia.probe.idempotency", havingValue = "true")
+class OperationProbeController(private val tx: TenantTransactions, private val operations: de.taktovia.platform.operation.OperationService, private val identity: ProbeIdentity) {
+    @PostMapping
+    fun create(@RequestBody body: Map<String, Any?>, r: HttpServletRequest): ResponseEntity<Map<String, Any?>> {
+        ProbeCommandStats.creates.incrementAndGet()
+        val t = TenantId.parse(identity.tenant(r))
+        val view = tx.run(t) { j -> operations.find(j, operations.enqueue(j, "TEST_COMMAND", Instant.now().plusSeconds(3600)))!! }
+        r.setAttribute(de.taktovia.app.web.IdempotencyFilter.OPERATION_ID_ATTRIBUTE, view.id)
+        return de.taktovia.app.operations.OperationResponses.accepted(view)
+    }
+}

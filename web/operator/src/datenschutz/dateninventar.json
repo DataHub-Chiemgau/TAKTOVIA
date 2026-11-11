@@ -2141,6 +2141,24 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "attempts",
+          "personenbezogen": "nein",
+          "zweck": "SAGA_ABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "SAGA_ABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "deadline_at",
           "personenbezogen": "nein",
           "zweck": "SAGA_ABWICKLUNG",
@@ -2195,6 +2213,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "lease_owner",
+          "personenbezogen": "nein",
+          "zweck": "SAGA_ABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "technische Worker-Kennung"
+        },
+        {
           "spalte": "lease_until",
           "personenbezogen": "nein",
           "zweck": "SAGA_ABWICKLUNG",
@@ -2211,6 +2238,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "result_code",
+          "personenbezogen": "nein",
+          "zweck": "SAGA_ABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Ausgangs- oder Grundcode in Grossbuchstaben, kein Freitext"
         },
         {
           "spalte": "revision",
@@ -2232,6 +2268,15 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "SAGA_ABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
           "personenbezogen": "nein",
           "zweck": "SAGA_ABWICKLUNG",
           "rechtsgrundlage": "",

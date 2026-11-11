@@ -67,6 +67,28 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '428':
           $ref: common.yaml#/components/responses/Problem
+  /v1/probe/operations:
+    post:
+      summary: Testbefehl, der eine persistierte Operation anlegt (202 OperationAccepted)
+      operationId: createProbeOperation
+      security:
+      - oidc:
+        - probe:write
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeCommandCreate'
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     ProbeCommandCreate:

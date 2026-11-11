@@ -1,6 +1,8 @@
 package de.taktovia.app.contract
 
 import de.taktovia.app.identity.IdentityEnv
+import de.taktovia.platform.operation.OperationService
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -39,5 +41,12 @@ object M1ContractCases {
             404, { val w = World(); ContractRequest("DELETE", "/v1/memberships/${UUID.randomUUID()}", null, w.env.headers(w.adminToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
     )
 
-    val cases: Map<String, ContractCase> = identityCases.associateBy { it.operationId }
+    /** Plattformbausteine (WP-M1-15): `operation`-Ressource. */
+    private val platformCases: List<ContractCase> = listOf(
+        ContractCase("getOperation",
+            200, { val w = World(); val id = w.env.tx.run(w.tenant) { OperationService().enqueue(it, "TEST_COMMAND", Instant.now().plusSeconds(3600)) }; ContractRequest("GET", "/v1/operations/$id", headers = w.env.headers(w.adminToken)) },
+            404, { val w = World(); ContractRequest("GET", "/v1/operations/${UUID.randomUUID()}", headers = w.env.headers(w.adminToken)) }, server = { IdentityEnv.server }),
+    )
+
+    val cases: Map<String, ContractCase> = (identityCases + platformCases).associateBy { it.operationId }
 }
