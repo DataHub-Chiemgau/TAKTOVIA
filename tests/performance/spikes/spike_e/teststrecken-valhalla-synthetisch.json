@@ -57,30 +57,32 @@
    "category": "restriktion_einbahn_mit_richtung",
    "profile": "auto",
    "from": [
-    51.0153,
+    51.0279,
     13.728
    ],
    "to": [
-    51.0153,
-    13.742
+    51.0279,
+    13.7294
    ],
    "expect": "route",
-   "pair": "V04"
+   "pair": "V04",
+   "note": "Zeile 31 ist Einbahnstraße in Richtung steigender Spalte; mit der Richtung ca. 100 m"
   },
   {
    "id": "V04b",
    "category": "restriktion_einbahn_gegen_richtung",
    "profile": "auto",
    "from": [
-    51.0153,
-    13.742
+    51.0279,
+    13.7294
    ],
    "to": [
-    51.0153,
+    51.0279,
     13.728
    ],
    "expect": "umweg_laenger_als:V04a",
-   "pair": "V04"
+   "pair": "V04",
+   "note": "gegen die Richtung: Umweg über die benachbarte Hauptstraße (Zeile 30)"
   },
   {
    "id": "V05",
@@ -154,7 +156,23 @@
     13.7805
    ],
    "expect": "error:NoRoute",
-   "note": "Ziel auf nicht angebundenem Weg"
+   "note": "Ziel auf nicht angebundenem Weg; strenges Snapping (minimum_reachability 0, Radius 100 m): Nicht-Verbindung muss gemeldet werden"
+  },
+  {
+   "id": "V08b",
+   "category": "keine_verbindung_standard_snapping",
+   "profile": "auto",
+   "from": [
+    51.009,
+    13.714
+   ],
+   "to": [
+    50.995,
+    13.7805
+   ],
+   "expect": "route",
+   "strict_snapping": false,
+   "note": "GEFAHR: Mit dem Standard-Snapping von Valhalla verbindet die Engine das Ziel stillschweigend mit dem nächsten erreichbaren Netzteil (hier ca. 555 m entfernt) und liefert eine Route statt eines Fehlers"
   }
  ]
 }

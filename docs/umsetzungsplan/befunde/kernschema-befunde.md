@@ -13,7 +13,7 @@ Das Entwurfs-DDL läuft ohne Änderung an den Anweisungen auf einer leeren Daten
 | B-01 | Die Runtime-Rolle konnte eine geschlossene Periode per `UPDATE` wieder öffnen oder verschieben (`closed_at=NULL`, Grenzen ändern). Damit ließe sich `guard_journal()` umgehen. | `V2__haertung_periode.sql`: Trigger `fiscal_period_guard`; Regressionstest `test_05_haertung.py` | behoben |
 | B-02 | Die Runtime-Rolle konnte Name und Status des eigenen Mandanten ändern. | Nur `SELECT` auf `tenant`; Verwaltung des Mandantenstamms über die Plattformverwaltung (M1) | behoben, M1 muss den Verwaltungsweg liefern |
 | B-03 | Die Zeilentrigger lesen `journal` und `fiscal_period` mit `FOR UPDATE` unter Aufruferrechten. Die Runtime braucht deshalb `UPDATE` auf beide Tabellen; ohne `SECURITY DEFINER` lässt sich das nicht enger fassen. | Rechte bleiben; B-01 sperrt den kritischen Missbrauch. Offen: Spalten-`GRANT` auf `journal.state`/`posted_by` prüfen | offen (M4) |
-| B-04 | `service_area_geo` und `stop_geo` sind GiST-Indizes ohne `tenant_id`. Geoabfragen filtern erst nach dem Indexzugriff nach Mandant. | Laufzeitmessung in Spike (a), WP-M0-26; gegebenenfalls `btree_gist` mit `tenant_id` | offen (Messung) |
+| B-04 | `service_area_geo` und `stop_geo` sind GiST-Indizes ohne `tenant_id`. Spike (a) (WP-M0-26, PostgreSQL 16/PostGIS 3.4) zeigt mehr als vermutet: Unter RLS wird der GiST-Index für Bereichsprädikate nicht genutzt, weil die PostGIS-Operatoren nicht leakproof sind; nächste-Nachbar-Suche (KNN) und Gitterzellen funktionieren. | Haltepunktsuche über KNN oder Gitterzelle statt Bereichsprädikat; Entscheidung und Wiederholung auf PostgreSQL 17 in M2 (WP-M2). Bericht: `tests/performance/spikes/` | bestätigt, Folgearbeit M2 |
 | B-05 | Das DDL enthält `BEGIN`, `COMMIT` und `CREATE EXTENSION postgis`. Ein Migrationswerkzeug öffnet die Transaktion selbst, und Erweiterungen braucht Administratorrechte. | Entfernt beziehungsweise im Bootstrap des Administrators; V1 ist sonst zeilengleich, ein Test sichert das | übernommen |
 | B-06 | `DELETE` ist für die Runtime nur auf `idempotency_record`, `inbox`, `outbox`, `journal`, `journal_line` vergeben (Aufräumen, Entwürfe). Das ist ein Vorschlag, im Pflichtenheft nicht festgelegt. | In `role_matrix.csv`; Löschjobs (M8) und Entwurfslöschung fachlich bestätigen | Vorschlag |
 
@@ -25,4 +25,4 @@ Das Entwurfs-DDL läuft ohne Änderung an den Anweisungen auf einer leeren Daten
 
 ## Nicht geprüft
 
-PostgreSQL 17 (CI-Lauf steht aus), Partitionierung, Lastverhalten der Sperrreihenfolge (Spike (a)), Tabellen aus Kap. 04 §4.4.
+PostgreSQL 17 (CI-Lauf steht aus), Partitionierung, Tabellen aus Kap. 04 §4.4. Die Sperrreihenfolge für Hold/Confirm wurde in Spike (a) gemessen: stabile Reihenfolge 0 Deadlocks, ohne sie 3.930; zusätzlicher Index auf `capacity_hold(tenant_id, run_id)` nötig.

@@ -18,8 +18,12 @@ COSTING = {"auto": ("auto", None), "pedestrian": ("pedestrian", None), "wheelcha
 class ValhallaAdapter(RoutingPort):
     name = "valhalla"
 
-    def __init__(self, base_url, data_version, timeout_s=2.0):
+    def __init__(self, base_url, data_version, timeout_s=2.0, strict_snapping=True, snap_radius_m=100):
+        """strict_snapping: Orte werden mit minimum_reachability=0 und festem Radius an die nächste Kante gebunden. Das Standard-Snapping von Valhalla verbindet
+        einen Ort auf einem nicht angebundenen Netzteil stillschweigend mit dem nächsten erreichbaren Netz (gemessen: ca. 555 m entfernt) und liefert eine Route
+        statt eines Fehlers; streng gebunden meldet die Engine dann NoRoute."""
         self.base, self._version, self.timeout = base_url.rstrip("/"), data_version, timeout_s
+        self.strict, self.snap_radius = strict_snapping, snap_radius_m
 
     def data_version(self):
         return self._version
@@ -42,9 +46,11 @@ class ValhallaAdapter(RoutingPort):
             raise ProviderUnavailable(f"HTTP {status}: {msg}")
         return data
 
-    @staticmethod
-    def _loc(p):
-        return {"lat": p[0], "lon": p[1]}
+    def _loc(self, p):
+        d = {"lat": p[0], "lon": p[1]}
+        if self.strict:
+            d.update(minimum_reachability=0, radius=self.snap_radius)
+        return d
 
     def route(self, origin, dest, profile="auto"):
         costing, opts = COSTING[profile]

@@ -22,20 +22,26 @@ def _bin(name):
     return Path(valhalla.PYVALHALLA_DIR) / "bin" / name
 
 
+MATRIX_PAIR_LIMIT = 100_000   # Valhalla-Vorgabe ist 2.500 Ortspaare (max_matrix_location_pairs); für die Messgrößen angehoben (Konfigurationsentscheidung des Betreibers)
+
+
 def build(workdir: Path, grid=None, concurrency=2):
-    """Erzeugt PBF, Konfiguration und Kacheln (idempotent je Arbeitsverzeichnis). -> (config_path, build_seconds, pbf_bytes)."""
+    """Erzeugt PBF, Konfiguration und Kacheln (Kacheln werden je Arbeitsverzeichnis wiederverwendet). -> (config_path, build_seconds, pbf_bytes)."""
     import valhalla
     workdir.mkdir(parents=True, exist_ok=True)
     g = grid or osm_pbf.GRID
     pbf, cfg_path, tiles = workdir / "synthetic.osm.pbf", workdir / "valhalla.json", workdir / "tiles"
-    if cfg_path.exists() and tiles.exists() and any(tiles.rglob("*.gph")):
+    tiles.mkdir(parents=True, exist_ok=True)
+    cfg = valhalla.get_config(tile_extract="", tile_dir=str(tiles), verbose=False)
+    cfg["mjolnir"].update({"admin": "", "timezone": "", "landmarks": "", "concurrency": concurrency, "tile_dir": str(tiles)})
+    cfg["logging"] = {"type": "file", "file_name": str(workdir / "valhalla.log")}
+    for costing in ("auto", "pedestrian"):
+        cfg["service_limits"][costing]["max_matrix_location_pairs"] = MATRIX_PAIR_LIMIT
+    cfg_path.write_text(json.dumps(cfg, indent=1))
+    if pbf.exists() and any(tiles.rglob("*.gph")):
         return cfg_path, 0.0, pbf.stat().st_size
     nodes, ways = osm_pbf.synthetic_network(g)
     size = osm_pbf.write_pbf(pbf, nodes, ways)
-    cfg = valhalla.get_config(tile_dir=str(tiles), verbose=False)
-    cfg["mjolnir"].update({"admin": "", "timezone": "", "landmarks": "", "concurrency": concurrency, "tile_dir": str(tiles)})
-    cfg["logging"] = {"type": "file", "file_name": str(workdir / "valhalla.log")}
-    cfg_path.write_text(json.dumps(cfg, indent=1))
     t = time.perf_counter()
     subprocess.run([str(_bin("valhalla_build_tiles")), "-c", str(cfg_path), str(pbf)], check=True, capture_output=True, text=True)
     return cfg_path, time.perf_counter() - t, size

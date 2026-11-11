@@ -43,12 +43,12 @@ def t_meta(r):
     hw = m["hardware"]
     rows = [("Hardware", f"{hw.get('cpu_model')} · {hw.get('logical_cpus')} logische CPUs · {hw.get('memory_total_mb')} MB RAM · {hw.get('os')}"),
             ("Virtualisierung", hw.get("virtualized")),
-            ("Last auf dem Rechner (Load Average 1/5/15 min)", f"Beginn {', '.join(fmt(x) for x in m['loadavg_start'])} · Ende {', '.join(fmt(x) for x in m['loadavg_end'])} (Rechner wurde mit anderen Arbeiten geteilt)"),
+            ("Last auf dem Rechner (Load Average 1/5/15 min)", f"Beginn {', '.join(fmt(x) for x in m['loadavg_start'])} · Ende {', '.join(fmt(x) for x in m['loadavg_end'])} (enthält die eigenen 100 Verbindungen; auf dem Rechner liefen zugleich Prozesse anderer Arbeiten, z. B. Gradle-Builds)"),
             ("PostgreSQL / PostGIS", f"{pg['version'].split(' on ')[0]} · PostGIS {pg['postgis']}"),
             ("Server-Einstellungen", f"max_connections={pg['max_connections']}, shared_buffers={pg['shared_buffers']}, work_mem={pg['work_mem']}, effective_cache_size={pg['effective_cache_size']}, fsync={pg['fsync']}, synchronous_commit={pg['synchronous_commit']}, deadlock_timeout={pg['deadlock_timeout']}, default_transaction_isolation={pg['default_transaction_isolation']}"),
             ("Verbindungen", f"{m['pool']['connections']} gleichzeitig offene Verbindungen unter der Rolle `{m['pool']['role']}` ({m['pool']['driver']}); Ausführung: {m['pool']['executor']} ({m['pool']['processes']} Prozesse); {m['pool']['note']}"),
             ("Isolationsstufe", "READ COMMITTED (Standard); REPEATABLE READ nur als Vergleichsvariante"),
-            ("Software-Stand", f"{m['software_build']['build_id']} ({m['software_build']['origin']})"),
+            ("Software-Stand", f"{m['software_build']['build_id']} ({m['software_build']['origin']}); Arbeitskopie mit nicht eingecheckten Änderungen"),
             ("Skript, Seed", f"`run_spike_a.py`, Seed {m['seed']}, Laufzeit {m['duration_s']} s, Beginn {m['started_utc']}")]
     return md(rows, ["Messprotokoll", "Wert"])
 
@@ -91,7 +91,7 @@ def t_e3(r):
              f"Verstöße: {sum(v for k, v in rp['counts'].items() if k != 'iterations')}"),
             ("Ablauf gegen Confirm gleichzeitig um den Grenzzeitpunkt (20 Holds je Durchlauf)", c["iterations"], c["holds"],
              f"bestätigt {c.get('confirm_won', 0)}, abgelaufen {c.get('confirm_rejected:HOLD_EXPIRED', 0)}, Verstöße „abgelaufen und gebucht“: {c.get('VIOLATION_expired_and_booked', 0)}, weitere Verstöße: {sum(viol.values()) - c.get('VIOLATION_expired_and_booked', 0)}"),
-            ("Confirm auf Hold mit expires_at = Einfügezeitpunkt", ex["n"], ex["n"], "; ".join(f"{k}: {v}" for k, v in ex["counts"].items()))]
+            ("Confirm auf Hold mit expires_at = Einfügezeitpunkt", ex["n"], ex["n"], "; ".join(f"{k.replace('|', ' / ')}: {v}" for k, v in ex["counts"].items()))]
     return md(rows, ["Fall", "Durchläufe", "Operationen", "Ergebnis"], ["---", "---:", "---:", "---"])
 
 
@@ -155,7 +155,7 @@ def t_rls(r):
 
 def t_geo_plans(r):
     rows = []
-    for phase, label in (("plans_baseline", "Kernschema-Indexe"), ("plans_composite_index", "mit btree_gist (tenant_id, geom)")):
+    for phase, label in (("plans_baseline", "Kernschema-Indexe (+ stop_cell)"), ("plans_composite_index", "zusätzlich btree_gist (tenant_id, geom)")):
         for name, v in r["e6_postgis"][phase].items():
             if not name.endswith("_A"):
                 continue
@@ -166,7 +166,7 @@ def t_geo_plans(r):
 
 def t_geo_lat(r):
     rows = []
-    for phase, label in (("latency_baseline", "Kernschema-Indexe"), ("latency_composite_index", "mit btree_gist (tenant_id, geom)")):
+    for phase, label in (("latency_baseline", "Kernschema-Indexe (+ stop_cell)"), ("latency_composite_index", "zusätzlich btree_gist (tenant_id, geom)")):
         for name, v in r["e6_postgis"][phase].items():
             s, p = v["single_connection"], v["parallel"]
             rows.append((label, name, s["n"], ms(s, "p50_ms"), ms(s), ms(s, "p99_ms"), p["n"], ms(p, "p50_ms"), ms(p), ms(p, "p99_ms"), v["avg_result_rows"], v["errors"]))
@@ -183,6 +183,8 @@ def t_iso(r):
             "c_hold_A_on_B_run": "A: Hold auf dem Lauf von B",
             "c_A_sees_B_holds_rows": "A sieht Holds auf dem Lauf von B (Zeilen)",
             "c_A_distinct_tenant_ids_visible": "verschiedene tenant_id in den für A sichtbaren Holds",
+            "c_A_bookings_of_other_tenants_visible": "für A sichtbare Buchungen anderer Mandanten (Zeilen)",
+            "c_A_bookings_on_B_run_visible": "für A sichtbare Buchungen auf dem Lauf von B (Zeilen)",
             "d_no_context_holds_visible": "ohne Mandantenkontext sichtbare Holds",
             "e_A_stop_foreign_tenant_rows": "Haltepunktzeilen fremder Mandanten für A sichtbar",
             "e_distinct_tenants_of_returned_stops": "verschiedene Mandanten in einer Geoabfrage von A ohne Mandantenbedingung"}

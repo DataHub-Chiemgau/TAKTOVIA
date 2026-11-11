@@ -21,13 +21,13 @@ from perfkit import hardware  # noqa: E402
 from perfkit.stats import summarize  # noqa: E402
 
 
-def run_routes(adapter, catalog):
+def run_routes(adapter, catalog, loose_adapter=None):
     res = {}
     for r in catalog["routes"]:
         rec = {"id": r["id"], "category": r["category"], "profile": r["profile"], "expect": r["expect"]}
         t = time.perf_counter()
         try:
-            x = adapter.route(tuple(r["from"]), tuple(r["to"]), r["profile"])
+            x = (loose_adapter if (r.get("strict_snapping") is False and loose_adapter) else adapter).route(tuple(r["from"]), tuple(r["to"]), r["profile"])
             rec.update(error=None, duration_s=x.duration_s, distance_m=x.distance_m)
         except RoutingError as e:
             rec.update(error=type(e).__name__, duration_s=None, distance_m=None)
@@ -57,7 +57,8 @@ def run_matrix(adapter, actor, reps, seed=1):
     pts = lambda n: [{"lat": round(rnd.uniform(lat0, lat1), 6), "lon": round(rnd.uniform(lon0, lon1), 6)} for _ in range(n)]  # noqa: E731
     out = {}
     for s in spec["sizes"]:
-        n_reps = reps if s["sources"] * s["targets"] <= 25000 else max(5, reps // 4)
+        cells = s["sources"] * s["targets"]
+        n_reps = reps if cells <= 1000 else (max(5, reps // 2) if cells <= 15000 else 3)
         eng, via = [], []
         for _ in range(n_reps):
             a, b = pts(s["sources"]), pts(s["targets"])
@@ -78,6 +79,7 @@ def main(argv=None):
     ap.add_argument("--work", default="/tmp/taktovia-valhalla-work")
     ap.add_argument("--reps", type=int, default=20)
     ap.add_argument("--out", default=str(HERE.parent / "spike-e-data"))
+    ap.add_argument("--routes-only", action="store_true", help="nur die Strecken neu messen und in eine vorhandene Ergebnisdatei übernehmen (Matrix bleibt)")
     a = ap.parse_args(argv)
     import valhalla
     cfg, build_s, pbf_bytes = valhalla_local.build(Path(a.work))
@@ -85,11 +87,22 @@ def main(argv=None):
     app = valhalla_local.serve(actor)
     app.start()
     try:
-        adapter = ValhallaAdapter(app.url, "synthetic-grid-120x120-v1", timeout_s=30)
+        adapter = ValhallaAdapter(app.url, "synthetic-grid-120x120-v1", timeout_s=300)
+        loose = ValhallaAdapter(app.url, "synthetic-grid-120x120-v1", timeout_s=300, strict_snapping=False)
         catalog = json.loads((HERE / "teststrecken-valhalla-synthetisch.json").read_text())
+        if a.routes_only:
+            f = Path(a.out) / "messung-valhalla-synthetisch.json"
+            res = json.loads(f.read_text())
+            res["routes"] = run_routes(adapter, catalog, loose)
+            res["routes_rerun_note"] = "Strecken nach Korrektur des Katalogs (V04) und des Snappings (V08) neu gemessen; Matrixmessung aus dem früheren Lauf"
+            f.write_text(json.dumps(res, indent=1, ensure_ascii=False, sort_keys=True) + "\n")
+            bad = [r["id"] for r in res["routes"] if not r["ok"]]
+            print("->", f)
+            print("Strecken wie erwartet:", len(res["routes"]) - len(bad), "von", len(res["routes"]), ("; abweichend: " + ", ".join(bad)) if bad else "")
+            return 0
         res = {"label": "Valhalla lokal auf synthetischem Gitternetz (Probelauf, kein Anbietervergleich)", "pyvalhalla": getattr(valhalla, "__version__", None) or "3.9.1",
                "python": platform.python_version(), "hardware": hardware.collect(), "network": catalog["network"], "tile_build_s": round(build_s, 2), "pbf_bytes": pbf_bytes,
-               "routes": run_routes(adapter, catalog), "matrix": run_matrix(adapter, actor, a.reps),
+               "routes": run_routes(adapter, catalog, loose), "matrix": run_matrix(adapter, actor, a.reps),
                "limitations": ["künstliches Netz mit ca. 14.400 Knoten, keine reale Region, keine reale Datenqualität", "Engine im selben Prozess, ein Aufruf zur Zeit (keine Parallelität gemessen)",
                                "HTTP-Wrapper statt Valhalla-HTTP-Server", "Lizenz-, Betriebs- und Kostenkriterien nicht bewertet"]}
     finally:

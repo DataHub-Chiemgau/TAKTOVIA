@@ -175,6 +175,7 @@ class Konkurrenz(unittest.TestCase):
         self.assertEqual((o["b_A_select_for_update_on_B_run_rows"], o["b_A_select_B_run_without_tenant_condition_rows"]), (0, 0))
         self.assertEqual(o["c_hold_A_on_B_run"], "REJECTED:UNKNOWN_RUN")
         self.assertEqual((o["c_A_sees_B_holds_rows"], o["c_A_distinct_tenant_ids_visible"], o["d_no_context_holds_visible"]), (0, 1, 0))
+        self.assertEqual((o["c_A_bookings_of_other_tenants_visible"], o["c_A_bookings_on_B_run_visible"]), (0, 0))
         self.assertEqual((o["e_A_stop_foreign_tenant_rows"], o["e_distinct_tenants_of_returned_stops"]), (0, 1))
 
 

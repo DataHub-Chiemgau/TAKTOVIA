@@ -31,6 +31,7 @@ class EchtesValhalla(unittest.TestCase):
         cls.app = valhalla_local.serve(cls.actor)
         cls.app.start()
         cls.ad = ValhallaAdapter(cls.app.url, "synthetic-v1", timeout_s=20)
+        cls.loose = ValhallaAdapter(cls.app.url, "synthetic-v1", timeout_s=20, strict_snapping=False)
         cls.catalog = json.loads((HERE / "teststrecken-valhalla-synthetisch.json").read_text())
 
     @classmethod
@@ -38,20 +39,23 @@ class EchtesValhalla(unittest.TestCase):
         cls.app.stop()
 
     def test_alle_konstruierten_strecken_wie_erwartet(self):
-        res = measure_valhalla.run_routes(self.ad, self.catalog)
+        res = measure_valhalla.run_routes(self.ad, self.catalog, self.loose)
         self.assertEqual([r["id"] for r in res if not r["ok"]], [], res)
 
     def test_profile_rollstuhl_meidet_treppe(self):
-        res = {r["id"]: r for r in measure_valhalla.run_routes(self.ad, self.catalog)}
+        res = {r["id"]: r for r in measure_valhalla.run_routes(self.ad, self.catalog, self.loose)}
         self.assertLess(res["V06a"]["distance_m"], 150)             # Fußgänger nehmen die Treppe (ca. 100 m)
         self.assertGreater(res["V06b"]["distance_m"], 250)          # Rollstuhl: Umweg über die Straße
-        self.assertGreater(res["V04b"]["duration_s"], res["V04a"]["duration_s"])
+        self.assertGreater(res["V04b"]["distance_m"], 2 * res["V04a"]["distance_m"])        # gegen die Einbahnrichtung: Umweg
+        self.assertIsNone(res["V08b"]["error"])                          # Standard-Snapping: stille Route statt Fehler (Gefahr)
+        self.assertEqual(res["V08"]["error"], "NoRoute")                 # strenges Snapping meldet die Nicht-Verbindung
 
     def test_fehlercodes_der_echten_api(self):
         with self.assertRaises(OutOfCoverage):
             self.ad.route((51.05, 13.78), (52.52, 13.40))
         with self.assertRaises(NoRoute):
             self.ad.route((51.01, 13.71), (50.995, 13.7805))
+        self.assertGreater(self.loose.route((51.01, 13.71), (50.995, 13.7805)).distance_m, 5000)   # Standard-Snapping: Route zum Gitter statt Fehler
 
     def test_matrix_form_und_unerreichbare_zellen(self):
         m = self.ad.matrix([(51.01, 13.71), (51.02, 13.72)], [(51.03, 13.73), (51.04, 13.74), (51.05, 13.75)], "auto")

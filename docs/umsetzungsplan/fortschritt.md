@@ -17,7 +17,35 @@ Stand 11.11.2026. Ein WP gilt nur als umgesetzt, wenn die unter „Tests“ gena
 | WP-M0-02 Backend-Gerüst | umgesetzt | `backend/` (20 Teilprojekte, Wrapper mit Prüfsumme, Lockfiles); `./gradlew build` auch mit `--offline` grün; `BackendStartTest` (Health UP, Runtime-Rolle, Guard weist Migrator/Admin ab) |
 | WP-M0-03 Architekturtest Modulgrenzen | umgesetzt | `ArchitectureRules`/`ArchitectureTest` (grün), `ArchitectureRulesSelfTest` (5 rote Selbsttests), `TableOwnershipTest`, `db/table_owners.csv`, `leitlinien-pruefung.md` |
 | WP-M0-01 Repository und Versionen | teilweise | Verzeichnisse, READMEs, CODEOWNERS, CONTRIBUTING, `check_repo.py`; Versionsmatrix mit 9 Bausteinen noch `offen` (siehe `versionen.md`); Branch-Schutz nur in den Repository-Einstellungen möglich |
-| übrige M0-WPs | offen | – |
+| WP-M0-04 API-Verzeichnis | umgesetzt | `api/` (6 Bereiche + common), `api/tools/{bundle,lint,breaking,test_api}.py`, 18 Tests; Bündel kompatibel zum Ausgangsstand |
+| WP-M0-05 Web-Gerüst | umgesetzt (Node 22; Node 24 offen) | `web/`: `npm ci && lint && test && build` grün, 8 Tests; TypeScript 6.0.3 statt 7.0.2 (typescript-eslint-Grenze) |
+| WP-M0-06 Mobile-Gerüst | **nicht ausgeführt** | Dateien in `mobile/`; Flutter-SDK geladen, Start durch die Sitzung nicht erlaubt; kein analyze/test/pub get |
+| WP-M0-07 Worker-Gerüst | teilweise | `workers/`: ruff, mypy strict, 19 + 5 Tests grün; Container-Build nicht ausgeführt (kein Docker) |
+| WP-M0-08 bis -11, -35 Infrastruktur | teilweise, nur statisch geprüft | `infra/`: `check.py` grün; Dienste, Keycloak-Import, terraform nicht ausgeführt; MinIO/Valhalla-Images als Platzhalter |
+| WP-M0-12 CI Build/Test | angelegt, nicht gelaufen | `.github/workflows/ci.yml` (repository, vertraege, datenbank, backend, web, workers, mobile) |
+| WP-M0-13 CI Vertragsprüfung | umgesetzt (lokal), CI nicht gelaufen | API-Lint/Bündelung/Breaking-Prüfung, 12 Contract-Fälle als Skip-Tests |
+| WP-M0-14 CI Lieferkette | angelegt, nicht ausgeführt | Job `lieferkette` (Secret-Scan, OSV); SBOM und Image-Signatur fehlen (kein Docker) |
+| WP-M0-22 Akzeptanzgerüst | umgesetzt | `tests/acceptance`: 29 Tests, Rauchtest PASSED |
+| WP-M0-23 PSP-Simulator | umgesetzt | `tests/sandbox/psp`: 38 Tests |
+| WP-M0-24 Sandbox-Partner | umgesetzt | `tests/sandbox/partner`: 37 Tests |
+| WP-M0-25 Performance-Gerüst | umgesetzt | `tests/performance`: 22 Tests |
+| WP-M0-26 Spike (a) | umgesetzt (PostgreSQL 16) | `tests/performance/spikes/`: 1.000 × PH-AT-004 mit genau einer Bestätigung; 0 Deadlocks mit stabiler Sperrreihenfolge; p95 ≤ 561 ms bei 100 Parallelen; Befund B-04 bestätigt |
+| WP-M0-27 Spike (b) | umgesetzt | `workers/routing/docs/spike-b-solver.md`: Referenzinstanz p95 1,64 ms, 0 Verletzungen; Matrixlatenz nicht gemessen |
+| WP-M0-28 Spike (c) | **nicht ausgeführt** | Offline-Queue-Logik als Dart-Dateien, keine Tests gelaufen, keine Geräte |
+| WP-M0-29 Spike (d) | nicht ausführbar | nur Simulator-Konformität (14 bestanden); kein PSP-Kandidat/Zugang |
+| WP-M0-30 Spike (e) | teilweise | Probelauf gegen Referenzimplementierung; Anbietervergleich ohne zweite Variante/reale Daten nicht ausführbar |
+| WP-M0-31 Detailvertragsprozess | umgesetzt | `vertragsprozess.md`, Vorlagen, 3 Probeverträge, danach alle 202 P1-Verträge |
+| WP-M0-32 Nachverfolgungs-CI | umgesetzt (lokal) | `check_tracking.py` (12 Tests), `tools/transfer_evidence.py` (7 Tests inkl. Parallelität), `gate_report.py` |
+| WP-M0-33 Abstimmung mit dem Auftraggeber | **offen, Beistellung** | braucht den Auftraggeber (Umfang, Testzuordnung, D-12, D-05) |
+| WP-M0-34 Gate-Bericht M0 | offen | hängt an WP-M0-33, Gate-Abnahme durch den Auftraggeber |
+
+## Phase 1, Meilenstein M1 (Plattformkern)
+
+| Stand | Inhalt |
+|---|---|
+| WP-M1-01 umgesetzt | Tenantkontext (`TenantTransactions`), V3, DB-Konventionstests; `LH-I.4-MUL-001`, `LH-6.18-SEC-001` |
+| Detailverträge | alle 202 P1-Anforderungen: 189 Bereit, 11 Vertrag in Arbeit (offene Fachfragen) |
+| Weitere WPs | in Umsetzung (siehe Git-Verlauf) |
 
 Abweichungen vom Plan:
 - Die Datenbankprüfung (Rollen, Migration, RLS, Trigger) bleibt vorerst in Python; Flyway und Testcontainers sind im Gradle-Projekt nicht eingebunden, weil in der Entwicklungsumgebung kein Docker läuft. Die JVM-Tests verwenden eine vorhandene Datenbank (Umgebung oder CI-Service).

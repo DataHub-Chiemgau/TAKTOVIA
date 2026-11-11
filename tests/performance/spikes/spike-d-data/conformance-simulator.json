@@ -1,0 +1,155 @@
+{
+ "is_simulator": true,
+ "label": "psp-simulator",
+ "latency_ms": {
+  "authorize": {
+   "max_ms": 4.486,
+   "mean_ms": 1.531,
+   "min_ms": 0.703,
+   "n": 30,
+   "p50_ms": 1.046,
+   "p90_ms": 3.229,
+   "p95_ms": 3.575,
+   "p99_ms": 4.486
+  },
+  "capture": {
+   "max_ms": 4.228,
+   "mean_ms": 1.349,
+   "min_ms": 0.633,
+   "n": 30,
+   "p50_ms": 1.085,
+   "p90_ms": 1.895,
+   "p95_ms": 3.836,
+   "p99_ms": 4.228
+  },
+  "refund": {
+   "max_ms": 7.745,
+   "mean_ms": 2.122,
+   "min_ms": 0.807,
+   "n": 30,
+   "p50_ms": 1.342,
+   "p90_ms": 3.832,
+   "p95_ms": 4.872,
+   "p99_ms": 7.745
+  },
+  "status": {
+   "max_ms": 4.11,
+   "mean_ms": 1.372,
+   "min_ms": 0.63,
+   "n": 30,
+   "p50_ms": 0.971,
+   "p90_ms": 2.385,
+   "p95_ms": 4.071,
+   "p99_ms": 4.11
+  }
+ },
+ "limitations": [
+  "Simulator-Ergebnis (Loopback), kein PSP-Nachweis"
+ ],
+ "results": [
+  {
+   "description": "Authorize -> Capture (Teilbetrag) -> Teil-Refund -> Status über Händlerreferenz",
+   "detail": "",
+   "duration_ms": 8.5,
+   "id": "C1",
+   "ok": true
+  },
+  {
+   "description": "Authorize -> Void",
+   "detail": "",
+   "duration_ms": 3.0,
+   "id": "C2",
+   "ok": true
+  },
+  {
+   "description": "Negativ: Capture über Autorisierung, Refund über Capture/ohne Capture, abgelehntes Testzahlungsmittel",
+   "detail": "",
+   "duration_ms": 19.1,
+   "id": "C3",
+   "ok": true
+  },
+  {
+   "description": "Idempotenzschlüssel mit abweichendem Request wird abgewiesen",
+   "detail": "",
+   "duration_ms": 2.7,
+   "id": "C6",
+   "ok": true
+  },
+  {
+   "description": "authorize: Antwort verloren -> Status zeigt Wirkung, Wiederholung ohne zweite Wirkung",
+   "detail": "Wiederholung replayed=True",
+   "duration_ms": 7.1,
+   "id": "C4-authorize-lost",
+   "ok": true
+  },
+  {
+   "description": "authorize: Timeout ohne Wirkung -> Status zeigt keine Wirkung, Wiederholung wirkt genau einmal",
+   "detail": "Wiederholung replayed=False",
+   "duration_ms": 9.7,
+   "id": "C4-authorize-timeout",
+   "ok": true
+  },
+  {
+   "description": "capture: Antwort verloren -> Status zeigt Wirkung, Wiederholung ohne zweite Wirkung",
+   "detail": "",
+   "duration_ms": 5.3,
+   "id": "C4-capture-lost",
+   "ok": true
+  },
+  {
+   "description": "capture: Timeout ohne Wirkung -> Status zeigt keine Wirkung, Wiederholung wirkt genau einmal",
+   "detail": "",
+   "duration_ms": 15.0,
+   "id": "C4-capture-timeout",
+   "ok": true
+  },
+  {
+   "description": "void: Antwort verloren -> Status zeigt Wirkung, Wiederholung ohne zweite Wirkung",
+   "detail": "",
+   "duration_ms": 7.7,
+   "id": "C4-void-lost",
+   "ok": true
+  },
+  {
+   "description": "void: Timeout ohne Wirkung -> Status zeigt keine Wirkung, Wiederholung wirkt genau einmal",
+   "detail": "",
+   "duration_ms": 9.0,
+   "id": "C4-void-timeout",
+   "ok": true
+  },
+  {
+   "description": "refund: Antwort verloren -> Status zeigt Wirkung, Wiederholung ohne zweite Wirkung",
+   "detail": "",
+   "duration_ms": 13.8,
+   "id": "C4-refund-lost",
+   "ok": true
+  },
+  {
+   "description": "refund: Timeout ohne Wirkung -> Status zeigt keine Wirkung, Wiederholung wirkt genau einmal",
+   "detail": "",
+   "duration_ms": 8.7,
+   "id": "C4-refund-timeout",
+   "ok": true
+  },
+  {
+   "description": "Zwei gleichzeitige Capture-Aufrufe mit gleichem Schlüssel: genau eine Erfassung",
+   "detail": "",
+   "duration_ms": 6.2,
+   "id": "C5a",
+   "ok": true
+  },
+  {
+   "description": "Fünffach zugestellte Benachrichtigung mit gültiger Signatur: eine Wirkung nach Deduplikation (event_id)",
+   "detail": "",
+   "duration_ms": 74.2,
+   "id": "C5b",
+   "ok": true
+  }
+ ],
+ "summary": {
+  "failed": 0,
+  "not_run": 0,
+  "ok": 14
+ },
+ "target": "psp-simulator"
+}

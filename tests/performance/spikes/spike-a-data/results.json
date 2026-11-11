@@ -1,0 +1,3243 @@
+{
+ "e0_overhead_select1": {
+  "executor": "processes",
+  "latency_ms": {
+   "max_ms": 49.536,
+   "mean_ms": 6.389,
+   "min_ms": 0.042,
+   "n": 10000,
+   "p50_ms": 4.339,
+   "p90_ms": 14.092,
+   "p95_ms": 18.326,
+   "p99_ms": 28.988
+  },
+  "parallel": 100
+ },
+ "e1_primary": {
+  "counts": {
+   "deadlocks": 0,
+   "outcome:CONFIRMED": 1000,
+   "outcome:REJECTED:NO_CAPACITY_SEATS": 99000,
+   "serialization_failures": 0
+  },
+  "iterations": 1000,
+  "latency_ms": {
+   "max_ms": 732.882,
+   "mean_ms": 273.663,
+   "min_ms": 8.152,
+   "n": 100000,
+   "p50_ms": 272.129,
+   "p90_ms": 463.435,
+   "p95_ms": 492.916,
+   "p99_ms": 545.039
+  },
+  "lock_wait_ms": {
+   "max_ms": 698.969,
+   "mean_ms": 254.503,
+   "min_ms": 0.428,
+   "n": 100000,
+   "p50_ms": 253.161,
+   "p90_ms": 436.666,
+   "p95_ms": 464.905,
+   "p99_ms": 513.731
+  },
+  "mode": "seat",
+  "requests_per_iteration": 100,
+  "requests_total": 100000,
+  "strategy": "rc_run_row"
+ },
+ "e1_variants": {
+  "rc_advisory": {
+   "counts": {
+    "deadlocks": 0,
+    "outcome:CONFIRMED": 200,
+    "outcome:REJECTED:NO_CAPACITY_SEATS": 19800,
+    "serialization_failures": 0
+   },
+   "iterations": 200,
+   "latency_ms": {
+    "max_ms": 741.373,
+    "mean_ms": 319.393,
+    "min_ms": 16.122,
+    "n": 20000,
+    "p50_ms": 319.595,
+    "p90_ms": 547.59,
+    "p95_ms": 577.491,
+    "p99_ms": 621.176
+   },
+   "lock_wait_ms": {
+    "max_ms": 697.88,
+    "mean_ms": 301.093,
+    "min_ms": 5.876,
+    "n": 20000,
+    "p50_ms": 302.111,
+    "p90_ms": 524.541,
+    "p95_ms": 553.154,
+    "p99_ms": 594.473
+   },
+   "mode": "seat",
+   "requests_per_iteration": 100,
+   "requests_total": 20000,
+   "strategy": "rc_advisory"
+  },
+  "rc_none": {
+   "counts": {
+    "deadlocks": 0,
+    "iterations_capacity_violation": 100,
+    "iterations_overbooked": 100,
+    "outcome:CONFIRMED": 2328,
+    "outcome:REJECTED:NO_CAPACITY_SEATS": 7672,
+    "serialization_failures": 0
+   },
+   "iterations": 100,
+   "latency_ms": {
+    "max_ms": 275.977,
+    "mean_ms": 134.89,
+    "min_ms": 4.125,
+    "n": 10000,
+    "p50_ms": 138.377,
+    "p90_ms": 184.792,
+    "p95_ms": 200.405,
+    "p99_ms": 229.222
+   },
+   "lock_wait_ms": {
+    "max_ms": 186.216,
+    "mean_ms": 20.53,
+    "min_ms": 0.247,
+    "n": 10000,
+    "p50_ms": 11.64,
+    "p90_ms": 53.22,
+    "p95_ms": 72.066,
+    "p99_ms": 105.852
+   },
+   "mode": "seat",
+   "requests_per_iteration": 100,
+   "requests_total": 10000,
+   "strategy": "rc_none"
+  },
+  "rr_run_row": {
+   "counts": {
+    "deadlocks": 0,
+    "iterations_capacity_violation": 100,
+    "iterations_overbooked": 100,
+    "outcome:CONFIRMED": 9667,
+    "outcome:REJECTED:NO_CAPACITY_SEATS": 333,
+    "serialization_failures": 0
+   },
+   "iterations": 100,
+   "latency_ms": {
+    "max_ms": 1306.197,
+    "mean_ms": 934.853,
+    "min_ms": 22.588,
+    "n": 10000,
+    "p50_ms": 933.346,
+    "p90_ms": 1099.745,
+    "p95_ms": 1139.72,
+    "p99_ms": 1208.87
+   },
+   "lock_wait_ms": {
+    "max_ms": 1270.309,
+    "mean_ms": 908.915,
+    "min_ms": 0.443,
+    "n": 10000,
+    "p50_ms": 907.781,
+    "p90_ms": 1067.756,
+    "p95_ms": 1104.914,
+    "p99_ms": 1170.914
+   },
+   "mode": "seat",
+   "requests_per_iteration": 100,
+   "requests_total": 10000,
+   "strategy": "rr_run_row"
+  },
+  "rr_touch": {
+   "counts": {
+    "deadlocks": 0,
+    "outcome:CONFIRMED": 200,
+    "outcome:REJECTED:NO_CAPACITY_SEATS": 19800,
+    "serialization_failures": 0
+   },
+   "iterations": 200,
+   "latency_ms": {
+    "max_ms": 761.033,
+    "mean_ms": 353.249,
+    "min_ms": 20.826,
+    "n": 20000,
+    "p50_ms": 353.08,
+    "p90_ms": 584.819,
+    "p95_ms": 618.38,
+    "p99_ms": 666.121
+   },
+   "lock_wait_ms": {
+    "max_ms": 631.077,
+    "mean_ms": 256.496,
+    "min_ms": 0.554,
+    "n": 20000,
+    "p50_ms": 244.605,
+    "p90_ms": 482.593,
+    "p95_ms": 520.808,
+    "p99_ms": 570.175
+   },
+   "mode": "seat",
+   "requests_per_iteration": 100,
+   "requests_total": 20000,
+   "strategy": "rr_touch"
+  }
+ },
+ "e2_revision_after_hold": {
+  "confirm_requests": 5000,
+  "counts": {
+   "REJECTED:REVISION_CONFLICT": 5000,
+   "bookings": 0
+  },
+  "iterations": 50,
+  "strategy": "rc_run_row"
+ },
+ "e2_revision_before": {
+  "counts": {
+   "deadlocks": 0,
+   "outcome:REJECTED:REVISION_CONFLICT": 5000,
+   "serialization_failures": 0
+  },
+  "iterations": 50,
+  "latency_ms": {
+   "max_ms": 215.796,
+   "mean_ms": 78.948,
+   "min_ms": 1.491,
+   "n": 5000,
+   "p50_ms": 77.33,
+   "p90_ms": 122.619,
+   "p95_ms": 133.336,
+   "p99_ms": 168.673
+  },
+  "lock_wait_ms": {
+   "max_ms": 183.069,
+   "mean_ms": 63.4,
+   "min_ms": 0.52,
+   "n": 5000,
+   "p50_ms": 62.501,
+   "p90_ms": 98.147,
+   "p95_ms": 106.366,
+   "p99_ms": 143.976
+  },
+  "mode": "revision",
+  "requests_per_iteration": 100,
+  "requests_total": 5000,
+  "strategy": "rc_run_row"
+ },
+ "e2_wheelchair": {
+  "counts": {
+   "deadlocks": 0,
+   "outcome:CONFIRMED": 100,
+   "outcome:REJECTED:NO_CAPACITY_SEATS": 4900,
+   "outcome:REJECTED:NO_CAPACITY_WHEELCHAIR": 5000,
+   "serialization_failures": 0
+  },
+  "iterations": 100,
+  "latency_ms": {
+   "max_ms": 963.013,
+   "mean_ms": 398.776,
+   "min_ms": 14.745,
+   "n": 10000,
+   "p50_ms": 394.721,
+   "p90_ms": 676.699,
+   "p95_ms": 733.115,
+   "p99_ms": 852.33
+  },
+  "lock_wait_ms": {
+   "max_ms": 935.442,
+   "mean_ms": 375.971,
+   "min_ms": 0.63,
+   "n": 10000,
+   "p50_ms": 372.953,
+   "p90_ms": 645.877,
+   "p95_ms": 700.679,
+   "p99_ms": 812.829
+  },
+  "mode": "wheelchair",
+  "requests_per_iteration": 100,
+  "requests_total": 10000,
+  "strategy": "rc_run_row"
+ },
+ "e3_boundary_race": {
+  "counts": {
+   "confirm_rejected:HOLD_EXPIRED": 4950,
+   "confirm_won": 1050,
+   "holds": 6000,
+   "iterations": 300
+  },
+  "holds_per_iteration": 20,
+  "strategy": "rc_run_row"
+ },
+ "e3_expired_exact": {
+  "counts": {
+   "REJECTED:HOLD_EXPIRED|state=EXPIRED|bookings=0": 50
+  },
+  "n": 50,
+  "strategy": "rc_run_row"
+ },
+ "e3_replay": {
+  "counts": {
+   "deadlocks": 0,
+   "iterations": 100,
+   "iterations_booking_rows_not_one": 0,
+   "iterations_not_exactly_one_fresh_confirm": 0,
+   "iterations_with_distinct_booking_ids": 0,
+   "not_confirmed_outcomes": 0
+  },
+  "parallel_confirms_per_iteration": 100,
+  "strategy": "rc_run_row"
+ },
+ "e4_deadlock": {
+  "rc_advisory": {
+   "counts": {
+    "CONFIRMED": 200,
+    "REJECTED:NO_CAPACITY_SEATS": 4800,
+    "deadlocks": 0,
+    "iteration_wall_s_total_x1000": 47084,
+    "iterations": 50
+   },
+   "iterations": 50,
+   "latency_ms": {
+    "max_ms": 1111.283,
+    "mean_ms": 513.713,
+    "min_ms": 83.812,
+    "n": 5000,
+    "p50_ms": 509.2,
+    "p90_ms": 846.87,
+    "p95_ms": 895.259,
+    "p99_ms": 981.291
+   },
+   "requests_total": 5000,
+   "strategy": "rc_advisory"
+  },
+  "rc_advisory_naive": {
+   "counts": {
+    "CONFIRMED": 39,
+    "ERROR:DEADLOCK": 1960,
+    "REJECTED:NO_CAPACITY_SEATS": 1,
+    "deadlocks": 1960,
+    "iteration_wall_s_total_x1000": 29820,
+    "iterations": 20
+   },
+   "iterations": 20,
+   "latency_ms": {
+    "max_ms": 9129.627,
+    "mean_ms": 1041.273,
+    "min_ms": 1000.976,
+    "n": 2000,
+    "p50_ms": 1015.249,
+    "p90_ms": 1028.172,
+    "p95_ms": 1033.325,
+    "p99_ms": 1085.207
+   },
+   "requests_total": 2000,
+   "strategy": "rc_advisory_naive"
+  },
+  "rc_run_row": {
+   "counts": {
+    "CONFIRMED": 200,
+    "REJECTED:NO_CAPACITY_SEATS": 4800,
+    "deadlocks": 0,
+    "iteration_wall_s_total_x1000": 47362,
+    "iterations": 50
+   },
+   "iterations": 50,
+   "latency_ms": {
+    "max_ms": 1061.686,
+    "mean_ms": 529.156,
+    "min_ms": 80.424,
+    "n": 5000,
+    "p50_ms": 529.118,
+    "p90_ms": 860.127,
+    "p95_ms": 911.859,
+    "p99_ms": 980.902
+   },
+   "requests_total": 5000,
+   "strategy": "rc_run_row"
+  },
+  "rc_run_row_naive": {
+   "counts": {
+    "CONFIRMED": 27,
+    "ERROR:DEADLOCK": 1970,
+    "REJECTED:NO_CAPACITY_SEATS": 3,
+    "deadlocks": 1970,
+    "iteration_wall_s_total_x1000": 273022,
+    "iterations": 20
+   },
+   "iterations": 20,
+   "latency_ms": {
+    "max_ms": 50119.723,
+    "mean_ms": 4871.865,
+    "min_ms": 1000.88,
+    "n": 2000,
+    "p50_ms": 1022.251,
+    "p90_ms": 17034.441,
+    "p95_ms": 30058.745,
+    "p99_ms": 45044.901
+   },
+   "requests_total": 2000,
+   "strategy": "rc_run_row_naive"
+  }
+ },
+ "e5": {
+  "baseline_kernschema_indexes": {
+   "hot5": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 751.913,
+     "mean_ms": 179.585,
+     "min_ms": 6.417,
+     "n": 9689,
+     "p50_ms": 150.436,
+     "p90_ms": 377.359,
+     "p95_ms": 442.594,
+     "p99_ms": 564.284
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 707.747,
+       "mean_ms": 142.218,
+       "min_ms": 0.199,
+       "n": 9689,
+       "p50_ms": 107.723,
+       "p90_ms": 345.961,
+       "p95_ms": 409.892,
+       "p99_ms": 542.309
+      },
+      "outcomes": {
+       "CONFIRMED": 9689
+      },
+      "total_ms": {
+       "max_ms": 710.774,
+       "mean_ms": 154.708,
+       "min_ms": 1.382,
+       "n": 9689,
+       "p50_ms": 121.376,
+       "p90_ms": 360.344,
+       "p95_ms": 423.744,
+       "p99_ms": 556.879
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 707.324,
+       "mean_ms": 151.005,
+       "min_ms": 0.228,
+       "n": 9689,
+       "p50_ms": 120.136,
+       "p90_ms": 351.638,
+       "p95_ms": 416.612,
+       "p99_ms": 552.614
+      },
+      "outcomes": {
+       "CONFIRMED": 9689
+      },
+      "total_ms": {
+       "max_ms": 728.725,
+       "mean_ms": 166.632,
+       "min_ms": 1.745,
+       "n": 9689,
+       "p50_ms": 136.015,
+       "p90_ms": 369.198,
+       "p95_ms": 434.684,
+       "p99_ms": 569.826
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 731.469,
+       "mean_ms": 153.315,
+       "min_ms": 0.273,
+       "n": 10000,
+       "p50_ms": 123.172,
+       "p90_ms": 352.24,
+       "p95_ms": 416.147,
+       "p99_ms": 541.698
+      },
+      "outcomes": {
+       "HELD": 9689,
+       "REJECTED:NO_CAPACITY_SEATS": 226,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 85
+      },
+      "total_ms": {
+       "max_ms": 751.913,
+       "mean_ms": 182.697,
+       "min_ms": 6.417,
+       "n": 10000,
+       "p50_ms": 154.033,
+       "p90_ms": 383.461,
+       "p95_ms": 446.896,
+       "p99_ms": 573.835
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "hot5",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 572.6,
+    "transactions": 29378,
+    "wall_s": 51.31,
+    "worker_exceptions": []
+   },
+   "occupancy_plan_run_A": {
+    "execution_ms": 4.543,
+    "indexes_used": [],
+    "nodes": [
+     "Aggregate",
+     "Sort",
+     "Nested Loop",
+     "Function Scan",
+     "Materialize",
+     "Result",
+     "Seq Scan"
+    ],
+    "planning_ms": 0.147,
+    "scans": [
+     {
+      "filter": "((tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid) AND (run_id = 'a57a4982-3fce-ab9d-96a6-3d456c566c89'::uuid) AND ((state = 'CONSUMED'::text) OR ((state = 'HELD'::text) AND (expires_at > clock_timestamp()))))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Seq Scan",
+      "relation": "capacity_hold",
+      "removed_by_filter": 56110,
+      "removed_by_index_recheck": null,
+      "rows": 57
+     }
+    ],
+    "shared_hit": 1479,
+    "shared_read": 0
+   },
+   "single": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 732.603,
+     "mean_ms": 345.635,
+     "min_ms": 8.065,
+     "n": 7665,
+     "p50_ms": 334.567,
+     "p90_ms": 501.368,
+     "p95_ms": 559.784,
+     "p99_ms": 635.411
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 711.788,
+       "mean_ms": 332.831,
+       "min_ms": 0.235,
+       "n": 7665,
+       "p50_ms": 322.642,
+       "p90_ms": 481.121,
+       "p95_ms": 540.49,
+       "p99_ms": 609.637
+      },
+      "outcomes": {
+       "CONFIRMED": 7665
+      },
+      "total_ms": {
+       "max_ms": 719.941,
+       "mean_ms": 336.824,
+       "min_ms": 1.741,
+       "n": 7665,
+       "p50_ms": 326.118,
+       "p90_ms": 487.482,
+       "p95_ms": 547.618,
+       "p99_ms": 617.82
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 701.717,
+       "mean_ms": 339.19,
+       "min_ms": 0.247,
+       "n": 7665,
+       "p50_ms": 325.001,
+       "p90_ms": 495.403,
+       "p95_ms": 546.739,
+       "p99_ms": 627.685
+      },
+      "outcomes": {
+       "CONFIRMED": 7665
+      },
+      "total_ms": {
+       "max_ms": 706.512,
+       "mean_ms": 344.188,
+       "min_ms": 2.212,
+       "n": 7665,
+       "p50_ms": 329.429,
+       "p90_ms": 502.882,
+       "p95_ms": 553.83,
+       "p99_ms": 636.714
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 714.011,
+       "mean_ms": 334.706,
+       "min_ms": 0.275,
+       "n": 10000,
+       "p50_ms": 323.542,
+       "p90_ms": 486.326,
+       "p95_ms": 542.868,
+       "p99_ms": 621.623
+      },
+      "outcomes": {
+       "HELD": 7665,
+       "REJECTED:NO_CAPACITY_SEATS": 2227,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 108
+      },
+      "total_ms": {
+       "max_ms": 732.603,
+       "mean_ms": 347.943,
+       "min_ms": 7.49,
+       "n": 10000,
+       "p50_ms": 335.738,
+       "p90_ms": 503.375,
+       "p95_ms": 561.255,
+       "p99_ms": 635.488
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "single",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 285.5,
+    "transactions": 25330,
+    "wall_s": 88.715,
+    "worker_exceptions": []
+   },
+   "spread": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 695.845,
+     "mean_ms": 147.969,
+     "min_ms": 10.349,
+     "n": 9922,
+     "p50_ms": 138.19,
+     "p90_ms": 228.506,
+     "p95_ms": 262.142,
+     "p99_ms": 348.36
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 417.594,
+       "mean_ms": 21.046,
+       "min_ms": 0.227,
+       "n": 9922,
+       "p50_ms": 5.075,
+       "p90_ms": 60.458,
+       "p95_ms": 103.295,
+       "p99_ms": 195.843
+      },
+      "outcomes": {
+       "CONFIRMED": 9922
+      },
+      "total_ms": {
+       "max_ms": 533.341,
+       "mean_ms": 97.741,
+       "min_ms": 1.761,
+       "n": 9922,
+       "p50_ms": 86.047,
+       "p90_ms": 176.998,
+       "p95_ms": 214.377,
+       "p99_ms": 303.464
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 425.65,
+       "mean_ms": 22.624,
+       "min_ms": 0.238,
+       "n": 9922,
+       "p50_ms": 5.5,
+       "p90_ms": 69.034,
+       "p95_ms": 112.528,
+       "p99_ms": 201.776
+      },
+      "outcomes": {
+       "CONFIRMED": 9922
+      },
+      "total_ms": {
+       "max_ms": 604.221,
+       "mean_ms": 119.495,
+       "min_ms": 2.139,
+       "n": 9922,
+       "p50_ms": 107.146,
+       "p90_ms": 210.857,
+       "p95_ms": 251.425,
+       "p99_ms": 346.71
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 377.239,
+       "mean_ms": 15.83,
+       "min_ms": 0.272,
+       "n": 10000,
+       "p50_ms": 3.164,
+       "p90_ms": 43.001,
+       "p95_ms": 77.807,
+       "p99_ms": 166.016
+      },
+      "outcomes": {
+       "HELD": 9922,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 78
+      },
+      "total_ms": {
+       "max_ms": 695.845,
+       "mean_ms": 147.764,
+       "min_ms": 10.349,
+       "n": 10000,
+       "p50_ms": 138.084,
+       "p90_ms": 228.381,
+       "p95_ms": 262.102,
+       "p99_ms": 347.999
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "spread",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 801.8,
+    "transactions": 29844,
+    "wall_s": 37.222,
+    "worker_exceptions": []
+   },
+   "spread_paced300ms": {
+    "cycles_completed": 3300,
+    "cycles_per_worker": 33,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 441.524,
+     "mean_ms": 175.462,
+     "min_ms": 10.208,
+     "n": 3279,
+     "p50_ms": 186.292,
+     "p90_ms": 265.444,
+     "p95_ms": 293.267,
+     "p99_ms": 343.034
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 235.868,
+       "mean_ms": 6.128,
+       "min_ms": 0.233,
+       "n": 3279,
+       "p50_ms": 1.993,
+       "p90_ms": 15.25,
+       "p95_ms": 23.737,
+       "p99_ms": 59.979
+      },
+      "outcomes": {
+       "CONFIRMED": 3279
+      },
+      "total_ms": {
+       "max_ms": 293.346,
+       "mean_ms": 37.338,
+       "min_ms": 1.386,
+       "n": 3279,
+       "p50_ms": 29.766,
+       "p90_ms": 76.181,
+       "p95_ms": 93.271,
+       "p99_ms": 153.151
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 222.811,
+       "mean_ms": 13.313,
+       "min_ms": 0.245,
+       "n": 3279,
+       "p50_ms": 3.67,
+       "p90_ms": 35.985,
+       "p95_ms": 63.453,
+       "p99_ms": 119.306
+      },
+      "outcomes": {
+       "CONFIRMED": 3279
+      },
+      "total_ms": {
+       "max_ms": 306.013,
+       "mean_ms": 76.208,
+       "min_ms": 1.933,
+       "n": 3279,
+       "p50_ms": 69.221,
+       "p90_ms": 146.869,
+       "p95_ms": 176.003,
+       "p99_ms": 231.036
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 361.728,
+       "mean_ms": 16.555,
+       "min_ms": 0.286,
+       "n": 3300,
+       "p50_ms": 1.78,
+       "p90_ms": 43.331,
+       "p95_ms": 100.008,
+       "p99_ms": 197.234
+      },
+      "outcomes": {
+       "HELD": 3279,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 21
+      },
+      "total_ms": {
+       "max_ms": 441.524,
+       "mean_ms": 175.2,
+       "min_ms": 10.208,
+       "n": 3300,
+       "p50_ms": 185.858,
+       "p90_ms": 265.192,
+       "p95_ms": 292.737,
+       "p99_ms": 340.299
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "spread",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 300,
+    "throughput_tx_per_s": 479.4,
+    "transactions": 9858,
+    "wall_s": 20.562,
+    "worker_exceptions": []
+   }
+  },
+  "with_hold_indexes": {
+   "alt_strategies_spread": {
+    "rc_advisory": {
+     "cycles_completed": 10000,
+     "cycles_per_worker": 100,
+     "deadlocks": 0,
+     "errors_other": 0,
+     "executor": "processes",
+     "hold_success_total_ms": {
+      "max_ms": 582.335,
+      "mean_ms": 73.001,
+      "min_ms": 2.089,
+      "n": 9921,
+      "p50_ms": 59.699,
+      "p90_ms": 142.243,
+      "p95_ms": 174.146,
+      "p99_ms": 256.152
+     },
+     "parallel_transactions": 100,
+     "per_op": {
+      "cancel": {
+       "lock_wait_ms": {
+        "max_ms": 262.237,
+        "mean_ms": 15.519,
+        "min_ms": 0.36,
+        "n": 9921,
+        "p50_ms": 8.031,
+        "p90_ms": 37.885,
+        "p95_ms": 55.037,
+        "p99_ms": 95.664
+       },
+       "outcomes": {
+        "CONFIRMED": 9921
+       },
+       "total_ms": {
+        "max_ms": 496.303,
+        "mean_ms": 67.154,
+        "min_ms": 1.924,
+        "n": 9921,
+        "p50_ms": 52.926,
+        "p90_ms": 134.638,
+        "p95_ms": 167.941,
+        "p99_ms": 241.892
+       }
+      },
+      "confirm": {
+       "lock_wait_ms": {
+        "max_ms": 259.11,
+        "mean_ms": 15.677,
+        "min_ms": 0.346,
+        "n": 9921,
+        "p50_ms": 8.273,
+        "p90_ms": 38.507,
+        "p95_ms": 54.347,
+        "p99_ms": 99.189
+       },
+       "outcomes": {
+        "CONFIRMED": 9921
+       },
+       "total_ms": {
+        "max_ms": 476.925,
+        "mean_ms": 84.183,
+        "min_ms": 2.809,
+        "n": 9921,
+        "p50_ms": 69.598,
+        "p90_ms": 162.084,
+        "p95_ms": 194.906,
+        "p99_ms": 284.939
+       }
+      },
+      "hold": {
+       "lock_wait_ms": {
+        "max_ms": 259.125,
+        "mean_ms": 14.988,
+        "min_ms": 0.328,
+        "n": 10000,
+        "p50_ms": 7.623,
+        "p90_ms": 37.242,
+        "p95_ms": 52.388,
+        "p99_ms": 96.554
+       },
+       "outcomes": {
+        "HELD": 9921,
+        "REJECTED:NO_CAPACITY_WHEELCHAIR": 79
+       },
+       "total_ms": {
+        "max_ms": 582.335,
+        "mean_ms": 72.882,
+        "min_ms": 2.089,
+        "n": 10000,
+        "p50_ms": 59.551,
+        "p90_ms": 142.191,
+        "p95_ms": 174.146,
+        "p99_ms": 256.074
+       }
+      }
+     },
+     "retries": 0,
+     "scenario": "spread",
+     "serialization_failures": 0,
+     "strategy": "rc_advisory",
+     "think_ms": 0,
+     "throughput_tx_per_s": 1288.3,
+     "transactions": 29842,
+     "wall_s": 23.163,
+     "worker_exceptions": []
+    },
+    "rc_advisory_hot5": {
+     "cycles_completed": 10000,
+     "cycles_per_worker": 100,
+     "deadlocks": 0,
+     "errors_other": 0,
+     "executor": "processes",
+     "hold_success_total_ms": {
+      "max_ms": 549.727,
+      "mean_ms": 95.888,
+      "min_ms": 2.832,
+      "n": 9685,
+      "p50_ms": 84.374,
+      "p90_ms": 169.229,
+      "p95_ms": 203.689,
+      "p99_ms": 283.731
+     },
+     "parallel_transactions": 100,
+     "per_op": {
+      "cancel": {
+       "lock_wait_ms": {
+        "max_ms": 530.486,
+        "mean_ms": 32.239,
+        "min_ms": 0.341,
+        "n": 9685,
+        "p50_ms": 13.568,
+        "p90_ms": 89.005,
+        "p95_ms": 123.916,
+        "p99_ms": 200.605
+       },
+       "outcomes": {
+        "CONFIRMED": 9685
+       },
+       "total_ms": {
+        "max_ms": 575.933,
+        "mean_ms": 84.226,
+        "min_ms": 1.552,
+        "n": 9685,
+        "p50_ms": 70.497,
+        "p90_ms": 160.083,
+        "p95_ms": 193.672,
+        "p99_ms": 272.937
+       }
+      },
+      "confirm": {
+       "lock_wait_ms": {
+        "max_ms": 497.095,
+        "mean_ms": 33.222,
+        "min_ms": 0.323,
+        "n": 9685,
+        "p50_ms": 14.714,
+        "p90_ms": 90.536,
+        "p95_ms": 123.775,
+        "p99_ms": 201.519
+       },
+       "outcomes": {
+        "CONFIRMED": 9685
+       },
+       "total_ms": {
+        "max_ms": 554.823,
+        "mean_ms": 99.367,
+        "min_ms": 1.998,
+        "n": 9685,
+        "p50_ms": 87.001,
+        "p90_ms": 183.238,
+        "p95_ms": 216.911,
+        "p99_ms": 299.986
+       }
+      },
+      "hold": {
+       "lock_wait_ms": {
+        "max_ms": 472.901,
+        "mean_ms": 28.465,
+        "min_ms": 0.349,
+        "n": 10000,
+        "p50_ms": 11.023,
+        "p90_ms": 79.53,
+        "p95_ms": 115.771,
+        "p99_ms": 205.281
+       },
+       "outcomes": {
+        "HELD": 9685,
+        "REJECTED:NO_CAPACITY_SEATS": 229,
+        "REJECTED:NO_CAPACITY_WHEELCHAIR": 86
+       },
+       "total_ms": {
+        "max_ms": 549.727,
+        "mean_ms": 97.375,
+        "min_ms": 2.832,
+        "n": 10000,
+        "p50_ms": 85.333,
+        "p90_ms": 173.551,
+        "p95_ms": 208.798,
+        "p99_ms": 290.378
+       }
+      }
+     },
+     "retries": 0,
+     "scenario": "hot5",
+     "serialization_failures": 0,
+     "strategy": "rc_advisory",
+     "think_ms": 0,
+     "throughput_tx_per_s": 1035.8,
+     "transactions": 29370,
+     "wall_s": 28.356,
+     "worker_exceptions": []
+    },
+    "rr_touch": {
+     "cycles_completed": 10000,
+     "cycles_per_worker": 100,
+     "deadlocks": 0,
+     "errors_other": 0,
+     "executor": "processes",
+     "hold_success_total_ms": {
+      "max_ms": 754.35,
+      "mean_ms": 90.827,
+      "min_ms": 2.875,
+      "n": 9921,
+      "p50_ms": 72.612,
+      "p90_ms": 174.087,
+      "p95_ms": 218.662,
+      "p99_ms": 348.432
+     },
+     "parallel_transactions": 100,
+     "per_op": {
+      "cancel": {
+       "lock_wait_ms": {
+        "max_ms": 248.065,
+        "mean_ms": 14.786,
+        "min_ms": 0.348,
+        "n": 9920,
+        "p50_ms": 8.411,
+        "p90_ms": 35.042,
+        "p95_ms": 50.454,
+        "p99_ms": 83.748
+       },
+       "outcomes": {
+        "CONFIRMED": 9920
+       },
+       "total_ms": {
+        "max_ms": 922.01,
+        "mean_ms": 84.309,
+        "min_ms": 1.751,
+        "n": 9920,
+        "p50_ms": 64.477,
+        "p90_ms": 163.935,
+        "p95_ms": 214.172,
+        "p99_ms": 376.321
+       }
+      },
+      "confirm": {
+       "lock_wait_ms": {
+        "max_ms": 231.663,
+        "mean_ms": 15.093,
+        "min_ms": 0.0,
+        "n": 9921,
+        "p50_ms": 8.645,
+        "p90_ms": 36.614,
+        "p95_ms": 50.672,
+        "p99_ms": 84.366
+       },
+       "outcomes": {
+        "CONFIRMED": 9920,
+        "ERROR:SERIALIZATION_FAILURE": 1
+       },
+       "total_ms": {
+        "max_ms": 787.413,
+        "mean_ms": 99.173,
+        "min_ms": 2.602,
+        "n": 9921,
+        "p50_ms": 79.027,
+        "p90_ms": 187.701,
+        "p95_ms": 241.128,
+        "p99_ms": 386.891
+       }
+      },
+      "hold": {
+       "lock_wait_ms": {
+        "max_ms": 245.154,
+        "mean_ms": 14.069,
+        "min_ms": 0.398,
+        "n": 10000,
+        "p50_ms": 7.596,
+        "p90_ms": 34.5,
+        "p95_ms": 48.48,
+        "p99_ms": 84.896
+       },
+       "outcomes": {
+        "HELD": 9921,
+        "REJECTED:NO_CAPACITY_WHEELCHAIR": 79
+       },
+       "total_ms": {
+        "max_ms": 754.35,
+        "mean_ms": 90.731,
+        "min_ms": 2.875,
+        "n": 10000,
+        "p50_ms": 72.459,
+        "p90_ms": 174.083,
+        "p95_ms": 218.662,
+        "p99_ms": 348.305
+       }
+      }
+     },
+     "retries": 4405,
+     "scenario": "spread",
+     "serialization_failures": 1,
+     "strategy": "rr_touch",
+     "think_ms": 0,
+     "throughput_tx_per_s": 1051.3,
+     "transactions": 29841,
+     "wall_s": 28.385,
+     "worker_exceptions": []
+    },
+    "rr_touch_hot5": {
+     "cycles_completed": 10000,
+     "cycles_per_worker": 100,
+     "deadlocks": 0,
+     "errors_other": 0,
+     "executor": "processes",
+     "hold_success_total_ms": {
+      "max_ms": 1013.75,
+      "mean_ms": 177.697,
+      "min_ms": 5.365,
+      "n": 2430,
+      "p50_ms": 143.605,
+      "p90_ms": 359.499,
+      "p95_ms": 432.355,
+      "p99_ms": 590.428
+     },
+     "parallel_transactions": 100,
+     "per_op": {
+      "cancel": {
+       "lock_wait_ms": {
+        "max_ms": 434.523,
+        "mean_ms": 19.179,
+        "min_ms": 0.0,
+        "n": 1837,
+        "p50_ms": 4.978,
+        "p90_ms": 56.764,
+        "p95_ms": 80.421,
+        "p99_ms": 141.546
+       },
+       "outcomes": {
+        "CONFIRMED": 1512,
+        "ERROR:SERIALIZATION_FAILURE": 325
+       },
+       "total_ms": {
+        "max_ms": 1077.027,
+        "mean_ms": 189.207,
+        "min_ms": 2.082,
+        "n": 1837,
+        "p50_ms": 101.516,
+        "p90_ms": 489.877,
+        "p95_ms": 574.043,
+        "p99_ms": 798.826
+       }
+      },
+      "confirm": {
+       "lock_wait_ms": {
+        "max_ms": 226.695,
+        "mean_ms": 17.022,
+        "min_ms": 0.0,
+        "n": 2430,
+        "p50_ms": 3.609,
+        "p90_ms": 53.048,
+        "p95_ms": 76.387,
+        "p99_ms": 129.066
+       },
+       "outcomes": {
+        "CONFIRMED": 1837,
+        "ERROR:SERIALIZATION_FAILURE": 593
+       },
+       "total_ms": {
+        "max_ms": 1197.184,
+        "mean_ms": 224.324,
+        "min_ms": 2.659,
+        "n": 2430,
+        "p50_ms": 157.506,
+        "p90_ms": 516.815,
+        "p95_ms": 579.176,
+        "p99_ms": 757.687
+       }
+      },
+      "hold": {
+       "lock_wait_ms": {
+        "max_ms": 415.453,
+        "mean_ms": 24.045,
+        "min_ms": 0.0,
+        "n": 10000,
+        "p50_ms": 9.513,
+        "p90_ms": 66.981,
+        "p95_ms": 93.794,
+        "p99_ms": 164.514
+       },
+       "outcomes": {
+        "ERROR:SERIALIZATION_FAILURE": 940,
+        "HELD": 2430,
+        "REJECTED:NO_CAPACITY_SEATS": 6441,
+        "REJECTED:NO_CAPACITY_WHEELCHAIR": 189
+       },
+       "total_ms": {
+        "max_ms": 1335.682,
+        "mean_ms": 200.826,
+        "min_ms": 3.38,
+        "n": 10000,
+        "p50_ms": 145.516,
+        "p90_ms": 448.21,
+        "p95_ms": 548.395,
+        "p99_ms": 782.734
+       }
+      }
+     },
+     "retries": 44103,
+     "scenario": "hot5",
+     "serialization_failures": 1858,
+     "strategy": "rr_touch",
+     "think_ms": 0,
+     "throughput_tx_per_s": 472.2,
+     "transactions": 14267,
+     "wall_s": 30.214,
+     "worker_exceptions": []
+    }
+   },
+   "hot5": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 1304.13,
+     "mean_ms": 125.786,
+     "min_ms": 2.429,
+     "n": 9687,
+     "p50_ms": 94.578,
+     "p90_ms": 271.044,
+     "p95_ms": 346.961,
+     "p99_ms": 535.27
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 1285.006,
+       "mean_ms": 106.374,
+       "min_ms": 0.209,
+       "n": 9687,
+       "p50_ms": 74.784,
+       "p90_ms": 250.272,
+       "p95_ms": 326.481,
+       "p99_ms": 507.222
+      },
+      "outcomes": {
+       "CONFIRMED": 9687
+      },
+      "total_ms": {
+       "max_ms": 1294.501,
+       "mean_ms": 119.11,
+       "min_ms": 1.168,
+       "n": 9687,
+       "p50_ms": 88.045,
+       "p90_ms": 265.487,
+       "p95_ms": 340.964,
+       "p99_ms": 522.713
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 1269.921,
+       "mean_ms": 106.922,
+       "min_ms": 0.218,
+       "n": 9687,
+       "p50_ms": 76.499,
+       "p90_ms": 249.564,
+       "p95_ms": 321.792,
+       "p99_ms": 498.441
+      },
+      "outcomes": {
+       "CONFIRMED": 9687
+      },
+      "total_ms": {
+       "max_ms": 1288.114,
+       "mean_ms": 123.239,
+       "min_ms": 1.724,
+       "n": 9687,
+       "p50_ms": 94.438,
+       "p90_ms": 267.178,
+       "p95_ms": 340.911,
+       "p99_ms": 517.951
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 1268.422,
+       "mean_ms": 112.283,
+       "min_ms": 0.257,
+       "n": 10000,
+       "p50_ms": 80.667,
+       "p90_ms": 256.816,
+       "p95_ms": 335.075,
+       "p99_ms": 525.763
+      },
+      "outcomes": {
+       "HELD": 9687,
+       "REJECTED:NO_CAPACITY_SEATS": 232,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 81
+      },
+      "total_ms": {
+       "max_ms": 1304.13,
+       "mean_ms": 128.664,
+       "min_ms": 1.902,
+       "n": 10000,
+       "p50_ms": 97.333,
+       "p90_ms": 276.678,
+       "p95_ms": 356.33,
+       "p99_ms": 548.002
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "hot5",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 772.1,
+    "transactions": 29374,
+    "wall_s": 38.045,
+    "worker_exceptions": []
+   },
+   "occupancy_plan_run_A": {
+    "execution_ms": 1.256,
+    "indexes_used": [
+     "capacity_hold_run"
+    ],
+    "nodes": [
+     "Aggregate",
+     "Sort",
+     "Nested Loop",
+     "Function Scan",
+     "Materialize",
+     "Result",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 0.481,
+    "scans": [
+     {
+      "filter": "((state = 'CONSUMED'::text) OR ((state = 'HELD'::text) AND (expires_at > clock_timestamp())))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "capacity_hold",
+      "removed_by_filter": 1046,
+      "removed_by_index_recheck": 0,
+      "rows": 57
+     }
+    ],
+    "shared_hit": 369,
+    "shared_read": 14
+   },
+   "single": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 522.917,
+     "mean_ms": 237.742,
+     "min_ms": 3.699,
+     "n": 7698,
+     "p50_ms": 231.215,
+     "p90_ms": 332.236,
+     "p95_ms": 358.256,
+     "p99_ms": 407.114
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 515.767,
+       "mean_ms": 228.647,
+       "min_ms": 0.247,
+       "n": 7698,
+       "p50_ms": 222.76,
+       "p90_ms": 320.931,
+       "p95_ms": 346.524,
+       "p99_ms": 395.74
+      },
+      "outcomes": {
+       "CONFIRMED": 7698
+      },
+      "total_ms": {
+       "max_ms": 520.01,
+       "mean_ms": 232.975,
+       "min_ms": 1.481,
+       "n": 7698,
+       "p50_ms": 226.614,
+       "p90_ms": 326.413,
+       "p95_ms": 353.008,
+       "p99_ms": 401.83
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 521.33,
+       "mean_ms": 230.995,
+       "min_ms": 0.249,
+       "n": 7698,
+       "p50_ms": 224.413,
+       "p90_ms": 321.318,
+       "p95_ms": 346.578,
+       "p99_ms": 403.722
+      },
+      "outcomes": {
+       "CONFIRMED": 7698
+      },
+      "total_ms": {
+       "max_ms": 527.837,
+       "mean_ms": 236.328,
+       "min_ms": 2.167,
+       "n": 7698,
+       "p50_ms": 229.105,
+       "p90_ms": 328.679,
+       "p95_ms": 353.435,
+       "p99_ms": 411.091
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 515.562,
+       "mean_ms": 230.833,
+       "min_ms": 0.288,
+       "n": 10000,
+       "p50_ms": 224.245,
+       "p90_ms": 322.478,
+       "p95_ms": 347.946,
+       "p99_ms": 397.655
+      },
+      "outcomes": {
+       "HELD": 7698,
+       "REJECTED:NO_CAPACITY_SEATS": 2190,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 112
+      },
+      "total_ms": {
+       "max_ms": 526.004,
+       "mean_ms": 238.487,
+       "min_ms": 2.627,
+       "n": 10000,
+       "p50_ms": 231.456,
+       "p90_ms": 331.993,
+       "p95_ms": 358.219,
+       "p99_ms": 407.91
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "single",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 414.0,
+    "transactions": 25396,
+    "wall_s": 61.34,
+    "worker_exceptions": []
+   },
+   "spread": {
+    "cycles_completed": 10000,
+    "cycles_per_worker": 100,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 354.945,
+     "mean_ms": 62.282,
+     "min_ms": 2.292,
+     "n": 9921,
+     "p50_ms": 53.731,
+     "p90_ms": 114.704,
+     "p95_ms": 139.673,
+     "p99_ms": 193.06
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 259.652,
+       "mean_ms": 11.154,
+       "min_ms": 0.209,
+       "n": 9921,
+       "p50_ms": 2.294,
+       "p90_ms": 32.56,
+       "p95_ms": 56.785,
+       "p99_ms": 114.867
+      },
+      "outcomes": {
+       "CONFIRMED": 9921
+      },
+      "total_ms": {
+       "max_ms": 314.982,
+       "mean_ms": 59.837,
+       "min_ms": 1.727,
+       "n": 9921,
+       "p50_ms": 50.297,
+       "p90_ms": 114.204,
+       "p95_ms": 139.543,
+       "p99_ms": 199.69
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 406.587,
+       "mean_ms": 11.371,
+       "min_ms": 0.21,
+       "n": 9921,
+       "p50_ms": 2.462,
+       "p90_ms": 32.622,
+       "p95_ms": 57.565,
+       "p99_ms": 120.994
+      },
+      "outcomes": {
+       "CONFIRMED": 9921
+      },
+      "total_ms": {
+       "max_ms": 465.087,
+       "mean_ms": 70.167,
+       "min_ms": 2.217,
+       "n": 9921,
+       "p50_ms": 60.213,
+       "p90_ms": 131.054,
+       "p95_ms": 158.396,
+       "p99_ms": 221.587
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 282.675,
+       "mean_ms": 9.173,
+       "min_ms": 0.246,
+       "n": 10000,
+       "p50_ms": 1.585,
+       "p90_ms": 27.076,
+       "p95_ms": 46.764,
+       "p99_ms": 98.953
+      },
+      "outcomes": {
+       "HELD": 9921,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 79
+      },
+      "total_ms": {
+       "max_ms": 354.945,
+       "mean_ms": 62.081,
+       "min_ms": 2.292,
+       "n": 10000,
+       "p50_ms": 53.583,
+       "p90_ms": 114.534,
+       "p95_ms": 139.624,
+       "p99_ms": 192.837
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "spread",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 0,
+    "throughput_tx_per_s": 1492.9,
+    "transactions": 29842,
+    "wall_s": 19.99,
+    "worker_exceptions": []
+   },
+   "spread_paced300ms": {
+    "cycles_completed": 3300,
+    "cycles_per_worker": 33,
+    "deadlocks": 0,
+    "errors_other": 0,
+    "executor": "processes",
+    "hold_success_total_ms": {
+     "max_ms": 233.099,
+     "mean_ms": 19.385,
+     "min_ms": 2.141,
+     "n": 3279,
+     "p50_ms": 10.687,
+     "p90_ms": 43.436,
+     "p95_ms": 64.887,
+     "p99_ms": 125.829
+    },
+    "parallel_transactions": 100,
+    "per_op": {
+     "cancel": {
+      "lock_wait_ms": {
+       "max_ms": 69.588,
+       "mean_ms": 2.082,
+       "min_ms": 0.231,
+       "n": 3279,
+       "p50_ms": 0.949,
+       "p90_ms": 4.217,
+       "p95_ms": 7.381,
+       "p99_ms": 19.353
+      },
+      "outcomes": {
+       "CONFIRMED": 3279
+      },
+      "total_ms": {
+       "max_ms": 121.051,
+       "mean_ms": 12.323,
+       "min_ms": 1.237,
+       "n": 3279,
+       "p50_ms": 7.369,
+       "p90_ms": 28.117,
+       "p95_ms": 41.061,
+       "p99_ms": 68.534
+      }
+     },
+     "confirm": {
+      "lock_wait_ms": {
+       "max_ms": 87.845,
+       "mean_ms": 2.642,
+       "min_ms": 0.246,
+       "n": 3279,
+       "p50_ms": 1.069,
+       "p90_ms": 5.78,
+       "p95_ms": 9.894,
+       "p99_ms": 27.618
+      },
+      "outcomes": {
+       "CONFIRMED": 3279
+      },
+      "total_ms": {
+       "max_ms": 145.316,
+       "mean_ms": 19.065,
+       "min_ms": 1.964,
+       "n": 3279,
+       "p50_ms": 11.008,
+       "p90_ms": 44.611,
+       "p95_ms": 62.282,
+       "p99_ms": 105.726
+      }
+     },
+     "hold": {
+      "lock_wait_ms": {
+       "max_ms": 132.495,
+       "mean_ms": 2.79,
+       "min_ms": 0.316,
+       "n": 3300,
+       "p50_ms": 1.1,
+       "p90_ms": 5.763,
+       "p95_ms": 10.323,
+       "p99_ms": 29.693
+      },
+      "outcomes": {
+       "HELD": 3279,
+       "REJECTED:NO_CAPACITY_WHEELCHAIR": 21
+      },
+      "total_ms": {
+       "max_ms": 233.099,
+       "mean_ms": 19.354,
+       "min_ms": 2.141,
+       "n": 3300,
+       "p50_ms": 10.651,
+       "p90_ms": 43.394,
+       "p95_ms": 64.778,
+       "p99_ms": 125.661
+      }
+     }
+    },
+    "retries": 0,
+    "scenario": "spread",
+    "serialization_failures": 0,
+    "strategy": "rc_run_row",
+    "think_ms": 300,
+    "throughput_tx_per_s": 812.3,
+    "transactions": 9858,
+    "wall_s": 12.136,
+    "worker_exceptions": []
+   }
+  }
+ },
+ "e6_postgis": {
+  "area_correctness": [
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "innerhalb (Revision 1 wirksam)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [],
+    "case": "au\u00dferhalb",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Kantenmitte West)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Ecke)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Kantenmitte Ost)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [],
+    "case": "knapp au\u00dferhalb der Grenze (0,000001 Grad)",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     2
+    ],
+    "case": "innerhalb Revision 1 und 2 zum sp\u00e4teren Zeitpunkt",
+    "expected_revisions": [
+     2
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [],
+    "case": "nur in Revision 1 (Randstreifen), sp\u00e4terer Zeitpunkt: nicht mehr wirksam",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [],
+    "case": "Zeitpunkt vor G\u00fcltigkeit",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     2
+    ],
+    "case": "G\u00fcltigkeitsgrenze: exakt valid_to von Revision 1 = valid_from von Revision 2",
+    "expected_revisions": [
+     2
+    ],
+    "ok": true,
+    "tenant": "A"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "innerhalb (Revision 1 wirksam)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [],
+    "case": "au\u00dferhalb",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Kantenmitte West)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Ecke)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [
+     1
+    ],
+    "case": "auf der Grenze (Kantenmitte Ost)",
+    "expected_revisions": [
+     1
+    ],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [],
+    "case": "knapp au\u00dferhalb der Grenze (0,000001 Grad)",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [
+     2
+    ],
+    "case": "innerhalb Revision 1 und 2 zum sp\u00e4teren Zeitpunkt",
+    "expected_revisions": [
+     2
+    ],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [],
+    "case": "nur in Revision 1 (Randstreifen), sp\u00e4terer Zeitpunkt: nicht mehr wirksam",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [],
+    "case": "Zeitpunkt vor G\u00fcltigkeit",
+    "expected_revisions": [],
+    "ok": true,
+    "tenant": "B"
+   },
+   {
+    "actual_revisions": [
+     2
+    ],
+    "case": "G\u00fcltigkeitsgrenze: exakt valid_to von Revision 1 = valid_from von Revision 2",
+    "expected_revisions": [
+     2
+    ],
+    "ok": true,
+    "tenant": "B"
+   }
+  ],
+  "latency_baseline": {
+   "area": {
+    "avg_result_rows": 3.14,
+    "errors": 0,
+    "kind": "area",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 204.655,
+     "mean_ms": 25.318,
+     "min_ms": 0.527,
+     "n": 5000,
+     "p50_ms": 20.342,
+     "p90_ms": 47.959,
+     "p95_ms": 63.172,
+     "p99_ms": 126.228,
+     "wall_s": 1.39
+    },
+    "single_connection": {
+     "max_ms": 3.257,
+     "mean_ms": 0.776,
+     "min_ms": 0.389,
+     "n": 1000,
+     "p50_ms": 0.77,
+     "p90_ms": 1.047,
+     "p95_ms": 1.153,
+     "p99_ms": 1.485
+    }
+   },
+   "bbox_prefilter": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "bbox_prefilter",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 1236.556,
+     "mean_ms": 584.568,
+     "min_ms": 33.808,
+     "n": 5000,
+     "p50_ms": 580.646,
+     "p90_ms": 754.847,
+     "p95_ms": 816.355,
+     "p99_ms": 935.751,
+     "wall_s": 29.74
+    },
+    "single_connection": {
+     "max_ms": 36.274,
+     "mean_ms": 20.422,
+     "min_ms": 12.994,
+     "n": 1000,
+     "p50_ms": 19.406,
+     "p90_ms": 25.836,
+     "p95_ms": 28.079,
+     "p99_ms": 32.154
+    }
+   },
+   "grid_cell": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "grid_cell",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 331.084,
+     "mean_ms": 28.929,
+     "min_ms": 0.753,
+     "n": 5000,
+     "p50_ms": 19.984,
+     "p90_ms": 64.481,
+     "p95_ms": 82.179,
+     "p99_ms": 123.431,
+     "wall_s": 1.7
+    },
+    "single_connection": {
+     "max_ms": 8.075,
+     "mean_ms": 0.982,
+     "min_ms": 0.467,
+     "n": 1000,
+     "p50_ms": 1.011,
+     "p90_ms": 1.353,
+     "p95_ms": 1.423,
+     "p99_ms": 1.76
+    }
+   },
+   "knn_index": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "knn_index",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 261.519,
+     "mean_ms": 29.311,
+     "min_ms": 0.633,
+     "n": 5000,
+     "p50_ms": 21.095,
+     "p90_ms": 61.041,
+     "p95_ms": 79.601,
+     "p99_ms": 143.141,
+     "wall_s": 1.67
+    },
+    "single_connection": {
+     "max_ms": 7.119,
+     "mean_ms": 1.023,
+     "min_ms": 0.51,
+     "n": 1000,
+     "p50_ms": 1.017,
+     "p90_ms": 1.27,
+     "p95_ms": 1.407,
+     "p99_ms": 2.974
+    }
+   },
+   "naive_geography": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "naive_geography",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 2443.626,
+     "mean_ms": 1215.296,
+     "min_ms": 38.078,
+     "n": 5000,
+     "p50_ms": 1216.417,
+     "p90_ms": 1444.18,
+     "p95_ms": 1512.032,
+     "p99_ms": 1873.871,
+     "wall_s": 61.55
+    },
+    "single_connection": {
+     "max_ms": 98.519,
+     "mean_ms": 48.413,
+     "min_ms": 28.379,
+     "n": 1000,
+     "p50_ms": 48.152,
+     "p90_ms": 59.855,
+     "p95_ms": 62.032,
+     "p99_ms": 79.5
+    }
+   }
+  },
+  "latency_composite_index": {
+   "area": {
+    "avg_result_rows": 3.14,
+    "errors": 0,
+    "kind": "area",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 185.603,
+     "mean_ms": 17.815,
+     "min_ms": 0.403,
+     "n": 5000,
+     "p50_ms": 9.994,
+     "p90_ms": 45.833,
+     "p95_ms": 60.505,
+     "p99_ms": 96.134,
+     "wall_s": 1.15
+    },
+    "single_connection": {
+     "max_ms": 4.701,
+     "mean_ms": 0.668,
+     "min_ms": 0.316,
+     "n": 1000,
+     "p50_ms": 0.624,
+     "p90_ms": 0.959,
+     "p95_ms": 1.061,
+     "p99_ms": 1.536
+    }
+   },
+   "bbox_prefilter": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "bbox_prefilter",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 993.147,
+     "mean_ms": 522.969,
+     "min_ms": 21.778,
+     "n": 5000,
+     "p50_ms": 519.18,
+     "p90_ms": 683.235,
+     "p95_ms": 735.535,
+     "p99_ms": 824.211,
+     "wall_s": 26.64
+    },
+    "single_connection": {
+     "max_ms": 40.853,
+     "mean_ms": 22.282,
+     "min_ms": 11.368,
+     "n": 1000,
+     "p50_ms": 22.54,
+     "p90_ms": 28.507,
+     "p95_ms": 31.662,
+     "p99_ms": 36.22
+    }
+   },
+   "grid_cell": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "grid_cell",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 353.711,
+     "mean_ms": 26.291,
+     "min_ms": 0.645,
+     "n": 5000,
+     "p50_ms": 16.043,
+     "p90_ms": 58.949,
+     "p95_ms": 86.165,
+     "p99_ms": 171.126,
+     "wall_s": 1.58
+    },
+    "single_connection": {
+     "max_ms": 7.515,
+     "mean_ms": 1.313,
+     "min_ms": 0.625,
+     "n": 1000,
+     "p50_ms": 1.285,
+     "p90_ms": 1.713,
+     "p95_ms": 1.933,
+     "p99_ms": 2.337
+    }
+   },
+   "knn_index": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "knn_index",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 366.965,
+     "mean_ms": 24.508,
+     "min_ms": 0.606,
+     "n": 5000,
+     "p50_ms": 15.772,
+     "p90_ms": 54.599,
+     "p95_ms": 74.673,
+     "p99_ms": 129.58,
+     "wall_s": 1.61
+    },
+    "single_connection": {
+     "max_ms": 5.07,
+     "mean_ms": 1.009,
+     "min_ms": 0.478,
+     "n": 1000,
+     "p50_ms": 0.967,
+     "p90_ms": 1.317,
+     "p95_ms": 1.582,
+     "p99_ms": 2.42
+    }
+   },
+   "naive_geography": {
+    "avg_result_rows": 5.0,
+    "errors": 0,
+    "kind": "naive_geography",
+    "parallel": {
+     "connections": 100,
+     "max_ms": 2051.91,
+     "mean_ms": 1253.351,
+     "min_ms": 57.116,
+     "n": 5000,
+     "p50_ms": 1259.975,
+     "p90_ms": 1509.512,
+     "p95_ms": 1579.756,
+     "p99_ms": 1739.017,
+     "wall_s": 63.44
+    },
+    "single_connection": {
+     "max_ms": 84.888,
+     "mean_ms": 47.724,
+     "min_ms": 28.407,
+     "n": 1000,
+     "p50_ms": 46.391,
+     "p90_ms": 62.496,
+     "p95_ms": 65.151,
+     "p99_ms": 73.326
+    }
+   }
+  },
+  "plans_baseline": {
+   "area_A": {
+    "execution_ms": 0.39,
+    "indexes_used": [
+     "service_area_pkey"
+    ],
+    "nodes": [
+     "Result",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 0.105,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_covers(area, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geometry))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "service_area",
+      "removed_by_filter": 116,
+      "removed_by_index_recheck": 0,
+      "rows": 6
+     }
+    ],
+    "shared_hit": 44,
+    "shared_read": 0
+   },
+   "area_B": {
+    "execution_ms": 0.281,
+    "indexes_used": [
+     "service_area_pkey"
+    ],
+    "nodes": [
+     "Result",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 0.116,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_covers(area, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geometry))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "service_area",
+      "removed_by_filter": 116,
+      "removed_by_index_recheck": 0,
+      "rows": 6
+     }
+    ],
+    "shared_hit": 43,
+    "shared_read": 0
+   },
+   "stops_bbox_prefilter_A": {
+    "execution_ms": 15.947,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.179,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (point && '0103000020E6100000010000000500000048E17A14AE872B40B91E85EB5188494048E17A14AE872B407B14AE47E18A494052B81E85EB912B407B14AE47E18A494052B81E85EB912B40B91E85EB5188494048E17A14AE872B40B91E85EB51884940'::geometry) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23625,
+    "shared_read": 0
+   },
+   "stops_bbox_prefilter_B": {
+    "execution_ms": 20.302,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.192,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (point && '0103000020E6100000010000000500000048E17A14AE872B40B91E85EB5188494048E17A14AE872B407B14AE47E18A494052B81E85EB912B407B14AE47E18A494052B81E85EB912B40B91E85EB5188494048E17A14AE872B40B91E85EB51884940'::geometry) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23613,
+    "shared_read": 0
+   },
+   "stops_grid_cell_A": {
+    "execution_ms": 0.417,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.156,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "((tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid) AND (cell = ANY ('{137605106,137605107,137605108,137705106,137705107,137705108,137805106,137805107,137805108}'::integer[])))",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 169,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 201,
+    "shared_read": 0
+   },
+   "stops_grid_cell_B": {
+    "execution_ms": 0.514,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.34,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "((tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid) AND (cell = ANY ('{137605106,137605107,137605108,137705106,137705107,137705108,137805106,137805107,137805108}'::integer[])))",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 169,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 200,
+    "shared_read": 0
+   },
+   "stops_knn_index_A": {
+    "execution_ms": 0.433,
+    "indexes_used": [
+     "stop_geo"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Subquery Scan",
+     "Limit",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.149,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid))",
+      "index": "stop_geo",
+      "index_cond": null,
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 70,
+      "removed_by_index_recheck": null,
+      "rows": 50
+     }
+    ],
+    "shared_hit": 122,
+    "shared_read": 2
+   },
+   "stops_knn_index_B": {
+    "execution_ms": 0.533,
+    "indexes_used": [
+     "stop_geo"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Subquery Scan",
+     "Limit",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.179,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid))",
+      "index": "stop_geo",
+      "index_cond": null,
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 69,
+      "removed_by_index_recheck": null,
+      "rows": 50
+     }
+    ],
+    "shared_hit": 124,
+    "shared_read": 0
+   },
+   "stops_naive_geography_A": {
+    "execution_ms": 44.694,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.096,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23625,
+    "shared_read": 0
+   },
+   "stops_naive_geography_B": {
+    "execution_ms": 38.103,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.135,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23613,
+    "shared_read": 0
+   }
+  },
+  "plans_composite_index": {
+   "area_A": {
+    "execution_ms": 0.587,
+    "indexes_used": [
+     "service_area_geo_tenant"
+    ],
+    "nodes": [
+     "Result",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 0.413,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_covers(area, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geometry))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "service_area",
+      "removed_by_filter": 116,
+      "removed_by_index_recheck": 0,
+      "rows": 6
+     }
+    ],
+    "shared_hit": 45,
+    "shared_read": 0
+   },
+   "area_B": {
+    "execution_ms": 0.357,
+    "indexes_used": [
+     "service_area_geo_tenant"
+    ],
+    "nodes": [
+     "Result",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 0.147,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_covers(area, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geometry))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "service_area",
+      "removed_by_filter": 116,
+      "removed_by_index_recheck": 0,
+      "rows": 6
+     }
+    ],
+    "shared_hit": 44,
+    "shared_read": 0
+   },
+   "stops_bbox_prefilter_A": {
+    "execution_ms": 21.486,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.302,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (point && '0103000020E6100000010000000500000048E17A14AE872B40B91E85EB5188494048E17A14AE872B407B14AE47E18A494052B81E85EB912B407B14AE47E18A494052B81E85EB912B40B91E85EB5188494048E17A14AE872B40B91E85EB51884940'::geometry) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23625,
+    "shared_read": 0
+   },
+   "stops_bbox_prefilter_B": {
+    "execution_ms": 25.122,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.235,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND (point && '0103000020E6100000010000000500000048E17A14AE872B40B91E85EB5188494048E17A14AE872B407B14AE47E18A494052B81E85EB912B407B14AE47E18A494052B81E85EB912B40B91E85EB5188494048E17A14AE872B40B91E85EB51884940'::geometry) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23613,
+    "shared_read": 0
+   },
+   "stops_grid_cell_A": {
+    "execution_ms": 0.353,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.21,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "((tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid) AND (cell = ANY ('{137605106,137605107,137605108,137705106,137705107,137705108,137805106,137805107,137805108}'::integer[])))",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 169,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 201,
+    "shared_read": 0
+   },
+   "stops_grid_cell_B": {
+    "execution_ms": 0.469,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.165,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "((tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid) AND (cell = ANY ('{137605106,137605107,137605108,137705106,137705107,137705108,137805106,137805107,137805108}'::integer[])))",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 169,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 200,
+    "shared_read": 0
+   },
+   "stops_knn_index_A": {
+    "execution_ms": 0.303,
+    "indexes_used": [
+     "stop_geo_tenant"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Subquery Scan",
+     "Limit",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.169,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)))",
+      "index": "stop_geo_tenant",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 10,
+      "removed_by_index_recheck": 0,
+      "rows": 50
+     }
+    ],
+    "shared_hit": 68,
+    "shared_read": 0
+   },
+   "stops_knn_index_B": {
+    "execution_ms": 0.246,
+    "indexes_used": [
+     "stop_geo_tenant"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Subquery Scan",
+     "Limit",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.137,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)))",
+      "index": "stop_geo_tenant",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 10,
+      "removed_by_index_recheck": 0,
+      "rows": 50
+     }
+    ],
+    "shared_hit": 68,
+    "shared_read": 0
+   },
+   "stops_naive_geography_A": {
+    "execution_ms": 64.982,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.359,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23625,
+    "shared_read": 0
+   },
+   "stops_naive_geography_B": {
+    "execution_ms": 49.267,
+    "indexes_used": [
+     "stop_cell"
+    ],
+    "nodes": [
+     "Limit",
+     "Sort",
+     "Result",
+     "Index Scan"
+    ],
+    "planning_ms": 0.127,
+    "scans": [
+     {
+      "filter": "((valid_from <= '2026-07-01 12:00:00+00'::timestamp with time zone) AND ((valid_to IS NULL) OR (valid_to > '2026-07-01 12:00:00+00'::timestamp with time zone)) AND st_dwithin((point)::geography, '0101000020E6100000CDCCCCCCCC8C2B409A99999999894940'::geography, '500'::double precision, true))",
+      "index": "stop_cell",
+      "index_cond": "(tenant_id = '00000000-0000-4000-8000-00000000000b'::uuid)",
+      "loops": 1,
+      "node": "Index Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 23987,
+      "removed_by_index_recheck": 0,
+      "rows": 19
+     }
+    ],
+    "shared_hit": 23613,
+    "shared_read": 0
+   }
+  },
+  "rls_index_usage": {
+   "leakproof": {
+    "geometry_distance_centroid/2": false,
+    "geometry_overlaps/2": false,
+    "int8eq/2": true,
+    "st_covers/2": false,
+    "st_dwithin/3": false,
+    "st_dwithin/4": false,
+    "uuid_eq/2": true
+   },
+   "runtime_with_rls": {
+    "execution_ms": 9.945,
+    "indexes_used": [],
+    "nodes": [
+     "Result",
+     "Seq Scan"
+    ],
+    "planning_ms": 5.0,
+    "scans": [
+     {
+      "filter": "((tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid) AND (point && '0103000020E6100000010000000500000048E17A14AE872B40B91E85EB5188494048E17A14AE872B407B14AE47E18A494052B81E85EB912B407B14AE47E18A494052B81E85EB912B40B91E85EB5188494048E17A14AE872B40B91E85EB51884940'::geometry))",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Seq Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 47912,
+      "removed_by_index_recheck": null,
+      "rows": 88
+     }
+    ],
+    "shared_hit": null,
+    "shared_read": null
+   },
+   "superuser_no_rls": {
+    "execution_ms": 1.267,
+    "indexes_used": [
+     "stop_geo"
+    ],
+    "nodes": [
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan"
+    ],
+    "planning_ms": 6.627,
+    "scans": [
+     {
+      "filter": "(tenant_id = '00000000-0000-4000-8000-00000000000a'::uuid)",
+      "index": null,
+      "index_cond": null,
+      "loops": 1,
+      "node": "Bitmap Heap Scan",
+      "relation": "stop_revision",
+      "removed_by_filter": 88,
+      "removed_by_index_recheck": 0,
+      "rows": 88
+     }
+    ],
+    "shared_hit": null,
+    "shared_read": null
+   }
+  },
+  "stop_correctness": [
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "naive_geography"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "naive_geography"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "bbox_prefilter"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "bbox_prefilter"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "knn_index"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "knn_index"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "grid_cell"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "A",
+    "variant": "grid_cell"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "naive_geography"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "naive_geography"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "bbox_prefilter"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "bbox_prefilter"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "knn_index"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "knn_index"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 100.0
+    },
+    "at": "2026-03-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 100
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "grid_cell"
+   },
+   {
+    "actual_m": {
+     "Test E250": 250.0,
+     "Test N100": 300.0
+    },
+    "at": "2026-07-01T12:00:00+00",
+    "expected_m": {
+     "Test E250": 250,
+     "Test N100": 300
+    },
+    "note": "S600 (600 m) liegt au\u00dferhalb des Radius 500 m",
+    "ok": true,
+    "tenant": "B",
+    "variant": "grid_cell"
+   }
+  ]
+ },
+ "e7_tenant_isolation": {
+  "a_hold_A_result": "HELD",
+  "a_hold_A_while_B_holds_lock_ms": 12.66,
+  "b_A_select_B_run_without_tenant_condition_rows": 0,
+  "b_A_select_for_update_on_B_run_ms": 1.13,
+  "b_A_select_for_update_on_B_run_rows": 0,
+  "c_A_bookings_of_other_tenants_visible": 0,
+  "c_A_bookings_on_B_run_visible": 0,
+  "c_A_distinct_tenant_ids_visible": 1,
+  "c_A_sees_B_holds_rows": 0,
+  "c_A_total_holds_visible": 74613,
+  "c_hold_A_on_B_run": "REJECTED:UNKNOWN_RUN",
+  "d_no_context_holds_visible": 0,
+  "e_A_geo_query_without_tenant_condition_rows": 50,
+  "e_A_stop_foreign_tenant_rows": 0,
+  "e_A_stop_rows_visible": 24006,
+  "e_distinct_tenants_of_returned_stops": 1
+ },
+ "e8_jsonb_vs_int": {
+  "generated_int_columns": {
+   "max_ms": 5.051,
+   "mean_ms": 0.835,
+   "min_ms": 0.648,
+   "n": 400,
+   "p50_ms": 0.777,
+   "p90_ms": 0.847,
+   "p95_ms": 0.908,
+   "p99_ms": 3.071
+  },
+  "jsonb": {
+   "max_ms": 5.072,
+   "mean_ms": 1.133,
+   "min_ms": 0.704,
+   "n": 400,
+   "p50_ms": 1.071,
+   "p90_ms": 1.303,
+   "p95_ms": 1.468,
+   "p99_ms": 3.929
+  },
+  "query": "Belegung je Abschnitt \u00fcber 120 Abschnitte eines Basislaufs (60 Holds)"
+ },
+ "meta": {
+  "data": {
+   "rows_per_tenant": {
+    "A": {
+     "booking": 14250,
+     "capacity_hold": 15000,
+     "outbox": 15000,
+     "service": 41,
+     "service_area": 120,
+     "staff_shift": 250,
+     "stop_revision": 24000,
+     "vehicle": 251,
+     "vehicle_run": 6250
+    },
+    "B": {
+     "booking": 14250,
+     "capacity_hold": 15000,
+     "outbox": 15000,
+     "service": 41,
+     "service_area": 120,
+     "staff_shift": 250,
+     "stop_revision": 24000,
+     "vehicle": 251,
+     "vehicle_run": 6250
+    }
+   },
+   "total_size_kb": {
+    "booking": 11352,
+    "capacity_hold": 11312,
+    "outbox": 8680,
+    "service_area": 720,
+    "stop_revision": 17288
+   }
+  },
+  "data_notes": {
+   "base_runs_per_tenant": 250,
+   "bbox": [
+    13.55,
+    50.95,
+    14.0,
+    51.2
+   ],
+   "holds_per_base_run": 60,
+   "segments_per_run": 120,
+   "service_areas_per_tenant": 120,
+   "stops_per_tenant_base": 20000
+  },
+  "duration_s": 2304.6,
+  "finished_utc": "2026-11-11T08:48:05Z",
+  "hardware": {
+   "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+   "logical_cpus": 4,
+   "memory_total_mb": 16086,
+   "os": "Linux-6.18.44-fc-v378-x86_64-with-glibc2.39",
+   "python": "3.13.18",
+   "virtualized": "nicht gepr\u00fcft"
+  },
+  "loadavg_end": [
+   63.974609375,
+   50.65673828125,
+   28.34619140625
+  ],
+  "loadavg_start": [
+   15.458984375,
+   7.37060546875,
+   4.14892578125
+  ],
+  "pool": {
+   "connections": 100,
+   "driver": "psycopg 3",
+   "executor": "processes",
+   "note": "je Auftrag eigener Thread und eigene Verbindung; alle Auftr\u00e4ge einer Runde starten gleichzeitig",
+   "processes": 4,
+   "role": "taktovia_runtime"
+  },
+  "postgresql": {
+   "deadlock_timeout": "1s",
+   "default_transaction_isolation": "read committed",
+   "effective_cache_size": "4GB",
+   "fsync": "on",
+   "max_connections": "300",
+   "max_wal_size": "1GB",
+   "postgis": "3.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1",
+   "random_page_cost": "4",
+   "shared_buffers": "128MB",
+   "synchronous_commit": "on",
+   "version": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit",
+   "work_mem": "4MB"
+  },
+  "quick": false,
+  "reruns": [
+   {
+    "blocks": [
+     "e7"
+    ],
+    "finished_utc": "2026-11-11T08:48:54Z",
+    "loadavg_end": [
+     30.74658203125,
+     43.638671875,
+     27.1259765625
+    ],
+    "loadavg_start": [
+     32.98779296875,
+     44.291015625,
+     27.24560546875
+    ],
+    "started_utc": "2026-11-11T08:48:53Z"
+   }
+  ],
+  "scale": {
+   "e1": 1000,
+   "e1_alt": 200,
+   "e1_neg": 100,
+   "e2_rev": 50,
+   "e2_wc": 100,
+   "e3_boundary": 300,
+   "e3_replay": 100,
+   "e4_naive": 20,
+   "e4_stable": 50,
+   "e5_cycles": 100,
+   "geo_par": 50,
+   "geo_single": 1000
+  },
+  "seed": 1,
+  "software_build": {
+   "build_id": "c2f2a84cadf165065bd29a821bd7528781ad3e07",
+   "origin": "git-head"
+  },
+  "spare_runs_used": {
+   "A": 1265,
+   "B": 1265
+  },
+  "started_utc": "2026-11-11T08:09:41Z"
+ },
+ "server_deadlocks_per_block": {
+  "e0_e1": 0,
+  "e2": 0,
+  "e3": 0,
+  "e4": 3930,
+  "e5": 0,
+  "e6": 0,
+  "e7_e8": 0
+ }
+}

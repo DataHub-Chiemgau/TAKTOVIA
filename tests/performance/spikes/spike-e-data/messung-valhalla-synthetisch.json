@@ -1,0 +1,322 @@
+{
+ "hardware": {
+  "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "logical_cpus": 4,
+  "memory_total_mb": 16086,
+  "os": "Linux-6.18.44-fc-v378-x86_64-with-glibc2.39",
+  "python": "3.13.18",
+  "virtualized": "nicht geprüft"
+ },
+ "label": "Valhalla lokal auf synthetischem Gitternetz (Probelauf, kein Anbietervergleich)",
+ "limitations": [
+  "künstliches Netz mit ca. 14.400 Knoten, keine reale Region, keine reale Datenqualität",
+  "Engine im selben Prozess, ein Aufruf zur Zeit (keine Parallelität gemessen)",
+  "HTTP-Wrapper statt Valhalla-HTTP-Server",
+  "Lizenz-, Betriebs- und Kostenkriterien nicht bewertet"
+ ],
+ "matrix": {
+  "budget_ms": 1000,
+  "reference_size_id": "M-2x250",
+  "sizes": {
+   "M-100x100": {
+    "cells": 10000,
+    "engine_only_ms": {
+     "max_ms": 8674.121,
+     "mean_ms": 7415.899,
+     "min_ms": 6119.76,
+     "n": 5,
+     "p50_ms": 7076.876,
+     "p90_ms": 8674.121,
+     "p95_ms": 8674.121,
+     "p99_ms": 8674.121
+    },
+    "reps": 5,
+    "via_adapter_http_ms": {
+     "max_ms": 7885.537,
+     "mean_ms": 7206.36,
+     "min_ms": 6374.628,
+     "n": 5,
+     "p50_ms": 7160.696,
+     "p90_ms": 7885.537,
+     "p95_ms": 7885.537,
+     "p99_ms": 7885.537
+    },
+    "within_budget_p95_via_adapter": false
+   },
+   "M-1x25": {
+    "cells": 25,
+    "engine_only_ms": {
+     "max_ms": 396.075,
+     "mean_ms": 260.901,
+     "min_ms": 190.031,
+     "n": 10,
+     "p50_ms": 238.693,
+     "p90_ms": 315.176,
+     "p95_ms": 396.075,
+     "p99_ms": 396.075
+    },
+    "reps": 10,
+    "via_adapter_http_ms": {
+     "max_ms": 364.498,
+     "mean_ms": 265.833,
+     "min_ms": 203.381,
+     "n": 10,
+     "p50_ms": 236.817,
+     "p90_ms": 353.167,
+     "p95_ms": 364.498,
+     "p99_ms": 364.498
+    },
+    "within_budget_p95_via_adapter": true
+   },
+   "M-1x250": {
+    "cells": 250,
+    "engine_only_ms": {
+     "max_ms": 4945.541,
+     "mean_ms": 3672.855,
+     "min_ms": 2678.844,
+     "n": 10,
+     "p50_ms": 3377.155,
+     "p90_ms": 4438.996,
+     "p95_ms": 4945.541,
+     "p99_ms": 4945.541
+    },
+    "reps": 10,
+    "via_adapter_http_ms": {
+     "max_ms": 4300.446,
+     "mean_ms": 3672.421,
+     "min_ms": 3021.631,
+     "n": 10,
+     "p50_ms": 3545.582,
+     "p90_ms": 4213.479,
+     "p95_ms": 4300.446,
+     "p99_ms": 4300.446
+    },
+    "within_budget_p95_via_adapter": false
+   },
+   "M-250x250": {
+    "cells": 62500,
+    "engine_only_ms": {
+     "max_ms": 30241.238,
+     "mean_ms": 28995.02,
+     "min_ms": 27913.586,
+     "n": 3,
+     "p50_ms": 28830.236,
+     "p90_ms": 30241.238,
+     "p95_ms": 30241.238,
+     "p99_ms": 30241.238
+    },
+    "reps": 3,
+    "via_adapter_http_ms": {
+     "max_ms": 30124.428,
+     "mean_ms": 28804.401,
+     "min_ms": 27849.026,
+     "n": 3,
+     "p50_ms": 28439.75,
+     "p90_ms": 30124.428,
+     "p95_ms": 30124.428,
+     "p99_ms": 30124.428
+    },
+    "within_budget_p95_via_adapter": false
+   },
+   "M-25x25": {
+    "cells": 625,
+    "engine_only_ms": {
+     "max_ms": 1553.82,
+     "mean_ms": 1284.506,
+     "min_ms": 894.462,
+     "n": 10,
+     "p50_ms": 1272.168,
+     "p90_ms": 1507.813,
+     "p95_ms": 1553.82,
+     "p99_ms": 1553.82
+    },
+    "reps": 10,
+    "via_adapter_http_ms": {
+     "max_ms": 1648.762,
+     "mean_ms": 1367.42,
+     "min_ms": 1075.18,
+     "n": 10,
+     "p50_ms": 1372.464,
+     "p90_ms": 1527.357,
+     "p95_ms": 1648.762,
+     "p99_ms": 1648.762
+    },
+    "within_budget_p95_via_adapter": false
+   },
+   "M-2x250": {
+    "cells": 500,
+    "engine_only_ms": {
+     "max_ms": 6679.303,
+     "mean_ms": 5142.991,
+     "min_ms": 3804.122,
+     "n": 10,
+     "p50_ms": 5350.656,
+     "p90_ms": 6310.075,
+     "p95_ms": 6679.303,
+     "p99_ms": 6679.303
+    },
+    "reps": 10,
+    "via_adapter_http_ms": {
+     "max_ms": 6711.245,
+     "mean_ms": 5025.286,
+     "min_ms": 3235.648,
+     "n": 10,
+     "p50_ms": 5222.488,
+     "p90_ms": 5769.907,
+     "p95_ms": 6711.245,
+     "p99_ms": 6711.245
+    },
+    "within_budget_p95_via_adapter": false
+   }
+  }
+ },
+ "network": {
+  "cols": 120,
+  "dlat": 0.0009,
+  "dlon": 0.0014,
+  "lat0": 51.0,
+  "lon0": 13.7,
+  "real_world_validated": false,
+  "rows": 120
+ },
+ "pbf_bytes": 2799,
+ "python": "3.13.18",
+ "pyvalhalla": "3.9.1",
+ "routes": [
+  {
+   "category": "fahrzeug_kurz",
+   "distance_m": 2470,
+   "duration_s": 186,
+   "error": null,
+   "expect": "route",
+   "id": "V01",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 85.07
+  },
+  {
+   "category": "fahrzeug_mittel",
+   "distance_m": 13850,
+   "duration_s": 1028,
+   "error": null,
+   "expect": "route",
+   "id": "V02",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 28.15
+  },
+  {
+   "category": "fahrzeug_lang",
+   "distance_m": 23170,
+   "duration_s": 1727,
+   "error": null,
+   "expect": "route",
+   "id": "V03",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 10.7
+  },
+  {
+   "category": "restriktion_einbahn_mit_richtung",
+   "distance_m": 98,
+   "duration_s": 12,
+   "error": null,
+   "expect": "route",
+   "id": "V04a",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 2.38
+  },
+  {
+   "category": "restriktion_einbahn_gegen_richtung",
+   "compared_with": {
+    "distance_m": 98,
+    "duration_s": 12,
+    "id": "V04a"
+   },
+   "distance_m": 298,
+   "duration_s": 35,
+   "error": null,
+   "expect": "umweg_laenger_als:V04a",
+   "id": "V04b",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 2.0
+  },
+  {
+   "category": "restriktion_fussgaengerzone",
+   "distance_m": 2160,
+   "duration_s": 160,
+   "error": null,
+   "expect": "laenge_km_mindestens:2.05",
+   "id": "V05",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 6.27
+  },
+  {
+   "category": "fuss_treppe",
+   "distance_m": 100,
+   "duration_s": 71,
+   "error": null,
+   "expect": "route",
+   "id": "V06a",
+   "ok": true,
+   "profile": "pedestrian",
+   "response_ms": 2.15
+  },
+  {
+   "category": "rollstuhl_treppe_meiden",
+   "compared_with": {
+    "distance_m": 100,
+    "duration_s": 71,
+    "id": "V06a"
+   },
+   "distance_m": 296,
+   "duration_s": 266,
+   "error": null,
+   "expect": "umweg_laenger_als:V06a",
+   "id": "V06b",
+   "ok": true,
+   "profile": "wheelchair",
+   "response_ms": 6.44
+  },
+  {
+   "category": "ausserhalb_datenbestand",
+   "distance_m": null,
+   "duration_s": null,
+   "error": "OutOfCoverage",
+   "expect": "error:OutOfCoverage",
+   "id": "V07",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 2.15
+  },
+  {
+   "category": "keine_verbindung",
+   "distance_m": null,
+   "duration_s": null,
+   "error": "NoRoute",
+   "expect": "error:NoRoute",
+   "id": "V08",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 2.29
+  },
+  {
+   "category": "keine_verbindung_standard_snapping",
+   "distance_m": 5655,
+   "duration_s": 410,
+   "error": null,
+   "expect": "route",
+   "id": "V08b",
+   "ok": true,
+   "profile": "auto",
+   "response_ms": 4.65
+  }
+ ],
+ "routes_rerun_note": "Strecken nach Korrektur des Katalogs (V04) und des Snappings (V08) neu gemessen; Matrixmessung aus dem früheren Lauf",
+ "tile_build_note": "frischer Kachelbau in leerem Arbeitsverzeichnis (gesonderter Lauf, gleiche Eingabe); tile_build_s=0.0 im Hauptlauf bedeutet: Kacheln wiederverwendet",
+ "tile_build_s": 0.0,
+ "tile_build_s_fresh": 0.64
+}

@@ -98,7 +98,8 @@ def write_pbf(path, nodes, ways, chunk=8000):
             way = f_varint(1, wid) + f_packed(2, ks) + f_packed(3, vs) + f_packed(8, deltas, True)
             group += f_bytes(3, way)
         out += blob("OSMData", f_bytes(1, st.encode()) + f_bytes(2, group) + f_varint(17, GRAN))
-    open(path, "wb").write(bytes(out))
+    with open(path, "wb") as f:
+        f.write(bytes(out))
     return len(out)
 
 

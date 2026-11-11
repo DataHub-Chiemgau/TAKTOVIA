@@ -470,7 +470,8 @@ def exp_isolation(pool, runs):
     out["c_hold_A_on_B_run"] = f"{o.kind}:{o.code}"
     cur = tx(pool.ctl[3], A)
     out["c_A_sees_B_holds_rows"] = cur.execute("SELECT count(*) FROM taktovia.capacity_hold WHERE run_id=%s", (run_b,)).fetchone()[0]
-    out["c_A_sees_B_bookings_rows"] = cur.execute("SELECT count(*) FROM taktovia.booking WHERE hold_id IN (SELECT id FROM taktovia.capacity_hold)", ()).fetchone()[0]
+    out["c_A_bookings_of_other_tenants_visible"] = cur.execute("SELECT count(*) FROM taktovia.booking WHERE tenant_id <> %s", (A,)).fetchone()[0]
+    out["c_A_bookings_on_B_run_visible"] = cur.execute("SELECT count(*) FROM taktovia.booking b JOIN taktovia.capacity_hold h ON h.tenant_id=b.tenant_id AND h.id=b.hold_id WHERE h.run_id=%s", (run_b,)).fetchone()[0]
     out["c_A_total_holds_visible"] = cur.execute("SELECT count(*) FROM taktovia.capacity_hold", ()).fetchone()[0]
     out["c_A_distinct_tenant_ids_visible"] = cur.execute("SELECT count(DISTINCT tenant_id) FROM taktovia.capacity_hold", ()).fetchone()[0]
     pool.ctl[3].rollback()
@@ -578,6 +579,7 @@ def main(argv=None):
     ap.add_argument("--executor", choices=["threads", "processes"], default="processes", help="processes: 4 Prozesse mit je 25 Threads (Standard)")
     ap.add_argument("--no-reload", action="store_true", help="vorhandene Datenbank weiterverwenden")
     ap.add_argument("--drop", action="store_true")
+    ap.add_argument("--merge", action="store_true", help="mit --only: nur die gewählten Abschnitte in eine vorhandene results.json übernehmen (Wiederholung einzelner Messblöcke)")
     a = ap.parse_args(argv)
     only = set(filter(None, a.only.split(",")))
     want = lambda e: not only or e in only  # noqa: E731
@@ -694,7 +696,18 @@ def main(argv=None):
                        spare_runs_used=runs.n)
     pool.close()
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / ("results-quick.json" if q else "results.json")).write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
+    target = out_dir / ("results-quick.json" if q else "results.json")
+    if a.merge and target.exists():
+        old = json.loads(target.read_text())
+        keep_meta = old.get("meta", {})
+        keep_meta.setdefault("reruns", []).append({"blocks": sorted(only), "started_utc": res["meta"]["started_utc"], "finished_utc": res["meta"]["finished_utc"],
+                                                   "loadavg_start": res["meta"]["loadavg_start"], "loadavg_end": res["meta"]["loadavg_end"]})
+        for k, v in res.items():
+            if k.startswith(tuple(sorted(only))) or any(k.startswith(o) for o in only):
+                old[k] = v
+        old["meta"] = keep_meta
+        res = old
+    target.write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
     print("fertig:", out_dir / ("results-quick.json" if q else "results.json"), f"({res['meta']['duration_s']} s)")
     if a.drop:
         atdb.drop_database(sd.SPIKE_DB)

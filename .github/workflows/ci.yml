@@ -27,6 +27,7 @@ jobs:
       - run: python docs/umsetzungsplan/check_wp.py
       - run: python docs/umsetzungsplan/check_tracking.py
       - run: python docs/umsetzungsplan/test_check_tracking.py
+      - run: python docs/umsetzungsplan/gate_report.py M1
       - name: API-Verträge (WP-M0-04, -13)
         run: |
           python api/tools/bundle.py --check
