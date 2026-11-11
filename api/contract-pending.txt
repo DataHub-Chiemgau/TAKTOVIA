@@ -24,7 +24,6 @@ getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
 getOperation  # GET /v1/operations/{operation_id}
 holdOffer  # POST /v1/federation/offers/{offer_id}/hold
-listAuditEvents  # GET /v1/audit-events
 listConfigRevisions  # GET /v1/config/revisions
 listCostCenters  # GET /v1/cost-centers
 listDepots  # GET /v1/depots

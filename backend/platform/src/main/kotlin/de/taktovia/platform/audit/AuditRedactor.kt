@@ -16,7 +16,7 @@ object AuditRedactor {
     private const val MAX_DEPTH = 6; private const val MAX_ENTRIES = 50; private const val MAX_STRING = 500
 
     private val SECRET_KEY = Regex("(?i)(pass(word|wd)?|secret|token|authorization|auth|api[_-]?key|credential|cookie|signature|private[_-]?key|otp|pin|cvc|cvv|bearer|session)")
-    private val PERSONAL_KEY = Regex("(?i)(e-?mail|phone|mobile|telefon|first[_-]?name|last[_-]?name|full[_-]?name|vorname|nachname|birth|geburt|address|adresse|street|strasse|postal|iban|card|pan)")
+    private val PERSONAL_KEY = Regex("(?i)(e-?mail|phone|mobile|telefon|first[_-]?name|last[_-]?name|full[_-]?name|vorname|nachname|birth|geburt|address|adresse|street|strasse|postal|iban|card|pan|(^|_)name$|customer|passenger|fahrgast|kunde)")
     private val TENANT_KEY = Regex("(?i)(^|_)tenant_id$")
     private val EMAIL = Regex("[^\\s@\"]+@[^\\s@\"]+\\.[^\\s@\"]+")
     private val JWT = Regex("eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{4,}")

@@ -70,9 +70,21 @@ object AuditActions {
     const val SECURITY_ACCESS_DENIED = "security.access.denied"
     /** Privilegiertes Konto ohne zweiten Faktor an einer geschützten API abgewiesen (WP-M1-04, LH-6.2-IAM-010). */
     const val SECURITY_MFA_MISSING = "security.auth.mfa_missing"
+    // WP-M1-12: Anmeldeereignisse des IdP (Keycloak-Ereignisschnittstelle), Sperre und der Auditzugriff selbst.
+    const val SECURITY_LOGIN_SUCCEEDED = "security.auth.login_succeeded"
+    const val SECURITY_LOGIN_FAILED = "security.auth.login_failed"
+    const val SECURITY_LOGOUT = "security.auth.logout"
+    /** Zweiter Faktor falsch eingegeben (WP-M1-04), im Unterschied zu [SECURITY_MFA_MISSING] (zweiter Faktor fehlt im Token). */
+    const val SECURITY_MFA_FAILED = "security.auth.mfa_failed"
+    /** Sitzung oder Konto gesperrt bzw. entsperrt (WP-M1-10). */
+    const val SECURITY_ACCOUNT_LOCKED = "security.account.locked"
+    const val SECURITY_ACCOUNT_UNLOCKED = "security.account.unlocked"
+    /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
+    const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, CONFIG_PUBLISHED, CONFIG_REVERTED,
         PROMISE_SNAPSHOT_BOUND, PROMISE_SNAPSHOT_CHANGED,
-        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING)
+        SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
+        SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED, AUDIT_READ)
 }
 
 /**
