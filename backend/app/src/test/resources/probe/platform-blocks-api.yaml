@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: Prüfvertrag für Plattformbausteine (Zustandsautomaten WP-M1-17, gebundene Zusage WP-M1-27)
+  version: 0.0.0
+paths:
+  /v1/probe/payments:
+    post:
+      summary: Testaggregat Zahlung anlegen (Zustand CREATED)
+      operationId: createProbePayment
+      security:
+      - oidc:
+        - probe:write
+      responses:
+        '201':
+          description: angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePayment'
+        '415':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/payments/{payment_id}:
+    get:
+      summary: Aktueller Zustand im ETag-geschützten Lesen
+      operationId: getProbePayment
+      security:
+      - oidc:
+        - probe:read
+      parameters:
+      - name: payment_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePayment'
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/payments/{payment_id}/transitions:
+    post:
+      summary: Zustandsübergang anfordern (serverseitig gegen die Übergangstabelle geprüft)
+      operationId: transitionProbePayment
+      security:
+      - oidc:
+        - probe:payments:transition
+      parameters:
+      - name: payment_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeTransition'
+      responses:
+        '200':
+          description: Übergang ausgeführt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePayment'
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/promises:
+    post:
+      summary: Testaggregat Zusage anlegen (bindet Revision 1)
+      operationId: createProbePromise
+      security:
+      - oidc:
+        - probe:write
+      responses:
+        '201':
+          description: angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePromise'
+        '415':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/promises/{promise_id}:
+    get:
+      summary: Aktuelle Revision der Zusage im ETag-geschützten Lesen
+      operationId: getProbePromise
+      security:
+      - oidc:
+        - probe:read
+      parameters:
+      - name: promise_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePromise'
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/promises/{promise_id}/changes:
+    post:
+      summary: Änderungsverfahren der Zusage (Grund Pflicht, If-Match, Recht promise:change)
+      operationId: changeProbePromise
+      security:
+      - oidc:
+        - promise:change
+      parameters:
+      - name: promise_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbePromiseChange'
+      responses:
+        '200':
+          description: neue Revision gebunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbePromise'
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ProbePromise:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+        content_hash:
+          type: string
+        content:
+          type: object
+      required:
+      - id
+      - revision
+      - content_hash
+      - content
+    ProbePromiseChange:
+      type: object
+      additionalProperties: false
+      properties:
+        procedure:
+          type: string
+        reason:
+          type: string
+          description: Pflicht, wird vom Baustein geprüft (fehlend oder leer 422).
+        content:
+          type: object
+      required:
+      - procedure
+      - content
+    ProbePayment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+        revision:
+          type: integer
+      required:
+      - id
+      - state
+      - revision
+    ProbeTransition:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          minLength: 1
+          maxLength: 40
+      required:
+      - state

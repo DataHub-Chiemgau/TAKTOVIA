@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+state_transition_rule;SELECT;WP-M1-17: Übergangsregeln der Zustandsautomaten; global, nur per Migration gepflegt

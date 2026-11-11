@@ -1,0 +1,6 @@
+# Zustandsautomat Fahrzeug: NICHT SPEZIFIZIERT (OP-21)
+
+- **Arbeitspaket:** WP-M1-17 (`LH-6.1-SYS-007`); Code: `StateMachines` führt `vehicle` als `UnspecifiedMachine` (registriert, nicht ausführbar).
+- **Zustandsspalte:** keine: `vehicle` hat nur `active_block` und `safety_revision`
+- **Lücke:** Das Pflichtenheft enthält für diesen Automaten keine Zustands- und Übergangsliste (OP-21). Sie darf nicht erfunden werden und **muss vor Codebeginn dieser Definition vom Auftraggeber/Fachanalyse spezifiziert werden**. Sobald sie vorliegt, wird sie in dieser Datei beschrieben, in `StateMachines` als `StateMachine` definiert und per Migration in `state_transition_rule` eingetragen; der Rahmen (Prüfung, CAS, Outbox, Datenbankhärtung) bleibt unverändert.
+- **Nachweis am echten Aggregat:** M2 (Fahrt) bzw. M3 (Fahrzeug, Störung), Vollabnahme siehe WP-M1-17.

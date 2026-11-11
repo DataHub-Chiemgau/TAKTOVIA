@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+promise_test_aggregate;SELECT,INSERT,UPDATE;WP-M1-27: Kopf (aktuelle Revision) des Testaggregats; Revision nur +1 per Trigger
+promise_test_snapshot;SELECT,INSERT;WP-M1-27: gebundener Snapshot je Revision; unveraenderlich (Trigger promise_snapshot_immutable)

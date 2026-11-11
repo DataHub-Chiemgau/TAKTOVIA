@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/platform.statechanged.v1.schema.json",
+  "title": "Zustandswechsel eines Aggregats (WP-M1-17, LH-6.1-SYS-007)",
+  "description": "Payload der Outbox-Ereignisse `<aggregat>.state_changed` (event_type z. B. `booking.state_changed`, `payment.state_changed`, `operation.state_changed`). Je Übergang genau ein Ereignis, geschrieben in derselben Transaktion wie Zustand und Revision. `aggregate_revision` der Hülle ist die neue Revision. Ein Konsument wendet ein Ereignis nur an, wenn seine Revision die zuletzt bekannte übersteigt; ältere Revisionen bewirken keinen Rücksprung (PH-AT-017). Der Ereignisname ist ein Vorschlag (OP-33).",
+  "type": "object",
+  "required": ["machine", "machine_version", "from", "to", "previous_revision", "revision"],
+  "additionalProperties": false,
+  "properties": {
+    "machine": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$", "description": "Name des Automaten (operation, tenant, booking, payment, ...)." },
+    "machine_version": { "type": "integer", "minimum": 1, "description": "Version der Übergangstabelle." },
+    "from": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,40}$" },
+    "to": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,40}$" },
+    "previous_revision": { "type": "integer", "minimum": 0 },
+    "revision": { "type": "integer", "minimum": 1 }
+  },
+  "examples": [
+    { "machine": "payment", "machine_version": 1, "from": "CREATED", "to": "AUTHORIZED", "previous_revision": 1, "revision": 2 }
+  ]
+}
