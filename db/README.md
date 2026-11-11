@@ -8,7 +8,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V1__kernschema.sql` | Kernschema, Zeile für Zeile der Entwurfs-DDL aus `docs/pflichtenheft/schema/` (ohne `BEGIN`, `COMMIT`, `CREATE EXTENSION`) |
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
-| `role_matrix.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
+| `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |
 
 ## Lokal
@@ -33,3 +33,9 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 
 - `db.py` ersetzt bis zum Gradle-Gerüst (WP-M0-02) Flyway; Dateinamen sind Flyway-kompatibel, die Historientabelle liegt in `taktovia_meta.schema_history`.
 - Getestet wurde mit PostgreSQL 16.15 und PostGIS 3.4 (Entwicklungsumgebung ohne Docker); die CI nutzt PostgreSQL 17 mit PostGIS 3.5. Das 17er-Ergebnis steht bis zum ersten CI-Lauf aus.
+
+## Parallele Arbeit ohne Merge-Konflikte
+
+- **Migrationsnummern:** Arbeitspaket `WP-M<m>-<nn>` verwendet Versionen ab `V<m>0<nn>0` (z. B. WP-M1-02 → `V1020`, `V1021`, …; WP-M2-05 → `V2050`). V1–V3 gehören dem Kernschema.
+- **Rechte:** je Arbeitspaket eine eigene `R__grants_<wp>.sql` (wiederholbar) statt Änderungen an `R__runtime_grants.sql`.
+- **Rollenmatrix und Tabellenbesitz:** je Arbeitspaket eine eigene Datei `db/role_matrix.d/<wp>.csv` und `db/table_owners.d/<wp>.csv`; Tabellennamen dürfen nicht doppelt vorkommen.

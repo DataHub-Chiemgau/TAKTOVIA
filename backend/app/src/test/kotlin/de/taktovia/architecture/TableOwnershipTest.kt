@@ -11,13 +11,13 @@ import kotlin.io.path.writeText
 
 class TableOwnershipTest {
     private val repo: Path = Path.of(System.getProperty("taktovia.repoRoot"))
-    private val owners = TableOwnership.loadOwners(repo.resolve("db/table_owners.csv"))
+    private val owners = TableOwnership.loadOwners(repo.resolve("db/table_owners.d"))
 
     @Test
     fun `jede Tabelle der Migrationen hat genau einen gueltigen Besitzer`() {
         val tables = TableOwnership.migrationTables(repo.resolve("db/migrations"))
-        assertEquals(38, tables.size)
-        assertEquals(tables, owners.keys, "Tabelle ohne Eintrag in db/table_owners.csv (oder Eintrag ohne Tabelle)")
+        assertTrue(tables.size >= 38)
+        assertEquals(tables, owners.keys, "Tabelle ohne Eintrag in db/table_owners.d (oder Eintrag ohne Tabelle)")
         assertTrue(owners.values.all { it in TableOwnership.OWNERS }, "unbekannter Besitzer")
     }
 

@@ -19,8 +19,16 @@ object TableOwnership {
     private val WRITE = Regex("""(?i)\b(insert\s+into|update|delete\s+from)\s+(?:taktovia\.)?([a-z_]+)\b""")
     private val CREATE = Regex("""(?im)^\s*CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:taktovia\.)?([a-z_]+)""")
 
-    fun loadOwners(csv: Path): Map<String, String> = Files.readAllLines(csv).drop(1).filter { it.isNotBlank() }
-        .associate { l -> l.split(';').let { it[0] to it[1] } }
+    /** Liest alle CSV-Dateien in `db/table_owners.d` (je Arbeitspaket eine Datei) und verlangt eindeutige Tabellennamen. */
+    fun loadOwners(dir: Path): Map<String, String> {
+        val out = linkedMapOf<String, String>()
+        Files.list(dir).use { s -> s.filter { it.extension == "csv" }.sorted().toList() }.forEach { f ->
+            Files.readAllLines(f).drop(1).filter { it.isNotBlank() }.forEach { l ->
+                val c = l.split(';'); require(c[0] !in out) { "Tabelle doppelt in table_owners.d: ${c[0]}" }; out[c[0]] = c[1]
+            }
+        }
+        return out
+    }
 
     fun migrationTables(dir: Path): Set<String> = Files.list(dir).use { s ->
         s.filter { it.name.startsWith("V") && it.extension == "sql" }.toList()

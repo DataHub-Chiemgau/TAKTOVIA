@@ -4,13 +4,19 @@ from pathlib import Path
 import psycopg
 from helpers import admin, migrator, runtime, set_tenant, uid, seed_tenant
 
-MATRIX = Path(__file__).resolve().parents[1] / 'role_matrix.csv'
+MATRIX_DIR = Path(__file__).resolve().parents[1] / 'role_matrix.d'
 T1 = uid()
 
 
 def matrix():
-    with MATRIX.open(encoding='utf-8', newline='') as f:
-        return {r['table']: set(filter(None, r['runtime_privileges'].split(','))) for r in csv.DictReader(f, delimiter=';')}
+    """Rollenmatrix: alle Dateien db/role_matrix.d/*.csv (je Arbeitspaket eine eigene Datei, um Merge-Konflikte zu vermeiden)."""
+    out = {}
+    for p in sorted(MATRIX_DIR.glob('*.csv')):
+        with p.open(encoding='utf-8', newline='') as f:
+            for r in csv.DictReader(f, delimiter=';'):
+                assert r['table'] not in out, f'Tabelle doppelt in der Rollenmatrix: {r["table"]}'
+                out[r['table']] = set(filter(None, r['runtime_privileges'].split(',')))
+    return out
 
 
 class Rollen(unittest.TestCase):
