@@ -4,10 +4,12 @@
   db.py bootstrap   als Administrator: Rollen, Datenbank, PostGIS (einmalig, idempotent)
   db.py migrate     als Migrator: V*.sql in Versionsreihenfolge, R__*.sql bei geänderter Prüfsumme
   db.py reset       als Administrator: Datenbank verwerfen und neu bootstrappen
+  db.py import-dump <datei>   Dump nach Importpruefung einspielen (WP-M1-40: Produktionsdump nie in Nicht-Produktion), siehe dumpguard.py
 
 Konfiguration ausschließlich über Umgebungsvariablen (keine Secrets im Repository):
   TAKTOVIA_DB_HOST/PORT/NAME, TAKTOVIA_DB_ADMIN_USER/PASSWORD,
-  TAKTOVIA_DB_MIGRATOR_PASSWORD, TAKTOVIA_DB_RUNTIME_PASSWORD
+  TAKTOVIA_DB_MIGRATOR_PASSWORD, TAKTOVIA_DB_RUNTIME_PASSWORD,
+  TAKTOVIA_ENVIRONMENT (development|staging|performance|production, Vorgabe development): Umgebungskennung der Datenbank (WP-M1-40)
 
 Die Fachmigrationen sind Flyway-kompatibel benannt (V<n>__name.sql, R__name.sql). Dieses Werkzeug ist ein
 bewusst kleiner Übergang, bis das Gradle-Projekt (WP-M0-02) Flyway einbindet; die Historientabelle
@@ -89,7 +91,24 @@ def migrate():
                 c.execute('INSERT INTO taktovia_meta.schema_history(script,checksum) VALUES (%s,%s) '
                           'ON CONFLICT (script) DO UPDATE SET checksum=EXCLUDED.checksum, installed_on=now()', (p.name, cs))
             done.append(p.name)
+    mark_environment()
     print('migriert:', ', '.join(done) if done else 'nichts zu tun')
+
+
+ENVIRONMENTS = ('development', 'staging', 'performance', 'production')
+
+
+def mark_environment():
+    """WP-M1-40: setzt die unveraenderliche Umgebungskennung der Datenbank einmalig; eine abweichende Kennung bricht ab."""
+    want = env('TAKTOVIA_ENVIRONMENT', 'development')
+    if want not in ENVIRONMENTS:
+        sys.exit(f'Umgebungskennung {want!r} unbekannt (erlaubt: {", ".join(ENVIRONMENTS)})')
+    with conn('taktovia_migrator', env('TAKTOVIA_DB_MIGRATOR_PASSWORD')) as c:
+        have = c.execute('SELECT environment FROM taktovia_meta.environment_marker').fetchone()
+        if have is None:
+            c.execute('INSERT INTO taktovia_meta.environment_marker(environment) VALUES (%s)', (want,))
+        elif have[0] != want:
+            sys.exit(f'Umgebungskennung der Datenbank ist {have[0]!r}, angefordert {want!r}: Migration verweigert (WP-M1-40)')
 
 
 def reset():
@@ -99,6 +118,11 @@ def reset():
     bootstrap()
 
 
+def import_dump():
+    import dumpguard
+    sys.exit(dumpguard.main(sys.argv[2:]))
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
-    {'bootstrap': bootstrap, 'migrate': migrate, 'reset': reset}.get(cmd, lambda: sys.exit(__doc__))()
+    {'bootstrap': bootstrap, 'migrate': migrate, 'reset': reset, 'import-dump': import_dump}.get(cmd, lambda: sys.exit(__doc__))()

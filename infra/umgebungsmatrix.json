@@ -1,0 +1,242 @@
+{
+  "version": 1,
+  "hinweis": "Umgebungsmatrix (WP-M1-40, LH-6.18-SEC-012): Zugänge, Rollen und Datenherkunft je Umgebung. Maschinenlesbar, von infra/check_env_separation.py und tests/acceptance/test_umgebungsmatrix.py geprüft. Bezeichner sind Namen, keine Zugangsdaten. Hosting (D-05) offen: Konto und Netz sind anbieterneutrale Namen.",
+  "umgebungen": {
+    "development": {
+      "zweck": "Lokale Entwicklung (compose) und gemeinsame Integrationsumgebung (vorläufig)",
+      "datenklasse": "synthetisch",
+      "datenherkunft": "synthetisch: Seed-Generator infra/seed/seed_dev.py (Mandanten A/B); Produktionsdaten werden nie kopiert, eine Übernahme ist ohne eigenen Beschluss verboten",
+      "umgebungskennung": "development",
+      "konto": "taktovia-development-account",
+      "netz": "taktovia-development-net",
+      "datenbank": {
+        "host": "postgres.development.taktovia.internal",
+        "erlaubte_quellnetze": [
+          "taktovia-development-net"
+        ],
+        "migrationszugang": "taktovia-development-migrator",
+        "laufzeitzugang": "taktovia-development-runtime"
+      },
+      "identitaet": {
+        "realm": "taktovia-dev",
+        "issuer": "http://localhost:18080/realms/taktovia-dev",
+        "realm_datei": "keycloak/realm-taktovia-dev.json",
+        "audience": "taktovia-api",
+        "domaene": "taktovia-development-idp"
+      },
+      "secrets": {
+        "domaene": "taktovia-development-secrets"
+      },
+      "psp": {
+        "domaene": "taktovia-development-psp",
+        "modus": "sandbox"
+      },
+      "zugaenge": [
+        {
+          "gruppe": "Entwicklung",
+          "rollen": [
+            "entwickler"
+          ],
+          "art": "lesend und schreibend auf Entwicklungssystemen, nie auf Staging, Performance oder Produktion"
+        },
+        {
+          "gruppe": "CI",
+          "rollen": [
+            "ci"
+          ],
+          "art": "Build und Tests gegen Entwicklungsdienste"
+        }
+      ],
+      "erlaubte_dump_herkunft": [
+        "synthetisch"
+      ]
+    },
+    "staging": {
+      "zweck": "Abnahme- und Integrationstests vor Produktion (Zielplattform, M5)",
+      "datenklasse": "synthetisch",
+      "datenherkunft": "synthetisch: Seed-Generator, Testdaten aus Abnahmeläufen; keine Produktionsdaten",
+      "umgebungskennung": "staging",
+      "konto": "taktovia-staging-account",
+      "netz": "taktovia-staging-net",
+      "datenbank": {
+        "host": "postgres.staging.taktovia.internal",
+        "erlaubte_quellnetze": [
+          "taktovia-staging-net"
+        ],
+        "migrationszugang": "taktovia-staging-migrator",
+        "laufzeitzugang": "taktovia-staging-runtime"
+      },
+      "identitaet": {
+        "realm": "taktovia-staging",
+        "issuer": "https://idp.staging.taktovia.example/realms/taktovia-staging",
+        "realm_datei": "keycloak/realm-taktovia-staging.json",
+        "audience": "taktovia-api",
+        "domaene": "taktovia-staging-idp"
+      },
+      "secrets": {
+        "domaene": "taktovia-staging-secrets"
+      },
+      "psp": {
+        "domaene": "taktovia-staging-psp",
+        "modus": "sandbox"
+      },
+      "zugaenge": [
+        {
+          "gruppe": "Entwicklung",
+          "rollen": [
+            "entwickler"
+          ],
+          "art": "lesend, Fehleranalyse"
+        },
+        {
+          "gruppe": "Test",
+          "rollen": [
+            "tester"
+          ],
+          "art": "Abnahmetests"
+        },
+        {
+          "gruppe": "Betrieb",
+          "rollen": [
+            "betrieb"
+          ],
+          "art": "Betrieb und Bereitstellung"
+        }
+      ],
+      "erlaubte_dump_herkunft": [
+        "synthetisch",
+        "development"
+      ]
+    },
+    "performance": {
+      "zweck": "Lasttests mit produktionsähnlichem synthetischem Volumen (Vollausbau M5)",
+      "datenklasse": "produktionsähnlich synthetisch",
+      "datenherkunft": "synthetisch erzeugtes Volumen; keine Produktionsdaten und keine Anonymisierungskopie",
+      "umgebungskennung": "performance",
+      "konto": "taktovia-performance-account",
+      "netz": "taktovia-performance-net",
+      "datenbank": {
+        "host": "postgres.performance.taktovia.internal",
+        "erlaubte_quellnetze": [
+          "taktovia-performance-net"
+        ],
+        "migrationszugang": "taktovia-performance-migrator",
+        "laufzeitzugang": "taktovia-performance-runtime"
+      },
+      "identitaet": {
+        "realm": "taktovia-performance",
+        "issuer": "https://idp.performance.taktovia.example/realms/taktovia-performance",
+        "realm_datei": "keycloak/realm-taktovia-performance.json",
+        "audience": "taktovia-api",
+        "domaene": "taktovia-performance-idp"
+      },
+      "secrets": {
+        "domaene": "taktovia-performance-secrets"
+      },
+      "psp": {
+        "domaene": "taktovia-performance-psp",
+        "modus": "sandbox"
+      },
+      "zugaenge": [
+        {
+          "gruppe": "Test",
+          "rollen": [
+            "tester"
+          ],
+          "art": "Lasttests"
+        },
+        {
+          "gruppe": "Betrieb",
+          "rollen": [
+            "betrieb"
+          ],
+          "art": "Betrieb und Bereitstellung"
+        }
+      ],
+      "erlaubte_dump_herkunft": [
+        "synthetisch"
+      ]
+    },
+    "production": {
+      "zweck": "Produktivbetrieb",
+      "datenklasse": "Produktionsdaten",
+      "datenherkunft": "echte Betriebsdaten; verlassen die Produktion nicht (kein Dump in andere Umgebungen)",
+      "umgebungskennung": "production",
+      "konto": "taktovia-production-account",
+      "netz": "taktovia-production-net",
+      "datenbank": {
+        "host": "postgres.production.taktovia.internal",
+        "erlaubte_quellnetze": [
+          "taktovia-production-net"
+        ],
+        "migrationszugang": "taktovia-production-migrator",
+        "laufzeitzugang": "taktovia-production-runtime"
+      },
+      "identitaet": {
+        "realm": "taktovia-production",
+        "issuer": "https://idp.taktovia.example/realms/taktovia-production",
+        "realm_datei": "keycloak/realm-taktovia-production.json",
+        "audience": "taktovia-api",
+        "domaene": "taktovia-production-idp"
+      },
+      "secrets": {
+        "domaene": "taktovia-production-secrets"
+      },
+      "psp": {
+        "domaene": "taktovia-production-psp",
+        "modus": "live"
+      },
+      "zugaenge": [
+        {
+          "gruppe": "Betrieb",
+          "rollen": [
+            "betrieb"
+          ],
+          "art": "eng begrenzt, nachvollziehbar, getrennte Zugangsdaten; kein Zugang mit Entwicklungs- oder Testzugängen"
+        }
+      ],
+      "erlaubte_dump_herkunft": [
+        "production"
+      ]
+    }
+  },
+  "netzpfade": [
+    {
+      "von": "taktovia-development-net",
+      "nach": "taktovia-development-net",
+      "zweck": "umgebungsintern"
+    },
+    {
+      "von": "taktovia-staging-net",
+      "nach": "taktovia-staging-net",
+      "zweck": "umgebungsintern"
+    },
+    {
+      "von": "taktovia-performance-net",
+      "nach": "taktovia-performance-net",
+      "zweck": "umgebungsintern"
+    },
+    {
+      "von": "taktovia-production-net",
+      "nach": "taktovia-production-net",
+      "zweck": "umgebungsintern"
+    }
+  ],
+  "verboten": [
+    {
+      "von": "taktovia-development-net",
+      "nach": "taktovia-production-net",
+      "gegenstand": "jeder Verkehr, insbesondere Produktionsdatenbank, Produktions-API, Produktions-Secrets"
+    },
+    {
+      "von": "taktovia-staging-net",
+      "nach": "taktovia-production-net",
+      "gegenstand": "jeder Verkehr, insbesondere Produktionsdatenbank, Produktions-API, Produktions-Secrets"
+    },
+    {
+      "von": "taktovia-performance-net",
+      "nach": "taktovia-production-net",
+      "gegenstand": "jeder Verkehr, insbesondere Produktionsdatenbank, Produktions-API, Produktions-Secrets"
+    }
+  ]
+}

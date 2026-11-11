@@ -20,7 +20,8 @@ ALL_ROLES = {"passenger", "dispatcher", "driver", "finance", "tenant_admin"}
 CORE_SERVICES = ["postgres", "rabbitmq", "redis", "keycloak", "minio", "valhalla"]
 ENVS = ["development", "staging", "performance", "production"]
 MODULE_REQUIRED_VARS = {"environment", "hosting_provider", "hosting_region", "secret_domain", "identity_domain",
-                        "psp_domain", "db_migration_access", "db_runtime_access", "data_class"}
+                        "psp_domain", "db_migration_access", "db_runtime_access", "data_class", "account_domain", "network_domain",
+                        "db_ingress_network_domain"}
 SECRET_PATTERNS = [re.compile(p) for p in (r"-----BEGIN [A-Z ]*PRIVATE KEY-----", r"AKIA[0-9A-Z]{16}", r"ghp_[A-Za-z0-9]{20,}",
                                            r"xox[bp]-[0-9A-Za-z-]{10,}")]
 
@@ -189,7 +190,7 @@ def check_terraform(root, errs, notes):
         for v in MODULE_REQUIRED_VARS - {"environment", "data_class"}:
             if v not in need or f"var.{v}" not in main:
                 errs.append(f"terraform: envs/{e} reicht {v} nicht durch")
-        if f'environment         = "{e}"' not in main:
+        if not re.search(rf'^\s*environment\s*=\s*"{e}"', main, re.M):
             errs.append(f"terraform: envs/{e} setzt environment falsch")
         vals = tfvars(d / "terraform.tfvars.example")
         for v in need:
@@ -197,7 +198,7 @@ def check_terraform(root, errs, notes):
                 errs.append(f"terraform: envs/{e}/terraform.tfvars.example ohne {v}")
         if vals.get("db_migration_access") == vals.get("db_runtime_access"):
             errs.append(f"terraform: {e} Migrations- und Laufzeitzugang gleich")
-        for k in ("secret_domain", "identity_domain", "psp_domain", "db_migration_access", "db_runtime_access"):
+        for k in ("secret_domain", "identity_domain", "psp_domain", "db_migration_access", "db_runtime_access", "account_domain", "network_domain"):
             v = vals.get(k)
             if v in seen:
                 errs.append(f"terraform: {k}={v} in {e} und {seen[v]} geteilt")
@@ -286,9 +287,18 @@ def check_alerting(root, errs, notes):
     notes.append("alerting: Alertmanager-/Regelkonfiguration statisch geprueft (nicht gestartet)")
 
 
+def check_env_separation(root, errs, notes):
+    """WP-M1-40: Umgebungsmatrix (umgebungsmatrix.json) und Trennung von Konten, Netzen, Identitaeten und Secrets je Umgebung."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_env_separation as ces
+    m = json.loads((root / "umgebungsmatrix.json").read_text(encoding="utf-8"))
+    errs.extend(f"umgebungstrennung: {e}" for e in ces.check(m, root))
+    notes.append("umgebungstrennung: Matrix, Terraform-Parameter, Realms und Compose statisch geprueft (reale Netze/Konten NICHT)")
+
+
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_env_separation):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz

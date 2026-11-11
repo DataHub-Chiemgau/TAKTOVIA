@@ -9,6 +9,7 @@ PostgreSQL mit PostGIS, Mandantentrennung per Row Level Security (Kap. 02 §4, K
 | `migrations/V2__haertung_periode.sql` | Befund B-01: geschlossene Buchungsperiode unveränderlich |
 | `migrations/R__runtime_grants.sql` | wiederholbare Rechtevergabe für die Runtime-Rolle |
 | `role_matrix.d/*.csv` | Rolle × Tabelle × Recht; jede Tabelle braucht einen Eintrag, Test vergleicht gegen die echten Grants |
+| `dumpguard.py` | Importprüfung für Dumps (WP-M1-40): Produktionsdump nie in Nicht-Produktion, `db.py import-dump <datei>` |
 | `tests/` | Laufzeittests unter der echten Runtime-Rolle (49 Fälle: Rollen, Migration, RLS, Trigger, Härtung) |
 
 ## Lokal
@@ -39,3 +40,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 - **Migrationsnummern:** Arbeitspaket `WP-M<m>-<nn>` verwendet Versionen ab `V<m>0<nn>0` (z. B. WP-M1-02 → `V1020`, `V1021`, …; WP-M2-05 → `V2050`). V1–V3 gehören dem Kernschema.
 - **Rechte:** je Arbeitspaket eine eigene `R__grants_<wp>.sql` (wiederholbar) statt Änderungen an `R__runtime_grants.sql`.
 - **Rollenmatrix und Tabellenbesitz:** je Arbeitspaket eine eigene Datei `db/role_matrix.d/<wp>.csv` und `db/table_owners.d/<wp>.csv`; Tabellennamen dürfen nicht doppelt vorkommen.
+
+## Umgebungskennung und Dump-Import (WP-M1-40)
+
+`db.py migrate` setzt einmalig die unveränderliche Umgebungskennung (`taktovia_meta.environment_marker`) aus `TAKTOVIA_ENVIRONMENT` (Vorgabe `development`; Produktion: `TAKTOVIA_ENVIRONMENT=production`). Das Backend startet nur, wenn seine `taktovia.environment` zur Kennung passt. Dumps werden nur über `db.py import-dump` eingespielt; Produktionsdumps in Nicht-Produktion werden abgewiesen. Details: [umgebungstrennung.md](../docs/umsetzungsplan/vertraege/umgebungstrennung.md).

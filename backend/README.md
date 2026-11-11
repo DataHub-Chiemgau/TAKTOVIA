@@ -39,3 +39,18 @@ Alle `/v1/…`-Anfragen laufen durch die Filterkette `CorrelationFilter` (W3C `t
 | `extra-specs` (zusätzliche OpenAPI-Dateien, nur Tests) | – |
 
 Die Verträge aus `api/*.yaml` werden beim Bauen in die Anwendung kopiert (`processResources`). Tests der Gerüstteile laufen gegen die echte Anwendung und die echte Datenbank über die Prüf-Endpunkte unter `app/src/test/…/probe` (`taktovia.probe.enabled=true`, nur im Test).
+
+## Ressourcenserver und Umgebungstrennung (WP-M1-04, WP-M1-40)
+
+Jede Anfrage außer `/actuator/health` braucht ein gültiges Bearer-Token (`security.AuthenticationFilter`, nach Herkunftsprüfung und vor der Quote): Signatur (RS256/PS256/ES256, Schlüssel per `kid` aus dem JWKS des Issuers, Rotation und Fail-closed), `iss`, `aud`, `exp`, Claims-Vertrag [token-claims.v1](../docs/umsetzungsplan/vertraege/schemas/token-claims.v1.schema.json) → sonst 401. Privilegierte Rollen brauchen `acr=loa2` (zweiter Faktor), sonst 403 und Sicherheitsereignis `security.auth.mfa_missing`. Dienstkonten sind auf Adapter und Scopes begrenzt. Das System speichert keine Passwörter. Vertrag und Planungswerte: [idp-realm.md](../docs/umsetzungsplan/vertraege/idp-realm.md).
+
+| Einstellung (`taktovia.idp.…`) | Standard |
+|---|---|
+| `enabled` (Ausschalten nur mit `taktovia.environment=local`) | `true` |
+| `issuer-uri` (Pflicht), `jwks-uri`, `audience` | –, `<issuer>/protocol/openid-connect/certs`, `taktovia-api` |
+| `jwks-cache-seconds` / `jwks-min-refresh-seconds` / `max-stale-seconds` | 300 / 10 / 3600 |
+| `clock-skew-seconds` / `max-token-lifetime-seconds` | 30 / 900 |
+| `privileged-roles`, `human-clients` | `tenant_admin,dispatcher,finance`, `passenger-web,operator-web,driver-app` |
+| `service-clients.<client>` (Scope-Obergrenze je Adapter) | – (kein Dienstkonto zugelassen) |
+
+`EnvironmentGuard`: `taktovia.environment` (`local`=`development`, `staging`, `performance`, `production`) muss der unveränderlichen Umgebungskennung der Datenbank entsprechen, sonst kein Start. Die bestehenden Gerüsttests laufen mit `taktovia.idp.enabled=false` (Testkonfiguration); die Sicherheitstests starten die Anwendung gegen einen lokalen JWT-Test-Issuer (`TestIdp`).
