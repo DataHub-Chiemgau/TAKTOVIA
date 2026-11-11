@@ -153,7 +153,7 @@ class SchemasUndBeispiele(unittest.TestCase):
 
 class EreigniskatalogM2(unittest.TestCase):
     TYPEN = ['booking.attempt_recorded', 'booking.offer_created', 'booking.hold_placed', 'booking.hold_released', 'booking.hold_expired', 'booking.confirmed',
-             'booking.cancelled', 'dispatch.run_revised', 'payment.refund_recorded', 'communication.notification_sent', 'communication.notification_failed']
+             'booking.cancelled', 'dispatch.run_revised', 'payment.refund_recorded', 'payment.provider_event_received', 'communication.notification_sent', 'communication.notification_failed']
 
     def test_jedes_ereignis_hat_schema_beispiel_und_katalogzeile(self):
         katalog = (VERTRAEGE / 'm2-ereigniskatalog.md').read_text()

@@ -17,6 +17,7 @@ Outbox-Ereignisse der Module `booking-dispatch`, `fare-payment` und `communicati
 | `dispatch.run_revised` | `vehicle_run` / n | jede Planrevision (Einfügung, Entnahme, manuelle Änderung, Neuplanung) | M3 (Fahrtenplan, Fahrerhinweise), Nachrichten (Zusageänderung) | ja |
 | `payment.state_changed` | `payment_intent` / n | Übergang nach [zahlung-ablauf.md](zustaende/zahlung-ablauf.md) | Buchung (Zahlungsvoraussetzung), M4 | `platform.statechanged` |
 | `payment.refund_recorded` | `payment_intent` / n | Erstattung bestätigt | M4 (Umsatz), Nachrichten | ja |
+| `payment.provider_event_received` | `payment_event` / 1 | signiertes PSP-Ereignis dauerhaft gespeichert (WP-M2-29), je Ereignis-ID des Providers genau einmal; kein Zahlstatus-Übergang | Zahlungsautomat (WP-M2-30, Abgleich per Statusabfrage) | ja |
 | `communication.notification_sent` | `notification` / n | Zustellung bestätigt | Betreiberansicht | ja |
 | `communication.notification_failed` | `notification` / n | endgültiger Fehlschlag | Betreiberwarnung | ja |
 | `promise.changed` (M1, WP-M1-27) | `booking` / n | fahrgastrelevante Änderung der Zusage | Nachrichten (COM-001) | vorhanden |

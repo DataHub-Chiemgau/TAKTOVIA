@@ -31,6 +31,8 @@ data class ApiOperation(
     /** Antwortstatus → Ort des Antwortschemas (`null` ohne Body). */
     val responseSchemas: Map<String, String?>,
     val summary: String,
+    /** Authentisierung durch die PSP-Signatur (`security: providerSignature`) statt Bearer-Token (WP-M2-29): kein Ressourcenserver-, Kontext- und Idempotenzfilter, die Signaturprüfung leistet die Operation selbst. */
+    val signatureAuthenticated: Boolean = false,
 ) {
     val responseStatuses: Set<String> get() = responseSchemas.keys
     private val regex = Regex("^" + path.split('/').joinToString("/") { seg ->
@@ -107,6 +109,7 @@ class OpenApiRegistry(documents: Map<String, String>, dialectKeywords: List<Sema
                     requestSchemaLocation = if (hasSchema) ptr else null, requestBodyRequired = body.path("required").asBoolean(false),
                     responseSchemas = op.path("responses").properties().associate { (code, r) -> code to responseSchemaLocation(file, path, method, code, r) },
                     summary = op.path("summary").asString(),
+                    signatureAuthenticated = op.path("security").values().any { it.has("providerSignature") },
                 )
             }
         }

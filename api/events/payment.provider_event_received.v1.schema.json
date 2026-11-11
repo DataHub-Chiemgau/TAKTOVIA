@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.provider_event_received.v1.schema.json",
+  "title": "PSP-Ereignis empfangen (WP-M2-29)",
+  "description": "Payload von `payment.provider_event_received`. Aggregat: `payment_event` (Revision 1), je Ereignis-ID des Providers genau ein Ereignis (Deduplikation vor der Wirkung). Der Zahlungsautomat (WP-M2-30) ordnet über `provider_ref` dem `payment_intent` zu und führt Übergänge erst nach einer Statusabfrage beim PSP aus (Leitlinie 6); das Ereignis selbst ändert keinen Zahlstatus. Geld als bigint in kleinster Einheit (Leitlinie 5), keine Zahlungsmitteldaten (SEC-008). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md, Abbildung: docs/umsetzungsplan/vertraege/psp-adapter.md.",
+  "type": "object",
+  "required": ["provider", "event_id", "kind", "provider_ref", "reported_state"],
+  "additionalProperties": false,
+  "properties": {
+    "provider": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]+$", "maxLength": 64},
+    "event_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "kind": {"enum": ["REQUIRES_ACTION", "AUTHORIZED", "AUTHORIZATION_FAILED", "CAPTURE_PENDING", "CAPTURED", "VOID_PENDING", "VOIDED", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED", "DISPUTE_OPENED", "DISPUTE_WON", "DISPUTE_LOST"]},
+    "provider_ref": {"type": "string", "minLength": 1, "maxLength": 128},
+    "reported_state": {"enum": ["CREATED", "REQUIRES_ACTION", "AUTHORIZED", "CAPTURE_PENDING", "CAPTURED", "AUTHORIZATION_FAILED", "VOID_PENDING", "VOIDED", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED"]},
+    "authorized_minor": {"type": "integer", "minimum": 0},
+    "captured_minor": {"type": "integer", "minimum": 0},
+    "refunded_minor": {"type": "integer", "minimum": 0},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "dispute_state": {"enum": ["OPEN", "WON", "LOST"]}
+  },
+  "examples": [
+    {"provider": "simpsp", "event_id": "evt_0123456789abcdef", "kind": "AUTHORIZED", "provider_ref": "psp_1", "reported_state": "AUTHORIZED", "authorized_minor": 1250, "captured_minor": 0, "refunded_minor": 0, "currency": "EUR"}
+  ]
+}

@@ -441,7 +441,9 @@ class PspSimulator:
             now = self.clock.epoch()
             ts = now - int(late_seconds) if mode == "late" else now
             secret = self.webhook_secret if mode != "bad_signature" else h(self.seed, "falscher-schluessel")
-            headers = {"X-PSP-Signature": f"t={ts},v1={sign(secret, ts, body)}", "X-PSP-Event-Id": event["event_id"]}
+            sig = f"t={ts},v1={sign(secret, ts, body)}"
+            # X-Provider-* nach api/payments.yaml (receiveProviderEvent, WP-M2-29); X-PSP-* bleibt für bestehende Empfänger
+            headers = {"X-PSP-Signature": sig, "X-PSP-Event-Id": event["event_id"], "X-Provider-Signature": sig, "X-Provider-Timestamp": str(ts)}
             status, err = None, None
             try:
                 status, _, _, _ = http_call("POST", url, headers=headers, raw_body=body, timeout=5)

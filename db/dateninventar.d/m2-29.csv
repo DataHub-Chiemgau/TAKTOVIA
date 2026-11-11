@@ -1,0 +1,18 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+payment_event;tenant_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;provider;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;event_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;payload_sha256;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;event_type;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;internal_kind;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;provider_sequence;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;provider_created_at;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;provider_ref;ja;ZAHLUNGSABWICKLUNG;ART6_1_B_VERTRAG;BELEGE_JOURNAL;LK_BELEG;"Referenz beim Zahlungsdienstleister; Schutzklasse wie payment_intent.provider_ref (vorläufig, SEC-008)"
+payment_event;reported_state;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;authorized_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;captured_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;refunded_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;currency;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;dispute_state;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_event;received_at;nein;ZAHLUNGSABWICKLUNG;;;;

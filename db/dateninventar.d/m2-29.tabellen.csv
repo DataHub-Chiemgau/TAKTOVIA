@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+payment_event;PSP-Ereignis (WP-M2-29);LK_BELEG;nur Referenzwerte und Beträge, kein Rohpayload, unveränderlich

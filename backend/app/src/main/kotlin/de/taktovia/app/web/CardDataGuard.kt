@@ -36,7 +36,9 @@ private fun reject(request: HttpServletRequest, incidents: CardDataIncidents, fi
  */
 class CardDataRequestFilter(private val problems: ProblemWriter, private val incidents: CardDataIncidents) : OncePerRequestFilter() {
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
-        val headers = request.headerNames.toList().associateWith { n -> request.getHeaders(n).toList() }
+        // Signaturheader tragen Hexwerte eines HMAC (Ausgabe einer Hashfunktion, keine Zahlungsdaten): eine zufällige Ziffernfolge mit gültiger Luhn-Summe würde sonst eine
+        // rechtmäßige Nachricht abweisen (WP-M2-29). Alle übrigen Header bleiben geprüft; der Body (die eigentliche Nutzlast) ebenfalls.
+        val headers = request.headerNames.toList().filter { it.lowercase() !in SIGNATURE_HEADERS }.associateWith { n -> request.getHeaders(n).toList() }
         val findings = CardDataFilter.screen(CardDataInput(query = request.queryString, headers = headers))
         if (findings.isNotEmpty()) {
             try { reject(request, incidents, findings) } catch (e: ProblemException) { problems.write(request, response, e); return }
@@ -44,6 +46,8 @@ class CardDataRequestFilter(private val problems: ProblemWriter, private val inc
         chain.doFilter(request, response)
     }
 }
+
+private val SIGNATURE_HEADERS = setOf("x-provider-signature", "taktovia-signature")
 
 /** Prüft den geparsten JSON-Body vor der Schema-Validierung (Hook [RequestBodyInspector]). */
 class CardDataBodyInspector(private val incidents: CardDataIncidents) : RequestBodyInspector {
