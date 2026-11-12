@@ -19,6 +19,7 @@ import de.taktovia.stafftime.api.BreakPlan
 import de.taktovia.stafftime.api.RosterShiftInput
 import de.taktovia.stafftime.api.RosterShiftView
 import de.taktovia.stafftime.api.RosterShifts
+import de.taktovia.stafftime.api.RosterViewKind
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
@@ -34,7 +35,7 @@ import java.util.UUID
  * Schichtmodell (WP-M4-03) auf `staff_shift`. Zeitpunkte entstehen aus lokaler Zeit und Zone nach Kap. 05 §5.1 (Lücke abgelehnt, doppelte Ortszeit nur mit Offset); Betriebstag und Revision leitet die
  * Datenbank ab (Trigger). Die bedingte Änderung (`shift_revision = ?`) serialisiert gleichzeitige Änderer: genau einer gewinnt, der andere erhält 412, nie ein stilles Überschreiben.
  */
-internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private val audit: AuditPort) : RosterShifts {
+internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private val audit: AuditPort, private val conflicts: RosterConflictChecker) : RosterShifts {
     private val json = JsonMapper.builder().build()
 
     override fun create(ctx: RequestContext, rosterId: UUID, input: RosterShiftInput): RosterShiftView {
@@ -45,14 +46,23 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
 
     override fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): RosterShiftView {
         require(ctx, SCOPE_READ)
-        return ctxTx.run(ctx, readOnly = true) { j -> j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ?", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound() }
+        return ctxTx.run(ctx, readOnly = true) { j ->
+            RosterDraftAccess.enable(j)
+            j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ?", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound()
+        }
     }
 
-    override fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<RosterShiftView> {
+    override fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?, view: RosterViewKind, openOnly: Boolean): List<RosterShiftView> {
         require(ctx, SCOPE_READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
-            j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.roster_id = ? AND (CAST(? AS timestamptz) IS NULL OR (s.starts_at, s.id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY s.starts_at, s.id LIMIT ?",
-                VIEW, rosterId, after?.first?.let(Timestamp::from), after?.first?.let(Timestamp::from), after?.second, limit + 1)
+            if (view == RosterViewKind.PLANNER) RosterDraftAccess.enable(j)
+            // Arbeitsrevision: Entwurf, sonst veröffentlichte Revision (verbindliche Sicht: nur die veröffentlichte; ohne Schalter sind Entwurfszeilen ohnehin unsichtbar)
+            j.query(
+                "SELECT $COLUMNS FROM taktovia.staff_shift s JOIN taktovia.roster_revision r ON r.tenant_id = s.tenant_id AND r.roster_id = s.roster_id AND r.revision = s.roster_revision " +
+                    "WHERE s.roster_id = ? AND r.state = CASE WHEN ? AND EXISTS (SELECT 1 FROM taktovia.roster_revision d WHERE d.roster_id = r.roster_id AND d.state = 'DRAFT') THEN 'DRAFT' ELSE 'PUBLISHED' END " +
+                    "AND s.state <> 'CANCELLED' AND (NOT ? OR s.driver_ref IS NULL) AND (CAST(? AS timestamptz) IS NULL OR (s.starts_at, s.id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY s.starts_at, s.id LIMIT ?",
+                VIEW, rosterId, view == RosterViewKind.PLANNER, openOnly, after?.first?.let(Timestamp::from), after?.first?.let(Timestamp::from), after?.second, limit + 1,
+            )
         }
     }
 
@@ -64,30 +74,66 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
 
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, i: RosterShiftInput, c: Checked): RosterShiftView {
+        RosterDraftAccess.enable(j)
+        val draft = lockDraft(j, rosterId) ?: throw noDraft(j, rosterId)
+        checkAgainstRoster(j, draft, i, c)
         val id = UUID.randomUUID()
         val v = j.query(
             "INSERT INTO taktovia.staff_shift AS s (tenant_id, id, roster_id, driver_ref, vehicle_id, starts_at, ends_at, timezone, roster_revision, state, operator_id, depot_id, shift_function, " +
-                "required_qualification, staffing_need, break_plan, created_by) VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,0,'DRAFT',?,?,?,?,?,CAST(? AS jsonb),?) RETURNING $COLUMNS",
-            VIEW, id, rosterId, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
+                "required_qualification, staffing_need, break_plan, created_by) VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?,CAST(? AS jsonb),?) RETURNING $COLUMNS",
+            VIEW, id, rosterId, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, draft.revision, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
             json.writeValueAsString(c.plan.toMap()), "user:" + ctx.actor.subject,
         ).single()
+        bumpDraft(j, draft)
         audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CREATED))
-        return v
+        return withHints(j, draft, v)
     }
 
     @AuditRequired
     private fun doUpdate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, shiftId: UUID, expected: Long, i: RosterShiftInput, c: Checked): RosterShiftView {
+        RosterDraftAccess.enable(j)
+        val draft = lockDraft(j, rosterId)   // Reihenfolge: Dienstplan, dann Schicht
         val cur = j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ? FOR UPDATE", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound()
         if (cur.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Schicht wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
-        if (cur.state != "DRAFT") throw ProblemException(ErrorCode.CONFLICT, "Nur Entwürfe sind änderbar; veröffentlichte Schichten ändert der Dienstplan.")
+        if (cur.state != "DRAFT" || draft == null) throw ProblemException(ErrorCode.CONFLICT, "Nur Entwürfe sind änderbar; veröffentlichte Schichten ändert der Dienstplan.")
+        checkAgainstRoster(j, draft, i, c)
         val v = j.query(
             "UPDATE taktovia.staff_shift s SET driver_ref = ?, vehicle_id = ?, starts_at = ?, ends_at = ?, timezone = ?, operator_id = ?, depot_id = ?, shift_function = ?, required_qualification = ?, " +
                 "staffing_need = ?, break_plan = CAST(? AS jsonb) WHERE s.id = ? AND s.shift_revision = ? RETURNING $COLUMNS",
             VIEW, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
             json.writeValueAsString(c.plan.toMap()), shiftId, expected,
         ).firstOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH)
-        if (v.revision != cur.revision) audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
-        return v
+        if (v.revision != cur.revision) { bumpDraft(j, draft); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED)) }
+        return withHints(j, draft, v)
+    }
+
+    /** Hinweis beim Speichern (WP-M4-07): Konflikte dieser Schicht im Entwurf; der Entwurf bleibt in jedem Fall gespeichert. */
+    private fun withHints(j: JdbcOperations, d: Draft, v: RosterShiftView): RosterShiftView = v.copy(conflicts = conflicts.check(j, v.rosterId, d.revision).filter { v.id in it.shiftIds })
+
+    private class Draft(val id: UUID, val revision: Long, val depotId: UUID, val weekStart: java.time.LocalDate)
+
+    /** Sperrt die Entwurfszeile des Dienstplans (serialisiert Änderer und Veröffentlichung); `null`, wenn es keinen sichtbaren Entwurf gibt. */
+    private fun lockDraft(j: JdbcOperations, rosterId: UUID): Draft? =
+        j.query("SELECT r.id, r.revision, r.depot_id, r.week_start FROM taktovia.roster_revision r WHERE r.roster_id = ? AND r.state = 'DRAFT' FOR UPDATE",
+            { rs, _ -> Draft(rs.getObject(1, UUID::class.java), rs.getLong(2), rs.getObject(3, UUID::class.java), rs.getDate(4).toLocalDate()) }, rosterId).firstOrNull()
+
+    /** Kein Entwurf: der Dienstplan existiert nicht (404) oder ist nur veröffentlicht (409, ein Entwurf ist zu eröffnen). */
+    private fun noDraft(j: JdbcOperations, rosterId: UUID): ProblemException =
+        if (j.queryForObject("SELECT count(*) FROM taktovia.roster_revision WHERE roster_id = ?", Int::class.java, rosterId) == 0) ProblemException.notFound()
+        else ProblemException(ErrorCode.CONFLICT, "Der Dienstplan hat keinen Entwurf; zuerst einen Entwurf eröffnen.")
+
+    /** Stand des Entwurfs (ETag des Dienstplans) steigt mit jeder Änderung seiner Schichten. */
+    private fun bumpDraft(j: JdbcOperations, d: Draft) { j.update("UPDATE taktovia.roster_revision SET entity_revision = entity_revision + 1 WHERE id = ?", d.id) }
+
+    /** Eine Schicht gehört zum Depot des Dienstplans (fremdes Depot des Mandanten: 422, unbekanntes oder fremdes: 404), ihr Betriebstag liegt in seiner Woche, ohne Person kein Fahrzeug (SCH-008). */
+    private fun checkAgainstRoster(j: JdbcOperations, d: Draft, i: RosterShiftInput, c: Checked) {
+        if (j.queryForObject("SELECT count(*) FROM taktovia.depot WHERE id = ?", Int::class.java, i.depotId) == 0) throw ProblemException.notFound()
+        val v = mutableListOf<Violation>()
+        if (i.depotId != d.depotId) v += Violation("/depot_id", ViolationCode.INVALID_VALUE, "Das Depot der Schicht ist nicht das Depot des Dienstplans")
+        val day = c.start.atZone(c.zone).toLocalDate()
+        if (day.isBefore(d.weekStart) || !day.isBefore(d.weekStart.plusDays(7))) v += Violation("/starts_local", ViolationCode.INVALID_VALUE, "Der Betriebstag liegt außerhalb der Woche des Dienstplans")
+        if (i.driverRef == null && i.vehicleId != null) v += Violation("/vehicle_id", ViolationCode.INVALID_VALUE, "Eine offene Schicht (ohne Person) trägt keine Fahrzeugzuordnung")
+        if (v.isNotEmpty()) throw ProblemException.invalid(*v.toTypedArray())
     }
 
     private class Checked(val start: Instant, val end: Instant, val zone: ZoneId, val plan: BreakPlan)

@@ -21,6 +21,9 @@ interface StafftimeApi {
     /** Schichten eines Dienstplans mit Pausenplan, Qualifikation und Personalbedarf (WP-M4-03). */
     val rosterShifts: RosterShifts
 
+    /** Dienstplan je Depot und Woche mit getrenntem Entwurf und veröffentlichtem Plan (WP-M4-04). */
+    val rosters: Rosters
+
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers
 

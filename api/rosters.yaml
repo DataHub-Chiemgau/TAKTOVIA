@@ -13,7 +13,22 @@ paths:
         required: true
         schema:
           $ref: common.yaml#/components/schemas/UUID
-        description: Dienstplan, zu dem die Schichten gehören (Gruppenschlüssel bis zum Dienstplankopf, WP-M4-04).
+        description: Dienstplan, zu dem die Schichten gehören (`roster_id` aus `POST /v1/rosters`, WP-M4-04).
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - planner
+          - published
+        description: '`planner` (Standard): Arbeitsrevision (Entwurf, sonst veröffentlicht); `published`: nur die veröffentlichte Revision.'
+      - name: open
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: 'Bei `true` nur offene Schichten (ohne zugeordnete Person, WP-M4-05).'
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -42,7 +57,7 @@ paths:
       security:
       - oidc:
         - rosters:write
-      description: 'Legt eine Schicht als Entwurf im Dienstplan `roster_id` an (bis zum Dienstplankopf, WP-M4-04, ein vom Planer gewählter Gruppenschlüssel). Lokaler Beginn und Ende gelten in `timezone`; eine Ortszeit in der Frühjahrslücke wird abgelehnt (422 LOCAL_TIME_NONEXISTENT), eine doppelte Ortszeit im Herbst verlangt den Offset (`starts_offset`/`ends_offset`, sonst 422 LOCAL_TIME_AMBIGUOUS). Ende vor Beginn, mehr als 24 Stunden oder ein ungültiger Pausenplan: 422. Betrieb und Depot müssen zum Mandanten gehören, fremde IDs: 404. Der Betriebstag einer Mitternachtsschicht ist der lokale Tag des Beginns (Vorschlag des Plans, OP-08).'
+      description: 'Legt eine Schicht als Entwurf im Dienstplan `roster_id` an (`POST /v1/rosters`, WP-M4-04; ohne Entwurf 409, Depot der Schicht = Depot des Dienstplans, Betriebstag in der Woche des Dienstplans, sonst 422). Lokaler Beginn und Ende gelten in `timezone`; eine Ortszeit in der Frühjahrslücke wird abgelehnt (422 LOCAL_TIME_NONEXISTENT), eine doppelte Ortszeit im Herbst verlangt den Offset (`starts_offset`/`ends_offset`, sonst 422 LOCAL_TIME_AMBIGUOUS). Ende vor Beginn, mehr als 24 Stunden oder ein ungültiger Pausenplan: 422. Betrieb und Depot müssen zum Mandanten gehören, fremde IDs: 404. Der Betriebstag einer Mitternachtsschicht ist der lokale Tag des Beginns (Vorschlag des Plans, OP-08).'
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
@@ -100,7 +115,7 @@ paths:
         required: true
         schema:
           $ref: common.yaml#/components/schemas/UUID
-        description: Dienstplan, zu dem die Schichten gehören (Gruppenschlüssel bis zum Dienstplankopf, WP-M4-04).
+        description: Dienstplan, zu dem die Schichten gehören (`roster_id` aus `POST /v1/rosters`, WP-M4-04).
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
@@ -231,6 +246,195 @@ paths:
           application/json:
             schema:
               $ref: common.yaml#/components/schemas/PublishRequest
+  /v1/rosters:
+    get:
+      summary: Dienstpläne auflisten
+      operationId: listRosters
+      security:
+      - oidc:
+        - rosters:read
+      description: 'Dienstpläne (Depot und Kalenderwoche) mit Zählern, nach Woche und ID aufsteigend. Der Planer sieht Entwurf und veröffentlichte Revision (WP-M4-04); Filter schränken nur ein. Die Liste enthält keine Konfliktprüfung, sie steht im Einzelabruf. Nur Planer und Personalrolle.'
+      parameters:
+      - name: depot_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Dienstpläne dieses Depots.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Nur Wochen ab diesem Montag (einschließlich).
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Nur Wochen bis zu diesem Montag (einschließlich).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RosterPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Dienstplan anlegen
+      operationId: createRoster
+      security:
+      - oidc:
+        - rosters:write
+      description: 'Legt den Dienstplan eines Depots für eine Kalenderwoche an (Revision 1 als Entwurf, nur für Planer sichtbar). `week_start` ist ein Montag (422 sonst); ein Depot eines anderen Mandanten ist nicht auffindbar (404); für Depot und Woche gibt es höchstens einen Dienstplan (409). `tenant_id` im Body wird nie übernommen.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stand des Dienstplans).
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RosterCreate'
+  /v1/rosters/{roster_id}:
+    get:
+      summary: Dienstplan lesen
+      operationId: getRoster
+      security:
+      - oidc:
+        - rosters:read
+      description: 'Dienstplan mit Entwurf (`draft`) und veröffentlichter Revision (`published`), Zählern offener Schichten und unbesetzten Bedarfs je Tag und Funktion sowie der Konfliktliste des Entwurfs (Doppelbelegung, fehlende Qualifikation, genehmigte Abwesenheit; WP-M4-05, -07). `view=planner` (Standard): Entwurf und veröffentlicht; `view=published`: die verbindliche Sicht, nur die veröffentlichte Revision. Nicht sichtbare Dienstpläne (fremder Mandant, ohne Veröffentlichung in der verbindlichen Sicht) sind nicht auffindbar (404); ohne Planerrecht 403. ETag = Stand des Dienstplans.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/roster_id
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - planner
+          - published
+        description: 'Lesesicht; Standard `planner`.'
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stand des Dienstplans).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/rosters/{roster_id}/draft:
+    post:
+      summary: Neuen Entwurf eröffnen
+      operationId: openRosterDraft
+      security:
+      - oidc:
+        - rosters:write
+      description: 'Eröffnet nach einer Veröffentlichung einen neuen Entwurf als Kopie der veröffentlichten Schichten; der veröffentlichte Plan bleibt unverändert lesbar. Besteht schon ein Entwurf oder gibt es keine veröffentlichte Revision: 409. `If-Match` trägt den Stand des Dienstplans (veraltet: 412, fehlend: 428).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/roster_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stand des Dienstplans).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     BreakPlan:
@@ -427,6 +631,14 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        conflicts:
+          oneOf:
+          - type: array
+            maxItems: 1000
+            items:
+              $ref: '#/components/schemas/RosterConflict'
+          - type: 'null'
+          description: Hinweis beim Speichern im Entwurf (WP-M4-07) – Konflikte dieser Schicht; der Entwurf bleibt gespeichert. Beim Lesen und in Listen nicht enthalten (Konfliktliste im Dienstplan).
       required:
       - id
       - roster_id
@@ -471,3 +683,215 @@ components:
       - items
       - next_cursor
       - as_of
+    NeedLine:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+          format: date
+        function:
+          type: string
+          maxLength: 100
+        need:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+          description: Personalbedarf (Summe `staffing_need`).
+        assigned:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+          description: Zugeordnete Personen (Schichten mit `driver_ref`).
+        unstaffed:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+          description: Unbesetzter Bedarf = Personalbedarf minus zugeordnete Personen.
+      required:
+      - date
+      - function
+      - need
+      - assigned
+      - unstaffed
+    RosterSide:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Revisionsnummer des Dienstplans (Veröffentlichung = neue Revision).
+        state:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        author:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        published_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        etag:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Stand der Revision; steigt mit jeder Änderung ihrer Schichten.
+        shift_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+        open_shifts:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+          description: Zähler unbesetzter Schichten (ohne zugeordnete Person und ohne verbindliche Fahrzeugzuordnung).
+        unstaffed_need:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+        need_lines:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/NeedLine'
+      required:
+      - revision
+      - state
+      - author
+      - created_at
+      - published_at
+      - etag
+      - shift_count
+      - open_shifts
+      - unstaffed_need
+      - need_lines
+    RosterConflict:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - ROSTER_DOUBLE_BOOKING
+          - ROSTER_QUALIFICATION_MISSING
+          - ROSTER_ABSENCE_OVERLAP
+        person_ref:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_ids:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        cause:
+          type: string
+          maxLength: 500
+          description: Ursache in Worten; nennt bei Abwesenheit nie Art oder Kommentar der Abwesenheit.
+        missing_qualification:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+      required:
+      - code
+      - person_ref
+      - shift_ids
+      - cause
+      - missing_qualification
+    Roster:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        depot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        week_start:
+          type: string
+          format: date
+          description: Montag der Kalenderwoche.
+        draft:
+          oneOf:
+          - $ref: '#/components/schemas/RosterSide'
+          - type: 'null'
+          description: Nicht veröffentlichter Entwurf, nur für berechtigte Planer; in der verbindlichen Sicht `null`.
+        published:
+          oneOf:
+          - $ref: '#/components/schemas/RosterSide'
+          - type: 'null'
+        conflicts:
+          oneOf:
+          - type: array
+            maxItems: 1000
+            items:
+              $ref: '#/components/schemas/RosterConflict'
+          - type: 'null'
+          description: Konflikte des Entwurfs; `null` in Listen und in der verbindlichen Sicht.
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Stand des Dienstplans (ETag).
+      required:
+      - id
+      - depot_id
+      - week_start
+      - draft
+      - published
+      - conflicts
+      - revision
+    RosterPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Roster'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    RosterCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        depot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        week_start:
+          type: string
+          format: date
+          description: Montag der Kalenderwoche des Dienstplans.
+      required:
+      - depot_id
+      - week_start
+      examples:
+      - depot_id: 00000000-0000-4000-8000-000000000012
+        week_start: '2026-11-30'

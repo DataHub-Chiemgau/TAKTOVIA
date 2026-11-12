@@ -72,6 +72,8 @@ internal class JdbcAbsences(private val ctxTx: ContextTransactions, private val 
 
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, person: String, cmd: CreateAbsence): AbsenceView {
+        // Absperrung gegen die Publikationsprüfung des Dienstplans (WP-M4-07): geteilt untereinander, exklusiv gegenüber der Prüfung, die den committeten Stand werten muss
+        j.queryForObject("SELECT pg_advisory_xact_lock_shared(hashtextextended('roster_absence|' || taktovia.current_tenant()::text, 0))", String::class.java)
         val id = UUID.randomUUID()
         val v = j.query(
             "INSERT INTO taktovia.absence_request AS a (tenant_id, id, person_ref, starts_at, ends_at, kind, created_by) VALUES (taktovia.current_tenant(),?,?,?,?,?,?) RETURNING $COLUMNS",

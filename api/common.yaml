@@ -651,6 +651,9 @@ components:
       - TARGET_NOT_ALLOWED
       - UNIT_MISMATCH
       - SAFETY_INVARIANT_VIOLATED
+      - ROSTER_DOUBLE_BOOKING
+      - ROSTER_QUALIFICATION_MISSING
+      - ROSTER_ABSENCE_OVERLAP
     Money:
       type: object
       additionalProperties: false

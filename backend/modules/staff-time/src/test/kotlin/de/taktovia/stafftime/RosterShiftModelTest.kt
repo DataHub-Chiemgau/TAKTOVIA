@@ -28,21 +28,20 @@ class RosterShiftModelTest {
     @BeforeAll fun up() { fx = StaffFixture() }
     @AfterAll fun down() = fx.close()
 
-    private class Org(val tenant: TenantId, val operator: UUID, val depot: UUID, val roster: UUID = UUID.randomUUID())
-
-    private fun org(): Org {
-        val t = UUID.randomUUID(); val le = UUID.randomUUID(); val op = UUID.randomUUID(); val region = UUID.randomUUID(); val depot = UUID.randomUUID()
-        fx.exec("INSERT INTO taktovia.tenant(id,name,status) VALUES (?,?,'ACTIVE')", t, "t-$t")
-        fx.tx.run(TenantId(t)) { j ->
-            j.update("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (?,?,'LE','DE')", t, le)
-            j.update("INSERT INTO taktovia.organization(tenant_id,id,legal_entity_id,name,federation_ref,roles) VALUES (?,?,?,'Betrieb',?,CAST('{TRANSPORT_COMPANY}' AS text[]))", t, op, le, "f-$op")
-            j.update("INSERT INTO taktovia.region(tenant_id,id,name,created_by) VALUES (?,?,'R','user:t')", t, region)
-            j.update("INSERT INTO taktovia.depot(tenant_id,id,region_id,name,created_by) VALUES (?,?,?,'Depot Nord','user:t')", t, depot, region)
-        }
-        return Org(TenantId(t), op, depot)
+    /** Mandant mit Betreiber und Depot; Dienstpläne entstehen je Woche bei Bedarf ([roster]). */
+    private inner class Org(val world: RosterTestWorld = RosterTestWorld(fx)) {
+        val tenant: TenantId get() = world.tenant
+        val operator: UUID get() = world.operator
+        val depot: UUID get() = world.depot
+        private val rosters = mutableMapOf<LocalDate, UUID>()
+        private val ctx get() = world.planner()
+        fun rosterFor(day: String): UUID { val d = LocalDate.parse(day); val monday = d.minusDays((d.dayOfWeek.value - 1).toLong()); return rosters.getOrPut(monday) { world.roster(ctx, d).rosterId } }
+        val roster: UUID get() = rosterFor("2026-12-01")
     }
 
-    private fun planner(t: TenantId) = StaffM4Support.ctx(t, UUID.randomUUID(), setOf("planner"), setOf("rosters:write", "rosters:read"))
+    private fun org() = Org()
+
+    private fun planner(o: Org) = o.world.planner()
 
     private fun input(o: Org, start: String = "2026-12-01T22:00:00", end: String = "2026-12-02T06:00:00", plan: Any? = null, need: Int = 2, tz: String = "Europe/Berlin",
                       startOffset: String? = null, depot: UUID = o.depot, operator: UUID = o.operator) =
@@ -52,7 +51,7 @@ class RosterShiftModelTest {
 
     @Test
     fun mitternachtsschicht_hat_kalendertag_des_beginns_und_8h() {
-        val o = org(); val ctx = planner(o.tenant)
+        val o = org(); val ctx = planner(o)
         val s = fx.staff.rosterShifts.create(ctx, o.roster, input(o))
         assertEquals(LocalDate.of(2026, 12, 1), s.operatingDay, "Betriebstag = lokaler Tag des Beginns")
         assertEquals(480L, s.durationMinutes); assertEquals(Instant.parse("2026-12-01T21:00:00Z"), s.startsAt); assertEquals(Instant.parse("2026-12-02T05:00:00Z"), s.endsAt)
@@ -61,19 +60,19 @@ class RosterShiftModelTest {
         val day = fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-12-02T06:00:00", "2026-12-02T14:00:00"))
         assertEquals(LocalDate.of(2026, 12, 2), day.operatingDay); assertEquals(480L, day.durationMinutes)
         // Zeitumstellung: reale Dauer, nicht Wanduhr-Differenz
-        val autumn = fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-10-24T22:00:00", "2026-10-25T06:00:00"))
-        val spring = fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2027-03-27T22:00:00", "2027-03-28T06:00:00"))
+        val autumn = fx.staff.rosterShifts.create(ctx, o.rosterFor("2026-10-24"), input(o, "2026-10-24T22:00:00", "2026-10-25T06:00:00"))
+        val spring = fx.staff.rosterShifts.create(ctx, o.rosterFor("2027-03-27"), input(o, "2027-03-27T22:00:00", "2027-03-28T06:00:00"))
         assertEquals(540L, autumn.durationMinutes); assertEquals(420L, spring.durationMinutes)
         assertEquals(LocalDate.of(2026, 10, 24), autumn.operatingDay)
     }
 
     @Test
     fun pflichtmerkmale_gespeichert_und_per_api_lesbar() {
-        val o = org(); val ctx = planner(o.tenant)
+        val o = org(); val ctx = planner(o)
         val plan = mapOf("schema_version" to "1.0", "breaks" to listOf(mapOf("offset_min" to 240, "duration_min" to 30, "paid" to false)))
         val created = fx.staff.rosterShifts.create(ctx, o.roster, input(o, plan = plan, need = 3))
         val read = fx.staff.rosterShifts.get(ctx, o.roster, created.id)
-        assertEquals(created, read)
+        assertEquals(created.copy(conflicts = null), read, "Lesen prüft keine Konflikte (null), Anlegen liefert die Hinweise")
         assertEquals(o.operator, read.operatorId); assertEquals(o.depot, read.depotId); assertEquals("Fahrdienst", read.function); assertEquals("PERSONENBEFOERDERUNG", read.requiredQualification)
         assertEquals(3, read.staffingNeed); assertEquals(1, read.breakPlan.breaks.size); assertEquals(30, read.breakPlan.breaks.single().durationMin)
         assertEquals("DRAFT", read.state); assertEquals(1L, read.revision); assertNull(read.driverRef, "offene Schicht ohne Fahrer"); assertNull(read.vehicleId)
@@ -86,12 +85,12 @@ class RosterShiftModelTest {
         assertEquals("/staffing_need", invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, need = 0)) }.violations.single().pointer)
         // Rechte und Mandant
         assertEquals(ErrorCode.FORBIDDEN, assertThrows<ProblemException> { fx.staff.rosterShifts.create(StaffM4Support.employee(o.tenant), o.roster, input(o)) }.code)
-        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.get(planner(org().tenant), o.roster, created.id) }.code)
+        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.get(planner(org()), o.roster, created.id) }.code)
     }
 
     @Test
     fun ende_vor_beginn_ergibt_422() {
-        val o = org(); val ctx = planner(o.tenant)
+        val o = org(); val ctx = planner(o)
         assertEquals("/ends_local", invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-12-02T06:00:00", "2026-12-01T22:00:00")) }.violations.single().pointer)
         invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-12-02T06:00:00", "2026-12-02T06:00:00")) }
         invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-12-02T06:00:00", "2026-12-03T06:00:01")) }   // länger als 24 h
@@ -101,26 +100,26 @@ class RosterShiftModelTest {
 
     @Test
     fun dst_luecke_wird_abgelehnt() {
-        val o = org(); val ctx = planner(o.tenant)
-        val e = invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2027-03-28T02:30:00", "2027-03-28T10:00:00")) }
+        val o = org(); val ctx = planner(o)
+        val e = invalid { fx.staff.rosterShifts.create(ctx, o.rosterFor("2027-03-28"), input(o, "2027-03-28T02:30:00", "2027-03-28T10:00:00")) }
         assertEquals(ViolationCode.LOCAL_TIME_NONEXISTENT, e.violations.single().code); assertEquals("/starts_local", e.violations.single().pointer)
-        assertEquals(ViolationCode.LOCAL_TIME_NONEXISTENT, invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2027-03-27T22:00:00", "2027-03-28T02:30:00")) }.violations.single().code)
+        assertEquals(ViolationCode.LOCAL_TIME_NONEXISTENT, invalid { fx.staff.rosterShifts.create(ctx, o.rosterFor("2027-03-27"), input(o, "2027-03-27T22:00:00", "2027-03-28T02:30:00")) }.violations.single().code)
     }
 
     @Test
     fun doppelte_ortszeit_ohne_offset_wird_abgelehnt() {
-        val o = org(); val ctx = planner(o.tenant)
-        val e = invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00")) }
+        val o = org(); val ctx = planner(o)
+        val e = invalid { fx.staff.rosterShifts.create(ctx, o.rosterFor("2026-10-25"), input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00")) }
         assertEquals(ViolationCode.LOCAL_TIME_AMBIGUOUS, e.violations.single().code)
-        val summer = fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00", startOffset = "+02:00"))
-        val winter = fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00", startOffset = "+01:00"))
+        val summer = fx.staff.rosterShifts.create(ctx, o.rosterFor("2026-10-25"), input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00", startOffset = "+02:00"))
+        val winter = fx.staff.rosterShifts.create(ctx, o.rosterFor("2026-10-25"), input(o, "2026-10-25T02:30:00", "2026-10-25T10:00:00", startOffset = "+01:00"))
         assertEquals(Instant.parse("2026-10-25T00:30:00Z"), summer.startsAt); assertEquals(Instant.parse("2026-10-25T01:30:00Z"), winter.startsAt)
         assertEquals(ViolationCode.ZONE_OFFSET_MISMATCH, invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, "2026-12-01T22:00:00", startOffset = "+05:00")) }.violations.single().code)
     }
 
     @Test
     fun fremdes_depot_und_betrieb_ergeben_404() {
-        val a = org(); val b = org(); val ctx = planner(a.tenant)
+        val a = org(); val b = org(); val ctx = planner(a)
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.create(ctx, a.roster, input(a, depot = b.depot)) }.code)
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.create(ctx, a.roster, input(a, operator = b.operator)) }.code)
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.create(ctx, a.roster, input(a, depot = UUID.randomUUID())) }.code)
@@ -130,7 +129,7 @@ class RosterShiftModelTest {
 
     @Test
     fun anlegen_und_aendern_stehen_im_audit_event() {
-        val o = org(); val ctx = planner(o.tenant)
+        val o = org(); val ctx = planner(o)
         val s = fx.staff.rosterShifts.create(ctx, o.roster, input(o))
         val changed = fx.staff.rosterShifts.update(ctx, o.roster, s.id, 1, input(o, need = 4))
         assertEquals(2L, changed.revision); assertEquals(4, changed.staffingNeed)
@@ -147,7 +146,7 @@ class RosterShiftModelTest {
 
     @Test
     fun paralleles_aendern_mit_altem_etag_ergibt_412() {
-        val o = org(); val ctx = planner(o.tenant)
+        val o = org(); val ctx = planner(o)
         val s = fx.staff.rosterShifts.create(ctx, o.roster, input(o))
         val pool = Executors.newFixedThreadPool(8); val go = CountDownLatch(1)
         try {
@@ -161,7 +160,7 @@ class RosterShiftModelTest {
         assertEquals(2L, now.revision); assertNotEquals(2, now.staffingNeed)
         // parallele Anlage zweier Mandanten vermischt nichts
         val a = org(); val b = org()
-        val both = listOf(a, b).map { x -> Executors.newSingleThreadExecutor().submit<Int> { repeat(5) { fx.staff.rosterShifts.create(planner(x.tenant), x.roster, input(x)) }; fx.staff.rosterShifts.list(planner(x.tenant), x.roster, 50, null).size } }
+        val both = listOf(a, b).map { x -> Executors.newSingleThreadExecutor().submit<Int> { repeat(5) { fx.staff.rosterShifts.create(planner(x), x.roster, input(x)) }; fx.staff.rosterShifts.list(planner(x), x.roster, 50, null).size } }
         assertEquals(listOf(5, 5), both.map { it.get(60, TimeUnit.SECONDS) })
         assertEquals(0, fx.count("SELECT count(*) FROM taktovia.staff_shift WHERE tenant_id = ? AND depot_id = ?", a.tenant.value, b.depot))
     }

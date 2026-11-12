@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+roster_revision;tenant_id;nein;PERSONALEINSATZ;;;;
+roster_revision;id;nein;PERSONALEINSATZ;;;;
+roster_revision;roster_id;nein;PERSONALEINSATZ;;;;
+roster_revision;depot_id;nein;PERSONALEINSATZ;;;;
+roster_revision;week_start;nein;PERSONALEINSATZ;;;;
+roster_revision;revision;nein;PERSONALEINSATZ;;;;
+roster_revision;state;nein;PERSONALEINSATZ;;;;
+roster_revision;author;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;planende Person (Subject)
+roster_revision;created_at;nein;TECHNISCHER_BETRIEB;;;;
+roster_revision;published_at;nein;PERSONALEINSATZ;;;;
+roster_revision;published_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;veröffentlichende Person (Subject)
+roster_revision;entity_revision;nein;PERSONALEINSATZ;;;;
+staff_shift;updated_at;nein;TECHNISCHER_BETRIEB;;;;
