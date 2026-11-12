@@ -273,6 +273,46 @@ export const texte = {
   'reisen.verschoben': 'verschoben nach',
   'reisen.mehr': 'weitere Reisen sind nicht aufgelistet',
   'reisen.abholung': 'Abholung',
+  // UI-04 Selbststorno (WP-M2-46)
+  'storno.titel': 'Reise stornieren',
+  'storno.regel': 'Stornoregel',
+  'storno.frist': 'Sie können bis zum',
+  'storno.fristEnde': 'stornieren (Frist: Minuten vor Beginn des zugesagten Abholfensters:',
+  'storno.fristDefault': 'Planungswert, noch nicht vom Betreiber veröffentlicht',
+  'storno.erwartung.keine': 'Es wurde noch nichts berechnet; beim Storno entsteht keine Belastung.',
+  'storno.erwartung.void':
+    'Der reservierte Betrag wird aufgehoben, es erfolgt keine Belastung. Betrag:',
+  'storno.erwartung.refund':
+    'Der eingezogene Betrag wird nach der Stornoregel erstattet. Voraussichtlich:',
+  'storno.starten': 'Reise stornieren',
+  'storno.grund': 'Grund',
+  'storno.grundEigen': 'Auf eigenen Wunsch',
+  'storno.bestaetigenFrage':
+    'Möchten Sie diese Reise wirklich stornieren? Das lässt sich nicht rückgängig machen.',
+  'storno.bestaetigen': 'Verbindlich stornieren',
+  'storno.abbrechen': 'Abbrechen',
+  'storno.ergebnis': 'Reise storniert',
+  'storno.status': 'Status: storniert.',
+  'storno.hint.void': 'Die Reservierung des Betrags wird aufgehoben, es erfolgt keine Belastung:',
+  'storno.hint.voided':
+    'Die Reservierung des Betrags wurde aufgehoben, es erfolgte keine Belastung:',
+  'storno.hint.requested': 'Erstattung beauftragt, noch nicht bestätigt:',
+  'storno.hint.confirmed': 'Erstattet:',
+  'storno.hint.pendingCapture':
+    'Die Erstattung folgt, sobald der laufende Einzug abgeschlossen ist.',
+  'storno.hint.notDue': 'Nach der Stornoregel besteht kein Erstattungsanspruch.',
+  'storno.hint.failed':
+    'Die Erstattung konnte nicht ausgeführt werden. Der Betrag bleibt offen, wir kümmern uns darum:',
+  'storno.hint.nichts': 'Es war nichts zu erstatten.',
+  'storno.nichtMehr': 'Storno nicht mehr möglich',
+  'storno.nichtMehrText':
+    'Die Stornofrist ist abgelaufen oder die Buchung kann nicht mehr storniert werden. Bitte wenden Sie sich an den Betreiber über die',
+  'storno.geaendert':
+    'Die Buchung hat sich geändert. Bitte prüfen Sie die Stornoregel und versuchen Sie es erneut. Es wurde nichts storniert.',
+  'storno.bereits': 'Die Buchung ist bereits storniert oder kann nicht storniert werden.',
+  'storno.unklar':
+    'Das Ergebnis des Stornos wird geprüft. Es wird weder Erfolg noch Ablehnung behauptet; bitte lösen Sie keinen zweiten Storno aus.',
+  'storno.pruefen': 'Stand prüfen',
   'sw.updated': 'Die App wurde aktualisiert.',
   // Textbausteine der standardisierten Ablehnungsgründe mit nächster Handlung (WP-M2-13, Kap. 06 §6.2); Schlüssel = Code aus `RideRejectionCode` in camelCase
   'rej.next': 'Nächste Handlung:',

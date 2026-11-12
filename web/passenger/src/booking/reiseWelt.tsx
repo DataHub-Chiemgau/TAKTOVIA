@@ -6,6 +6,8 @@ import type {
   PassengerPlanChange,
   PlanChangeBooking,
   RideBooking,
+  RidePayment,
+  RideRefundHint,
 } from '@taktovia/api-client';
 import { sampleMe } from '@taktovia/api-client/testing';
 import { LiveRegionProvider } from '@taktovia/design-system';
@@ -95,6 +97,12 @@ export interface ReiseWelt {
   planChange: (pickupAt: string, dropoffAt?: string) => PassengerPlanChange;
   /** Alle Buchungen der Welt (die geöffnete und die weiteren). */
   alle: () => RideBooking[];
+  /** Die Stornofrist ist abgelaufen (der Server weist ab, 409 CANCEL_DEADLINE_EXPIRED). */
+  fristAbgelaufen: boolean;
+  /** Ergebnisse je Idempotenzschlüssel des Stornos (Wiederholung liefert dasselbe Ergebnis). */
+  stornos: Map<string, RideBooking>;
+  /** Die PSP-Bestätigung trifft ein: Void wird `VOIDED`, die Erstattung `CONFIRMED`. */
+  pspBestaetigt: () => void;
   /** Ändert eine Buchung wie ein Statuswechsel auf dem Server; `mitEintrag` legt zusätzlich einen Eintrag im Änderungsstrom an (Plan ohne die Buchung). */
   setze: (id: string, patch: Partial<RideBooking>, mitEintrag?: boolean) => void;
 }
@@ -111,6 +119,29 @@ export function reiseWelt(initial: RideBooking = basisBuchung(), others: RideBoo
     before: new Map<string, () => void>(),
     failNext: new Map<string, ApiError>(),
     count: (id: string) => w.calls.filter((c) => c.id === id).length,
+    fristAbgelaufen: false,
+    stornos: new Map<string, RideBooking>(),
+    pspBestaetigt() {
+      const p = w.booking.payment;
+      if (!p) return;
+      if (p.status === 'VOID_PENDING')
+        w.booking = {
+          ...w.booking,
+          payment: { ...p, status: 'VOIDED' },
+          revision: w.booking.revision + 1,
+        };
+      else if (p.refund)
+        w.booking = {
+          ...w.booking,
+          payment: {
+            ...p,
+            status: 'REFUNDED',
+            refunded: p.captured,
+            refund: { ...p.refund, status: 'CONFIRMED', refunded: p.refund.requested },
+          },
+          revision: w.booking.revision + 1,
+        };
+    },
     alle: () => [w.booking, ...w.others],
     setze(id, patch, mitEintrag = false) {
       if (w.booking.id === id) w.booking = { ...w.booking, ...patch };
@@ -220,6 +251,56 @@ export function reiseWelt(initial: RideBooking = basisBuchung(), others: RideBoo
             next_cursor: null,
             as_of: '2026-11-21T06:00:00Z',
           });
+        }
+        case 'cancelBooking': {
+          const problem = (status: number, code: string) =>
+            new ApiError(status, {
+              type: 'about:blank',
+              title: 'x',
+              status,
+              code,
+              correlation_id: '77777777-7777-4777-8777-777777777777',
+            });
+          const key = (args.headers as Record<string, string>)['Idempotency-Key'] ?? '';
+          const known = w.stornos.get(key);
+          if (known) return structuredClone(known);
+          const b = w.booking;
+          if (w.fristAbgelaufen) throw problem(409, 'CANCEL_DEADLINE_EXPIRED');
+          if (String(args.revision) !== String(b.revision)) throw problem(412, 'REVISION_MISMATCH');
+          if (b.state !== 'CONFIRMED' && b.state !== 'CONFIRMING')
+            throw problem(409, 'INVALID_STATE_TRANSITION');
+          const p = b.payment;
+          const zero = { amount_minor: 0, currency: 'EUR' as const, exponent: 2 };
+          const hint: RideRefundHint = !p
+            ? { status: 'NONE', amount: zero }
+            : p.status === 'CAPTURED'
+              ? { status: 'REQUESTED', amount: p.captured }
+              : p.status === 'AUTHORIZED'
+                ? { status: 'VOID_REQUESTED', amount: p.authorized }
+                : { status: 'NONE', amount: zero };
+          const payment: RidePayment | undefined = !p
+            ? undefined
+            : p.status === 'CAPTURED'
+              ? {
+                  ...p,
+                  refund_pending: p.captured,
+                  refund: { status: 'REQUESTED', requested: p.captured, refunded: zero },
+                }
+              : p.status === 'AUTHORIZED'
+                ? { ...p, status: 'VOID_PENDING' }
+                : p;
+          w.booking = {
+            ...b,
+            state: 'CANCELED',
+            bereich: 'storniert',
+            cancel_reason: 'PASSENGER_REQUEST',
+            revision: b.revision + 2,
+            ...(payment ? { payment } : {}),
+            ...(b.cancellation ? { cancellation: { ...b.cancellation, allowed: false } } : {}),
+          };
+          const result: RideBooking = { ...w.booking, refund_hint: hint };
+          w.stornos.set(key, result);
+          return structuredClone(result);
         }
         case 'getPlanChangesSnapshot':
           return {
