@@ -26,7 +26,7 @@ internal object FleetServicesFactory {
         val evidenceService = JdbcDefectEvidence(ctxTx, audit, clock, evidenceWiring ?: DefectEvidenceWiring())
         val defectService = JdbcDefects(ctxTx, audit, outbox, clock, driverRelation ?: ShiftDriverRelation(), evidenceService)
         val readinessService = JdbcReadiness(ctxTx, audit, outbox, clock, releasePolicy)
-        val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock)
+        val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock, readinessService)
         val knownDefectService = JdbcKnownDefects(ctxTx, audit, driverRelation ?: ShiftDriverRelation(), clock)
         return object : FleetsafetyApi {
             override val checklistTemplates: ChecklistTemplates = checklists

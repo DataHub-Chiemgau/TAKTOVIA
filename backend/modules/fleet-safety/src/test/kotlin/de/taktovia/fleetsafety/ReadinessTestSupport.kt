@@ -21,7 +21,7 @@ class ReadinessWorld(val fx: FleetFixture) {
         Actor(if (service) ActorType.SERVICE else ActorType.HUMAN, "https://idp.test/realms/fleet", subject.toString(), "sid-$subject", !service), tenant, roles.toSet(),
         setOf("fleet:read", "fleet:write", "inspections:read", "inspections:write"), emptySet(), UUID.randomUUID())
 
-    fun driver(qualified: Boolean = true): UUID = UUID.randomUUID().also { id ->
+    fun driver(qualified: Boolean = true, id: UUID = UUID.randomUUID()): UUID = id.also { id ->
         fx.exec("INSERT INTO taktovia.driver(tenant_id,id,display_name,contact_channel,contact_value) VALUES (?,?,'Fahrer','APP','x')", tenant.value, id)
         if (qualified) qualify(id)
     }
@@ -64,5 +64,31 @@ class ReadinessWorld(val fx: FleetFixture) {
         fx.exec("INSERT INTO taktovia.vehicle_release_decision(tenant_id,id,vehicle_id,repair_order_id,follow_up_inspection_id,decision,decided_by,second_approver,safety_revision) VALUES (?,?,?,?,?,'RELEASED','user:a','user:b',1)",
             tenant.value, decision, vehicle, order, follow)
         return decision
+    }
+
+    // ------------------------------------------------------------------ Prüflauf mit echtem Start (WP-M3-14, -15, -17)
+
+    /** Ein gestarteter Prüflauf des Fahrers (Fahrerkennung = IdP-Kennung = Fahrerstamm-ID, qualifiziert) mit der freigegebenen Vorlage des Mandanten (drei Pflichtschritte, STEP_1 kritisch). */
+    class Run(val driver: UUID, val vehicle: UUID, val shift: UUID, val id: UUID, val ctx: RequestContext)
+
+    fun startedRun(vehicleClass: String = "PKW", qualified: Boolean = true, kind: String = "PRE_SHIFT"): Run {
+        template   // die freigegebene Vorlage (genau eine je Klasse und Bedienart) besteht vor dem Start
+        val driver = driver(qualified, UUID.randomUUID()); val vehicle = iw.vehicle(vehicleClass); val shift = iw.shift(driver, vehicle)
+        val ctx = iw.ctx(driver, "driver")
+        val started = iw.start(ctx, shift, vehicle, kind)
+        return Run(driver, vehicle, shift, started.inspection.id, ctx)
+    }
+
+    fun answer(step: String, status: String = "OK", number: java.math.BigDecimal? = null, note: String? = null) = de.taktovia.fleetsafety.api.AnswerInput(step, status, number, note, Instant.now().minusSeconds(30))
+
+    fun allOk(steps: Int = 3) = (1..steps).map { answer("STEP_$it") }
+
+    fun submit(run: Run, answers: List<de.taktovia.fleetsafety.api.AnswerInput>, ctx: RequestContext = run.ctx, revision: Long? = null) =
+        fx.fleet.inspections.submit(ctx, run.id, revision ?: fx.fleet.inspections.get(ctx, run.id).revision, de.taktovia.fleetsafety.api.SubmitInspection(answers, Instant.now().minusSeconds(5), null))
+
+    /** Offene Schadenakte des Fahrzeugs, die vor dem Prüflauf bestand (Altschaden, DMG-012). */
+    fun openDefect(vehicle: UUID): UUID = UUID.randomUUID().also { id ->
+        fx.exec("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,created_by,created_at) VALUES (?,?,?,?,?,now(),'BODY','user:t', now() - interval '1 day')",
+            tenant.value, id, "DC-" + id.toString().take(8), vehicle, UUID.randomUUID())
     }
 }

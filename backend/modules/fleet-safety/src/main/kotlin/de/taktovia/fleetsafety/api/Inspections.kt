@@ -65,7 +65,96 @@ data class InspectionView(
     val id: UUID, val shiftId: UUID, val vehicleId: UUID, val driverRef: UUID, val templateRevisionId: UUID, val kind: String, val status: String, val outcome: String?,
     val startedAt: Instant, val completedAt: Instant?, val receivedAt: Instant?, val revision: Long, val template: InspectionTemplateView,
     val answers: List<InspectionAnswerView> = emptyList(), val release: InspectionReleaseView? = null,
+    /** Prüfer-ID aus der Sitzung beim Abschluss (`user:<kennung>`), Serverwert (WP-M3-14). */
+    val completedBy: String? = null,
+    /** Noch fehlende Voraussetzungen der Einsatzfreigabe (leer, wenn die Freigabe erteilt ist). */
+    val missing: List<ReleaseBlocker> = emptyList(),
 )
+
+/** Antwort im Entwurf oder im Abschluss, wie der Client sie liefert (Rohwerte; die Prüfung gegen die Vorlagenrevision macht der Server). */
+data class AnswerInput(val stepCode: String, val answer: String?, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant)
+
+internal object AnswerParsing {
+    private val FIELDS = setOf("step_code", "answer", "number_value", "note", "evidence_ids", "answered_at")
+    private val CODE = Regex("^[A-Z][A-Z0-9_]{1,59}$")
+
+    /** Liest die Antwortliste; jede Verletzung mit Pointer `/answers/<i>/…` (422). Unbekannte Felder (z. B. Prüfer, Mandant, Ergebnis) werden abgewiesen, nie übernommen. */
+    fun parse(raw: Any?, max: Int, v: Violations, min: Int = 0): List<AnswerInput> {
+        if (raw == null) { v.add("/answers", ViolationCode.REQUIRED); return emptyList() }
+        if (raw !is List<*>) { v.add("/answers", ViolationCode.TYPE_MISMATCH); return emptyList() }
+        if (raw.size < min) v.add("/answers", ViolationCode.TOO_FEW_ITEMS)
+        if (raw.size > max) { v.add("/answers", ViolationCode.TOO_MANY_ITEMS); return emptyList() }
+        val out = mutableListOf<AnswerInput>()
+        raw.forEachIndexed { i, a ->
+            val p = "/answers/$i"
+            if (a !is Map<*, *>) { v.add(p, ViolationCode.TYPE_MISMATCH); return@forEachIndexed }
+            val t = Violations()
+            t.unknown(a, FIELDS, "")
+            val code = (a["step_code"] as? String)?.also { if (!CODE.matches(it)) t.add("/step_code", ViolationCode.PATTERN_MISMATCH) } ?: run { t.add("/step_code", if (a["step_code"] == null) ViolationCode.REQUIRED else ViolationCode.TYPE_MISMATCH); null }
+            val answer = (a["answer"] as? String) ?: run { t.add("/answer", if (a["answer"] == null) ViolationCode.REQUIRED else ViolationCode.TYPE_MISMATCH); null }
+            val number = when (val n = a["number_value"]) {
+                null -> null
+                is Int, is Long, is Short, is Byte -> java.math.BigDecimal((n as Number).toLong())
+                is Double -> if (n.isFinite()) java.math.BigDecimal.valueOf(n) else { t.add("/number_value", ViolationCode.TYPE_MISMATCH); null }
+                is java.math.BigDecimal -> n
+                is java.math.BigInteger -> java.math.BigDecimal(n)
+                else -> { t.add("/number_value", ViolationCode.TYPE_MISMATCH); null }
+            }
+            val note = when (val n = a["note"]) { null -> null; is String -> n; else -> { t.add("/note", ViolationCode.TYPE_MISMATCH); null } }
+            // Fotoevidenz an Prüfantworten gehört zu WP-M3-20 (Abweichung mit Foto); bis dahin werden Verweise nicht stillschweigend ignoriert
+            if ((a["evidence_ids"] as? List<*>)?.isNotEmpty() == true || (a["evidence_ids"] != null && a["evidence_ids"] !is List<*>)) t.add("/evidence_ids", ViolationCode.INVALID_VALUE)
+            val at = t.instant(a, "answered_at", true)
+            t.list.forEach { v.add(p + it.pointer, it.code) }
+            if (t.list.isEmpty()) out += AnswerInput(code!!, answer!!, number, note, at!!)
+        }
+        return out
+    }
+}
+
+/** Entwurf der Antworten (WP-M3-15). */
+data class SaveInspectionDraft(val answers: List<AnswerInput>) {
+    companion object {
+        fun parse(raw: Map<String, Any?>): SaveInspectionDraft {
+            val v = Violations()
+            v.unknown(raw, setOf("answers"), "")
+            val answers = AnswerParsing.parse(raw["answers"], 200, v)
+            v.throwIfAny()
+            return SaveInspectionDraft(answers)
+        }
+    }
+}
+
+/**
+ * Abschluss eines Prüflaufs (WP-M3-14). Nur Antworten, Gerätezeit und optional die Geräteereignis-ID sind Eingabe. Prüfer, Mandant, Fahrzeug, Schicht, Ergebnis und Freigabe
+ * entscheidet allein der Server; ein mitgesendetes Feld dieser Art ist ein unbekanntes Feld (422), nie ein übernommener Wert.
+ */
+data class SubmitInspection(val answers: List<AnswerInput>, val clientSubmittedAt: Instant, val deviceEventId: UUID?) {
+    companion object {
+        fun parse(raw: Map<String, Any?>): SubmitInspection {
+            val v = Violations()
+            v.unknown(raw, setOf("answers", "client_submitted_at", "device_event_id"), "")
+            val answers = AnswerParsing.parse(raw["answers"], 200, v, min = 1)
+            val at = v.instant(raw, "client_submitted_at", true)
+            val device = v.uuid(raw, "device_event_id", false)
+            v.throwIfAny()
+            return SubmitInspection(answers, at!!, device)
+        }
+    }
+}
+
+enum class InspectionOutcome { PASSED, PASSED_RESTRICTED, BLOCKED, CLARIFICATION_REQUIRED }
+
+/**
+ * Ergebnisregel (Detailvertrag LH-6.21-CHK-013, Annahmen OP-16/OP-17): eine negative Antwort (`DEFECT`) auf ein sicherheitskritisches Prüfelement ergibt `BLOCKED` (gesperrt); sonst
+ * `PASSED`. Ein unkritischer Mangel sperrt nicht. `NOT_CHECKABLE` („technisch ungeklärt“, `CLARIFICATION_REQUIRED`) und `PASSED_RESTRICTED` (nur mit Ausstattungsprüfpunkten, WP-M3-12)
+ * sind bis zur Entscheidung der offenen Punkte nicht erreichbar: die Antwortvalidierung weist den vierten Statuswert ab.
+ */
+object InspectionOutcomeRule {
+    fun evaluate(steps: List<ChecklistStepView>, answers: List<AnswerInput>): InspectionOutcome {
+        val critical = steps.filter { it.safetyCritical }.map { it.code }.toSet()
+        return if (answers.any { it.answer == ChecklistAnswerStatus.DEFECT && it.stepCode in critical }) InspectionOutcome.BLOCKED else InspectionOutcome.PASSED
+    }
+}
 
 /** Ergebnis des Starts: [created] ist `false`, wenn für (Schicht, Fahrzeug, Art) bereits ein offener Lauf bestand (dieser wird unverändert, mit seiner Vorlagenrevision, geliefert). */
 data class StartedInspection(val inspection: InspectionView, val created: Boolean)
@@ -79,6 +168,14 @@ data class StartedInspection(val inspection: InspectionView, val created: Boolea
  */
 interface Inspections {
     fun start(ctx: RequestContext, cmd: StartInspection): StartedInspection
+
+    /**
+     * Schließt den Lauf ab (WP-M3-14): validiert alle Antworten (Entwurf plus Abschlussantworten, die Abschlussantwort gewinnt) gegen die **feste** Vorlagenrevision, berechnet das
+     * Ergebnis, schreibt Antworten, Ergebnis, Einsatzfreigabe (über [Readiness]) und Ereignis in einer Transaktion. [expectedRevision] ist die Revision des Laufs (`If-Match`,
+     * 412 wenn veraltet). Prüfer-ID und Serverzeit setzt der Server. Fehlende Pflichtantwort, falscher Wert, Mangel ohne Beschreibung: 422 mit Verweis auf das Element; Lauf nicht
+     * offen: 409; fremder Lauf, fremde Schicht, fremder Mandant: 404; nicht quittierte Altschäden: 409 `KNOWN_DEFECTS_UNACKNOWLEDGED`.
+     */
+    fun submit(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: SubmitInspection): InspectionView
 
     /** Lesen mit fester Vorlage und gespeicherten Antworten. Fahrer sehen nur Läufe eigener Schichten (sonst 404), Disposition und Werkstatt alle Läufe des Mandanten. */
     fun get(ctx: RequestContext, id: UUID): InspectionView

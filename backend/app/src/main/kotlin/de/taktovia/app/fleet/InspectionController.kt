@@ -5,6 +5,8 @@ import de.taktovia.app.identity.RequestContexts
 import de.taktovia.fleetsafety.api.FleetsafetyApi
 import de.taktovia.fleetsafety.api.InspectionView
 import de.taktovia.fleetsafety.api.StartInspection
+import de.taktovia.fleetsafety.api.SubmitInspection
+import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Revisioned
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.util.UUID
@@ -34,6 +37,13 @@ class InspectionController(private val fleet: FleetsafetyApi) {
         return if (r.created) ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/inspections/${r.inspection.id}")).body(res) else ResponseEntity.ok(res)
     }
 
+    /** Abschluss (WP-M3-14, `submitInspection`): `If-Match` ist die Revision des Laufs (428 fehlt, 412 veraltet); Prüfer und Ergebnis setzt allein der Server. */
+    @PostMapping("/v1/inspections/{inspection_id}/submit")
+    fun submit(@PathVariable("inspection_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): InspectionResource {
+        val expected = Etag.parseIfMatch(ifMatch)
+        return resource(fleet.inspections.submit(RequestContexts.require(request), id, expected, SubmitInspection.parse(body)))
+    }
+
     @GetMapping("/v1/inspections/{inspection_id}")
     fun get(@PathVariable("inspection_id") id: UUID, request: HttpServletRequest): InspectionResource = resource(fleet.inspections.get(RequestContexts.require(request), id))
 
@@ -42,8 +52,11 @@ class InspectionController(private val fleet: FleetsafetyApi) {
     private fun json(v: InspectionView): Map<String, Any?> = linkedMapOf(
         "id" to v.id.toString(), "shift_id" to v.shiftId.toString(), "vehicle_id" to v.vehicleId.toString(), "driver_ref" to v.driverRef.toString(),
         "template_revision_id" to v.templateRevisionId.toString(), "kind" to v.kind, "status" to v.status, "outcome" to v.outcome,
-        // Solange der Lauf offen ist, fehlt die Einsatzfreigabe genau deshalb (Codes, keine Diagnosetexte); der Abschluss kommt mit WP-M3-14
-        "missing_requirements" to if (v.status == "IN_PROGRESS") listOf(linkedMapOf("code" to "INSPECTION_OPEN", "inspection_id" to v.id.toString(), "step_codes" to v.template.steps.filter { it.mandatory }.map { it.code })) else emptyList<Any>(),
+        // Fehlende Voraussetzungen der Einsatzfreigabe (Codes, keine Diagnosetexte); solange der Lauf offen ist, fehlt sie wegen der offenen Pflichtschritte
+        "missing_requirements" to v.missing.map { m ->
+            linkedMapOf("code" to m.name, "inspection_id" to v.id.toString(), "step_codes" to if (m == de.taktovia.fleetsafety.api.ReleaseBlocker.INSPECTION_OPEN) v.template.steps.filter { it.mandatory }.map { it.code } else emptyList<String>())
+        },
+        "completed_by" to v.completedBy,
         "answers" to v.answers.map { linkedMapOf("step_code" to it.stepCode, "answer" to it.answer, "number_value" to it.numberValue, "note" to it.note, "answered_at" to it.answeredAt.toString()) },
         "release" to v.release?.let { linkedMapOf("release_id" to it.releaseId.toString(), "valid_until" to it.validUntil.toString(), "safety_revision" to it.safetyRevision) },
         "started_at" to v.startedAt.toString(), "completed_at" to v.completedAt?.toString(), "received_at" to v.receivedAt?.toString(), "revision" to v.revision,

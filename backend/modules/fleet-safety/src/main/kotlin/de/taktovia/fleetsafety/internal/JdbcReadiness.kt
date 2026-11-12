@@ -146,34 +146,22 @@ internal class JdbcReadiness(
     fun issueReleaseIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, cmd: IssueRelease): ReleaseOutcome {
         val vehicle = lockVehicle(j, cmd.vehicleId, exclusive = true) ?: throw ProblemException.notFound()
         val shift = shift(j, cmd.shiftId) ?: throw ProblemException.notFound()
-        val inspection = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome FROM taktovia.inspection_run WHERE id = ?",
-            { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5)) }, cmd.inspectionId).firstOrNull()
+        val inspection = inspection(j, cmd.inspectionId)
         existingFor(j, cmd.inspectionId)?.let { r ->
             if (r.vehicleId != cmd.vehicleId || r.shiftId != cmd.shiftId) throw ProblemException(ErrorCode.CONFLICT, "Zu diesem Prüflauf besteht eine Freigabe für eine andere Kombination.")
             if (r.state == ReleaseState.REVOKED) throw ProblemException(ErrorCode.IMMUTABLE_RECORD, "Die widerrufene Freigabe wird nicht wieder gültig; eine neue Prüfung erzeugt eine neue Freigabe.")
             return ReleaseOutcome.Issued(r, replayed = true)
         }
         val now = clock.instant()
-        val missing = linkedSetOf<ReleaseBlocker>()
-        if (shift.vehicleId != cmd.vehicleId || shift.state !in USABLE_SHIFT || !now.isBefore(shift.endsAt)) missing += ReleaseBlocker.VEHICLE_CHANGED
-        when {
-            inspection == null || inspection.vehicleId != cmd.vehicleId || inspection.shiftId != cmd.shiftId || inspection.driverRef != shift.driverRef -> missing += ReleaseBlocker.NO_INSPECTION
-            inspection.status == "IN_PROGRESS" -> missing += ReleaseBlocker.INSPECTION_OPEN
-            inspection.status != "COMPLETED" -> missing += ReleaseBlocker.INSPECTION_EXPIRED
-            inspection.outcome != "PASSED" && inspection.outcome != "PASSED_RESTRICTED" -> missing += ReleaseBlocker.NO_INSPECTION
-        }
-        val qualification = qualification(j, shift.driverRef, now)
-        if (qualification == null) missing += ReleaseBlocker.QUALIFICATION_MISSING
-        val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
-        if (blocks.any { it == "SAFETY" }) missing += ReleaseBlocker.DEFECT_BLOCK
-        if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += ReleaseBlocker.OPERATIONAL_BLOCK
+        val missing = blockers(j, vehicle, shift, inspection, cmd, now, lock = true)
         if (missing.isNotEmpty()) return ReleaseOutcome.Refused(missing.toList())
 
+        val qualification = qualification(j, shift.driverRef, now)!!
         val validUntil = minOf(shift.endsAt, now.plus(policy.maxValidity))
         val id = UUID.randomUUID()
         j.update(
             "INSERT INTO taktovia.resource_release (tenant_id, id, vehicle_id, shift_id, safety_revision, inspection_ref, qualification_revision, valid_until, issued_at, issued_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            id, cmd.vehicleId, cmd.shiftId, vehicle.safetyRevision, cmd.inspectionId, qualification!!, Timestamp.from(validUntil), Timestamp.from(now), actor.value,
+            id, cmd.vehicleId, cmd.shiftId, vehicle.safetyRevision, cmd.inspectionId, qualification, Timestamp.from(validUntil), Timestamp.from(now), actor.value,
         )
         // die Freigabe löscht den abgeleiteten Sperrzustand des Fahrzeugs (V1-Vorgabe true = „nicht freigegeben“); es besteht keine aktive Sperre (oben geprüft)
         j.update("UPDATE taktovia.vehicle SET active_block = false WHERE id = ? AND active_block", cmd.vehicleId)
@@ -185,6 +173,39 @@ internal class JdbcReadiness(
             "release_id" to id.toString(), "vehicle_id" to cmd.vehicleId.toString(), "shift_id" to cmd.shiftId.toString(), "inspection_id" to cmd.inspectionId.toString(),
             "safety_revision" to vehicle.safetyRevision, "valid_until" to validUntil.toString()), clock.instant(), correlationId = correlationId))
         return ReleaseOutcome.Issued(view, replayed = false)
+    }
+
+    /**
+     * Fehlende Voraussetzungen der Einsatzfreigabe für (Fahrzeug, Schicht, Prüflauf), **ohne** zu sperren und ohne etwas zu schreiben (Anzeige „fehlende Voraussetzungen“, WP-M3-09).
+     * Dieselbe Regel wie beim Erteilen; ein bereits widerrufener Freigabestand steht als [ReleaseBlocker.RELEASE_REVOKED] da.
+     */
+    fun missing(j: JdbcOperations, vehicleId: UUID, shiftId: UUID, inspectionId: UUID): List<ReleaseBlocker> {
+        val vehicle = lockVehicle(j, vehicleId, exclusive = false, lock = false) ?: return listOf(ReleaseBlocker.NO_INSPECTION)
+        val shift = shift(j, shiftId) ?: return listOf(ReleaseBlocker.VEHICLE_CHANGED)
+        val inspection = inspection(j, inspectionId)
+        val cmd = IssueRelease(vehicleId, shiftId, inspectionId)
+        val list = blockers(j, vehicle, shift, inspection, cmd, clock.instant(), lock = false).toMutableList()
+        if (list.isEmpty() && existingFor(j, inspectionId)?.state == ReleaseState.REVOKED) list += ReleaseBlocker.RELEASE_REVOKED
+        return list
+    }
+
+    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome FROM taktovia.inspection_run WHERE id = ?",
+        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5)) }, id).firstOrNull()
+
+    private fun blockers(j: JdbcOperations, vehicle: Vehicle, shift: Shift, inspection: Insp?, cmd: IssueRelease, now: Instant, lock: Boolean): Set<ReleaseBlocker> {
+        val missing = linkedSetOf<ReleaseBlocker>()
+        if (shift.vehicleId != cmd.vehicleId || shift.state !in USABLE_SHIFT || !now.isBefore(shift.endsAt)) missing += ReleaseBlocker.VEHICLE_CHANGED
+        when {
+            inspection == null || inspection.vehicleId != cmd.vehicleId || inspection.shiftId != cmd.shiftId || inspection.driverRef != shift.driverRef -> missing += ReleaseBlocker.NO_INSPECTION
+            inspection.status == "IN_PROGRESS" -> missing += ReleaseBlocker.INSPECTION_OPEN
+            inspection.status != "COMPLETED" -> missing += ReleaseBlocker.INSPECTION_EXPIRED
+            inspection.outcome != "PASSED" && inspection.outcome != "PASSED_RESTRICTED" -> missing += ReleaseBlocker.NO_INSPECTION
+        }
+        if (qualification(j, shift.driverRef, now, lock = lock) == null) missing += ReleaseBlocker.QUALIFICATION_MISSING
+        val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
+        if (blocks.any { it == "SAFETY" }) missing += ReleaseBlocker.DEFECT_BLOCK
+        if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += ReleaseBlocker.OPERATIONAL_BLOCK
+        return missing
     }
 
     override fun revokeRelease(ctx: RequestContext, releaseId: UUID, reason: ReleaseRevokeReason): ResourceReleaseView {

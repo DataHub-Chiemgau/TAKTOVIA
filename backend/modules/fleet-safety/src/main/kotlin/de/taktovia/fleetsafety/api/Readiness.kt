@@ -61,7 +61,7 @@ data class ResourceReleaseView(
 data class IssueRelease(val vehicleId: UUID, val shiftId: UUID, val inspectionId: UUID)
 
 /** Fehlende Voraussetzung der Einsatzfreigabe (Codes wie `MissingRequirement` im Vertrag `api/fleet-safety.yaml`); keine Diagnosetexte. */
-enum class ReleaseBlocker { NO_INSPECTION, INSPECTION_OPEN, INSPECTION_EXPIRED, DEFECT_BLOCK, OPERATIONAL_BLOCK, QUALIFICATION_MISSING, VEHICLE_CHANGED }
+enum class ReleaseBlocker { NO_INSPECTION, INSPECTION_OPEN, INSPECTION_EXPIRED, DEFECT_BLOCK, OPERATIONAL_BLOCK, QUALIFICATION_MISSING, VEHICLE_CHANGED, RELEASE_REVOKED }
 
 sealed interface ReleaseOutcome {
     /** [replayed] = die Freigabe für diesen Prüflauf bestand schon (Wiederholung, keine zweite Freigabe, kein zweiter Revisionsstand). */

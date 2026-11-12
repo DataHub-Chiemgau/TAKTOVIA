@@ -26,6 +26,5 @@ planJourney  # POST /v1/federation/journeys/plan
 quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quotes
 receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
 saveInspectionDraft  # PUT /v1/inspections/{inspection_id}
-submitInspection  # POST /v1/inspections/{inspection_id}/submit
 transitionOperatorIncident  # POST /v1/operator/incidents/{incident_id}/transitions
 triageDefect  # POST /v1/defects/{defect_id}/triage

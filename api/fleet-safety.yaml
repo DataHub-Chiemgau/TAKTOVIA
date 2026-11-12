@@ -847,10 +847,17 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Schließt den Lauf ab; Pflichtschritte fehlen: 422 VALIDATION_FAILED;
-        abgelaufen: 409 INVALID_STATE_TRANSITION. Die Antwort enthält Ergebnis und
-        Freigabe, die allein der Server entscheidet (CHK-001, CHK-013). Wiederholung
-        mit demselben Idempotency-Key liefert dieselbe Antwort.'
+      description: 'Schließt den Lauf ab (WP-M3-14, CHK-013). Pflichtschritte fehlen,
+        ein Wert liegt außerhalb des Eingabetyps oder ein Mangel hat keine Beschreibung:
+        422 VALIDATION_FAILED mit Verweis auf das Element; Lauf nicht mehr offen: 409
+        IMMUTABLE_RECORD (abgeschlossen) bzw. INVALID_STATE_TRANSITION; nicht quittierte
+        Altschäden: 409 CONFLICT mit `detail` KNOWN_DEFECTS_UNACKNOWLEDGED; `If-Match`
+        ist die Revision des Laufs (428 fehlt, 412 veraltet). Prüfer-ID, Serverzeit,
+        Ergebnis und Einsatzfreigabe setzt allein der Server; mitgesendete Felder dazu
+        sind unbekannte Felder (422). Die Antwort enthält Ergebnis und Freigabe bzw.
+        die fehlenden Voraussetzungen (CHK-001, CHK-013). Wiederholung mit demselben
+        Idempotency-Key liefert dieselbe Antwort, anderer Inhalt unter demselben Schlüssel
+        409 IDEMPOTENCY_CONFLICT.'
       parameters:
       - name: inspection_id
         in: path
@@ -3368,6 +3375,13 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/MissingRequirement'
+        completed_by:
+          oneOf:
+          - type: string
+            pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+          - type: 'null'
+          description: Prüfer-ID aus der Sitzung beim Abschluss; setzt allein der Server
+            (CHK-013).
         answers:
           type: array
           maxItems: 200
