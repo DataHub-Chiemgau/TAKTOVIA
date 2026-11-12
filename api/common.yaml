@@ -31,6 +31,7 @@ components:
             rosters:publish: rosters:publish
             rosters:write: rosters:write
             rosters:read: rosters:read
+            rosters:audit: rosters:audit
             driver:events: driver:events
             me:read: me:read
             tenant:switch: tenant:switch
@@ -114,6 +115,7 @@ components:
             rosters:publish: rosters:publish
             rosters:write: rosters:write
             rosters:read: rosters:read
+            rosters:audit: rosters:audit
             driver:events: driver:events
             me:read: me:read
             tenant:switch: tenant:switch

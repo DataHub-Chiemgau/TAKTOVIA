@@ -435,8 +435,408 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/rosters/own-shifts:
+    get:
+      summary: Eigene veröffentlichte Schichten lesen
+      operationId: listOwnRosterShifts
+      security:
+      - oidc:
+        - time-events:read
+      description: 'Eigensicht (WP-M4-14, UI-09/UI-13): die eigenen Schichten der aktuellen veröffentlichten Revisionen im Zeitraum der Betriebstage von bis (höchstens 62 Tage). Die Person ist immer der Akteur; Entwürfe, ersetzte Revisionen und fremde Schichten gibt es in dieser Sicht nie. Jede Schicht nennt die Planrevision, aus der sie stammt.'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Erster Betriebstag (lokales Datum).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Letzter Betriebstag (einschließlich).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnShiftList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/rosters/{roster_id}/revisions:
+    get:
+      summary: Revisionen eines Dienstplans lesen
+      operationId: listRosterRevisions
+      security:
+      - oidc:
+        - rosters:audit
+      description: 'Alle Revisionen des Dienstplans aufsteigend mit Zustand, Autor, Zeitstempeln und Wirksamkeitsbeginn (WP-M4-15). Nur mit dem Auditrecht `rosters:audit` und dem Depotrecht; nicht sichtbare Dienstpläne sind nicht auffindbar (404).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/roster_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RosterRevisionList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/rosters/{roster_id}/revisions/{revision}:
+    get:
+      summary: Historische veröffentlichte Fassung lesen
+      operationId: getRosterRevision
+      security:
+      - oidc:
+        - rosters:audit
+      description: 'Eine veröffentlichte oder ersetzte Fassung des Dienstplans mit ihren Schichtständen (Snapshot je Revision, WP-M4-15). Die Fassung ist seit ihrer Veröffentlichung unverändert; ein Entwurf oder eine unbekannte Revision ist nicht auffindbar (404).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/roster_id
+      - name: revision
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Nummer der Planrevision.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RosterRevisionSnapshot'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/rosters/{roster_id}/shifts/{shift_id}/history:
+    get:
+      summary: Änderungen und Veröffentlichungen einer Schicht lesen
+      operationId: listRosterShiftHistory
+      security:
+      - oidc:
+        - rosters:audit
+      description: 'Änderungsprotokoll der Schicht über alle Revisionen (WP-M4-15): Anlage, Änderung und Veröffentlichung mit Autor, Zeitstempel und Schichtstand, aufsteigend nach Zeit. `shift_id` ist die Schichtzeile einer beliebigen Revision derselben Schicht.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/roster_id
+      - $ref: common.yaml#/components/parameters/shift_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftChangeList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    OwnShift:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        roster_id:
+          $ref: common.yaml#/components/schemas/UUID
+        roster_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Planrevision, aus der die Schicht stammt.
+        operating_day:
+          type: string
+          format: date
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          maxLength: 64
+        function:
+          oneOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        state:
+          type: string
+          maxLength: 40
+        break_minutes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1440
+          description: Geplante Pausen insgesamt.
+      required:
+      - shift_id
+      - roster_id
+      - roster_revision
+      - operating_day
+      - starts_at
+      - ends_at
+      - timezone
+      - function
+      - state
+      - break_minutes
+    OwnShiftList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/OwnShift'
+      required:
+      - items
+    RosterRevisionHead:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - SUPERSEDED
+        author:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        published_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        published_by:
+          oneOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+        effective_from:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        etag:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - revision
+      - state
+      - author
+      - created_at
+      - published_at
+      - published_by
+      - effective_from
+      - etag
+    RosterRevisionList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/RosterRevisionHead'
+      required:
+      - items
+    HistoricShift:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        lineage_id:
+          $ref: common.yaml#/components/schemas/UUID
+        operating_day:
+          type: string
+          format: date
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          maxLength: 64
+        function:
+          oneOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        required_qualification:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+        staffing_need:
+          type: integer
+          minimum: 1
+          maximum: 50
+        driver_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        depot_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        break_plan:
+          $ref: '#/components/schemas/BreakPlan'
+        state:
+          type: string
+          maxLength: 40
+      required:
+      - shift_id
+      - lineage_id
+      - operating_day
+      - starts_at
+      - ends_at
+      - timezone
+      - function
+      - required_qualification
+      - staffing_need
+      - driver_ref
+      - vehicle_id
+      - depot_id
+      - break_plan
+      - state
+    RosterRevisionSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        head:
+          $ref: '#/components/schemas/RosterRevisionHead'
+        shifts:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/HistoricShift'
+      required:
+      - head
+      - shifts
+    ShiftChange:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - CREATED
+          - CHANGED
+          - PUBLISHED
+        roster_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        actor:
+          type: string
+          maxLength: 200
+        occurred_at:
+          type: string
+          format: date-time
+        snapshot:
+          type: object
+          additionalProperties: true
+          description: Schichtstand zum Zeitpunkt der Änderung.
+      required:
+      - id
+      - kind
+      - roster_revision
+      - shift_id
+      - shift_revision
+      - actor
+      - occurred_at
+      - snapshot
+    ShiftChangeList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/ShiftChange'
+      required:
+      - items
     BreakPlan:
       type: object
       additionalProperties: false

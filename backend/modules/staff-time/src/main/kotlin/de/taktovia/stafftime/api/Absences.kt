@@ -44,6 +44,12 @@ interface Absences {
     /** Genehmigte, nicht zurückgenommene Abwesenheiten, die das Fenster `[from, to)` überlappen; sortiert nach `(created_at, id)`, mit `limit + 1` Zeilen für die Folgeseite. */
     fun restrictions(ctx: RequestContext, personRef: String?, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<AvailabilityRestriction>
 
+    /**
+     * Eigensicht (WP-M4-20, UI-13): die eigenen genehmigten, nicht zurückgenommenen Abwesenheitszeiträume der Person des Kontexts, neutral wie [restrictions] (nie Art). Braucht nur
+     * `time-events:read`; fremde Personen gibt es hier nicht (die Person ist immer der Akteur, nie Eingabe).
+     */
+    fun own(ctx: RequestContext, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<AvailabilityRestriction>
+
     /** Für die Konfliktprüfung (WP-M4-07): Nichtverfügbarkeit einer Person im Fenster in der **laufenden** Transaktion des Aufrufers (Mandantenkontext gesetzt). */
     fun restrictionsIn(jdbc: JdbcOperations, personRef: String, from: Instant, to: Instant): List<UnavailableInterval>
 }

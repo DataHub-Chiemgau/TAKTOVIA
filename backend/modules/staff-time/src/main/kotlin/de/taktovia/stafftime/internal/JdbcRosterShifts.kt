@@ -88,6 +88,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
             json.writeValueAsString(c.plan.toMap()), "user:" + ctx.actor.subject,
         ).single()
         bumpDraft(j, draft)
+        ShiftChangeLog.record(j, v.id, "CREATED", "user:" + ctx.actor.subject)
         audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CREATED))
         RosterAudit.crossDepot(audit, j, ctx, access, rosterId, draft.depotId, "shift.create")
         return withHints(j, ctx, draft, v)
@@ -109,7 +110,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
             json.writeValueAsString(c.plan.toMap()), shiftId, expected,
         ).firstOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH)
         if (v.revision != cur.revision) {
-            bumpDraft(j, draft); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
+            bumpDraft(j, draft); ShiftChangeLog.record(j, v.id, "CHANGED", "user:" + ctx.actor.subject); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
             RosterAudit.crossDepot(audit, j, ctx, access, rosterId, depotOfRoster, "shift.update")
         }
         return withHints(j, ctx, draft, v)

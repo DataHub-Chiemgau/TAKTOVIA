@@ -1,4 +1,49 @@
 paths:
+  /v1/absences/own:
+    get:
+      summary: Eigene Abwesenheitszeiträume lesen
+      operationId: listOwnAbsences
+      security:
+      - oidc:
+        - time-events:read
+      description: 'Eigensicht (WP-M4-20, UI-13): die eigenen genehmigten, nicht zurückgenommenen Abwesenheitszeiträume der angemeldeten Person, neutral als Verfügbarkeitsrestriktion (nie Art oder Kommentar). Die Person ist immer der Akteur und nie Eingabe; fremde Personen gibt es hier nicht. Anträge und Korrekturen sind erst mit M7 verfügbar.'
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+        description: Beginn des Zeitfensters (RFC 3339 mit Offset).
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+        description: Ende des Zeitfensters (RFC 3339 mit Offset, exklusiv).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRestrictionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/absences:
     get:
       summary: Abwesenheiten als Verfügbarkeitsrestriktion lesen

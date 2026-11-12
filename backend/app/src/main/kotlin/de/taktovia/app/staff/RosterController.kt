@@ -16,6 +16,9 @@ import de.taktovia.stafftime.api.RosterConflict
 import de.taktovia.stafftime.api.RosterSide
 import de.taktovia.stafftime.api.RosterView
 import de.taktovia.stafftime.api.RosterViewKind
+import de.taktovia.stafftime.api.PublishRoster
+import de.taktovia.stafftime.api.PublishedRoster
+import de.taktovia.stafftime.api.RosterRevisionHead
 import de.taktovia.stafftime.api.StafftimeApi
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
@@ -74,6 +77,69 @@ class RosterController(private val staff: StafftimeApi, private val codec: Curso
         val v = staff.rosters.openDraft(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch))
         return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/rosters/${v.rosterId}")).body(RosterResource(json(v), v.etag))
     }
+
+    /**
+     * Veröffentlicht den geprüften Entwurf (WP-M4-14): `rosters:publish`, `If-Match` (428 ohne, 412 veraltet), `Idempotency-Key` (Wiederholung liefert dieselbe Revision, anderer Inhalt 409
+     * `IDEMPOTENCY_CONFLICT`), 409 mit Konfliktliste bei blockierendem Konflikt (keine Revision, kein Ereignis). Die Fahrermeldung geht über die Outbox.
+     */
+    @PostMapping("/v1/rosters/{roster_id}/publish")
+    fun publish(
+        @PathVariable("roster_id") id: UUID, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?,
+        @RequestHeader("Idempotency-Key", required = false) key: String?, request: HttpServletRequest,
+    ): RosterResource {
+        val etag = Etag.parseIfMatch(ifMatch)
+        val effective = runCatching { java.time.OffsetDateTime.parse(body["effective_from"] as String?).toInstant() }.getOrNull() ?: throw ProblemException.invalid(Violation("/effective_from", ViolationCode.INVALID_FORMAT))
+        val impact = runCatching { UUID.fromString(body["impact_report_id"] as String?) }.getOrNull() ?: throw ProblemException.invalid(Violation("/impact_report_id", ViolationCode.INVALID_FORMAT))
+        val r = staff.publishedRosters.publish(RequestContexts.require(request), id, PublishRoster(effective, body["reason"] as String? ?: "", impact, etag, key))
+        return RosterResource(published(r), r.etag)
+    }
+
+    /** Eigensicht (WP-M4-14, UI-09/UI-13): eigene Schichten der aktuellen veröffentlichten Revisionen; nie Entwürfe, nie fremde Schichten. */
+    @GetMapping("/v1/rosters/own-shifts")
+    fun ownShifts(@RequestParam from: String, @RequestParam to: String, request: HttpServletRequest): Map<String, Any?> {
+        val f = date(from, "from")!!; val t = date(to, "to")!!
+        return mapOf("items" to staff.publishedRosters.ownShifts(RequestContexts.require(request), f, t).map {
+            linkedMapOf(
+                "shift_id" to it.shiftId.toString(), "roster_id" to it.rosterId.toString(), "roster_revision" to it.rosterRevision, "operating_day" to it.operatingDay.toString(), "starts_at" to it.startsAt.toString(),
+                "ends_at" to it.endsAt.toString(), "timezone" to it.timezone.id, "function" to it.function, "state" to it.state, "break_minutes" to it.breakMinutes,
+            )
+        })
+    }
+
+    /** Revisionen des Dienstplans (WP-M4-15): Auditrecht und Depotrecht. */
+    @GetMapping("/v1/rosters/{roster_id}/revisions")
+    fun revisions(@PathVariable("roster_id") id: UUID, request: HttpServletRequest): Map<String, Any?> =
+        mapOf("items" to staff.rosterHistory.revisions(RequestContexts.require(request), id).map(::head))
+
+    @GetMapping("/v1/rosters/{roster_id}/revisions/{revision}")
+    fun revision(@PathVariable("roster_id") id: UUID, @PathVariable("revision") revision: Long, request: HttpServletRequest): Map<String, Any?> {
+        val v = staff.rosterHistory.revision(RequestContexts.require(request), id, revision)
+        return linkedMapOf("head" to head(v.head), "shifts" to v.shifts.map { s ->
+            linkedMapOf(
+                "shift_id" to s.shiftId.toString(), "lineage_id" to s.lineageId.toString(), "operating_day" to s.operatingDay.toString(), "starts_at" to s.startsAt.toString(), "ends_at" to s.endsAt.toString(),
+                "timezone" to s.timezone.id, "function" to s.function, "required_qualification" to s.requiredQualification, "staffing_need" to s.staffingNeed, "driver_ref" to s.driverRef?.toString(),
+                "vehicle_id" to s.vehicleId?.toString(), "depot_id" to s.depotId?.toString(), "break_plan" to s.breakPlan.toMap(), "state" to s.state,
+            )
+        })
+    }
+
+    @GetMapping("/v1/rosters/{roster_id}/shifts/{shift_id}/history")
+    fun shiftHistory(@PathVariable("roster_id") id: UUID, @PathVariable("shift_id") shift: UUID, request: HttpServletRequest): Map<String, Any?> =
+        mapOf("items" to staff.rosterHistory.shiftHistory(RequestContexts.require(request), id, shift).map {
+            linkedMapOf(
+                "id" to it.id.toString(), "kind" to it.kind.name, "roster_revision" to it.rosterRevision, "shift_id" to it.shiftId.toString(), "shift_revision" to it.shiftRevision, "actor" to it.actor,
+                "occurred_at" to it.occurredAt.toString(), "snapshot" to it.snapshot,
+            )
+        })
+
+    private fun head(h: RosterRevisionHead): Map<String, Any?> = linkedMapOf(
+        "revision" to h.revision, "state" to h.state.name, "author" to h.author, "created_at" to h.createdAt.toString(), "published_at" to h.publishedAt?.toString(), "published_by" to h.publishedBy,
+        "effective_from" to h.effectiveFrom?.toString(), "etag" to h.etag,
+    )
+
+    private fun published(r: PublishedRoster): Map<String, Any?> = linkedMapOf(
+        "resource_id" to r.rosterId.toString(), "revision" to r.etag, "state" to "PUBLISHED", "effective_from" to r.effectiveFrom.toString(), "audit_event_id" to r.auditEventId.toString(),
+    )
 
     private fun uuid(s: String?, name: String): UUID = runCatching { UUID.fromString(s) }.getOrNull() ?: throw ProblemException.invalid(Violation("/$name", ViolationCode.INVALID_FORMAT))
     private fun date(s: String?, name: String): LocalDate? = s?.let { runCatching { LocalDate.parse(it) }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT)) }

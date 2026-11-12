@@ -282,6 +282,38 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listOwnRosterShifts"><h3><span class="m">GET</span> <code>/v1/rosters/own-shifts</code></h3><p>Eigene veröffentlichte Schichten lesen</p><dl><dt>operationId</dt><dd><code>listOwnRosterShifts</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>time-events:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listRosterRevisions"><h3><span class="m">GET</span> <code>/v1/rosters/{roster_id}/revisions</code></h3><p>Revisionen eines Dienstplans lesen</p><dl><dt>operationId</dt><dd><code>listRosterRevisions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rosters:audit</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getRosterRevision"><h3><span class="m">GET</span> <code>/v1/rosters/{roster_id}/revisions/{revision}</code></h3><p>Historische veröffentlichte Fassung lesen</p><dl><dt>operationId</dt><dd><code>getRosterRevision</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rosters:audit</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listRosterShiftHistory"><h3><span class="m">GET</span> <code>/v1/rosters/{roster_id}/shifts/{shift_id}/history</code></h3><p>Änderungen und Veröffentlichungen einer Schicht lesen</p><dl><dt>operationId</dt><dd><code>listRosterShiftHistory</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rosters:audit</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="driver">driver.yaml</h2>
 <article id="recordDriverEvent"><h3><span class="m">POST</span> <code>/v1/driver/events</code></h3><p>Ein-/Ausstieg oder No-Show übermitteln</p><dl><dt>operationId</dt><dd><code>recordDriverEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>driver:events</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
@@ -373,6 +405,14 @@
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
 <h2 id="absences">absences.yaml</h2>
+<article id="listOwnAbsences"><h3><span class="m">GET</span> <code>/v1/absences/own</code></h3><p>Eigene Abwesenheitszeiträume lesen</p><dl><dt>operationId</dt><dd><code>listOwnAbsences</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>time-events:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listAbsences"><h3><span class="m">GET</span> <code>/v1/absences</code></h3><p>Abwesenheiten als Verfügbarkeitsrestriktion lesen</p><dl><dt>operationId</dt><dd><code>listAbsences</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>absences:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>

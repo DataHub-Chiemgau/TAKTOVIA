@@ -51,6 +51,15 @@ internal class JdbcAbsences(private val ctxTx: ContextTransactions, private val 
 
     override fun restrictions(ctx: RequestContext, personRef: String?, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<AvailabilityRestriction> {
         require(ctx, SCOPE_READ)
+        return restrictionRows(ctx, personRef, from, to, limit, after)
+    }
+
+    override fun own(ctx: RequestContext, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<AvailabilityRestriction> {
+        require(ctx, SCOPE_OWN)
+        return restrictionRows(ctx, ctx.actor.subject, from, to, limit, after)
+    }
+
+    private fun restrictionRows(ctx: RequestContext, personRef: String?, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<AvailabilityRestriction> {
         return ctxTx.run(ctx, readOnly = true) { j ->
             val fromTs = from?.let(Timestamp::from); val toTs = to?.let(Timestamp::from); val afterTs = after?.first?.let(Timestamp::from)
             // feste Anweisung mit optionalen Filtern (NULL = kein Filter); nur Person und Zeitraum verlassen die Datenbank, nie Art oder Urheber
@@ -104,6 +113,7 @@ internal class JdbcAbsences(private val ctxTx: ContextTransactions, private val 
     private companion object {
         const val SCOPE_WRITE = "absences:write"
         const val SCOPE_READ = "absences:read"
+        const val SCOPE_OWN = "time-events:read"
         const val SCOPE_DETAIL = "absences:detail"
         const val COLUMNS = "a.id, a.person_ref, a.starts_at, a.ends_at, a.kind, a.state, a.created_by, a.created_at, a.revision"
         val VIEW = RowMapper { rs, _ ->

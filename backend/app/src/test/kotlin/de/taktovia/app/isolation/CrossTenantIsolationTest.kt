@@ -255,6 +255,11 @@ class CrossTenantIsolationTest {
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
             "getRoster" to Probe("GET", "/v1/rosters/{roster_id}", role = "planner"),
             "openRosterDraft" to Probe("POST", "/v1/rosters/{roster_id}/draft", null, true, role = "planner"),
+            // WP-M4-14/-15: Veröffentlichung, Revisionen und Historie (der Planer hat weder `rosters:publish` noch `rosters:audit`: beide Wege sind gleichartig abgewiesen; die echte Mandantentrennung weist RosterPublishApiTest nach)
+            "publishRoster" to Probe("POST", "/v1/rosters/{roster_id}/publish", """{"effective_from":"2026-12-01T00:00:00Z","reason":"Freigabe","impact_report_id":"00000000-0000-4000-8000-0000000000c9"}""", true, role = "planner"),
+            "listRosterRevisions" to Probe("GET", "/v1/rosters/{roster_id}/revisions", role = "planner"),
+            "getRosterRevision" to Probe("GET", "/v1/rosters/{roster_id}/revisions/1", role = "planner"),
+            "listRosterShiftHistory" to Probe("GET", "/v1/rosters/{roster_id}/shifts/{roster_shift_id}/history", role = "planner"),
             "getRosterShift" to Probe("GET", "/v1/rosters/shifts/{roster_shift_id}?roster_id={roster_id}", role = "planner"),
             "updateRosterShift" to Probe("PUT", "/v1/rosters/shifts/{roster_shift_id}", """{"roster_id":"00000000-0000-4000-8000-0000000000c1","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"00000000-0000-4000-8000-0000000000c2","depot_id":"00000000-0000-4000-8000-0000000000c3","function":"Fahrdienst","staffing_need":2}""", true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
@@ -270,7 +275,7 @@ class CrossTenantIsolationTest {
         "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events",
     )
     private val selfScoped = setOf(
-        "getMe", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
+        "getMe", "listOwnRosterShifts", "listOwnAbsences", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
         "getMe", "listDriverShifts", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
     )
 
