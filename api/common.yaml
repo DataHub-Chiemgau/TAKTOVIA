@@ -79,6 +79,14 @@ components:
             driver:run: driver:run
             driver:devices: driver:devices
             driver:positions: driver:positions
+            absences:read: absences:read
+            absences:write: absences:write
+            absences:detail: absences:detail
+            time-events:read: time-events:read
+            time-events:write: time-events:write
+            time-events:manage: time-events:manage
+            receipts:read: receipts:read
+            receipts:write: receipts:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -142,6 +150,14 @@ components:
             driver:run: driver:run
             driver:devices: driver:devices
             driver:positions: driver:positions
+            absences:read: absences:read
+            absences:write: absences:write
+            absences:detail: absences:detail
+            time-events:read: time-events:read
+            time-events:write: time-events:write
+            time-events:manage: time-events:manage
+            receipts:read: receipts:read
+            receipts:write: receipts:write
     partnerSignature:
       type: apiKey
       in: header

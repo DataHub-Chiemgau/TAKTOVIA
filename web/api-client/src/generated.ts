@@ -459,6 +459,39 @@ export interface DriverDevice {
   revision: number;
 }
 
+export interface AbsenceCreate {
+  person_ref: string;
+  from: string;
+  to: string;
+  kind: 'LEAVE' | 'TRAINING' | 'OTHER';
+}
+
+export interface Absence {
+  id: UUID;
+  person_ref: string;
+  from: string;
+  to: string;
+  kind: 'LEAVE' | 'TRAINING' | 'OTHER';
+  state: 'APPROVED' | 'WITHDRAWN';
+  created_by: string;
+  created_at: string;
+  revision: number;
+}
+
+export interface AvailabilityRestriction {
+  id: UUID;
+  person_ref: string;
+  from: string;
+  to: string;
+  availability: 'UNAVAILABLE';
+}
+
+export interface AvailabilityRestrictionPage {
+  items: AvailabilityRestriction[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface RideResourceVector {
   schema_version?: '1.0';
   seats: number;
@@ -1694,6 +1727,47 @@ export interface ProviderEventReceipt {
   status: 'ACCEPTED' | 'ALREADY_RECEIVED';
 }
 
+export interface ReceiptUploadRequest {
+  legal_entity_id: UUID;
+  purpose: UploadPurpose;
+  mime: 'image/jpeg' | 'image/png' | 'application/pdf';
+  size_bytes: number;
+  sha256: string;
+}
+
+export type UploadPurpose = 'RECEIPT' | 'DAMAGE_PHOTO';
+
+export interface ReceiptUploadTicket {
+  ticket_id: UUID;
+  purpose: UploadPurpose;
+  mime: string;
+  size_bytes: number;
+  sha256: string;
+  max_bytes: number;
+  expires_at: string;
+  state: 'ISSUED';
+  revision: number;
+  upload_key: string;
+  upload: null | {
+    method: 'PUT';
+    url: string;
+    headers: Record<string, unknown>;
+  };
+}
+
+export interface ReceiptDocument {
+  document_id: UUID;
+  ticket_id: UUID;
+  purpose: UploadPurpose;
+  state: 'QUARANTINED' | 'STORED' | 'QUARANTINE_REJECTED';
+  mime: string;
+  size_bytes: number;
+  sha256: string;
+  received_at: string;
+  scanned_at: string | null;
+  revision: number;
+}
+
 export interface EffectiveConfig {
   as_of: string;
   values: Record<string, unknown>;
@@ -2004,6 +2078,68 @@ export interface AccountRecovery {
   started_at: string;
 }
 
+export interface TimeEventCreate {
+  event_id: UUID;
+  kind: TimeEventKind;
+  occurred_at: string;
+  device_recorded_at: string;
+  channel: 'APP' | 'WEB';
+  shift_id?: UUID | null;
+}
+
+export interface TimeEventBackfillCreate {
+  event_id: UUID;
+  person_ref: string;
+  kind: TimeEventKind;
+  occurred_at: string;
+  shift_id?: UUID | null;
+  reason: string;
+}
+
+export type TimeEventKind = 'WORK_START' | 'WORK_END' | 'BREAK_START' | 'BREAK_END';
+
+export interface TimeEvent {
+  event_id: UUID;
+  person_ref: string;
+  kind: TimeEventKind;
+  occurred_at: string;
+  device_recorded_at: string | null;
+  received_at: string;
+  source: 'APP' | 'WEB' | 'BACKFILL';
+  recorded_by: string;
+  shift_id: UUID | null;
+  backfill_reason: string | null;
+}
+
+export interface TimeEventPage {
+  items: TimeEvent[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface TimeInterval {
+  start: string | null;
+  end: string | null;
+  breaks: ({
+    start: string;
+    end: string | null;
+  })[];
+  net_seconds: number | null;
+  flags: ('MISSING_END' | 'END_WITHOUT_START' | 'BREAK_NOT_ENDED')[];
+  event_ids: UUID[];
+}
+
+export interface TimeIntervalList {
+  person_ref: string;
+  from: string;
+  to: string;
+  intervals: TimeInterval[];
+  anomalies: ({
+    event_id: UUID;
+    code: 'BREAK_OUTSIDE_WORK' | 'BREAK_END_WITHOUT_START' | 'BREAK_ALREADY_STARTED';
+  })[];
+}
+
 export interface WebhookSubscription {
   id: UUID;
   url: string;
@@ -2158,6 +2294,34 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: undefined;
     response: undefined;
+  };
+  listAbsences: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: AvailabilityRestrictionPage;
+  };
+  createAbsence: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: AbsenceCreate;
+    response: Absence;
+  };
+  getAbsence: {
+    path: { absence_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Absence;
+  };
+  withdrawAbsence: {
+    path: { absence_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: Absence;
   };
   createRideOffer: {
     path: Record<string, never>;
@@ -2915,6 +3079,27 @@ export interface Operations {
     body: ProviderEvent;
     response: ProviderEventReceipt;
   };
+  requestReceiptUpload: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ReceiptUploadRequest;
+    response: ReceiptUploadTicket;
+  };
+  completeReceiptUpload: {
+    path: { ticket_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: ReceiptDocument;
+  };
+  getReceiptDocument: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ReceiptDocument;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
@@ -3097,6 +3282,34 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
+  listTimeEvents: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TimeEventPage;
+  };
+  recordTimeEvent: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TimeEventCreate;
+    response: TimeEvent;
+  };
+  createTimeEventBackfill: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TimeEventBackfillCreate;
+    response: TimeEvent;
+  };
+  listTimeIntervals: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from: string; to: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TimeIntervalList;
+  };
   listWebhookSubscriptions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -3160,6 +3373,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   acknowledgeDriverRunRevision: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/run/acknowledgements', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   registerDriverDevice: { method: 'POST', path: '/v1/driver/devices', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:devices'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   revokeDriverDevice: { method: 'DELETE', path: '/v1/driver/devices/{device_id}', pathParams: ['device_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['driver:devices'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  withdrawAbsence: { method: 'POST', path: '/v1/absences/{absence_id}/withdraw', pathParams: ['absence_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['absences:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
@@ -3268,6 +3485,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
+  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -3294,6 +3514,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listTimeIntervals: { method: 'GET', path: '/v1/time-events/intervals', pathParams: [], query: ['person_ref', 'from', 'to'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getWebhookSubscription: { method: 'GET', path: '/v1/webhook-subscriptions/{subscription_id}', pathParams: ['subscription_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

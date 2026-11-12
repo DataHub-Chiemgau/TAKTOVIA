@@ -1,0 +1,303 @@
+paths:
+  /v1/expenses/receipts:
+    post:
+      summary: Uploadticket für ein Beleg-Original anfordern
+      operationId: requestReceiptUpload
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Stellt ein einmal verbrauchbares Uploadticket mit erlaubter Größe, MIME-Typ (JPEG, PNG, PDF) und erwartetem SHA-256 aus; Planungsdefaults: höchstens 10 MiB, 15 Minuten gültig (nicht freigegeben, Offener Punkt 13). Die Datei wird danach direkt in die Quarantäne des Objektspeichers geladen (`upload.url`, vorsigniert; solange kein Objektspeicher-Adapter angebunden ist, ist `upload` null) und mit `completeReceiptUpload` abgeschlossen. Der Hash wird als base64url ohne Auffüllung (43 Zeichen) übertragen, weil lange Hexfolgen die Kartendatenerkennung (SEC-008) fehldeuten können. Rechtsträger eines anderen Mandanten: 404; Typ, Größe oder Hash unzulässig: 422. Das Ticket gilt auch für andere Module (`purpose` DAMAGE_PHOTO: Fotoevidenz der Schadenmeldung).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptUploadTicket'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptUploadRequest'
+  /v1/expenses/receipts/{ticket_id}/complete:
+    post:
+      summary: Upload abschließen und Quarantäneprüfung starten
+      operationId: completeReceiptUpload
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Schließt den Upload ab: der Server liest die Datei aus der Quarantäne und prüft Größe, SHA-256 und tatsächlichen Dateityp gegen das Ticket (Abweichung: 422, das Ticket ist danach verbraucht). Danach läuft die Malware-Prüfung. Antwort `QUARANTINED` (Prüfer nicht verfügbar, bleibt in Quarantäne), `STORED` (Original gespeichert) oder `QUARANTINE_REJECTED` (Schadsoftware, endgültig, Sicherheitsereignis, nie ausgeliefert oder an OCR übergeben). `If-Match` trägt die Ticketrevision (veraltet: 412, fehlend: 428). Ein abgelaufenes oder bereits verbrauchtes Ticket ist nicht wiederverwendbar (409); parallele Abschlüsse ergeben genau ein Dokument; fremde Tickets sind nicht auffindbar (404).'
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Ticket-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDocument'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/receipts/{document_id}:
+    get:
+      summary: Beleg-Original mit Prüfzustand lesen
+      operationId: getReceiptDocument
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert Zustand und Metadaten des hochgeladenen Dokuments (nicht den Inhalt). Sichtbar für den Erfasser und die Finanzrolle; fremde Mandanten und andere Akteure: 404.'
+      parameters:
+      - name: document_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dokument-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDocument'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ReceiptUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        purpose:
+          $ref: '#/components/schemas/UploadPurpose'
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+          - application/pdf
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1073741824
+          description: Erwartete Größe in Byte; über der Obergrenze der Anlage ist 422.
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Erwarteter SHA-256 der Datei, base64url ohne Auffüllung (43 Zeichen).
+      required:
+      - legal_entity_id
+      - purpose
+      - mime
+      - size_bytes
+      - sha256
+    UploadPurpose:
+      type: string
+      enum:
+      - RECEIPT
+      - DAMAGE_PHOTO
+    ReceiptUploadTicket:
+      type: object
+      additionalProperties: false
+      properties:
+        ticket_id:
+          $ref: common.yaml#/components/schemas/UUID
+        purpose:
+          $ref: '#/components/schemas/UploadPurpose'
+        mime:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1073741824
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+        max_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1073741824
+          description: Obergrenze der Anlage (Planungsdefault, nicht freigegeben).
+        expires_at:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum:
+          - ISSUED
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        upload_key:
+          type: string
+          maxLength: 200
+          description: Objektname in der Quarantäne (ohne Mandantenpräfix), nur zur Zuordnung.
+        upload:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: false
+            properties:
+              method:
+                type: string
+                enum:
+                - PUT
+              url:
+                type: string
+                maxLength: 2048
+              headers:
+                type: object
+                additionalProperties:
+                  type: string
+                  maxLength: 512
+            required:
+            - method
+            - url
+            - headers
+          description: Vorsigniertes Ziel des direkten Uploads; null, solange kein Objektspeicher-Adapter angebunden ist.
+      required:
+      - ticket_id
+      - purpose
+      - mime
+      - size_bytes
+      - sha256
+      - max_bytes
+      - expires_at
+      - state
+      - revision
+      - upload_key
+      - upload
+    ReceiptDocument:
+      type: object
+      additionalProperties: false
+      properties:
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        ticket_id:
+          $ref: common.yaml#/components/schemas/UUID
+        purpose:
+          $ref: '#/components/schemas/UploadPurpose'
+        state:
+          type: string
+          enum:
+          - QUARANTINED
+          - STORED
+          - QUARANTINE_REJECTED
+          description: In Quarantäne (nicht ausgeliefert, nicht an OCR), geprüft und als Original gespeichert, oder endgültig abgelehnt.
+        mime:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1073741824
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Serverseitig berechneter SHA-256 des Originals, base64url.
+        received_at:
+          type: string
+          format: date-time
+        scanned_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - document_id
+      - ticket_id
+      - purpose
+      - state
+      - mime
+      - size_bytes
+      - sha256
+      - received_at
+      - scanned_at
+      - revision

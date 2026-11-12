@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+absence_request;SELECT,INSERT,UPDATE;WP-M4-06: genehmigte Abwesenheit als Verfügbarkeitsrestriktion; nur Rücknahme änderbar (Trigger), kein DELETE

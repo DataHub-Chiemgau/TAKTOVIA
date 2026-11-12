@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.quarantine_passed.v1.schema.json",
+  "title": "Quarantäne bestanden (WP-M4-21)",
+  "description": "Payload von `document.quarantine_passed`. Aggregat: expense_document / 2. Das Original liegt schreibgeschützt im Originalbestand; erst ab diesem Ereignis darf OCR oder die Auslieferung beginnen.",
+  "type": "object",
+  "required": [
+    "document_id",
+    "mime",
+    "scanned_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mime": {
+      "enum": [
+        "image/jpeg",
+        "image/png",
+        "application/pdf"
+      ]
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "document_id": "11111111-2222-4333-8444-555555555555",
+      "mime": "application/pdf",
+      "scanned_at": "2026-12-01T06:00:05Z"
+    }
+  ]
+}

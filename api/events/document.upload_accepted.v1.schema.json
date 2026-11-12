@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.upload_accepted.v1.schema.json",
+  "title": "Upload angenommen (WP-M4-21)",
+  "description": "Payload von `document.upload_accepted`. Aggregat: expense_document / 1. Das Dokument liegt in Quarantäne und ist noch nicht ausgeliefert oder an OCR übergeben. Nur Kennungen, Codes, Typ und Größe (Minimierungsregel, Kap. 05 §5.1): kein Dateiname, kein Inhalt.",
+  "type": "object",
+  "required": [
+    "document_id",
+    "ticket_id",
+    "purpose",
+    "mime",
+    "size_bytes",
+    "received_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "ticket_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "purpose": {
+      "enum": [
+        "RECEIPT",
+        "DAMAGE_PHOTO"
+      ]
+    },
+    "mime": {
+      "enum": [
+        "image/jpeg",
+        "image/png",
+        "application/pdf"
+      ]
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "document_id": "11111111-2222-4333-8444-555555555555",
+      "ticket_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "purpose": "RECEIPT",
+      "mime": "image/jpeg",
+      "size_bytes": 123456,
+      "received_at": "2026-12-01T06:00:00Z"
+    }
+  ]
+}

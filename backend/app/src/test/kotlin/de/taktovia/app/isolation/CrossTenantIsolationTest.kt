@@ -31,14 +31,15 @@ class CrossTenantIsolationTest {
     private fun idem() = mapOf("Idempotency-Key" to "iso-" + UUID.randomUUID())
 
     private class Side(val tenant: TenantId, val admin: UUID, val adminToken: String, val callcenter: UUID, val ccToken: String, val passenger: UUID, val passengerToken: String,
-        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String)
+        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String, val finance: UUID, val financeToken: String)
 
     private fun side(): Side {
         val t = env.tenant("Iso-" + UUID.randomUUID()); val a = UUID.randomUUID(); val c = UUID.randomUUID(); val p = UUID.randomUUID()
         env.grant(t, a, "tenant_admin"); env.grant(t, c, "callcenter"); env.grant(t, p, "passenger")
         val pl = UUID.randomUUID(); val di = UUID.randomUUID(); val dr = UUID.randomUUID()
         env.grant(t, pl, "staff_planning"); env.grant(t, di, "dispatcher"); env.grant(t, dr, "driver")
-        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr))
+        val fi = UUID.randomUUID(); env.grant(t, fi, "finance")
+        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr), fi, env.token(fi))
     }
 
     private class Ids(val map: Map<String, String>, val subject: String)
@@ -78,6 +79,17 @@ class CrossTenantIsolationTest {
         val driverMaster = create("/v1/drivers", """{"membership_id":"${env.grant(b.tenant, UUID.randomUUID(), "driver")}","display_name":"Erika B","contact_channel":"PHONE","contact_value":"+49170000"}""", b.plannerToken).json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
+        // WP-M4-06: Abwesenheit in B (Personalrolle)
+        val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
+        // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
+        val timeEvent = UUID.randomUUID().toString()
+        create("/v1/time-events", """{"event_id":"$timeEvent","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}""", b.driverToken)
+        // WP-M4-21: Beleg-Original in B (Finanzrolle von B legt Ticket an, lädt in die Quarantäne und schließt ab)
+        val jpeg = ByteArray(512) { (it * 3).toByte() }.also { it[0] = 0xFF.toByte(); it[1] = 0xD8.toByte(); it[2] = 0xFF.toByte() }
+        val hash = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(jpeg))
+        val ticketJson = create("/v1/expenses/receipts", """{"legal_entity_id":"$le","purpose":"RECEIPT","mime":"image/jpeg","size_bytes":${jpeg.size},"sha256":"$hash"}""", b.financeToken).json
+        env.server.ctx.getBean(de.taktovia.platform.storage.TenantObjectStore::class.java).put(de.taktovia.platform.storage.ObjectKey(b.tenant, ticketJson["upload_key"].asString()), jpeg, "image/jpeg")
+        val receipt = env.post("/v1/expenses/receipts/${ticketJson["ticket_id"].asString()}/complete", "", b.financeToken, extra = idem() + ("If-Match" to "\"1\"")).also { check(it.status == 201) { it.text } }.json["document_id"].asString()
         val recipient = UUID.randomUUID()
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
@@ -89,7 +101,7 @@ class CrossTenantIsolationTest {
             "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
 
@@ -152,6 +164,10 @@ class CrossTenantIsolationTest {
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
             "updateVehicleCapacity" to Probe("PATCH", "/v1/operator/vehicle-master/{vehicle_id}/capacity", """{"restrictions":[]}""", true, role = "dispatcher"),
+            "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
+            "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
+            "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
+            "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -159,7 +175,7 @@ class CrossTenantIsolationTest {
     private val listPaths = mapOf(
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
-        "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
+        "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
@@ -179,7 +195,7 @@ class CrossTenantIsolationTest {
         return listOf(r.status, j["type"]?.asString(), j["code"]?.asString(), j["title"]?.asString(), j["detail"]?.asString()).joinToString("|")
     }
 
-    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
+    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
         env.server.send(p.method, path, p.body, env.headers(token, extra = (if (p.method != "GET") idem() else emptyMap()) + (if (p.ifMatch) mapOf("If-Match" to "\"1\"") else emptyMap()) + (if (p.purpose) mapOf("X-Access-Purpose" to "BOOKING_ASSISTANCE") else emptyMap())))
 
     private fun snapshot(b: Side): String = listOf("/v1/regions", "/v1/depots", "/v1/legal-entities", "/v1/organizations", "/v1/services", "/v1/cost-centers", "/v1/config/revisions", "/v1/memberships", "/v1/webhook-subscriptions")
@@ -210,13 +226,22 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters" -> a.dispatcherToken; "listDrivers" -> a.plannerToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
                 assertFalse(r.text.contains(b.tenant.toString()), "$op: Liste von A nennt Mandant B")
             }
         }
+        // Zeitereignisse (WP-M4-08): die Personalrolle von A fragt gezielt die Person von B ab: leer, nie Ereignisse von B
+        for (path in listOf("/v1/time-events?person_ref=${b.driver}", "/v1/time-events/intervals?person_ref=${b.driver}&from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z")) {
+            val r = env.get(path, a.plannerToken)
+            assertEquals(200, r.status, r.text)
+            assertEquals(0, r.json[if (path.contains("intervals")) "intervals" else "items"].size(), "$path: Ereignisse von B sichtbar")
+            assertFalse(r.text.contains(ids.map.getValue("time_event_id")))
+        }
+        assertEquals(1, env.count("SELECT count(*) FROM taktovia.time_event WHERE tenant_id=?", b.tenant.value), "Zeitereignis in B unverändert")
+        assertEquals(1, env.count("SELECT count(*) FROM taktovia.absence_request WHERE tenant_id=? AND state='APPROVED' AND revision=1", b.tenant.value), "Abwesenheit in B unverändert (Rücknahme aus A wirkungslos)")
         assertEquals(before, snapshot(b), "Mandant B ist nach allen Fremdversuchen unverändert (Änderung und Löschung wirkungslos)")
     }
 

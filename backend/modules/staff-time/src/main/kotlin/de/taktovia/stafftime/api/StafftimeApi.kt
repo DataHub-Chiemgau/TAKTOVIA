@@ -13,6 +13,10 @@ import java.util.UUID
 interface StafftimeApi {
     val driverDevices: DriverDevices
     val driverEvents: DriverEvents
+    /** Abwesenheit als Verfügbarkeitsrestriktion (WP-M4-06). */
+    val absences: Absences
+    /** Ist-Arbeitszeit als Zeitereignisse (WP-M4-08). */
+    val timeEvents: TimeEvents
 
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers

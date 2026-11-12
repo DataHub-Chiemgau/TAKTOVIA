@@ -1,0 +1,321 @@
+paths:
+  /v1/absences:
+    get:
+      summary: Abwesenheiten als Verfügbarkeitsrestriktion lesen
+      operationId: listAbsences
+      security:
+      - oidc:
+        - absences:read
+      description: 'Liefert genehmigte, nicht zurückgenommene Abwesenheiten ausschließlich als Verfügbarkeitsrestriktion (Zeitraum, Person, `availability` = UNAVAILABLE) für Konfliktprüfung, Planerraster und Dispositionssichten. Art und weitere Angaben der Abwesenheit sind in dieser Sicht nie enthalten (Kap. 06 §6.8); sie sind nur über `getAbsence` für die Personalrolle lesbar. Ein Zeitfenster (`from`/`to`) liefert alle Restriktionen, die es überlappen.'
+      parameters:
+      - name: person_ref
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description: Nur die Restriktionen dieser Person.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+        description: Beginn des Zeitfensters (RFC 3339 mit Offset); nur Abwesenheiten, die nach diesem Zeitpunkt enden.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+        description: Ende des Zeitfensters (RFC 3339 mit Offset, exklusiv); nur Abwesenheiten, die vor diesem Zeitpunkt beginnen.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRestrictionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Genehmigte Abwesenheit erfassen
+      operationId: createAbsence
+      security:
+      - oidc:
+        - absences:write
+      description: 'Erfasst eine bereits genehmigte Abwesenheit einer Person (Minimalmodell: kein Antragsworkflow). Nur die Personalrolle; der Administrator hat ohne Fachrolle keinen Zugriff (HR-Daten). Die Art ist ein neutraler Katalogwert, es gibt weder Diagnose noch Nachweis noch Kommentar (Krankheitsabwesenheit folgt in M7). `to` ist exklusiv und muss nach `from` liegen. Jede Anlage steht im Audit.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Absence'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbsenceCreate'
+  /v1/absences/{absence_id}:
+    get:
+      summary: Abwesenheit mit Art lesen (Personalrolle)
+      operationId: getAbsence
+      security:
+      - oidc:
+        - absences:detail
+      description: 'Vollständige Sicht für die Personalrolle einschließlich der neutralen Art. Planer und Disposition haben darauf keinen Zugriff (403); fremde oder unbekannte Abwesenheiten sind nicht auffindbar (404).'
+      parameters:
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Abwesenheits-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Absence'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/absences/{absence_id}/withdraw:
+    post:
+      summary: Abwesenheit zurücknehmen
+      operationId: withdrawAbsence
+      security:
+      - oidc:
+        - absences:write
+      description: 'Nimmt eine Abwesenheit zurück (Zustand WITHDRAWN, endgültig, Revision +1); sie zählt danach nicht mehr als Verfügbarkeitsrestriktion. `If-Match` trägt die Revision (veraltet: 412, fehlend: 428). Wiederholung auf eine bereits zurückgenommene Abwesenheit mit gültiger Revision liefert denselben Stand.'
+      parameters:
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Abwesenheits-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Absence'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    AbsenceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Kennung der Person (IdP-Subject), wie sie auch Schichten und Zeitereignisse tragen.
+        from:
+          type: string
+          format: date-time
+          maxLength: 40
+        to:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: Ende, exklusiv; nach `from`.
+        kind:
+          type: string
+          enum:
+          - LEAVE
+          - TRAINING
+          - OTHER
+          description: Neutrale Art (Urlaub/Freistellung, Schulung, sonstige). Kein Diagnose-, Nachweis- oder Kommentarfeld.
+      required:
+      - person_ref
+      - from
+      - to
+      - kind
+    Absence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+          - LEAVE
+          - TRAINING
+          - OTHER
+        state:
+          type: string
+          enum:
+          - APPROVED
+          - WITHDRAWN
+        created_by:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - person_ref
+      - from
+      - to
+      - kind
+      - state
+      - created_by
+      - created_at
+      - revision
+      description: Vollständige Sicht der Personalrolle.
+    AvailabilityRestriction:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        availability:
+          type: string
+          enum:
+          - UNAVAILABLE
+          description: Einziger Wert; Art und Grund der Abwesenheit gehören nicht in Planer- und Dispositionssichten.
+      required:
+      - id
+      - person_ref
+      - from
+      - to
+      - availability
+    AvailabilityRestrictionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityRestriction'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

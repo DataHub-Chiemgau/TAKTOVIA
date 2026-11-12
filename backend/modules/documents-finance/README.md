@@ -6,3 +6,7 @@ Paket `de.taktovia.documentsfinance` mit `api` (öffentliche Ports) und `interna
 
 Regeln: schreibt nur eigene Tabellen (`db/table_owners.d/`); greift auf andere Module nur über deren `api`-Paket zu;
 hängt im Gradle-Build nur von `platform` ab.
+
+## Uploadticket, Quarantäne und Malware-Prüfung (WP-M4-21)
+
+`DocumentUploads.create(…)` liefert den Port `Uploads` (Ticket anfordern, abschließen, lesen, erneut prüfen, Original öffnen); Ablauf, Zustände und Betrieb: [m4-cluster-c5.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-c5.md). Objektspeicher (`TenantObjectStore`) und Prüfer (`MalwareScanner`: `ClamdScanner`, `EicarSignatureScanner` nur lokal, `UnavailableScanner` fail-closed) liefert die Anwendung (`app.documents.DocumentsConfiguration`).

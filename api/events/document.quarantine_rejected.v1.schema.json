@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.quarantine_rejected.v1.schema.json",
+  "title": "Quarantäne abgelehnt (WP-M4-21)",
+  "description": "Payload von `document.quarantine_rejected` (Sicherheitsereignis). Aggregat: expense_document / 2. Das Dokument bleibt endgültig in Quarantäne, wird nie ausgeliefert und nicht an OCR übergeben. Kein Signaturname, kein Inhalt.",
+  "type": "object",
+  "required": [
+    "document_id",
+    "engine",
+    "scanned_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "engine": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "document_id": "11111111-2222-4333-8444-555555555555",
+      "engine": "clamd",
+      "scanned_at": "2026-12-01T06:00:05Z"
+    }
+  ]
+}

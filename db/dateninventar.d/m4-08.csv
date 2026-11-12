@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+time_event;tenant_id;nein;PERSONALEINSATZ;;;;
+time_event;id;nein;PERSONALEINSATZ;;;;
+time_event;person_ref;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;IdP-Subject der Person, kein Klarname
+time_event;kind;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Arbeitsbeginn, Arbeitsende, Pausenbeginn, Pausenende
+time_event;occurred_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Ereigniszeit der Arbeitszeit
+time_event;device_recorded_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Gerätezeit des Erfassers
+time_event;received_at;nein;TECHNISCHER_BETRIEB;;;;
+time_event;source;nein;PERSONALEINSATZ;;;;
+time_event;recorded_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Urheber der Erfassung (Subject), bei Nacherfassung die berechtigte Person
+time_event;shift_id;nein;PERSONALEINSATZ;;;;
+time_event;backfill_reason;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Begründung der Nacherfassung (kurzer Text, keine Gesundheitsangaben)
+time_event;payload_sha256;nein;TECHNISCHER_BETRIEB;;;;

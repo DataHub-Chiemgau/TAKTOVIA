@@ -47,6 +47,7 @@ tasks.withType<Test>().configureEach {
     // Datenbankabhängige Tests dürfen nie aus Cache oder „up-to-date“ als bestanden gelten: Umgebung ist kein Task-Input.
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }
+    maxHeapSize = "2g"   // viele Spring-Kontexte und ArchUnit-Importe in einer Test-JVM (OutOfMemoryError mit dem Standard von 512 MB)
     systemProperty("taktovia.repoRoot", rootProject.projectDir.parentFile.absolutePath)
     // Die Anwendungstests teilen sich eine JVM (mehrere Spring-Kontexte, ArchUnit-Import aller Module): mit dem Wachsen der Suite reicht der Standard-Heap (512 MB) nicht mehr.
     maxHeapSize = "2g"

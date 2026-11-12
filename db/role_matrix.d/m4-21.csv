@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+upload_ticket;SELECT,INSERT,UPDATE;WP-M4-21: Uploadticket, einmal verbrauchbar (Zustand nur vorwärts, Trigger), kein DELETE
