@@ -160,7 +160,7 @@ internal class JdbcReadiness(
         val validUntil = minOf(shift.endsAt, now.plus(policy.maxValidity))
         val id = UUID.randomUUID()
         j.update(
-            "INSERT INTO taktovia.resource_release (tenant_id, id, vehicle_id, shift_id, safety_revision, inspection_ref, qualification_revision, valid_until, issued_at, issued_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO taktovia.resource_release (tenant_id, id, vehicle_id, shift_id, safety_revision, inspection_ref, qualification_revision, valid_until, created_at, issued_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id, cmd.vehicleId, cmd.shiftId, vehicle.safetyRevision, cmd.inspectionId, qualification, Timestamp.from(validUntil), Timestamp.from(now), actor.value,
         )
         // die Freigabe löscht den abgeleiteten Sperrzustand des Fahrzeugs (V1-Vorgabe true = „nicht freigegeben“); es besteht keine aktive Sperre (oben geprüft)
@@ -335,7 +335,7 @@ internal class JdbcReadiness(
                 BlockStatus.valueOf(rs.getString(6)), rs.getString(7), rs.getTimestamp(8).toInstant(), rs.getString(9), rs.getTimestamp(10)?.toInstant(), rs.getObject(11, UUID::class.java), rs.getLong(12))
         }
 
-        const val RELEASE_SELECT = "SELECT r.id, r.vehicle_id, r.shift_id, r.inspection_ref, r.safety_revision, r.qualification_revision, r.valid_until, r.issued_at, r.issued_by, r.revoked_at, r.revoked_by, r.revoke_reason FROM taktovia.resource_release r"
+        const val RELEASE_SELECT = "SELECT r.id, r.vehicle_id, r.shift_id, r.inspection_ref, r.safety_revision, r.qualification_revision, r.valid_until, r.created_at, r.issued_by, r.revoked_at, r.revoked_by, r.revoke_reason FROM taktovia.resource_release r"
         @Suppress("FunctionName")
         fun RELEASE_ROW(now: Instant) = RowMapper { rs, _ ->
             val validUntil = rs.getTimestamp(7).toInstant(); val revoked = rs.getTimestamp(10)?.toInstant()

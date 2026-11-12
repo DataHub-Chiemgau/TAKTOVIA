@@ -11045,6 +11045,15 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -11055,15 +11064,6 @@
         },
         {
           "spalte": "inspection_ref",
-          "personenbezogen": "nein",
-          "zweck": "FLOTTE_SICHERHEIT",
-          "rechtsgrundlage": "",
-          "schutzklasse": "",
-          "loeschklasse": "",
-          "bemerkung": ""
-        },
-        {
-          "spalte": "issued_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
           "rechtsgrundlage": "",

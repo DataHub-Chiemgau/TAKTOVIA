@@ -26,7 +26,7 @@ BEGIN
 END $$;
 
 ALTER TABLE resource_release
-  ADD COLUMN issued_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  ADD COLUMN created_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
   ADD COLUMN issued_by     text CHECK (issued_by IS NULL OR issued_by ~ '^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$'),
   ADD COLUMN revoked_by    text CHECK (revoked_by IS NULL OR revoked_by ~ '^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$'),
   ADD COLUMN revoke_reason text CHECK (revoke_reason IS NULL OR revoke_reason IN ('BLOCK_SET', 'VEHICLE_CHANGED', 'QUALIFICATION_REVOKED', 'MANUAL'));
@@ -39,7 +39,7 @@ BEGIN
      OR NEW.id IS DISTINCT FROM OLD.id OR NEW.vehicle_id IS DISTINCT FROM OLD.vehicle_id OR NEW.shift_id IS DISTINCT FROM OLD.shift_id
      OR NEW.safety_revision IS DISTINCT FROM OLD.safety_revision OR NEW.inspection_ref IS DISTINCT FROM OLD.inspection_ref
      OR NEW.qualification_revision IS DISTINCT FROM OLD.qualification_revision OR NEW.valid_until IS DISTINCT FROM OLD.valid_until
-     OR NEW.issued_at IS DISTINCT FROM OLD.issued_at OR NEW.issued_by IS DISTINCT FROM OLD.issued_by THEN
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.issued_by IS DISTINCT FROM OLD.issued_by THEN
     RAISE EXCEPTION 'resource release may only be revoked once' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
