@@ -1,0 +1,24 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+defect_evidence_upload;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;uploaded_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+defect_evidence_upload;declared_mime;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;declared_size;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;declared_sha256;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;captured_at;nein;FLOTTE_SICHERHEIT;;;;Aufnahmezeit laut Gerät, EXIF wird serverseitig entfernt (OP-31)
+defect_evidence_upload;quarantine_key;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;state;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;reject_reason;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;object_key;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;stored_sha256;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;stored_size;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;review_engine;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;reviewed_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;expires_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;revision;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence_upload;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;mime;nein;FLOTTE_SICHERHEIT;;;;WP-M3-44
+defect_evidence;size_bytes;nein;FLOTTE_SICHERHEIT;;;;WP-M3-44
+defect_evidence;original_sha256;nein;FLOTTE_SICHERHEIT;;;;WP-M3-44
+defect_evidence;upload_id;nein;FLOTTE_SICHERHEIT;;;;WP-M3-44

@@ -1252,6 +1252,302 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CapacityPatch'
+  /v1/defect-evidence-uploads:
+    post:
+      summary: Uploadticket für ein Schadenfoto
+      operationId: requestDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:write
+      description: 'Stellt ein Uploadticket (Größe, MIME, SHA-256 base64url, Aufnahmezeit) aus; die Datei wird direkt in die Quarantäne unter `upload_key` geladen und dann mit `completeDefectEvidenceUpload` abgeschlossen. Dieselbe Datei desselben Urhebers liefert das bestehende Ticket (Wiederholung nach Zeitüberschreitung). Unzulässiger Typ oder zu große Datei: 422 mit Feldverweis.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectEvidenceUploadRequest'
+  /v1/defect-evidence-uploads/{upload_id}:
+    get:
+      summary: Uploadticket lesen
+      operationId: getDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:read
+      description: 'Zustand des Fotos auf dem Weg zur Akte: ISSUED (Upload offen), IN_REVIEW (in Prüfung), RELEASED (sichtbar), REJECTED (abgewiesen). Mit ETag. Fremdes Ticket: 404.'
+      parameters:
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Ticket-ID (zugleich Evidenz-ID).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defect-evidence-uploads/{upload_id}/complete:
+    post:
+      summary: Upload abschließen und prüfen lassen
+      operationId: completeDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:write
+      description: 'Prüft Größe, Hash und Typ am gespeicherten Objekt und startet die Medienprüfung. Abweichung, fehlendes Objekt, Schadsoftware oder ungültiges Bild: 422, das Foto wird nie an die Akte gehängt. Bereits abgeschlossen: 409; veraltete Revision: 412.'
+      parameters:
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Ticket-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/evidence:
+    get:
+      summary: Freigegebene Fotos einer Schadenakte
+      operationId: listDefectEvidence
+      security:
+      - oidc:
+        - defects:read
+      description: 'Nur Fotos mit bestandener Medienprüfung; Fotos in Prüfung zählt die Akte (`evidence_pending`). Fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidencePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/evidence/{evidence_id}/download:
+    get:
+      summary: Signierten Abruflink für ein Schadenfoto erzeugen
+      operationId: getDefectEvidenceDownload
+      security:
+      - oidc:
+        - defects:read
+      description: 'Erst nach Objekt- und Zweckprüfung (freigegebene Evidenz einer sichtbaren Akte); der Link gilt höchstens 60 s und nur für den Mandanten, der ihn erhielt.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - name: evidence_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Evidenz-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceLink'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/objects/{tenant_id}/{object_name}:
+    get:
+      summary: Objekt über signierten Link abrufen
+      operationId: readSignedObject
+      security:
+      - oidc:
+        - defects:read
+      description: 'Liefert das Objekt zu einem signierten Link (Parameter `exp`, `purpose`, `sig`). Ungültige, abgelaufene oder mandantenfremde Links sind nicht von einem fehlenden Objekt zu unterscheiden: 404.'
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Mandant im Objektschlüssel.
+      - name: object_name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9._-]{1,200}$
+        description: Objektname ohne Mandantenpräfix.
+      - name: exp
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Ablauf (Unix-Sekunden).
+      - name: purpose
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{1,40}$
+        description: Zweck der Signatur.
+      - name: sig
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        description: Signatur (HMAC-SHA256, hexadezimal).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     VehicleOperationalState:
@@ -2675,3 +2971,191 @@ components:
       - effective
       - vectors
       - revision
+    DefectEvidenceUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+      required:
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      description: Ticketanforderung für ein Schadenfoto (DMG-004). EXIF-Angaben entfernt der Server; die Aufnahmezeit steht neben dem Bild (OP-31).
+    DefectEvidenceUpload:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - ISSUED
+          - IN_REVIEW
+          - RELEASED
+          - REJECTED
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+        max_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        expires_at:
+          type: string
+          format: date-time
+        upload_key:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Objektname in der Quarantäne (ohne Mandantenpräfix); der vorsignierte Direktupload ist an die Objektspeicheranbindung gebunden (WP-M0-08).
+        reject_reason:
+          oneOf:
+          - type: string
+            enum:
+            - EXPIRED
+            - OBJECT_MISSING
+            - SIZE_MISMATCH
+            - HASH_MISMATCH
+            - MIME_MISMATCH
+            - SIZE_LIMIT
+            - MALWARE
+            - MEDIA_INVALID
+          - type: 'null'
+        defect_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - state
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      - max_bytes
+      - expires_at
+      - upload_key
+      - reject_reason
+      - defect_id
+      - revision
+      description: Uploadticket und Prüfzustand eines Schadenfotos. Ein Foto ist erst mit `RELEASED` an der Akte sichtbar und abrufbar.
+    DefectEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        added_in_version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          description: Version der Akte, mit der das Foto hinzukam (WP-M3-48).
+        replaces_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Vorgänger, den dieses Foto ersetzt; der Vorgänger bleibt als frühere Version erhalten.
+      required:
+      - id
+      - defect_id
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      - received_at
+      - added_in_version
+      - replaces_id
+      description: Freigegebenes Foto einer Schadenakte (unveränderlich).
+    DefectEvidencePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DefectEvidence'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DefectEvidenceLink:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - url
+      - expires_at
+      description: Signierter Abruflink; Gültigkeit höchstens 60 s, gilt nur für den Mandanten, der ihn erhielt.

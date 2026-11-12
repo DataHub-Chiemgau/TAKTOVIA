@@ -77,6 +77,14 @@ class CrossTenantIsolationTest {
         val vehicleMaster = create("/v1/operator/vehicle-master", """{"vehicle_label":"ISO-B","vehicle_type":"PKW","operator_organization_id":"$org","capacity":{"seats":4,"wheelchair":1},"equipment":[],"active":true}""", b.dispatcherToken).json["id"].asString()
         // Fahrerstamm in B (WP-M3-05): Fahrer mit Mitgliedschaft der Rolle driver
         val driverMaster = create("/v1/drivers", """{"membership_id":"${env.grant(b.tenant, UUID.randomUUID(), "driver")}","display_name":"Erika B","contact_channel":"PHONE","contact_value":"+49170000"}""", b.plannerToken).json["id"].asString()
+        // Schadenakte mit freigegebenem Foto in B (WP-M3-43/-44): Ticket, Direktupload in die Quarantäne, Abschluss mit Medienprüfung, Meldung mit Foto
+        val photo = de.taktovia.app.fleet.DefectEvidenceApiTest.jpeg(777)
+        val ticket = env.post("/v1/defect-evidence-uploads", de.taktovia.app.fleet.DefectEvidenceApiTest.ticketBody(photo), b.dispatcherToken, null, idem())
+        check(ticket.status == 201) { "defect-evidence-uploads: ${ticket.text}" }
+        val uploadId = ticket.json["id"].asString()
+        env.server.ctx.getBean(de.taktovia.platform.storage.TenantObjectStore::class.java).put(de.taktovia.platform.storage.ObjectKey(b.tenant, ticket.json["upload_key"].asString()), photo, "image/jpeg")
+        check(env.post("/v1/defect-evidence-uploads/$uploadId/complete", "{}", b.dispatcherToken, null, idem() + ("If-Match" to "\"1\"")).status == 200)
+        val defect = create("/v1/defects", """{"vehicle_id":"$vehicleMaster","occurred_at":"${Instant.now().minusSeconds(600)}","category_code":"BODY","description":"Kratzer B","evidence_ids":["$uploadId"]}""", b.dispatcherToken).json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
         // WP-M4-06: Abwesenheit in B (Personalrolle)
@@ -97,7 +105,8 @@ class CrossTenantIsolationTest {
                 .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
         }.toString()
         return Ids(mapOf(
-            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
+            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
+            "tenant_id" to b.tenant.toString(), "object_name" to "defect-evidence-$uploadId", "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
@@ -163,6 +172,12 @@ class CrossTenantIsolationTest {
             "getVehicleMaster" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}", role = "dispatcher"),
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
+            "getDefect" to Probe("GET", "/v1/defects/{defect_id}", role = "dispatcher"),
+            "getDefectEvidenceUpload" to Probe("GET", "/v1/defect-evidence-uploads/{upload_id}", role = "dispatcher"),
+            "completeDefectEvidenceUpload" to Probe("POST", "/v1/defect-evidence-uploads/{upload_id}/complete", "{}", true, role = "dispatcher"),
+            "listDefectEvidence" to Probe("GET", "/v1/defects/{defect_id}/evidence", role = "dispatcher"),
+            "getDefectEvidenceDownload" to Probe("GET", "/v1/defects/{defect_id}/evidence/{evidence_id}/download", role = "dispatcher"),
+            "readSignedObject" to Probe("GET", "/v1/objects/{tenant_id}/{object_name}?exp=4102444800&purpose=defect_evidence&sig=${"0".repeat(64)}", role = "dispatcher"),
             "updateVehicleCapacity" to Probe("PATCH", "/v1/operator/vehicle-master/{vehicle_id}/capacity", """{"restrictions":[]}""", true, role = "dispatcher"),
             "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
             "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
@@ -176,7 +191,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDefects" to "/v1/defects", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
     private val selfScoped = setOf(
@@ -226,7 +241,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

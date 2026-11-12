@@ -9,7 +9,8 @@
     "case_number",
     "vehicle_id",
     "category_code",
-    "reporter_role"
+    "reporter_role",
+    "evidence_ids"
   ],
   "additionalProperties": false,
   "properties": {
@@ -35,6 +36,15 @@
         "dispatcher",
         "workshop"
       ]
+    },
+    "evidence_ids": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "Ids der freigegebenen oder in Prüfung befindlichen Fotos, nur Kennungen (WP-M3-44)."
     }
   },
   "examples": [
@@ -43,7 +53,10 @@
       "case_number": "SCH-2026-000123",
       "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
       "category_code": "BRAKES",
-      "reporter_role": "driver"
+      "reporter_role": "driver",
+      "evidence_ids": [
+        "77777777-8888-4999-8aaa-bbbbbbbbbbbb"
+      ]
     }
   ]
 }

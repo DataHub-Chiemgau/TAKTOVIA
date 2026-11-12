@@ -31,3 +31,22 @@ Ergänzt [m3-detailvertraege.md](m3-detailvertraege.md) und die Verträge `LH-6.
 - Berechtigung: Rollen `driver`, `dispatcher`, `workshop` (Rechtematrix; zweite Schicht im Modul). **Fahrerbezug** (Kriterium 7, Annahme, OP-34): ein Konto, das nur als Fahrer auftritt, meldet für ein Fahrzeug, für das es eine
   Schicht hat, die läuft, in höchstens 2 h beginnt oder vor höchstens 24 h endete (`staff_shift.driver_ref` = IdP-Subject, nur lesend); sonst 404. Die Meldung verlangt weder Buchung noch Prüflauf. Ein Fahrer sieht nur eigene Akten (DMG-011).
 - Ereignis `defect.reported` (Schema `api/events/defect.reported.v1.schema.json`), Audit `fleet.defect.reported` ohne Beschreibungstext.
+
+## 4. Fotoevidenz (WP-M3-44, DMG-004, OP-13, OP-31)
+
+- **Ablauf** (die Datei geht nie durch die JSON-API, Grenze 1 MiB): (1) `POST /v1/defect-evidence-uploads` stellt ein Ticket aus (MIME `image/jpeg|png`, Größe höchstens 10 MiB, SHA-256 als base64url, Aufnahmezeit);
+  (2) der Client lädt direkt in die Quarantäne unter `upload_key` (vorsignierter Upload: Objektspeicher-Adapter S3/MinIO **nicht ausgeführt**, WP-M0-08; in den Tests schreibt der „Client“ in den prozesslokalen Objektspeicher);
+  (3) `POST …/complete` mit `If-Match` prüft Größe, Hash und tatsächlichen Typ am gespeicherten Objekt (abweichend: 422 mit Feldverweis, Ticket `REJECTED`, nie an die Akte gehängt) und führt die Medienprüfung aus;
+  (4) mit `POST /v1/defects` (`evidence_ids`) werden Tickets des Meldenden an die Akte gebunden.
+- **Medienprüfung** (außerhalb jeder SQL-Transaktion): Prüfer aus WP-M4-21 (ClamAV `clamd`, in der Entwicklung nur EICAR; ohne Prüfer bleibt jedes Foto in Quarantäne, fail-closed), dazu Typ- und Bildprüfung und **Neu-Kodierung ohne Metadaten**
+  (EXIF inklusive Standort entfällt, OP-31; die Aufnahmezeit steht neben dem Bild, nicht eingebrannt). Gespeichert wird die bereinigte Fassung; `defect_evidence.sha256` ist ihr Hash, `original_sha256` der vom Gerät deklarierte.
+  Nicht verfügbarer Prüfer: Foto bleibt `IN_REVIEW` und wird mit `reviewPending(tenant)` erneut geprüft (Prüfauftrag je Mandant; **Zeitplan und Mandantenaufzählung des Workers nicht ausgeführt**).
+- **Sichtbarkeit:** erst mit `RELEASED` entsteht die unveränderliche Zeile `defect_evidence` (Objekt unter `tenants/<mandant>/defect-evidence-<id>`); bis dahin zeigt die Akte `evidence_pending` („in Prüfung“), kein Link möglich.
+- **Abruf:** `GET /v1/defects/{id}/evidence/{eid}/download` liefert einen signierten Link (HMAC-SHA256 über Mandant, Objekt, Zweck, Ablauf; **höchstens 60 s**, Kap. 02 §4.3) nach Objekt- und Zweckprüfung; `GET /v1/objects/{tenant}/{name}` prüft Signatur,
+  Ablauf und Mandantenbezug (fremd oder abgelaufen: 404). Schlüssel `taktovia.fleet.evidence-link-secret` (Pflicht außerhalb von `local`/`development`).
+- **Integrität:** `verifyIntegrity(tenant)` vergleicht jedes freigegebene Objekt mit dem gespeicherten Hash; Abweichung oder fehlendes Objekt ergibt das Sicherheitsereignis `security.defect_evidence.integrity_violation` (Periodik: Betriebsauftrag, nicht ausgeführt).
+- **Wiederholung:** dieselbe Datei desselben Urhebers liefert dasselbe Ticket (`UNIQUE` über Urheber und Hash, solange nicht abgewiesen); eine Datei ist je Akte höchstens einmal Evidenz (`UNIQUE (tenant_id, defect_id, sha256)`).
+- **Geführte Erfassung (UI-10, `capture_mode=GUIDED`):** Pflicht sind `kind`, `vehicle_area`, `observed_effect` und mindestens ein Eintrag in `evidence_ids` (fehlt eines: 422 mit Feldverweis). Musterfall: **höchstens 5 Schritte** (Art, Bereich, Auswirkung, Foto, Senden; Vorschlag des Vertrags,
+  nicht aus dem Pflichtenheft). Freitext höchstens 300 Zeichen in der App (Server: 2000), keine Namen oder Gesundheitsangaben. Anzeigen „Entwurf“, „synchronisiert“, „angenommen“ getrennt, mit Symbol und Text (nicht nur Farbe).
+  Die Flutter-Umsetzung (`mobile/driver/lib/schaden/`, Tests unter `mobile/driver/test/`) ist **nicht ausgeführt** (kein Flutter).
+- **Offen:** Aufbewahrung der Schadensbilder (D-11) blockiert nur die Produktivschaltung; echte Malware-Prüfung gegen ClamAV und der S3-Direktupload sind nicht ausgeführt.

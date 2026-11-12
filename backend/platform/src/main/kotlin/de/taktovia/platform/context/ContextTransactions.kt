@@ -27,4 +27,10 @@ class ContextTransactions(private val tx: TenantTransactions, private val revali
             if (ctx.actor.type == ActorType.HUMAN) revalidator.revalidate(jdbc, ctx, lock = !readOnly)
             block(jdbc)
         }
+
+    /**
+     * Transaktion im Mandanten **ohne Personenkontext** für Betriebsaufträge (z. B. Medienprüfung und Integritätsprüfung der Schadenfotos, WP-M3-44): keine Mitgliedschaftsprüfung, weil kein Mensch
+     * handelt. Nur für zeitgesteuerte Aufträge des Betriebs gedacht, nie für Anfragen; der Mandant kommt aus dem Auftrag, nie aus einer Eingabe.
+     */
+    fun <T> runSystem(tenant: de.taktovia.platform.tenant.TenantId, readOnly: Boolean = false, block: (JdbcOperations) -> T): T = tx.run(tenant, readOnly, block)
 }

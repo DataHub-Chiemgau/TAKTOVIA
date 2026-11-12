@@ -17,6 +17,8 @@ class Strings {
     'nav.inspection': 'Pruefung',
     'nav.defect': 'Schaden',
     'nav.settings': 'Einstellungen',
+    'defect.report': 'Mangel melden',
+    'defect.reportHint': 'Einen Schaden oder Mangel melden, auch ohne aktive Fahrt.',
     'action.unavailableOffline': 'Ohne Verbindung nicht verfuegbar. Die Freigabe erteilt nur der Server.',
   });
 

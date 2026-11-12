@@ -1241,6 +1241,51 @@ export interface CapacityConfiguration {
   revision: number;
 }
 
+export interface DefectEvidenceUploadRequest {
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
+}
+
+export interface DefectEvidenceUpload {
+  id: UUID;
+  state: 'ISSUED' | 'IN_REVIEW' | 'RELEASED' | 'REJECTED';
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
+  max_bytes: number;
+  expires_at: string;
+  upload_key: string;
+  reject_reason: 'EXPIRED' | 'OBJECT_MISSING' | 'SIZE_MISMATCH' | 'HASH_MISMATCH' | 'MIME_MISMATCH' | 'SIZE_LIMIT' | 'MALWARE' | 'MEDIA_INVALID' | null;
+  defect_id: UUID | null;
+  revision: number;
+}
+
+export interface DefectEvidence {
+  id: UUID;
+  defect_id: UUID;
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
+  received_at: string;
+  added_in_version: number;
+  replaces_id: UUID | null;
+}
+
+export interface DefectEvidencePage {
+  items: DefectEvidence[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface DefectEvidenceLink {
+  url: string;
+  expires_at: string;
+}
+
 export interface GeoMultiPolygon {
   type: 'MultiPolygon';
   coordinates: number[][][][];
@@ -2743,6 +2788,48 @@ export interface Operations {
     body: CapacityPatch;
     response: CapacityConfiguration;
   };
+  requestDefectEvidenceUpload: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DefectEvidenceUploadRequest;
+    response: DefectEvidenceUpload;
+  };
+  getDefectEvidenceUpload: {
+    path: { upload_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidenceUpload;
+  };
+  completeDefectEvidenceUpload: {
+    path: { upload_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: DefectEvidenceUpload;
+  };
+  listDefectEvidence: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidencePage;
+  };
+  getDefectEvidenceDownload: {
+    path: { defect_id: UUID; evidence_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidenceLink;
+  };
+  readSignedObject: {
+    path: { tenant_id: UUID; object_name: string };
+    query: { exp: number; purpose: string; sig: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
   listServiceAreas: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; service_id?: UUID };
@@ -3455,6 +3542,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
+  requestDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getDefectEvidenceUpload: { method: 'GET', path: '/v1/defect-evidence-uploads/{upload_id}', pathParams: ['upload_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  completeDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads/{upload_id}/complete', pathParams: ['upload_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listDefectEvidence: { method: 'GET', path: '/v1/defects/{defect_id}/evidence', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getDefectEvidenceDownload: { method: 'GET', path: '/v1/defects/{defect_id}/evidence/{evidence_id}/download', pathParams: ['defect_id', 'evidence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  readSignedObject: { method: 'GET', path: '/v1/objects/{tenant_id}/{object_name}', pathParams: ['tenant_id', 'object_name'], query: ['exp', 'purpose', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
