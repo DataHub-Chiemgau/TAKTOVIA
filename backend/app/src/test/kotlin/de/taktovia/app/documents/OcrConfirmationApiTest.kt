@@ -76,9 +76,9 @@ class OcrConfirmationApiTest {
         assertEquals(412, patch("/v1/expenses/$doc", """{"reason":"x","confirm":["merchant"]}""", w.financeToken, "\"7\"").status)
         // alles bestätigen: die Summe stimmt nicht, der Beleg bleibt blockiert; Korrektur auf 83,30 löst es
         val all = patch("/v1/expenses/$doc", """{"reason":"geprüft","confirm":["amount_minor","currency","document_date","merchant","vat_amounts","net_amount_minor"]}""", w.financeToken, "\"1\"")
-        assertEquals(200, all.status, all.text); assertTrue(all.json["sum_mismatch"].asBoolean()); assertFalse(all.json["approvable"].asBoolean()); assertEquals(listOf("SUM_MISMATCH"), all.json["blockers"].items().map { it.asString() })
+        assertEquals(200, all.status, all.text); assertTrue(all.json["sum_mismatch"].asBoolean()); assertFalse(all.json["approvable"].asBoolean()); assertEquals(listOf("SUM_MISMATCH", "COST_ASSIGNMENT_MISSING"), all.json["blockers"].items().map { it.asString() })
         val fixed = patch("/v1/expenses/$doc", """{"reason":"Brutto war 83,30","fields":{"amount_minor":8330}}""", w.financeToken, "\"2\"")
-        assertEquals(200, fixed.status, fixed.text); assertFalse(fixed.json["sum_mismatch"].asBoolean()); assertTrue(fixed.json["approvable"].asBoolean()); assertEquals(0, fixed.json["unconfirmed_fields"].size())
+        assertEquals(200, fixed.status, fixed.text); assertFalse(fixed.json["sum_mismatch"].asBoolean()); assertFalse(fixed.json["approvable"].asBoolean(), "Kostenzuordnung fehlt noch (WP-M4-29)"); assertEquals(listOf("COST_ASSIGNMENT_MISSING"), fixed.json["blockers"].items().map { it.asString() }); assertEquals(0, fixed.json["unconfirmed_fields"].size())
         // der OCR-Vorschlag 89,00 bleibt abrufbar und unverändert markiert
         val after = env.get("/v1/expenses/receipts/$doc/extraction", w.financeToken).json
         assertEquals("8900", after["proposals"].items().single { it["field"].asString() == "AMOUNT" }["normalized_value"].asString())

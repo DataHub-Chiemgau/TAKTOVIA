@@ -49,13 +49,13 @@ class CostAssignmentApiTest {
     fun zuordnung_per_patch_macht_den_beleg_freigabefaehig() {
         val w = World(); val doc = w.document()
         val before = env.get("/v1/expenses/$doc", w.financeToken).json
-        assertFalse(before["approvable"].asBoolean()); assertEquals("COST_ASSIGNMENT_MISSING", before["blockers"][0].asString())
+        assertFalse(before["approvable"].asBoolean()); assertTrue((0 until before["blockers"].size()).any { before["blockers"][it].asString() == "COST_ASSIGNMENT_MISSING" })
         assertEquals(428, patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":["${w.ks}"]}}""", w.financeToken, null).status)
         assertEquals(422, patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":[]}}""", w.financeToken, 1).status, "leere Zuordnung")
         assertEquals(422, patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":["${w.ks}"]},"fields":{"amount_minor":100},"reason":"x"}""", w.financeToken, 1).status, "nicht mit Feldkorrektur kombinierbar")
         val ok = patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":["${w.ks}"],"vehicle_ids":["${w.vehicle}"]}}""", w.financeToken, 1)
         assertEquals(200, ok.status, ok.text); assertEquals("\"2\"", ok.header("ETag"))
-        assertTrue(ok.json["approvable"].asBoolean()); assertEquals(0, ok.json["blockers"].size()); assertEquals(2, ok.json["cost_objects"].size())
+        assertFalse(ok.json["approvable"].asBoolean(), "Pflichtfelder sind noch unbestätigt (WP-M4-28)"); assertEquals(1, ok.json["blockers"].size()); assertEquals("UNCONFIRMED_FIELDS", ok.json["blockers"][0].asString()); assertEquals(2, ok.json["cost_objects"].size())
         assertEquals(setOf("COST_CENTER", "VEHICLE"), (0 until 2).map { ok.json["cost_objects"][it]["kind"].asString() }.toSet())
         assertEquals(412, patch("/v1/expenses/$doc", """{"cost_assignment":{"vehicle_ids":["${w.vehicle}"]}}""", w.financeToken, 1).status)
         // Ersetzen durch nur das Fahrzeug; die Revisionen zeigen die Zuordnung

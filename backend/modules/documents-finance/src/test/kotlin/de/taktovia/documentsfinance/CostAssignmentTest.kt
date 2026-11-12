@@ -77,13 +77,13 @@ class CostAssignmentTest {
     fun zuordnung_zu_kostenstelle_und_fahrzeug_macht_beleg_freigabefaehig() {
         val s = Scenario()
         val before = bf.svc.expenses.get(s.fin, s.doc.documentId)
-        assertEquals(listOf(ReleaseBlocker.COST_ASSIGNMENT_MISSING), before.blockers); assertFalse(before.approvable)   // Beleg ohne Kostenzuordnung: nicht freigabefähig
+        assertEquals(listOf(ReleaseBlocker.COST_ASSIGNMENT_MISSING), before.costBlockers); assertFalse(before.approvable)   // Beleg ohne Kostenzuordnung: nicht freigabefähig
         val v = bf.svc.costs.assign(s.fin, s.doc.documentId, 1, AssignCosts(costObjectIds = setOf(s.ks), vehicleIds = setOf(s.vehicle)))
-        assertEquals(2L, v.document.revision); assertTrue(v.approvable); assertEquals(emptyList<ReleaseBlocker>(), v.blockers)
+        assertEquals(2L, v.document.revision); assertTrue(v.costApprovable); assertEquals(emptyList<ReleaseBlocker>(), v.costBlockers)
         assertEquals(setOf(CostObjectKind.COST_CENTER, CostObjectKind.VEHICLE), v.costObjects.map { it.kind }.toSet())
         assertEquals(setOf(s.w.legalEntity), v.costObjects.map { it.legalEntityId }.toSet(), "genau ein Rechtsträger: der des Belegs")
         assertEquals(s.vehicle, v.costObjects.single { it.kind == CostObjectKind.VEHICLE }.vehicleId)
-        assertTrue(bf.svc.expenses.get(s.fin, s.doc.documentId).approvable)
+        assertTrue(bf.svc.expenses.get(s.fin, s.doc.documentId).costApprovable)
         // Revision, Audit und Ereignis
         assertEquals(listOf(1L, 2L), bf.svc.expenses.revisions(s.fin, s.doc.documentId).map { it.revision }); assertEquals("COST_ASSIGNMENT", bf.svc.expenses.revisions(s.fin, s.doc.documentId).last().reason)
         assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action='finance.expense.cost_assigned' AND object_ref=?", s.w.tenant.value, "expense:${s.doc.documentId}"))
@@ -139,7 +139,7 @@ class CostAssignmentTest {
         assertFalse(bf.svc.costs.costObjects(ohneScope, CostObjectKind.COST_CENTER).any { it.id == gebunden }, "nur erlaubte Objekte sichtbar")
         assertTrue(bf.svc.costs.costObjects(mitScope, CostObjectKind.COST_CENTER).any { it.id == gebunden })
         assertEquals(ErrorCode.NOT_FOUND, bf.problem { bf.svc.costs.deactivate(ohneScope, gebunden) }.code)
-        assertTrue(bf.svc.costs.assign(mitScope, s.doc.documentId, 1, AssignCosts(costObjectIds = setOf(gebunden))).approvable)
+        assertTrue(bf.svc.costs.assign(mitScope, s.doc.documentId, 1, AssignCosts(costObjectIds = setOf(gebunden))).costApprovable)
     }
 
     @Test
@@ -147,7 +147,7 @@ class CostAssignmentTest {
         val s = Scenario()
         val own = bf.upload(s.w, s.driver)
         assertEquals(ErrorCode.NOT_FOUND, bf.problem { bf.svc.costs.assign(s.driver, own.documentId, 1, AssignCosts(costObjectIds = setOf(s.ks))) }.code)
-        assertTrue(bf.svc.costs.assign(s.driver, own.documentId, 1, AssignCosts(vehicleIds = setOf(s.vehicle))).approvable)
+        assertTrue(bf.svc.costs.assign(s.driver, own.documentId, 1, AssignCosts(vehicleIds = setOf(s.vehicle))).costApprovable)
         assertEquals(setOf(CostObjectKind.VEHICLE), bf.svc.costs.costObjects(s.driver).map { it.kind }.toSet())
         assertEquals(setOf(CostObjectKind.VEHICLE, CostObjectKind.COST_CENTER), bf.svc.costs.costObjects(s.fin).map { it.kind }.toSet())
         // ein fremder Fahrer sieht den Beleg nicht
@@ -180,7 +180,7 @@ class CostAssignmentTest {
                 assertEquals(2L, view.document.revision); assertTrue(ReleaseBlocker.COST_OBJECT_INACTIVE in view.blockers, view.blockers.toString())
             } else {             // Deaktivierung kam zuerst: Zuordnung abgewiesen, Beleg unverändert
                 assertEquals(ErrorCode.VALIDATION_FAILED, (a.exceptionOrNull() as ProblemException).code, a.toString())
-                assertEquals(1L, view.document.revision); assertEquals(listOf(ReleaseBlocker.COST_ASSIGNMENT_MISSING), view.blockers)
+                assertEquals(1L, view.document.revision); assertEquals(listOf(ReleaseBlocker.COST_ASSIGNMENT_MISSING), view.costBlockers)
             }
             assertFalse(view.approvable, "nie ein freigabefähiger Beleg mit inaktivem Kostenobjekt")
         }
@@ -211,3 +211,8 @@ class CostAssignmentTest {
         assertEquals(ErrorCode.CONFLICT, bf.problem { bf.svc.costs.assign(s.fin, infected.documentId, infected.revision, AssignCosts(costObjectIds = setOf(s.ks))) }.code)
     }
 }
+
+
+/** Kostenbezogene Blocker: die Bestätigungspflicht der Pflichtfelder (WP-M4-28) ist ein eigener Gegenstand und hier nicht Prüfziel. */
+private val ExpenseView.costBlockers: List<ReleaseBlocker> get() = blockers.filter { it == ReleaseBlocker.COST_ASSIGNMENT_MISSING || it == ReleaseBlocker.COST_OBJECT_INACTIVE }
+private val ExpenseView.costApprovable: Boolean get() = costBlockers.isEmpty()
