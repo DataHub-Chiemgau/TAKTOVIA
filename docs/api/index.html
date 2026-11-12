@@ -689,6 +689,27 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="getServiceArea"><h3><span class="m">GET</span> <code>/v1/service-areas/{area_id}</code></h3><p>Bediengebiet lesen</p><dl><dt>operationId</dt><dd><code>getServiceArea</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateServiceArea"><h3><span class="m">PUT</span> <code>/v1/service-areas/{area_id}</code></h3><p>Neue Revision des Bediengebiets anlegen</p><dl><dt>operationId</dt><dd><code>updateServiceArea</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listStops"><h3><span class="m">GET</span> <code>/v1/stops</code></h3><p>Haltepunkte auflisten</p><dl><dt>operationId</dt><dd><code>listStops</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -697,11 +718,61 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
-<article id="createStop"><h3><span class="m">POST</span> <code>/v1/stops</code></h3><p>Haltepunkt anlegen (neue Revision)</p><dl><dt>operationId</dt><dd><code>createStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<article id="createStop"><h3><span class="m">POST</span> <code>/v1/stops</code></h3><p>Haltepunkt anlegen</p><dl><dt>operationId</dt><dd><code>createStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
 <li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getStop"><h3><span class="m">GET</span> <code>/v1/stops/{stop_id}</code></h3><p>Haltepunkt lesen</p><dl><dt>operationId</dt><dd><code>getStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="updateStop"><h3><span class="m">PUT</span> <code>/v1/stops/{stop_id}</code></h3><p>Neue Revision des Haltepunkts anlegen (auch Deaktivierung)</p><dl><dt>operationId</dt><dd><code>updateStop</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getServiceRelationRule"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/relation-rules</code></h3><p>Erlaubte Zielpunkte des Dienstes lesen</p><dl><dt>operationId</dt><dd><code>getServiceRelationRule</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="putServiceRelationRule"><h3><span class="m">PUT</span> <code>/v1/services/{service_id}/relation-rules</code></h3><p>Erlaubte Zielpunkte als neue Mengenversion veröffentlichen</p><dl><dt>operationId</dt><dd><code>putServiceRelationRule</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="checkServiceRelation"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/relation-check</code></h3><p>Relation auf Zulässigkeit prüfen (Zonen und Zielpunkte)</p><dl><dt>operationId</dt><dd><code>checkServiceRelation</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
 <li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
@@ -1242,6 +1313,44 @@
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getServiceOperatingHours"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/operating-hours</code></h3><p>Betriebszeiten und Dienstversion lesen</p><dl><dt>operationId</dt><dd><code>getServiceOperatingHours</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>services:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="putServiceOperatingHours"><h3><span class="m">PUT</span> <code>/v1/services/{service_id}/operating-hours</code></h3><p>Betriebszeiten als neue Dienstversion veröffentlichen</p><dl><dt>operationId</dt><dd><code>putServiceOperatingHours</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>services:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listServiceOperatingHoursRevisions"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/operating-hours/revisions</code></h3><p>Dienstversionen auflisten</p><dl><dt>operationId</dt><dd><code>listServiceOperatingHoursRevisions</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>services:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getServiceAvailability"><h3><span class="m">GET</span> <code>/v1/services/{service_id}/availability</code></h3><p>Betriebsstatus des Dienstes zu einem Zeitpunkt lesen</p><dl><dt>operationId</dt><dd><code>getServiceAvailability</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>geo:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

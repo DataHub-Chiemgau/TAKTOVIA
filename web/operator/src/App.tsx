@@ -27,6 +27,7 @@ import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
+import { Geodaten } from './geo/Geodaten';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -200,8 +201,18 @@ export function App() {
                 <p>
                   <Link to="/admin/struktur">Zur Organisationsstruktur (Regionen, Dienste)</Link>
                   {' · '}
+                  <Link to="/admin/geodaten">Zu Gebieten, Haltepunkten und Betriebszeiten</Link>
+                  {' · '}
                   <Link to="/admin/konfiguration">Zur wirksamen Konfiguration</Link>
                 </p>
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/geodaten"
+            element={
+              <RequireRight right="admin.ui17">
+                <Geodaten />
               </RequireRight>
             }
           />

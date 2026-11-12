@@ -142,6 +142,14 @@ object AuditActions {
     const val SECURITY_CONTAINMENT_EXECUTED = "security.containment.executed"
     /** Nachrichtenvorlage angelegt (neue Revision) bzw. Standardvorlagen eingespielt (WP-M2-33); Objekt `channel_template:<uuid>` bzw. `tenant:<uuid>`; nie mit Vorlagentext. */
     const val COMMUNICATION_TEMPLATE_CREATED = "communication.template.created"
+    /** Dienstversion mit Betriebszeiten veröffentlicht (WP-M2-03); Objekt `service:<uuid>`, Details nennen Verkehrsprodukt, Wirksamkeit und Grund. */
+    const val GEO_SERVICE_REVISION_PUBLISHED = "geo.service_revision.published"
+    /** Bediengebiet angelegt bzw. neue Revision (WP-M2-04); Objekt `service_area:<Gebietsschlüssel>`, Details nennen Dienst, Revision und Wirksamkeit, nie die Geometrie. */
+    const val GEO_SERVICE_AREA_CHANGED = "geo.service_area.changed"
+    /** Haltepunkt angelegt, neue Revision oder Deaktivierung (WP-M2-05); Objekt `stop:<stop_id>`, Details nennen Revision, Aktivstatus, Verkehrsprodukte und `approved_by`. */
+    const val GEO_STOP_CHANGED = "geo.stop.changed"
+    /** Mengenversion der erlaubten Zielpunkte eines Dienstes veröffentlicht (WP-M2-06); Objekt `service:<uuid>`, Details nennen Anzahl, Wirksamkeit und Grund. */
+    const val GEO_RELATION_RULE_PUBLISHED = "geo.relation_rule.published"
     /** Lesezugriff auf das Audit selbst (Auditabfrage mit Zweck). */
     const val AUDIT_READ = "audit.events.read"
     val CATALOG = setOf(DRIVER_DEVICE_REGISTERED, DRIVER_DEVICE_REVOKED, DRIVER_RELEASE_GRANTED, DRIVER_RELEASE_REVOKED, POLICY_CHECKED, REGION_CHANGED, DEPOT_CHANGED, SERVICE_CHANGED, COST_CENTER_CHANGED, MEMBERSHIP_GRANTED, MEMBERSHIP_REVOKED, TENANT_SWITCHED, ORGANIZATION_CHANGED, TENANT_CREATED, TENANT_STATUS_CHANGED, TENANT_PROFILE_CHANGED, VEHICLE_ROLE_ASSIGNMENT_CHANGED, RETENTION_RULE_CHANGED, RETENTION_RULE_APPROVED, RETENTION_ERASURE_STARTED, RETENTION_ERASURE_FINISHED, RETENTION_ARCHIVE_READ, CONFIG_PUBLISHED, CONFIG_REVERTED,
@@ -152,7 +160,8 @@ object AuditActions {
         SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED,
         SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_CONTAINMENT_EXECUTED, AUDIT_READ,
         PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
-        SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED)
+        SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED,
+        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED)
 }
 
 /**

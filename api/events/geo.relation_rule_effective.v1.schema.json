@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/geo.relation_rule_effective.v1.schema.json",
+  "title": "Relationsregel wirksam (WP-M2-06)",
+  "description": "Payload von `geo.relation_rule_effective`. Aggregat: Dienst (Revision = Revision der Mengenversion der erlaubten Zielpunkte). Wirksam ab `valid_from` (links geschlossen, rechts offen). Nur Anzahl, keine Haltepunktlisten.",
+  "type": "object",
+  "required": ["service_id", "revision", "destination_count", "valid_from", "valid_to"],
+  "additionalProperties": false,
+  "properties": {
+    "service_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "destination_count": {"type": "integer", "minimum": 0, "maximum": 1000},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+  }
+}

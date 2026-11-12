@@ -1035,6 +1035,8 @@ export interface GeoMultiPolygon {
 
 export interface GeoServiceArea {
   id: UUID;
+  revision_id: UUID;
+  zone_role: 'ORIGIN' | 'DESTINATION' | 'BOTH';
   service_id: UUID;
   revision: number;
   area: GeoMultiPolygon;
@@ -1042,9 +1044,17 @@ export interface GeoServiceArea {
   valid_to: Timestamp | null;
 }
 
+export interface GeoServiceAreaUpdate {
+  area: GeoMultiPolygon;
+  zone_role?: 'ORIGIN' | 'DESTINATION' | 'BOTH';
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+}
+
 export interface GeoServiceAreaCreate {
   service_id: UUID;
   area: GeoMultiPolygon;
+  zone_role?: 'ORIGIN' | 'DESTINATION' | 'BOTH';
   valid_from: Timestamp;
   valid_to?: Timestamp | null;
 }
@@ -1055,12 +1065,40 @@ export interface GeoServiceAreaPage {
   as_of: string;
 }
 
+export interface GeoRelationRuleInput {
+  destination_stop_ids: UUID[];
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+}
+
+export interface GeoRelationRule {
+  service_id: UUID;
+  revision: number;
+  destination_stop_ids: UUID[];
+  valid_from: Timestamp | null;
+  valid_to: Timestamp | null;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at?: Timestamp | null;
+}
+
+export interface GeoRelationCheck {
+  service_id: UUID;
+  at: string;
+  admissible: boolean;
+  reason: 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | null;
+  detail: string | null;
+}
+
 export interface GeoStopAccessibility {
   schema_version: '1.0';
   step_free: 'YES' | 'NO' | 'UNVERIFIED';
   wheelchair_boarding: 'YES' | 'NO' | 'UNVERIFIED';
   tactile_guidance?: 'YES' | 'NO' | 'UNVERIFIED';
   shelter?: 'YES' | 'NO' | 'UNVERIFIED';
+  verified_at?: string;
+  note?: string;
 }
 
 export interface GeoStop {
@@ -1070,8 +1108,23 @@ export interface GeoStop {
   name: string;
   point: Point;
   accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active: boolean;
+  approved_by: string;
   valid_from: Timestamp;
   valid_to: Timestamp | null;
+}
+
+export type GeoTrafficProducts = string[];
+
+export interface GeoStopUpdate {
+  name: string;
+  point: Point;
+  accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active: boolean;
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
 }
 
 export interface GeoStopCreate {
@@ -1079,6 +1132,8 @@ export interface GeoStopCreate {
   name: string;
   point: Point;
   accessibility: GeoStopAccessibility;
+  traffic_products: GeoTrafficProducts;
+  active?: boolean;
   valid_from: Timestamp;
   valid_to?: Timestamp | null;
 }
@@ -1713,6 +1768,61 @@ export interface ServicePage {
   as_of: string;
 }
 
+export interface HoursWindow {
+  from: string;
+  to: string;
+}
+
+export interface WeeklyHours {
+  weekdays: ('MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN')[];
+  from: string;
+  to: string;
+}
+
+export interface ExceptionDay {
+  date: string;
+  windows: HoursWindow[];
+  note?: string;
+}
+
+export interface ServiceOperatingHoursInput {
+  traffic_product: string;
+  weekly_hours: WeeklyHours[];
+  exceptions?: ExceptionDay[];
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+}
+
+export interface ServiceOperatingHours {
+  service_id: UUID;
+  revision: number;
+  traffic_product: string | null;
+  timezone: string | null;
+  weekly_hours: WeeklyHours[] | null;
+  exceptions: ExceptionDay[] | null;
+  valid_from: Timestamp | null;
+  valid_to: Timestamp | null;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at?: Timestamp | null;
+}
+
+export interface ServiceOperatingHoursRevisionPage {
+  items: ServiceOperatingHours[];
+  next_before_revision: number | null;
+  as_of: string;
+}
+
+export interface ServiceAvailability {
+  service_id: UUID;
+  at: string;
+  in_operation: boolean;
+  next_opening: string | null;
+  timezone: TimeZone;
+  traffic_product: string | null;
+}
+
 export interface AccountLockCreate {
   subject: UUID;
   reason: string;
@@ -2219,9 +2329,23 @@ export interface Operations {
     body: GeoServiceAreaCreate;
     response: GeoServiceArea;
   };
+  getServiceArea: {
+    path: { area_id: UUID };
+    query: { revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoServiceArea;
+  };
+  updateServiceArea: {
+    path: { area_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoServiceAreaUpdate;
+    response: GeoServiceArea;
+  };
   listStops: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string };
+    query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp; near_latitude?: number; near_longitude?: number; near_radius_m?: number; active?: boolean };
     headers: { traceparent?: string };
     body: undefined;
     response: GeoStopPage;
@@ -2232,6 +2356,41 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: GeoStopCreate;
     response: GeoStop;
+  };
+  getStop: {
+    path: { stop_id: UUID };
+    query: { revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoStop;
+  };
+  updateStop: {
+    path: { stop_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoStopUpdate;
+    response: GeoStop;
+  };
+  getServiceRelationRule: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoRelationRule;
+  };
+  putServiceRelationRule: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: GeoRelationRuleInput;
+    response: GeoRelationRule;
+  };
+  checkServiceRelation: {
+    path: { service_id: UUID };
+    query: { origin_latitude: number; origin_longitude: number; destination_latitude: number; destination_longitude: number; destination_stop_id?: UUID; at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: GeoRelationCheck;
   };
   getMe: {
     path: Record<string, never>;
@@ -2625,6 +2784,34 @@ export interface Operations {
     body: undefined;
     response: ServiceOfferModelList;
   };
+  getServiceOperatingHours: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOperatingHours;
+  };
+  putServiceOperatingHours: {
+    path: { service_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ServiceOperatingHoursInput;
+    response: ServiceOperatingHours;
+  };
+  listServiceOperatingHoursRevisions: {
+    path: { service_id: UUID };
+    query: { limit?: number; before_revision?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceOperatingHoursRevisionPage;
+  };
+  getServiceAvailability: {
+    path: { service_id: UUID };
+    query: { at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ServiceAvailability;
+  };
   listMySessions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -2777,8 +2964,15 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at', 'near_latitude', 'near_longitude', 'near_radius_m', 'active'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateStop: { method: 'PUT', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getServiceRelationRule: { method: 'GET', path: '/v1/services/{service_id}/relation-rules', pathParams: ['service_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  putServiceRelationRule: { method: 'PUT', path: '/v1/services/{service_id}/relation-rules', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  checkServiceRelation: { method: 'GET', path: '/v1/services/{service_id}/relation-check', pathParams: ['service_id'], query: ['origin_latitude', 'origin_longitude', 'destination_latitude', 'destination_longitude', 'destination_stop_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getMe: { method: 'GET', path: '/v1/me', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   switchTenant: { method: 'POST', path: '/v1/me/tenant-switch', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tenant:switch'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listMemberships: { method: 'GET', path: '/v1/memberships', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['memberships:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -2835,6 +3029,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getServiceConfiguration: { method: 'GET', path: '/v1/services/{service_id}/configuration', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listServiceOfferModels: { method: 'GET', path: '/v1/service-offer-models', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 429, 503] },
+  getServiceOperatingHours: { method: 'GET', path: '/v1/services/{service_id}/operating-hours', pathParams: ['service_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  putServiceOperatingHours: { method: 'PUT', path: '/v1/services/{service_id}/operating-hours', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listServiceOperatingHoursRevisions: { method: 'GET', path: '/v1/services/{service_id}/operating-hours/revisions', pathParams: ['service_id'], query: ['limit', 'before_revision'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getServiceAvailability: { method: 'GET', path: '/v1/services/{service_id}/availability', pathParams: ['service_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listMySessions: { method: 'GET', path: '/v1/me/sessions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   revokeAllMySessions: { method: 'POST', path: '/v1/me/sessions/revoke-all', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 422, 429, 503] },
   revokeMySession: { method: 'DELETE', path: '/v1/me/sessions/{session_id}', pathParams: ['session_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

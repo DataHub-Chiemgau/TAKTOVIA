@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+service_revision;tenant_id;nein;KONFIGURATION;;;;
+service_revision;id;nein;KONFIGURATION;;;;
+service_revision;service_id;nein;KONFIGURATION;;;;
+service_revision;revision;nein;KONFIGURATION;;;;
+service_revision;traffic_product;nein;KONFIGURATION;;;;
+service_revision;timezone;nein;KONFIGURATION;;;;
+service_revision;weekly_hours;nein;KONFIGURATION;;;;
+service_revision;exceptions;nein;KONFIGURATION;;;;
+service_revision;valid_from;nein;KONFIGURATION;;;;
+service_revision;valid_to;nein;KONFIGURATION;;;;
+service_revision;reason;nein;KONFIGURATION;;;;
+service_revision;created_at;nein;KONFIGURATION;;;;
+service_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse

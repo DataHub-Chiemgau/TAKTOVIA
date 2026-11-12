@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/geo.stop_revision_deactivated.v1.schema.json",
+  "title": "Haltepunkt deaktiviert (WP-M2-05)",
+  "description": "Payload von `geo.stop_revision_deactivated`. Aggregat: Haltepunkt (`stop_id`, Revision = Revision der Kette); die Revision ist inaktiv: neue Angebote enthalten den Haltepunkt nicht mehr, bestehende Zusagen behalten ihren Haltepunktsnapshot. Wirksam ab `valid_from` (links geschlossen, rechts offen). Keine Koordinaten oder Namen im Payload.",
+  "type": "object",
+  "required": ["stop_id", "revision_id", "revision", "active", "traffic_products", "valid_from", "valid_to"],
+  "additionalProperties": false,
+  "properties": {
+    "stop_id": {"type": "string", "format": "uuid"},
+    "revision_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "active": {"const": false},
+    "traffic_products": {"type": "array", "minItems": 1, "maxItems": 10, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"}},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+  }
+}

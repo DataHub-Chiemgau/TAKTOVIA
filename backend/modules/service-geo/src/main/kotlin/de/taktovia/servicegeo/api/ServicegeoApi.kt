@@ -7,6 +7,7 @@ import de.taktovia.platform.authz.ObjectAuthorizer
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.outbox.Outbox
 import de.taktovia.servicegeo.internal.ServicegeoServicesFactory
 import java.time.Clock
 import java.time.Instant
@@ -20,14 +21,28 @@ interface ServicegeoApi {
     val structure: OrganizationStructure
     /** Dienstkonfiguration und Angebotsmodelle (WP-M1-25). */
     val configurations: ServiceConfigurations
+    /** Dienstversionen mit Betriebszeiten (WP-M2-03). */
+    val serviceRevisions: ServiceRevisions
+    /** Betriebsstatus eines Dienstes für Fahrgäste und die Angebotsprüfung (WP-M2-03). */
+    val availability: ServiceAvailabilities
+    /** Bediengebiete als valide Polygone mit Aktivierungszeitraum (WP-M2-04). */
+    val areas: ServiceAreas
+    /** Haltepunktrevisionen mit Aktivstatus und zulässigen Verkehrsprodukten (WP-M2-05). */
+    val stops: Stops
+    /** Start-/Zielzulässigkeit nach Zonen und erlaubten Zielpunkten (WP-M2-06). */
+    val relations: RelationRules
 
     companion object {
         /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */
         fun offerModelValidator(): RevisionValidator = de.taktovia.servicegeo.internal.ServicegeoServicesFactory.offerModelValidator()
 
+        /** ImpactProvider „Bediengebiet“ (WP-M2-04) für `ConfigApi.create(impactProviders = …)`: nennt bestätigte Buchungen außerhalb des neuen Gebiets. */
+        fun areaImpactProvider(): de.taktovia.config.api.ImpactProvider = de.taktovia.servicegeo.internal.ServicegeoServicesFactory.areaImpactProvider()
+
         /** [config] liefert die erste Konfigurationsrevision eines neuen Dienstes (OP-35) in derselben Transaktion. */
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer): ServicegeoApi =
-            ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer)
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,
+            outbox: Outbox = Outbox()): ServicegeoApi =
+            ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer, outbox)
     }
 }
 

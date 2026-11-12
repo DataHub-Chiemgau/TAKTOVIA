@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+relation_rule;tenant_id;nein;KONFIGURATION;;;;
+relation_rule;id;nein;KONFIGURATION;;;;
+relation_rule;service_id;nein;KONFIGURATION;;;;
+relation_rule;revision;nein;KONFIGURATION;;;;
+relation_rule;destination_stop_ids;nein;KONFIGURATION;;;;
+relation_rule;valid_from;nein;KONFIGURATION;;;;
+relation_rule;valid_to;nein;KONFIGURATION;;;;
+relation_rule;reason;nein;KONFIGURATION;;;;
+relation_rule;created_at;nein;KONFIGURATION;;;;
+relation_rule;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+service_area;zone_role;nein;KONFIGURATION;;;;Zonenrolle ORIGIN, DESTINATION oder BOTH (WP-M2-06)

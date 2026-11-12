@@ -83,9 +83,116 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/service-areas/{area_id}:
+    get:
+      summary: Bediengebiet lesen
+      description: '`area_id` ist der stabile Gebietsschlüssel (Feld `id`); geliefert wird die jüngste Revision oder die mit `revision` angeforderte. ETag = Revision. Fremder oder unbekannter Gebietsschlüssel: 404.'
+      operationId: getServiceArea
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: area_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: revision
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Nur diese Revision der Kette (ältere Revisionen bleiben lesbar); ohne Angabe die jüngste.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoServiceArea'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Neue Revision des Bediengebiets anlegen
+      description: 'Legt die Revision + 1 an (If-Match = zuletzt gelesene Revision; veraltet 412, fehlend 428). Ungültige Geometrie, nicht geschlossener Ring oder `valid_to <= valid_from`: 422 mit Feldverweis, nichts gespeichert. Überlappende Wirksamkeit je Dienst: 409. Eine offene Vorgängerrevision endet mit dem Beginn der neuen; ältere Revisionen bleiben lesbar.'
+      operationId: updateServiceArea
+      security:
+      - oidc:
+        - geo:write
+      parameters:
+      - name: area_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoServiceAreaUpdate'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoServiceArea'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/stops:
     get:
       summary: Haltepunkte auflisten
+      description: 'Fahrgäste und alle Rollen ohne Stammdatenrecht erhalten ausschließlich aktive, zum Zeitpunkt `at` (Standard jetzt) wirksame Haltepunkte (GEO-002). Mit `service_id` werden zusätzlich nur Haltepunkte geliefert, deren zulässiges Verkehrsprodukt zur zu `at` wirksamen Dienstversion passt; ohne wirksame Dienstversion ist die Liste leer. Rollen mit Stammdatenrecht sehen ohne `service_id` und `at` die jüngste Revision je Haltepunkt, `active` filtert dann nach Aktivstatus. `near_*` begrenzt auf einen Umkreis (Meter).'
       operationId: listStops
       security:
       - oidc:
@@ -93,6 +200,47 @@ paths:
       parameters:
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dienst, für den buchbare Haltepunkte gesucht werden.
+      - name: at
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Zeitpunkt der Wirksamkeit (Standard jetzt).
+      - name: near_latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+      - name: near_longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: near_radius_m
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          default: 1000
+        description: Umkreis in Metern um near_latitude/near_longitude.
+      - name: active
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Nur für Rollen mit Stammdatenrecht wirksam; alle anderen sehen nur aktive Haltepunkte.
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
@@ -114,7 +262,8 @@ paths:
         '503':
           $ref: common.yaml#/components/responses/Problem
     post:
-      summary: Haltepunkt anlegen (neue Revision)
+      summary: Haltepunkt anlegen
+      description: 'Legt einen neuen Haltepunkt (Revision 1) an; `approved_by` ist der anlegende Akteur. Ein vorgegebener `stop_id`, der bereits existiert: 409. Neue Revisionen (auch die Deaktivierung) entstehen mit PUT /v1/stops/{stop_id}.'
       operationId: createStop
       security:
       - oidc:
@@ -159,6 +308,283 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/stops/{stop_id}:
+    get:
+      summary: Haltepunkt lesen
+      description: '`stop_id` ist der stabile Identifikator. Geliefert wird die jüngste Revision (Fahrgäste: nur wenn aktiv und jetzt wirksam, sonst 404). ETag = Revision.'
+      operationId: getStop
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: stop_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: revision
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Nur diese Revision (nur Rollen mit Stammdatenrecht); ohne Angabe die jüngste.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoStop'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Neue Revision des Haltepunkts anlegen (auch Deaktivierung)
+      description: 'Legt die Revision + 1 an (If-Match = zuletzt gelesene Revision; veraltet 412, fehlend 428). Die Deaktivierung ist eine Revision mit `active: false`; bestehende Zusagen behalten ihren Haltepunktsnapshot. Eine offene Vorgängerrevision endet mit dem Beginn der neuen.'
+      operationId: updateStop
+      security:
+      - oidc:
+        - geo:write
+      parameters:
+      - name: stop_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoStopUpdate'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoStop'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/services/{service_id}/relation-rules:
+    get:
+      summary: Erlaubte Zielpunkte des Dienstes lesen
+      description: 'Jüngste Mengenversion der erlaubten Zielpunkte; ETag = Revision. Revision 0 = keine Regel (keine Einschränkung durch Zielpunkte). Die Zonenrollen stehen an den Bediengebieten (`zone_role`).'
+      operationId: getServiceRelationRule
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Erlaubte Zielpunkte als neue Mengenversion veröffentlichen
+      description: 'Legt eine neue Version der Zielpunktmenge an (If-Match = zuletzt gelesene Revision, 0 = noch keine). Jeder Zielpunkt muss ein Haltepunkt des Mandanten sein (sonst 422 mit Pointer). Eine leere Menge hebt die Einschränkung auf. Überlappende Wirksamkeit 409, veraltet 412, fehlend 428; `reason` wird auditiert.'
+      operationId: putServiceRelationRule
+      security:
+      - oidc:
+        - geo:write
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoRelationRuleInput'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationRule'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/services/{service_id}/relation-check:
+    get:
+      summary: Relation auf Zulässigkeit prüfen (Zonen und Zielpunkte)
+      description: 'Fachoperation „Relation zulässig?“: Start in der wirksamen Startzone, Ziel in der Zielzone und, wenn eine Zielpunktmenge gilt, an einem erlaubten aktiven Zielpunkt. Die Ablehnung trägt genau einen Grund (OUTSIDE_AREA = Gebiet, RULE_FORBIDDEN = Regelverbot; Katalog von WP-M2-13). Die Rückrichtung wird unabhängig bewertet; Punkte auf der Zonengrenze gelten als innerhalb.'
+      operationId: checkServiceRelation
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: origin_latitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+      - name: origin_longitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: destination_latitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+      - name: destination_longitude
+        in: query
+        required: true
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: destination_stop_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: 'Ziel als Haltepunkt (stop_id): dann zählen dessen zum Zeitpunkt wirksame Koordinate (statt destination_latitude/-longitude) und die Zielpunktmenge; ohne Angabe ist das Ziel eine freie Koordinate.'
+      - name: at
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Zeitpunkt der Prüfung (Standard jetzt).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRelationCheck'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     GeoMultiPolygon:
@@ -193,9 +619,19 @@ components:
     GeoServiceArea:
       type: object
       additionalProperties: false
+      description: Eine Revision eines Bediengebiets. `id` ist der stabile Gebietsschlüssel der Revisionskette, `revision_id` die Zeile dieser Revision (Bezug bestehender Zusagen).
       properties:
         id:
           $ref: common.yaml#/components/schemas/UUID
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
         service_id:
           $ref: common.yaml#/components/schemas/UUID
         revision:
@@ -213,11 +649,35 @@ components:
           - type: 'null'
       required:
       - id
+      - revision_id
+      - zone_role
       - service_id
       - revision
       - area
       - valid_from
       - valid_to
+    GeoServiceAreaUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        area:
+          $ref: '#/components/schemas/GeoMultiPolygon'
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+      required:
+      - area
+      - valid_from
     GeoServiceAreaCreate:
       type: object
       additionalProperties: false
@@ -226,6 +686,14 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         area:
           $ref: '#/components/schemas/GeoMultiPolygon'
+        zone_role:
+          type: string
+          enum:
+          - ORIGIN
+          - DESTINATION
+          - BOTH
+          default: BOTH
+          description: 'Zonenrolle (WP-M2-06, PA-04): nur Start, nur Ziel oder beides. Je Dienst und Zeitpunkt höchstens eine wirksame Start- und eine wirksame Zielzone (`BOTH` zählt für beide). Beim PUT: fehlt das Feld, bleibt die Rolle der Vorgängerrevision.'
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -275,6 +743,105 @@ components:
       - items
       - next_cursor
       - as_of
+    GeoRelationRuleInput:
+      type: object
+      additionalProperties: false
+      properties:
+        destination_stop_ids:
+          type: array
+          maxItems: 1000
+          uniqueItems: true
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Erlaubte Zielpunkte (`stop_id` von Haltepunkten); leer = keine Einschränkung durch Zielpunkte.
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Grund der Änderung (Audit).
+      required:
+      - destination_stop_ids
+      - valid_from
+      - reason
+    GeoRelationRule:
+      type: object
+      additionalProperties: false
+      description: Mengenversion der erlaubten Zielpunkte; Revision 0 = keine Regel (übrige Felder leer bzw. null).
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        destination_stop_ids:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        valid_from:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        created_by:
+          type:
+          - string
+          - 'null'
+        created_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+      required:
+      - service_id
+      - revision
+      - destination_stop_ids
+      - valid_from
+      - valid_to
+    GeoRelationCheck:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        at:
+          type: string
+          format: date-time
+        admissible:
+          type: boolean
+        reason:
+          oneOf:
+          - type: string
+            enum:
+            - OUTSIDE_AREA
+            - RULE_FORBIDDEN
+          - type: 'null'
+          description: Genau ein normierter Grund bei Ablehnung (Zuordnung zum Katalog von WP-M2-13, Vorschlag OP-14), sonst null.
+        detail:
+          type:
+          - string
+          - 'null'
+          description: Kurzer Text ohne Koordinaten.
+      required:
+      - service_id
+      - at
+      - admissible
+      - reason
+      - detail
     GeoStopAccessibility:
       type: object
       additionalProperties: false
@@ -305,6 +872,13 @@ components:
           - 'YES'
           - 'NO'
           - UNVERIFIED
+        verified_at:
+          type: string
+          format: date-time
+          maxLength: 40
+        note:
+          type: string
+          maxLength: 200
       required:
       - schema_version
       - step_free
@@ -331,6 +905,16 @@ components:
           $ref: common.yaml#/components/schemas/Point
         accessibility:
           $ref: '#/components/schemas/GeoStopAccessibility'
+        traffic_products:
+          $ref: '#/components/schemas/GeoTrafficProducts'
+        active:
+          type: boolean
+          description: Aktivstatus dieser Revision; eine inaktive Revision wird weder in der Haltepunktsuche noch als Abhol-/Zielpunkt eines Angebots geliefert.
+        approved_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Freigebender Akteur (Annahme OP-9; Pseudonym user:<uuid>).
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -344,8 +928,49 @@ components:
       - name
       - point
       - accessibility
+      - traffic_products
+      - active
+      - approved_by
       - valid_from
       - valid_to
+    GeoTrafficProducts:
+      type: array
+      minItems: 1
+      maxItems: 10
+      uniqueItems: true
+      items:
+        type: string
+        pattern: ^[A-Z][A-Z0-9_]{1,39}$
+      description: Zulässige Verkehrsprodukte (Kennung wie `traffic_product` der Dienstversion); ein Haltepunkt wird nur für Dienste angeboten, deren Verkehrsprodukt hier steht.
+    GeoStopUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        point:
+          $ref: common.yaml#/components/schemas/Point
+        accessibility:
+          $ref: '#/components/schemas/GeoStopAccessibility'
+        traffic_products:
+          $ref: '#/components/schemas/GeoTrafficProducts'
+        active:
+          type: boolean
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+      required:
+      - name
+      - point
+      - accessibility
+      - traffic_products
+      - active
+      - valid_from
     GeoStopCreate:
       type: object
       additionalProperties: false
@@ -362,6 +987,11 @@ components:
           $ref: common.yaml#/components/schemas/Point
         accessibility:
           $ref: '#/components/schemas/GeoStopAccessibility'
+        traffic_products:
+          $ref: '#/components/schemas/GeoTrafficProducts'
+        active:
+          type: boolean
+          default: true
         valid_from:
           $ref: common.yaml#/components/schemas/Timestamp
         valid_to:
@@ -372,8 +1002,9 @@ components:
       - name
       - point
       - accessibility
+      - traffic_products
       - valid_from
-      description: '`stop_id` fehlt für einen neuen Haltepunkt, sonst entsteht eine neue Revision des Haltepunkts.'
+      description: '`stop_id` ist optional (vorgegebener stabiler Identifikator, z. B. beim Import) und darf noch nicht vergeben sein (sonst 409); neue Revisionen entstehen mit PUT.'
       examples:
       - name: Marktplatz
         point:
@@ -383,6 +1014,8 @@ components:
           schema_version: '1.0'
           step_free: 'YES'
           wheelchair_boarding: UNVERIFIED
+        traffic_products:
+        - AREA_ON_DEMAND
         valid_from: '2026-12-01T00:00:00+01:00'
     GeoStopPage:
       type: object

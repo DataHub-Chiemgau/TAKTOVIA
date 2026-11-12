@@ -5712,6 +5712,104 @@
       ]
     },
     {
+      "tabelle": "relation_rule",
+      "aggregat": "Version der erlaubten Zielpunkte eines Dienstes (WP-M2-06)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Verweise auf Haltepunkte, keine Personendaten",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "destination_stop_ids",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "resource_release",
       "aggregat": "Einsatzfreigabe",
       "loeschklasse": "LK_BETRIEB",
@@ -6466,6 +6564,33 @@
           "bemerkung": "Geometrie eines Bediengebiets, kein Personenbezug"
         },
         {
+          "spalte": "area_key",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Stabiler Gebietsschluessel einer Revisionskette (WP-M2-04)"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
@@ -6512,6 +6637,140 @@
         },
         {
           "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "zone_role",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zonenrolle ORIGIN, DESTINATION oder BOTH (WP-M2-06)"
+        }
+      ]
+    },
+    {
+      "tabelle": "service_revision",
+      "aggregat": "Dienstversion mit Betriebszeiten (WP-M2-03)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Betriebszeiten ohne Personenbezug, bestehende Zusagen referenzieren ihre Version, daher keine Löschung",
+      "spalten": [
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "exceptions",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "timezone",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "traffic_product",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_from",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "valid_to",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "weekly_hours",
           "personenbezogen": "nein",
           "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
@@ -6893,6 +7152,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "active",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Aktivstatus der Revision (WP-M2-05)"
+        },
+        {
           "spalte": "approved_by",
           "personenbezogen": "ja",
           "zweck": "SICHERHEITSPROTOKOLL",
@@ -6900,6 +7168,24 @@
           "schutzklasse": "SECURITY_AUDIT",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Freigeber der Revision"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
         },
         {
           "spalte": "id",
@@ -6954,6 +7240,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "traffic_products",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zulaessige Verkehrsprodukte (WP-M2-05)"
         },
         {
           "spalte": "valid_from",
