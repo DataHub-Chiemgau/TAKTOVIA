@@ -26,7 +26,7 @@ import java.util.UUID
  * Ereignis in der Outbox. Der Fingerprint des Inhalts erkennt „gleiche event_id, anderer Inhalt“ (409).
  * Annahme bis WP-M3-05: `staff_shift.driver_ref` ist die IdP-Subject-UUID des Fahrers (die Tabelle `driver` mit Konto-Bezug entsteht dort).
  */
-internal class JdbcDriverEvents(private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock) : DriverEvents {
+internal class JdbcDriverEvents(private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock, private val statuses: JdbcVehicleServiceStatuses? = null) : DriverEvents {
 
     override fun record(ctx: RequestContext, cmd: DriverEventCommand): DriverEventResult {
         if (ctx.actor.type != ActorType.HUMAN) throw ProblemException(ErrorCode.FORBIDDEN)
@@ -70,6 +70,8 @@ internal class JdbcDriverEvents(private val ctxTx: ContextTransactions, private 
             "event_id" to cmd.eventId.toString(), "shift_id" to cmd.shiftId.toString(), "vehicle_id" to cmd.vehicleId.toString(), "event_type" to cmd.type.name,
             "outcome" to outcome.name, "route_stop_id" to cmd.routeStopId?.toString(), "received_at" to receivedAt.toString(),
         ), clock.instant(), correlationId = ctx.correlationId))
+        // Dienststatus (WP-M3-31): Anfahrt, Wartezeit, Pause, Störung und Ende folgen dem Ereignis in derselben Transaktion; ein veraltetes Ereignis (REVIEW_REQUIRED) ändert den Status nie
+        if (outcome == DriverEventOutcome.APPLIED) statuses?.deriveFromDriverEvent(j, ctx, cmd.type, cmd.eventId, cmd.shiftId, cmd.routeStopId, cmd.occurredAt, cmd.offlineRecorded)
         return DriverEventResult(cmd.eventId, outcome, receivedAt, current, reason, null)
     }
 

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+vehicle_service_status;SELECT,INSERT,UPDATE;WP-M3-31: aktueller Dienststatus je Schicht; Kanten nur nach Zustandsautomat (Trigger), kein DELETE

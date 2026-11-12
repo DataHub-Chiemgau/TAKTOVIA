@@ -27,6 +27,11 @@ enum class Unusable {
     NO_SHIFT,
     /** Keine gültige Einsatzfreigabe: fehlt, widerrufen, vor Fensterende abgelaufen oder gegen eine veraltete `safety_revision` ausgestellt. Ohne Freigabe nie einsetzbar. */
     NO_VALID_RELEASE,
+    /**
+     * Dienststatus der Schicht erlaubt keine neue Zuweisung (WP-M3-31, DRV-007): Pause, Störung, Ende oder noch nicht bereitgemeldet. Schichten ohne Statuszeile (Altbestand, vor dem ersten
+     * Statuswechsel) sind davon nicht betroffen; mit der ersten Statusmeldung gilt der Automat. Geprüft nach der Freigabe.
+     */
+    SERVICE_STATUS_NOT_DISPATCHABLE,
 }
 
 /**
@@ -79,4 +84,10 @@ interface ResourceAvailability {
      * Ende einer Zuordnung keine neue Zusage entsteht. Läuft in der Transaktion des Aufrufers.
      */
     fun isAssigned(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, at: Instant): Boolean
+
+    /**
+     * Dienststatus (WP-M3-31): erlaubt der aktuelle Dienststatus der Schicht des Fahrzeugs, die zum Zeitpunkt [at] läuft, eine neue Zusage? `false` bei Pause, Störung, Ende oder noch nicht bereitgemeldet; ohne
+     * Statuszeile `true`. Der Zusage-Commit prüft das unter der Fahrzeugsperre erneut (der Statuswechsel sperrt dieselbe Fahrzeugzeile), damit nach einer Störung keine Zusage mehr entsteht.
+     */
+    fun isStatusDispatchable(jdbc: JdbcOperations, vehicleId: UUID, at: Instant): Boolean
 }

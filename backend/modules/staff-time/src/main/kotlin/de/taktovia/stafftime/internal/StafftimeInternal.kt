@@ -21,7 +21,8 @@ import java.time.Clock
 internal object StafftimeServicesFactory {
     fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
-        val events = JdbcDriverEvents(ctxTx, outbox, clock)
+        val statusImpl = JdbcVehicleServiceStatuses(ctxTx, outbox, clock)
+        val events = JdbcDriverEvents(ctxTx, outbox, clock, statusImpl)
         val drivers = JdbcDrivers(ctxTx, audit)
         val shiftsImpl = JdbcShifts(ctxTx, audit)
         val driverShiftsImpl = JdbcDriverShifts(ctxTx, audit, clock, settings, runSource)
@@ -32,6 +33,7 @@ internal object StafftimeServicesFactory {
         return object : StafftimeApi {
             override val driverDevices: DriverDevices = devices
             override val driverEvents: DriverEvents = events
+            override val serviceStatus: de.taktovia.stafftime.api.VehicleServiceStatuses = statusImpl
             override val drivers: Drivers = drivers
             override val shifts: Shifts = shiftsImpl
             override val driverShifts: DriverShifts = driverShiftsImpl

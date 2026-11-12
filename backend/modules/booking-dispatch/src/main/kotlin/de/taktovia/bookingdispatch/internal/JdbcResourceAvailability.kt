@@ -24,7 +24,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
 
     private class Row(
         val vehicleId: UUID, val inPool: Boolean, val areaOk: Boolean, val capacity: String, val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean,
-        val shiftId: UUID?, val shiftStart: java.time.Instant?, val shiftEnd: java.time.Instant?, val releaseId: UUID?, val releaseUntil: java.time.Instant?,
+        val shiftId: UUID?, val shiftStart: java.time.Instant?, val shiftEnd: java.time.Instant?, val releaseId: UUID?, val releaseUntil: java.time.Instant?, val serviceStatus: String?,
     ) {
         fun verdict(): VehicleAvailability = when {
             !inPool -> VehicleAvailability.NotUsable(vehicleId, Unusable.NOT_IN_POOL)
@@ -33,6 +33,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
             activeBlock -> VehicleAvailability.NotUsable(vehicleId, Unusable.VEHICLE_BLOCKED)
             shiftId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_SHIFT)
             releaseId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_VALID_RELEASE)
+            serviceStatus != null && serviceStatus !in DISPATCHABLE_STATUS -> VehicleAvailability.NotUsable(vehicleId, Unusable.SERVICE_STATUS_NOT_DISPATCHABLE)
             else -> VehicleAvailability.Usable(VehicleResource(vehicleId, capacity, safetyRevision, shiftId, shiftStart!!, shiftEnd!!, releaseId, releaseUntil!!))
         }
     }
@@ -41,7 +42,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
         Row(
             rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getBoolean("area_ok"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"),
             rs.getObject("shift_id", UUID::class.java), rs.getTimestamp("starts_at")?.toInstant(), rs.getTimestamp("ends_at")?.toInstant(),
-            rs.getObject("release_id", UUID::class.java), rs.getTimestamp("valid_until")?.toInstant(),
+            rs.getObject("release_id", UUID::class.java), rs.getTimestamp("valid_until")?.toInstant(), rs.getString("service_status"),
         )
     }
 
@@ -54,7 +55,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
         val from = Timestamp.from(w.from); val to = Timestamp.from(w.to)
         return j.query(
             "SELECT v.id, (p.id IS NOT NULL) AS in_pool, ($AREA_OK) AS area_ok, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, v.active, " +
-                "s.id AS shift_id, s.starts_at, s.ends_at, r.id AS release_id, r.valid_until " +
+                "s.id AS shift_id, s.starts_at, s.ends_at, r.id AS release_id, r.valid_until, st.status AS service_status " +
                 "FROM taktovia.vehicle v " +
                 "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +
                 "AND p.valid_from <= ? AND (p.valid_to IS NULL OR p.valid_to > ?) " +
@@ -63,6 +64,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
                 "LEFT JOIN LATERAL (SELECT rr.id, rr.valid_until FROM taktovia.resource_release rr WHERE rr.tenant_id = v.tenant_id AND rr.vehicle_id = v.id " +
                 "AND rr.shift_id = s.id AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision " +
                 "ORDER BY rr.valid_until DESC, rr.id LIMIT 1) r ON true " +
+                "LEFT JOIN taktovia.vehicle_service_status st ON st.tenant_id = v.tenant_id AND st.shift_id = s.id " +
                 "WHERE (CAST(? AS uuid) IS NULL AND p.id IS NOT NULL) OR v.id = CAST(? AS uuid) ORDER BY v.id",
             mapper, GeoPoint.toJsonArray(locations), from, from, serviceId, from, from, from, to, to, vehicleId, vehicleId,
         )
@@ -91,6 +93,15 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
         )!! > 0
     }
 
+    override fun isStatusDispatchable(jdbc: JdbcOperations, vehicleId: UUID, at: java.time.Instant): Boolean {
+        val ts = Timestamp.from(at)
+        return jdbc.queryForObject(
+            "SELECT count(*) FROM taktovia.vehicle_service_status st JOIN taktovia.staff_shift sh ON sh.tenant_id = st.tenant_id AND sh.id = st.shift_id " +
+                "WHERE st.vehicle_id = ? AND sh.starts_at <= ? AND sh.ends_at >= ? AND st.status NOT IN ($DISPATCHABLE_STATUS_SQL)",
+            Int::class.java, vehicleId, ts, ts,
+        )!! == 0
+    }
+
     companion object {
         const val SOURCE = "FIXTURE"
 
@@ -104,5 +115,9 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
             "WHERE a0.tenant_id = p.tenant_id AND a0.id = p.service_area_id AND g.valid_from <= ? AND (g.valid_to IS NULL OR g.valid_to > ?))"
         /** Zustand einer einsetzbaren Schicht: Annahme dieses Plans (M4 legt die Werte fest, `staff_shift.state` ist freier Text). */
         const val SHIFT_USABLE = "'PUBLISHED', 'STARTED'"
+
+        /** Für neue Zuweisungen zulässige Dienststatus (WP-M3-31, `zustaende/fahrzeug_dienststatus.md`): Verfügbarkeit, Anfahrt, Wartezeit. */
+        val DISPATCHABLE_STATUS = setOf("AVAILABLE", "EN_ROUTE", "WAITING")
+        const val DISPATCHABLE_STATUS_SQL = "'AVAILABLE', 'EN_ROUTE', 'WAITING'"
     }
 }

@@ -473,8 +473,251 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/driver/shifts/{shift_id}/service-status:
+    post:
+      summary: Dienststatus melden
+      operationId: reportDriverServiceStatus
+      security:
+      - oidc:
+        - driver:events
+      description: 'Meldet den Fahrzeug- und Dienststatus der eigenen, **angetretenen** Schicht (WP-M3-31, LH-6.6-DRV-007; OP-03: eigener Pfad, `DriverEvent` bleibt unverändert). Sechs Werte: Verfügbarkeit
+        (`AVAILABLE`), Anfahrt (`EN_ROUTE`), Wartezeit (`WAITING`), Pause (`BREAK`), Störung (`DISRUPTED`) und Ende (`ENDED`); `NOT_READY` ist nur der Anfangszustand und nie ein Meldeziel. Der Server
+        prüft den Übergang gegen den Zustandsautomaten (`vertraege/zustaende/fahrzeug_dienststatus.md`): unzulässig (z. B. Ende nach Anfahrt) ergibt 409 `INVALID_STATE_TRANSITION`, ebenso die Bereitmeldung
+        ohne gültige Einsatzfreigabe. Fremde, unbekannte und Schichten anderer Mandanten sind einheitlich 404, eine eigene nicht angetretene oder beendete Schicht 409. Die `event_id` dedupliziert dauerhaft:
+        dieselbe Meldung wirkt genau einmal (`state` DUPLICATE), dieselbe ID mit anderem Ziel ist 409 `IDEMPOTENCY_CONFLICT`. Eine **offline** erfasste Meldung (`offline_recorded`), die zum Serverstand nicht mehr passt oder
+        älter ist als der aktuelle Status, ergibt `state` REVIEW_REQUIRED ohne Änderung (Klärfall der Leitstelle). Störung und Ende wirken auf die Disponierbarkeit erst ab Serverempfang (`received_at`), nie ab
+        der Gerätezeit; Pause, Störung, Ende und der Anfangszustand erhalten keine neue Zuweisung. Jeder Wechsel steht mit Auslöser, Zeit und Vorstatus in der Historie; Störung erzeugt das Ereignis
+        `vehicle.service_status_changed`, das den Störungsablauf eröffnet. Ein `tenant_id` im Body gibt kein Recht (422 als unbekanntes Feld).'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverServiceStatusResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverServiceStatusReport'
+    get:
+      summary: Dienststatus der Schicht lesen
+      operationId: getDriverServiceStatus
+      security:
+      - oidc:
+        - driver:run
+      description: 'Aktueller Dienststatus der eigenen Schicht mit Historie (älteste zuerst; Vorstatus, Auslöser, Gerätezeit, Serverzeit). Ohne bisherige Meldung: `NOT_READY`, Revision 0, leere Historie. Fremde
+        oder unbekannte Schicht: einheitlich 404. Hinweis für die App: offline erfasste Störung und Ende wirken erst ab Serverempfang auf die Disponierbarkeit.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverServiceStatus'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    DriverServiceStatusReport:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        target_status:
+          type: string
+          enum:
+          - AVAILABLE
+          - EN_ROUTE
+          - WAITING
+          - BREAK
+          - DISRUPTED
+          - ENDED
+        occurred_at:
+          type: string
+          format: date-time
+        device_recorded_at:
+          type: string
+          format: date-time
+        offline_recorded:
+          type: boolean
+      required:
+      - event_id
+      - target_status
+      - occurred_at
+      - device_recorded_at
+      - offline_recorded
+      description: 'Statusmeldung (WP-M3-31). `device_id` fehlt: das eine, an die Sitzung gebundene Gerät des Kontos. `vehicle_id` (optional) muss das Fahrzeug der Schicht sein (sonst 404). `occurred_at` ist die Gerätezeit,
+        sie ersetzt die Serverempfangszeit nie.'
+    DriverServiceStatusChange:
+      type: object
+      additionalProperties: false
+      properties:
+        from:
+          oneOf:
+          - $ref: '#/components/schemas/ServiceStatus'
+          - type: 'null'
+        to:
+          $ref: '#/components/schemas/ServiceStatus'
+        trigger:
+          type: string
+          enum:
+          - DRIVER
+          - SYSTEM
+          - DISPATCH
+        occurred_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        recorded_at:
+          type: string
+          format: date-time
+        offline_recorded:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - from
+      - to
+      - trigger
+      - occurred_at
+      - recorded_at
+      - offline_recorded
+      - revision
+      description: Eintrag der Statushistorie. `from` null = Anlage; `recorded_at` ist die Serverzeit, `occurred_at` die Gerätezeit der Meldung (null bei Wechseln des Systems oder der Leitstelle).
+    ServiceStatus:
+      type: string
+      enum:
+      - NOT_READY
+      - AVAILABLE
+      - EN_ROUTE
+      - WAITING
+      - BREAK
+      - DISRUPTED
+      - ENDED
+      description: 'Fahrzeug- und Dienststatus (LH-6.6-DRV-007): Anfangszustand, Verfügbarkeit, Anfahrt, Wartezeit, Pause, Störung, Ende. Disponierbar sind nur AVAILABLE, EN_ROUTE und WAITING.'
+    DriverServiceStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          $ref: '#/components/schemas/ServiceStatus'
+        dispatchable:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        changed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        history:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/DriverServiceStatusChange'
+      required:
+      - shift_id
+      - vehicle_id
+      - status
+      - dispatchable
+      - revision
+      - changed_at
+      - history
+      description: Aktueller Status der Schicht mit Historie; `dispatchable` sagt, ob das Fahrzeug neu disponiert werden darf.
+    DriverServiceStatusResult:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          enum:
+          - APPLIED
+          - DUPLICATE
+          - REVIEW_REQUIRED
+        reason_code:
+          oneOf:
+          - type: string
+            enum:
+            - INVALID_TRANSITION
+            - STALE_EVENT
+            - RELEASE_REQUIRED
+            - NO_EFFECT
+          - type: 'null'
+        received_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/DriverServiceStatus'
+      required:
+      - state
+      - reason_code
+      - received_at
+      - status
+      description: 'Ergebnis der Statusmeldung: APPLIED = Wechsel durchgeführt, DUPLICATE = dieselbe Meldung war schon eingegangen (genau einmal wirksam), REVIEW_REQUIRED = offline erfasste Meldung passt nicht mehr zum
+        Serverstand (keine Änderung, Klärfall der Leitstelle).'
     DriverEvent:
       type: object
       additionalProperties: false

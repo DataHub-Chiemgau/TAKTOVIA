@@ -10,7 +10,7 @@ DB_DIR = Path(__file__).resolve().parents[1]
 CATALOG = DB_DIR / 'm4_tabellenkatalog.csv'
 M4_MODULES = ('staff-time', 'documents-finance', 'analytics')
 # Tabellen im Besitz von staff-time, die zu M1/M3 gehören (Fahrerstamm, Fahrzeugstatus, Positionen, Einstiegscodes); sie stehen im M3-Katalog, nicht im M4-Katalog.
-M3_STAFFTIME_TABLES = frozenset({'driver', 'qualification_revision', 'driver_plan_ack', 'position_sample', 'vehicle_status_history', 'boarding_code'})
+M3_STAFFTIME_TABLES = frozenset({'driver', 'qualification_revision', 'driver_plan_ack', 'position_sample', 'vehicle_status_history', 'vehicle_service_status', 'boarding_code'})
 CLASSES = ('APPEND_ONLY', 'FREIGABE_UNVERAENDERLICH', 'VERAENDERLICH')
 
 
