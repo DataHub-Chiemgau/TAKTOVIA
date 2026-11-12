@@ -2580,6 +2580,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "confidentiality",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M3-50"
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2739,6 +2748,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": "Aufnahmezeit laut Gerät, EXIF wird serverseitig entfernt (OP-31)"
+        },
+        {
+          "spalte": "confidentiality",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M3-50"
         },
         {
           "spalte": "created_at",
@@ -2910,6 +2928,86 @@
           "schutzklasse": "SECURITY_AUDIT",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        }
+      ]
+    },
+    {
+      "tabelle": "defect_personal_detail",
+      "aggregat": "Personenbezogene Unfallangaben der Schadenakte, getrennt von defect_case (WP-M3-50)",
+      "loeschklasse": "LK_PII",
+      "bemerkung": "In M3 standardmäßig leer, Datenmodell fachlich zu bestätigen (OP-23), Aufbewahrung D-11",
+      "spalten": [
+        {
+          "spalte": "content",
+          "personenbezogen": "ja",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Personenbezogene Unfallangaben (Beteiligte, Zeugen, Aussagen), getrennter Bereich nur über den Modulzugang, Datenmodell OP-23"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "defect_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "detail_kind",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         }
       ]
     },

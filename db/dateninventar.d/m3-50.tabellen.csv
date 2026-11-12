@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+defect_personal_detail;Personenbezogene Unfallangaben der Schadenakte, getrennt von defect_case (WP-M3-50);LK_PII;In M3 standardmäßig leer, Datenmodell fachlich zu bestätigen (OP-23), Aufbewahrung D-11

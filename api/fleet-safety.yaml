@@ -2096,7 +2096,9 @@ paths:
       - oidc:
         - defects:read
       description: 'Nur Fotos mit bestandener Medienprüfung; Fotos in Prüfung zählt
-        die Akte (`evidence_pending`). Fremde Akte: 404.'
+        die Akte (`evidence_pending`). Projektion je Rolle: vertrauliche Dokumente
+        (`confidentiality=CONFIDENTIAL`) fehlen für Unberechtigte vollständig. Fremde
+        Akte: 404.'
       parameters:
       - name: defect_id
         in: path
@@ -2135,7 +2137,10 @@ paths:
         - defects:read
       description: Erst nach Objekt- und Zweckprüfung (freigegebene Evidenz einer
         sichtbaren Akte); der Link gilt höchstens 60 s und nur für den Mandanten,
-        der ihn erhielt.
+        der ihn erhielt. Ein vertrauliches Dokument erfordert Werkstatt, Betriebsleitung
+        oder den Urheber; sonst 404 (auch mit bekannter Dokument-ID) und ein Sicherheitsereignis
+        ohne Fallinhalt. Jeder Zugriff auf ein vertrauliches Dokument wird im Audit
+        protokolliert.
       parameters:
       - name: defect_id
         in: path
@@ -4452,6 +4457,15 @@ components:
         captured_at:
           type: string
           format: date-time
+        confidentiality:
+          type: string
+          enum:
+          - STANDARD
+          - CONFIDENTIAL
+          description: Vertraulichkeitsstufe des Dokuments (DMG-011). `CONFIDENTIAL`
+            sehen nur Werkstatt, Betriebsleitung und der Urheber; für alle anderen
+            ist das Dokument nicht vorhanden (404, kein Zähler). Fehlt das Feld, gilt
+            `STANDARD`.
       required:
       - mime
       - size_bytes
@@ -4524,6 +4538,15 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        confidentiality:
+          type: string
+          enum:
+          - STANDARD
+          - CONFIDENTIAL
+          description: Vertraulichkeitsstufe des Dokuments (DMG-011). `CONFIDENTIAL`
+            sehen nur Werkstatt, Betriebsleitung und der Urheber; für alle anderen
+            ist das Dokument nicht vorhanden (404, kein Zähler). Fehlt das Feld, gilt
+            `STANDARD`.
       required:
       - id
       - state
@@ -4537,6 +4560,7 @@ components:
       - reject_reason
       - defect_id
       - revision
+      - confidentiality
       description: Uploadticket und Prüfzustand eines Schadenfotos. Ein Foto ist erst
         mit `RELEASED` an der Akte sichtbar und abrufbar.
     DefectEvidence:
@@ -4578,6 +4602,15 @@ components:
           - type: 'null'
           description: Vorgänger, den dieses Foto ersetzt; der Vorgänger bleibt als
             frühere Version erhalten.
+        confidentiality:
+          type: string
+          enum:
+          - STANDARD
+          - CONFIDENTIAL
+          description: Vertraulichkeitsstufe des Dokuments (DMG-011). `CONFIDENTIAL`
+            sehen nur Werkstatt, Betriebsleitung und der Urheber; für alle anderen
+            ist das Dokument nicht vorhanden (404, kein Zähler). Fehlt das Feld, gilt
+            `STANDARD`.
       required:
       - id
       - defect_id
@@ -4588,6 +4621,7 @@ components:
       - received_at
       - added_in_version
       - replaces_id
+      - confidentiality
       description: Freigegebenes Foto einer Schadenakte (unveränderlich).
     DefectEvidencePage:
       type: object

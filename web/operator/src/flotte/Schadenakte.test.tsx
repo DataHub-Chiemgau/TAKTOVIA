@@ -295,4 +295,25 @@ describe('UI-11 Schadenakte: Erfassung, Übergänge, Nachtrag, Versionsverlauf',
     expect(screen.queryByRole('group', { name: 'Folgeaktionen' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Nachtrag speichern' })).toBeNull();
   });
+  it('WP-M3-50: zeigt nur die vom Server für die Rolle projizierten Dokumente, vertrauliche Teile gibt es ohne Platzhalter nicht', async () => {
+    // Die Projektion je Rolle liefert der Server (DMG-011): ein vertrauliches Dokument fehlt in evidence_ids und im Zähler vollständig.
+    const projected: Defect = {
+      ...DEFECT,
+      evidence_ids: ['00000000-0000-4000-8000-0000000000e1'],
+      evidence_pending: 0,
+    };
+    const { container } = setup((id) => {
+      if (id === 'listDefects') return page([projected]);
+      if (id === 'getDefect') return projected;
+      return undefined;
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /Öffnen SCH-2026-000001/ }));
+    expect(
+      await screen.findByRole('heading', { name: 'Schadenakte SCH-2026-000001' }),
+    ).toBeVisible();
+    expect(screen.getByText('1 freigegeben', { exact: false })).toBeVisible();
+    // nicht ausgegraut, nicht angedeutet: weder Text noch deaktivierte Steuerelemente zu vertraulichen Inhalten
+    expect(screen.queryByText(/vertraulich|confidential|gesperrt|keine Berechtigung/i)).toBeNull();
+    expect(container.querySelectorAll('[aria-disabled="true"], [disabled]').length).toBe(0);
+  });
 });

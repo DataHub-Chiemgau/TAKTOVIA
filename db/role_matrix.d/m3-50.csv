@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+defect_personal_detail;;WP-M3-50: getrennter Bereich der personenbezogenen Unfallangaben; nur Spaltenrechte (db/role_matrix_spalten.d/m3-50.csv): Runtime sieht nur tenant_id und id, Inhalt nur der Modulzugang taktovia_fields; append-only (Trigger)

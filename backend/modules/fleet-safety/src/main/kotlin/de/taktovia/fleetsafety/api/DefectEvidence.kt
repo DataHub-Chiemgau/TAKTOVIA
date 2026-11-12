@@ -24,6 +24,16 @@ data class EvidencePolicy(
     init { require(maxBytes in 1..10L * 1024 * 1024 && allowedMime.isNotEmpty() && ticketTtl > Duration.ZERO) }
 }
 
+/**
+ * Vertraulichkeitsstufe eines Dokuments der Schadenakte (WP-M3-50, DMG-011). [STANDARD]: jede Rolle mit Zugriff auf die Akte. [CONFIDENTIAL]: nur Werkstatt und Betriebsleitung (Prüfer) und
+ * der Urheber; für alle anderen ist das Dokument nicht vorhanden (404, kein Hinweis, auch kein Zähler). Planungsannahme der Rollenmatrix, nicht freigegeben.
+ */
+object EvidenceConfidentiality {
+    const val STANDARD = "STANDARD"
+    const val CONFIDENTIAL = "CONFIDENTIAL"
+    val ALL: Set<String> = linkedSetOf(STANDARD, CONFIDENTIAL)
+}
+
 /** Zustand des Fotos auf dem Weg zur Akte: hochgeladen nur nach Ticket, in Prüfung (Quarantäne), freigegeben (sichtbar, abrufbar) oder abgewiesen (endgültig). */
 enum class EvidenceState { ISSUED, IN_REVIEW, RELEASED, REJECTED }
 
@@ -31,9 +41,9 @@ enum class EvidenceState { ISSUED, IN_REVIEW, RELEASED, REJECTED }
  * Anforderung eines Uploadtickets: Größe, MIME-Typ, SHA-256 der Datei (Wire: base64url ohne Auffüllung, [sha256Hex] intern in Hex; die Kartendatenerkennung SEC-008 würde lange
  * Hexfolgen gelegentlich fehldeuten) und Aufnahmezeit laut Gerät. EXIF-Angaben entfernt der Server (OP-31).
  */
-data class RequestEvidenceTicket(val mime: String, val sizeBytes: Long, val sha256Hex: String, val capturedAt: Instant) {
+data class RequestEvidenceTicket(val mime: String, val sizeBytes: Long, val sha256Hex: String, val capturedAt: Instant, val confidentiality: String = EvidenceConfidentiality.STANDARD) {
     companion object {
-        private val FIELDS = setOf("mime", "size_bytes", "sha256", "captured_at")
+        private val FIELDS = setOf("mime", "size_bytes", "sha256", "captured_at", "confidentiality")
 
         fun parse(raw: Map<String, Any?>, policy: EvidencePolicy = EvidencePolicy()): RequestEvidenceTicket {
             val v = Violations()
@@ -44,15 +54,16 @@ data class RequestEvidenceTicket(val mime: String, val sizeBytes: Long, val sha2
             val sha = (raw["sha256"] as? String)?.let { b -> runCatching { Base64.getUrlDecoder().decode(b) }.getOrNull()?.takeIf { it.size == 32 }?.joinToString("") { "%02x".format(it) } }
             if (sha == null) v.add("/sha256", if (raw["sha256"] == null) ViolationCode.REQUIRED else ViolationCode.INVALID_FORMAT)
             val captured = v.instant(raw, "captured_at", true)
+            val confidentiality = v.code(raw, "confidentiality", EvidenceConfidentiality.ALL, false) ?: EvidenceConfidentiality.STANDARD
             v.throwIfAny()
-            return RequestEvidenceTicket(mime!!, size!!.toLong(), sha!!, captured!!)
+            return RequestEvidenceTicket(mime!!, size!!.toLong(), sha!!, captured!!, confidentiality)
         }
     }
 }
 
 data class EvidenceTicketView(
     val id: UUID, val state: EvidenceState, val mime: String, val sizeBytes: Long, val sha256Hex: String, val capturedAt: Instant, val maxBytes: Long, val expiresAt: Instant,
-    val uploadKey: String, val rejectReason: String?, val defectId: UUID?, val revision: Long,
+    val uploadKey: String, val rejectReason: String?, val defectId: UUID?, val revision: Long, val confidentiality: String = EvidenceConfidentiality.STANDARD,
 ) {
     /** Wire-Form des Hashs. */
     val sha256Wire: String get() = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { sha256Hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() })
@@ -76,7 +87,7 @@ interface MediaInspector {
 /** Foto an der Akte, wie es ein Prüfer sieht. */
 data class EvidenceDetail(
     val id: UUID, val defectId: UUID, val mime: String?, val sizeBytes: Long?, val sha256Hex: String, val capturedAt: Instant, val receivedAt: Instant, val addedInVersion: Int,
-    val replacesId: UUID?, val createdBy: String,
+    val replacesId: UUID?, val createdBy: String, val confidentiality: String = EvidenceConfidentiality.STANDARD,
 )
 
 /** Ergebnis der Integritätsprüfung Objekt ↔ gespeicherter Hash. */

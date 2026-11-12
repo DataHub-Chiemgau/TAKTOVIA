@@ -140,16 +140,17 @@ class Feldschutz(unittest.TestCase):
 
     def test_spaltenrechte_entsprechen_der_matrix(self):
         expected = column_matrix()
+        tables = sorted({t for (_, t, _) in expected})   # Tabellen mit Spaltenrechten (passenger_private; seit WP-M3-50 auch defect_personal_detail)
         with admin() as c:
             actual = {}
             for role, tab, col, priv in c.execute("""SELECT grantee, table_name, column_name, privilege_type FROM information_schema.column_privileges
-                                                     WHERE table_schema='taktovia' AND table_name='passenger_private'
-                                                       AND grantee IN ('taktovia_runtime','taktovia_fields')"""):
+                                                     WHERE table_schema='taktovia' AND table_name = ANY(%s)
+                                                       AND grantee IN ('taktovia_runtime','taktovia_fields')""", (tables,)):
                 actual.setdefault((role, tab, col), set()).add(priv)
-            # Tabellenweite Rechte (die information_schema.column_privileges mit ausweist) gibt es für diese Tabelle nicht.
+            # Tabellenweite Rechte (die information_schema.column_privileges mit ausweist) gibt es für Tabellen mit Spaltenrechten nicht.
             tablewide = c.execute("""SELECT grantee, privilege_type FROM information_schema.role_table_grants
-                                     WHERE table_schema='taktovia' AND table_name='passenger_private'
-                                       AND grantee IN ('taktovia_runtime','taktovia_fields','PUBLIC')""").fetchall()
+                                     WHERE table_schema='taktovia' AND table_name = ANY(%s)
+                                       AND grantee IN ('taktovia_runtime','taktovia_fields','PUBLIC')""", (tables,)).fetchall()
             self.assertEqual(tablewide, [])
         for key, privs in expected.items():
             self.assertEqual(actual.get(key, set()), privs, key)

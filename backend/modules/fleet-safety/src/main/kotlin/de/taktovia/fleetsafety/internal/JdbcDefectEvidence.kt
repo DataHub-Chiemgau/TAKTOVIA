@@ -2,6 +2,7 @@ package de.taktovia.fleetsafety.internal
 
 import de.taktovia.fleetsafety.api.DefectEvidenceUploads
 import de.taktovia.fleetsafety.api.DefectEvidenceWiring
+import de.taktovia.fleetsafety.api.EvidenceConfidentiality
 import de.taktovia.fleetsafety.api.EvidenceDetail
 import de.taktovia.fleetsafety.api.EvidenceState
 import de.taktovia.fleetsafety.api.EvidenceTicketView
@@ -72,9 +73,10 @@ internal class JdbcDefectEvidence(
         }
         val id = UUID.randomUUID(); val now = clock.instant()
         return toView(j.query(
-            "INSERT INTO taktovia.defect_evidence_upload AS u (tenant_id, id, uploaded_by, declared_mime, declared_size, declared_sha256, captured_at, quarantine_key, expires_at, created_at) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING $COLUMNS",
+            "INSERT INTO taktovia.defect_evidence_upload AS u (tenant_id, id, uploaded_by, declared_mime, declared_size, declared_sha256, captured_at, quarantine_key, expires_at, created_at, confidentiality) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING $COLUMNS",
             MAPPER, id, actor.value, cmd.mime, cmd.sizeBytes, cmd.sha256Hex, Timestamp.from(cmd.capturedAt), "quarantine/defect-evidence/$id", Timestamp.from(now.plus(policy.ticketTtl)), Timestamp.from(now),
+            cmd.confidentiality,
         ).single())
     }
 
@@ -82,6 +84,7 @@ internal class JdbcDefectEvidence(
         val row = j.query("SELECT $COLUMNS FROM taktovia.defect_evidence_upload u WHERE u.id = ?", MAPPER, ticketId).firstOrNull() ?: throw ProblemException.notFound()
         // ein Ticket gehört dem Urheber; Disposition und Werkstatt sehen Tickets, die an eine Akte gebunden sind (Prüfansicht)
         if (row.uploadedBy != actor(ctx).value && (DefectRoles.driverOnly(ctx) || row.defectId == null)) throw ProblemException.notFound()
+        if (row.confidentiality == EvidenceConfidentiality.CONFIDENTIAL && row.uploadedBy != actor(ctx).value && !DefectConfidentiality.privileged(ctx.roles)) throw ProblemException.notFound()
         toView(row)
     }
 
@@ -196,39 +199,92 @@ internal class JdbcDefectEvidence(
 
     private fun insertEvidence(j: JdbcOperations, u: TicketRow, version: Int, replaces: UUID?) {
         j.update(
-            "INSERT INTO taktovia.defect_evidence (tenant_id, id, defect_id, media_ref, sha256, captured_at, created_by, mime, size_bytes, original_sha256, upload_id, defect_version, replaces_evidence_id) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-            u.id, u.defectId, u.objectKey, u.storedSha256, Timestamp.from(u.capturedAt), u.uploadedBy, u.mime, u.storedSize, u.sha256Hex, u.id, version, replaces,
+            "INSERT INTO taktovia.defect_evidence (tenant_id, id, defect_id, media_ref, sha256, captured_at, created_by, mime, size_bytes, original_sha256, upload_id, defect_version, replaces_evidence_id, confidentiality) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            u.id, u.defectId, u.objectKey, u.storedSha256, Timestamp.from(u.capturedAt), u.uploadedBy, u.mime, u.storedSize, u.sha256Hex, u.id, version, replaces, u.confidentiality,
         )
     }
 
     // ---------------- Lesen, Link, Integrität ----------------
 
-    override fun listForDefect(ctx: RequestContext, defectId: UUID): List<EvidenceDetail> = ctxTx.run(ctx, readOnly = true) { j ->
-        requireVisible(j, ctx, defectId)
-        j.query("SELECT $EV_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) ORDER BY e.created_at, e.id", EV_MAPPER, defectId)
+    override fun listForDefect(ctx: RequestContext, defectId: UUID): List<EvidenceDetail> =
+        ctxTx.run(ctx) { j -> listOrDeny(j, ctx, defectId) } ?: throw ProblemException.notFound()
+
+    /** Fotos der Akte in der Projektion der Rolle; `null` = nicht sichtbar (Akte unbekannt oder einem Fahrer fremd; Letzteres ist ein Sicherheitsereignis ohne Fallinhalt). */
+    @AuditRequired
+    private fun listOrDeny(j: JdbcOperations, ctx: RequestContext, defectId: UUID): List<EvidenceDetail>? {
+        val reporter = reporterOf(j, defectId) ?: return null
+        if (DefectRoles.driverOnly(ctx) && reporter.toString() != ctx.actor.subject.lowercase()) { deny(j, ctx, ObjectRef("defect", defectId), "NOT_VISIBLE", "list"); return null }
+        return j.query("SELECT $EV_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) ORDER BY e.created_at, e.id", EV_MAPPER, defectId)
+            .filter { DefectConfidentiality.visibleTo(ctx, it) }
     }
 
     override fun downloadLink(ctx: RequestContext, defectId: UUID, evidenceId: UUID): SignedUrl {
         val urls = wiring.urls ?: throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Signierte Links sind nicht konfiguriert.")
-        val ref = ctxTx.run(ctx, readOnly = true) { j ->
-            requireVisible(j, ctx, defectId)
-            j.query("SELECT e.media_ref, EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) FROM taktovia.defect_evidence e WHERE e.id = ? AND e.defect_id = ?",
-                { rs, _ -> rs.getString(1) to rs.getBoolean(2) }, evidenceId, defectId).firstOrNull()
-        }?.let { (ref, replaced) -> if (replaced && ctx.roles.none { it in DefectRoles.REVIEWERS }) null else ref } ?: throw ProblemException.notFound()
-        return urls.sign(ctx, ObjectKey(ctx.tenant, ref), PURPOSE, ObjectPurposeCheck { _, _, _ -> true })
+        val granted = ctxTx.run(ctx) { j -> authorizeLink(j, ctx, defectId, evidenceId) } as? Access.Granted ?: throw ProblemException.notFound()
+        return urls.sign(ctx, ObjectKey(ctx.tenant, granted.ref), PURPOSE, ObjectPurposeCheck { _, _, _ -> true })
     }
 
     override fun openLinked(ctx: RequestContext, url: String): LinkedObject {
         val urls = wiring.urls ?: throw ProblemException.notFound()
         val (key, purpose) = urls.verify(ctx, url)
         if (purpose != PURPOSE) throw ProblemException.notFound()
-        val mime = ctxTx.run(ctx, readOnly = true) { j ->
-            val row = j.query("SELECT e.defect_id, e.mime FROM taktovia.defect_evidence e WHERE e.media_ref = ?", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getString(2) }, key.name).firstOrNull() ?: throw ProblemException.notFound()
-            requireVisible(j, ctx, row.first)
-            row.second ?: "application/octet-stream"
+        val granted = ctxTx.run(ctx) { j -> authorizeDownload(j, ctx, key.name) } as? Access.Granted ?: throw ProblemException.notFound()
+        return LinkedObject(store.get(key) ?: throw ProblemException.notFound(), granted.mime ?: "application/octet-stream")
+    }
+
+    private sealed interface Access {
+        data class Granted(val ref: String, val mime: String?) : Access
+        /** Nicht vorhanden oder nicht sichtbar, ohne Sicherheitsereignis (kein Fall betroffen). */
+        data object Missing : Access
+        /** Abgewiesen, das Sicherheitsereignis ist in derselben Transaktion geschrieben. */
+        data object Denied : Access
+    }
+
+    private class EvidenceRow(val id: UUID, val defectId: UUID, val ref: String, val mime: String?, val confidentiality: String, val createdBy: String, val replaced: Boolean)
+
+    private fun reporterOf(j: JdbcOperations, defectId: UUID): UUID? =
+        j.query("SELECT reported_by FROM taktovia.defect_case WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, defectId).firstOrNull()
+
+    private val rowMapper = RowMapper { rs, _ -> EvidenceRow(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getBoolean(7)) }
+    private fun evidenceById(j: JdbcOperations, evidenceId: UUID, defectId: UUID): EvidenceRow? = j.query(ROW_BY_ID, rowMapper, evidenceId, defectId).firstOrNull()
+    private fun evidenceByRef(j: JdbcOperations, mediaRef: String): EvidenceRow? = j.query(ROW_BY_REF, rowMapper, mediaRef).firstOrNull()
+
+    /** Link für ein Dokument einer Akte: Sichtbarkeit der Akte, Dokument, Vertraulichkeit; Reihenfolge so, dass ein Fremdzugriff immer als abgewiesen erfasst wird. */
+    @AuditRequired
+    private fun authorizeLink(j: JdbcOperations, ctx: RequestContext, defectId: UUID, evidenceId: UUID): Access {
+        val reporter = reporterOf(j, defectId) ?: return Access.Missing
+        if (DefectRoles.driverOnly(ctx) && reporter.toString() != ctx.actor.subject.lowercase()) { deny(j, ctx, ObjectRef("defect_evidence", evidenceId), "NOT_VISIBLE", "link"); return Access.Denied }
+        val row = evidenceById(j, evidenceId, defectId) ?: return Access.Missing
+        return decide(j, ctx, row, "link")
+    }
+
+    /** Abruf über den signierten Link: die Rechte des **Einlösenden** werden jetzt geprüft, nicht die des Ausstellers (weitergegebener Link). */
+    @AuditRequired
+    private fun authorizeDownload(j: JdbcOperations, ctx: RequestContext, mediaRef: String): Access {
+        val row = evidenceByRef(j, mediaRef) ?: return Access.Missing
+        val reporter = reporterOf(j, row.defectId) ?: return Access.Missing
+        if (DefectRoles.driverOnly(ctx) && reporter.toString() != ctx.actor.subject.lowercase()) { deny(j, ctx, ObjectRef("defect_evidence", row.id), "NOT_VISIBLE", "download"); return Access.Denied }
+        return decide(j, ctx, row, "download")
+    }
+
+    @AuditRequired
+    private fun decide(j: JdbcOperations, ctx: RequestContext, row: EvidenceRow, stage: String): Access {
+        if (row.replaced && stage == "link" && ctx.roles.none { it in DefectRoles.REVIEWERS }) return Access.Missing
+        if (row.confidentiality == EvidenceConfidentiality.CONFIDENTIAL) {
+            val roles = DefectConfidentiality.currentRoles(j, ctx, lock = true)
+            if (!DefectConfidentiality.mayRead(roles, DefectConfidentiality.actorRef(ctx), row.createdBy, row.confidentiality)) {
+                deny(j, ctx, ObjectRef("defect_evidence", row.id), "ROLE_NOT_PERMITTED", stage); return Access.Denied
+            }
+            // Jeder Zugriff auf ein vertrauliches Dokument wird protokolliert (Ausstellung des Links und Abruf); nie mit Dateiinhalt, Beschreibung oder Fallnummer
+            audit.record(j, AuditEntry(actor(ctx), AuditActions.DEFECT_CONFIDENTIAL_READ, ObjectRef("defect_evidence", row.id), ctx.correlationId, mapOf("stage" to stage)))
         }
-        return LinkedObject(store.get(key) ?: throw ProblemException.notFound(), mime)
+        return Access.Granted(row.ref, row.mime)
+    }
+
+    /** Sicherheitsereignis eines abgewiesenen Zugriffs: nur Grund und Stufe, ohne Fallinhalt (kein Text, keine Fallnummer, kein Hash). */
+    private fun deny(j: JdbcOperations, ctx: RequestContext, obj: ObjectRef, reason: String, stage: String) {
+        audit.record(j, AuditEntry(actor(ctx), AuditActions.SECURITY_DEFECT_CONFIDENTIAL_DENIED, obj, ctx.correlationId, mapOf("reason" to reason, "stage" to stage)))
     }
 
     override fun verifyIntegrity(tenant: TenantId, limit: Int): IntegrityReport {
@@ -253,12 +309,6 @@ internal class JdbcDefectEvidence(
 
     // ---------------- Hilfen ----------------
 
-    /** Die Akte muss im Mandanten sichtbar sein; ein reiner Fahrer sieht nur eigene Akten (sonst 404). */
-    private fun requireVisible(j: JdbcOperations, ctx: RequestContext, defectId: UUID) {
-        val reporter = j.query("SELECT reported_by FROM taktovia.defect_case WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, defectId).firstOrNull() ?: throw ProblemException.notFound()
-        if (DefectRoles.driverOnly(ctx) && reporter.toString() != ctx.actor.subject.lowercase()) throw ProblemException.notFound()
-    }
-
     private fun findOwn(j: JdbcOperations, actor: ActorRef, sha: String): TicketRow? =
         j.query("SELECT $COLUMNS FROM taktovia.defect_evidence_upload u WHERE u.uploaded_by = ? AND u.declared_sha256 = ? AND u.state <> 'REJECTED'", MAPPER, actor.value, sha).firstOrNull()
 
@@ -275,25 +325,29 @@ internal class JdbcDefectEvidence(
     internal data class TicketRow(
         val id: UUID, val uploadedBy: String, val mime: String, val sizeBytes: Long, val sha256Hex: String, val capturedAt: Instant, val uploadKey: String, val state: EvidenceState,
         val rejectReason: String?, val objectKey: String?, val storedSha256: String?, val storedSize: Long?, val defectId: UUID?, val expiresAt: Instant, val revision: Long,
-        val attachedInVersion: Int? = null, val replacesEvidenceId: UUID? = null,
+        val attachedInVersion: Int? = null, val replacesEvidenceId: UUID? = null, val confidentiality: String = EvidenceConfidentiality.STANDARD,
     )
 
-    private fun toView(r: TicketRow) = EvidenceTicketView(r.id, r.state, r.mime, r.sizeBytes, r.sha256Hex, r.capturedAt, policy.maxBytes, r.expiresAt, r.uploadKey, r.rejectReason, r.defectId, r.revision)
+    private fun toView(r: TicketRow) = EvidenceTicketView(r.id, r.state, r.mime, r.sizeBytes, r.sha256Hex, r.capturedAt, policy.maxBytes, r.expiresAt, r.uploadKey, r.rejectReason, r.defectId, r.revision, r.confidentiality)
 
     internal companion object {
         const val PURPOSE = "defect_evidence"
+        private const val ROW_SELECT = "SELECT e.id, e.defect_id, e.media_ref, e.mime, e.confidentiality, e.created_by, EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) " +
+            "FROM taktovia.defect_evidence e WHERE "
+        private const val ROW_BY_ID = ROW_SELECT + "e.id = ? AND e.defect_id = ?"
+        private const val ROW_BY_REF = ROW_SELECT + "e.media_ref = ?"
         const val COLUMNS = "u.id, u.uploaded_by, u.declared_mime, u.declared_size, u.declared_sha256, u.captured_at, u.quarantine_key, u.state, u.reject_reason, u.object_key, u.stored_sha256, " +
-            "u.stored_size, u.defect_id, u.expires_at, u.revision, u.attached_in_version, u.replaces_evidence_id"
+            "u.stored_size, u.defect_id, u.expires_at, u.revision, u.attached_in_version, u.replaces_evidence_id, u.confidentiality"
         val MAPPER = RowMapper { rs, _ ->
             TicketRow(rs.getObject("id", UUID::class.java), rs.getString("uploaded_by"), rs.getString("declared_mime"), rs.getLong("declared_size"), rs.getString("declared_sha256"),
                 rs.getTimestamp("captured_at").toInstant(), rs.getString("quarantine_key"), EvidenceState.valueOf(rs.getString("state")), rs.getString("reject_reason"), rs.getString("object_key"),
                 rs.getString("stored_sha256"), rs.getObject("stored_size") as Long?, rs.getObject("defect_id", UUID::class.java), rs.getTimestamp("expires_at").toInstant(), rs.getLong("revision"),
-                rs.getObject("attached_in_version") as Int?, rs.getObject("replaces_evidence_id", UUID::class.java))
+                rs.getObject("attached_in_version") as Int?, rs.getObject("replaces_evidence_id", UUID::class.java), rs.getString("confidentiality"))
         }
-        const val EV_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id"
+        const val EV_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id, e.confidentiality"
         val EV_MAPPER = RowMapper { rs, _ ->
             EvidenceDetail(rs.getObject("id", UUID::class.java), rs.getObject("defect_id", UUID::class.java), rs.getString("mime"), rs.getObject("size_bytes") as Long?, rs.getString("sha256"),
-                rs.getTimestamp("captured_at").toInstant(), rs.getTimestamp("received_at").toInstant(), rs.getInt("defect_version"), rs.getObject("replaces_evidence_id", UUID::class.java), rs.getString("created_by"))
+                rs.getTimestamp("captured_at").toInstant(), rs.getTimestamp("received_at").toInstant(), rs.getInt("defect_version"), rs.getObject("replaces_evidence_id", UUID::class.java), rs.getString("created_by"), rs.getString("confidentiality"))
         }
     }
 }
