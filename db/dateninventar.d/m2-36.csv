@@ -1,0 +1,2 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+passenger_preference;point;ja;KONTAKT_UND_UNTERSTUETZUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_PII;Koordinate eines Ortsfavoriten (WGS84), vom Fahrgast bestaetigt (WP-M2-36)

@@ -111,6 +111,7 @@ getServiceAvailability;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 listServiceAreas;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 getServiceArea;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 listStops;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
+searchPlaces;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 getStop;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 getServiceRelationRule;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N
 checkServiceRelation;geo:read;-;M2;J;N;J;J;J;J;J;N;N;N

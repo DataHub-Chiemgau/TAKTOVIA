@@ -35,6 +35,57 @@ export const texte = {
   'offline.hint':
     'Es wird nichts gespeichert oder gebucht, solange die Verbindung fehlt. Sobald Sie wieder online sind, geht es hier weiter.',
   'offline.back': 'Wieder online.',
+  'ort.suche.hint': 'Adresse, Ort, Haltestelle oder Favorit eingeben (mindestens 2 Zeichen).',
+  'ort.zuKurz': 'Bitte geben Sie mindestens 2 Zeichen ein.',
+  'ort.keinTreffer':
+    'Kein Ort gefunden. Prüfen Sie die Schreibweise oder wählen Sie eine Haltestelle, einen Favoriten oder einen Punkt auf der Karte.',
+  'ort.geocoderAus':
+    'Die Adress- und Ortssuche ist gerade nicht verfügbar. Haltestellen, Favoriten und der Kartenpunkt funktionieren weiter.',
+  'ort.zuVieleAnfragen':
+    'Zu viele Suchanfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.',
+  'ort.fehler':
+    'Die Suche ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wählen Sie einen Favoriten.',
+  'ort.typ.adresse': 'Adresse',
+  'ort.typ.poi': 'Ort',
+  'ort.typ.haltestelle': 'Haltestelle',
+  'ort.typ.favorit': 'Favorit',
+  'ort.typ.kartenpunkt': 'Kartenpunkt',
+  'ort.ausserhalb': 'außerhalb Bediengebiet',
+  'ort.ausserhalbHinweis':
+    'Dieser Ort liegt außerhalb des Bediengebiets und kann nicht gebucht werden. Bitte wählen Sie einen anderen Ort.',
+  'ort.bestaetigt': 'Treffpunkt bestätigt',
+  'ort.aendern': 'Ändern',
+  'ort.favoriten': 'Meine Favoriten',
+  'ort.karte': 'Punkt auf Karte wählen',
+  'ort.karteHinweis':
+    'Geben Sie die Koordinaten des Punkts ein (die Kartenansicht folgt mit der Karte, WP-M2-40).',
+  'ort.karteUebernehmen': 'Kartenpunkt prüfen',
+  'ort.karteUngueltig':
+    'Breite (-90 bis 90) und Länge (-180 bis 180) müssen gültige Zahlen sein, nicht beide 0.',
+  'ort.nachsteHaltestelle': 'Nächste Haltestelle',
+  'standort.button': 'Meinen Standort verwenden',
+  'standort.dialog.titel': 'Standort verwenden?',
+  'standort.dialog.text':
+    'Ihr Gerätestandort wird nur für diese eine Suche verwendet, nicht gespeichert und nur zur Adresssuche an unseren Geocoding-Dienst übermittelt. Sie können Start und Ziel jederzeit von Hand wählen.',
+  'standort.dialog.ja': 'Standort abfragen',
+  'standort.dialog.nein': 'Abbrechen',
+  'standort.laeuft': 'Standort wird ermittelt …',
+  'standort.vorschlag': 'Ihr Standort ist als Start verfügbar.',
+  'standort.uebernehmen': 'Als Start übernehmen',
+  'standort.verwerfen': 'Verwerfen',
+  'standort.abgelehnt': 'Die Standortfreigabe wurde abgelehnt. Wählen Sie Start und Ziel von Hand.',
+  'standort.blockiert':
+    'Der Standort ist in Ihrem Browser für diese Seite blockiert. Sie können das in den Browsereinstellungen ändern oder Start und Ziel von Hand wählen.',
+  'standort.nichtVerfuegbar':
+    'Der Standort ist gerade nicht verfügbar. Wählen Sie Start und Ziel von Hand.',
+  'standort.zeit':
+    'Die Standortabfrage hat zu lange gedauert. Versuchen Sie es erneut oder wählen Sie Start und Ziel von Hand.',
+  'standort.ungenau':
+    'Der Standort ist zu ungenau für einen Startvorschlag. Wählen Sie den Start von Hand oder versuchen Sie es erneut.',
+  'standort.keineUnterstuetzung':
+    'Dieses Gerät unterstützt keine Standortabfrage. Wählen Sie Start und Ziel von Hand.',
+  'standort.manuell': 'Start von Hand wählen',
+  'standort.meinStandort': 'Mein Standort',
   'sw.updated': 'Die App wurde aktualisiert.',
   // Textbausteine der standardisierten Ablehnungsgründe mit nächster Handlung (WP-M2-13, Kap. 06 §6.2); Schlüssel = Code aus `RideRejectionCode` in camelCase
   'rej.next': 'Nächste Handlung:',

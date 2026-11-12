@@ -3,6 +3,7 @@ package de.taktovia.identity.internal
 import de.taktovia.identity.api.ChannelStatus
 import de.taktovia.identity.api.ChannelView
 import de.taktovia.identity.api.ContactChannel
+import de.taktovia.identity.api.FavoriteInput
 import de.taktovia.identity.api.FavoriteView
 import de.taktovia.identity.api.PassengerProfiles
 import de.taktovia.identity.api.PassengerSettings
@@ -46,13 +47,19 @@ internal class JdbcPassengerProfiles(
 
     private class Base(val id: UUID, val status: String, val locale: String, val createdAt: Instant, val revision: Long,
                        val contacts: Map<String, Triple<String, String, Instant?>>, val prefs: List<Pref>)
-    private class Pref(val kind: String, val label: String?, val stopId: UUID?, val channel: String?)
+    private class Pref(val kind: String, val label: String?, val stopId: UUID?, val channel: String?, val lon: Double?, val lat: Double?, val stopBookable: Boolean)
 
     override fun get(ctx: RequestContext): ProfileView {
         val b = ctxTx.run(ctx, readOnly = true) { j -> load(j, ctx) }
         val doc = fieldTx.run(ctx.tenant, readOnly = true) { fj -> store.read(fj, ctx.tenant.value, ProtectedColumns.CONTACT, b.id) }
         val (email, phone) = ContactDocument.decode((doc as? ProtectedColumnStore.Read.Value)?.plaintext)
         return view(ctx, b, email, phone)
+    }
+
+    override fun favorites(ctx: RequestContext): List<FavoriteView> = ctxTx.run(ctx, readOnly = true) { j ->
+        val id = j.query("SELECT id FROM taktovia.passenger_private WHERE idp_issuer = ? AND idp_subject = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, ctx.actor.issuer, ctx.actor.subject).firstOrNull()
+            ?: return@run emptyList()
+        loadPrefs(j, id).filter { it.kind == "FAVORITE" }.map { FavoriteView(it.label!!, it.lat!!, it.lon!!, it.stopId, it.stopBookable) }
     }
 
     private fun view(ctx: RequestContext, b: Base, email: String?, phone: String?): ProfileView {
@@ -63,7 +70,7 @@ internal class JdbcPassengerProfiles(
             return ChannelView(shown, ChannelStatus.valueOf(row.second), row.third)
         }
         return ProfileView(b.id, b.status, b.locale, b.createdAt, b.revision, channel(ContactChannel.EMAIL, email), channel(ContactChannel.PHONE, phone),
-            b.prefs.filter { it.kind == "FAVORITE" }.map { FavoriteView(it.label!!, it.stopId!!) }, b.prefs.filter { it.kind == "PREFERRED_STOP" }.map { it.stopId!! },
+            b.prefs.filter { it.kind == "FAVORITE" }.map { FavoriteView(it.label!!, it.lat!!, it.lon!!, it.stopId, it.stopBookable) }, b.prefs.filter { it.kind == "PREFERRED_STOP" }.map { it.stopId!! },
             b.prefs.filter { it.kind == "NOTIFICATION_CHANNEL" }.map { it.channel!! })
     }
 
@@ -74,10 +81,17 @@ internal class JdbcPassengerProfiles(
         val id = p[0] as UUID
         val contacts = j.query("SELECT channel, contact_token, status, verified_at FROM taktovia.passenger_contact WHERE passenger_id = ?",
             { rs, _ -> rs.getString(1) to Triple(rs.getString(2), rs.getString(3), rs.getTimestamp(4)?.toInstant()) }, id).toMap()
-        val prefs = j.query("SELECT kind, label, stop_id, channel FROM taktovia.passenger_preference WHERE passenger_id = ? ORDER BY kind, position",
-            { rs, _ -> Pref(rs.getString(1), rs.getString(2), rs.getObject(3, UUID::class.java), rs.getString(4)) }, id)
+        val prefs = loadPrefs(j, id)
         return Base(id, p[1] as String, p[2] as String, p[3] as Instant, p[4] as Long, contacts, prefs)
     }
+
+    /** stop_bookable: der Haltepunkt hat heute eine wirksame, aktive Revision (Deaktivierung = neue Revision mit active = false). */
+    private fun loadPrefs(j: JdbcOperations, id: UUID): List<Pref> =
+        j.query("""SELECT kind, label, stop_id, channel, ST_X(point), ST_Y(point),
+                |  (stop_id IS NOT NULL AND EXISTS (SELECT 1 FROM taktovia.stop_revision s WHERE s.tenant_id = p.tenant_id AND s.stop_id = p.stop_id AND s.active
+                |     AND s.valid_from <= clock_timestamp() AND (s.valid_to IS NULL OR s.valid_to > clock_timestamp())))
+                |  FROM taktovia.passenger_preference p WHERE passenger_id = ? ORDER BY kind, position""".trimMargin(),
+            { rs, _ -> Pref(rs.getString(1), rs.getString(2), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getObject(5) as Double?, rs.getObject(6) as Double?, rs.getBoolean(7)) }, id)
 
     override fun update(ctx: RequestContext, expectedRevision: Long, patch: ProfilePatch): ProfileView {
         if (patch.isEmpty) throw ProblemException.invalid(Violation("/", ViolationCode.REQUIRED))
@@ -96,9 +110,9 @@ internal class JdbcPassengerProfiles(
         patch.locale?.let { if (it !in settings.locales) throw ProblemException.invalid(Violation("/locale", ViolationCode.NOT_IN_ENUM)) }
         val changed = linkedSetOf<String>()
         patch.locale?.let { changed += "locale" }
-        patch.favorites?.let { f -> checkFavorites(j, ctx, f); replace(j, id, "FAVORITE", f.mapIndexed { i, x -> arrayOf<Any?>(i, x.label, x.stopId, null) }); changed += "favorites" }
-        patch.preferredStops?.let { s -> checkStops(j, ctx, s, "/preferred_stops"); replace(j, id, "PREFERRED_STOP", s.mapIndexed { i, x -> arrayOf<Any?>(i, null, x, null) }); changed += "preferred_stops" }
-        patch.notificationChannels?.let { c -> checkChannels(c); replace(j, id, "NOTIFICATION_CHANNEL", c.mapIndexed { i, x -> arrayOf<Any?>(i, null, null, x) }); changed += "notification_channels" }
+        patch.favorites?.let { f -> val pts = checkFavorites(j, ctx, f); replace(j, id, "FAVORITE", f.mapIndexed { i, x -> arrayOf<Any?>(i, x.label, x.stopId, null, pts[i]) }); changed += "favorites" }
+        patch.preferredStops?.let { s -> checkStops(j, ctx, s, "/preferred_stops"); replace(j, id, "PREFERRED_STOP", s.mapIndexed { i, x -> arrayOf<Any?>(i, null, x, null, null) }); changed += "preferred_stops" }
+        patch.notificationChannels?.let { c -> checkChannels(c); replace(j, id, "NOTIFICATION_CHANNEL", c.mapIndexed { i, x -> arrayOf<Any?>(i, null, null, x, null) }); changed += "notification_channels" }
 
         val newEmail = patch.email?.let { Contacts.normalize(ContactChannel.EMAIL, it, "/contact/email") }
         val newPhone = patch.phone?.let { Contacts.normalize(ContactChannel.PHONE, it, "/contact/phone") }
@@ -141,23 +155,39 @@ internal class JdbcPassengerProfiles(
 
     private fun replace(j: JdbcOperations, id: UUID, kind: String, rows: List<Array<Any?>>) {
         j.update("DELETE FROM taktovia.passenger_preference WHERE passenger_id = ? AND kind = ?", id, kind)
-        rows.forEach { r -> j.update("INSERT INTO taktovia.passenger_preference (tenant_id, id, passenger_id, kind, position, label, stop_id, channel) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?)",
-            UUID.randomUUID(), id, kind, r[0], r[1], r[2], r[3]) }
+        rows.forEach { r -> j.update("INSERT INTO taktovia.passenger_preference (tenant_id, id, passenger_id, kind, position, label, stop_id, channel, point) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, CASE WHEN CAST(? AS text) IS NULL THEN NULL ELSE ST_GeomFromText(CAST(? AS text), 4326) END)",
+            UUID.randomUUID(), id, kind, r[0], r[1], r[2], r[3], r[4], r[4]) }
     }
 
-    private fun checkFavorites(j: JdbcOperations, ctx: RequestContext, f: List<FavoriteView>) {
+    /** Prüft die Favoriten und liefert je Favorit die Koordinate als WKT (`POINT(lon lat)`); ohne Koordinate wird sie aus dem Haltepunkt abgeleitet. */
+    private fun checkFavorites(j: JdbcOperations, ctx: RequestContext, f: List<FavoriteInput>): List<String> {
         if (f.size > MAX_FAVORITES) throw ProblemException.invalid(Violation("/favorites", ViolationCode.TOO_MANY_ITEMS))
-        f.forEachIndexed { i, x -> if (x.label.isBlank() || x.label.length > 80) throw ProblemException.invalid(Violation("/favorites/$i/label", ViolationCode.INVALID_VALUE)) }
-        checkStops(j, ctx, f.map { it.stopId }, "/favorites", "/stop_id")
+        f.forEachIndexed { i, x ->
+            if (x.label.isBlank() || x.label.length > 80) throw ProblemException.invalid(Violation("/favorites/$i/label", ViolationCode.INVALID_VALUE))
+            if ((x.lat == null) != (x.lon == null)) throw ProblemException.invalid(Violation("/favorites/$i/${if (x.lat == null) "lat" else "lon"}", ViolationCode.REQUIRED))
+            if (x.lat == null && x.stopId == null) throw ProblemException.invalid(Violation("/favorites/$i/lat", ViolationCode.REQUIRED))
+            if (x.lat != null && x.lon != null) {
+                if (!x.lat.isFinite() || x.lat !in -90.0..90.0 || (x.lat == 0.0 && x.lon == 0.0)) throw ProblemException.invalid(Violation("/favorites/$i/lat", ViolationCode.INVALID_VALUE))
+                if (!x.lon.isFinite() || x.lon !in -180.0..180.0) throw ProblemException.invalid(Violation("/favorites/$i/lon", ViolationCode.INVALID_VALUE))
+            }
+        }
+        checkStops(j, ctx, f.mapNotNull { it.stopId }, "/favorites", "/stop_id", f.map { it.stopId })
+        return f.map { x ->
+            if (x.lat != null && x.lon != null) "POINT(${x.lon} ${x.lat})"
+            else j.queryForObject("SELECT ST_AsText(point) FROM taktovia.stop_revision WHERE stop_id = ? ORDER BY revision DESC LIMIT 1", String::class.java, x.stopId)!!
+        }
     }
 
-    private fun checkStops(j: JdbcOperations, ctx: RequestContext, stops: List<UUID>, base: String, suffix: String = "") {
+    private fun checkStops(j: JdbcOperations, ctx: RequestContext, stops: List<UUID>, base: String, suffix: String = "", positions: List<UUID?>? = null) {
         if (stops.size > MAX_STOPS.coerceAtLeast(MAX_FAVORITES)) throw ProblemException.invalid(Violation(base, ViolationCode.TOO_MANY_ITEMS))
         if (base == "/preferred_stops" && stops.toSet().size != stops.size) throw ProblemException.invalid(Violation(base, ViolationCode.NOT_UNIQUE))
         if (stops.isEmpty()) return
         val known = j.query("SELECT DISTINCT stop_id FROM taktovia.stop_revision WHERE stop_id = ANY(CAST(? AS uuid[]))", { rs, _ -> rs.getObject(1, UUID::class.java) }, stops.joinToString(",", "{", "}")).toSet()
         // Fixture-Haltepunkte (stop_revision); die Existenz gilt im Mandanten (RLS), fremde Haltestellen sind unbekannt
-        stops.forEachIndexed { i, s -> if (s !in known) throw ProblemException.invalid(Violation("$base/$i$suffix", ViolationCode.INVALID_VALUE)) }
+        // positions: Lage der Haltepunkte in der ursprünglichen Liste (Favoriten ohne Haltepunkt zählen mit), damit der Fehlerzeiger auf das richtige Element zeigt
+        val index = positions?.withIndex()?.filter { it.value != null }?.map { it.index } ?: stops.indices.toList()
+        stops.forEachIndexed { i, s -> if (s !in known) throw ProblemException.invalid(Violation("$base/${index[i]}$suffix", ViolationCode.INVALID_VALUE)) }
     }
 
     private fun checkChannels(c: List<String>) {

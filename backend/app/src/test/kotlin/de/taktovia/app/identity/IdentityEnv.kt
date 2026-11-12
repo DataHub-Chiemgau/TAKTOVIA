@@ -28,7 +28,7 @@ object IdentityEnv {
             "taktovia.idp.enabled=true", "taktovia.idp.issuer-uri=${idp.issuer}", "taktovia.idp.jwks-uri=${idp.jwksUri}", "taktovia.idp.audience=${idp.audience}",
             "taktovia.idp.jwks-min-refresh-seconds=0", "taktovia.idp.privileged-roles=tenant_admin,dispatcher,finance",
             "taktovia.idp.service-clients.adapter-psp=memberships:read", "taktovia.api.rate-limit.requests=1000000",
-            "taktovia.identity.context-secret=$CONTEXT_SECRET",
+            "taktovia.identity.context-secret=$CONTEXT_SECRET", "taktovia.geocoding.provider=simulator",
             "taktovia.idp.admin.base-url=${keycloak.baseUrl}", "taktovia.idp.admin.client-secret=test-admin-secret",
             *(redis?.let { arrayOf("taktovia.identity.session.redis-url=${it.url}") } ?: emptyArray()),
         )

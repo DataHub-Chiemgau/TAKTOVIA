@@ -6755,6 +6755,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "point",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Koordinate eines Ortsfavoriten (WGS84), vom Fahrgast bestaetigt (WP-M2-36)"
+        },
+        {
           "spalte": "position",
           "personenbezogen": "nein",
           "zweck": "KONTAKT_UND_UNTERSTUETZUNG",

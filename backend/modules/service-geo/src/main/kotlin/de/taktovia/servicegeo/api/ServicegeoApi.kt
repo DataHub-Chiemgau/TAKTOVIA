@@ -31,6 +31,8 @@ interface ServicegeoApi {
     val stops: Stops
     /** Start-/Zielzulässigkeit nach Zonen und erlaubten Zielpunkten (WP-M2-06). */
     val relations: RelationRules
+    /** Ortssuche mit fünf Eingabearten (WP-M2-38). */
+    val places: PlaceSearch
 
     companion object {
         /** Modellregel-Validator der Dienstkonfiguration (WP-M1-25) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi`, damit es keinen Verdrahtungszyklus gibt. */
@@ -41,8 +43,9 @@ interface ServicegeoApi {
 
         /** [config] liefert die erste Konfigurationsrevision eines neuen Dienstes (OP-35) in derselben Transaktion. */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,
-            outbox: Outbox = Outbox()): ServicegeoApi =
-            ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer, outbox)
+            outbox: Outbox = Outbox(),
+            geocoder: Geocoder = Geocoder.unavailable(), geocoderTimeout: java.time.Duration = java.time.Duration.ofSeconds(2)): ServicegeoApi =
+            ServicegeoServicesFactory.create(ctxTx, audit, config, clock, authorizer, outbox, geocoder, geocoderTimeout)
     }
 }
 

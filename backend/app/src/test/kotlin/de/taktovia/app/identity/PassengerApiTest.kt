@@ -167,6 +167,27 @@ class PassengerApiTest {
         assertEquals(200, changed.status, changed.text); assertEquals("UNVERIFIED", changed.json["contact"]["email"]["status"].asString())
     }
 
+    @Test fun favoriten_mit_koordinate_ueber_api_und_ungueltige_werte_422() {
+        val p = verifiedPassenger(); val st = stop(p.tenant)
+        val rev = env.get("/v1/me/profile", p.token).json["revision"].asLong()
+        val ok = patch(p.token, """{"favorites":[{"label":"Zuhause","lat":48.775,"lon":9.182},{"label":"Halt","stop_id":"$st"}]}""", rev)
+        assertEquals(200, ok.status, ok.text)
+        val favs = ok.json["favorites"]
+        assertEquals(48.775, favs[0]["lat"].asDouble(), 1e-9); assertEquals(true, favs[0]["stop_id"].isNull); assertEquals(false, favs[0]["stop_bookable"].asBoolean())
+        assertEquals(st.toString(), favs[1]["stop_id"].asString()); assertEquals(true, favs[1]["stop_bookable"].asBoolean())
+        val cur = ok.json["revision"].asLong()
+        for ((body, pointer) in listOf(
+            """{"favorites":[{"label":"X","lat":95,"lon":9}]}""" to "/favorites/0/lat",
+            """{"favorites":[{"label":"X","lat":0,"lon":0}]}""" to "/favorites/0/lat",
+            """{"favorites":[{"label":"X","lat":"48","lon":9}]}""" to "/favorites/0/lat",
+            """{"favorites":[{"label":"X","stop_id":"${UUID.randomUUID()}"}]}""" to "/favorites/0/stop_id",
+        )) {
+            val r = patch(p.token, body, cur)
+            assertEquals(422, r.status, r.text); assertEquals(pointer, r.json["violations"][0]["pointer"].asString())
+        }
+        assertEquals(422, patch(p.token, """{"favorites":[{"label":"X","lat":48,"lon":9,"extra":1}]}""", cur).status, "unbekanntes Feld")
+    }
+
     @Test fun brute_force_ueber_api_ergibt_429_mit_retry_after() {
         val t = env.tenant("Brute-" + UUID.randomUUID()); val subject = UUID.randomUUID(); val token = enrolmentToken(subject, t); val email = "brute.${UUID.randomUUID().toString().take(6)}@example.org"
         assertEquals(201, register(token, email).status)

@@ -1412,6 +1412,29 @@ export interface GeoStopCreate {
   valid_to?: Timestamp | null;
 }
 
+export interface PlaceHit {
+  type: 'ADDRESS' | 'POI' | 'STOP' | 'FAVORITE' | 'MAP_POINT';
+  label: string;
+  point: Point;
+  stop_id: UUID | null;
+  source: string;
+  data_as_of: string;
+  service_area: 'INSIDE' | 'OUTSIDE' | 'UNKNOWN';
+  nearest_stop: PlaceNearestStop | null;
+}
+
+export interface PlaceNearestStop {
+  stop_id: UUID;
+  name: string;
+  distance_m: number;
+}
+
+export interface PlaceSearchResult {
+  items: PlaceHit[];
+  notices: ('GEOCODER_UNAVAILABLE' | 'NO_MATCH')[];
+  as_of: string;
+}
+
 export interface GeoStopPage {
   items: GeoStop[];
   next_cursor: string | null;
@@ -1697,7 +1720,17 @@ export interface Profile {
 
 export interface Favorite {
   label: string;
-  stop_id: UUID;
+  lat: number;
+  lon: number;
+  stop_id: UUID | null;
+  stop_bookable: boolean;
+}
+
+export interface FavoriteInput {
+  label: string;
+  lat?: number;
+  lon?: number;
+  stop_id?: UUID;
 }
 
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'SMS';
@@ -1708,7 +1741,7 @@ export interface ProfileUpdate {
     email?: string;
     phone?: string;
   };
-  favorites?: Favorite[];
+  favorites?: FavoriteInput[];
   preferred_stops?: UUID[];
   notification_channels?: NotificationChannel[];
 }
@@ -2937,6 +2970,13 @@ export interface Operations {
     body: GeoServiceAreaUpdate;
     response: GeoServiceArea;
   };
+  searchPlaces: {
+    path: Record<string, never>;
+    query: { q?: string; map_latitude?: number; map_longitude?: number; bias_latitude?: number; bias_longitude?: number; service_id?: UUID; limit?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: PlaceSearchResult;
+  };
   listStops: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp; near_latitude?: number; near_longitude?: number; near_radius_m?: number; active?: boolean };
@@ -3678,6 +3718,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  searchPlaces: { method: 'GET', path: '/v1/places', pathParams: [], query: ['q', 'map_latitude', 'map_longitude', 'bias_latitude', 'bias_longitude', 'service_id', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at', 'near_latitude', 'near_longitude', 'near_radius_m', 'active'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
