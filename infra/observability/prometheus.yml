@@ -6,11 +6,13 @@ global:
 rule_files:
   - /etc/prometheus/alert-rules.yml
   - /etc/prometheus/operator-alert-rules.yml
+  # WP-M5-04: Alarmregeln der kritischen Fehlerszenarien (Katalog: infra/alerting/katalog.yaml)
+  - /etc/prometheus/alert-rules.d/*.yml
 
-# Alarmkanal: PLATZHALTER. Alarmierung ist erst M5; bewusst kein Alertmanager-Ziel konfiguriert.
-# alerting:
-#   alertmanagers:
-#     - static_configs: [{ targets: ["alertmanager:9093"] }]   # Kanal/Empfaenger offen (D-12 Betriebsrolle)
+# Alarmierung (WP-M5-04): genau ein Alertmanager-Ziel; Empfängerkanal und Totmannprüfung siehe infra/alerting/. Empfänger je Umgebung offen (D-12, OP-32/OP-39). NICHT gestartet (kein Docker).
+alerting:
+  alertmanagers:
+    - static_configs: [{ targets: ["alertmanager:9093"] }]
 
 scrape_configs:
   - job_name: otel-collector
@@ -32,3 +34,16 @@ scrape_configs:
     static_configs: [{ targets: ["redis-exporter:9121"], labels: { component: redis } }]
   - job_name: postgres
     static_configs: [{ targets: ["postgres-exporter:9187"], labels: { component: postgres } }]
+  # WP-M5-04: Gateway von außen (blackbox_exporter: Erreichbarkeit und Zertifikatsablauf) und die Alarmkette selbst
+  - job_name: gateway-probe
+    metrics_path: /probe
+    params: { module: [https_2xx] }
+    static_configs: [{ targets: ["https://gateway.taktovia.invalid/health"], labels: { component: gateway } }]   # Ziel je Umgebung (Domäne aus umgebungsmatrix.json)
+    relabel_configs:
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [__param_target], target_label: instance }
+      - { target_label: __address__, replacement: "blackbox-exporter:9115" }
+  - job_name: alertmanager
+    static_configs: [{ targets: ["alertmanager:9093"], labels: { component: alarmkette } }]
+  - job_name: prometheus
+    static_configs: [{ targets: ["localhost:9090"], labels: { component: alarmkette } }]

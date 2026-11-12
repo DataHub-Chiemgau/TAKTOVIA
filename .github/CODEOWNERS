@@ -8,6 +8,9 @@
 /db/                           @DataHub-Chiemgau/plattform
 /docs/                         @DataHub-Chiemgau/plattform
 /infra/                        @DataHub-Chiemgau/plattform
+# Alarmregeln und Alarmierung (WP-M5-04): Anlegen und Ändern nur durch Betrieb/Plattform (Review-Pflicht)
+/infra/alerting/               @DataHub-Chiemgau/plattform
+/infra/observability/alert-rules.d/ @DataHub-Chiemgau/plattform
 /tests/                        @DataHub-Chiemgau/plattform
 /tools/                        @DataHub-Chiemgau/plattform
 /backend/                      @DataHub-Chiemgau/plattform

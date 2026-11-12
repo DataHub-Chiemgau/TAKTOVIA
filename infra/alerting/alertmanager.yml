@@ -1,18 +1,47 @@
-# Alarmweiterleitung (WP-M1-47). STATUS: statisch geprüft (infra/check.py), NICHT gestartet (kein Docker).
-# Genau ein Empfängerkanal je Umgebung; Adresse ausschließlich aus der eingehängten Secret-Datei (Secret-Referenz
-# secret://taktovia-<umgebung>-secrets/alert_channel_credential), nie als Klartext in dieser Datei.
-# Lokal und in CI zeigt die Secret-Datei auf den Test-Empfänger (infra/alerting/test_receiver.py).
+# Alarmweiterleitung (WP-M1-47, erweitert in WP-M5-04). STATUS: statisch geprüft (infra/check.py, infra/check_alerting.py), NICHT gestartet (kein Docker).
+# Genau EIN Empfängerkanal für Alarme je Umgebung (`betreiber`); Adresse ausschließlich aus der eingehängten Secret-Datei (Secret-Referenz
+# secret://taktovia-<umgebung>-secrets/alert_channel_credential), nie als Klartext in dieser Datei. Lokal und in CI zeigt die Secret-Datei auf den Test-Empfänger (infra/alerting/test_receiver.py).
+# Daneben der Herzschlag-Empfänger `totmann` (unabhängige Totmannprüfung, infra/alerting/deadman.py, Secret `deadman_credential`): er ist kein Alarmkanal, sondern der Prüfer der Kette selbst.
+# Der Empfänger einer Regel steht als Etikett `empfaenger` im Alarm (Katalog infra/alerting/katalog.yaml); die Rufbereitschaft (D-05) hängt hinter dem einen Kanal.
 route:
   receiver: betreiber
-  group_by: [source, kind]          # gleichartige Warnungen -> ein Alarm
+  group_by: [source, kind]          # gleichartige Betreiberwarnungen (WP-M1-47) -> ein Alarm
   group_wait: 10s
   group_interval: 5m
   repeat_interval: 4h
+  routes:
+    # Herzschlag der Kette an die Totmannprüfung: minütlich, nie an den Alarmkanal
+    - matchers: [alertname="Watchdog"]
+      receiver: totmann
+      group_by: [alertname]
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 1m
+    # Kritische Fehlerszenarien (WP-M5-04): ein offener Alarm je Szenario und Komponente; kritisch wiederholt stündlich, Warnung alle 4 h
+    - matchers: [scenario=~".+", severity="critical"]
+      receiver: betreiber
+      group_by: [alertname, component]
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 1h
+    - matchers: [scenario=~".+"]
+      receiver: betreiber
+      group_by: [alertname, component]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
 receivers:
   - name: betreiber
     webhook_configs:
       - url_file: /run/secrets/alert_channel_credential
         send_resolved: true
         max_alerts: 20
+        http_config:
+          tls_config: { min_version: TLS12 }
+  - name: totmann
+    webhook_configs:
+      - url_file: /run/secrets/deadman_credential
+        send_resolved: false
+        max_alerts: 1
         http_config:
           tls_config: { min_version: TLS12 }
