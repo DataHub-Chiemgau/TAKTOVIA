@@ -73,3 +73,8 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 ## Modulzugänge der M4-Module (WP-M4-64)
 
 `db.py bootstrap` legt neben Migrator, Runtime und `taktovia_fields` die Anmeldungen `taktovia_mod_stafftime`, `taktovia_mod_docsfin` und `taktovia_mod_analytics` an (Passwörter `TAKTOVIA_DB_MODULE_PASSWORD_STAFFTIME|DOCSFIN|ANALYTICS`; in Staging und Produktion ausdrücklich setzen). Jede darf nur die Tabellen ihres Moduls (`table_owners.d`, gespiegelt nach `taktovia_meta.table_owner`) mit den DML-Rechten der Runtime-Rolle benutzen (`R__zz_modulzugaenge_m4_64.sql`, mit `-- repeat: always`: läuft erneut, wenn sich Tabellen, Besitz oder andere Rechtedateien ändern). **Neue Tabelle eines M4-Moduls:** Eintrag in `table_owners.d/<wp>.csv` und in `m4_tabellenkatalog.csv` (Klasse `APPEND_ONLY`, `FREIGABE_UNVERAENDERLICH` oder `VERAENDERLICH`); `test_m4_64_katalog.py` scheitert sonst. Vertrag: [m4-modulzugaenge.md](../docs/umsetzungsplan/vertraege/m4-modulzugaenge.md).
+
+## Fahrzeugpool: Dienstzuordnung (WP-M3-06)
+
+`V3060__fahrzeugpool_zuordnung.sql` erweitert `vehicle_pool_assignment` (V2020) additiv um `service_area_id` (Fremdschlüssel `(tenant_id, service_id, service_area_id) -> service_area`, dafür `UNIQUE (tenant_id, service_id, id)` an `service_area`) und macht die Zuordnung unveränderlich (Trigger `vehicle_pool_assignment_guard`: nie löschen, nur das Ende eines laufenden Intervalls setzen, Revision +1). Die Runtime-Rolle darf jetzt `SELECT, INSERT` und `UPDATE (valid_to)` (`R__runtime_grants_m3_06.sql`, Rollenmatrix in `role_matrix.d/m2-02.csv` angepasst). Das Überlappungsverbot gilt je Dienst und Fahrzeug, nicht je Fahrzeug. `vehicle_assignment` (V1340) bleibt die Rollentabelle (Fahrzeug zu Organisation).
+

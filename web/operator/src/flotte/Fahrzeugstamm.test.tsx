@@ -60,6 +60,12 @@ function setup(handler: Handler, scopes = ['me:read', 'fleet:read', 'fleet:write
       if (id === 'getMe') return Promise.resolve(sampleMe({ roles: ['dispatcher'], scopes }));
       if (id === 'listOrganizations')
         return Promise.resolve({ items: [ORG], next_cursor: null, as_of: '2026-11-11T08:00:00Z' });
+      if (
+        id === 'listVehicleServiceAssignments' ||
+        id === 'listServices' ||
+        id === 'listServiceAreas'
+      )
+        return Promise.resolve({ items: [], next_cursor: null, as_of: '2026-11-11T08:00:00Z' });
       try {
         return Promise.resolve(handler(id, args));
       } catch (e) {

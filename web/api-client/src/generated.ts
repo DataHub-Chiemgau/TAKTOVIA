@@ -893,6 +893,42 @@ export interface DriverClearancePage {
   as_of: string;
 }
 
+export interface CommittedRide {
+  booking_id: UUID;
+  state: string;
+  pickup_earliest: string;
+  pickup_latest: string;
+}
+
+export interface VehicleServiceAssignmentCreate {
+  service_id: UUID;
+  service_area_id?: UUID | null;
+  valid_from: string;
+  valid_to?: string | null;
+}
+
+export interface VehicleServiceAssignmentEnd {
+  valid_to: string;
+}
+
+export interface VehicleServiceAssignment {
+  id: UUID;
+  vehicle_id: UUID;
+  service_id: UUID;
+  service_area_id: UUID | null;
+  valid_from: string;
+  valid_to: string | null;
+  revision: number;
+  created_at: string;
+  committed_rides_after_end: CommittedRide[];
+}
+
+export interface VehicleServiceAssignmentPage {
+  items: VehicleServiceAssignment[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export type VehicleOperationalState = 'NOT_READY' | 'RELEASE_PENDING' | 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'BLOCKED' | 'RESTRICTED' | 'ENDED';
 
 export interface MissingRequirement {
@@ -2722,6 +2758,27 @@ export interface Operations {
     body: CapacityPatch;
     response: CapacityConfiguration;
   };
+  listVehicleServiceAssignments: {
+    path: { vehicle_id: UUID };
+    query: { as_of?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleServiceAssignmentPage;
+  };
+  createVehicleServiceAssignment: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: VehicleServiceAssignmentCreate;
+    response: VehicleServiceAssignment;
+  };
+  endVehicleServiceAssignment: {
+    path: { vehicle_id: UUID; assignment_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: VehicleServiceAssignmentEnd;
+    response: VehicleServiceAssignment;
+  };
   listServiceAreas: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; service_id?: UUID };
@@ -3434,6 +3491,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
+  listVehicleServiceAssignments: { method: 'GET', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: ['as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  endVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end', pathParams: ['vehicle_id', 'assignment_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 422, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

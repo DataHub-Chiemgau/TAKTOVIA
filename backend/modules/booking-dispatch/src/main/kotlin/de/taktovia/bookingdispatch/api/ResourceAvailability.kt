@@ -1,6 +1,7 @@
 package de.taktovia.bookingdispatch.api
 
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.geo.GeoPoint
 import org.springframework.jdbc.core.JdbcOperations
 import java.time.Instant
 import java.util.UUID
@@ -14,8 +15,10 @@ data class TimeWindow(val from: Instant, val to: Instant) {
 enum class Unusable {
     /** Fahrzeug unbekannt oder (durch RLS) nicht im Mandanten sichtbar; beides ist von außen nicht unterscheidbar. */
     UNKNOWN_VEHICLE,
-    /** Fahrzeug gehört im Fenster nicht zum Pool des Dienstes (OP-43). */
+    /** Fahrzeug gehört zum Fensterbeginn nicht zum Pool des Dienstes (OP-43): nie zugeordnet, noch nicht begonnen oder abgelaufen (`valid_to` exklusiv), WP-M3-06. */
     NOT_IN_POOL,
+    /** Zuordnung gültig, aber mit Gebietsbezug und ein übergebener Ort liegt nicht im zum Fensterbeginn gültigen Gebiet oder es wurde kein Ort übergeben (nicht prüfbar: fail closed), WP-M3-06. */
+    OUTSIDE_SERVICE_AREA,
     /** Fahrzeug deaktiviert (`vehicle.active = false`, Fahrzeugstamm WP-M3-03): wird nicht neu disponiert, bleibt in Historie und Nachweisen lesbar. */
     VEHICLE_INACTIVE,
     /** `active_block = true`: Sperre des Fahrzeugs (Sicherheit). */
@@ -59,12 +62,21 @@ data class AvailabilitySnapshot(
  * - **Schreiben:** nie. Die Tabellen gehören `fleet-safety`/`staff-time`.
  */
 interface ResourceAvailability {
-    /** Einsetzbare Fahrzeuge des Pools von [serviceId], die im ganzen [window] eine deckende Schicht und eine gültige Freigabe haben, sortiert nach Fahrzeug-ID. */
-    fun usableVehicles(ctx: RequestContext, serviceId: UUID, window: TimeWindow): AvailabilitySnapshot
+    /**
+     * Einsetzbare Fahrzeuge des Pools von [serviceId], die im ganzen [window] eine deckende Schicht und eine gültige Freigabe haben, sortiert nach Fahrzeug-ID. [locations]: Orte der Fahrt
+     * (Abholung, Ziel), die im Bediengebiet der Dienstzuordnung liegen müssen, soweit die Zuordnung ein Gebiet hat (WP-M3-06; welche Orte maßgeblich sind, legt der Aufrufer fest, OP-25).
+     */
+    fun usableVehicles(ctx: RequestContext, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint> = emptyList()): AvailabilitySnapshot
 
     /** Einsetzbarkeit eines einzelnen Fahrzeugs für den Dienst und das Fenster. */
-    fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability
+    fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint> = emptyList()): VehicleAvailability
 
     /** Wie [check] innerhalb einer laufenden Transaktion des Aufrufers (Hold prüft unter dem Kapazitätslock erneut, Kap. 01 §1.4 Schritt 5); der Mandant ist der der Transaktion. */
-    fun check(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow): VehicleAvailability
+    fun check(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint> = emptyList()): VehicleAvailability
+
+    /**
+     * Nur die zeitliche Zuordnung (WP-M3-06): ist das Fahrzeug dem Dienst zum Zeitpunkt [at] zugeordnet? Der Zusage-Commit (Bestätigung) prüft das unter dem Lock erneut, damit nach dem
+     * Ende einer Zuordnung keine neue Zusage entsteht. Läuft in der Transaktion des Aufrufers.
+     */
+    fun isAssigned(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, at: Instant): Boolean
 }

@@ -1,2 +1,2 @@
 table;runtime_privileges;note
-vehicle_pool_assignment;SELECT;WP-M2-02: Fahrzeugpool je Dienst; nur lesen (Pflege durch Seed unter Migrator, später WP-M3-06)
+vehicle_pool_assignment;SELECT,INSERT;WP-M2-02/WP-M3-06: Fahrzeugpool je Dienst (Dienstzuordnung); UPDATE nur auf valid_to (Spaltenrecht, Trigger vehicle_pool_assignment_guard), kein DELETE

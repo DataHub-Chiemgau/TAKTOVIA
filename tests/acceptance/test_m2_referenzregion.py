@@ -79,14 +79,19 @@ class ReferenzregionDb(unittest.TestCase):
         finally:
             c.close()
 
-    def test_4_runtime_darf_den_pool_nicht_schreiben(self):
+    def test_4_runtime_pflegt_den_pool_nur_anhaengend_und_nur_im_eigenen_mandanten(self):
+        """Seit WP-M3-06 pflegt die Runtime-Rolle die Dienstzuordnung (Anhängen, Ende setzen); löschen und fremde Mandanten bleiben ausgeschlossen."""
         import psycopg
         c = atdb.runtime_conn(DB)
         try:
             atdb.set_tenant(c, rr.TENANTS["a"])
-            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):   # kein Löschen
+                c.execute("DELETE FROM taktovia.vehicle_pool_assignment WHERE tenant_id = %s", (rr.TENANTS["a"],))
+            c.rollback()
+            atdb.set_tenant(c, rr.TENANTS["a"])
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):   # Zeile eines fremden Mandanten (RLS)
                 c.execute("INSERT INTO taktovia.vehicle_pool_assignment(tenant_id,id,service_id,vehicle_id,valid_from,created_by) VALUES (%s,%s,%s,%s,now(),'system:t')",
-                          (rr.TENANTS["a"], rr.fixture_id("a", "x"), rr.fixture_id("a", "svc-nord"), rr.fixture_id("a", "veh-v-std")))
+                          (rr.TENANTS["b"], rr.fixture_id("b", "x"), rr.fixture_id("b", "svc-nord"), rr.fixture_id("b", "veh-v-wc")))
         finally:
             c.rollback(); c.close()
 

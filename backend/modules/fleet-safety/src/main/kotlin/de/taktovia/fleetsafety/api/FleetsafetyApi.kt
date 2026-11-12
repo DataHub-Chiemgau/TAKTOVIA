@@ -10,7 +10,7 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 
-/** Öffentliche Ports des Moduls `fleet-safety`; wächst mit den Arbeitspaketen (bisher: Fahrzeugrollen WP-M1-34, Fahrzeugstamm WP-M3-03, Kapazitätskonfiguration WP-M3-04). */
+/** Öffentliche Ports des Moduls `fleet-safety`; wächst mit den Arbeitspaketen (bisher: Fahrzeugrollen WP-M1-34, Fahrzeugstamm WP-M3-03, Kapazitätskonfiguration WP-M3-04, Fahrzeugpool WP-M3-06). */
 interface FleetsafetyApi {
     val vehicleRoles: VehicleRoles
 
@@ -19,6 +19,9 @@ interface FleetsafetyApi {
 
     /** Kapazitäts- und Stellplatzkonfiguration (WP-M3-04). */
     val vehicleCapacities: VehicleCapacities
+
+    /** Fahrzeugpool: Dienstzuordnung mit Gültigkeitsintervall und Gebietsbezug (WP-M3-06). */
+    val vehiclePool: VehiclePool
 
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): FleetsafetyApi =

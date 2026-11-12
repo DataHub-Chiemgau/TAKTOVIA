@@ -1225,8 +1225,300 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CapacityPatch'
+  /v1/operator/vehicles/{vehicle_id}/service-assignments:
+    get:
+      summary: Dienstzuordnungen eines Fahrzeugs lesen (UI-11)
+      operationId: listVehicleServiceAssignments
+      security:
+      - oidc:
+        - fleet:read
+      description: 'Zuordnungen des Fahrzeugs zu Diensten (Fahrzeugpool, WP-M3-06, LH-6.8-FLT-002), Listenform {items,next_cursor,as_of}, nach Anlage sortiert. Filter `as_of`:
+        nur die zu diesem Zeitpunkt gültigen Zuordnungen (Intervall links geschlossen, rechts offen). Bei beendeten Zuordnungen nennt `committed_rides_after_end` die zugesagten
+        Fahrten des Dienstes auf diesem Fahrzeug, deren Abholung nach dem Ende liegt; sie bleiben sichtbar und werden nicht entfernt. Fremdes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - name: as_of
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Nur die zu diesem Zeitpunkt gültigen Zuordnungen.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleServiceAssignmentPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrzeug einem Dienst zuordnen
+      operationId: createVehicleServiceAssignment
+      security:
+      - oidc:
+        - fleet:write
+      description: 'Ordnet das Fahrzeug einem Dienst mit Gültigkeitsintervall `[valid_from, valid_to)` und optional einem Bediengebiet dieses Dienstes zu (`service_area_id`;
+        wirksam ist die zum Prüfzeitpunkt gültige Revision des Gebiets, Planungsannahme PA-02, OP-25 offen). Ein Fahrzeug kann gleichzeitig mehreren Diensten zugeordnet sein; im selben
+        Dienst überschneiden sich Zuordnungen nicht (409). Dienst, Gebiet oder Fahrzeug eines anderen Mandanten: 404. Gebiet eines anderen Dienstes: 422 an /service_area_id.
+        Genau ein Audit und ein Ereignis `vehicle.pool_assignment_created` je Anlage. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleServiceAssignment'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleServiceAssignmentCreate'
+  /v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end:
+    post:
+      summary: Dienstzuordnung beenden
+      operationId: endVehicleServiceAssignment
+      security:
+      - oidc:
+        - fleet:write
+      description: 'Setzt das Ende (`valid_to`, exklusiv) einer laufenden Zuordnung (If-Match: Revision der Zuordnung, ohne 428, veraltet 412); das Ende darf nicht vor dem Beginn und nicht in der Vergangenheit liegen (422). Bereits beendete
+        Zuordnung: 409 INVALID_STATE_TRANSITION. Ab dem Ende erhält das Fahrzeug aus diesem Dienst keine neue Fahrt. Bereits zugesagte Fahrten bleiben unverändert sichtbar; sie stehen
+        in `committed_rides_after_end` und im Ereignis `vehicle.pool_assignment_ended` als Hinweis an die Leitstelle (kein stilles Entfernen). Die Beendigung wird mit einem Hold
+        desselben Fahrzeugs serialisiert: entweder ist der Hold zugesagt (und erscheint als Hinweis) oder er wird abgewiesen. Fremde Zuordnung: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Zuordnungs-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleServiceAssignment'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleServiceAssignmentEnd'
 components:
   schemas:
+    CommittedRide:
+      type: object
+      additionalProperties: false
+      description: Zugesagte Fahrt, die nach dem Ende einer Dienstzuordnung liegt (Hinweis an die Leitstelle).
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          maxLength: 40
+        pickup_earliest:
+          type: string
+          format: date-time
+        pickup_latest:
+          type: string
+          format: date-time
+      required:
+      - booking_id
+      - state
+      - pickup_earliest
+      - pickup_latest
+    VehicleServiceAssignmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_area_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Bediengebiet des Dienstes (eine Revision der Gebietskette); ohne Angabe gilt keine geografische Einschränkung.
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ende (exklusiv); ohne Angabe unbegrenzt.
+      required:
+      - service_id
+      - valid_from
+    VehicleServiceAssignmentEnd:
+      type: object
+      additionalProperties: false
+      properties:
+        valid_to:
+          type: string
+          format: date-time
+          description: Ende der Zuordnung (exklusiv); nicht vor dem Beginn, nicht in der Vergangenheit.
+      required:
+      - valid_to
+    VehicleServiceAssignment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_area_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        committed_rides_after_end:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/CommittedRide'
+          description: Nur bei beendeten Zuordnungen; leer, wenn keine zugesagte Fahrt nach dem Ende liegt.
+      required:
+      - id
+      - vehicle_id
+      - service_id
+      - service_area_id
+      - valid_from
+      - valid_to
+      - revision
+      - created_at
+      - committed_rides_after_end
+    VehicleServiceAssignmentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleServiceAssignment'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
     VehicleOperationalState:
       type: string
       description: Betriebszustand des Fahrzeugs aus Sicht der Leitstelle (Zustandsautomat fahrzeug_dienststatus.md, abgeleitet aus Sperren, Einsatzfreigabe

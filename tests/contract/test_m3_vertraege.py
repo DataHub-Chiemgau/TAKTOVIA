@@ -54,6 +54,8 @@ VALID = {
     # WP-M3-03/-04: Fahrzeugstamm und Kapazitätskonfiguration
     'VehicleMasterWrite': {'vehicle_label': 'KA-100', 'vehicle_type': 'PKW', 'operator_organization_id': U1, 'capacity': {'seats': 4, 'wheelchair': 1}, 'equipment': ['RAMP'], 'active': True},
     'CapacityPatch': {'combinations': [{'code': 'STANDARD', 'wheelchair_places': 0}], 'active_combination': 'STANDARD'},
+    'VehicleServiceAssignmentCreate': {'service_id': U1, 'service_area_id': None, 'valid_from': '2026-12-01T00:00:00Z', 'valid_to': None},
+    'VehicleServiceAssignmentEnd': {'valid_to': '2027-01-01T00:00:00Z'},
 }
 # Je Schema: Mutation, die ein Pflichtfeld entfernt, bzw. einen unzulässigen Wert setzt
 BROKEN = {
@@ -74,6 +76,8 @@ BROKEN = {
     'DriverDeviceRegister': ('platform', 'WINDOWS'),
     'VehicleMasterWrite': ('capacity', {'seats': -1, 'wheelchair': 1}),
     'CapacityPatch': ('active_combination', 'klein'),
+    'VehicleServiceAssignmentCreate': ('valid_from', 'gestern'),
+    'VehicleServiceAssignmentEnd': ('valid_to', 'morgen'),
 }
 
 

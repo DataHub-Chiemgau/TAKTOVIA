@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.pool_assignment_ended.v1.schema.json",
+  "title": "Dienstzuordnung des Fahrzeugs beendet, Ereignistyp vehicle.pool_assignment_ended (WP-M3-06, LH-6.8-FLT-002)",
+  "description": "Genau ein Ereignis je Beendigung. Hinweis an die Leitstelle: `committed_booking_ids` nennt die zugesagten Fahrten des Dienstes auf diesem Fahrzeug, deren Abholung (spätestens) ab dem Ende liegt; sie bleiben unverändert bestehen und werden nicht still entfernt, die Leitstelle entscheidet über eine Umplanung. Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist `assignment_id`, `aggregate_revision` die neue Revision der Zuordnung (2). Das Ereignis bleibt im Mandanten. Keine Fahrgastdaten. Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["vehicle_id", "service_id", "assignment_id", "service_area_id", "valid_from", "valid_to", "revision", "committed_ride_count", "committed_booking_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": { "type": "string", "format": "uuid" },
+    "service_id": { "type": "string", "format": "uuid" },
+    "assignment_id": { "type": "string", "format": "uuid" },
+    "service_area_id": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "valid_to": { "type": "string", "format": "date-time", "description": "Ende der Zuordnung (exklusiv)." },
+    "revision": { "type": "integer", "minimum": 2 },
+    "committed_ride_count": { "type": "integer", "minimum": 0 },
+    "committed_booking_ids": { "type": "array", "maxItems": 500, "items": { "type": "string", "format": "uuid" } }
+  },
+  "examples": [
+    {
+      "vehicle_id": "00000000-0000-4000-8000-000000000006", "service_id": "00000000-0000-4000-8000-0000000000d1", "assignment_id": "00000000-0000-4000-8000-0000000000c2",
+      "service_area_id": null, "valid_from": "2030-07-01T00:00:00Z", "valid_to": "2031-01-01T00:00:00Z", "revision": 2, "committed_ride_count": 1,
+      "committed_booking_ids": ["00000000-0000-4000-8000-0000000000b1"]
+    }
+  ]
+}

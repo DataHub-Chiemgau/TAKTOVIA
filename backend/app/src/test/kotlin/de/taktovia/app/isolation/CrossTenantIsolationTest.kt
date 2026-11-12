@@ -75,6 +75,11 @@ class CrossTenantIsolationTest {
         val retentionRule = create("/v1/retention-rules", """{"data_category":"LK_PII","retention_days":30,"action":"ANONYMIZE"}""").json["id"].asString()
         // Fahrzeugstamm in B (WP-M3-03)
         val vehicleMaster = create("/v1/operator/vehicle-master", """{"vehicle_label":"ISO-B","vehicle_type":"PKW","operator_organization_id":"$org","capacity":{"seats":4,"wheelchair":1},"equipment":[],"active":true}""", b.dispatcherToken).json["id"].asString()
+        // Dienstzuordnung des Fahrzeugpools in B (WP-M3-06): Dienst, Gebiet und Zuordnung am Fahrzeug von B
+        val poolCfg = UUID.randomUUID(); val poolService = UUID.randomUUID(); val assignment = UUID.randomUUID()
+        env.exec("INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason) VALUES (?,?,'SERVICE',?,1,'1',CAST('{}' AS jsonb),'2026-01-01T00:00:00Z','user:t','Test')", b.tenant.value, poolCfg, poolService)
+        env.exec("INSERT INTO taktovia.service(tenant_id,id,operator_id,name,timezone,config_revision_id,created_by) VALUES (?,?,CAST(? AS uuid),'Dienst','Europe/Berlin',?,'user:t')", b.tenant.value, poolService, org, poolCfg)
+        env.exec("INSERT INTO taktovia.vehicle_pool_assignment(tenant_id,id,service_id,vehicle_id,valid_from,created_by) VALUES (?,?,?,CAST(? AS uuid),'2026-01-01T00:00:00Z','system:test')", b.tenant.value, assignment, poolService, vehicleMaster)
         // Fahrerstamm in B (WP-M3-05): Fahrer mit Mitgliedschaft der Rolle driver
         val driverMaster = create("/v1/drivers", """{"membership_id":"${env.grant(b.tenant, UUID.randomUUID(), "driver")}","display_name":"Erika B","contact_channel":"PHONE","contact_value":"+49170000"}""", b.plannerToken).json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
@@ -97,7 +102,7 @@ class CrossTenantIsolationTest {
                 .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
         }.toString()
         return Ids(mapOf(
-            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
+            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
@@ -164,6 +169,9 @@ class CrossTenantIsolationTest {
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
             "updateVehicleCapacity" to Probe("PATCH", "/v1/operator/vehicle-master/{vehicle_id}/capacity", """{"restrictions":[]}""", true, role = "dispatcher"),
+            "listVehicleServiceAssignments" to Probe("GET", "/v1/operator/vehicles/{vehicle_id}/service-assignments", role = "dispatcher"),
+            "createVehicleServiceAssignment" to Probe("POST", "/v1/operator/vehicles/{vehicle_id}/service-assignments", """{"service_id":"${UUID.randomUUID()}","valid_from":"2031-01-01T00:00:00Z"}""", false, role = "dispatcher"),
+            "endVehicleServiceAssignment" to Probe("POST", "/v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end", """{"valid_to":"2099-01-01T00:00:00Z"}""", true, role = "dispatcher"),
             "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
             "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),

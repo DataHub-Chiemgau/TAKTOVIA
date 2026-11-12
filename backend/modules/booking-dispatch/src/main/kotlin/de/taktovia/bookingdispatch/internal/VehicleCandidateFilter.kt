@@ -24,7 +24,7 @@ internal class VehicleCandidateFilter(
 ) : VehicleCandidates {
 
     override fun find(ctx: RequestContext, request: CandidateRequest): CandidateSearch {
-        val snap = resources.usableVehicles(ctx, request.serviceId, request.window)
+        val snap = resources.usableVehicles(ctx, request.serviceId, request.window, request.locations)
         val excluded = snap.excluded.map { ExcludedVehicle(it.vehicleId, it.reason.toExclusion()) }.toMutableList()
         val candidates = mutableListOf<VehicleCandidate>()
         for (v in snap.vehicles) {
@@ -70,6 +70,7 @@ internal class VehicleCandidateFilter(
         Unusable.NO_SHIFT -> ExclusionReason.NO_SHIFT
         Unusable.NO_VALID_RELEASE -> ExclusionReason.NO_VALID_RELEASE
         // vom Leseport für Poolmitglieder nicht geliefert; konservativ als nicht einsetzbar
+        Unusable.OUTSIDE_SERVICE_AREA -> ExclusionReason.OUTSIDE_SERVICE_AREA
         Unusable.NOT_IN_POOL, Unusable.UNKNOWN_VEHICLE -> ExclusionReason.VEHICLE_BLOCKED
     }
 }
