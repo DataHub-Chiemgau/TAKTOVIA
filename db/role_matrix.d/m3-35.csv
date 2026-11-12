@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+live_event;SELECT,INSERT,DELETE;WP-M3-35: Kanalpuffer, INSERT nur über den Outbox-Trigger (Wächter); UPDATE per Trigger verboten

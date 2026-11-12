@@ -263,3 +263,6 @@ getLedgerExportDownload;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 readLedgerExportContent;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 confirmLedgerExport;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 listExpenses;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+streamOperatorLiveEvents;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
+listOperatorLiveEvents;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
+streamDriverLiveEvents;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N

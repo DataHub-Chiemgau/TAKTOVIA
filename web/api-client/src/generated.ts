@@ -2780,6 +2780,26 @@ export interface TenantStatusChanged {
   status: TenantStatus;
 }
 
+export interface LiveEvent {
+  event_id: UUID;
+  cursor: string;
+  type: string;
+  topic: string;
+  aggregate_id: UUID;
+  aggregate_revision: number;
+  service_id: UUID | null;
+  shift_id: UUID | null;
+  status: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface LiveEventPage {
+  items: LiveEvent[];
+  next_cursor: string;
+  has_more: boolean;
+  as_of: string;
+}
+
 export interface Notification {
   id: UUID;
   event_id: UUID;
@@ -4925,6 +4945,27 @@ export interface Operations {
     body: TenantStatusChange;
     response: TenantStatusChanged;
   };
+  streamOperatorLiveEvents: {
+    path: Record<string, never>;
+    query: { after?: string; wait_seconds?: number };
+    headers: { 'Last-Event-ID'?: string; traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
+  listOperatorLiveEvents: {
+    path: Record<string, never>;
+    query: { after?: string; limit?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LiveEventPage;
+  };
+  streamDriverLiveEvents: {
+    path: Record<string, never>;
+    query: { after?: string; wait_seconds?: number };
+    headers: { 'Last-Event-ID'?: string; traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
   listNotifications: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; state?: 'QUEUED' | 'SENDING' | 'RETRY_WAIT' | 'UNKNOWN' | 'DELIVERED' | 'FAILED' | 'SUPPRESSED' };
@@ -5619,6 +5660,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateOrganization: { method: 'PUT', path: '/v1/organizations/{organization_id}', pathParams: ['organization_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['organization:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   createTenant: { method: 'POST', path: '/v1/platform/tenants', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['platform:tenants:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   changeTenantStatus: { method: 'POST', path: '/v1/platform/tenant-status-changes', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['platform:tenants:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  streamOperatorLiveEvents: { method: 'GET', path: '/v1/operator/live/events', pathParams: [], query: ['after', 'wait_seconds'], headers: ['Last-Event-ID', 'traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listOperatorLiveEvents: { method: 'GET', path: '/v1/operator/live/feed', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  streamDriverLiveEvents: { method: 'GET', path: '/v1/driver/live/events', pathParams: [], query: ['after', 'wait_seconds'], headers: ['Last-Event-ID', 'traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listNotifications: { method: 'GET', path: '/v1/notifications', pathParams: [], query: ['limit', 'cursor', 'state'], headers: ['traceparent'], hasBody: false, scopes: ['notifications:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getNotification: { method: 'GET', path: '/v1/notifications/{notification_id}', pathParams: ['notification_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['notifications:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

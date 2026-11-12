@@ -1,0 +1,234 @@
+paths:
+  /v1/operator/live/events:
+    get:
+      summary: Live-Kanal der Leitstelle (Server-Sent Events)
+      operationId: streamOperatorLiveEvents
+      security:
+      - oidc:
+        - operator:read
+      description: 'Server-Sent-Events-Strom (`text/event-stream`) mit Zustandsänderungen des eigenen Mandanten und der berechtigten Dienste (WP-M3-35, OP-05). Nachrichten tragen nur Referenzen (Aggregat, Revision, Dienst) und eine Positivliste skalarer Statusfelder, nie Rohpayloads mit Personendaten. Ablauf: `ready` (Cursor, Datenstand), je Änderung `live` mit `id` = Cursor, Kommentar-Herzschlag, am Ende `end` mit festem Grund (`max_duration`, `session_revoked`, `membership_revoked`, `unavailable`). Die Berechtigung (Sitzung, Mitgliedschaft, Dienste) wird bei **jedem** Abruf neu geprüft: nach Sitzungssperre endet das Abonnement, nach Entzug eines Dienstes folgen keine Ereignisse dieses Dienstes. Die Verbindung ist auf `wait_seconds` begrenzt; der Client verbindet mit dem letzten `id` (Header `Last-Event-ID` oder `after`) neu und lädt nach jedem Verbindungsabbruch seinen Zustand über die gewöhnlichen Listen nach. Ohne Cursor beginnt der Strom am aktuellen Stand. Rückfall bei fehlendem Kanal: `listOperatorLiveEvents`.'
+      parameters:
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        description: Cursor des zuletzt verarbeiteten Ereignisses (`id` der Nachricht bzw. `cursor` aus `ready`); der Header `Last-Event-ID` hat dieselbe Bedeutung, `after` geht vor.
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        description: Wiederaufsetzen nach Verbindungsabbruch (Standardheader von Server-Sent Events).
+      - name: wait_seconds
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 55
+          default: 25
+        description: Höchstdauer der Verbindung in Sekunden (0 = nur den Rückstand liefern und beenden).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Ereignisstrom.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/live/feed:
+    get:
+      summary: Live-Kanal der Leitstelle als Abruf (Rückfall)
+      operationId: listOperatorLiveEvents
+      security:
+      - oidc:
+        - operator:read
+      description: 'Dasselbe Protokoll als Abruf (Rückfall auf Polling bei fehlendem Strom, OP-05): Ereignisse ab `after` in Cursorreihenfolge, gleiche Berechtigung und gleiche Nachrichtenhülle wie im Strom. Ohne `after` liefert der Abruf keine Ereignisse, sondern den aktuellen Cursor (`next_cursor`) und den Datenstand (`as_of`).'
+      parameters:
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        description: Cursor des zuletzt verarbeiteten Ereignisses.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100
+          default: 50
+        description: Höchstzahl der Ereignisse je Antwort, 1 bis 100 (Standard 50).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveEventPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/driver/live/events:
+    get:
+      summary: Live-Kanal des Fahrers (Server-Sent Events)
+      operationId: streamDriverLiveEvents
+      security:
+      - oidc:
+        - driver:run
+      description: 'Wie `streamOperatorLiveEvents`, aber für den Fahrer: ausschließlich Planrevisionen (`dispatch.run_revised`) der Umläufe der **eigenen** Schichten (WP-M3-35, WP-M3-27). Die Schichtzuordnung wird bei jedem Abruf neu bestimmt. Rückfall: `listDriverPlanChanges`.'
+      parameters:
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        description: Cursor des zuletzt verarbeiteten Ereignisses.
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        description: Wiederaufsetzen nach Verbindungsabbruch.
+      - name: wait_seconds
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 55
+          default: 25
+        description: Höchstdauer der Verbindung in Sekunden (0 = nur den Rückstand liefern und beenden).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Ereignisstrom.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    LiveEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        cursor:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        type:
+          type: string
+          maxLength: 100
+          description: Ereignistyp (`<familie>.<name>`), z. B. `dispatch.run_revised`, `alert.raised`.
+        topic:
+          type: string
+          maxLength: 60
+        aggregate_id:
+          $ref: common.yaml#/components/schemas/UUID
+        aggregate_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        shift_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        status:
+          type: object
+          additionalProperties: true
+          description: Positivliste skalarer Statusfelder (Codes, Zahlen, Kennungen); nie Freitext, Namen, Adressen oder Koordinaten.
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - event_id
+      - cursor
+      - type
+      - topic
+      - aggregate_id
+      - aggregate_revision
+      - service_id
+      - shift_id
+      - status
+      - occurred_at
+      description: Nachricht des Live-Kanals; nur Referenzen und Statusfelder (WP-M3-35).
+    LiveEventPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LiveEvent'
+        next_cursor:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})$
+          maxLength: 40
+        has_more:
+          type: boolean
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - has_more
+      - as_of
