@@ -27,7 +27,7 @@
 - **Negativ:** neues, als Mobilitätsdatum markiertes Inventarfeld ohne DSFA-Referenz lässt die Prüfung scheitern; fehlender Freigabevermerk bzw. fehlendes Datum lässt die Prüfung scheitern; Maßnahme ohne WP-Verweis wird beanstandet; DSFA ohne Bewertung der Bewegungs-/Mobilitätsdaten (einschließlich der laut Pflichtenheft geplanten Standort-, Fahrer- und ETA-Daten) wird beanstandet.
 - **Konkurrierend:** nicht einschlägig (Dokument- und Gate-Prüfung, so im WP festgehalten).
 - **Referenztests:** keine Katalog-ID im WP genannt.
-- Testfälle: geplant:tests/acceptance/test_dsfa_gate.py::test_gate_besteht_mit_freigegebener_dsfa; geplant:tests/acceptance/test_dsfa_gate.py::test_mobilitaetsfeld_ohne_dsfa_referenz_scheitert; geplant:tests/acceptance/test_dsfa_gate.py::test_fehlender_freigabevermerk_scheitert; geplant:tests/acceptance/test_dsfa_gate.py::test_massnahme_ohne_wp_verweis_wird_beanstandet; geplant:tests/acceptance/test_dsfa_gate.py::test_dsfa_ohne_bewertung_der_bewegungsdaten_scheitert; geplant:tests/acceptance/test_dsfa_gate.py::test_fehlendes_freigabedatum_scheitert
+- Testfälle: tests/acceptance/test_dsfa_gate.py::test_gate_besteht_mit_freigegebener_dsfa; tests/acceptance/test_dsfa_gate.py::test_mobilitaetsfeld_ohne_dsfa_referenz_scheitert; tests/acceptance/test_dsfa_gate.py::test_fehlender_freigabevermerk_scheitert; tests/acceptance/test_dsfa_gate.py::test_massnahme_ohne_wp_verweis_wird_beanstandet; tests/acceptance/test_dsfa_gate.py::test_dsfa_ohne_bewertung_der_bewegungsdaten_scheitert; tests/acceptance/test_dsfa_gate.py::test_fehlendes_freigabedatum_scheitert
 
 ## Reviews
 

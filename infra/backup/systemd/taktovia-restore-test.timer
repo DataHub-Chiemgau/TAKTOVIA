@@ -1,0 +1,11 @@
+# Zyklus des Restore-Tests: Planungswert, fachlich nicht freigegeben (Pflichtenheft nur „zyklisch“, OP-31). Parametrisiert über backup-policy.json.
+[Unit]
+Description=TAKTOVIA Restore-Test (wöchentlich)
+
+[Timer]
+OnCalendar=Sun *-*-* 03:20:00
+Persistent=true
+RandomizedDelaySec=900
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+retention_rule;SELECT,INSERT,UPDATE;WP-M1-33: Aufbewahrungsregel je Datenklasse mit Freigabestatus; freigegebene Regel inhaltlich unveränderlich (Trigger), kein DELETE
+erasure_job;SELECT,INSERT,UPDATE;WP-M1-33: fortsetzbarer Löschlauf; Endzustände unveränderlich (Trigger), kein DELETE
+erasure_journal;SELECT,INSERT;WP-M1-33: Lösch-/Sperrjournal append-only (Trigger erasure_journal_immutable)

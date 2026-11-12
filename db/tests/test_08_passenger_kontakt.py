@@ -127,7 +127,9 @@ class PassengerKontakt(unittest.TestCase):
             with self.assertRaises(psycopg.errors.CheckViolation):   # geschlossen ist endgültig: ein Code wirkt höchstens einmal
                 c.execute("UPDATE taktovia.contact_verification SET state='PENDING', closed_at=NULL WHERE id=%s", (vid,))
             c.rollback(); set_tenant(c, A)
-            with self.assertRaises(psycopg.errors.InsufficientPrivilege):   # kein DELETE
+            c.execute("INSERT INTO taktovia.contact_verification(tenant_id,id,passenger_id,channel,contact_token,code_mac,expires_at) VALUES (%s,%s,%s,'EMAIL',%s,%s,now()+interval '10 minutes')",
+                      (A, uid(), p, hex64('a'), hex64('c')))
+            with self.assertRaises(psycopg.errors.CheckViolation):   # DELETE nur für gelöschte Fahrgäste (Löschlauf WP-M1-33, Trigger)
                 c.execute("DELETE FROM taktovia.contact_verification")
         finally:
             c.rollback(); c.close()

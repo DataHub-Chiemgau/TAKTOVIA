@@ -39,7 +39,6 @@ listDriverClearances  # GET /v1/driver-clearances
 listOperatorIncidents  # GET /v1/operator/incidents
 listOperatorVehicles  # GET /v1/operator/vehicles
 listRepairOrders  # GET /v1/repair-orders
-listRetentionRules  # GET /v1/retention-rules
 listRunRevisions  # GET /v1/runs/{run_id}/revisions
 listServiceAreas  # GET /v1/service-areas
 listStops  # GET /v1/stops
@@ -53,4 +52,3 @@ saveInspectionDraft  # PUT /v1/inspections/{inspection_id}
 submitInspection  # POST /v1/inspections/{inspection_id}/submit
 transitionOperatorIncident  # POST /v1/operator/incidents/{incident_id}/transitions
 triageDefect  # POST /v1/defects/{defect_id}/triage
-updateRetentionRule  # PUT /v1/retention-rules/{rule_id}

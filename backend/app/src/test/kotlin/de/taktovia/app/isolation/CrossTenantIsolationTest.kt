@@ -68,6 +68,7 @@ class CrossTenantIsolationTest {
         env.exec("INSERT INTO taktovia.driver(tenant_id,id,display_name,contact_channel,contact_value) VALUES (?,?,'Erika Muster','PHONE','+491701234567')", b.tenant.value, driverRef)
         env.exec("INSERT INTO taktovia.qualification_revision(tenant_id,id,driver_id,qualification_code,revision,valid_from,evidence_ref) VALUES (?,?,?,'PBEF',1,now()-interval '1 year','akte-1')", b.tenant.value, UUID.randomUUID(), driverRef)
         val release = create("/v1/driver-releases", """{"driver_id":"$driverRef","recipient_tenant_id":"${recipientTenant.value}","service_ids":["${UUID.randomUUID()}"],"valid_from":"2026-01-01T00:00:00Z","valid_to":"2099-01-01T00:00:00Z"}""", b.plannerToken).json["id"].asString()
+        val retentionRule = create("/v1/retention-rules", """{"data_category":"LK_PII","retention_days":30,"action":"ANONYMIZE"}""").json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
         val recipient = UUID.randomUUID()
@@ -77,7 +78,7 @@ class CrossTenantIsolationTest {
                 .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
         }.toString()
         return Ids(mapOf(
-            "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
+            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "notification_id" to notification,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session,
@@ -121,6 +122,8 @@ class CrossTenantIsolationTest {
             "getDriverReleaseProjection" to Probe("GET", "/v1/driver-releases/{release_id}/projection?service_id=${UUID.randomUUID()}", role = "dispatcher"),
             "revokeDriverDevice" to Probe("DELETE", "/v1/driver/devices/{device_id}", null, true, role = "driver"),
             "getNotification" to Probe("GET", "/v1/notifications/{notification_id}"),
+            "updateRetentionRule" to Probe("PUT", "/v1/retention-rules/{rule_id}", """{"retention_days":10,"action":"DELETE"}""", true),
+            "approveRetentionRule" to Probe("POST", "/v1/retention-rules/{rule_id}/approvals", "{}", true),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -130,6 +133,7 @@ class CrossTenantIsolationTest {
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
     private val selfScoped = setOf(
         "getMe", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",

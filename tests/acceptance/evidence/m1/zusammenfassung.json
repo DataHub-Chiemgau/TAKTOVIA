@@ -1,0 +1,93 @@
+{
+  "build": "88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal",
+  "tests": [
+    {
+      "checks": 11,
+      "evidence": "PH-AT-001-run-652fc54dbff536dc.json",
+      "failed": [],
+      "id": "PH-AT-001",
+      "result": "PASSED",
+      "run_id": "run-652fc54dbff536dc"
+    },
+    {
+      "checks": 11,
+      "evidence": "PH-AT-011-run-e6b44ca51b62ea09.json",
+      "failed": [],
+      "id": "PH-AT-011",
+      "result": "PASSED",
+      "run_id": "run-e6b44ca51b62ea09"
+    },
+    {
+      "checks": 7,
+      "evidence": "PH-AT-017-run-b255ee8e29f57d82.json",
+      "failed": [],
+      "id": "PH-AT-017",
+      "result": "PASSED",
+      "run_id": "run-b255ee8e29f57d82"
+    },
+    {
+      "checks": 9,
+      "evidence": "PH-AT-018-run-da326e8f6fe35f3a.json",
+      "failed": [],
+      "id": "PH-AT-018",
+      "result": "PASSED",
+      "run_id": "run-da326e8f6fe35f3a"
+    },
+    {
+      "checks": 8,
+      "evidence": "AT-18-run-0194aabf61cf338d.json",
+      "failed": [],
+      "id": "AT-18",
+      "result": "PASSED",
+      "run_id": "run-0194aabf61cf338d"
+    },
+    {
+      "checks": 7,
+      "evidence": "AT-24-run-d2c0de793ba27d98.json",
+      "failed": [],
+      "id": "AT-24",
+      "result": "PASSED",
+      "run_id": "run-d2c0de793ba27d98"
+    },
+    {
+      "checks": 6,
+      "evidence": "AT-49-run-5dd27e0bcd8ee027.json",
+      "failed": [],
+      "id": "AT-49",
+      "result": "PASSED",
+      "run_id": "run-5dd27e0bcd8ee027"
+    },
+    {
+      "checks": 5,
+      "evidence": "E2E-091-run-ac5a8c577bfb135f.json",
+      "failed": [],
+      "id": "E2E-091",
+      "result": "PASSED",
+      "run_id": "run-ac5a8c577bfb135f"
+    },
+    {
+      "checks": 6,
+      "evidence": "E2E-096-run-c0305b9f737adc43.json",
+      "failed": [],
+      "id": "E2E-096",
+      "result": "PASSED",
+      "run_id": "run-c0305b9f737adc43"
+    },
+    {
+      "checks": 9,
+      "evidence": "E2E-097-run-a7fe27beaef79465.json",
+      "failed": [],
+      "id": "E2E-097",
+      "result": "PASSED",
+      "run_id": "run-a7fe27beaef79465"
+    },
+    {
+      "checks": 6,
+      "evidence": "E2E-098-run-8cfa8674cfc14082.json",
+      "failed": [],
+      "id": "E2E-098",
+      "result": "PASSED",
+      "run_id": "run-8cfa8674cfc14082"
+    }
+  ]
+}

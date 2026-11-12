@@ -1,0 +1,14 @@
+# WP-M1-39: Restore-Test in eine isolierte Datenbank (Prüfsummen, RLS, Trigger, Isolationstest, Lösch-/Sperrjournal). NICHT in einer Umgebung ausgeführt (D-05 offen).
+# Die Betriebsrolle `ops-restore` darf Backups nur lesen; Schlüssel und Datenbank-Zugangsdaten kommen aus dem Secret-Speicher (EnvironmentFile), nie aus dem Repository.
+[Unit]
+Description=TAKTOVIA Restore-Test (isolierte Datenbank, Prüfsummenvergleich)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=taktovia-restore
+EnvironmentFile=/etc/taktovia/restore-test.env
+Environment=TAKTOVIA_BACKUP_PRINCIPAL=ops-restore
+WorkingDirectory=/opt/taktovia/infra/backup
+# Neuestes Backup: Name steht in /var/lib/taktovia/backup/LATEST (vom Backupjob geschrieben)
+ExecStart=/bin/sh -c 'python3 -m taktovia_backup restore-test "$(cat /var/lib/taktovia/backup/LATEST)" --out-dir /var/lib/taktovia/restore-protokolle'

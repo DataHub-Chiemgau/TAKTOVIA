@@ -2200,6 +2200,283 @@
       ]
     },
     {
+      "tabelle": "erasure_job",
+      "aggregat": "Löschlauf (WP-M1-33)",
+      "loeschklasse": "LK_AUDIT",
+      "bemerkung": "Lauf- und Zählerstand ohne Personendaten",
+      "spalten": [
+        {
+          "spalte": "action",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "archive_days",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_AUDIT",
+          "bemerkung": "Auslöser des Löschlaufs (Pseudonym user:<uuid>)"
+        },
+        {
+          "spalte": "data_class",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "finished_at",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "lease_until",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "operation_id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "processed_count",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "result_code",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "resume_after",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "retention_days",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "rule_id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "rule_revision",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "skipped_count",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "erasure_journal",
+      "aggregat": "Lösch-/Sperrjournal (WP-M1-33)",
+      "loeschklasse": "LK_AUDIT",
+      "bemerkung": "append-only, nur Objektkennungen, Quelle für die Wiedereinspielung beim Restore",
+      "spalten": [
+        {
+          "spalte": "action",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "applied_at",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "archive_until",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "data_class",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "job_id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "object_ref",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_AUDIT",
+          "bemerkung": "Objektart und Kennung (UUID) des bearbeiteten Datensatzes, keine Personendaten; Löschnachweis, damit ein Restore Gelöschtes nicht wiederbelebt"
+        },
+        {
+          "spalte": "seq",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "expense_document",
       "aggregat": "Beleg",
       "loeschklasse": "LK_BELEG",
@@ -4453,6 +4730,24 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "archive_until",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Ende des Archivzustands, danach Anonymisierung"
+        },
+        {
+          "spalte": "archived_at",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Beginn des Archivzustands: für operative Rollen nicht lesbar (WP-M1-33)"
+        },
+        {
           "spalte": "contact_ciphertext",
           "personenbezogen": "ja",
           "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
@@ -4469,6 +4764,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "erased_at",
+          "personenbezogen": "ja",
+          "zweck": "KONTAKT_UND_UNTERSTUETZUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_PII",
+          "bemerkung": "Löschzustand (Tombstone): alle Personenangaben der Zeile entfernt"
         },
         {
           "spalte": "id",
@@ -5489,6 +5793,131 @@
           "spalte": "vehicle_id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "retention_rule",
+      "aggregat": "Aufbewahrungsregel (WP-M1-33)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "Konfiguration je Datenklasse; Fristen nicht freigegeben (D-11)",
+      "spalten": [
+        {
+          "spalte": "action",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "approved_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "approved_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Freigeber der Regel (Vier-Augen, Pseudonym user:<uuid>)"
+        },
+        {
+          "spalte": "archive_days",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "changed_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber der letzten Änderung (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "data_class",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "retention_days",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "KONFIGURATION",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",

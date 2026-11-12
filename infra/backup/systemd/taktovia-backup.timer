@@ -1,0 +1,10 @@
+# Backupintervall: Planungswert, fachlich nicht freigegeben (OP-31; Ziel RPO <= 15 min wird erst mit dem kontinuierlichen WAL-Archiv erreicht und in M5 gemessen).
+[Unit]
+Description=TAKTOVIA Basis-Backup (täglich)
+
+[Timer]
+OnCalendar=*-*-* 01:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

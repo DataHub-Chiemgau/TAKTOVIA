@@ -1,0 +1,393 @@
+{
+  "acceptance_decision": "PENDING",
+  "clock": {
+    "mode": "frozen",
+    "start": "2026-01-01T00:00:00Z"
+  },
+  "defect_class": null,
+  "environment": {
+    "name": "local",
+    "simulated_components": []
+  },
+  "event_trace_ids": {
+    "event_ids": [],
+    "trace_ids": []
+  },
+  "executed_at": "2026-01-01T00:00:00.000Z",
+  "migration_state": {
+    "latest": "V20290__payment_event.sql",
+    "scripts": [
+      {
+        "checksum": -226771926,
+        "script": "R__grants_m1_40.sql"
+      },
+      {
+        "checksum": -1962247084,
+        "script": "R__runtime_grants.sql"
+      },
+      {
+        "checksum": -107680667,
+        "script": "R__runtime_grants_m1_05.sql"
+      },
+      {
+        "checksum": -1836842966,
+        "script": "R__runtime_grants_m1_06.sql"
+      },
+      {
+        "checksum": 1490379614,
+        "script": "R__runtime_grants_m1_07.sql"
+      },
+      {
+        "checksum": -805317191,
+        "script": "R__runtime_grants_m1_09.sql"
+      },
+      {
+        "checksum": 828970185,
+        "script": "R__runtime_grants_m1_10.sql"
+      },
+      {
+        "checksum": 1890077660,
+        "script": "R__runtime_grants_m1_16.sql"
+      },
+      {
+        "checksum": -1898764385,
+        "script": "R__runtime_grants_m1_17.sql"
+      },
+      {
+        "checksum": -1621620034,
+        "script": "R__runtime_grants_m1_19.sql"
+      },
+      {
+        "checksum": -932327684,
+        "script": "R__runtime_grants_m1_21.sql"
+      },
+      {
+        "checksum": 622487311,
+        "script": "R__runtime_grants_m1_23.sql"
+      },
+      {
+        "checksum": 231343883,
+        "script": "R__runtime_grants_m1_27.sql"
+      },
+      {
+        "checksum": 345747194,
+        "script": "R__runtime_grants_m1_31.sql"
+      },
+      {
+        "checksum": 919172456,
+        "script": "R__runtime_grants_m1_31_wp28.sql"
+      },
+      {
+        "checksum": 693774899,
+        "script": "R__runtime_grants_m1_31_wp29.sql"
+      },
+      {
+        "checksum": 1074211071,
+        "script": "R__runtime_grants_m1_31_wp30.sql"
+      },
+      {
+        "checksum": 317128579,
+        "script": "R__runtime_grants_m1_33.sql"
+      },
+      {
+        "checksum": -1084450593,
+        "script": "R__runtime_grants_m1_34.sql"
+      },
+      {
+        "checksum": 823635037,
+        "script": "R__runtime_grants_m1_35.sql"
+      },
+      {
+        "checksum": -699464705,
+        "script": "R__runtime_grants_m2_02.sql"
+      },
+      {
+        "checksum": -160032212,
+        "script": "R__runtime_grants_m2_10.sql"
+      },
+      {
+        "checksum": 1700013072,
+        "script": "R__runtime_grants_m2_14.sql"
+      },
+      {
+        "checksum": 494303432,
+        "script": "R__runtime_grants_m2_16.sql"
+      },
+      {
+        "checksum": -741357298,
+        "script": "R__runtime_grants_m2_29.sql"
+      },
+      {
+        "checksum": -844892744,
+        "script": "R__runtime_grants_m2_32.sql"
+      },
+      {
+        "checksum": 961587407,
+        "script": "R__runtime_grants_m2_33.sql"
+      },
+      {
+        "checksum": -1821396990,
+        "script": "R__runtime_grants_m3_24.sql"
+      },
+      {
+        "checksum": 315898173,
+        "script": "V10100__sitzungsregister.sql"
+      },
+      {
+        "checksum": -848537981,
+        "script": "V1020__waehrungskatalog.sql"
+      },
+      {
+        "checksum": 1940575600,
+        "script": "V10210__praezedenz_fahrzeugscope.sql"
+      },
+      {
+        "checksum": -738450632,
+        "script": "V10220__publikation_vier_augen.sql"
+      },
+      {
+        "checksum": -643239083,
+        "script": "V10230__wirkungsbericht.sql"
+      },
+      {
+        "checksum": 1750190542,
+        "script": "V10330__aufbewahrung_loeschung.sql"
+      },
+      {
+        "checksum": 1746982781,
+        "script": "V1050__mandant_rechtstraeger_organisation.sql"
+      },
+      {
+        "checksum": 2077923915,
+        "script": "V1060__mitgliedschaft.sql"
+      },
+      {
+        "checksum": -1229418905,
+        "script": "V1070__rollenkatalog_rechtematrix.sql"
+      },
+      {
+        "checksum": -767274655,
+        "script": "V1090__organisationsstruktur.sql"
+      },
+      {
+        "checksum": 1479356673,
+        "script": "V1120__audit_abfrage_systemmandant.sql"
+      },
+      {
+        "checksum": 1020922162,
+        "script": "V1130__idempotenz_register.sql"
+      },
+      {
+        "checksum": -480151029,
+        "script": "V1140__outbox_inbox_zustellung.sql"
+      },
+      {
+        "checksum": -1460879548,
+        "script": "V1150__operation_lease.sql"
+      },
+      {
+        "checksum": 246281005,
+        "script": "V1160__webhook_grundlage.sql"
+      },
+      {
+        "checksum": -664464650,
+        "script": "V1170__zustandshaertung.sql"
+      },
+      {
+        "checksum": 824180360,
+        "script": "V1180__zeitzonen_pruefung.sql"
+      },
+      {
+        "checksum": 2051608781,
+        "script": "V1190__policy_schema.sql"
+      },
+      {
+        "checksum": -1572269311,
+        "script": "V1200__config_revision_lebenszyklus.sql"
+      },
+      {
+        "checksum": -1774155018,
+        "script": "V1250__config_revision_profilscope.sql"
+      },
+      {
+        "checksum": 475071499,
+        "script": "V1270__zusage_snapshot.sql"
+      },
+      {
+        "checksum": 1399291488,
+        "script": "V1280__fahrgast_registrierung.sql"
+      },
+      {
+        "checksum": 1612083717,
+        "script": "V1290__fahrgastprofil.sql"
+      },
+      {
+        "checksum": 1342025321,
+        "script": "V1300__einwilligung.sql"
+      },
+      {
+        "checksum": -221073915,
+        "script": "V1340__fahrzeugrollen.sql"
+      },
+      {
+        "checksum": 250681087,
+        "script": "V1350__fahrerstamm_qualifikation.sql"
+      },
+      {
+        "checksum": 1130641117,
+        "script": "V1351__fahrerfreigabe.sql"
+      },
+      {
+        "checksum": 723780999,
+        "script": "V1400__umgebungskennung.sql"
+      },
+      {
+        "checksum": 188300381,
+        "script": "V1460__audit_event_formate.sql"
+      },
+      {
+        "checksum": 1731169884,
+        "script": "V1__kernschema.sql"
+      },
+      {
+        "checksum": 192190694,
+        "script": "V20100__routing_cache.sql"
+      },
+      {
+        "checksum": -1888033575,
+        "script": "V20140__ressourcenvektor_passenger_trip.sql"
+      },
+      {
+        "checksum": -671858342,
+        "script": "V20160__fahrtenplan_route_stop.sql"
+      },
+      {
+        "checksum": 1264777327,
+        "script": "V2020__fahrzeugpool_fixture.sql"
+      },
+      {
+        "checksum": 1749781985,
+        "script": "V20290__payment_event.sql"
+      },
+      {
+        "checksum": 811349114,
+        "script": "V2320__nachrichtenversand.sql"
+      },
+      {
+        "checksum": 1857507439,
+        "script": "V2330__nachrichtenvorlagen.sql"
+      },
+      {
+        "checksum": 735132808,
+        "script": "V2__haertung_periode.sql"
+      },
+      {
+        "checksum": 71084788,
+        "script": "V3240__fahrer_geraete_ereigniseingang.sql"
+      },
+      {
+        "checksum": -1291066924,
+        "script": "V3__tenant_id_unveraenderlich.sql"
+      }
+    ]
+  },
+  "responsible": "Plattform (QA)",
+  "result": "PASSED",
+  "revisions": {
+    "config_revision": "NONE_M0",
+    "contract_revision": "NONE_M0",
+    "tariff_revision": "NONE_M0"
+  },
+  "roles_and_tenants": [
+    {
+      "identity": "a.tenant_admin",
+      "role": "tenant_admin",
+      "tenant_id": "00000000-0000-4000-8000-00000000000a"
+    }
+  ],
+  "run_id": "run-c0305b9f737adc43",
+  "schema_version": "1.0",
+  "seed": {
+    "data_state_sha256": "9e653049836d34e880b109425de30192ecf0b6cf035232fe4eac6b66c2da7148",
+    "name": "two-tenants",
+    "tenants": {
+      "A": "00000000-0000-4000-8000-00000000000a",
+      "B": "00000000-0000-4000-8000-00000000000b"
+    },
+    "version": "1.0.0"
+  },
+  "software_build": {
+    "build_id": "88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal",
+    "origin": "TAKTOVIA_BUILD_ID"
+  },
+  "soll_ist": [
+    {
+      "actual": [
+        {
+          "min_booking_lead_min": 30
+        }
+      ],
+      "expected": [
+        {
+          "min_booking_lead_min": 30
+        }
+      ],
+      "ok": true,
+      "step": "Sonntag (vor Montag 00:00): wirksam bleibt der alte Wert 30"
+    },
+    {
+      "actual": [
+        {
+          "min_booking_lead_min": 60
+        }
+      ],
+      "expected": [
+        {
+          "min_booking_lead_min": 60
+        }
+      ],
+      "ok": true,
+      "step": "ab Montag: künftige Angebote nutzen den neuen Wert 60"
+    },
+    {
+      "actual": "9b2aab21d0a465c61104006145016a7f06425f024b16476a62003fcca83056f1",
+      "expected": "9b2aab21d0a465c61104006145016a7f06425f024b16476a62003fcca83056f1",
+      "ok": true,
+      "step": "Zusage für den Sonntag bleibt unverändert"
+    },
+    {
+      "actual": [
+        0,
+        []
+      ],
+      "expected": [
+        0,
+        []
+      ],
+      "ok": true,
+      "step": "Mandant B sieht die Revisionen von A nicht und ist von der Änderung unberührt"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test ConfigPublicationApiTest.hundert_parallele_publish_wiederholungen_mit_gleichem_idempotency_key_eine_wirkung"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test ConfigPublicationTest.paralleler_publish_und_rollback_bleiben_konsistent"
+    }
+  ],
+  "source_key": [
+    "LH-I.7-CFG-003",
+    "LH-I.7-CFG-007"
+  ],
+  "test": {
+    "id": "E2E-096",
+    "kind": "E2E",
+    "name": "Konfigurationsänderung Zukunft (M1-Umfang)",
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,4 @@
+role;table;column;privileges
+taktovia_runtime;passenger_private;archived_at;SELECT,UPDATE
+taktovia_runtime;passenger_private;archive_until;SELECT,UPDATE
+taktovia_runtime;passenger_private;erased_at;SELECT,UPDATE

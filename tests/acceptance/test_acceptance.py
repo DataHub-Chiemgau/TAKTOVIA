@@ -234,7 +234,8 @@ class KatalogTest(unittest.TestCase):
         import run
         for r in catalog.load():
             self.assertEqual(r["status"], "NOT_IMPLEMENTED")
-        self.assertEqual(run.main(["--scenario", "PH-AT-001", "--db", DB1, "--out", tempfile.mkdtemp()]), 2)
+        # PH-AT-001 ist seit WP-M1-45 im M1-Umfang implementiert (m1_gate); AT-01 (Sofortfahrt, M2) bleibt benannt und nicht implementiert.
+        self.assertEqual(run.main(["--scenario", "AT-01", "--db", DB1, "--out", tempfile.mkdtemp()]), 2)
 
     def test_ph_at_001_fixture_bezug(self):
         r = next(x for x in catalog.load() if x["test_id"] == "PH-AT-001")

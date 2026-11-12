@@ -1,0 +1,13 @@
+# WP-M1-39: Backup (Basis-Backup mit Snapshot, Journalausleitung). NICHT in einer Umgebung ausgeführt (D-05 offen).
+[Unit]
+Description=TAKTOVIA verschlüsseltes Backup mit Journalausleitung
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=taktovia-backup
+EnvironmentFile=/etc/taktovia/backup.env
+Environment=TAKTOVIA_BACKUP_PRINCIPAL=ops-backup
+WorkingDirectory=/opt/taktovia/infra/backup
+ExecStart=/bin/sh -c 'python3 -m taktovia_backup backup --database "$TAKTOVIA_DB_NAME" | python3 -c "import json,sys; print(json.load(sys.stdin)[\"backup_id\"])" > /var/lib/taktovia/backup/LATEST'
+ExecStartPost=/usr/bin/python3 -m taktovia_backup journal-export --database ${TAKTOVIA_DB_NAME}
