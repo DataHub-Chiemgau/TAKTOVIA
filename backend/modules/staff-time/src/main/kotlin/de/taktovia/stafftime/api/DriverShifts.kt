@@ -147,6 +147,8 @@ interface DriverShifts {
      * (nicht angetreten, nicht freigegeben): leere Liste.
      */
     fun expectedPassengers(ctx: RequestContext, shiftId: UUID): ExpectedPassengersView
+
+    /**
      * Kennungen der eigenen, noch nicht beendeten Schichten (geplant, veröffentlicht, angetreten; Ende in der Zukunft): die Berechtigungsgrundlage des Live-Kanals des Fahrers
      * (WP-M3-35). Wird bei jedem Abruf des Kanals neu bestimmt; eine neu zugewiesene oder entzogene Schicht wirkt damit sofort.
      */

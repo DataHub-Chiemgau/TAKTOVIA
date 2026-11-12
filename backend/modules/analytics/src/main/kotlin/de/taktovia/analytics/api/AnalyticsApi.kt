@@ -1,3 +1,6 @@
+package de.taktovia.analytics.api
+
+import de.taktovia.analytics.internal.AnalyticsServicesFactory
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.tenant.TenantId

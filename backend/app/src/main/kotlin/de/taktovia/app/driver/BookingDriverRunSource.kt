@@ -13,7 +13,6 @@ import de.taktovia.stafftime.api.DriverRunProjection
 import de.taktovia.stafftime.api.DriverRunSource
 import de.taktovia.stafftime.api.DriverRunStopView
 import de.taktovia.stafftime.api.ExpectedPassenger
-import de.taktovia.stafftime.api.ExpectedPassenger
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
