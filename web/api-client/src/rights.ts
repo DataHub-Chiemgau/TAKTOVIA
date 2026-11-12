@@ -9,6 +9,9 @@ export type Right =
   | 'callcenter'
   | 'finance'
   | 'staff'
+  | 'roster'
+  | 'roster.write'
+  | 'roster.publish'
   | 'fleet'
   | 'fleet.write'
   | 'drivers'
@@ -34,7 +37,9 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'passengers:read': ['callcenter'],
   'costs:allocate': ['finance'],
   'expenses:approve': ['finance'],
-  'rosters:publish': ['staff'],
+  'rosters:read': ['roster'],
+  'rosters:write': ['roster', 'roster.write'],
+  'rosters:publish': ['staff', 'roster.publish'],
   'driver-releases:write': ['staff'],
   'fleet:read': ['fleet'],
   'fleet:write': ['fleet', 'fleet.write'],
@@ -82,11 +87,19 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
     'defects.state',
     'defects.history',
   ],
-  PLANNER: ['admin.ui17', 'fleet', 'drivers', 'shifts'],
+  PLANNER: ['admin.ui17', 'fleet', 'drivers', 'shifts', 'roster', 'roster.write'],
   ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
   TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20', 'defects.state', 'defects.history'],
   FINANCE: ['finance'],
-  STAFF_PLANNING: ['staff', 'drivers', 'drivers.write', 'shifts'],
+  STAFF_PLANNING: [
+    'staff',
+    'drivers',
+    'drivers.write',
+    'shifts',
+    'roster',
+    'roster.write',
+    'roster.publish',
+  ],
 };
 
 export function rightsOf(me: Pick<Me, 'roles'> & { scopes?: string[] | undefined }): Set<Right> {
