@@ -129,6 +129,27 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     expect(d).toHaveTextContent('Stornoregel: std-24h');
   });
 
+  it('fussweg_des_angebots_ersetzt_die_naeherung_und_kennzeichnet_den_rueckfall', async () => {
+    const { client, world } = await mitAngebot();
+    if (world.offer)
+      world.offer.walk = {
+        status: 'ROUTE',
+        snapshot_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccc01',
+        distance_m: 310,
+        duration_s: 250,
+        profile: 'walk',
+        map_version: 'referenz-2026-11-01',
+        fallback_reason: null,
+        geometry: [],
+        steps: [],
+        pickup_stop_name: 'Altmarkt',
+        computed_at: '2026-11-20T07:50:00Z',
+      };
+    renderOffers(client, { now: NOW });
+    expect(await screen.findByTestId('fussweg-start')).toHaveTextContent('310 m, ca. 5 min');
+    expect(screen.getByTestId('fussweg-start')).not.toHaveTextContent('Luftlinie');
+  });
+
   it('preis_wird_clientseitig_nicht_berechnet_oder_gerundet', async () => {
     // Darstellung ist reine Zerlegung des Serverwerts
     expect(formatMoney({ amount_minor: 1, currency: 'EUR', exponent: 2 })).toBe('0,01 €');

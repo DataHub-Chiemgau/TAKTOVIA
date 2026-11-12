@@ -45,7 +45,7 @@ class BookingResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * `If-Match` ist die Angebotsrevision (ETag der Hold-Antwort): fehlt er 428, ist er veraltet 412. Der `Idempotency-Key` ist Pflicht (Filter): Wiederholung liefert das gespeicherte Ergebnis.
  */
 @RestController
-class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments) {
+class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments, private val walking: de.taktovia.bookingdispatch.api.WalkingRoutes) {
 
     @PostMapping("/v1/bookings")
     @Suppress("UNCHECKED_CAST")
@@ -67,7 +67,9 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         // Ein Client, der seinen Stand mitsendet, bekommt bei veralteter Revision 412 mit dem aktuellen ETag (WP-M2-28)
         if (ifMatch != null && Etag.parseIfMatch(ifMatch) != b.revision)
             throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung hat die Revision ${b.revision}; ohne If-Match neu lesen.", headers = mapOf("ETag" to Etag.format(b.revision)))
-        return BookingResource(withTracking(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), t), b.revision)
+        val withWalk = LinkedHashMap(withTracking(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), t))
+        t.offerId?.let { walking.forOffer(ctx, it) }?.let { withWalk["walk"] = RideOfferController.walkBlock(it) }
+        return BookingResource(withWalk, b.revision)
     }
 
     @GetMapping("/v1/bookings")

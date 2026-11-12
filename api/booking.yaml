@@ -755,6 +755,8 @@ components:
           minimum: 1
           maximum: 9007199254740991
           description: Angebotsrevision (ETag von `GET /v1/ride-offers/{id}`), Bedingung `If-Match` für Hold und Freigabe.
+        walk:
+          $ref: '#/components/schemas/RideWalkRoute'
       required:
       - service_id
       - booking_kind
@@ -954,6 +956,8 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        walk:
+          $ref: '#/components/schemas/RideWalkRoute'
       required:
       - id
       - attempt_id
@@ -1320,7 +1324,6 @@ components:
           type: string
           enum:
           - START
-          - STRAIGHT
           - TURN_LEFT
           - TURN_RIGHT
           - ARRIVE

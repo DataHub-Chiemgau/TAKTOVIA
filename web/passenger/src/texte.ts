@@ -241,6 +241,22 @@ export const texte = {
   'reise.state.canceled': 'Storniert',
   'reise.state.completed': 'Abgeschlossen',
   'reise.state.failed': 'Nicht zustande gekommen',
+  // Fußweg zum Treffpunkt (WP-M2-44)
+  'fuss.titel': 'Fußweg zum Treffpunkt',
+  'fuss.zusammenfassung': 'Zu Fuß etwa',
+  'fuss.minuten': 'Minuten',
+  'fuss.karte': 'Karte des Fußwegs',
+  'fuss.kartenHinweis': 'Die Wegbeschreibung unter der Karte enthält dieselben Angaben als Text.',
+  'fuss.anleitung': 'Wegbeschreibung',
+  'fuss.rueckfall': 'Rückfall',
+  'fuss.rueckfallHinweis':
+    'Der Fußweg konnte nicht berechnet werden. Angezeigt werden Name des Treffpunkts und die Entfernung in Luftlinie, keine Wegführung.',
+  'fuss.keinWeg': 'Kein Fußweg nötig: Sie befinden sich bereits am Treffpunkt.',
+  'fuss.nichtVerfuegbar': 'Für diese Buchung liegt kein Fußweg vor.',
+  'fuss.treffpunkt': 'Treffpunkt',
+  'fuss.stand': 'Stand der Wegberechnung',
+  'fuss.start': 'Start',
+  'fuss.ziel': 'Treffpunkt',
   'sw.updated': 'Die App wurde aktualisiert.',
   // Textbausteine der standardisierten Ablehnungsgründe mit nächster Handlung (WP-M2-13, Kap. 06 §6.2); Schlüssel = Code aus `RideRejectionCode` in camelCase
   'rej.next': 'Nächste Handlung:',

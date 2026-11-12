@@ -40,6 +40,12 @@ class BookingConfiguration {
     @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments): Bookings =
         Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments))   // Void/Erstattung nach Storno (WP-M2-31)
 
+    /**
+     * Fußweg zum Abholhaltepunkt (WP-M2-44). Der Routing-Worker ist in dieser Verdrahtung nicht angeschlossen (Haltepunktkatalog des Workers offen, D-09): ohne ihn liefert jeder Fußweg den
+     * gekennzeichneten Rückfall; mit `RoutingPort` und Stopp-Schlüsseln entsteht der Weg (siehe `WalkingRouteTest`).
+     */
+    @Bean fun walkingRoutes(ctxTx: ContextTransactions, config: ConfigApi): de.taktovia.bookingdispatch.api.WalkingRoutes = de.taktovia.bookingdispatch.api.WalkingRoutes.create(ctxTx, config.effective)
+
     /** Änderungsstrom der Planrevisionen für Fahrgast und Fahrer (WP-M2-28). */
     @Bean fun planChanges(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.PlanChanges = de.taktovia.bookingdispatch.api.PlanChanges.create(ctxTx)
 

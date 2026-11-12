@@ -8,6 +8,7 @@ import type { Shown } from './angebotLesen';
 import { formatMoney } from './geld';
 import { fussweg } from './fussweg';
 import { fenster, ortszeit } from './Zeitanzeige';
+import type { RideWalkRoute } from '@taktovia/api-client';
 import { tx } from '../texte';
 
 export interface OfferListProps {
@@ -20,6 +21,15 @@ export interface OfferListProps {
   directSeconds?: Readonly<Record<string, number>> | undefined;
   now?: (() => number) | undefined;
   onNewSearch: () => void;
+}
+
+/** Fußweg des Angebots (WP-M2-44): Serverwert (Weg oder gekennzeichneter Rückfall) statt der Näherung der Oberfläche. */
+function walkAngabe(w: RideWalkRoute): { meter: number; minuten: number; hinweis: string | null } {
+  return {
+    meter: w.distance_m,
+    minuten: Math.max(1, Math.ceil(w.duration_s / 60)),
+    hinweis: w.status === 'FALLBACK' ? tx('fuss.rueckfall') + ', ' + tx('angebot.fussnote') : null,
+  };
 }
 
 /** Abgeleitete Fahrtdauer (Näherung): früheste Ankunft minus früheste Abholung. */
@@ -114,7 +124,11 @@ export function OfferList({
           const expired = abgelaufen(o);
           const isSel = selected === o.id && !expired;
           const dauer = dauerMinuten(o, directSeconds?.[o.id]);
-          const walkIn = origin && s.pickup ? fussweg(origin.point, s.pickup.point) : null;
+          const walkIn = o.walk
+            ? walkAngabe(o.walk)
+            : origin && s.pickup
+              ? { ...fussweg(origin.point, s.pickup.point), hinweis: tx('angebot.fussnote') }
+              : null;
           const walkOut =
             destination && s.dropoff ? fussweg(s.dropoff.point, destination.point) : null;
           const unbestaetigt = [s.pickup, s.dropoff].some(
@@ -151,7 +165,7 @@ export function OfferList({
                   <dt>{tx('angebot.fussweg')} (Start)</dt>
                   <dd data-testid="fussweg-start">
                     {walkIn
-                      ? `${walkIn.meter} m, ca. ${walkIn.minuten} min (${tx('angebot.fussnote')})`
+                      ? `${walkIn.meter} m, ca. ${walkIn.minuten} min${walkIn.hinweis ? ` (${walkIn.hinweis})` : ''}`
                       : tx('angebot.fussUnbekannt')}
                   </dd>
                   <dt>{tx('angebot.zielpunkt')}</dt>

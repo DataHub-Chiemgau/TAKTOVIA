@@ -17,6 +17,11 @@ import de.taktovia.bookingdispatch.api.RideOfferRequests
 import de.taktovia.bookingdispatch.api.RidePlace
 import de.taktovia.bookingdispatch.api.RideTimeKind
 import de.taktovia.bookingdispatch.api.RideTimeWindow
+import de.taktovia.bookingdispatch.api.RejectionCode
+import de.taktovia.bookingdispatch.api.WalkOrigin
+import de.taktovia.bookingdispatch.api.WalkPlan
+import de.taktovia.bookingdispatch.api.WalkSnapshot
+import de.taktovia.bookingdispatch.api.WalkingRoutes
 import de.taktovia.farepayment.api.QuoteView
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Revisioned
@@ -43,7 +48,7 @@ class RideOfferResource(@get:JsonValue val data: Map<String, Any?>, override val
  * dient zugleich als Wiederholungsschutz des Versuchs.
  */
 @RestController
-class RideOfferController(private val rides: RideOfferRequests, private val offers: RideOffers) {
+class RideOfferController(private val rides: RideOfferRequests, private val offers: RideOffers, private val walking: WalkingRoutes) {
 
     @PostMapping("/v1/ride-offers")
     @Suppress("UNCHECKED_CAST")
@@ -56,10 +61,17 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
             equipment = (body["equipment"] as List<String>?).orEmpty().map { EquipmentCode.valueOf(it) }.toSet(),
             assistanceCodes = (body["assistance_codes"] as List<String>?).orEmpty().map { AssistanceCode.valueOf(it) }.toSet(), channel = body["channel"] as String? ?: "WEB",
         )
-        val r = rides.request(RequestContexts.require(request), cmd)
+        val ctx = RequestContexts.require(request)
+        val r = rides.request(ctx, cmd)
+        // Fußweg zum Abholhaltepunkt (WP-M2-44): Weg als Snapshot des Angebots; ein Weg über `stop_walk_max_m` wird nicht angeboten (das Angebot entfällt)
+        val origin = WalkOrigin(cmd.origin.point(), cmd.origin.stopId)
+        val walks = r.offers.mapNotNull { p -> p.offer?.takeIf { it.pickupStop != null }?.let { o -> walking.plan(ctx, o.id, origin)?.let { plan -> p to plan } } }.toMap()
+        val offered = r.offers.filter { p -> p.offer?.pickupStop == null || walks[p] is WalkPlan.Offered }
+        val stored = walks.mapValues { (_, plan) -> (plan as? WalkPlan.Offered)?.let { walking.store(ctx, it.snapshot) } }
+        val rejection = r.rejection ?: if (offered.isEmpty() && r.offers.isNotEmpty()) de.taktovia.bookingdispatch.api.RideRejection(RejectionCode.NO_STOP_IN_RANGE) else null
         return linkedMapOf(
-            "attempt_id" to r.attemptId.toString(), "offers" to r.offers.map { proposal(it) },
-            "rejection" to r.rejection?.let { rej ->
+            "attempt_id" to r.attemptId.toString(), "offers" to offered.map { proposal(it, stored[it]) },
+            "rejection" to rejection?.let { rej ->
                 linkedMapOf("code" to rej.primary.name, "secondary_codes" to rej.secondary.map { it.name }, "text" to rej.primary.text, "next_action" to rej.primary.nextAction)
             },
         )
@@ -73,12 +85,13 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
 
     private fun window(w: RideTimeWindow) = linkedMapOf("earliest_at" to w.earliestAt.toString(), "latest_at" to w.latestAt.toString())
 
-    private fun proposal(o: RideOfferProposal): Map<String, Any?> {
+    private fun proposal(o: RideOfferProposal, walk: WalkSnapshot?): Map<String, Any?> {
         val m = linkedMapOf<String, Any?>(
             "service_id" to o.serviceId.toString(), "booking_kind" to o.bookingKind.name, "time_kind" to o.timeKind.name, "pickup_window" to window(o.pickupWindow),
             "arrival_window" to window(o.arrivalWindow), "arrival_grace_min" to o.arrivalGraceMin, "direct_seconds" to o.directSeconds,
         )
         o.offer?.let { i -> offerBlock(i, m) }
+        walk?.let { m["walk"] = walkBlock(it) }
         return m
     }
 
@@ -107,8 +120,10 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
 
     @GetMapping("/v1/ride-offers/{ride_offer_id}")
     fun get(@PathVariable("ride_offer_id") id: UUID, request: HttpServletRequest): RideOfferResource {
-        val v = offers.get(RequestContexts.require(request), id)
-        return RideOfferResource(view(v), v.revision)
+        val ctx = RequestContexts.require(request)
+        val v = offers.get(ctx, id)
+        val m = LinkedHashMap(view(v)); walking.forOffer(ctx, id)?.let { m["walk"] = walkBlock(it) }
+        return RideOfferResource(m, v.revision)
     }
 
     @PostMapping("/v1/ride-offers/{ride_offer_id}/hold")
@@ -141,5 +156,15 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
         m["demand"] = vector(v.demand); m["hold"] = v.hold?.let { holdBlock(it) }; m["revision"] = v.revision
         v.pickupStop?.let { m["pickup_stop"] = stop(it) }; v.dropoffStop?.let { m["dropoff_stop"] = stop(it) }
         return m
+    }
+
+    companion object {
+        /** Fußwegblock (Schema `RideWalkRoute`) von Angebot und Buchung: Geometrie als Punktliste, nummerierte Wegschritte, Rückfallgrund. */
+        fun walkBlock(w: WalkSnapshot): Map<String, Any?> = linkedMapOf(
+            "status" to w.status.name, "snapshot_id" to w.id.toString(), "distance_m" to w.distanceM, "duration_s" to w.durationS, "profile" to w.profile, "map_version" to w.mapVersion,
+            "fallback_reason" to w.fallbackReason, "geometry" to w.geometry.map { linkedMapOf("latitude" to it.latitude, "longitude" to it.longitude) },
+            "steps" to w.steps.map { linkedMapOf("seq" to it.seq, "maneuver" to it.maneuver.name, "distance_m" to it.distanceM, "duration_s" to it.durationS, "instruction" to it.instruction) },
+            "pickup_stop_name" to w.pickupStopName, "computed_at" to w.computedAt.toString(),
+        )
     }
 }

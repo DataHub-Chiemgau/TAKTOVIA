@@ -1220,6 +1220,7 @@ export interface RideOfferProposal {
   dropoff_stop?: RideOfferStop;
   run_revision?: number;
   revision: number;
+  walk?: RideWalkRoute;
 }
 
 export interface RideOfferStop {
@@ -1260,6 +1261,7 @@ export interface RideOffer {
   demand: RideResourceVector;
   hold: RideHold | null;
   revision: number;
+  walk?: RideWalkRoute;
 }
 
 export interface RideHold {
@@ -1352,7 +1354,7 @@ export interface RideWalkRoute {
 
 export interface RideWalkStep {
   seq: number;
-  maneuver: 'START' | 'STRAIGHT' | 'TURN_LEFT' | 'TURN_RIGHT' | 'ARRIVE';
+  maneuver: 'START' | 'TURN_LEFT' | 'TURN_RIGHT' | 'ARRIVE';
   distance_m: number;
   duration_s: number;
   instruction: string;

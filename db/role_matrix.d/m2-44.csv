@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+ride_offer_walk;SELECT,INSERT;WP-M2-44: Fußweg-Snapshot je Angebot, unveränderlich (kein UPDATE, kein DELETE)

@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+ride_offer_walk;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;offer_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;status;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;distance_m;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;duration_s;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;profile;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;map_version;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;fallback_reason;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;geometry;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;steps;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;pickup_stop_name;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer_walk;computed_at;nein;BUCHUNGSABWICKLUNG;;;;

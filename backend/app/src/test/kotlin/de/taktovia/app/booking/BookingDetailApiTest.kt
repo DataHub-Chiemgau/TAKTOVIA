@@ -109,4 +109,31 @@ class BookingDetailApiTest {
         val other = s.newAccount(); val o = sc.detail(other.token)
         assertEquals(404, o.status); assertFalse(o.text.contains("pickup_at"))
     }
+
+    @Test
+    fun fussweg_ist_derselbe_snapshot_in_angebot_und_buchung() {
+        val h = s.held(passengers = 1)
+        val inOffer = h.issued.offer["walk"]
+        // freier Startpunkt (keine Koordinate gespeichert): gekennzeichneter Rückfall, nie eine erfundene Geometrie; Name des Abholhaltepunkts und Luftlinie
+        assertEquals("FALLBACK", inOffer["status"].asString()); assertEquals("NO_ORIGIN_STOP", inOffer["fallback_reason"].asString())
+        assertEquals(0, inOffer["geometry"].size()); assertTrue(inOffer["steps"].size() >= 1); assertFalse(inOffer["pickup_stop_name"].asString().isBlank())
+        assertTrue(inOffer["distance_m"].asInt() <= 400, "kein angebotener Fußweg überschreitet stop_walk_max_m")
+        // GET Angebot und GET Buchung tragen denselben Snapshot
+        val offer = s.offers.get(h.issued)
+        assertEquals(inOffer, offer.json["walk"])
+        val booking = s.confirm(h).json["id"].asString()
+        val detail = s.get(booking, h.account.token)
+        assertEquals(inOffer, detail.json["walk"], detail.text)
+        assertEquals(inOffer["snapshot_id"].asString(), detail.json["walk"]["snapshot_id"].asString())
+    }
+
+    @Test
+    fun fussweg_fremde_buchung_ergibt_404() {
+        val sc = Scene(); val other = s.newAccount()
+        // fremder Fahrgast: Buchung 404 (also auch kein Fußweg), Angebot 404, keine Fußwegangaben im Problem
+        val r = sc.detail(other.token)
+        assertEquals(404, r.status); assertFalse(r.text.contains("steps") || r.text.contains("pickup_stop_name"))
+        val o = env.get("/v1/ride-offers/${sc.h.offerId}", other.token)
+        assertEquals(404, o.status); assertFalse(o.text.contains("steps"))
+    }
 }

@@ -3,6 +3,7 @@ import { ScreenFrame, StateView, zeit } from '@taktovia/design-system';
 import type { ScreenContext } from '@taktovia/design-system';
 import { useParams } from 'react-router-dom';
 import { BookingDetail } from './BookingDetail';
+import { WalkingRoute } from './WalkingRoute';
 import { useOnline } from '../netz/useOnline';
 import { tx } from '../texte';
 
@@ -35,7 +36,9 @@ export function ReiseDetailScreen({ pollMs }: { pollMs?: number } = {}) {
           bookingId={bookingId}
           zone={DEFAULT_ZONE}
           {...(pollMs === undefined ? {} : { pollMs })}
-        />
+        >
+          {(b) => <WalkingRoute booking={b} zone={DEFAULT_ZONE} />}
+        </BookingDetail>
       )}
     </ScreenFrame>
   );
