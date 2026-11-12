@@ -11,6 +11,7 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `fleet.release_issued` | `fleet-safety` | `resource_release` / 1 | Einsatzfreigabe nach Prüfabschluss | `staff-time` (Dienststatus, Auftragsauslieferung), Leitstelle | `einsatzfreigabe` |
 | `fleet.release_revoked` | `fleet-safety` | `resource_release` / 2 | Widerruf | `staff-time`, `booking-dispatch`, Leitstelle | `einsatzfreigabe` |
 | `inspection.completed` | `fleet-safety` | `inspection_run` / n | `submitInspection` bestätigt | Leitstelle (Prüfstatus), Schadenakte (Mangel zu Schaden) | `inspection_run` |
+| `inspection.template_unavailable` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Prüflauf-Start ohne eindeutig freigegebene Vorlage (WP-M3-13) | Leitstelle | – |
 | `defect.reported` | `fleet-safety` | `defect_case` / 1 | Schaden gemeldet | Leitstelle, Alarm (WP-M3-46) | `defect_case` |
 | `defect.triaged` | `fleet-safety` | `defect_case` / n | Klasse gesetzt | Sperrkern, Alarm, Incident | `defect_case` |
 | `defect.state_changed` | `fleet-safety` | `defect_case` / n | Status gewechselt (WP-M3-47, auch Wiedereröffnung) | Leitstelle, Alarm | `defect_case` |

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/inspection.template_unavailable.v1.schema.json",
+  "title": "Hinweis an die Leitstelle: keine eindeutig freigegebene Prüfvorlage, Ereignistyp inspection.template_unavailable (WP-M3-13, LH-6.21-CHK-002)",
+  "description": "Entsteht, wenn ein Prüflauf nicht gestartet werden kann, weil für Fahrzeugklasse und Bedienart des Fahrzeugs keine (NO_TEMPLATE) oder mehrere (AMBIGUOUS_TEMPLATE) freigegebene Vorlagenrevisionen bestehen. Die Einsatzfreigabe bleibt aus. `aggregate_id` der Hülle (platform.eventenvelope.v1) ist je Ereignis eine neue Kennung, `aggregate_revision` 1. Enthält nur Kennungen, Codes und Zähler (Minimierung); keine Personen, keine Texte. Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["shift_id", "vehicle_id", "vehicle_class", "service_mode", "reason", "candidate_count"],
+  "additionalProperties": false,
+  "properties": {
+    "shift_id": {"type": "string", "format": "uuid"},
+    "vehicle_id": {"type": "string", "format": "uuid"},
+    "vehicle_class": {"oneOf": [{"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"}, {"type": "null"}]},
+    "service_mode": {"oneOf": [{"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"}, {"type": "null"}]},
+    "reason": {"type": "string", "enum": ["NO_TEMPLATE", "AMBIGUOUS_TEMPLATE"]},
+    "candidate_count": {"type": "integer", "minimum": 0}
+  },
+  "examples": [
+    {
+      "shift_id": "00000000-0000-4000-8000-0000000000d1",
+      "vehicle_id": "00000000-0000-4000-8000-0000000000d2",
+      "vehicle_class": "KLEINBUS",
+      "service_mode": "STANDARD",
+      "reason": "NO_TEMPLATE",
+      "candidate_count": 0
+    }
+  ]
+}

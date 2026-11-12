@@ -672,14 +672,34 @@ paths:
       - oidc:
         - inspections:write
       description: 'Legt einen Prüflauf für genau die Kombination Fahrer (aus dem
-        Token), Fahrzeug und Schicht an. Fremde Schicht oder fremdes Fahrzeug: 404;
-        Schicht eines anderen Fahrers: 404; Vorlagenrevision nicht die freigegebene:
-        422. Ein zweiter offener Prüflauf derselben Kombination liefert den ersten
-        (200 ist nicht vorgesehen, daher 409 CONFLICT mit Verweis).'
+        Token), Fahrzeug und Schicht an (WP-M3-13, LH-6.21-CHK-002). Die Vorlagenrevision
+        bestimmt allein der Server aus Fahrzeugklasse und Bedienart des Fahrzeugs
+        (genau eine freigegebene Revision); `template_revision_id` im Request ist
+        wirkungslos. Fremde Schicht oder Schicht eines anderen Fahrers: 404; Schicht
+        ohne Dienstanmeldung (nicht angetreten) oder beendet: 409 INVALID_STATE_TRANSITION;
+        Fahrzeug nicht das der Schicht: 422. Gibt es keine oder mehrere passende freigegebene
+        Vorlagen, entsteht kein Prüflauf, die Freigabe bleibt aus, die Leitstelle erhält
+        das Hinweisereignis `inspection.template_unavailable` und die Antwort ist 409 CONFLICT,
+        `detail` beginnt mit `TEMPLATE_UNAVAILABLE` (keine) bzw. `TEMPLATE_AMBIGUOUS` (mehrere).
+        Ein bereits offener Prüflauf derselben Kombination (Schicht, Fahrzeug, Art; zweites
+        Gerät oder anderer Schlüssel) wird unverändert mit 200 geliefert, mit seiner
+        ursprünglichen Vorlagenrevision; derselbe `Idempotency-Key` liefert dieselbe Antwort.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
+        '200':
+          description: Für diese Kombination bestand bereits ein offener Prüflauf (unverändert).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
         '201':
           description: Angelegt.
           content:
@@ -2995,6 +3015,8 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         template_revision_id:
           $ref: common.yaml#/components/schemas/UUID
+          deprecated: true
+          description: Wirkungslos; die Vorlagenrevision bestimmt allein der Server.
         kind:
           type: string
           enum:
@@ -3019,11 +3041,12 @@ components:
       required:
       - shift_id
       - vehicle_id
-      - template_revision_id
       - kind
       - client_started_at
-      description: Prüflauf starten (CHK-004); der Server prüft, dass die Vorlagenrevision
-        genau die für Fahrzeugklasse und Bedienart freigegebene ist.
+      description: Prüflauf starten (CHK-002); die Vorlagenrevision wählt allein der Server
+        aus Fahrzeugklasse und Bedienart. `template_revision_id` ist veraltet und wirkungslos
+        (ein Client kann keine andere Vorlage wählen). `odometer_km` und `battery_soc_pct`
+        werden erst mit WP-M3-17 gespeichert.
     InspectionDraft:
       type: object
       additionalProperties: false
@@ -3135,6 +3158,88 @@ components:
           - type: string
             format: date-time
           - type: 'null'
+        template:
+          type: object
+          additionalProperties: false
+          description: Die feste Vorlagenrevision des Laufs mit allen Prüfschritten in
+            Reihenfolge (Anzeige „Prüfung n / step_count“). Bleibt auch nach einer späteren
+            Vorlagenfreigabe unverändert.
+          properties:
+            template_revision_id:
+              $ref: common.yaml#/components/schemas/UUID
+            template_id:
+              $ref: common.yaml#/components/schemas/UUID
+            version:
+              type: integer
+              minimum: 1
+            vehicle_class:
+              type: string
+            service_mode:
+              type: string
+            step_count:
+              type: integer
+              minimum: 1
+            steps:
+              type: array
+              maxItems: 200
+              items:
+                type: object
+                additionalProperties: false
+                properties:
+                  step_code:
+                    type: string
+                  position:
+                    type: integer
+                    minimum: 1
+                  title:
+                    type: string
+                  mandatory:
+                    type: boolean
+                  safety_critical:
+                    type: boolean
+                  answer_kind:
+                    type: string
+                    enum:
+                    - OK_DEFECT_NA
+                    - NUMBER
+                    - TEXT_SHORT
+                  photo_required_on_defect:
+                    type: boolean
+                  help_text:
+                    oneOf:
+                    - type: string
+                    - type: 'null'
+                  na_requires_reason:
+                    type: boolean
+                  number_min:
+                    oneOf:
+                    - type: number
+                    - type: 'null'
+                  number_max:
+                    oneOf:
+                    - type: number
+                    - type: 'null'
+                  number_unit:
+                    oneOf:
+                    - type: string
+                    - type: 'null'
+                  has_example_image:
+                    type: boolean
+                required:
+                - step_code
+                - position
+                - title
+                - mandatory
+                - safety_critical
+                - answer_kind
+          required:
+          - template_revision_id
+          - template_id
+          - version
+          - vehicle_class
+          - service_mode
+          - step_count
+          - steps
         revision:
           type: integer
           format: int64

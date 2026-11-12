@@ -1231,7 +1231,7 @@ export interface InspectionAnswer {
 export interface InspectionCreate {
   shift_id: UUID;
   vehicle_id: UUID;
-  template_revision_id: UUID;
+  template_revision_id?: UUID;
   kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE';
   odometer_km?: number | null;
   battery_soc_pct?: number | null;
@@ -1267,6 +1267,29 @@ export interface Inspection {
   started_at: string;
   completed_at: string | null;
   received_at: string | null;
+  template?: {
+    template_revision_id: UUID;
+    template_id: UUID;
+    version: number;
+    vehicle_class: string;
+    service_mode: string;
+    step_count: number;
+    steps: ({
+      step_code: string;
+      position: number;
+      title: string;
+      mandatory: boolean;
+      safety_critical: boolean;
+      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+      photo_required_on_defect?: boolean;
+      help_text?: string | null;
+      na_requires_reason?: boolean;
+      number_min?: number | null;
+      number_max?: number | null;
+      number_unit?: string | null;
+      has_example_image?: boolean;
+    })[];
+  };
   revision: number;
 }
 
@@ -4451,7 +4474,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   publishChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/publish', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getChecklistStepExampleImage: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   putChecklistStepExampleImage: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 415, 422, 429, 503] },
-  createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
