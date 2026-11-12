@@ -3,7 +3,9 @@ package de.taktovia.app.fleet
 import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.fleetsafety.api.DefectCatalog
+import de.taktovia.fleetsafety.api.DefectAmendment
 import de.taktovia.fleetsafety.api.DefectFilter
+import de.taktovia.fleetsafety.api.EvidenceView
 import de.taktovia.fleetsafety.api.DefectTransition
 import de.taktovia.fleetsafety.api.DefectView
 import de.taktovia.fleetsafety.api.FleetsafetyApi
@@ -48,6 +50,13 @@ internal object DefectJson {
     )
 
     fun resource(d: DefectView) = DefectResource(of(d), d.revision)
+
+    /** Wire-Darstellung eines Fotos (`DefectEvidence`); der Hash geht als base64url (siehe `DefectEvidenceController`). */
+    fun evidence(e: EvidenceView, defectId: UUID): Map<String, Any?> = linkedMapOf(
+        "id" to e.id.toString(), "defect_id" to defectId.toString(), "mime" to e.mime, "size_bytes" to e.sizeBytes,
+        "sha256" to java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { e.sha256.substring(it * 2, it * 2 + 2).toInt(16).toByte() }),
+        "captured_at" to e.capturedAt.toString(), "received_at" to e.receivedAt.toString(), "added_in_version" to e.addedInVersion, "replaces_id" to e.replacesId?.toString(),
+    )
 }
 
 /**
@@ -75,6 +84,26 @@ class DefectController(private val fleet: FleetsafetyApi, private val codec: Cur
             linkedMapOf("id" to h.id.toString(), "from_status" to h.fromStatus, "to_status" to h.toStatus, "actor" to h.actor, "reason" to h.reason, "revision" to h.revision,
                 "reopening" to h.reopening, "occurred_at" to h.occurredAt.toString())
         }, "next_cursor" to null, "as_of" to Instant.now().toString())
+    }
+
+    @PostMapping("/v1/defects/{defect_id}/amendments")
+    fun amend(@PathVariable("defect_id") id: UUID, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): DefectResource =
+        DefectJson.resource(fleet.defects.amend(RequestContexts.require(request), id, DefectAmendment.parse(body)))
+
+    @GetMapping("/v1/defects/{defect_id}/history")
+    fun history(@PathVariable("defect_id") id: UUID, request: HttpServletRequest): Map<String, Any?> {
+        val items = fleet.defects.history(RequestContexts.require(request), id)
+        return linkedMapOf("items" to items.map { r ->
+            linkedMapOf("version" to r.version, "author" to r.author, "change_reason" to r.changeReason, "created_at" to r.createdAt.toString(), "content" to r.content, "evidence" to r.evidence.map { DefectJson.evidence(it, id) })
+        }, "next_cursor" to null, "as_of" to Instant.now().toString())
+    }
+
+    @GetMapping("/v1/defects/{defect_id}/as-of")
+    fun asOf(@PathVariable("defect_id") id: UUID, @RequestParam(required = false) at: String?, request: HttpServletRequest): Map<String, Any?> {
+        val ts = at?.let { instant("at", it) } ?: throw bad("at", ViolationCode.REQUIRED)
+        val r = fleet.defects.stateAt(RequestContexts.require(request), id, ts)
+        return linkedMapOf("as_of" to r.asOf.toString(), "version" to r.version, "version_created_at" to r.versionCreatedAt.toString(), "status" to r.status, "content" to r.content,
+            "evidence" to r.evidence.map { DefectJson.evidence(it, id) })
     }
 
     @GetMapping("/v1/defects/{defect_id}")

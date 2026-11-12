@@ -2413,6 +2413,86 @@
       ]
     },
     {
+      "tabelle": "defect_case_revision",
+      "aggregat": "Fassung der Schadenmeldung (WP-M3-48)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "unveränderlich, Löschung nur über den Lifecycleprozess (D-11)",
+      "spalten": [
+        {
+          "spalte": "author",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Autor (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "change_reason",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Änderungsgrund (Freitext, begrenzt)"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "defect_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "snapshot",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Inhalt der Meldung in dieser Fassung (Codes und begrenzter Freitext)"
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "version",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "defect_evidence",
       "aggregat": "Schadenevidenz (WP-M3-02)",
       "loeschklasse": "LK_BETRIEB",
@@ -2453,6 +2533,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "defect_version",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Version der Akte, mit der der Anhang hinzukam"
         },
         {
           "spalte": "id",
@@ -2498,6 +2587,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "replaces_evidence_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Vorgänger-Anhang, den dieser ersetzt (WP-M3-48)"
         },
         {
           "spalte": "revision",
@@ -2552,6 +2650,15 @@
       "loeschklasse": "LK_BETRIEB",
       "bemerkung": "Quarantäne und Prüfergebnis, Aufbewahrung der Schadensbilder D-11",
       "spalten": [
+        {
+          "spalte": "attached_in_version",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Version der Akte bei der Bindung"
+        },
         {
           "spalte": "captured_at",
           "personenbezogen": "nein",
@@ -2650,6 +2757,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "replaces_evidence_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Vorgänger-Anhang bei Ersetzung"
         },
         {
           "spalte": "review_engine",

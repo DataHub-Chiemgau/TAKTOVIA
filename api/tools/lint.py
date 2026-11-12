@@ -19,7 +19,8 @@ MUTATING = {'post', 'put', 'patch', 'delete'}
 # Operationen ohne Idempotency-Key: Partnerereignisse tragen Signaturheader und werden über die Inbox dedupliziert (Kap. 05 §5.6).
 NO_IDEMPOTENCY_KEY = {'receivePartnerEvent', 'receiveProviderEvent'}   # receiveProviderEvent: PSP-Signatur und Inbox-Deduplikation (WP-M2-01)
 # Mutierende Operationen mit Idempotency-Key, aber ohne If-Match: legen Neues an statt eine Revision zu ändern.
-NO_IF_MATCH = {'planJourney', 'recordDriverEvent'}
+# amendDefect (WP-M3-48): ein Nachtrag hängt eine neue Version an die unveränderliche Historie an (Patch-Semantik auf dem Stand unter Zeilensperre); gleichzeitige Nachträge werden fortlaufend versioniert, nie abgewiesen
+NO_IF_MATCH = {'planJourney', 'recordDriverEvent', 'amendDefect'}
 EVENT_NAME = re.compile(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+\.v\d+\.schema\.json$')   # Unterstrich erlaubt: Ereignistypen wie config.revision_created
 
 

@@ -158,7 +158,7 @@ internal class JdbcDefectEvidence(
                 "UPDATE taktovia.defect_evidence_upload u SET state = 'RELEASED', object_key = ?, stored_sha256 = ?, stored_size = ?, review_engine = ?, reviewed_at = clock_timestamp() WHERE u.id = ? RETURNING $COLUMNS",
                 MAPPER, finalKey, hash, stored.size.toLong(), engine, id,
             ).single()
-            if (updated.defectId != null) insertEvidence(j, updated, 1, null)
+            if (updated.defectId != null) insertEvidence(j, updated, updated.attachedInVersion ?: 1, updated.replacesEvidenceId)
             audit.record(j, AuditEntry(actor, AuditActions.DEFECT_EVIDENCE_RELEASED, ObjectRef("defect_evidence", id), UUID.randomUUID(), mapOf("engine" to engine, "mime" to row.mime, "size_bytes" to stored.size)))
             toView(updated)
         } else {
@@ -178,18 +178,27 @@ internal class JdbcDefectEvidence(
     fun attach(j: JdbcOperations, defectId: UUID, ids: List<UUID>, actor: ActorRef, version: Int, pointer: String = "/evidence_ids", replaces: Map<UUID, UUID> = emptyMap()) {
         ids.forEachIndexed { i, id ->
             val row = j.query("SELECT $COLUMNS FROM taktovia.defect_evidence_upload u WHERE u.id = ? FOR UPDATE", MAPPER, id).firstOrNull()
-            if (row == null || row.uploadedBy != actor.value || row.defectId != null || row.state !in setOf(EvidenceState.IN_REVIEW, EvidenceState.RELEASED))
-                throw ProblemException.invalid(Violation("$pointer/$i", ViolationCode.INVALID_VALUE))
-            j.update("UPDATE taktovia.defect_evidence_upload SET defect_id = ? WHERE id = ?", defectId, id)
-            if (row.state == EvidenceState.RELEASED) insertEvidence(j, row.copy(defectId = defectId), version, replaces[id])
+            val replacing = replaces[id]
+            // Ein Ersatz-Foto muss schon freigegeben sein: die Ersetzung ist mit der Version wirksam, nicht erst nach einer späteren Prüfung
+            val okState = if (replacing != null) setOf(EvidenceState.RELEASED) else setOf(EvidenceState.IN_REVIEW, EvidenceState.RELEASED)
+            if (row == null || row.uploadedBy != actor.value || row.defectId != null || row.state !in okState) throw ProblemException.invalid(Violation("$pointer/$i", ViolationCode.INVALID_VALUE))
+            j.update("UPDATE taktovia.defect_evidence_upload SET defect_id = ?, attached_in_version = ?, replaces_evidence_id = ? WHERE id = ?", defectId, version, replacing, id)
+            if (row.state == EvidenceState.RELEASED) insertEvidence(j, row.copy(defectId = defectId), version, replacing)
         }
+    }
+
+    /** Anhang, der ersetzt werden soll: freigegeben, zur Akte gehörig und noch nicht ersetzt (sonst 422 mit Feldverweis). */
+    fun requireReplaceable(j: JdbcOperations, defectId: UUID, evidenceId: UUID, pointer: String) {
+        val n = j.queryForObject(
+            "SELECT count(*) FROM taktovia.defect_evidence e WHERE e.id = ? AND e.defect_id = ? AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id)", Int::class.java, evidenceId, defectId)
+        if (n != 1) throw ProblemException.invalid(Violation(pointer, ViolationCode.INVALID_VALUE))
     }
 
     private fun insertEvidence(j: JdbcOperations, u: TicketRow, version: Int, replaces: UUID?) {
         j.update(
-            "INSERT INTO taktovia.defect_evidence (tenant_id, id, defect_id, media_ref, sha256, captured_at, created_by, mime, size_bytes, original_sha256, upload_id) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-            u.id, u.defectId, u.objectKey, u.storedSha256, Timestamp.from(u.capturedAt), u.uploadedBy, u.mime, u.storedSize, u.sha256Hex, u.id,
+            "INSERT INTO taktovia.defect_evidence (tenant_id, id, defect_id, media_ref, sha256, captured_at, created_by, mime, size_bytes, original_sha256, upload_id, defect_version, replaces_evidence_id) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            u.id, u.defectId, u.objectKey, u.storedSha256, Timestamp.from(u.capturedAt), u.uploadedBy, u.mime, u.storedSize, u.sha256Hex, u.id, version, replaces,
         )
     }
 
@@ -197,15 +206,16 @@ internal class JdbcDefectEvidence(
 
     override fun listForDefect(ctx: RequestContext, defectId: UUID): List<EvidenceDetail> = ctxTx.run(ctx, readOnly = true) { j ->
         requireVisible(j, ctx, defectId)
-        j.query("SELECT $EV_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? ORDER BY e.created_at, e.id", EV_MAPPER, defectId)
+        j.query("SELECT $EV_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) ORDER BY e.created_at, e.id", EV_MAPPER, defectId)
     }
 
     override fun downloadLink(ctx: RequestContext, defectId: UUID, evidenceId: UUID): SignedUrl {
         val urls = wiring.urls ?: throw ProblemException(ErrorCode.SERVICE_UNAVAILABLE, "Signierte Links sind nicht konfiguriert.")
         val ref = ctxTx.run(ctx, readOnly = true) { j ->
             requireVisible(j, ctx, defectId)
-            j.query("SELECT e.media_ref FROM taktovia.defect_evidence e WHERE e.id = ? AND e.defect_id = ?", { rs, _ -> rs.getString(1) }, evidenceId, defectId).firstOrNull()
-        } ?: throw ProblemException.notFound()
+            j.query("SELECT e.media_ref, EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) FROM taktovia.defect_evidence e WHERE e.id = ? AND e.defect_id = ?",
+                { rs, _ -> rs.getString(1) to rs.getBoolean(2) }, evidenceId, defectId).firstOrNull()
+        }?.let { (ref, replaced) -> if (replaced && ctx.roles.none { it in DefectRoles.REVIEWERS }) null else ref } ?: throw ProblemException.notFound()
         return urls.sign(ctx, ObjectKey(ctx.tenant, ref), PURPOSE, ObjectPurposeCheck { _, _, _ -> true })
     }
 
@@ -265,6 +275,7 @@ internal class JdbcDefectEvidence(
     internal data class TicketRow(
         val id: UUID, val uploadedBy: String, val mime: String, val sizeBytes: Long, val sha256Hex: String, val capturedAt: Instant, val uploadKey: String, val state: EvidenceState,
         val rejectReason: String?, val objectKey: String?, val storedSha256: String?, val storedSize: Long?, val defectId: UUID?, val expiresAt: Instant, val revision: Long,
+        val attachedInVersion: Int? = null, val replacesEvidenceId: UUID? = null,
     )
 
     private fun toView(r: TicketRow) = EvidenceTicketView(r.id, r.state, r.mime, r.sizeBytes, r.sha256Hex, r.capturedAt, policy.maxBytes, r.expiresAt, r.uploadKey, r.rejectReason, r.defectId, r.revision)
@@ -272,16 +283,17 @@ internal class JdbcDefectEvidence(
     internal companion object {
         const val PURPOSE = "defect_evidence"
         const val COLUMNS = "u.id, u.uploaded_by, u.declared_mime, u.declared_size, u.declared_sha256, u.captured_at, u.quarantine_key, u.state, u.reject_reason, u.object_key, u.stored_sha256, " +
-            "u.stored_size, u.defect_id, u.expires_at, u.revision"
+            "u.stored_size, u.defect_id, u.expires_at, u.revision, u.attached_in_version, u.replaces_evidence_id"
         val MAPPER = RowMapper { rs, _ ->
             TicketRow(rs.getObject("id", UUID::class.java), rs.getString("uploaded_by"), rs.getString("declared_mime"), rs.getLong("declared_size"), rs.getString("declared_sha256"),
                 rs.getTimestamp("captured_at").toInstant(), rs.getString("quarantine_key"), EvidenceState.valueOf(rs.getString("state")), rs.getString("reject_reason"), rs.getString("object_key"),
-                rs.getString("stored_sha256"), rs.getObject("stored_size") as Long?, rs.getObject("defect_id", UUID::class.java), rs.getTimestamp("expires_at").toInstant(), rs.getLong("revision"))
+                rs.getString("stored_sha256"), rs.getObject("stored_size") as Long?, rs.getObject("defect_id", UUID::class.java), rs.getTimestamp("expires_at").toInstant(), rs.getLong("revision"),
+                rs.getObject("attached_in_version") as Int?, rs.getObject("replaces_evidence_id", UUID::class.java))
         }
-        const val EV_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by"
+        const val EV_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id"
         val EV_MAPPER = RowMapper { rs, _ ->
             EvidenceDetail(rs.getObject("id", UUID::class.java), rs.getObject("defect_id", UUID::class.java), rs.getString("mime"), rs.getObject("size_bytes") as Long?, rs.getString("sha256"),
-                rs.getTimestamp("captured_at").toInstant(), rs.getTimestamp("received_at").toInstant(), 1, null, rs.getString("created_by"))
+                rs.getTimestamp("captured_at").toInstant(), rs.getTimestamp("received_at").toInstant(), rs.getInt("defect_version"), rs.getObject("replaces_evidence_id", UUID::class.java), rs.getString("created_by"))
         }
     }
 }

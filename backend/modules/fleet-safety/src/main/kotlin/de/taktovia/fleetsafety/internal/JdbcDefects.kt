@@ -1,7 +1,10 @@
 package de.taktovia.fleetsafety.internal
 
 import de.taktovia.fleetsafety.api.DefectCatalog
+import de.taktovia.fleetsafety.api.DefectAmendment
 import de.taktovia.fleetsafety.api.DefectFilter
+import de.taktovia.fleetsafety.api.DefectRevision
+import de.taktovia.fleetsafety.api.DefectStateAt
 import de.taktovia.fleetsafety.api.DefectState
 import de.taktovia.fleetsafety.api.DefectStateMachine
 import de.taktovia.fleetsafety.api.DefectTransition
@@ -30,6 +33,7 @@ import de.taktovia.platform.problem.ViolationCode
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
+import tools.jackson.databind.json.JsonMapper
 import java.sql.SQLException
 import java.sql.Timestamp
 import java.time.Clock
@@ -40,6 +44,8 @@ import java.util.UUID
 /** Rollen, die Schäden melden dürfen (Rechtematrix `createDefect`: Fahrer, Disposition, Werkstatt); die Rechtematrix im Anfragefilter ist die erste, diese Prüfung die zweite Schicht. */
 internal object DefectRoles {
     val REPORTERS = setOf("driver", "dispatcher", "workshop")
+    /** Prüfer („berechtigte Prüfer“, OP-34): Werkstatt und Betriebsleitung lesen die Historie, auch ersetzte Anhänge. */
+    val REVIEWERS = setOf("workshop", "tenant_admin")
     /** Ein Konto, das nur als Fahrer auftritt, sieht und meldet im Rahmen seines Bezugs und seiner eigenen Meldungen (DMG-011). */
     fun driverOnly(ctx: RequestContext) = "driver" in ctx.roles && ctx.roles.none { it == "dispatcher" || it == "workshop" || it == "tenant_admin" }
     fun reporterRole(ctx: RequestContext): String? = listOf("dispatcher", "workshop", "driver").firstOrNull { it in ctx.roles }
@@ -121,6 +127,7 @@ internal class JdbcDefects(
     private fun afterInsert(j: JdbcOperations, id: UUID, view: DefectView, actor: ActorRef, cmd: ReportDefect) {
         j.update("INSERT INTO taktovia.defect_status_history (tenant_id, id, defect_id, from_status, to_status, actor, reason, revision) VALUES (taktovia.current_tenant(), ?, ?, NULL, 'NEW', ?, NULL, ?)",
             UUID.randomUUID(), id, actor.value, view.revision)
+        insertRevision(j, id, 1, actor, "Erstmeldung", view)
         evidence.attach(j, id, cmd.evidenceIds, actor, 1)
     }
 
@@ -224,6 +231,110 @@ internal class JdbcDefects(
         }
     }
 
+    // ---------------- Unveränderliche Historie (WP-M3-48) ----------------
+
+    private val json = JsonMapper.builder().build()
+
+    /** Inhalt einer Fassung der Meldung als Schlüssel-Wert-Abbild (nur Codes, Zeiten und begrenzter Freitext). */
+    private fun contentOf(v: DefectView): Map<String, Any?> = linkedMapOf(
+        "occurred_at" to v.occurredAt.toString(), "location_kind" to v.locationKind, "location_value" to v.locationValue, "category_code" to v.categoryCode, "kind" to v.kind,
+        "vehicle_area" to v.vehicleArea, "observed_effect" to v.observedEffect, "description" to v.description, "source_inspection_id" to v.sourceInspectionId?.toString(), "source_step_code" to v.sourceStepCode,
+    )
+
+    private fun insertRevision(j: JdbcOperations, defectId: UUID, version: Int, actor: ActorRef, reason: String, content: DefectView) {
+        j.update("INSERT INTO taktovia.defect_case_revision (tenant_id, id, defect_id, version, snapshot, author, change_reason) VALUES (taktovia.current_tenant(), ?, ?, ?, CAST(? AS jsonb), ?, ?)",
+            UUID.randomUUID(), defectId, version, json.writeValueAsString(contentOf(content)), actor.value, reason)
+    }
+
+    override fun amend(ctx: RequestContext, id: UUID, cmd: DefectAmendment): DefectView {
+        val actor = actor(ctx)
+        DefectRoles.reporterRole(ctx) ?: throw ProblemException(ErrorCode.FORBIDDEN, "Nachträge erfassen Fahrer, Disposition und Werkstatt.")
+        reporter(ctx)
+        try {
+            return ctxTx.run(ctx) { j -> doAmend(j, ctx, actor, id, cmd) }
+        } catch (e: DataIntegrityViolationException) {
+            if (sqlState(e) == "23514") throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.INVALID_VALUE))
+            throw e
+        }
+    }
+
+    @AuditRequired
+    private fun doAmend(j: JdbcOperations, ctx: RequestContext, actor: ActorRef, id: UUID, cmd: DefectAmendment): DefectView {
+        // Zeilensperre: gleichzeitige Nachträge werden nacheinander versioniert, jeder auf dem Stand des vorigen (kein verlorenes Update)
+        val before = j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.id = ? FOR UPDATE", MAPPER, id).firstOrNull() ?: throw ProblemException.notFound()
+        if (DefectRoles.driverOnly(ctx) && before.reportedBy.toString() != ctx.actor.subject.lowercase()) throw ProblemException.notFound()
+        val now = clock.instant()
+        if (cmd.occurredAt != null && cmd.occurredAt.isAfter(now.plusSeconds(DefectCatalog.FUTURE_TOLERANCE_SECONDS))) throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.INVALID_VALUE))
+        val next = before.copy(
+            occurredAt = cmd.occurredAt ?: before.occurredAt, locationKind = cmd.locationKind ?: before.locationKind, locationValue = cmd.locationValue ?: before.locationValue,
+            categoryCode = cmd.categoryCode ?: before.categoryCode, kind = cmd.kind ?: before.kind, vehicleArea = cmd.vehicleArea ?: before.vehicleArea,
+            observedEffect = cmd.observedEffect ?: before.observedEffect, description = cmd.description ?: before.description,
+        )
+        val changed = contentOf(next).filter { (k, v) -> v != contentOf(before)[k] }.keys.toList()
+        if (changed.isEmpty() && cmd.addEvidenceIds.isEmpty() && cmd.replaceEvidence.isEmpty()) throw ProblemException.invalid(Violation("/", ViolationCode.INVALID_VALUE))
+        cmd.replaceEvidence.forEachIndexed { i, r -> evidence.requireReplaceable(j, id, r.evidenceId, "/replace_evidence/$i/evidence_id") }
+        val version = before.contentVersion + 1
+        insertRevision(j, id, version, actor, cmd.changeReason.trim(), next)
+        j.update(
+            "UPDATE taktovia.defect_case SET occurred_at = ?, location_kind = ?, location_value = ?, category_code = ?, kind = ?, vehicle_area = ?, observed_effect = ?, description = ?, " +
+                "content_version = ?, revision = revision + 1, updated_at = clock_timestamp() WHERE id = ?",
+            Timestamp.from(next.occurredAt), next.locationKind, next.locationValue, next.categoryCode, next.kind, next.vehicleArea, next.observedEffect, next.description, version, id,
+        )
+        evidence.attach(j, id, cmd.addEvidenceIds, actor, version, "/add_evidence_ids")
+        evidence.attach(j, id, cmd.replaceEvidence.map { it.ticketId }, actor, version, "/replace_evidence", cmd.replaceEvidence.associate { it.ticketId to it.evidenceId })
+        val after = loadOrNull(j, id)!!
+        audit.record(j, AuditEntry(actor, AuditActions.DEFECT_AMENDED, ObjectRef("defect", id), ctx.correlationId,
+            mapOf("case_number" to after.caseNumber, "version" to version, "changed_fields" to changed, "evidence_added" to cmd.addEvidenceIds.size, "evidence_replaced" to cmd.replaceEvidence.size)))
+        outbox.append(j, OutboxEvent(id, after.revision, "defect.amended",
+            mapOf("defect_id" to id.toString(), "case_number" to after.caseNumber, "vehicle_id" to after.vehicleId.toString(), "version" to version, "changed_fields" to changed,
+                "evidence_added" to cmd.addEvidenceIds.size, "evidence_replaced" to cmd.replaceEvidence.size), clock.instant(), correlationId = ctx.correlationId))
+        return after
+    }
+
+    private fun requireReviewer(ctx: RequestContext) {
+        if (ctx.roles.none { it in DefectRoles.REVIEWERS }) throw ProblemException(ErrorCode.FORBIDDEN, "Die Historie sehen nur berechtigte Prüfer (Werkstatt, Betriebsleitung).")
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun readContent(text: String): Map<String, Any?> = json.readValue(text, Map::class.java) as Map<String, Any?>
+
+    private fun evidenceView(e: de.taktovia.fleetsafety.api.EvidenceDetail) = EvidenceView(e.id, e.mime ?: "", e.sizeBytes ?: 0, e.sha256Hex, e.capturedAt, e.receivedAt, e.addedInVersion, e.replacesId)
+
+    override fun history(ctx: RequestContext, id: UUID): List<DefectRevision> {
+        requireReviewer(ctx)
+        return ctxTx.run(ctx) { j -> doReadHistory(j, ctx, id) }
+    }
+
+    @AuditRequired
+    private fun doReadHistory(j: JdbcOperations, ctx: RequestContext, id: UUID): List<DefectRevision> {
+        val caseNumber = j.query("SELECT case_number FROM taktovia.defect_case WHERE id = ?", { rs, _ -> rs.getString(1) }, id).firstOrNull() ?: throw ProblemException.notFound()
+        val evidence = j.query("SELECT $EVIDENCE_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? ORDER BY e.created_at, e.id", JdbcDefectEvidence.EV_MAPPER, id).groupBy { it.addedInVersion }
+        val out = j.query("SELECT r.version, r.author, r.change_reason, r.created_at, r.snapshot::text FROM taktovia.defect_case_revision r WHERE r.defect_id = ? ORDER BY r.version", { rs, _ ->
+            DefectRevision(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getTimestamp(4).toInstant(), readContent(rs.getString(5)), evidence[rs.getInt(1)].orEmpty().map { evidenceView(it) })
+        }, id)
+        audit.record(j, AuditEntry(actor(ctx), AuditActions.DEFECT_HISTORY_READ, ObjectRef("defect", id), ctx.correlationId, mapOf("case_number" to caseNumber, "versions" to out.size)))
+        return out
+    }
+
+    override fun stateAt(ctx: RequestContext, id: UUID, at: Instant): DefectStateAt {
+        requireReviewer(ctx)
+        return ctxTx.run(ctx) { j -> doReadStateAt(j, ctx, id, at) }
+    }
+
+    @AuditRequired
+    private fun doReadStateAt(j: JdbcOperations, ctx: RequestContext, id: UUID, at: Instant): DefectStateAt {
+        val caseNumber = j.query("SELECT case_number FROM taktovia.defect_case WHERE id = ?", { rs, _ -> rs.getString(1) }, id).firstOrNull() ?: throw ProblemException.notFound()
+        val ts = Timestamp.from(at)
+        val rev = j.query("SELECT r.version, r.created_at, r.snapshot::text FROM taktovia.defect_case_revision r WHERE r.defect_id = ? AND r.created_at <= ? ORDER BY r.version DESC LIMIT 1",
+            { rs, _ -> Triple(rs.getInt(1), rs.getTimestamp(2).toInstant(), readContent(rs.getString(3))) }, id, ts).firstOrNull() ?: throw ProblemException.notFound()
+        val evidence = j.query(
+            "SELECT $EVIDENCE_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ? AND e.created_at <= ? AND NOT EXISTS " +
+                "(SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id AND r.created_at <= ?) ORDER BY e.created_at, e.id", JdbcDefectEvidence.EV_MAPPER, id, ts, ts)
+        val status = j.query("SELECT h.to_status FROM taktovia.defect_status_history h WHERE h.defect_id = ? AND h.created_at <= ? ORDER BY h.created_at DESC, h.revision DESC LIMIT 1", { rs, _ -> rs.getString(1) }, id, ts).firstOrNull()
+        audit.record(j, AuditEntry(actor(ctx), AuditActions.DEFECT_HISTORY_READ, ObjectRef("defect", id), ctx.correlationId, mapOf("case_number" to caseNumber, "as_of" to at.toString(), "version" to rev.first)))
+        return DefectStateAt(at, rev.first, rev.second, status, rev.third, evidence.map { evidenceView(it) })
+    }
+
     // ---------------- Hilfen ----------------
 
     private fun findByDeviceEvent(j: JdbcOperations, deviceEventId: UUID): DefectView? =
@@ -235,7 +346,7 @@ internal class JdbcDefects(
     private fun enrich(j: JdbcOperations, views: List<DefectView>): List<DefectView> {
         if (views.isEmpty()) return views
         val ids = views.joinToString(",") { it.id.toString() }
-        val released = j.query("SELECT $EVIDENCE_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ANY (string_to_array(?, ',')::uuid[]) ORDER BY e.created_at, e.id",
+        val released = j.query("SELECT $EVIDENCE_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ANY (string_to_array(?, ',')::uuid[]) AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) ORDER BY e.created_at, e.id",
             JdbcDefectEvidence.EV_MAPPER, ids).groupBy { it.defectId }
         val pending = j.query("SELECT defect_id, count(*) FROM taktovia.defect_evidence_upload WHERE state = 'IN_REVIEW' AND defect_id = ANY (string_to_array(?, ',')::uuid[]) GROUP BY defect_id",
             { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, ids).toMap()
@@ -253,7 +364,7 @@ internal class JdbcDefects(
 
     internal companion object {
         /** Wie [JdbcDefectEvidence.EV_COLUMNS] (hier als eigene Konstante, damit die Abfrage-Prüfung den Text sieht). */
-        const val EVIDENCE_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by"
+        const val EVIDENCE_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id"
         const val ACTIVE_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status <> 'CANCELED'"
         const val PROVEN_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status = 'PROOF_RECORDED'"
         const val RELEASE_DECISIONS = "SELECT count(*) FROM taktovia.vehicle_release_decision d JOIN taktovia.repair_order r ON r.tenant_id = d.tenant_id AND r.id = d.repair_order_id " +

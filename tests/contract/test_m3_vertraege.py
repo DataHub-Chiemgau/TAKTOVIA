@@ -42,6 +42,7 @@ VALID = {
     'DefectCreate': {'vehicle_id': U1, 'occurred_at': T0, 'category_code': 'BRAKES', 'description': 'Bremse zieht'},
     'DefectTriage': {'severity': 'SAFETY_CRITICAL', 'decision': 'REVIEWED'},
     'DefectTransition': {'to': 'REVIEWED'},
+    'DefectAmendment': {'change_reason': 'Beschreibung präzisiert', 'description': 'Kratzer links'},
     'RepairOrderCreate': {'defect_id': U1},
     'VehicleReleaseCreate': {'repair_order_id': U1, 'follow_up_inspection_id': U2, 'reason': 'Reparatur nachgewiesen'},
     'IncidentTransition': {'event': 'START_REPLACEMENT_SEARCH'},
@@ -65,6 +66,7 @@ BROKEN = {
     'InspectionSubmit': ('answers', []),
     'DefectCreate': ('vehicle_id', 'kein-uuid'),
     'DefectTriage': ('severity', 'S9'),
+    'DefectAmendment': ('change_reason', ''),                   # Änderungsgrund ist Pflicht
     'DefectTransition': ('to', 'NEW'),                          # Rücksprung nach NEW ist kein Ziel
     'RepairOrderCreate': ('defect_id', None),
     'VehicleReleaseCreate': ('reason', ''),

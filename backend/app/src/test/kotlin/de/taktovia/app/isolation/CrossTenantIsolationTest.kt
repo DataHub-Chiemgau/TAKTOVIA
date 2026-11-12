@@ -175,6 +175,9 @@ class CrossTenantIsolationTest {
             "getDefect" to Probe("GET", "/v1/defects/{defect_id}", role = "dispatcher"),
             "transitionDefect" to Probe("POST", "/v1/defects/{defect_id}/transitions", """{"to":"REVIEWED"}""", true, role = "dispatcher"),
             "listDefectStatusHistory" to Probe("GET", "/v1/defects/{defect_id}/status-history", role = "dispatcher"),
+            "amendDefect" to Probe("POST", "/v1/defects/{defect_id}/amendments", """{"change_reason":"Fremdversuch","description":"gekapert"}""", false, role = "dispatcher"),
+            "listDefectHistory" to Probe("GET", "/v1/defects/{defect_id}/history"),   // Prüfer: Betriebsleitung (Standardtoken)
+            "getDefectAsOf" to Probe("GET", "/v1/defects/{defect_id}/as-of?at=2099-01-01T00:00:00Z"),
             "getDefectEvidenceUpload" to Probe("GET", "/v1/defect-evidence-uploads/{upload_id}", role = "dispatcher"),
             "completeDefectEvidenceUpload" to Probe("POST", "/v1/defect-evidence-uploads/{upload_id}/complete", "{}", true, role = "dispatcher"),
             "listDefectEvidence" to Probe("GET", "/v1/defects/{defect_id}/evidence", role = "dispatcher"),

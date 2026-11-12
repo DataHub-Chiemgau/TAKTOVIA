@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/defect.amended.v1.schema.json",
+  "title": "Schadenmeldung nachgetragen (WP-M3-48)",
+  "description": "Payload von `defect.amended`. Aggregat: defect_case / n. Nur Kennungen, Feldnamen und Zähler: keine Beschreibungs- oder Begründungstexte, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "defect_id",
+    "case_number",
+    "vehicle_id",
+    "version",
+    "changed_fields",
+    "evidence_added",
+    "evidence_replaced"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "defect_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "case_number": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "changed_fields": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "enum": [
+          "occurred_at",
+          "location_kind",
+          "location_value",
+          "category_code",
+          "kind",
+          "vehicle_area",
+          "observed_effect",
+          "description",
+          "source_inspection_id",
+          "source_step_code"
+        ]
+      }
+    },
+    "evidence_added": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "evidence_replaced": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    }
+  },
+  "examples": [
+    {
+      "defect_id": "11111111-2222-4333-8444-555555555555",
+      "case_number": "SCH-2026-000123",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "version": 2,
+      "changed_fields": [
+        "category_code"
+      ],
+      "evidence_added": 0,
+      "evidence_replaced": 1
+    }
+  ]
+}

@@ -13,6 +13,10 @@ export type Right =
   | 'fleet.write'
   | 'drivers'
   | 'drivers.write'
+  | 'defects'
+  | 'defects.write'
+  | 'defects.state'
+  | 'defects.history'
   | 'admin.ui17'
   | 'admin.ui18'
   | 'admin.ui20';
@@ -32,6 +36,11 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'fleet:write': ['fleet', 'fleet.write'],
   'drivers:read': ['drivers'],
   'drivers:write': ['drivers', 'drivers.write'],
+  // Der Bereich „Schadenakten“ des Operator-Web öffnet das Triagerecht (Disposition, Werkstatt); Fahrer lesen und melden über die Fahrer-App, nicht im Operator-Web.
+  'defects:triage': ['defects'],
+  'defects:write': ['defects.write'],
+  'defects:state': ['defects.state'],
+  'defects:history': ['defects.history'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],
@@ -46,11 +55,26 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
   PASSENGER: ['passenger.app'],
   CALLCENTER: ['callcenter'],
   SUPPORT: ['callcenter', 'admin.ui20'],
-  DISPATCHER: ['callcenter', 'fleet', 'fleet.write', 'drivers'],
-  WORKSHOP: ['fleet', 'fleet.write'],
+  DISPATCHER: [
+    'callcenter',
+    'fleet',
+    'fleet.write',
+    'drivers',
+    'defects',
+    'defects.write',
+    'defects.state',
+  ],
+  WORKSHOP: [
+    'fleet',
+    'fleet.write',
+    'defects',
+    'defects.write',
+    'defects.state',
+    'defects.history',
+  ],
   PLANNER: ['admin.ui17', 'fleet', 'drivers'],
   ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
-  TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
+  TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20', 'defects.state', 'defects.history'],
   FINANCE: ['finance'],
   STAFF_PLANNING: ['staff', 'drivers', 'drivers.write'],
 };

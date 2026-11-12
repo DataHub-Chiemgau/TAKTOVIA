@@ -133,7 +133,76 @@ interface Defects {
 
     /** Statushistorie der Akte (Disposition, Werkstatt, Betriebsleitung); Fahrer: 403. */
     fun statusHistory(ctx: RequestContext, id: UUID): List<StatusHistoryEntry>
+
+    /**
+     * Nachtrag zur Meldung (WP-M3-48, DMG-008): ändert nie eine Zeile der Historie, sondern legt eine neue Version mit Autor, Zeit und Änderungsgrund (Pflicht, sonst 422) an und trägt die geänderten
+     * Felder in die aktuelle Fassung ein. Ein Nachtrag kann Anhänge hinzufügen und ersetzen (der ersetzte bleibt als frühere Version erhalten). Gleichzeitige Nachträge werden unter Zeilensperre
+     * nacheinander versioniert (fortlaufend, ohne Verlust). Nur Meldeberechtigte (Fahrer nur eigene Akten); fremde Akte: 404. Audit `fleet.defect.amended`, Ereignis `defect.amended`.
+     */
+    fun amend(ctx: RequestContext, id: UUID, cmd: DefectAmendment): DefectView
+
+    /** Alle Fassungen der Meldung samt Anhängen, älteste zuerst; nur Prüfer (Werkstatt, Betriebsleitung), sonst 403; der Lesezugriff wird protokolliert (`fleet.defect.history_read`). */
+    fun history(ctx: RequestContext, id: UUID): List<DefectRevision>
+
+    /** Stand der Meldung zum Zeitpunkt [at] (Fassung, Anhänge, Status); vor der Meldung: 404. Nur Prüfer; protokolliert wie [history]. */
+    fun stateAt(ctx: RequestContext, id: UUID, at: Instant): DefectStateAt
 }
+
+/** Ersetzt den freigegebenen Anhang [evidenceId] durch das (bereits freigegebene) Foto des Uploadtickets [ticketId]. */
+data class EvidenceReplacement(val evidenceId: UUID, val ticketId: UUID)
+
+/**
+ * Nachtrag zur Meldung. Nur gesetzte Felder ändern sich; [changeReason] ist Pflicht. Der Ort wird nur als Paar geändert. Unbekannte Felder (Mandant, Meldender, Status, Fallnummer): 422.
+ */
+data class DefectAmendment(
+    val changeReason: String, val occurredAt: Instant?, val locationKind: String?, val locationValue: String?, val categoryCode: String?, val kind: String?, val vehicleArea: String?,
+    val observedEffect: String?, val description: String?, val addEvidenceIds: List<UUID>, val replaceEvidence: List<EvidenceReplacement>,
+) {
+    companion object {
+        private val FIELDS = setOf("change_reason", "occurred_at", "location_kind", "location_value", "category_code", "kind", "vehicle_area", "observed_effect", "description", "add_evidence_ids", "replace_evidence")
+
+        fun parse(raw: Map<String, Any?>): DefectAmendment {
+            val v = Violations()
+            v.unknown(raw, FIELDS, "")
+            val reason = v.text(raw, "change_reason", DefectCatalog.MAX_REASON, true)
+            val occurred = v.instant(raw, "occurred_at", false)
+            val locKind = v.code(raw, "location_kind", DefectCatalog.LOCATION_KINDS, false)
+            val locValue = v.text(raw, "location_value", DefectCatalog.MAX_LOCATION, false)
+            if ((locKind == null) != (locValue == null)) v.add(if (locKind == null) "/location_kind" else "/location_value", ViolationCode.REQUIRED)
+            val category = v.code(raw, "category_code", DefectCatalog.CATEGORIES, false)
+            val kind = v.code(raw, "kind", DefectCatalog.KINDS, false)
+            val area = v.code(raw, "vehicle_area", DefectCatalog.AREAS, false)
+            val effect = v.code(raw, "observed_effect", DefectCatalog.EFFECTS, false)
+            val description = v.text(raw, "description", DefectCatalog.MAX_DESCRIPTION, false)
+            val add = v.uuidList(raw, "add_evidence_ids", DefectCatalog.MAX_EVIDENCE)
+            val replace = mutableListOf<EvidenceReplacement>()
+            when (val r = raw["replace_evidence"]) {
+                null -> {}
+                is List<*> -> {
+                    if (r.size > DefectCatalog.MAX_EVIDENCE) v.add("/replace_evidence", ViolationCode.TOO_MANY_ITEMS)
+                    r.forEachIndexed { i, e ->
+                        val m = e as? Map<*, *>
+                        if (m == null) v.add("/replace_evidence/$i", ViolationCode.TYPE_MISMATCH) else {
+                            v.unknown(m, setOf("evidence_id", "ticket_id"), "/replace_evidence/$i")
+                            val old = v.uuid(m, "evidence_id", true)
+                            val new = v.uuid(m, "ticket_id", true)
+                            if (old != null && new != null) replace += EvidenceReplacement(old, new)
+                        }
+                    }
+                }
+                else -> v.add("/replace_evidence", ViolationCode.TYPE_MISMATCH)
+            }
+            v.throwIfAny()
+            return DefectAmendment(reason!!, occurred, locKind, locValue, category, kind, area, effect, description, add, replace)
+        }
+    }
+}
+
+/** Eine Fassung der Meldung (unveränderlich): [content] ist der volle Inhalt dieser Version, [evidence] die mit ihr hinzugekommenen Anhänge (auch später ersetzte). */
+data class DefectRevision(val version: Int, val author: String, val changeReason: String, val createdAt: Instant, val content: Map<String, Any?>, val evidence: List<EvidenceView>)
+
+/** Stand der Meldung zum Zeitpunkt [asOf]: gültige Fassung, damals sichtbare Anhänge und Status. */
+data class DefectStateAt(val asOf: Instant, val version: Int, val versionCreatedAt: Instant, val status: String?, val content: Map<String, Any?>, val evidence: List<EvidenceView>)
 
 /** Hilfen zum Lesen untypisierter JSON-Werte (Feldfehler mit Pointer). */
 internal fun Violations.has(pointer: String) = list.any { it.pointer == pointer }

@@ -110,7 +110,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         'staff_planning',
         ['Start', 'Personal', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen'],
       ],
-      ['workshop', ['Start', 'Flotte und Werkstatt']],
+      ['workshop', ['Start', 'Flotte und Werkstatt', 'Schadenakten']],
     ];
     for (const [role, expected] of cases) {
       const view = renderFor(role);

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+defect_case_revision;SELECT,INSERT;WP-M3-48: Fassungen der Meldung (Autor, Zeit, Grund, Version); unveränderlich (Trigger), kein UPDATE/DELETE

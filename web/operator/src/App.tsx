@@ -30,6 +30,7 @@ import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Geodaten } from './geo/Geodaten';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
+import { Schadenakte } from './flotte/Schadenakte';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -191,6 +192,14 @@ export function App() {
             element={
               <RequireRight right="fleet">
                 <Fahrzeugstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/schaeden"
+            element={
+              <RequireRight right="defects">
+                <Schadenakte />
               </RequireRight>
             }
           />

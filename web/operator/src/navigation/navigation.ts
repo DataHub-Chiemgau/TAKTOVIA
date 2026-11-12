@@ -19,6 +19,7 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
     href: '/flotte/fahrer',
     requires: 'drivers',
   },
+  { id: 'ui11-schaeden', label: 'Schadenakten', href: '/flotte/schaeden', requires: 'defects' },
   { id: 'ui17', label: 'Gebiete, Stops, Tarife', href: '/admin/gebiete', requires: 'admin.ui17' },
   {
     id: 'ui18',

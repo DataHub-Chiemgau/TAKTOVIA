@@ -38,3 +38,22 @@ internal object DefectStateContractCases {
             403, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/status-history", headers = w.env.headers(w.driverToken)) }, server = { IdentityEnv.server }),
     )
 }
+
+/** Vertragsfälle der unveränderlichen Historie der Schadenakte (WP-M3-48). */
+internal object DefectHistoryContractCases {
+    private fun idem() = mapOf("Idempotency-Key" to "contract-" + UUID.randomUUID())
+    private fun w() = DefectApiTest.World(IdentityEnv)
+    private fun defect(w: DefectApiTest.World): String = IdentityEnv.post("/v1/defects", w.body(), w.dispatcherToken, null, idem()).json["id"].asString()
+
+    val cases: List<ContractCase> = listOf(
+        ContractCase("amendDefect",
+            200, { val w = w(); ContractRequest("POST", "/v1/defects/${defect(w)}/amendments", """{"change_reason":"Beschreibung präzisiert","description":"Kratzer links"}""", w.env.headers(w.dispatcherToken, extra = idem())) },
+            422, { val w = w(); ContractRequest("POST", "/v1/defects/${defect(w)}/amendments", """{"description":"ohne Grund"}""", w.env.headers(w.dispatcherToken, extra = idem())) }, server = { IdentityEnv.server }),
+        ContractCase("listDefectHistory",
+            200, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/history", headers = w.env.headers(w.workshopToken)) },
+            403, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/history", headers = w.env.headers(w.dispatcherToken)) }, server = { IdentityEnv.server }),
+        ContractCase("getDefectAsOf",
+            200, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/as-of?at=${java.time.Instant.now().plusSeconds(5)}", headers = w.env.headers(w.workshopToken)) },
+            404, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/as-of?at=2020-01-01T00:00:00Z", headers = w.env.headers(w.workshopToken)) }, server = { IdentityEnv.server }),
+    )
+}

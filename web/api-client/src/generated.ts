@@ -1309,6 +1309,60 @@ export interface DefectStatusHistoryPage {
   as_of: string;
 }
 
+export interface DefectAmendment {
+  change_reason: string;
+  occurred_at?: string;
+  location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT';
+  location_value?: string;
+  category_code?: DefectCategory;
+  kind?: DefectKind;
+  vehicle_area?: DefectArea;
+  observed_effect?: DefectEffect;
+  description?: string;
+  add_evidence_ids?: UUID[];
+  replace_evidence?: ({
+    evidence_id: UUID;
+    ticket_id: UUID;
+  })[];
+}
+
+export interface DefectContent {
+  occurred_at: string;
+  location_kind: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT' | null;
+  location_value: string | null;
+  category_code: DefectCategory;
+  kind: DefectKind | null;
+  vehicle_area: DefectArea | null;
+  observed_effect: DefectEffect | null;
+  description: string | null;
+  source_inspection_id: UUID | null;
+  source_step_code: string | null;
+}
+
+export interface DefectRevision {
+  version: number;
+  author: string;
+  change_reason: string;
+  created_at: string;
+  content: DefectContent;
+  evidence: DefectEvidence[];
+}
+
+export interface DefectRevisionPage {
+  items: DefectRevision[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface DefectAsOf {
+  as_of: string;
+  version: number;
+  version_created_at: string;
+  status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED' | null;
+  content: DefectContent;
+  evidence: DefectEvidence[];
+}
+
 export interface GeoMultiPolygon {
   type: 'MultiPolygon';
   coordinates: number[][][][];
@@ -2867,6 +2921,27 @@ export interface Operations {
     body: undefined;
     response: DefectStatusHistoryPage;
   };
+  amendDefect: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DefectAmendment;
+    response: Defect;
+  };
+  listDefectHistory: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectRevisionPage;
+  };
+  getDefectAsOf: {
+    path: { defect_id: UUID };
+    query: { at: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectAsOf;
+  };
   listServiceAreas: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; service_id?: UUID };
@@ -3587,6 +3662,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   readSignedObject: { method: 'GET', path: '/v1/objects/{tenant_id}/{object_name}', pathParams: ['tenant_id', 'object_name'], query: ['exp', 'purpose', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   transitionDefect: { method: 'POST', path: '/v1/defects/{defect_id}/transitions', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:state'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listDefectStatusHistory: { method: 'GET', path: '/v1/defects/{defect_id}/status-history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:state'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  amendDefect: { method: 'POST', path: '/v1/defects/{defect_id}/amendments', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listDefectHistory: { method: 'GET', path: '/v1/defects/{defect_id}/history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getDefectAsOf: { method: 'GET', path: '/v1/defects/{defect_id}/as-of', pathParams: ['defect_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
