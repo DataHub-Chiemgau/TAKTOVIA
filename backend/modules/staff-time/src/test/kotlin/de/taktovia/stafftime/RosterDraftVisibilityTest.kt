@@ -66,7 +66,7 @@ class RosterDraftVisibilityTest {
         assertEquals(ErrorCode.FORBIDDEN, assertThrows<ProblemException> { fx.staff.rosters.create(driver, de.taktovia.stafftime.api.CreateRoster(w.depot, java.time.LocalDate.of(2026, 12, 7))) }.code)
         // auch der Planer sieht in der verbindlichen Sicht den Entwurf nicht (existiert verbindlich nicht): 404
         assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosters.get(ctx, r.rosterId, RosterViewKind.PUBLISHED) }.code)
-        assertEquals(emptyList<Any>(), fx.staff.rosterShifts.list(ctx, r.rosterId, 10, null, RosterViewKind.PUBLISHED))
+        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.list(ctx, r.rosterId, 10, null, RosterViewKind.PUBLISHED) }.code)
         // Direktabfrage unter der Runtime-Rolle ohne Planerrecht (RLS plus Rollenprüfung): keine Entwurfszeile
         val direct = fx.tx.run(w.tenant) { j -> j.queryForObject("SELECT (SELECT count(*) FROM taktovia.staff_shift WHERE roster_id = ?) + (SELECT count(*) FROM taktovia.roster_revision WHERE roster_id = ?)", Int::class.java, r.rosterId, r.rosterId) }
         assertEquals(0, direct)

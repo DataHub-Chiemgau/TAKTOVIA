@@ -39,6 +39,7 @@ internal object StafftimeServicesFactory {
             override val timeEvents: TimeEvents = timeEv
             override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit, conflictChecker)
             override val rosters: de.taktovia.stafftime.api.Rosters = JdbcRosters(ctxTx, audit, conflictChecker)
+            override val rosterDepotAccess: de.taktovia.stafftime.api.RosterDepotAccess = JdbcRosterDepotAccess(ctxTx, audit)
             override val driverReadPort: de.taktovia.platform.readports.DriverReadPort = JdbcDriverReadPort(ctxTx)
         }
     }

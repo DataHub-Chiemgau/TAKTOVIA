@@ -19,3 +19,12 @@ internal object RosterAuthz {
 internal object RosterDraftAccess {
     fun enable(jdbc: JdbcOperations) { jdbc.queryForObject("SELECT set_config('app.roster_draft_access', 'on', true)", String::class.java) }
 }
+
+/** Protokoll der Bearbeitung allein aufgrund des ausdrücklichen depotübergreifenden Rechts (WP-M4-16, `staff.roster.cross_depot_edit`). */
+internal object RosterAudit {
+    fun crossDepot(audit: de.taktovia.platform.audit.AuditPort, j: JdbcOperations, ctx: RequestContext, access: DepotAccess, rosterId: java.util.UUID, depotId: java.util.UUID, operation: String) {
+        if (access != DepotAccess.CROSS_DEPOT) return
+        audit.record(j, de.taktovia.platform.audit.AuditEntry(de.taktovia.platform.audit.ActorRef("user:" + ctx.actor.subject), de.taktovia.platform.audit.AuditActions.ROSTER_CROSS_DEPOT_EDIT,
+            de.taktovia.platform.audit.ObjectRef("roster", rosterId), ctx.correlationId, mapOf("depot_id" to depotId.toString(), "operation" to operation)))
+    }
+}

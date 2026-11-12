@@ -101,6 +101,7 @@ class CrossTenantIsolationTest {
         // WP-M4-06: Abwesenheit in B (Personalrolle)
         val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
         // WP-M4-03: Schicht in B (Planer von B)
+        env.exec("INSERT INTO taktovia.roster_depot_grant(tenant_id,id,subject,scope_kind,depot_id,granted_by) VALUES (?,?,?,'DEPOT',CAST(? AS uuid),'user:test-admin')", b.tenant.value, UUID.randomUUID(), b.planner.toString().lowercase(), depot)
         val roster = create("/v1/rosters", """{"depot_id":"$depot","week_start":"2026-11-30"}""", b.plannerToken).json["id"].asString()
         val rosterShift = create("/v1/rosters/shifts", """{"roster_id":"$roster","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"$org","depot_id":"$depot","function":"Fahrdienst","staffing_need":2}""", b.plannerToken).json["id"].asString()
         // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
@@ -296,7 +297,7 @@ class CrossTenantIsolationTest {
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
             val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; else -> a.adminToken })
-            assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
+            assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
                 assertFalse(r.text.contains(b.tenant.toString()), "$op: Liste von A nennt Mandant B")

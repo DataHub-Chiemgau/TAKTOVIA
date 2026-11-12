@@ -24,6 +24,9 @@ interface StafftimeApi {
     /** Dienstplan je Depot und Woche mit getrenntem Entwurf und veröffentlichtem Plan (WP-M4-04). */
     val rosters: Rosters
 
+    /** Depotberechtigung im Dienstplan (WP-M4-16): Vergabe, Entzug und Abfrage der Depotrechte. */
+    val rosterDepotAccess: RosterDepotAccess
+
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers
 

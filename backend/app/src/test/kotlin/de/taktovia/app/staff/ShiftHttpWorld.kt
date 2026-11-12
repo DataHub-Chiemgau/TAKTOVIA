@@ -11,6 +11,11 @@ internal class ShiftHttpWorld {
     val plannerToken = g.env.token(planner); val hrToken = g.env.token(hr); val dispatcherToken = g.env.token(dispatcher)
     val operator: String = g.operator
     val depot: String = g.id("/v1/depots", """{"region_id":"${g.id("/v1/regions", """{"name":"Region"}""")}","name":"Depot Nord"}""")
+    /** Depotrecht (WP-M4-16) für Planer und Personalrolle; die Verwaltungsschnittstelle ist der Port `RosterDepotAccess`, hier per Administration vergeben. */
+    fun grantDepot(subject: UUID, depotId: String = depot, kind: String = "DEPOT") =
+        g.env.exec("INSERT INTO taktovia.roster_depot_grant(tenant_id,id,subject,scope_kind,depot_id,granted_by) VALUES (?,?,?,?,CAST(? AS uuid),'user:test-admin')", g.tenant.value, UUID.randomUUID(), subject.toString().lowercase(), kind, if (kind == "DEPOT") depotId else null)
+    init { grantDepot(planner); grantDepot(hr) }
+
     /** Dienstplan des Depots für die Woche ab Montag 2026-11-30 (WP-M4-04); die Schichten der Tests liegen am 1. und 2. Dezember 2026. */
     val roster: String = g.env.server.send("POST", "/v1/rosters", """{"depot_id":"$depot","week_start":"2026-11-30"}""", g.env.headers(plannerToken, extra = g.idem())).also { check(it.status == 201) { it.text } }.json["id"].asString()
 

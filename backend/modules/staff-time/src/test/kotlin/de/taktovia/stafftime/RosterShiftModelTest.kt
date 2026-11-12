@@ -77,7 +77,7 @@ class RosterShiftModelTest {
         assertEquals(3, read.staffingNeed); assertEquals(1, read.breakPlan.breaks.size); assertEquals(30, read.breakPlan.breaks.single().durationMin)
         assertEquals("DRAFT", read.state); assertEquals(1L, read.revision); assertNull(read.driverRef, "offene Schicht ohne Fahrer"); assertNull(read.vehicleId)
         assertEquals(listOf(created.id), fx.staff.rosterShifts.list(ctx, o.roster, 10, null).map { it.id })
-        assertEquals(emptyList<Any>(), fx.staff.rosterShifts.list(ctx, UUID.randomUUID(), 10, null), "anderer Dienstplan")
+        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.list(ctx, UUID.randomUUID(), 10, null) }.code, "unbekannter Dienstplan")
         // Pausenplan: außerhalb der Schicht, überlappend, falsche Form
         assertEquals("/break_plan/breaks", invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, plan = mapOf("schema_version" to "1.0", "breaks" to listOf(mapOf("offset_min" to 470, "duration_min" to 30, "paid" to true))))) }.violations.single().pointer)
         invalid { fx.staff.rosterShifts.create(ctx, o.roster, input(o, plan = mapOf("schema_version" to "1.0", "breaks" to listOf(mapOf("offset_min" to 60, "duration_min" to 60, "paid" to true), mapOf("offset_min" to 90, "duration_min" to 30, "paid" to true))))) }

@@ -58,11 +58,12 @@ internal class RosterConflictChecker(private val drivers: Drivers, private val a
 
     private fun doubleBookings(j: JdbcOperations, rosterId: UUID, revision: Long, canSee: (UUID?) -> Boolean): List<RosterConflict> {
         class Pair(val a: UUID, val b: UUID, val person: UUID, val bDepot: UUID?, val inDraft: Boolean)
-        val sql = "SELECT a.id, b.id, a.driver_ref, b.depot_id, b.roster_id = a.roster_id AND b.roster_revision = a.roster_revision FROM taktovia.staff_shift a " +
+        return j.query(
+            "SELECT a.id, b.id, a.driver_ref, b.depot_id, b.roster_id = a.roster_id AND b.roster_revision = a.roster_revision FROM taktovia.staff_shift a " +
             "JOIN taktovia.staff_shift b ON b.tenant_id = a.tenant_id AND b.driver_ref = a.driver_ref AND b.id <> a.id AND tstzrange(b.starts_at, b.ends_at, '[)') && tstzrange(a.starts_at, a.ends_at, '[)') " +
             "WHERE a.roster_id = ? AND a.roster_revision = ? AND a.state = 'DRAFT' AND ((b.roster_id = a.roster_id AND b.roster_revision = a.roster_revision AND b.state = 'DRAFT' AND a.id < b.id) " +
-            "OR (b.state IN ('PLANNED', 'STARTED', 'ENDED', 'PUBLISHED') AND b.roster_id IS DISTINCT FROM a.roster_id)) ORDER BY a.starts_at, a.id, b.starts_at, b.id"
-        return j.query(sql, { rs, _ -> Pair(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), rs.getBoolean(5)) }, rosterId, revision)
+            "OR (b.state IN ('PLANNED', 'STARTED', 'ENDED', 'PUBLISHED') AND b.roster_id IS DISTINCT FROM a.roster_id)) ORDER BY a.starts_at, a.id, b.starts_at, b.id",
+            { rs, _ -> Pair(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), rs.getBoolean(5)) }, rosterId, revision)
             .map { p ->
                 if (p.inDraft || canSee(p.bDepot)) RosterConflict(RosterConflictKind.DOUBLE_BOOKING, p.person, listOf(p.a, p.b),
                     "Doppelbelegung: Schicht ${p.a} und Schicht ${p.b} überlappen sich für dieselbe Person.")

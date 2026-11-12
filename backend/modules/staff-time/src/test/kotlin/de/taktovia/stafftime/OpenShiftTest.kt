@@ -69,8 +69,8 @@ class OpenShiftTest {
         assertEquals(0, fx.staff.rosters.get(ctx, r.rosterId).draft!!.openShifts)
         // Person entfernen und Fahrzeug behalten: abgewiesen
         assertEquals(ErrorCode.VALIDATION_FAILED, assertThrows<ProblemException> { fx.staff.rosterShifts.update(ctx, r.rosterId, s.id, s.revision, w.input().copy(vehicleId = vehicle)) }.code)
-        // Filter „offen“ in der verbindlichen Sicht: nur veröffentlichte Schichten, also hier keine
-        assertTrue(fx.staff.rosterShifts.list(ctx, r.rosterId, 10, null, RosterViewKind.PUBLISHED, openOnly = true).isEmpty())
+        // Filter „offen“ in der verbindlichen Sicht: nur veröffentlichte Schichten; ein Dienstplan ohne Veröffentlichung existiert verbindlich nicht (404)
+        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.list(ctx, r.rosterId, 10, null, RosterViewKind.PUBLISHED, openOnly = true) }.code)
     }
 
     @Test
@@ -78,7 +78,7 @@ class OpenShiftTest {
         val a = RosterTestWorld(fx); val b = RosterTestWorld(fx)
         val ra = a.roster(a.planner()); val rb = b.roster(b.planner())
         fx.staff.rosterShifts.create(a.planner(), ra.rosterId, a.input()); val sb = fx.staff.rosterShifts.create(b.planner(), rb.rosterId, b.input())
-        assertTrue(fx.staff.rosterShifts.list(a.planner(), rb.rosterId, 10, null, openOnly = true).isEmpty(), "fremder Dienstplan: leer")
+        assertEquals(ErrorCode.NOT_FOUND, assertThrows<ProblemException> { fx.staff.rosterShifts.list(a.planner(), rb.rosterId, 10, null, openOnly = true) }.code, "fremder Dienstplan: nicht auffindbar")
         assertEquals(listOf(sb.id), fx.staff.rosterShifts.list(b.planner(), rb.rosterId, 10, null, openOnly = true).map { it.id })
     }
 

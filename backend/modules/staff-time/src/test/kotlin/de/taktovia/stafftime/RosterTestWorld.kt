@@ -57,8 +57,11 @@ class RosterTestWorld(val fx: StaffFixture) {
         return Person(d, sub)
     }
 
-    /** Hook der Depotberechtigung (WP-M4-16); vor diesem WP ohne Wirkung. */
-    fun grantDepots(ctx: RequestContext, depots: Collection<UUID>) {}
+    /** Administration des Mandanten (Scope `organization:write`): vergibt und entzieht Depotrechte (WP-M4-16). */
+    val admin: RequestContext = StaffM4Support.ctx(tenant, UUID.randomUUID(), setOf("tenant_admin"), setOf("organization:write"))
+
+    /** Vergibt der Person des Kontexts das Recht für die Depots (WP-M4-16); ohne Vergabe ist ihr Depotscope leer (fail-closed). */
+    fun grantDepots(ctx: RequestContext, depots: Collection<UUID>) { depots.forEach { fx.staff.rosterDepotAccess.grantDepot(admin, ctx.actor.subject, it) } }
 
     /** Dienstplan des Depots für die Woche, die [day] enthält (Montag als Wochenbeginn). */
     fun roster(ctx: RequestContext, day: LocalDate = LocalDate.of(2026, 12, 1), depotId: UUID = depot): RosterView =

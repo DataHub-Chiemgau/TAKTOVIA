@@ -46,7 +46,8 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         RosterAuthz.require(ctx, RosterAuthz.READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
             if (view == RosterViewKind.PLANNER) RosterDraftAccess.enable(j)
-            load(j, rosterId, view) ?: throw ProblemException.notFound()
+            DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = false)
+            load(j, rosterId, view, canSee = canSee(j, ctx)) ?: throw ProblemException.notFound()
         }
     }
 
@@ -54,13 +55,17 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         RosterAuthz.require(ctx, RosterAuthz.READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
             RosterDraftAccess.enable(j)
+            // Depotscope: Filter schränken ihn nur ein; leer = nichts (fail-closed), `null` = alle Depots (ausdrückliches depotübergreifendes Recht)
+            val visible = DepotGuard.visible(j, ctx)
+            val scope = visible?.joinToString(",", "{", "}")
             // feste Anweisung mit optionalen Filtern (NULL = kein Filter); je Dienstplan die Kopfzeile der höchsten Revision
             val keys = j.query(
                 "SELECT DISTINCT r.roster_id, r.week_start FROM taktovia.roster_revision r WHERE (CAST(? AS uuid) IS NULL OR r.depot_id = CAST(? AS uuid)) " +
+                    "AND (CAST(? AS uuid[]) IS NULL OR r.depot_id = ANY (CAST(? AS uuid[]))) " +
                     "AND (CAST(? AS date) IS NULL OR r.week_start >= CAST(? AS date)) AND (CAST(? AS date) IS NULL OR r.week_start <= CAST(? AS date)) " +
                     "AND (CAST(? AS date) IS NULL OR (r.week_start, r.roster_id) > (CAST(? AS date), CAST(? AS uuid))) ORDER BY r.week_start, r.roster_id LIMIT ?",
                 { rs, _ -> rs.getObject(1, UUID::class.java) },
-                depotId, depotId, from?.let(Date::valueOf), from?.let(Date::valueOf), to?.let(Date::valueOf), to?.let(Date::valueOf), after?.first?.let(Date::valueOf), after?.first?.let(Date::valueOf), after?.second, limit + 1,
+                depotId, depotId, scope, scope, from?.let(Date::valueOf), from?.let(Date::valueOf), to?.let(Date::valueOf), to?.let(Date::valueOf), after?.first?.let(Date::valueOf), after?.first?.let(Date::valueOf), after?.second, limit + 1,
             )
             keys.mapNotNull { load(j, it, RosterViewKind.PLANNER, withConflicts = false) }
         }
@@ -76,13 +81,15 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         RosterDraftAccess.enable(jdbc)
         // Absperrung: gleichzeitige Abwesenheitsgenehmigungen warten bis zum Ende dieser Transaktion, die Prüfung wertet den committeten Stand (SCH-006, konkurrierend)
         jdbc.queryForObject("SELECT pg_advisory_xact_lock(hashtextextended('roster_absence|' || taktovia.current_tenant()::text, 0))", String::class.java)
+        DepotGuard.requireForRoster(jdbc, ctx, rosterId, forWrite = true)   // Depotrecht mit FOR SHARE: ein gleichzeitiger Entzug wartet, ein committeter wird gesehen (404)
         val draft = jdbc.query("SELECT r.revision FROM taktovia.roster_revision r WHERE r.roster_id = ? AND r.state = 'DRAFT' FOR UPDATE", { rs, _ -> rs.getLong(1) }, rosterId).firstOrNull() ?: throw ProblemException.notFound()
-        conflicts.requireNone(conflicts.check(jdbc, rosterId, draft))
+        conflicts.requireNone(conflicts.check(jdbc, rosterId, draft, canSee(jdbc, ctx)))
     }
 
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, cmd: CreateRoster): RosterView {
         RosterDraftAccess.enable(j)
+        val access = DepotGuard.require(j, ctx, cmd.depotId, forWrite = true)
         if (j.queryForObject("SELECT count(*) FROM taktovia.depot WHERE id = ?", Int::class.java, cmd.depotId) == 0) throw ProblemException.notFound()
         val rosterId = UUID.randomUUID()
         j.update(
@@ -91,12 +98,14 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         )
         audit.record(j, AuditEntry(ActorRef("user:" + ctx.actor.subject), AuditActions.ROSTER_CREATED, ObjectRef("roster", rosterId), ctx.correlationId,
             mapOf("depot_id" to cmd.depotId.toString(), "week_start" to cmd.weekStart.toString(), "revision" to 1)))
+        RosterAudit.crossDepot(audit, j, ctx, access, rosterId, cmd.depotId, "roster.create")
         return load(j, rosterId, RosterViewKind.PLANNER)!!
     }
 
     @AuditRequired
     private fun doOpenDraft(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, expectedEtag: Long): RosterView {
         RosterDraftAccess.enable(j)
+        val (depotOfRoster, access) = DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = true)
         val latest = j.query("SELECT r.revision, r.state, r.depot_id, r.week_start, r.entity_revision FROM taktovia.roster_revision r WHERE r.roster_id = ? ORDER BY r.revision DESC LIMIT 1 FOR UPDATE", { rs, _ -> Triple(rs.getLong(1), rs.getString(2), rs.getDate(4).toLocalDate()) to (rs.getObject(3, UUID::class.java) to rs.getLong(5)) }, rosterId)
             .firstOrNull() ?: throw ProblemException.notFound()
         val (rev, state, week) = latest.first; val depot = latest.second.first
@@ -114,6 +123,7 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
             next, "user:" + ctx.actor.subject, rosterId, rev,
         )
         audit.record(j, AuditEntry(ActorRef("user:" + ctx.actor.subject), AuditActions.ROSTER_DRAFT_OPENED, ObjectRef("roster", rosterId), ctx.correlationId, mapOf("revision" to next, "based_on" to rev)))
+        RosterAudit.crossDepot(audit, j, ctx, access, rosterId, depotOfRoster, "draft.open")
         return load(j, rosterId, RosterViewKind.PLANNER)!!
     }
 
@@ -127,16 +137,19 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
     }
 
     /** Lädt den Dienstplan; `null`, wenn er in der Sicht nicht sichtbar ist (nichts oder nur Entwurfszeilen ohne Schalter). */
-    private fun load(j: JdbcOperations, rosterId: UUID, view: RosterViewKind, withConflicts: Boolean = view == RosterViewKind.PLANNER): RosterView? {
+    private fun load(j: JdbcOperations, rosterId: UUID, view: RosterViewKind, withConflicts: Boolean = view == RosterViewKind.PLANNER, canSee: (UUID?) -> Boolean = { true }): RosterView? {
         val heads = j.query(HEAD, HEAD_MAPPER, rosterId).filter { view == RosterViewKind.PLANNER || it.state == RosterState.PUBLISHED }
         val draft = heads.firstOrNull { it.state == RosterState.DRAFT }
         val published = heads.firstOrNull { it.state == RosterState.PUBLISHED }
         if (draft == null && published == null) return null
         val any = draft ?: published!!
         val etag = if (view == RosterViewKind.PLANNER) (draft?.etag ?: published!!.etag) else published!!.etag
-        val found = if (withConflicts) (draft?.let { conflicts.check(j, rosterId, it.revision) } ?: emptyList()) else null
+        val found = if (withConflicts) (draft?.let { conflicts.check(j, rosterId, it.revision, canSee) } ?: emptyList()) else null
         return RosterView(rosterId, any.depotId, any.weekStart, draft?.let { side(j, it) }, published?.let { side(j, it) }, found, etag)
     }
+
+    /** Depots, deren Schichten in Meldungen mit Kennung erscheinen dürfen (Depotscope der Person; `null` = alle). */
+    private fun canSee(j: JdbcOperations, ctx: RequestContext): (UUID?) -> Boolean { val v = DepotGuard.visible(j, ctx); return { d -> d == null || v == null || d in v } }
 
     private class Head(val id: UUID, val revision: Long, val state: RosterState, val author: String, val createdAt: java.time.Instant, val publishedAt: java.time.Instant?, val etag: Long, val depotId: UUID, val weekStart: LocalDate)
 

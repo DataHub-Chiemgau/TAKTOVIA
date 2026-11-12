@@ -48,6 +48,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         require(ctx, SCOPE_READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
             RosterDraftAccess.enable(j)
+            DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = false)
             j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ?", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound()
         }
     }
@@ -56,6 +57,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         require(ctx, SCOPE_READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
             if (view == RosterViewKind.PLANNER) RosterDraftAccess.enable(j)
+            DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = false)
             // Arbeitsrevision: Entwurf, sonst veröffentlichte Revision (verbindliche Sicht: nur die veröffentlichte; ohne Schalter sind Entwurfszeilen ohnehin unsichtbar)
             j.query(
                 "SELECT $COLUMNS FROM taktovia.staff_shift s JOIN taktovia.roster_revision r ON r.tenant_id = s.tenant_id AND r.roster_id = s.roster_id AND r.revision = s.roster_revision " +
@@ -75,6 +77,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, i: RosterShiftInput, c: Checked): RosterShiftView {
         RosterDraftAccess.enable(j)
+        val (_, access) = DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = true)   // Reihenfolge: Depotrecht, Dienstplan, Schicht
         val draft = lockDraft(j, rosterId) ?: throw noDraft(j, rosterId)
         checkAgainstRoster(j, draft, i, c)
         val id = UUID.randomUUID()
@@ -86,13 +89,15 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         ).single()
         bumpDraft(j, draft)
         audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CREATED))
-        return withHints(j, draft, v)
+        RosterAudit.crossDepot(audit, j, ctx, access, rosterId, draft.depotId, "shift.create")
+        return withHints(j, ctx, draft, v)
     }
 
     @AuditRequired
     private fun doUpdate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, shiftId: UUID, expected: Long, i: RosterShiftInput, c: Checked): RosterShiftView {
         RosterDraftAccess.enable(j)
-        val draft = lockDraft(j, rosterId)   // Reihenfolge: Dienstplan, dann Schicht
+        val (depotOfRoster, access) = DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = true)   // Reihenfolge: Depotrecht, Dienstplan, Schicht
+        val draft = lockDraft(j, rosterId)
         val cur = j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ? FOR UPDATE", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound()
         if (cur.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Schicht wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (cur.state != "DRAFT" || draft == null) throw ProblemException(ErrorCode.CONFLICT, "Nur Entwürfe sind änderbar; veröffentlichte Schichten ändert der Dienstplan.")
@@ -103,12 +108,18 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
             VIEW, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
             json.writeValueAsString(c.plan.toMap()), shiftId, expected,
         ).firstOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH)
-        if (v.revision != cur.revision) { bumpDraft(j, draft); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED)) }
-        return withHints(j, draft, v)
+        if (v.revision != cur.revision) {
+            bumpDraft(j, draft); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
+            RosterAudit.crossDepot(audit, j, ctx, access, rosterId, depotOfRoster, "shift.update")
+        }
+        return withHints(j, ctx, draft, v)
     }
 
     /** Hinweis beim Speichern (WP-M4-07): Konflikte dieser Schicht im Entwurf; der Entwurf bleibt in jedem Fall gespeichert. */
-    private fun withHints(j: JdbcOperations, d: Draft, v: RosterShiftView): RosterShiftView = v.copy(conflicts = conflicts.check(j, v.rosterId, d.revision).filter { v.id in it.shiftIds })
+    private fun withHints(j: JdbcOperations, ctx: RequestContext, d: Draft, v: RosterShiftView): RosterShiftView {
+        val visible = DepotGuard.visible(j, ctx)
+        return v.copy(conflicts = conflicts.check(j, v.rosterId, d.revision) { dep -> dep == null || visible == null || dep in visible }.filter { v.id in it.shiftIds })
+    }
 
     private class Draft(val id: UUID, val revision: Long, val depotId: UUID, val weekStart: java.time.LocalDate)
 
