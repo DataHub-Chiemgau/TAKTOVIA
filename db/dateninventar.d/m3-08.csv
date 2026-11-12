@@ -1,0 +1,6 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+vehicle_block;reason_ref;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;issued_at;nein;FLOTTE_SICHERHEIT;;;;
+resource_release;issued_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+resource_release;revoked_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+resource_release;revoke_reason;nein;FLOTTE_SICHERHEIT;;;;
