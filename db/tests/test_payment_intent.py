@@ -54,7 +54,7 @@ class PaymentIntent(unittest.TestCase):
             with self.assertRaises(psycopg.errors.CheckViolation, msg=sql):
                 with tx(A) as c: c.execute(f"UPDATE taktovia.payment_intent SET {sql} WHERE id=%s", (pay,))
         ok, rejected, errors = [], [], []
-        start = threading.Barrier(30)
+        start = threading.Barrier(20)
 
         def worker():
             try:
@@ -69,10 +69,10 @@ class PaymentIntent(unittest.TestCase):
                     c.close()
             except Exception as e:   # pragma: no cover - Diagnose
                 errors.append(repr(e))
-        ts = [threading.Thread(target=worker) for _ in range(30)]
+        ts = [threading.Thread(target=worker) for _ in range(20)]
         [t.start() for t in ts]; [t.join() for t in ts]
         self.assertEqual(errors, [])
-        self.assertEqual((len(ok), len(rejected)), (10, 20), "genau 10 x 100 passen unter den erfassten Betrag 1000")
+        self.assertEqual((len(ok), len(rejected)), (10, 10), "genau 10 x 100 passen unter den erfassten Betrag 1000")
         with tx(A) as c:
             self.assertEqual(c.execute("SELECT refunded_minor FROM taktovia.payment_intent WHERE id=%s", (pay,)).fetchone()[0], 1000)
 

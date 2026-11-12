@@ -37,7 +37,8 @@ class BookingConfiguration {
         RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
-    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): Bookings = Bookings.create(ctxTx, outbox, quotes, config = config.effective)
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments): Bookings =
+        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments))   // Void/Erstattung nach Storno (WP-M2-31)
 
     @Bean fun bookingImpactProvider(): ImpactProvider = Bookings.impactProvider()
 

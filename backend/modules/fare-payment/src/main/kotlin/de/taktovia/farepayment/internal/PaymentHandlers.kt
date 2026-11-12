@@ -5,6 +5,7 @@ import de.taktovia.farepayment.api.GatewayCapture
 import de.taktovia.farepayment.api.GatewayOutcome
 import de.taktovia.farepayment.api.GatewayPayment
 import de.taktovia.farepayment.api.GatewayReconciliation
+import de.taktovia.farepayment.api.GatewayRefund
 import de.taktovia.farepayment.api.GatewayState
 import de.taktovia.farepayment.api.GatewayVoid
 import de.taktovia.farepayment.api.PaymentAction
@@ -164,4 +165,48 @@ internal class ReconcileHandler(tx: TenantTransactions, core: PaymentCore, gatew
     }
 
     override fun reconcile(ctx: OperationContext): OperationOutcome = execute(ctx)
+}
+
+/**
+ * `REFUND_PAYMENT` (WP-M2-31): Erstattung nach Storno. Die Kommandoreferenz gehört dem Erstattungsfall (`refund_case.command_ref`), jede Wiederholung benutzt sie erneut (nie eine zweite Erstattung).
+ * „Erstattet“ wird erst nach dem bestätigten PSP-Stand gebucht; eine definitive Ablehnung lässt den Fall `FAILED` mit sichtbarem offenem Betrag (die Buchung bleibt storniert), ein unbestimmtes
+ * Ergebnis wird abgeglichen.
+ */
+internal class RefundHandler(tx: TenantTransactions, core: PaymentCore, gateway: PaymentGateway, config: PaymentConfig) : PaymentHandler("REFUND_PAYMENT", tx, core, gateway, config) {
+    private class Target(val kase: CaseRow, val pspRef: String)
+
+    private fun target(ctx: OperationContext, l: Loaded): Target? = tx.run(ctx.tenant, readOnly = true) { j -> core.caseByCommand(j, l.op.commandRef) }?.let { Target(it, l.payment.pspPaymentId ?: l.payment.providerRef!!) }
+
+    private fun confirmed(o: de.taktovia.farepayment.api.GatewayPayment, l: Loaded) = o.refundedMinor > l.payment.refunded && (o.state == GatewayState.REFUNDED || o.state == GatewayState.PARTIALLY_REFUNDED)
+
+    override fun execute(ctx: OperationContext): OperationOutcome {
+        val l = load(ctx)
+        val t = target(ctx, l) ?: return OperationOutcome.Succeeded("NO_CASE")
+        if (t.kase.state != "REQUESTED") return OperationOutcome.Succeeded("ALREADY_APPLIED")
+        return outcome(ctx, l, t, gateway.refund(GatewayRefund(l.op.commandRef, t.pspRef, t.kase.requested!!)))
+    }
+
+    override fun reconcile(ctx: OperationContext): OperationOutcome {
+        val l = load(ctx)
+        val t = target(ctx, l) ?: return OperationOutcome.Succeeded("NO_CASE")
+        if (t.kase.state != "REQUESTED") return OperationOutcome.Succeeded("ALREADY_APPLIED")
+        return when (val r = gateway.reconcile(PaymentAction.REFUND, t.pspRef, l.op.commandRef)) {
+            is GatewayReconciliation.Performed ->
+                if (confirmed(r.payment, l)) ctx.commit("REFUNDED") { j -> core.observe(j, l.payment.id, r.payment) } else OperationOutcome.Unknown("REFUND_PENDING_AT_PSP", settleDelay())
+            is GatewayReconciliation.NotPerformed -> outcome(ctx, l, t, gateway.refund(GatewayRefund(l.op.commandRef, t.pspRef, t.kase.requested!!)))
+            is GatewayReconciliation.Undetermined -> OperationOutcome.Unknown("REFUND_OUTCOME_UNKNOWN")
+        }
+    }
+
+    private fun outcome(ctx: OperationContext, l: Loaded, t: Target, o: GatewayOutcome): OperationOutcome = when (o) {
+        is GatewayOutcome.Ok ->
+            if (confirmed(o.payment, l)) ctx.commit("REFUNDED") { j -> core.observe(j, l.payment.id, o.payment) } else OperationOutcome.Unknown("REFUND_PENDING_AT_PSP", settleDelay())
+        is GatewayOutcome.Declined, is GatewayOutcome.Rejected -> {
+            tx.run(ctx.tenant) { j -> core.refundFailed(j, t.kase.id, "REFUND_DECLINED") }
+            OperationOutcome.Failed("REFUND_DECLINED")
+        }
+        is GatewayOutcome.Conflict, GatewayOutcome.NotFound -> OperationOutcome.Unknown("REFUND_OUTCOME_UNKNOWN")
+        is GatewayOutcome.Unavailable -> throw OperationRetryException("PSP_UNAVAILABLE", o.retryAfter)
+        is GatewayOutcome.Unknown -> OperationOutcome.Unknown("REFUND_OUTCOME_UNKNOWN")
+    }
 }

@@ -8,7 +8,11 @@ import de.taktovia.farepayment.api.FareQuotes
 import de.taktovia.farepayment.api.PaymentAction
 import de.taktovia.farepayment.api.PaymentConfig
 import de.taktovia.farepayment.api.PaymentGateway
+import de.taktovia.farepayment.api.CancelledBooking
 import de.taktovia.farepayment.api.PaymentView
+import de.taktovia.farepayment.api.RefundHint
+import de.taktovia.farepayment.api.RefundRequest
+import de.taktovia.farepayment.api.RefundView
 import de.taktovia.farepayment.api.Payments
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
@@ -97,8 +101,13 @@ internal class JdbcPayments(
 
     override fun releaseAuthorizationIn(j: JdbcOperations, paymentId: UUID) = core.releaseAuthorization(j, paymentId)
 
+    override fun onBookingCancelledIn(j: JdbcOperations, cancelled: CancelledBooking): RefundHint? = core.onBookingCancelled(j, cancelled)
+
+    override fun requestRefundIn(j: JdbcOperations, request: RefundRequest): RefundView =
+        (core.requestRefund(j, request.paymentId, request.caseKey, request.reasonCode, request.causeClass, request.amountMinor) ?: throw ProblemException(ErrorCode.CONFLICT, "Keine Erstattung möglich.")).view()
+
     override fun handlers(gateway: PaymentGateway): List<OperationHandler> = listOf(
-        AuthorizeHandler(tx, core, gateway, config), CaptureHandler(tx, core, gateway, config), VoidHandler(tx, core, gateway, config), ReconcileHandler(tx, core, gateway, config),
+        AuthorizeHandler(tx, core, gateway, config), CaptureHandler(tx, core, gateway, config), VoidHandler(tx, core, gateway, config), RefundHandler(tx, core, gateway, config), ReconcileHandler(tx, core, gateway, config),
     )
 
     // ---- Lesen ------------------------------------------------------------------------------------------------------------------------
@@ -115,5 +124,5 @@ internal class JdbcPayments(
         "SELECT operation_id FROM taktovia.payment_operation WHERE payment_id = ? ORDER BY created_at DESC, seq DESC LIMIT 1", { rs, _ -> rs.getObject(1, UUID::class.java) }, paymentId,
     ).firstOrNull()
 
-    private fun view(j: JdbcOperations, p: PRow): PaymentView = PaymentCore.view(p, latestOperation(j, p.id))
+    private fun view(j: JdbcOperations, p: PRow): PaymentView = PaymentCore.view(p, latestOperation(j, p.id), core.openRefund(j, p.id), core.cases(j, p.id).lastOrNull()?.view())
 }

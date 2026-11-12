@@ -58,7 +58,7 @@ import java.util.UUID
 internal class JdbcBookings(
     private val ctxTx: ContextTransactions, private val quotes: FareQuotes, private val holds: JdbcCapacityHolds, private val transitions: BookingTransitions, private val plans: JdbcRunPlans,
     private val outbox: Outbox, private val config: EffectiveConfig?, private val clock: Clock,
-    private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,
+    private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer, private val cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
 ) : Bookings {
     private val json = JsonMapper.builder().build()
 
@@ -217,24 +217,26 @@ internal class JdbcBookings(
             if (clock.instant().isAfter(pickup.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))))
                 throw ProblemException(ErrorCode.CANCEL_DEADLINE_EXPIRED, "Die Stornofrist von ${policy.deadlineMin} Minuten vor der Abholung ist abgelaufen.")
         }
-        val planRevision = cancelLocked(j, Caller.of(ctx), actor.name, bookingId, holdId, runId, cur.first == BookingState.CONFIRMED.name, cmd.reason, cmd.ifMatch)
-        CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, planRevision)
+        val done = cancelLocked(j, Caller.of(ctx), actor.name, bookingId, holdId, runId, cur.first == BookingState.CONFIRMED.name, cmd.reason, cmd.ifMatch)
+        CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, done.first, done.second)
     }
 
     /**
      * Gemeinsamer Kern des Stornos unter den gehaltenen Sperren (Umlauf, Hold, Buchung): Übergang, Freigabe der Reservierung, Plan ohne die Buchung, Ereignis `booking.cancelled`. Liefert die neue
      * Planrevision. [initiator] ist `PASSENGER`, `OPERATOR` oder `SYSTEM`.
      */
-    private fun cancelLocked(j: JdbcOperations, caller: Caller, initiator: String, bookingId: UUID, holdId: UUID, runId: UUID, confirmed: Boolean, reason: BookingReason, revision: Long): Long? {
+    private fun cancelLocked(j: JdbcOperations, caller: Caller, initiator: String, bookingId: UUID, holdId: UUID, runId: UUID, confirmed: Boolean, reason: BookingReason, revision: Long): Pair<Long?, de.taktovia.bookingdispatch.api.RefundHint?> {
         transitions.apply(j, caller, bookingId, if (confirmed) BookingState.CANCEL_PENDING else BookingState.COMPENSATING, reason, revision)
         // Reservierung freigeben: die Kapazität zählt auf allen Abschnitten und Dimensionen wieder (Belegung = CONSUMED plus gültiges HELD)
         check(j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'CONSUMED'", holdId) == 1) { "Reservierung der Buchung nicht freigebbar" }
         val planRevision = removeFromPlan(j, caller.correlationId, runId, bookingId)
         transitions.apply(j, caller, bookingId, BookingState.CANCELED, if (confirmed) BookingReason.CANCEL_COMPLETED else BookingReason.COMPENSATION_DONE, null)
-        outbox.append(j, OutboxEvent(bookingId, revision + 2, "booking.cancelled", linkedMapOf(
+        // Zahlung: Void bzw. Erstattung beauftragen, in derselben Transaktion (WP-M2-31); der Erstattungshinweis geht in Ereignis und Antwort
+        val hint = cancellation?.onCancelled(j, de.taktovia.bookingdispatch.api.CancellationEvent(bookingId, reason, reason.cause!!, initiator))
+        outbox.append(j, OutboxEvent(bookingId, revision + 2, "booking.cancelled", linkedMapOf<String, Any?>(
             "booking_id" to bookingId.toString(), "reason" to reason.name, "reason_code" to reason.name, "cause_class" to reason.cause!!.name, "initiator" to initiator, "released_hold_id" to holdId.toString(),
-        ), clock.instant(), correlationId = caller.correlationId))
-        return planRevision
+        ).also { m -> hint?.let { m["refund_minor"] = it.amountMinor; m["currency"] = it.currency } }, clock.instant(), correlationId = caller.correlationId))
+        return planRevision to hint
     }
 
     // ---- Zahlungskopplung ohne Personenkontext (WP-M2-30) --------------------------------------------------------------------------------

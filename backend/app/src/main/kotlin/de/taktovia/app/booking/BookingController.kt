@@ -79,8 +79,12 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     fun cancel(@PathVariable("booking_id") id: UUID, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): BookingResource {
         val expected = Etag.parseIfMatch(ifMatch)
         val reason = BookingReason.parse(body["reason"] as String) ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
-        val r = bookings.cancel(RequestContexts.require(request), id, CancelBooking(expected, reason))
-        return BookingResource(render(r.booking), r.booking.revision)
+        val ctx = RequestContexts.require(request)
+        val r = bookings.cancel(ctx, id, CancelBooking(expected, reason))
+        // Erstattungshinweis (WP-M2-31): was beauftragt ist, nie „erstattet“ vor der PSP-Bestätigung; dazu der Zahlungsblock (Stand der Zahlung, getrennt vom Buchungsstatus)
+        val body = withPayment(render(r.booking), payments.forBooking(ctx, id), r.booking.promise.exponent)
+        val withHint = r.refundHint?.let { h -> LinkedHashMap(body).also { it["refund_hint"] = linkedMapOf("status" to h.status, "amount" to money(h.amountMinor, h.currency, r.booking.promise.exponent)) } } ?: body
+        return BookingResource(withHint, r.booking.revision)
     }
 
     /**

@@ -88,6 +88,8 @@ internal class PayTestWorld(val gateway: PaymentGateway, val clock: PayClock = P
     fun bookingState(b: PayBooking): Pair<String, Long> = fx.admin.queryForObject("SELECT state || '|' || revision FROM taktovia.booking WHERE id = ?", String::class.java, b.id)!!.split('|').let { it[0] to it[1].toLong() }
     fun opStatus(operationId: UUID): String = fx.admin.queryForObject("SELECT status || '/' || COALESCE(result_code, '') FROM taktovia.operation WHERE id = ?", String::class.java, operationId)!!
     fun count(sql: String, vararg a: Any?): Int = fx.adminCount(sql, *a)
+    /** Ereignisse, deren Payload auf die Zahlung verweist (Erstattungsereignisse tragen den Fall als Aggregat). */
+    fun eventsOf(type: String, paymentId: UUID): Int = count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id = ? AND event_type = ? AND payload->>'payment_id' = ?", tenant.value, type, paymentId.toString())
     fun events(type: String, paymentId: UUID): Int = count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id = ? AND event_type = ? AND aggregate_id = ?", tenant.value, type, paymentId)
 
     override fun close() = fx.close()

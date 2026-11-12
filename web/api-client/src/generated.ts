@@ -1074,6 +1074,7 @@ export interface RideBooking {
   assistance_codes?: RideAssistanceCodes;
   promise: RidePromise;
   payment?: RidePayment;
+  refund_hint?: RideRefundHint;
   revision: number;
 }
 
@@ -1085,8 +1086,21 @@ export interface RidePayment {
   refunded: Money;
   refund_pending?: Money;
   failure_code?: string;
+  refund?: RideRefund;
   operation_id?: UUID;
   revision: number;
+}
+
+export interface RideRefund {
+  status: 'PENDING_CAPTURE' | 'REQUESTED' | 'CONFIRMED' | 'FAILED' | 'NOT_DUE' | 'NOT_REQUIRED';
+  requested: Money;
+  refunded: Money;
+  failure_code?: string;
+}
+
+export interface RideRefundHint {
+  status: 'NONE' | 'VOID_REQUESTED' | 'PENDING_CAPTURE' | 'REQUESTED' | 'CONFIRMED' | 'FAILED' | 'NOT_DUE';
+  amount: Money;
 }
 
 export interface RidePromise {

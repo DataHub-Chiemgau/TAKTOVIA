@@ -64,6 +64,9 @@ class PaymentController(private val bookings: Bookings, private val payments: Pa
             val m = linkedMapOf<String, Any?>("id" to p.id.toString(), "status" to p.status.name)
             m["authorized"] = money(p.authorizedMinor, p.currency, exponent); m["captured"] = money(p.capturedMinor, p.currency, exponent); m["refunded"] = money(p.refundedMinor, p.currency, exponent)
             if (p.refundOpenMinor > 0) m["refund_pending"] = money(p.refundOpenMinor, p.currency, exponent)
+            p.refund?.let { r ->
+                m["refund"] = linkedMapOf<String, Any?>("status" to r.state, "requested" to money(r.requestedMinor ?: 0, p.currency, exponent), "refunded" to money(r.refundedMinor, p.currency, exponent)).also { o -> r.failureCode?.let { o["failure_code"] = it } }
+            }
             p.failureCode?.let { m["failure_code"] = it }
             p.operationId?.let { m["operation_id"] = it.toString() }
             m["revision"] = p.revision

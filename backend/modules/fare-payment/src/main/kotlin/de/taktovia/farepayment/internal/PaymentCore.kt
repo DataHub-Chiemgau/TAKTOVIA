@@ -4,10 +4,16 @@ import de.taktovia.farepayment.api.CommandRefs
 import de.taktovia.farepayment.api.GatewayPayment
 import de.taktovia.farepayment.api.GatewayState
 import de.taktovia.farepayment.api.PaymentAction
+import de.taktovia.farepayment.api.CancelledBooking
 import de.taktovia.farepayment.api.PaymentConfig
+import de.taktovia.farepayment.api.RefundHint
+import de.taktovia.farepayment.api.RefundRequest
+import de.taktovia.farepayment.api.RefundStatus
+import de.taktovia.farepayment.api.RefundView
 import de.taktovia.farepayment.api.PaymentUiStatus
 import de.taktovia.farepayment.api.PaymentView
 import de.taktovia.platform.operation.OperationService
+import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.outbox.Outbox
 import de.taktovia.platform.outbox.OutboxEvent
 import de.taktovia.platform.problem.ProblemException
@@ -17,6 +23,7 @@ import de.taktovia.platform.statemachine.StateTransitioner
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
+import java.math.BigInteger
 import java.sql.ResultSet
 import java.time.Clock
 import java.time.Instant
@@ -28,6 +35,21 @@ internal data class PRow(
     val paymentMethodRef: String?, val state: PaymentState, val revision: Long, val currency: String, val requested: Long?, val authorized: Long, val captured: Long, val refunded: Long,
     val authorizeBy: Instant?, val failureCode: String?, val coupledAt: Instant?,
 )
+
+/** Zeile von `refund_case` (WP-M2-31). */
+internal data class CaseRow(
+    val id: UUID, val paymentId: UUID, val caseKey: UUID, val seq: Int, val reasonCode: String, val causeClass: String, val state: String, val percent: Int, val requested: Long?, val refunded: Long,
+    val commandRef: String?, val failureCode: String?, val revision: Long,
+) {
+    fun view() = RefundView(id, paymentId, state, reasonCode, percent, requested, refunded, failureCode)
+}
+
+internal const val CASE_COLS = "id, payment_id, case_key, seq, reason_code, cause_class, state, percent, requested_minor, refunded_minor, command_ref, failure_code, revision"
+
+internal val CASE_ROW = RowMapper { rs: ResultSet, _ ->
+    CaseRow(rs.getObject("id", UUID::class.java), rs.getObject("payment_id", UUID::class.java), rs.getObject("case_key", UUID::class.java), rs.getInt("seq"), rs.getString("reason_code"), rs.getString("cause_class"), rs.getString("state"),
+        rs.getInt("percent"), rs.getObject("requested_minor") as Long?, rs.getLong("refunded_minor"), rs.getString("command_ref"), rs.getString("failure_code"), rs.getLong("revision"))
+}
 
 /** Zeile von `payment_operation`. */
 internal data class POp(val operationId: UUID, val paymentId: UUID, val action: PaymentAction, val seq: Int, val amountMinor: Long?, val commandRef: String)
@@ -158,7 +180,11 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
             else -> null
         }
         PaymentState.VOID_PENDING -> if (obs.state == GatewayState.VOIDED) PaymentState.VOIDED else null
-        else -> null   // CAPTURED und Erstattungszustände: WP-M2-31; Endzustände ohne Übergang
+        // Erstattung: nur ein vom PSP bestätigter, höherer Erstattungsstand führt weiter (absoluter Wert: ein doppelt zugestelltes Ereignis oder ein zweiter Abgleich ändert nichts)
+        PaymentState.REFUND_PENDING ->
+            if (obs.refundedMinor > row.refunded && (obs.state == GatewayState.REFUNDED || obs.state == GatewayState.PARTIALLY_REFUNDED))
+                (if (minOf(obs.refundedMinor, row.captured) >= row.captured) PaymentState.REFUNDED else PaymentState.PARTIALLY_REFUNDED) else null
+        else -> null   // CAPTURED, PARTIALLY_REFUNDED und Endzustände: ohne eigenen Übergang aus dem Beobachteten
     }
 
     /** Führt einen Übergang samt Spaltenänderung und Ereignissen aus; `null` = nicht ausführbar (Sicherheitsabbruch, Stand bleibt). */
@@ -166,7 +192,14 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
         val id = row.id
         when (to) {
             PaymentState.AUTHORIZED -> {
-                if (row.state == PaymentState.RECONCILING) return move(j, row, PaymentState.AUTHORIZED)   // Abgleich: nicht eingezogen, Autorisierung gültig
+                if (row.state == PaymentState.RECONCILING) {   // Abgleich: nicht eingezogen, Autorisierung gültig
+                    val moved = move(j, row, PaymentState.AUTHORIZED)
+                    // ein wartender Erstattungsfall (Storno während des Einzugs) ist hinfällig: es gibt nichts zu erstatten, die Autorisierung wird aufgehoben
+                    if (j.update("UPDATE taktovia.refund_case SET state = 'NOT_REQUIRED', revision = revision + 1 WHERE payment_id = ? AND state = 'PENDING_CAPTURE'", id) > 0) {
+                        markFailure(j, id, FailureCodes.BOOKING_RELEASED); return moved.copy(failureCode = FailureCodes.BOOKING_RELEASED)
+                    }
+                    return moved
+                }
                 if (obs.authorizedMinor < 1) { markFailure(j, id, FailureCodes.REJECTED); return null }
                 j.update("UPDATE taktovia.payment_intent SET authorized_minor = ? WHERE id = ?", obs.authorizedMinor, id)
                 val reason = when {
@@ -191,14 +224,30 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
                 j.update("UPDATE taktovia.payment_intent SET captured_minor = ? WHERE id = ?", obs.capturedMinor, id)
                 val moved = move(j, row.copy(captured = obs.capturedMinor), PaymentState.CAPTURED)
                 event(j, moved, "payment.captured", null, obs.capturedMinor)
-                return moved
+                return promotePending(j, moved)   // ein während des Einzugs gestorneter Fall wird jetzt beauftragt
             }
             PaymentState.VOID_PENDING -> {
                 val moved = move(j, row, PaymentState.VOID_PENDING)
                 enqueue(j, moved, PaymentAction.VOID, 1, null)
                 return moved
             }
-            else -> return move(j, row, to)   // REQUIRES_ACTION, RECONCILING, VOIDED
+            PaymentState.REFUNDED, PaymentState.PARTIALLY_REFUNDED -> {
+                val newRefunded = minOf(obs.refundedMinor, row.captured)
+                val delta = newRefunded - row.refunded
+                j.update("UPDATE taktovia.payment_intent SET refunded_minor = ? WHERE id = ?", newRefunded, id)
+                val moved = move(j, row.copy(refunded = newRefunded), to)
+                confirmCases(j, id, row.refunded, newRefunded)
+                outbox.append(j, OutboxEvent(id, moved.revision, "payment.refund_recorded", linkedMapOf(
+                    "payment_id" to id.toString(), "refund_minor" to delta, "currency" to row.currency, "state" to to.name) .also { m -> moved.providerRef?.let { m["provider_ref"] = it } }, now()))
+                // weitere beauftragte Erstattungen folgen nacheinander (PARTIALLY_REFUNDED -> REFUND_PENDING, Kap. 03 §4.2)
+                if (to == PaymentState.PARTIALLY_REFUNDED) startNextRefund(j, id)
+                return lock(j, id)
+            }
+            PaymentState.VOIDED -> {
+                j.update("UPDATE taktovia.refund_case SET state = 'NOT_REQUIRED', revision = revision + 1 WHERE payment_id = ? AND state = 'PENDING_CAPTURE'", id)
+                return move(j, row, to)
+            }
+            else -> return move(j, row, to)   // REQUIRES_ACTION, RECONCILING
         }
     }
 
@@ -283,6 +332,132 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
         if (row.state == PaymentState.CREATED || row.state == PaymentState.REQUIRES_ACTION) markFailure(j, id, FailureCodes.BOOKING_RELEASED)
     }
 
+    // ---- Void und Erstattung nach Storno (WP-M2-31) -----------------------------------------------------------------------------------
+
+    fun percentFor(reasonCode: String, causeClass: String): Int = when {
+        reasonCode == "NO_SHOW" -> config.refund.noShowPercent
+        reasonCode == "PAYMENT_FAILED" -> 0                        // es gab nie einen Einzug
+        causeClass == "FAHRGAST" -> config.refund.customerPercent
+        else -> config.refund.operatorPercent                       // BETREIBER und FAHRZEUGAUSFALL: die betreiberverursachte Regel (BKG-014, WP-M2-27)
+    }
+
+    /** Anteil in kleinster Einheit, abgerundet (nie mehr als der Anspruch). */
+    fun amountFor(capturedMinor: Long, percent: Int): Long = BigInteger.valueOf(capturedMinor).multiply(BigInteger.valueOf(percent.toLong())).divide(BigInteger.valueOf(100)).toLong()
+
+    fun cases(j: JdbcOperations, paymentId: UUID): List<CaseRow> = j.query("SELECT $CASE_COLS FROM taktovia.refund_case WHERE payment_id = ? ORDER BY created_at, id", CASE_ROW, paymentId)
+    fun caseByCommand(j: JdbcOperations, commandRef: String): CaseRow? = j.query("SELECT $CASE_COLS FROM taktovia.refund_case WHERE command_ref = ?", CASE_ROW, commandRef).firstOrNull()
+
+    /** Beauftragter, noch nicht bestätigter Betrag: Fälle in `REQUESTED` und `FAILED` (ein fehlgeschlagener Betrag bleibt offen und sichtbar). */
+    fun openRefund(j: JdbcOperations, paymentId: UUID): Long =
+        j.queryForObject("SELECT COALESCE(sum(requested_minor - refunded_minor), 0) FROM taktovia.refund_case WHERE payment_id = ? AND state IN ('REQUESTED', 'FAILED')", Long::class.java, paymentId) ?: 0L
+
+    private fun committed(j: JdbcOperations, paymentId: UUID): Long =
+        j.queryForObject("SELECT COALESCE(sum(requested_minor), 0) FROM taktovia.refund_case WHERE payment_id = ? AND state IN ('REQUESTED', 'CONFIRMED')", Long::class.java, paymentId) ?: 0L
+
+    fun forBooking(j: JdbcOperations, bookingId: UUID): PRow? =
+        j.query("SELECT $PAYMENT_COLS FROM taktovia.payment_intent WHERE booking_id = ? ORDER BY (state NOT IN ('AUTHORIZATION_FAILED', 'VOIDED')) DESC, created_at DESC, id DESC LIMIT 1", PAYMENT_ROW, bookingId).firstOrNull()
+
+    /** Reaktion auf „Buchung storniert“ in der Stornotransaktion (siehe `Payments.onBookingCancelledIn`). */
+    fun onBookingCancelled(j: JdbcOperations, c: CancelledBooking): RefundHint? {
+        val found = forBooking(j, c.bookingId) ?: return null
+        val p = lock(j, found.id)
+        return when (p.state) {
+            PaymentState.AUTHORIZED -> { releaseAuthorization(j, p.id); RefundHint(RefundStatus.VOID_REQUESTED, p.authorized, p.currency) }   // kein Einzug: Autorisierung aufheben
+            PaymentState.CREATED, PaymentState.REQUIRES_ACTION -> { releaseAuthorization(j, p.id); RefundHint(RefundStatus.NONE, 0, p.currency) }
+            PaymentState.CAPTURED, PaymentState.PARTIALLY_REFUNDED, PaymentState.REFUND_PENDING, PaymentState.CAPTURE_PENDING, PaymentState.CAPTURE_UNKNOWN, PaymentState.RECONCILING -> {
+                val k = requestRefund(j, p.id, c.bookingId, c.reasonCode, c.causeClass, null) ?: return RefundHint(RefundStatus.NONE, 0, p.currency)
+                RefundHint(RefundStatus.valueOf(k.state.let { if (it == "NOT_REQUIRED") "NONE" else it }), when (k.state) { "PENDING_CAPTURE" -> amountFor(p.authorized, k.percent); "CONFIRMED" -> k.refunded; else -> k.requested ?: 0 }, p.currency)
+            }
+            else -> RefundHint(RefundStatus.NONE, 0, p.currency)   // bereits aufgehoben, abgelehnt oder vollständig erstattet: nichts zu tun (wiederholtes Storno)
+        }
+    }
+
+    /**
+     * Beauftragt eine Erstattung (Zeile der Zahlung gesperrt): ein Fall je (Zahlung, [caseKey]), Betrag nach Regel (oder [explicit]), nie über dem noch erstattbaren Rest (erfasst minus beauftragt);
+     * läuft ein Einzug, wartet der Fall. Je Zahlung läuft **höchstens eine** Erstattung beim PSP: weitere Fälle sind beauftragt (`REQUESTED`) und folgen nacheinander, sobald die vorige bestätigt oder
+     * abgelehnt ist (so ist jeder bestätigte Stand eindeutig einem Fall zuzuordnen). `null`, wenn der Zustand der Zahlung keine Erstattung zulässt.
+     */
+    fun requestRefund(j: JdbcOperations, paymentId: UUID, caseKey: UUID, reasonCode: String, causeClass: String, explicit: Long?): CaseRow? {
+        val p = lock(j, paymentId)
+        j.query("SELECT $CASE_COLS FROM taktovia.refund_case WHERE payment_id = ? AND case_key = ?", CASE_ROW, paymentId, caseKey).firstOrNull()?.let { return it }
+        val percent = percentFor(reasonCode, causeClass)
+        val caseId = UUID.randomUUID()
+        val seq = (j.queryForObject("SELECT COALESCE(max(seq), 0) FROM taktovia.refund_case WHERE payment_id = ?", Int::class.java, paymentId) ?: 0) + 1
+        fun insert(state: String, requested: Long?, ref: String?) {
+            j.update(
+                "INSERT INTO taktovia.refund_case(tenant_id, id, payment_id, case_key, seq, reason_code, cause_class, state, percent, requested_minor, command_ref) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                caseId, paymentId, caseKey, seq, reasonCode, causeClass, state, percent, requested, ref,
+            )
+        }
+        when (p.state) {
+            PaymentState.CAPTURE_PENDING, PaymentState.CAPTURE_UNKNOWN, PaymentState.RECONCILING -> insert("PENDING_CAPTURE", null, null)
+            PaymentState.CAPTURED, PaymentState.PARTIALLY_REFUNDED, PaymentState.REFUND_PENDING -> {
+                val remaining = p.captured - committed(j, paymentId)
+                if (explicit != null && (explicit < 1 || explicit > remaining)) throw ProblemException(ErrorCode.CONFLICT, "Die Erstattung übersteigt den noch erstattbaren Betrag.")
+                val amount = minOf(explicit ?: amountFor(p.captured, percent), remaining)
+                if (amount < 1) insert("NOT_DUE", 0, null)
+                else { insert("REQUESTED", amount, CommandRefs.derive(p.id.toString(), PaymentAction.REFUND, seq)); requested(j, p, caseId, amount); startNextRefund(j, p.id) }
+            }
+            else -> if (explicit != null) throw ProblemException(ErrorCode.CONFLICT, "Im Zahlungszustand ${p.state.name} ist keine Erstattung möglich.") else return null
+        }
+        return j.query("SELECT $CASE_COLS FROM taktovia.refund_case WHERE id = ?", CASE_ROW, caseId).first()
+    }
+
+    /** Ereignis `payment.refund_requested` zum beauftragten Fall. */
+    private fun requested(j: JdbcOperations, p: PRow, caseId: UUID, amount: Long) {
+        outbox.append(j, OutboxEvent(caseId, 1, "payment.refund_requested", linkedMapOf("payment_id" to p.id.toString(), "refund_case_id" to caseId.toString(), "refund_minor" to amount, "currency" to p.currency)
+            .also { m -> p.bookingId?.let { m["booking_id"] = it.toString() } }, now()))
+    }
+
+    /**
+     * Stößt die nächste Erstattung beim PSP an, wenn keine läuft: der älteste beauftragte Fall ohne Operation bekommt die Operation `REFUND_PAYMENT`, die Zahlung geht (aus `CAPTURED` oder
+     * `PARTIALLY_REFUNDED`) nach `REFUND_PENDING`. Zeile der Zahlung gesperrt.
+     */
+    private fun startNextRefund(j: JdbcOperations, paymentId: UUID) {
+        val open = cases(j, paymentId).filter { it.state == "REQUESTED" }
+        val operations = j.queryForList("SELECT command_ref FROM taktovia.payment_operation WHERE payment_id = ? AND action = 'REFUND'", String::class.java, paymentId).toSet()
+        if (open.any { it.commandRef in operations }) return                    // eine Erstattung läuft bereits
+        val next = open.firstOrNull() ?: return
+        var p = lock(j, paymentId)
+        if (p.state == PaymentState.CAPTURED || p.state == PaymentState.PARTIALLY_REFUNDED) p = move(j, p, PaymentState.REFUND_PENDING)
+        enqueue(j, p, PaymentAction.REFUND, next.seq, next.requested)
+    }
+
+    /** Nach dem Einzug: wartende Fälle (Storno während des Einzugs) werden jetzt nach Regel beauftragt oder als „kein Anspruch“ geschlossen. */
+    private fun promotePending(j: JdbcOperations, captured: PRow): PRow {
+        for (k in cases(j, captured.id).filter { it.state == "PENDING_CAPTURE" }) {
+            val amount = minOf(amountFor(captured.captured, k.percent), captured.captured - committed(j, captured.id))
+            if (amount < 1) { j.update("UPDATE taktovia.refund_case SET state = 'NOT_DUE', requested_minor = 0, revision = revision + 1 WHERE id = ?", k.id); continue }
+            j.update("UPDATE taktovia.refund_case SET state = 'REQUESTED', requested_minor = ?, command_ref = ?, revision = revision + 1 WHERE id = ?", amount, CommandRefs.derive(captured.id.toString(), PaymentAction.REFUND, k.seq), k.id)
+            outbox.append(j, OutboxEvent(k.id, k.revision + 1, "payment.refund_requested", linkedMapOf("payment_id" to captured.id.toString(), "refund_case_id" to k.id.toString(), "refund_minor" to amount, "currency" to captured.currency)
+                .also { m -> captured.bookingId?.let { m["booking_id"] = it.toString() } }, now()))
+        }
+        startNextRefund(j, captured.id)
+        return lock(j, captured.id)
+    }
+
+    /** Bestätigter Erstattungsstand [newRefunded]: die ältesten beauftragten Fälle, die vollständig darunter liegen, gelten als bestätigt. */
+    private fun confirmCases(j: JdbcOperations, paymentId: UUID, previousRefunded: Long, newRefunded: Long) {
+        var running = previousRefunded
+        for (k in cases(j, paymentId).filter { it.state == "REQUESTED" }) {
+            val need = k.requested ?: continue
+            if (running + need > newRefunded) break
+            j.update("UPDATE taktovia.refund_case SET state = 'CONFIRMED', refunded_minor = ?, revision = revision + 1 WHERE id = ? AND state = 'REQUESTED'", need, k.id)
+            running += need
+        }
+    }
+
+    /** Der PSP lehnt die Erstattung definitiv ab: Fall `FAILED`, die Zahlung bleibt `REFUND_PENDING`, der offene Betrag bleibt sichtbar, die Buchung bleibt storniert. */
+    fun refundFailed(j: JdbcOperations, caseId: UUID, code: String) {
+        val k = j.query("SELECT $CASE_COLS FROM taktovia.refund_case WHERE id = ?", CASE_ROW, caseId).firstOrNull() ?: return
+        val p = lock(j, k.paymentId)
+        if (j.update("UPDATE taktovia.refund_case SET state = 'FAILED', failure_code = ?, revision = revision + 1 WHERE id = ? AND state = 'REQUESTED'", code, caseId) == 1) {
+            outbox.append(j, OutboxEvent(caseId, k.revision + 1, "payment.refund_failed", linkedMapOf("payment_id" to p.id.toString(), "refund_case_id" to caseId.toString(), "refund_minor" to (k.requested ?: 0), "currency" to p.currency, "failure_code" to code)
+                .also { m -> p.bookingId?.let { m["booking_id"] = it.toString() } }, now()))
+            startNextRefund(j, p.id)   // ein weiterer beauftragter Fall wird nicht durch die Ablehnung des vorigen blockiert
+        }
+    }
+
     // ---- Hilfen ------------------------------------------------------------------------------------------------------------------------------
 
     private fun markFailure(j: JdbcOperations, id: UUID, code: String, onlyIfNull: Boolean = false) {
@@ -322,8 +497,8 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
             else -> PaymentUiStatus.valueOf(p.state.name)
         }
 
-        fun view(p: PRow, operationId: UUID?, refundOpen: Long = 0) = PaymentView(
-            p.id, p.bookingId, p.journeyId, p.state, status(p), p.currency, p.requested, p.authorized, p.captured, p.refunded, refundOpen, p.failureCode, p.revision, p.authorizeBy, operationId,
+        fun view(p: PRow, operationId: UUID?, refundOpen: Long = 0, refund: RefundView? = null) = PaymentView(
+            p.id, p.bookingId, p.journeyId, p.state, status(p), p.currency, p.requested, p.authorized, p.captured, p.refunded, refundOpen, p.failureCode, p.revision, p.authorizeBy, operationId, refund,
         )
     }
 }

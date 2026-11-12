@@ -1,0 +1,17 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+refund_case;tenant_id;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;id;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;payment_id;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;case_key;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;seq;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;reason_code;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;cause_class;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;state;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;percent;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;requested_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;refunded_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;command_ref;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;failure_code;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;revision;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;created_at;nein;ZAHLUNGSABWICKLUNG;;;;
+refund_case;updated_at;nein;ZAHLUNGSABWICKLUNG;;;;

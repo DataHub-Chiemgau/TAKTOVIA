@@ -73,7 +73,7 @@ def validator(schema: dict) -> Draft202012Validator:
 
 
 class ZustandsautomatenM2(unittest.TestCase):
-    FILES = {'buchung-lokal.md': 1, 'hold.md': 1, 'fahrtenplan.md': 1, 'nachricht.md': 2, 'zahlung-ablauf.md': 1}
+    FILES = {'buchung-lokal.md': 1, 'hold.md': 1, 'fahrtenplan.md': 1, 'nachricht.md': 2, 'zahlung-ablauf.md': 1, 'refund_case.md': 1}
 
     def test_jeder_automat_vollstaendig_beschrieben(self):
         for f, count in self.FILES.items():

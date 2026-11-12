@@ -47,8 +47,23 @@ data class ConfirmedBooking(val booking: BookingDetail, val replayed: Boolean)
 /** Storno-Befehl: [ifMatch] = Revision der Buchung (ETag), [reason] einer der Stornogründe des Katalogs (Art `CANCELLATION`). */
 data class CancelBooking(val ifMatch: Long, val reason: BookingReason)
 
-/** Ergebnis: die stornierte Buchung, die freigegebene Reservierung und die neue Planrevision des Umlaufs (`null`, wenn der Plan die Buchung nicht enthielt oder nicht änderbar war). */
-data class CancelResult(val booking: BookingDetail, val releasedHoldId: UUID, val planRevision: Long?)
+/**
+ * Ergebnis: die stornierte Buchung, die freigegebene Reservierung und die neue Planrevision des Umlaufs (`null`, wenn der Plan die Buchung nicht enthielt oder nicht änderbar war). [refundHint] ist der
+ * Erstattungshinweis der Zahlung (WP-M2-31, `null` ohne Zahlung): [RefundHint.status] nennt, was beauftragt ist (nie „erstattet“, solange der PSP nicht bestätigt hat).
+ */
+data class CancelResult(val booking: BookingDetail, val releasedHoldId: UUID, val planRevision: Long?, val refundHint: RefundHint? = null)
+
+/** Erstattungshinweis zum Storno: [status] (`NONE`, `VOID_REQUESTED`, `PENDING_CAPTURE`, `REQUESTED`, `CONFIRMED`, `FAILED`, `NOT_DUE`) und Betrag in kleinster Einheit. */
+data class RefundHint(val status: String, val amountMinor: Long, val currency: String)
+
+/** Anlass der Zahlungsreaktion beim Storno (WP-M2-31): Grund, Verursacherklasse (Erstattungsregel, BKG-014) und Initiator. */
+data class CancellationEvent(val bookingId: UUID, val reason: BookingReason, val cause: CauseClass, val initiator: String)
+
+/**
+ * Port: Reaktion eines anderen Moduls auf einen Storno **in derselben Transaktion** (Zahlung: Void bzw. Erstattung beauftragen, WP-M2-31). Der Aufruf geschieht nach dem Übergang der Buchung und der
+ * Freigabe der Reservierung; wirft er, rollt der ganze Storno zurück. Er ruft nie einen externen Dienst (Leitlinie 3), der PSP-Aufruf folgt als Operation.
+ */
+fun interface CancellationListener { fun onCancelled(j: org.springframework.jdbc.core.JdbcOperations, event: CancellationEvent): RefundHint? }
 
 /** Wirksame Stornoregeln eines Dienstes (Planungsannahmen, wenn die Konfiguration keinen Wert nennt; [defaulted] nennt die Parameter mit Planungsdefault). */
 data class CancellationPolicy(val deadlineMin: Int, val reasons: Set<BookingReason>, val defaulted: Set<String>) {
@@ -111,8 +126,8 @@ interface Bookings {
     fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry>
 
     companion object {
-        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config)
+        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()

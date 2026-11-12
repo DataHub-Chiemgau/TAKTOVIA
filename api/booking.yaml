@@ -990,6 +990,8 @@ components:
           $ref: '#/components/schemas/RidePromise'
         payment:
           $ref: '#/components/schemas/RidePayment'
+        refund_hint:
+          $ref: '#/components/schemas/RideRefundHint'
         revision:
           type: integer
           format: int64
@@ -1040,6 +1042,8 @@ components:
           type: string
           pattern: ^[A-Z][A-Z0-9_]{0,63}$
           description: Stabiler Fehlercode (z. B. `DECLINED`, `AUTHORIZATION_EXPIRED`, `CAPTURE_DECLINED`); nie Freitext.
+        refund:
+          $ref: '#/components/schemas/RideRefund'
         operation_id:
           $ref: common.yaml#/components/schemas/UUID
         revision:
@@ -1054,6 +1058,53 @@ components:
       - captured
       - refunded
       - revision
+    RideRefund:
+      type: object
+      additionalProperties: false
+      description: 'Stand der Erstattung nach Storno (WP-M2-31): `REQUESTED` beauftragt, noch nicht vom PSP bestätigt (dem Fahrgast „Erstattung beauftragt“, nie „erstattet“), `CONFIRMED` bestätigt,
+        `FAILED` vom PSP abgelehnt (die Buchung bleibt storniert, der Betrag `requested` abzüglich `refunded` bleibt offen), `PENDING_CAPTURE` wartet auf einen laufenden Einzug, `NOT_DUE` kein Anspruch nach der Regel.'
+      properties:
+        status:
+          type: string
+          enum:
+          - PENDING_CAPTURE
+          - REQUESTED
+          - CONFIRMED
+          - FAILED
+          - NOT_DUE
+          - NOT_REQUIRED
+        requested:
+          $ref: common.yaml#/components/schemas/Money
+        refunded:
+          $ref: common.yaml#/components/schemas/Money
+        failure_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{0,63}$
+      required:
+      - status
+      - requested
+      - refunded
+    RideRefundHint:
+      type: object
+      additionalProperties: false
+      description: 'Erstattungshinweis in der Storno-Antwort (WP-M2-31): was mit der Zahlung geschieht. `VOID_REQUESTED` die Autorisierung wird aufgehoben (kein Einzug), `REQUESTED` eine Erstattung ist beauftragt,
+        `PENDING_CAPTURE` sie folgt nach dem laufenden Einzug, `NOT_DUE` kein Anspruch, `NONE` nichts zu tun. „Erstattet“ steht erst nach Bestätigung des PSP in `payment.refund`.'
+      properties:
+        status:
+          type: string
+          enum:
+          - NONE
+          - VOID_REQUESTED
+          - PENDING_CAPTURE
+          - REQUESTED
+          - CONFIRMED
+          - FAILED
+          - NOT_DUE
+        amount:
+          $ref: common.yaml#/components/schemas/Money
+      required:
+      - status
+      - amount
     RidePromise:
       type: object
       additionalProperties: false
