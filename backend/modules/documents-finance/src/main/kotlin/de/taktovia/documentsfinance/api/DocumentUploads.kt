@@ -33,7 +33,11 @@ data class UploadPolicy(
 }
 
 /** Anforderung eines Uploadtickets: Größe, MIME-Typ und erwarteter SHA-256 (hexadezimal, klein) der Datei. */
-data class RequestUploadTicket(val legalEntityId: UUID, val purpose: UploadPurpose, val mime: String, val sizeBytes: Long, val sha256: String)
+data class RequestUploadTicket(
+    val legalEntityId: UUID, val purpose: UploadPurpose, val mime: String, val sizeBytes: Long, val sha256: String,
+    /** Herkunftskanal (WP-M4-22): über die HTTP-Schnittstelle nur [SourceChannel.DRIVER_APP] und [SourceChannel.DISPATCH_WEB]; E-Mail und Import laufen über [ReceiptIntake]. */
+    val channel: SourceChannel = SourceChannel.DISPATCH_WEB, val kind: DocumentKind = DocumentKind.RECEIPT, val caseRef: CaseRef? = null,
+)
 
 /** Ziel des direkten Uploads in den Objektspeicher (z. B. vorsignierte MinIO-URL); `null`, solange kein S3/MinIO-Adapter angebunden ist (nicht ausgeführt, WP-M0-08). */
 data class UploadTarget(val method: String, val url: String, val headers: Map<String, String> = emptyMap())
@@ -48,7 +52,20 @@ data class UploadTicketView(
 data class StoredDocumentView(
     val documentId: UUID, val ticketId: UUID, val purpose: UploadPurpose, val state: DocumentState, val mime: String, val sizeBytes: Long, val sha256: String,
     val receivedAt: Instant, val scannedAt: Instant?, val revision: Long,
-)
+    val channel: SourceChannel = SourceChannel.DISPATCH_WEB, val kind: DocumentKind = DocumentKind.RECEIPT, val caseRef: CaseRef? = null,
+    /** Nur E-Mail-Eingang: Absenderdomäne verifiziert? Sonst `null`. */
+    val senderVerified: Boolean? = null, val integrity: IntegrityState = IntegrityState.UNCHECKED, val legalEntityId: UUID? = null,
+    /** Rohzustand des Belegs; spätere Pakete (Freigabe, Buchung) führen weitere Zustände nach `STORED`, [state] zeigt dafür `STORED`. */
+    val workflowState: String = state.name,
+) {
+    /** Freigabehindernisse, die aus dem Dokument selbst folgen (weitere Pakete ergänzen Pflichtfelder, Kostenzuordnung, Dublette). */
+    val blockers: List<ReleaseBlocker> get() = buildList {
+        if (state != DocumentState.STORED) add(ReleaseBlocker.NOT_STORED)
+        if (senderVerified == false) add(ReleaseBlocker.UNVERIFIED_SENDER)
+        if (integrity == IntegrityState.VIOLATED) add(ReleaseBlocker.INTEGRITY_VIOLATION)
+    }
+    val approvable: Boolean get() = blockers.isEmpty()
+}
 
 /** Ergebnis der Prüfung; [Unavailable] lässt das Dokument in Quarantäne (fail-closed). */
 sealed interface ScanResult {
@@ -85,8 +102,27 @@ interface Uploads {
     /** Wiederholt die Prüfung eines in Quarantäne verbliebenen Dokuments (z. B. nach Ausfall des Scanners). Andere Zustände bleiben unverändert. */
     fun rescan(ctx: RequestContext, documentId: UUID): StoredDocumentView
 
-    /** Liefert das Original, **nur** wenn die Prüfung bestanden ist; Dokumente in Quarantäne oder abgelehnte sind nicht auffindbar (404). Nur für den Besitzer und die Finanzrolle. */
+    /** Liefert das Original, **nur** wenn die Prüfung bestanden ist; Dokumente in Quarantäne oder abgelehnte sind nicht auffindbar (404). Nur für den Besitzer und die Finanzrolle. Weicht der Hash ab, entsteht ein Integritätsvorfall (WP-M4-24). */
     fun openOriginal(ctx: RequestContext, documentId: UUID): ByteArray
+
+    /**
+     * Gemeinsamer Anlagebefehl für serverseitige Kanäle (E-Mail-Eingang, Rechnungsimport; WP-M4-22): legt das Ticket an, schreibt die Bytes in die Quarantäne und schließt ab, mit
+     * serverseitig berechnetem Hash und demselben Ablauf wie der Upload per Ticket. Der Kontext darf ein Dienstkonto sein (Scope `receipts:write`). Dieselbe `sourceRef` im selben Kanal
+     * erzeugt nie einen zweiten Beleg ([IngestResult.Duplicate]).
+     */
+    fun ingest(ctx: RequestContext, cmd: IngestFile): IngestResult
+}
+
+/** Datei eines serverseitigen Kanals. `mime` (falls angegeben) muss zum tatsächlichen Typ passen; der Typ wird an den Bytes erkannt. */
+class IngestFile(
+    val legalEntityId: UUID, val channel: SourceChannel, val kind: DocumentKind, val bytes: ByteArray, val mime: String? = null, val sourceRef: String? = null,
+    val senderVerified: Boolean? = null, val caseRef: CaseRef? = null, val purpose: UploadPurpose = UploadPurpose.RECEIPT,
+)
+
+sealed interface IngestResult {
+    data class Created(val document: StoredDocumentView) : IngestResult
+    /** Die Quelle ist schon verarbeitet oder wird gerade verarbeitet; `document` fehlt, solange die erste Verarbeitung noch nicht abgeschlossen ist. */
+    data class Duplicate(val document: StoredDocumentView?) : IngestResult
 }
 
 /** Fabrik des Upload-Bausteins; die Ports (Objektspeicher, Scanner) liefert die Anwendung. */
@@ -95,4 +131,11 @@ object DocumentUploads {
         ctxTx: ContextTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox, store: TenantObjectStore, scanner: MalwareScanner,
         policy: UploadPolicy = UploadPolicy(), signer: UploadTargetSigner? = null, clock: Clock = Clock.systemUTC(),
     ): Uploads = UploadServicesFactory.create(ctxTx, audit, security, outbox, store, scanner, policy, signer, clock)
+
+    /** Alle Belegbausteine (WP-M4-21 bis -27). `recognizer` = OCR-Engine hinter der providerunabhängigen Schnittstelle; ohne Engine lehnt die Extraktion mit 503 ab. */
+    fun services(
+        ctxTx: ContextTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox, store: TenantObjectStore, scanner: MalwareScanner,
+        policy: UploadPolicy = UploadPolicy(), signer: UploadTargetSigner? = null, clock: Clock = Clock.systemUTC(),
+        recognizer: ReceiptRecognizer? = null, extraction: ExtractionPolicy = ExtractionPolicy(),
+    ): DocumentServices = UploadServicesFactory.services(ctxTx, audit, security, outbox, store, scanner, policy, signer, clock, recognizer, extraction)
 }

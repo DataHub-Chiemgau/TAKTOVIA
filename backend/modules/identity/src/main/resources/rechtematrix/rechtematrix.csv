@@ -173,3 +173,9 @@ createTimeEventBackfill;time-events:manage;HR;M4;N;N;N;N;N;N;N;N;J;N
 requestReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 completeReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 getReceiptDocument;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+getExpense;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+listExpenseRevisions;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+getExpenseOriginal;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+correctExpense;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+requestReceiptExtraction;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+getReceiptExtraction;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J

@@ -25,6 +25,7 @@ enum class ErrorCode(val status: Int, val title: String) {
     REQUOTE_REQUIRED(409, "Neue Preisauskunft erforderlich"),
     CAPACITY_UNAVAILABLE(409, "Kapazität nicht verfügbar"),
     IMMUTABLE_RECORD(409, "Datensatz unveränderlich"),
+    DOCUMENT_INTEGRITY_VIOLATION(409, "Belegintegrität verletzt"),
     INVALID_STATE_TRANSITION(409, "Zustandsübergang nicht erlaubt"),
     REVISION_MISMATCH(412, "Veraltete Revision"),
     PAYLOAD_TOO_LARGE(413, "Anfrage zu groß"),

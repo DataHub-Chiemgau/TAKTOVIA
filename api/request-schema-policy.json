@@ -13,6 +13,8 @@
     { "schema": "SignedMoney", "feld": "amount_minor", "grund": "Betrag einer Kostenumlagezeile, gesetzt von einer berechtigten Finanzrolle (M4); der Server prüft die Summe gegen den Beleg" },
     { "schema": "AllocationRequest", "feld": "allocation_policy_revision", "grund": "Optimistisches Konkurrenzmerkmal: die Revision der Umlageregel, auf der der Vorschlag beruht; der Server löst die geltende Revision selbst auf und weist eine abweichende ab, nie wird sie übernommen" },
     { "schema": "TenantStatusChange", "feld": "status", "grund": "Zielzustand eines Befehls der Plattformverwaltung (Zustandsautomat tenant, Server prüft den Übergang), kein vom Client gesetzter Objektzustand" },
-    { "schema": "PartnerEventData", "feld": "state", "grund": "Zustand, den ein signierter Partner für sein eigenes Objekt meldet (Ereigniseingang, M6); wird nie als Zustand eines TAKTOVIA-Objekts übernommen" }
+    { "schema": "PartnerEventData", "feld": "state", "grund": "Zustand, den ein signierter Partner für sein eigenes Objekt meldet (Ereigniseingang, M6); wird nie als Zustand eines TAKTOVIA-Objekts übernommen" },
+    { "schema": "ExpenseVatAmount", "feld": "amount_minor", "grund": "Mehrwertsteuerbetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (der OCR-Vorschlag bleibt erhalten); Betrag des Belegs, nie ein Preis des Dienstes" },
+    { "schema": "ExpenseFieldValues", "feld": "amount_minor", "grund": "Bruttobetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (WP-M4-23); der Server prüft Typ, Grenzen und Zustand des Belegs" }
   ]
 }

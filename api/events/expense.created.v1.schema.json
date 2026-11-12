@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/expense.created.v1.schema.json",
+  "title": "Beleg angelegt (WP-M4-22)",
+  "description": "Payload von `expense.created`. Aggregat: expense_document / 1. Entsteht in derselben Transaktion wie der Beleg (in Quarantäne) für alle vier Eingangskanäle; ohne Dateiname, Absender und Hash.",
+  "type": "object",
+  "required": ["document_id", "source_channel", "document_kind", "received_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "source_channel": {"enum": ["DRIVER_APP", "DISPATCH_WEB", "EMAIL_INBOUND", "INVOICE_IMPORT"]},
+    "document_kind": {"enum": ["RECEIPT", "FUEL_RECEIPT", "INVOICE", "OTHER"]},
+    "received_at": {"type": "string", "format": "date-time"},
+    "case_ref": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "required": ["kind", "id"], "additionalProperties": false, "properties": {"kind": {"enum": ["VEHICLE", "SHIFT"]}, "id": {"type": "string", "format": "uuid"}}}
+      ]
+    },
+    "sender_verified": {"type": ["boolean", "null"], "description": "Nur E-Mail-Eingang: Absenderdomäne verifiziert."}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "source_channel": "EMAIL_INBOUND", "document_kind": "INVOICE", "received_at": "2026-12-01T06:00:00Z", "case_ref": null, "sender_verified": true}
+  ]
+}

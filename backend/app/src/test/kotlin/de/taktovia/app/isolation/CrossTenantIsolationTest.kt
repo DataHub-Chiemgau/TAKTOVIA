@@ -101,7 +101,7 @@ class CrossTenantIsolationTest {
             "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
 
@@ -166,6 +166,13 @@ class CrossTenantIsolationTest {
             "updateVehicleCapacity" to Probe("PATCH", "/v1/operator/vehicle-master/{vehicle_id}/capacity", """{"restrictions":[]}""", true, role = "dispatcher"),
             "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
             "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
+            // Belege: Aggregat, Revisionen, Original, Extraktion (WP-M4-22 bis -27)
+            "getExpense" to Probe("GET", "/v1/expenses/{expense_id}", role = "finance"),
+            "correctExpense" to Probe("PATCH", "/v1/expenses/{expense_id}", """{"reason":"Fremdversuch","fields":{"amount_minor":1}}""", true, role = "finance"),
+            "listExpenseRevisions" to Probe("GET", "/v1/expenses/{expense_id}/revisions", role = "finance"),
+            "getExpenseOriginal" to Probe("GET", "/v1/expenses/{expense_id}/original", role = "finance"),
+            "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
+            "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }

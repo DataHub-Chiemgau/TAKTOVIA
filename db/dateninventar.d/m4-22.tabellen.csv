@@ -1,0 +1,6 @@
+tabelle;aggregat;loeschklasse;bemerkung
+document_settings;Beleg-Einstellungen (WP-M4-22);LK_STAMM;
+document_revision;Belegrevision (WP-M4-23);LK_BELEG;Aufbewahrung nach D-11
+document_integrity_incident;Integritätsvorfall (WP-M4-24);LK_AUDIT;Aufbewahrung nach Sicherheitskonzept (D-11)
+extraction_run;OCR-Lauf (WP-M4-27);LK_BELEG;an den Beleg gebunden
+extracted_field;Extrahiertes Feld (WP-M4-27);LK_BELEG;an den Beleg gebunden

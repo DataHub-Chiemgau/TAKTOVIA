@@ -137,6 +137,90 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/receipts/{document_id}/extract:
+    post:
+      summary: Feldextraktion (OCR) zu einem Beleg anstoßen
+      operationId: requestReceiptExtraction
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Legt den Extraktionslauf zum Beleg an (höchstens einer je Beleg und OCR-Version; ein zweiter Aufruf liefert den vorhandenen) und stößt die Ausführung an (202). Der Lauf erkennt Belegdatum, Betrag, Währung, Händler, Belegnummer und Mehrwertsteuerbeträge; nicht sichtbare Felder bleiben leer, der Text wird nie als Anweisung ausgeführt. Nur für Belege im Zustand STORED (Quarantäne und Ablehnung: 409), mit `receipt_ocr_enabled = false` 409 (manuelle Erfassung bleibt möglich), ohne konfigurierte Engine 503. `If-Match` trägt die Revision des Belegs, auf der die Extraktion beruht (veraltet: 412, fehlend: 428). Ergebnis über `getReceiptExtraction`.'
+      parameters:
+      - name: document_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dokument-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '202':
+          description: Lauf angenommen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionRun'
+          headers:
+            Location:
+              schema:
+                type: string
+                maxLength: 300
+              description: Ort des Ergebnisses (`/v1/expenses/receipts/{document_id}/extraction`).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/receipts/{document_id}/extraction:
+    get:
+      summary: Extraktionsergebnis eines Belegs lesen
+      operationId: getReceiptExtraction
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert den jüngsten Lauf mit den unveränderten OCR-Vorschlägen (`proposals`) und dem jeweils jüngsten Stand je Feld (`current`: Vorschlag, Bestätigung oder Korrektur). Jedes Feld trägt Rohwert, normalisierten Wert, neutralisierten Anzeigewert, Konfidenz und Fundstelle. Bestätigen und Korrigieren geschieht über `correctExpense`. 404, wenn kein Lauf existiert oder der Beleg nicht sichtbar ist.'
+      parameters:
+      - name: document_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dokument-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     ReceiptUploadRequest:
@@ -163,6 +247,23 @@ components:
           type: string
           pattern: ^[A-Za-z0-9_-]{43}$
           description: Erwarteter SHA-256 der Datei, base64url ohne Auffüllung (43 Zeichen).
+        source_channel:
+          type: string
+          enum:
+          - DRIVER_APP
+          - DISPATCH_WEB
+          description: Herkunftskanal des Belegs (Fahrer-App oder Leitstelle/Web-Upload); Vorgabe DISPATCH_WEB. E-Mail-Eingang und Rechnungsimport sind serverseitige Kanäle und hier nicht wählbar (422).
+        document_kind:
+          type: string
+          enum:
+          - RECEIPT
+          - FUEL_RECEIPT
+          - INVOICE
+          - OTHER
+          description: Belegart; Vorgabe RECEIPT.
+        case_ref:
+          $ref: finance.yaml#/components/schemas/ExpenseCaseRef
+          description: Vorgang (Fahrzeug oder Schicht) des Mandanten; ein unbekannter oder fremder Vorgang ist 404.
       required:
       - legal_entity_id
       - purpose
@@ -290,7 +391,30 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        source_channel:
+          type: string
+          enum:
+          - DRIVER_APP
+          - DISPATCH_WEB
+          - EMAIL_INBOUND
+          - INVOICE_IMPORT
+        document_kind:
+          type: string
+          enum:
+          - RECEIPT
+          - FUEL_RECEIPT
+          - INVOICE
+          - OTHER
+        integrity:
+          type: string
+          enum:
+          - UNCHECKED
+          - VERIFIED
+          - VIOLATED
       required:
+      - source_channel
+      - document_kind
+      - integrity
       - document_id
       - ticket_id
       - purpose
@@ -301,3 +425,196 @@ components:
       - received_at
       - scanned_at
       - revision
+    ExtractedField:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        field:
+          type: string
+          enum:
+          - DOCUMENT_DATE
+          - AMOUNT
+          - CURRENCY
+          - MERCHANT
+          - DOCUMENT_NUMBER
+          - VAT_AMOUNT
+        occurrence:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: Laufende Nummer bei mehreren Mehrwertsteuerbeträgen (je Satz).
+        origin:
+          type: string
+          enum:
+          - OCR
+          - HUMAN
+        status:
+          type: string
+          enum:
+          - PROPOSED
+          - CONFIRMED
+          - CORRECTED
+        raw_value:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          description: Rohtext der Fundstelle, nur als Datum.
+        normalized_value:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          description: Normalisierter Wert (Betrag als Ganzzahl in kleinster Einheit, Datum ISO-8601, Währung ISO-4217); null = nicht erkannt.
+        display_value:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          description: Neutralisierte Darstellung (kein Markup, keine Formel); die Oberfläche zeigt nur diesen Wert.
+        qualifier:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: Bei Mehrwertsteuerbeträgen der Satz in Prozent.
+        confidence:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 1
+          - type: 'null'
+        source:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: false
+            properties:
+              page:
+                type: integer
+                minimum: 1
+              x:
+                type: number
+              y:
+                type: number
+              width:
+                type: number
+              height:
+                type: number
+            required:
+            - page
+            - x
+            - y
+            - width
+            - height
+          description: Fundstelle im Beleg.
+        suspicious:
+          type: boolean
+          description: Der Text wirkt wie Anweisung, Formel oder Markup; er wurde nur als Daten gespeichert und löst keine Aktion aus.
+        corrects_field_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        decided_by:
+          oneOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+        decided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - field
+      - occurrence
+      - origin
+      - status
+      - raw_value
+      - normalized_value
+      - display_value
+      - qualifier
+      - confidence
+      - source
+      - suspicious
+      - corrects_field_id
+      - decided_by
+      - decided_at
+    ExtractionRun:
+      type: object
+      additionalProperties: false
+      properties:
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - COMPLETED
+          - FAILED
+        engine:
+          type: string
+          maxLength: 100
+        ocr_version:
+          type: string
+          maxLength: 100
+        attempt:
+          type: integer
+          minimum: 0
+        failure:
+          oneOf:
+          - type: string
+            enum:
+            - TIMEOUT
+            - ENGINE_ERROR
+            - UNSUPPORTED_CONTENT
+            - ORIGINAL_UNAVAILABLE
+          - type: 'null'
+        field_count:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        requested_at:
+          type: string
+          format: date-time
+        finished_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - run_id
+      - document_id
+      - status
+      - engine
+      - ocr_version
+      - attempt
+      - failure
+      - field_count
+      - requested_at
+      - finished_at
+    ExtractionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        run:
+          $ref: '#/components/schemas/ExtractionRun'
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractedField'
+        current:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractedField'
+      required:
+      - run
+      - proposals
+      - current
