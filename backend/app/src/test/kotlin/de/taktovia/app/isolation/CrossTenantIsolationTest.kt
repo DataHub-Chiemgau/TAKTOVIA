@@ -248,6 +248,9 @@ class CrossTenantIsolationTest {
             "getExpenseOriginal" to Probe("GET", "/v1/expenses/{expense_id}/original", role = "finance"),
             "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
+            // Belegerfassung per Kamera (WP-M4-25): bearbeitete Ansicht
+            "attachReceiptEditedView" to Probe("PUT", "/v1/expenses/receipts/{document_id}/edited-view", """{"mime":"image/jpeg","content_base64":"/9j/4AAQ"}""", true, role = "finance"),
+            "getReceiptEditedView" to Probe("GET", "/v1/expenses/receipts/{document_id}/edited-view", role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
             "getRoster" to Probe("GET", "/v1/rosters/{roster_id}", role = "planner"),

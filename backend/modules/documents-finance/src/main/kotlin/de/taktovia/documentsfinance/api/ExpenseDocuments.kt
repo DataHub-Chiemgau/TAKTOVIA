@@ -45,10 +45,13 @@ data class ExpenseView(val document: StoredDocumentView, val fields: Map<String,
 class EditedView(val mime: String, val bytes: ByteArray)
 
 /**
- * Korrektur eines Belegs (WP-M4-23): `fields` setzt Werte (muss vom aktuellen Wert abweichen), `confirm` bestätigt einen OCR-Vorschlag unverändert. Mindestens eines von beiden, der Grund ist Pflicht.
+ * Korrektur eines Belegs (WP-M4-23): `fields` setzt Werte (muss vom aktuellen Wert abweichen), `confirm` bestätigt einen OCR-Vorschlag unverändert. Mindestens eines von beiden oder eine bearbeitete Ansicht (WP-M4-25), der Grund ist Pflicht.
  * Eine Korrektur erzeugt genau eine neue Revision.
  */
 data class CorrectExpense(val reason: String, val fields: Map<String, Any?> = emptyMap(), val confirm: Set<String> = emptySet(), val editedView: EditedView? = null)
+
+/** Die bearbeitete Ansicht eines Belegs (jüngste Revision mit eigener Ansicht), unabhängig vom Original; `sha256` = Hash der Ansicht. */
+class EditedViewContent(val revision: Long, val mime: String, val bytes: ByteArray, val sha256: String)
 
 /** Beleg lesen, Revisionen abrufen, korrigieren und das Original abrufen (WP-M4-22, WP-M4-23). */
 interface Expenses {
@@ -63,6 +66,12 @@ interface Expenses {
      * gebuchter oder freigegebener Beleg ist unveränderlich (409 `IMMUTABLE_RECORD`), ebenso ein Beleg in Quarantäne. Das Original wird nie berührt.
      */
     fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView
+
+    /**
+     * Die jüngste bearbeitete Ansicht (Zuschnitt, Drehung) als eigenes Objekt; fehlt sie, 404. Das Original ist davon unabhängig ([original]) und bleibt byteweise unverändert (WP-M4-25).
+     * Anlegen: [correct] mit [CorrectExpense.editedView] (eigene Revision, ohne Feldänderung möglich).
+     */
+    fun editedView(ctx: RequestContext, id: UUID): EditedViewContent
 
     /** Das Original, byteweise unverändert; geprüft gegen den gespeicherten Hash (Verletzung: Vorfall und 409 `DOCUMENT_INTEGRITY_VIOLATION`). */
     fun original(ctx: RequestContext, id: UUID): ByteArray

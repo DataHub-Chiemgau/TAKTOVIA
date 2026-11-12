@@ -37,6 +37,11 @@ data class RequestUploadTicket(
     val legalEntityId: UUID, val purpose: UploadPurpose, val mime: String, val sizeBytes: Long, val sha256: String,
     /** Herkunftskanal (WP-M4-22): über die HTTP-Schnittstelle nur [SourceChannel.DRIVER_APP] und [SourceChannel.DISPATCH_WEB]; E-Mail und Import laufen über [ReceiptIntake]. */
     val channel: SourceChannel = SourceChannel.DISPATCH_WEB, val kind: DocumentKind = DocumentKind.RECEIPT, val caseRef: CaseRef? = null,
+    /**
+     * Stabile Kennung des Entwurfs, vom Gerät **vor** dem Upload erzeugt (WP-M4-26, DOC-013): macht die Anlage über [Uploads.registerReceipt] idempotent (Unique `(tenant_id, client_uuid)`).
+     * Ohne Angabe gilt keine Idempotenz über Wiederholungen (Web-Upload, serverseitige Kanäle). `capturedAt` = Erfassungszeit am Gerät, getrennt von der Eingangszeit am Server.
+     */
+    val clientUuid: UUID? = null, val capturedAt: Instant? = null,
 )
 
 /** Ziel des direkten Uploads in den Objektspeicher (z. B. vorsignierte MinIO-URL); `null`, solange kein S3/MinIO-Adapter angebunden ist (nicht ausgeführt, WP-M0-08). */
@@ -47,6 +52,9 @@ fun interface UploadTargetSigner { fun target(tenantPath: String, expiresAt: Ins
 data class UploadTicketView(
     val ticketId: UUID, val purpose: UploadPurpose, val mime: String, val sizeBytes: Long, val sha256: String, val maxBytes: Long, val expiresAt: Instant,
     val state: TicketState, val revision: Long, val uploadKey: String, val target: UploadTarget?,
+    val clientUuid: UUID? = null, val capturedAt: Instant? = null,
+    /** Gesetzt, sobald aus dem Ticket ein Beleg entstanden ist (Zustand [TicketState.CONSUMED]): der Entwurf ist dann bereits synchronisiert. */
+    val documentId: UUID? = null,
 )
 
 data class StoredDocumentView(
@@ -57,6 +65,8 @@ data class StoredDocumentView(
     val senderVerified: Boolean? = null, val integrity: IntegrityState = IntegrityState.UNCHECKED, val legalEntityId: UUID? = null,
     /** Rohzustand des Belegs; spätere Pakete (Freigabe, Buchung) führen weitere Zustände nach `STORED`, [state] zeigt dafür `STORED`. */
     val workflowState: String = state.name,
+    /** Stabile Kennung des Entwurfs (Geräte-UUID bzw. bei Kanälen ohne Gerät die Beleg-ID) und Erfassungszeit am Gerät (nur Fahrer-App), getrennt von [receivedAt]. */
+    val clientUuid: UUID? = null, val capturedAt: Instant? = null,
 ) {
     /** Freigabehindernisse, die aus dem Dokument selbst folgen (weitere Pakete ergänzen Pflichtfelder, Kostenzuordnung, Dublette). */
     val blockers: List<ReleaseBlocker> get() = buildList {
@@ -97,6 +107,20 @@ interface Uploads {
      */
     fun complete(ctx: RequestContext, ticketId: UUID, expectedRevision: Long): StoredDocumentView
 
+    /**
+     * Idempotente Anlage eines Belegs über die Client-UUID (WP-M4-26, DOC-013; auch der Online-Weg der Fahrer-App, WP-M4-25). `cmd.clientUuid` ist Pflicht. Ergebnis:
+     * kein Beleg und kein offenes Ticket zur UUID: neues Ticket ([ReceiptRegistration.created] = true, 201); ein noch gültiges Ticket derselben UUID und desselben Hashs: dasselbe Ticket
+     * (Wiederaufnahme eines abgebrochenen Uploads, 200); Beleg schon angelegt: dessen Ticket mit `documentId` (200). Dieselbe UUID mit abweichendem Hash: 409 ohne Überschreiben
+     * (auch wenn der Beleg erst entsteht). Die Ausstellung ist je `(Mandant, UUID)` serialisiert; ein Zuordnungsziel (Fahrzeug/Schicht) muss dem Fahrer der Fahrer-App zugewiesen sein (403, sonst 404).
+     */
+    fun registerReceipt(ctx: RequestContext, cmd: RequestUploadTicket): ReceiptRegistration
+
+    /**
+     * Wie [complete], aber idempotent für Tickets mit Client-UUID: ein bereits verbrauchtes Ticket liefert den vorhandenen Beleg ([CompletedReceipt.created] = false), ein gerade abgeschlossenes
+     * Ticket (paralleler Lauf) 409 `CONFLICT` zum Wiederholen. Übertragungsfehler (Hash/Größe weichen ab): 422, das Ticket ist verbraucht, mit [registerReceipt] folgt ein neues Ticket.
+     */
+    fun completeReceipt(ctx: RequestContext, ticketId: UUID, expectedRevision: Long): CompletedReceipt
+
     fun document(ctx: RequestContext, documentId: UUID): StoredDocumentView
 
     /** Wiederholt die Prüfung eines in Quarantäne verbliebenen Dokuments (z. B. nach Ausfall des Scanners). Andere Zustände bleiben unverändert. */
@@ -112,6 +136,9 @@ interface Uploads {
      */
     fun ingest(ctx: RequestContext, cmd: IngestFile): IngestResult
 }
+
+class ReceiptRegistration(val ticket: UploadTicketView, val created: Boolean)
+class CompletedReceipt(val document: StoredDocumentView, val created: Boolean)
 
 /** Datei eines serverseitigen Kanals. `mime` (falls angegeben) muss zum tatsächlichen Typ passen; der Typ wird an den Bytes erkannt. */
 class IngestFile(

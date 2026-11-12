@@ -28,7 +28,7 @@ internal object DocumentRows {
     const val SCOPE_READ = "receipts:read"
 
     const val COLUMNS = "d.id, d.upload_ticket_id, d.object_key, d.original_sha256, d.mime, d.size_bytes, d.state, d.original_received_at, d.scanned_at, d.revision, d.legal_entity_id, " +
-        "d.source_channel, d.document_kind, d.case_ref_kind, d.case_ref_id, d.sender_verified, d.integrity_state, d.created_by, d.current_fields::text AS current_fields_text"
+        "d.source_channel, d.document_kind, d.case_ref_kind, d.case_ref_id, d.sender_verified, d.integrity_state, d.created_by, d.current_fields::text AS current_fields_text, d.client_uuid, d.captured_at"
 
     val MAPPER = RowMapper { rs, _ ->
         val key = rs.getString("object_key")
@@ -42,6 +42,7 @@ internal object DocumentRows {
             rs.getLong("revision"), SourceChannel.valueOf(rs.getString("source_channel")), DocumentKind.valueOf(rs.getString("document_kind")),
             caseKind?.let { CaseRef(CaseKind.valueOf(it), rs.getObject("case_ref_id", UUID::class.java)) }, rs.getObject("sender_verified") as Boolean?,
             IntegrityState.valueOf(rs.getString("integrity_state")), rs.getObject("legal_entity_id", UUID::class.java), raw,
+            rs.getObject("client_uuid", UUID::class.java), rs.getTimestamp("captured_at")?.toInstant(),
         )
         DocRow(view, key, rs.getString("created_by"), raw, rs.getString("current_fields_text"))
     }

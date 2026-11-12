@@ -2,6 +2,7 @@ package de.taktovia.documentsfinance.internal
 
 import de.taktovia.documentsfinance.api.CorrectExpense
 import de.taktovia.documentsfinance.api.DocumentState
+import de.taktovia.documentsfinance.api.EditedViewContent
 import de.taktovia.documentsfinance.api.ExpenseFields
 import de.taktovia.documentsfinance.api.ExpenseView
 import de.taktovia.documentsfinance.api.ExtractedFieldKind
@@ -68,6 +69,17 @@ internal class JdbcExpenses(
 
     override fun original(ctx: RequestContext, id: UUID): ByteArray = uploads.openOriginal(ctx, id)
 
+    override fun editedView(ctx: RequestContext, id: UUID): EditedViewContent {
+        require(ctx, SCOPE_READ)
+        val found = ctxTx.run(ctx, readOnly = true) { j ->
+            DocumentRows.visible(j, ctx, id)
+            j.query("SELECT revision, edited_view_key FROM taktovia.document_revision WHERE document_id = ? AND edited_view_key IS NOT NULL ORDER BY revision DESC LIMIT 1",
+                { rs, _ -> rs.getLong("revision") to rs.getString("edited_view_key") }, id).firstOrNull()
+        } ?: throw ProblemException.notFound()
+        val bytes = store.get(ObjectKey(ctx.tenant, found.second)) ?: throw ProblemException.notFound()
+        return EditedViewContent(found.first, ContentSniffer.detect(bytes) ?: "application/octet-stream", bytes, DocumentRows.sha256(bytes))
+    }
+
     private fun view(r: DocRow) = ExpenseView(r.view, ExpenseFieldCodec.parseStored(r.fieldsJson), r.view.blockers)
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {
@@ -75,7 +87,7 @@ internal class JdbcExpenses(
         val reason = cmd.reason.trim()
         if (reason.isEmpty()) throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
         if (reason.length > 500) throw ProblemException.invalid(Violation("/reason", ViolationCode.TOO_LONG))
-        if (cmd.fields.isEmpty() && cmd.confirm.isEmpty()) throw ProblemException.invalid(Violation("/fields", ViolationCode.REQUIRED))
+        if (cmd.fields.isEmpty() && cmd.confirm.isEmpty() && cmd.editedView == null) throw ProblemException.invalid(Violation("/fields", ViolationCode.REQUIRED))
         cmd.confirm.firstOrNull { it !in ExpenseFields.ALL }?.let { throw ProblemException.invalid(Violation("/confirm", ViolationCode.UNKNOWN_FIELD)) }
         cmd.confirm.firstOrNull { it in cmd.fields }?.let { throw ProblemException.invalid(Violation("/confirm", ViolationCode.NOT_UNIQUE)) }
         val values = cmd.fields.entries.associate { (k, v) -> k to ExpenseFieldCodec.normalize(k, v) }   // prüft auch unbekannte Felder

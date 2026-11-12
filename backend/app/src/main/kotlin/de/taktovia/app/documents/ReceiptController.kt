@@ -5,6 +5,9 @@ import de.taktovia.app.identity.RequestContexts
 import de.taktovia.documentsfinance.api.CaseKind
 import de.taktovia.documentsfinance.api.CaseRef
 import de.taktovia.documentsfinance.api.DocumentKind
+import de.taktovia.documentsfinance.api.CorrectExpense
+import de.taktovia.documentsfinance.api.EditedView
+import de.taktovia.documentsfinance.api.Expenses
 import de.taktovia.documentsfinance.api.ExtractedFieldView
 import de.taktovia.documentsfinance.api.ExtractionRunView
 import de.taktovia.documentsfinance.api.ReceiptExtraction
@@ -12,6 +15,8 @@ import de.taktovia.documentsfinance.api.RequestUploadTicket
 import de.taktovia.documentsfinance.api.RunStatus
 import de.taktovia.documentsfinance.api.SourceChannel
 import de.taktovia.platform.problem.ProblemException
+import de.taktovia.platform.problem.Violation
+import de.taktovia.platform.problem.ViolationCode
 import de.taktovia.documentsfinance.api.StoredDocumentView
 import de.taktovia.documentsfinance.api.UploadPurpose
 import de.taktovia.documentsfinance.api.UploadTicketView
@@ -19,14 +24,18 @@ import de.taktovia.documentsfinance.api.Uploads
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Revisioned
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
+import java.time.Instant
 import java.util.Base64
 import java.util.UUID
 
@@ -37,7 +46,7 @@ class ReceiptResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * Der Hash wird als base64url übertragen (die Kartendatenerkennung SEC-008 würde lange Hexfolgen gelegentlich fehldeuten); das Modul rechnet intern mit Hex.
  */
 @RestController
-class ReceiptController(private val uploads: Uploads, private val extraction: ReceiptExtraction, private val dispatcher: ExtractionDispatcher) {
+class ReceiptController(private val uploads: Uploads, private val extraction: ReceiptExtraction, private val dispatcher: ExtractionDispatcher, private val expenses: Expenses) {
 
     @PostMapping("/v1/expenses/receipts")
     fun request(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<ReceiptResource> {
@@ -45,15 +54,36 @@ class ReceiptController(private val uploads: Uploads, private val extraction: Re
         val cmd = RequestUploadTicket(
             UUID.fromString(body["legal_entity_id"] as String), UploadPurpose.valueOf(body["purpose"] as String), body["mime"] as String, (body["size_bytes"] as Number).toLong(), toHex(body["sha256"] as String),
             (body["source_channel"] as String?)?.let { SourceChannel.valueOf(it) } ?: SourceChannel.DISPATCH_WEB, (body["document_kind"] as String?)?.let { DocumentKind.valueOf(it) } ?: DocumentKind.RECEIPT, caseRef,
+            (body["client_uuid"] as String?)?.let { UUID.fromString(it) }, (body["captured_at"] as String?)?.let { Instant.parse(it) },
         )
-        val t = uploads.requestTicket(RequestContexts.require(request), cmd)
-        return ResponseEntity.status(HttpStatus.CREATED).body(ReceiptResource(json(t), t.revision))
+        val ctx = RequestContexts.require(request)
+        if (cmd.clientUuid == null) {
+            val t = uploads.requestTicket(ctx, cmd)
+            return ResponseEntity.status(HttpStatus.CREATED).body(ReceiptResource(json(t), t.revision))
+        }
+        // idempotente Anlage über die Client-UUID: 201 neu, 200 vorhandenes Ticket bzw. schon angelegter Beleg
+        val r = uploads.registerReceipt(ctx, cmd)
+        return ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(ReceiptResource(json(r.ticket), r.ticket.revision))
     }
 
     @PostMapping("/v1/expenses/receipts/{ticket_id}/complete")
     fun complete(@PathVariable("ticket_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): ResponseEntity<ReceiptResource> {
-        val d = uploads.complete(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch))
-        return ResponseEntity.status(HttpStatus.CREATED).body(ReceiptResource(json(d), d.revision))
+        val r = uploads.completeReceipt(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch))
+        return ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(ReceiptResource(json(r.document), r.document.revision))
+    }
+
+    @PutMapping("/v1/expenses/receipts/{document_id}/edited-view")
+    fun attachEditedView(@PathVariable("document_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ReceiptResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val bytes = try { Base64.getDecoder().decode(body["content_base64"] as String) } catch (e: IllegalArgumentException) { throw ProblemException.invalid(Violation("/content_base64", ViolationCode.INVALID_VALUE)) }
+        val view = expenses.correct(RequestContexts.require(request), id, revision, CorrectExpense("Bearbeitete Ansicht (Zuschnitt, Drehung)", editedView = EditedView(body["mime"] as String, bytes)))
+        return ReceiptResource(json(view.document), view.document.revision)
+    }
+
+    @GetMapping("/v1/expenses/receipts/{document_id}/edited-view")
+    fun editedView(@PathVariable("document_id") id: UUID, request: HttpServletRequest): ResponseEntity<ByteArray> {
+        val v = expenses.editedView(RequestContexts.require(request), id)
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(v.mime)).cacheControl(CacheControl.noStore()).header("Content-Disposition", "inline; filename=\"beleg-$id-ansicht\"").body(v.bytes)
     }
 
     @GetMapping("/v1/expenses/receipts/{document_id}")
@@ -93,12 +123,13 @@ class ReceiptController(private val uploads: Uploads, private val extraction: Re
     private fun json(t: UploadTicketView): Map<String, Any?> = linkedMapOf(
         "ticket_id" to t.ticketId.toString(), "purpose" to t.purpose.name, "mime" to t.mime, "size_bytes" to t.sizeBytes, "sha256" to toB64(t.sha256), "max_bytes" to t.maxBytes,
         "expires_at" to t.expiresAt.toString(), "state" to t.state.name, "revision" to t.revision, "upload_key" to t.uploadKey,
+        "client_uuid" to t.clientUuid?.toString(), "captured_at" to t.capturedAt?.toString(), "document_id" to t.documentId?.toString(),
         "upload" to t.target?.let { linkedMapOf("method" to it.method, "url" to it.url, "headers" to it.headers) },
     )
 
     private fun json(d: StoredDocumentView): Map<String, Any?> = linkedMapOf(
         "document_id" to d.documentId.toString(), "ticket_id" to d.ticketId.toString(), "purpose" to d.purpose.name, "state" to d.state.name, "mime" to d.mime, "size_bytes" to d.sizeBytes,
         "sha256" to toB64(d.sha256), "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "revision" to d.revision,
-        "source_channel" to d.channel.name, "document_kind" to d.kind.name, "integrity" to d.integrity.name,
+        "source_channel" to d.channel.name, "document_kind" to d.kind.name, "integrity" to d.integrity.name, "client_uuid" to d.clientUuid?.toString(), "captured_at" to d.capturedAt?.toString(),
     )
 }
