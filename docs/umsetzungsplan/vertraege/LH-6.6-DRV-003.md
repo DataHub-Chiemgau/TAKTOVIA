@@ -22,6 +22,13 @@
 - **Entscheidungen:** D-09 (Routing, Karten, Telematik) blockiert nur die Produktivschaltung; gebaut wird gegen die Geräte-Navigation.
 - **Offene Punkte:** OP-19 (eingebettete Abbiegenavigation oder Übergabe; geplant: Übergabe an die Geräte-Navigation). Verhalten bei Planänderung während laufender Navigation ist im Pflichtenheft nicht festgelegt; Vorgabe für den Bau: das alte Ziel wird nicht weiterverwendet, Hinweis und neue Übergabe. WP-M0-30 (Routingvergleich) liefert Eingaben.
 
+## Festlegungen des Baus (WP-M3-28)
+
+- **Umsetzung:** `mobile/driver/lib/run/navigation_handover.dart` (Ziel aus der gültigen Stoppliste, Port `NavigationProvider`, Standardanbieter `GeoUriNavigationProvider` mit `geo:`-URI der Geräte-Navigation, OP-19 geplante Übergabe). Ziel = erster noch nicht abgeschlossener Stopp; ohne gültige Stoppliste (keine Schicht, kein Stopp, ohne Einsatzfreigabe, alles abgeschlossen) ist die Aktion nicht verfügbar.
+- **Planänderung:** nach einer Änderung des nächsten Stopps wird das alte Ziel nicht weiterverwendet, die App weist hin (`changedHint`) und übergibt das neue Ziel. Vor jeder Übergabe wird die aktuelle Revision gelesen; trifft während der Übergabe eine neue Revision mit anderem Ziel ein, folgt eine weitere Übergabe (höchstens drei Runden). Ein Ziel einer veralteten Revision wird nach Kenntnis der neuen nie übergeben (zwischen Prüfung und Aufruf der Geräte-Navigation bleibt ein nicht auszuschließendes Restfenster, das der Hinweis abdeckt).
+- **Serverseite:** keine neue Operation; `stop_revision_id`, Koordinate und Name liefert die Fahrerprojektion (WP-M3-26).
+- **Nicht ausgeführt:** Flutter war in der Erstellungsumgebung nicht verfügbar; die Dart-Tests (`navigation_handover_test.dart`) wurden nicht gestartet.
+
 ## Tests
 
 - **Positiv:** übergebenes Ziel entspricht Koordinate und Revision des nächsten disponierten Stopps der gültigen Stoppliste.
@@ -29,7 +36,7 @@
 - **Konkurrierend:** Planrevision trifft während der Übergabe ein, es wird nie ein Ziel einer veralteten Revision übergeben.
 - **Hinweis Testort:** Die Fahrer-App ist Flutter (`mobile/driver`, Kap. 01 §1.1); Tests liegen als `mobile/driver/test/*_test.dart`, nicht unter `web/`.
 - **Referenztests:** kein Katalogfall im WP genannt.
-- Testfälle: geplant:mobile/driver/test/navigation_handover_test.dart::ziel_entspricht_koordinate_und_revision_des_naechsten_stopps; geplant:mobile/driver/test/navigation_handover_test.dart::planaenderung_uebergibt_neues_ziel_und_weist_hin; geplant:mobile/driver/test/navigation_handover_test.dart::stopp_abgeschlossen_naechster_stopp_wird_ziel; geplant:mobile/driver/test/navigation_handover_test.dart::ohne_stoppliste_keine_navigation; geplant:mobile/driver/test/navigation_handover_test.dart::planrevision_waehrend_uebergabe_kein_veraltetes_ziel; geplant:mobile/driver/test/navigation_handover_test.dart::uebergabe_schnittstelle_mit_ersatzanbieter
+- Testfälle: nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::ziel_entspricht_koordinate_und_revision_des_naechsten_stopps; nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::planaenderung_uebergibt_neues_ziel_und_weist_hin; nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::stopp_abgeschlossen_naechster_stopp_wird_ziel; nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::ohne_stoppliste_keine_navigation; nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::planrevision_waehrend_uebergabe_kein_veraltetes_ziel; nicht ausgeführt:mobile/driver/test/navigation_handover_test.dart::uebergabe_schnittstelle_mit_ersatzanbieter
 
 ## Reviews
 
