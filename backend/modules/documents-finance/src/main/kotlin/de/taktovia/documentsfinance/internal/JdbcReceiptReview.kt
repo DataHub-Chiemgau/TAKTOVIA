@@ -58,7 +58,7 @@ internal object ReviewRules {
     )
 }
 
-internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock, private val audit: de.taktovia.platform.audit.AuditPort) : ReceiptReview {
+internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock, private val audit: de.taktovia.platform.audit.AuditPort, private val outbox: de.taktovia.platform.outbox.Outbox) : ReceiptReview {
 
     override fun state(ctx: RequestContext, id: UUID): ReviewState {
         require(ctx, SCOPE_READ)
@@ -68,7 +68,10 @@ internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private
     override fun requireApprovable(ctx: RequestContext, id: UUID, expectedRevision: Long): ApprovalClearance {
         require(ctx, SCOPE_WRITE)
         val clearance = integrity.clearForApproval(ctx, id, expectedRevision)   // Hash jetzt prüfen; veraltete Revision 412, nicht STORED 409
-        ctxTx.run(ctx) { j -> val r = DocumentRows.visible(j, ctx, id, lock = true); PlausibilityRows.check(j, audit, ctx, r.view.kind, id, r.view.revision) }   // Hinweise zuerst festschreiben (eigene Transaktion), damit sie quittierbar bleiben
+        ctxTx.run(ctx) { j ->   // Treffer und Hinweise zuerst festschreiben (eigene Transaktion), damit sie entscheidbar und quittierbar bleiben
+            val r = DocumentRows.visible(j, ctx, id, lock = true)
+            DuplicateRows.detect(j, audit, outbox, clock, ctx, id); PlausibilityRows.check(j, audit, ctx, r.view.kind, id, r.view.revision)
+        }
         ctxTx.run(ctx) { j -> requireApprovable(j, ctx, id, expectedRevision) }
         return ApprovalClearance(id, expectedRevision, maxOf(clearance.checkedAt, clock.instant()))
     }
@@ -80,6 +83,7 @@ internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private
         if (row.stateRaw != "STORED") throw ProblemException(ErrorCode.CONFLICT, "Nur ein Beleg im Entwurfszustand ist freigabefähig.")
         if (row.view.integrity == IntegrityState.VIOLATED) throw IntegrityChecksSupport.violation()
         if (row.view.senderVerified == false) throw ProblemException(ErrorCode.CONFLICT, "Der Absender ist nicht verifiziert.")
+        DuplicateRows.detect(jdbc, audit, outbox, clock, ctx, id); DuplicateRows.requireNoBlock(jdbc, id)   // Dublette: 409, bevor Einzelprüfungen laufen (WP-M4-32)
         val s = ReviewRules.state(jdbc, id, ExpenseFieldCodec.parseStored(row.fieldsJson))
         if (!s.ready) throw ReviewRules.problem(s)
         if (row.view.kind == de.taktovia.documentsfinance.api.DocumentKind.FUEL_RECEIPT) {

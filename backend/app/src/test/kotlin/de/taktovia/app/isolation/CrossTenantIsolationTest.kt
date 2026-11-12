@@ -247,6 +247,7 @@ class CrossTenantIsolationTest {
             "correctExpense" to Probe("PATCH", "/v1/expenses/{expense_id}", """{"reason":"Fremdversuch","fields":{"amount_minor":1}}""", true, role = "finance"),
             "listExpenseRevisions" to Probe("GET", "/v1/expenses/{expense_id}/revisions", role = "finance"),
             "getExpenseOriginal" to Probe("GET", "/v1/expenses/{expense_id}/original", role = "finance"),
+            "decideExpenseDuplicate" to Probe("POST", "/v1/expenses/{expense_id}/duplicates/{candidate_id}/decision", """{"decision":"EIGENER_VORGANG","reason":"Fremdversuch"}""", true, role = "finance"),
             "acknowledgeExpenseHint" to Probe("POST", "/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement", """{"reason":"Fremdversuch"}""", true, role = "finance"),
             "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),

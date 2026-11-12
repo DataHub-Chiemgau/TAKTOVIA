@@ -72,10 +72,12 @@ data class FinancePolicyView(
     /** `fuel_receipt_required`: true (Vorgabe) = Tankbeleg erst mit vollständigen Tankwerten freigabefähig; false = unvollständige Tankwerte blockieren nicht (Offener Punkt 39, Annahme). */
     val fuelReceiptRequired: Boolean = true, val revision: Long = 0,
     val fuel: FuelParameters = FuelParameters(),
+    /** `receipt_duplicate_threshold`: Mindestpunktzahl (1 bis 100, Vorgabe 60) eines Dublettentreffers; ein Treffer löscht oder verschmilzt nie einen Beleg. */
+    val duplicateThreshold: Int = 60,
 )
 
 /** `fuel` ersetzt den gesamten Satz der Tankparameter (nicht Angegebenes wird nicht konfiguriert); `null` lässt ihn unverändert. */
-data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null, val fuel: FuelParameters? = null)
+data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null, val fuel: FuelParameters? = null, val duplicateThreshold: Int? = null)
 
 /** Schwellen je Fahrzeug (`fuel_max_liters`: an die Tankgröße gebunden; `fuel_use_alert_pct`: je Fahrzeugtyp); `null` = der Wert des Mandanten gilt. */
 data class FuelVehiclePolicy(val vehicleId: UUID, val maxLiters: java.math.BigDecimal?, val useAlertPct: java.math.BigDecimal?, val revision: Long)

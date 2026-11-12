@@ -1,0 +1,23 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+finance_policy;receipt_duplicate_threshold;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-32
+duplicate_candidate;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;id;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;other_document_id;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;match_kind;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;certainty;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;score;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;basis;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;state;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;decision_reason;nein;BUCHHALTUNG_BELEGE;;;;
+duplicate_candidate;detected_at;nein;TECHNISCHER_BETRIEB;;;;
+duplicate_candidate;decided_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+duplicate_candidate;decided_at;nein;TECHNISCHER_BETRIEB;;;;
+evidence_link;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;id;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;event_id;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;role;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;decision;nein;BUCHHALTUNG_BELEGE;;;;
+evidence_link;decided_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+evidence_link;decided_at;nein;TECHNISCHER_BETRIEB;;;;

@@ -137,7 +137,7 @@ internal object PlausibilityRows {
         val at = effectiveAt(j, documentId)
         val previous = if (fuel.vehicleId == null || fuel.unit == null) emptyList() else j.query(
             "SELECT ft.odometer_km, ft.quantity FROM taktovia.fuel_transaction ft JOIN taktovia.expense_document d ON d.tenant_id = ft.tenant_id AND d.id = ft.document_id " +
-                "WHERE ft.vehicle_id = ? AND ft.document_id <> ? AND ft.unit = ? AND ft.odometer_km IS NOT NULL AND ft.quantity IS NOT NULL AND d.state NOT IN ('QUARANTINED', 'QUARANTINE_REJECTED') " +
+                "WHERE ft.vehicle_id = ? AND ft.document_id <> ? AND ft.unit = ? AND ft.odometer_km IS NOT NULL AND ft.quantity IS NOT NULL AND d.state NOT IN ('QUARANTINED', 'QUARANTINE_REJECTED') AND NOT EXISTS (SELECT 1 FROM taktovia.duplicate_candidate dc WHERE dc.document_id = ft.document_id AND dc.state = 'GLEICHE_EVIDENZ') " +
                 "AND $EFFECTIVE < ? ORDER BY $EFFECTIVE DESC, ft.id DESC LIMIT 7",
             { rs, _ -> FuelPlausibilityRules.Previous(rs.getLong(1), rs.getBigDecimal(2)) }, fuel.vehicleId, documentId, fuel.unit!!.name, Timestamp.from(at))
         val fp = policy.fuel
@@ -217,7 +217,7 @@ internal class JdbcFuelPlausibility(private val ctxTx: ContextTransactions, priv
             val inserted = j.update("INSERT INTO taktovia.expense_hint_ack (tenant_id, hint_id, acked_by, reason) VALUES (taktovia.current_tenant(), ?, ?, ?) ON CONFLICT (tenant_id, hint_id) DO NOTHING",
                 hintId, ctx.actor.subject.take(200), text)
             if (inserted == 1) audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_HINT_ACKNOWLEDGED, ObjectRef("expense", documentId), ctx.correlationId, mapOf("revision" to hint)))
-            ExpenseViews.build(j, DocumentRows.visible(j, ctx, documentId))
+            ExpenseViews.build(j, DocumentRows.visible(j, ctx, documentId), ctx)
         }
     }
 

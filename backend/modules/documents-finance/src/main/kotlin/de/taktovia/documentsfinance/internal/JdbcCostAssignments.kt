@@ -161,7 +161,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
         return o.copy(active = false)
     }
 
-    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView = ExpenseViews.build(j, DocumentRows.visible(j, ctx, id))
+    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView = ExpenseViews.build(j, DocumentRows.visible(j, ctx, id), ctx)
 
     private companion object {
         const val MAX_OBJECTS = 20

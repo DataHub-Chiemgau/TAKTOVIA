@@ -36,3 +36,4 @@ finance_policy;documents-finance;VERAENDERLICH;;WP-M4-30;Fachparameter des Modul
 expense_hint;documents-finance;APPEND_ONLY;;WP-M4-31;Plausibilitätshinweis je Regel und Belegrevision
 expense_hint_ack;documents-finance;APPEND_ONLY;;WP-M4-31;Quittierung eines Hinweises mit Begründung
 fuel_vehicle_policy;documents-finance;VERAENDERLICH;;WP-M4-31;Tankschwellen je Fahrzeug
+duplicate_candidate;documents-finance;VERAENDERLICH;;WP-M4-32;Dublettentreffer, nur offene Treffer änderbar

@@ -25,9 +25,9 @@ internal object W10C5ContractCases {
         }
         val token = env.token(finance)
 
-        /** Tankbeleg im Zustand STORED; Revision 1. */
-        fun fuelDocument(bytes: ByteArray = ("%PDF-1.4\n${UUID.randomUUID()}\n" + "x".repeat(600)).toByteArray(Charsets.ISO_8859_1)): String {
-            val t = env.post("/v1/expenses/receipts", """{"legal_entity_id":"$le","purpose":"RECEIPT","mime":"application/pdf","size_bytes":${bytes.size},"sha256":"${b64(bytes)}","document_kind":"FUEL_RECEIPT"}""", token, extra = idem())
+        /** Beleg im Zustand STORED (Art je nach `kind`); Revision 1. */
+        fun fuelDocument(bytes: ByteArray = ("%PDF-1.4\n${UUID.randomUUID()}\n" + "x".repeat(600)).toByteArray(Charsets.ISO_8859_1), kind: String = "FUEL_RECEIPT"): String {
+            val t = env.post("/v1/expenses/receipts", """{"legal_entity_id":"$le","purpose":"RECEIPT","mime":"application/pdf","size_bytes":${bytes.size},"sha256":"${b64(bytes)}","document_kind":"$kind"}""", token, extra = idem())
             check(t.status == 201) { t.text }
             env.server.ctx.getBean(TenantObjectStore::class.java).put(ObjectKey(tenant, t.json["upload_key"].asString()), bytes, "application/pdf")
             val d = env.post("/v1/expenses/receipts/${t.json["ticket_id"].asString()}/complete", "", token, extra = idem() + im(1))
@@ -44,7 +44,24 @@ internal object W10C5ContractCases {
         }
     }
 
+    /** Zwei Belege mit gleichem Händler, Datum und gleicher Belegnummer, aber anderem Betrag: möglicher Treffer am neueren Beleg; liefert Beleg, Treffer und Revision. */
+    fun World.documentWithDuplicate(): Triple<String, String, Long> {
+        fun fields(doc: String, amount: Long): Long {
+            val p = env.server.send("PATCH", "/v1/expenses/$doc", """{"reason":"erfasst","fields":{"amount_minor":$amount,"currency":"EUR","document_date":"2026-06-15","merchant":"Tankstelle Nord","document_number":"R-1001"}}""", env.headers(token, extra = idem() + im(1)))
+            check(p.status == 200) { p.text }
+            return p.json["revision"].asLong()
+        }
+        val first = fuelDocument(kind = "RECEIPT"); fields(first, 11900)
+        val second = fuelDocument(kind = "RECEIPT"); val rev = fields(second, 11800)
+        val e = env.get("/v1/expenses/$second", token).json
+        check(e["duplicates"].size() == 1 && e["duplicates"][0]["state"].asString() == "OFFEN") { e.toString() }
+        return Triple(second, e["duplicates"][0]["id"].asString(), rev)
+    }
+
     val cases: List<ContractCase> = listOf(
+        ContractCase("decideExpenseDuplicate",
+            200, { val w = World(); val (doc, c, rev) = w.documentWithDuplicate(); ContractRequest("POST", "/v1/expenses/$doc/duplicates/$c/decision", """{"decision":"EIGENER_VORGANG","reason":"Zweite Tankung am selben Tag"}""", env.headers(w.token, extra = idem() + im(rev))) },
+            422, { val w = World(); val (doc, c, rev) = w.documentWithDuplicate(); ContractRequest("POST", "/v1/expenses/$doc/duplicates/$c/decision", """{"decision":"EIGENER_VORGANG","reason":"ab"}""", env.headers(w.token, extra = idem() + im(rev))) }, server = { env.server }),
         ContractCase("acknowledgeExpenseHint",
             200, { val w = World(); val (doc, hint, rev) = w.documentWithHint(); ContractRequest("POST", "/v1/expenses/$doc/hints/$hint/acknowledgement", """{"reason":"Großtank, Sondertour"}""", env.headers(w.token, extra = idem() + im(rev))) },
             422, { val w = World(); val (doc, hint, rev) = w.documentWithHint(); ContractRequest("POST", "/v1/expenses/$doc/hints/$hint/acknowledgement", """{"reason":"ab"}""", env.headers(w.token, extra = idem() + im(rev))) }, server = { env.server }),

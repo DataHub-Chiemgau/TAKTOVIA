@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+duplicate_candidate;SELECT,INSERT,UPDATE;WP-M4-32: Dublettentreffer je Belegpaar, nur offene Treffer aenderbar (Trigger), kein DELETE
+evidence_link;SELECT,INSERT;WP-M4-32: Evidenzverknuepfung Beleg-Ereignis, append-only

@@ -18,7 +18,7 @@ data class CaseRef(val kind: CaseKind, val id: UUID)
 enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
 
 /** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
-enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE, FUEL_FIELDS_MISSING, HINT_UNACKNOWLEDGED }
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE, FUEL_FIELDS_MISSING, HINT_UNACKNOWLEDGED, DUPLICATE_REVIEW_OPEN, DUPLICATE_EVIDENCE }
 
 /** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
 object ExpenseFields {
@@ -47,7 +47,9 @@ data class ExpenseView(val document: StoredDocumentView, val fields: Map<String,
     /** Tankwerte (nur Belege der Art `FUEL_RECEIPT`, WP-M4-30). */
     val fuel: FuelView? = null,
     /** Plausibilitätshinweise der aktuellen Revision und Vermerke zu nicht prüfbaren Regeln (WP-M4-31). */
-    val plausibility: PlausibilityReport = PlausibilityReport.NONE) {
+    val plausibility: PlausibilityReport = PlausibilityReport.NONE,
+    /** Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32). */
+    val duplicates: List<DuplicateCandidateView> = emptyList()) {
     /** Freigabefähig, wenn kein Hindernis besteht (Dokument, Bestätigungspflicht und Kostenzuordnung). */
     val approvable: Boolean get() = blockers.isEmpty()
 }
@@ -225,4 +227,5 @@ class DocumentServices(
     val review: ReceiptReview,
     val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
     val fuel: FuelReceipts, val policies: FinancePolicies, val plausibility: FuelPlausibility,
+    val duplicates: DuplicateReview,
 )

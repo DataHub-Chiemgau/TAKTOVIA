@@ -86,8 +86,8 @@ class FuelPlausibilityTest {
         }
 
         /** Beleg freigabefähig machen (außer Hinweisen): Pflichtfelder, Kostenzuordnung. */
-        fun readyForApproval(f: Fill) {
-            f.fields(ExpenseFields.AMOUNT_MINOR to 11900L, ExpenseFields.CURRENCY to "EUR", ExpenseFields.DOCUMENT_DATE to "2026-06-15", ExpenseFields.MERCHANT to "Tankstelle")
+        fun readyForApproval(f: Fill, amount: Long = 11900L) {
+            f.fields(ExpenseFields.AMOUNT_MINOR to amount, ExpenseFields.CURRENCY to "EUR", ExpenseFields.DOCUMENT_DATE to "2026-06-15", ExpenseFields.MERCHANT to "Tankstelle")
             f.revision = bf.svc.costs.assign(fin, f.doc.documentId, f.revision, AssignCosts(vehicleIds = setOf(vehicle))).document.revision
         }
         fun count(rule: PlausibilityRule? = null, doc: UUID? = null) = bf.fx.count("SELECT count(*) FROM taktovia.expense_hint WHERE tenant_id=?" + (rule?.let { " AND rule='${it.name}'" } ?: "") + (doc?.let { " AND document_id='$it'" } ?: ""), w.tenant.value)
@@ -154,7 +154,7 @@ class FuelPlausibilityTest {
         assertEquals(hint.copy(acknowledgement = acked.plausibility.hints.single().acknowledgement), acked.plausibility.hints.single(), "Hinweis unverändert, nur die Quittierung kommt dazu")
         assertNotNull(bf.svc.review.requireApprovable(w.fin, f.doc.documentId, f.revision))
         // exakt dieselben Werte in einem Beleg ohne Hinweis blockieren nicht
-        val clean = w.fill(2, 2000, "50"); w.readyForApproval(clean); assertNotNull(bf.svc.review.requireApprovable(w.fin, clean.doc.documentId, clean.revision))
+        val clean = w.fill(2, 2000, "50"); w.readyForApproval(clean, 5000L); assertNotNull(bf.svc.review.requireApprovable(w.fin, clean.doc.documentId, clean.revision))
     }
 
     @Test

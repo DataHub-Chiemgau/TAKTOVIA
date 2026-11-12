@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.documentsfinance.api.AssignCosts
 import de.taktovia.documentsfinance.api.CaptureFuel
+import de.taktovia.documentsfinance.api.DuplicateCandidateView
+import de.taktovia.documentsfinance.api.DuplicateDecision
+import de.taktovia.documentsfinance.api.DuplicateReview
 import de.taktovia.documentsfinance.api.FuelPlausibility
 import de.taktovia.documentsfinance.api.FuelReceipts
 import de.taktovia.documentsfinance.api.HintView
@@ -49,7 +52,7 @@ class ExpenseResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview) {
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -98,6 +101,11 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         "unit_price" to f.unitPrice?.toPlainString(), "gross_minor" to f.grossMinor, "currency" to f.currency, "odometer_km" to f.odometerKm, "fueled_at" to f.fueledAt?.toString(), "card_id" to f.cardId,
         "missing" to f.missing, "complete" to f.complete)
 
+    private fun duplicateJson(d: DuplicateCandidateView): Map<String, Any?> = linkedMapOf("id" to d.id.toString(), "role" to d.role.name, "other_document_id" to d.otherDocumentId?.toString(), "match" to d.match.name,
+        "certainty" to d.certainty.name, "score" to d.score, "basis" to d.basis, "state" to d.state.name, "detected_at" to d.detectedAt.toString(), "decided_by" to d.decidedBy, "decided_at" to d.decidedAt?.toString(), "reason" to d.reason,
+        "other" to d.other?.let { linkedMapOf("merchant" to it.merchant, "document_date" to it.documentDate, "currency" to it.currency, "amount_minor" to it.amountMinor, "document_number" to it.documentNumber,
+            "source_channel" to it.channel.name, "received_at" to it.receivedAt.toString()) })
+
     private fun hintJson(h: HintView): Map<String, Any?> = linkedMapOf("id" to h.id.toString(), "rule" to h.rule.name, "document_revision" to h.documentRevision, "threshold" to h.threshold,
         "actual_value" to h.actualValue, "basis" to h.basis, "raised_at" to h.raisedAt.toString(),
         "acknowledgement" to h.acknowledgement?.let { linkedMapOf("acknowledged_by" to it.by, "reason" to it.reason, "acknowledged_at" to it.at.toString()) })
@@ -112,6 +120,15 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         val revision = Etag.parseIfMatch(ifMatch)
         val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
         return resource(plausibility.acknowledge(RequestContexts.require(request), id, hintId, revision, reason))
+    }
+
+    /** Entscheidung zu einem offenen Dublettentreffer (WP-M4-32); `If-Match` trägt die Belegrevision. */
+    @PostMapping("/v1/expenses/{expense_id}/duplicates/{candidate_id}/decision")
+    fun decideDuplicate(@PathVariable("expense_id") id: UUID, @PathVariable("candidate_id") candidateId: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ExpenseResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val decision = DuplicateDecision.entries.firstOrNull { it.name == body["decision"] } ?: throw ProblemException.invalid(Violation("/decision", if (body["decision"] == null) ViolationCode.REQUIRED else ViolationCode.NOT_IN_ENUM))
+        val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        return resource(duplicates.decide(RequestContexts.require(request), id, candidateId, revision, decision, reason))
     }
 
     @GetMapping("/v1/expenses/{expense_id}/revisions")
@@ -133,7 +150,8 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "case_ref" to d.caseRef?.let { linkedMapOf("kind" to it.kind.name, "id" to it.id.toString()) }, "mime" to d.mime, "size_bytes" to d.sizeBytes, "sha256" to toB64(d.sha256),
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
             "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson),
-            "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) }, "fields" to e.fields, "revision" to d.revision,
+            "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) },
+            "duplicates" to e.duplicates.map(::duplicateJson), "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 

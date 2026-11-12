@@ -362,6 +362,64 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/duplicates/{candidate_id}/decision:
+    post:
+      summary: Dublettentreffer entscheiden
+      operationId: decideExpenseDuplicate
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Entscheidet einen offenen Dublettentreffer (WP-M4-32): `GLEICHE_EVIDENZ` = der neuere Beleg ist weitere Evidenz des Vorgangs des älteren (Verknüpfung zum Kostenereignis, sobald es besteht; der Beleg wird nie eigener Kostenfall), `EIGENER_VORGANG` = der neuere Beleg bleibt ein eigener Kostenfall. Kein Beleg wird gelöscht oder zusammengeführt. Sichere Treffer (identischer Dateihash oder vollständig gleiche Fachdaten) entstehen bereits als `GLEICHE_EVIDENZ` und sind nicht entscheidbar. Die Freigabe eines Belegs mit offenem Treffer ist 409 `DUPLICATE_REVIEW_REQUIRED`, die eines Belegs, der Evidenz eines anderen Vorgangs ist, 409 `DUPLICATE_EVIDENCE_LINKED`. `If-Match` trägt die Revision des Belegs aus dem Pfad (veraltet 412, fehlend 428). Recht: Scope `expenses:review` und Finanzrolle; ohne Recht 403; Begründung 3 bis 1000 Zeichen, sonst 422. Dieselbe Entscheidung wiederholt liefert den unveränderten Stand, eine andere Entscheidung auf einen entschiedenen Treffer 409. Fremde Mandanten und unbekannte Treffer: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - name: candidate_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Treffer-ID (`duplicates[].id` des Belegs).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateDecisionRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/original:
     get:
       summary: Belegoriginal abrufen
@@ -489,6 +547,135 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/ExpenseFieldName'
+    DuplicateDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - GLEICHE_EVIDENZ
+          - EIGENER_VORGANG
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - decision
+      - reason
+    ExpenseDuplicate:
+      type: object
+      additionalProperties: false
+      description: 'Dublettentreffer (WP-M4-32). `role` = Sicht des Belegs (NEWER: er wird Evidenz oder blockiert, OLDER: Gegenüber). `other_document_id`, `basis` und `other` (Gegenüberstellung) sieht nur die Finanzrolle.'
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        role:
+          type: string
+          enum:
+          - NEWER
+          - OLDER
+        other_document_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        match:
+          type: string
+          enum:
+          - HASH
+          - FACTS
+        certainty:
+          type: string
+          enum:
+          - SAFE
+          - POSSIBLE
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        basis:
+          oneOf:
+          - type: object
+            description: Trefferregel, Schwelle, übereinstimmende und abweichende Felder.
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - OFFEN
+          - GLEICHE_EVIDENZ
+          - EIGENER_VORGANG
+        detected_at:
+          type: string
+          format: date-time
+        decided_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        decided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        reason:
+          oneOf:
+          - type: string
+          - type: 'null'
+        other:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseDuplicateFacts'
+      required:
+      - id
+      - role
+      - other_document_id
+      - match
+      - certainty
+      - score
+      - basis
+      - state
+      - detected_at
+      - decided_by
+      - decided_at
+      - reason
+      - other
+    ExpenseDuplicateFacts:
+      type: object
+      additionalProperties: false
+      properties:
+        merchant:
+          oneOf:
+          - type: string
+          - type: 'null'
+        document_date:
+          oneOf:
+          - type: string
+          - type: 'null'
+        currency:
+          oneOf:
+          - type: string
+          - type: 'null'
+        amount_minor:
+          oneOf:
+          - type: integer
+            format: int64
+          - type: 'null'
+        document_number:
+          oneOf:
+          - type: string
+          - type: 'null'
+        source_channel:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+      required:
+      - merchant
+      - document_date
+      - currency
+      - amount_minor
+      - document_number
+      - source_channel
+      - received_at
     HintAcknowledgementRequest:
       type: object
       additionalProperties: false
@@ -960,6 +1147,8 @@ components:
             - COST_OBJECT_INACTIVE
             - FUEL_FIELDS_MISSING
             - HINT_UNACKNOWLEDGED
+            - DUPLICATE_REVIEW_OPEN
+            - DUPLICATE_EVIDENCE
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -990,6 +1179,12 @@ components:
           maxItems: 8
           items:
             $ref: '#/components/schemas/ExpensePlausibilityNote'
+        duplicates:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ExpenseDuplicate'
+          description: Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32).
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

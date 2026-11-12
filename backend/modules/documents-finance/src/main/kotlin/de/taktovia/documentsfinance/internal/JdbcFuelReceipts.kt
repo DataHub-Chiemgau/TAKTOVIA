@@ -73,13 +73,18 @@ internal object FuelRows {
 
 /** Einheitliche Zusammenstellung der Belegansicht (Dokument, Felder, Prüfstand, Kostenzuordnung, Tankwerte); ein Ort für alle Bausteine, die einen [ExpenseView] liefern. */
 internal object ExpenseViews {
-    fun build(j: JdbcOperations, r: DocRow): ExpenseView {
+    fun build(j: JdbcOperations, r: DocRow, ctx: RequestContext): ExpenseView {
         val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields); val objects = CostAssignmentRows.assigned(j, r.view.documentId)
         val fuel = FuelRows.forDocument(j, r.view.kind, r.view.documentId)
         val fuelBlockers = FuelRows.blockers(r.view.kind, fuel, JdbcFinancePolicies.load(j).fuelReceiptRequired)
         val plausibility = PlausibilityRows.report(j, r.view.kind, r.view.documentId, r.view.revision, fuel)
         val hintBlockers = if (plausibility.openHints.isNotEmpty()) listOf(de.taktovia.documentsfinance.api.ReleaseBlocker.HINT_UNACKNOWLEDGED) else emptyList()
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers, review, objects, fuel, plausibility)
+        val duplicates = DuplicateRows.candidates(j, r.view.documentId, DocumentRows.isFinance(ctx))
+        val duplicateBlockers = buildList {
+            if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.GLEICHE_EVIDENZ }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_EVIDENCE)
+            if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.OFFEN }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_REVIEW_OPEN)
+        }
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers + duplicateBlockers, review, objects, fuel, plausibility, duplicates)
     }
 }
 
@@ -127,7 +132,7 @@ internal class JdbcFuelReceipts(private val ctxTx: ContextTransactions, private 
         cmd.vehicleId?.let { v -> if (j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, v) != 1) throw ProblemException.notFound() }
         val before = FuelRows.load(j, id)
         val next = merge(before, cmd)
-        if (before != null && same(before, next)) return ExpenseViews.build(j, DocumentRows.visible(j, ctx, id))   // keine Änderung: keine neue Revision
+        if (before != null && same(before, next)) return ExpenseViews.build(j, DocumentRows.visible(j, ctx, id), ctx)   // keine Änderung: keine neue Revision
         val revision = expected + 1
         check(j.update("UPDATE taktovia.expense_document SET revision = ? WHERE id = ? AND revision = ? AND state = 'STORED'", revision, id, expected) == 1)
         val by = ctx.actor.subject.take(200)
@@ -145,7 +150,8 @@ internal class JdbcFuelReceipts(private val ctxTx: ContextTransactions, private 
             "fuel_type" to recorded.fuelType?.name, "unit" to recorded.unit?.name, "quantity" to recorded.quantity?.toPlainString(), "unit_price" to recorded.unitPrice?.toPlainString(), "odometer_km" to recorded.odometerKm,
             "fueled_at" to recorded.fueledAt?.toString(), "complete" to recorded.complete, "recorded_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
         PlausibilityHook.afterRevision(j, audit, ctx, id, revision)
-        return ExpenseViews.build(j, DocumentRows.visible(j, ctx, id))
+        DuplicateHook.afterChange(j, audit, outbox, clock, ctx, id)
+        return ExpenseViews.build(j, DocumentRows.visible(j, ctx, id), ctx)
     }
 
     private fun merge(b: FuelView?, c: CaptureFuel) = FuelView(

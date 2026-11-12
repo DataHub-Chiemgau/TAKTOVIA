@@ -351,6 +351,37 @@ export interface ExpenseCorrection {
   confirm?: ExpenseFieldName[];
 }
 
+export interface DuplicateDecisionRequest {
+  decision: 'GLEICHE_EVIDENZ' | 'EIGENER_VORGANG';
+  reason: string;
+}
+
+export interface ExpenseDuplicate {
+  id: UUID;
+  role: 'NEWER' | 'OLDER';
+  other_document_id: UUID | null;
+  match: 'HASH' | 'FACTS';
+  certainty: 'SAFE' | 'POSSIBLE';
+  score: number;
+  basis: Record<string, unknown> | null;
+  state: 'OFFEN' | 'GLEICHE_EVIDENZ' | 'EIGENER_VORGANG';
+  detected_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  reason: string | null;
+  other: null | ExpenseDuplicateFacts;
+}
+
+export interface ExpenseDuplicateFacts {
+  merchant: string | null;
+  document_date: string | null;
+  currency: string | null;
+  amount_minor: number | null;
+  document_number: string | null;
+  source_channel: string;
+  received_at: string;
+}
+
 export interface HintAcknowledgementRequest {
   reason: string;
 }
@@ -471,13 +502,14 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED' | 'DUPLICATE_REVIEW_OPEN' | 'DUPLICATE_EVIDENCE')[];
   unconfirmed_fields: ExpenseFieldName[];
   sum_mismatch: boolean;
   cost_objects: CostObject[];
   fuel?: null | FuelData;
   hints?: ExpenseHint[];
   plausibility_notes?: ExpensePlausibilityNote[];
+  duplicates?: ExpenseDuplicate[];
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -3206,6 +3238,13 @@ export interface Operations {
     body: HintAcknowledgementRequest;
     response: Expense;
   };
+  decideExpenseDuplicate: {
+    path: { expense_id: UUID; candidate_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: DuplicateDecisionRequest;
+    response: Expense;
+  };
   getExpenseOriginal: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -4695,6 +4734,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   acknowledgeExpenseHint: { method: 'POST', path: '/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement', pathParams: ['expense_id', 'hint_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:review'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  decideExpenseDuplicate: { method: 'POST', path: '/v1/expenses/{expense_id}/duplicates/{candidate_id}/decision', pathParams: ['expense_id', 'candidate_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:review'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'view', 'open', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
