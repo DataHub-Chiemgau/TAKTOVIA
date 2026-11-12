@@ -10,6 +10,7 @@ import { DataTable, Field, Form, ResourceView, ScreenFrame } from '@taktovia/des
 import type { ProblemLike, ResourceState } from '@taktovia/design-system';
 import { useCallback, useEffect, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
+import { Dienstzuordnung } from './Dienstzuordnung';
 
 /** Ausstattungsmerkmale (Platzhalterkatalog, OP-14), wie im Ressourcenvektor. */
 export const EQUIPMENT_LABELS: Readonly<Record<VehicleEquipment, string>> = {
@@ -462,6 +463,7 @@ export function Fahrzeugstamm() {
           ) : null}
         </section>
       ) : null}
+      {editing ? <Dienstzuordnung api={api} vehicle={editing} canWrite={canWrite} /> : null}
     </ScreenFrame>
   );
 }

@@ -10945,6 +10945,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "service_area_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Gebietsbezug der Dienstzuordnung (Bediengebiet, OP-25)"
+        },
+        {
           "spalte": "service_id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",

@@ -1,6 +1,7 @@
 package de.taktovia.bookingdispatch.api
 
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.geo.GeoPoint
 import java.time.Instant
 import java.util.UUID
 
@@ -26,6 +27,8 @@ enum class ExclusionReason(val category: RejectionCategory, val depth: Int) {
     CAPACITY_INSUFFICIENT(RejectionCategory.CAPACITY, 4),
     /** Geplanter Standort unbekannt (kein Fahrtenplan/Fixture): Erreichbarkeit nicht belegbar, also kein Kandidat. */
     POSITION_UNKNOWN(RejectionCategory.CAPACITY, 5),
+    /** Zuordnung mit Gebietsbezug: ein Ort der Fahrt liegt außerhalb des Gebiets oder es wurde kein Ort übergeben (WP-M3-06). */
+    OUTSIDE_SERVICE_AREA(RejectionCategory.CAPACITY, 1),
     /** Abholpunkt vom geplanten Standort aus nicht rechtzeitig oder gar nicht erreichbar. */
     PICKUP_UNREACHABLE(RejectionCategory.CAPACITY, 5),
 }
@@ -52,6 +55,8 @@ class FixturePlannedPositions(private val positions: Map<UUID, PlannedPosition>)
  */
 data class CandidateRequest(
     val serviceId: UUID, val window: TimeWindow, val demand: ResourceVector, val pickupStop: String, val pickupLatest: Instant, val profile: String = "car",
+    /** Orte der Fahrt (Abholung, Ziel) für die Gebietsprüfung der Dienstzuordnung (WP-M3-06, OP-25). */
+    val locations: List<GeoPoint> = emptyList(),
 ) {
     init { require(!pickupLatest.isBefore(window.from) && !pickupLatest.isAfter(window.to)) { "Abholzeitpunkt muss im Zeitfenster liegen" } }
 }

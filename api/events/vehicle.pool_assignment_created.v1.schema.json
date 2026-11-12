@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.pool_assignment_created.v1.schema.json",
+  "title": "Fahrzeug einem Dienst zugeordnet, Ereignistyp vehicle.pool_assignment_created (WP-M3-06, LH-6.8-FLT-002)",
+  "description": "Genau ein Ereignis je Anlage einer Dienstzuordnung des Fahrzeugpools. Payload des Outbox-Ereignisses (Hülle: platform.eventenvelope.v1); `aggregate_id` der Hülle ist `assignment_id`, `aggregate_revision` die Revision der Zuordnung (1). Das Ereignis bleibt im Mandanten. `service_area_id` ist der Gebietsbezug (Planungsannahme PA-02, OP-25 offen), `valid_to` ist exklusiv. Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["vehicle_id", "service_id", "assignment_id", "service_area_id", "valid_from", "valid_to", "revision"],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": { "type": "string", "format": "uuid" },
+    "service_id": { "type": "string", "format": "uuid" },
+    "assignment_id": { "type": "string", "format": "uuid" },
+    "service_area_id": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "valid_to": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "revision": { "type": "integer", "const": 1 }
+  },
+  "examples": [
+    {
+      "vehicle_id": "00000000-0000-4000-8000-000000000006", "service_id": "00000000-0000-4000-8000-0000000000d1", "assignment_id": "00000000-0000-4000-8000-0000000000c2",
+      "service_area_id": null, "valid_from": "2030-07-01T00:00:00Z", "valid_to": null, "revision": 1
+    }
+  ]
+}

@@ -364,62 +364,6 @@ export interface ExpenseApproval {
   posting_id: UUID | null;
 }
 
-export interface BreakPlan {
-  schema_version: '1.0';
-  breaks: ({
-    offset_min: number;
-    duration_min: number;
-    paid: boolean;
-  })[];
-}
-
-export interface ShiftWrite {
-  roster_id: UUID;
-  starts_local: string;
-  starts_offset?: string;
-  ends_local: string;
-  ends_offset?: string;
-  timezone: string;
-  break_plan?: BreakPlan;
-  operator_id: UUID;
-  depot_id: UUID;
-  function: string;
-  required_qualification?: string | null;
-  staffing_need: number;
-  driver_ref?: UUID | null;
-  vehicle_id?: UUID | null;
-}
-
-export interface Shift {
-  id: UUID;
-  roster_id: UUID;
-  date: string;
-  starts_local: string;
-  ends_local: string;
-  timezone: string;
-  starts_at: string;
-  ends_at: string;
-  duration_min: number;
-  break_plan: BreakPlan;
-  operator_id: UUID;
-  depot_id: UUID;
-  function: string;
-  required_qualification: string | null;
-  staffing_need: number;
-  driver_ref: UUID | null;
-  vehicle_id: UUID | null;
-  state: string;
-  created_by: string;
-  created_at: string;
-  revision: number;
-}
-
-export interface ShiftPage {
-  items: Shift[];
-  next_cursor: string | null;
-  as_of: string;
-}
-
 export interface DriverEvent {
   event_id: UUID;
   shift_id: UUID;
@@ -573,37 +517,11 @@ export interface RideOfferRequest {
   wheelchair_spaces?: number;
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
   assistance_codes?: RideAssistanceCodes;
-  channel?: 'WEB' | 'APP' | 'API';
 }
 
 export interface RideWindow {
   earliest_at: Timestamp;
   latest_at: Timestamp;
-}
-
-export interface RideOfferProposal {
-  service_id: UUID;
-  booking_kind: 'IMMEDIATE' | 'ADVANCE';
-  time_kind: 'DEPARTURE' | 'ARRIVAL';
-  pickup_window: RideWindow;
-  arrival_window: RideWindow;
-  arrival_grace_min: number;
-  direct_seconds: number;
-}
-
-export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
-
-export interface RideRejection {
-  code: RideRejectionCode;
-  secondary_codes: RideRejectionCode[];
-  text: string;
-  next_action: string;
-}
-
-export interface RideOfferResponse {
-  attempt_id: UUID;
-  offers: RideOfferProposal[];
-  rejection: RideRejection | null;
 }
 
 export interface RideOffer {
@@ -975,6 +893,42 @@ export interface DriverClearancePage {
   as_of: string;
 }
 
+export interface CommittedRide {
+  booking_id: UUID;
+  state: string;
+  pickup_earliest: string;
+  pickup_latest: string;
+}
+
+export interface VehicleServiceAssignmentCreate {
+  service_id: UUID;
+  service_area_id?: UUID | null;
+  valid_from: string;
+  valid_to?: string | null;
+}
+
+export interface VehicleServiceAssignmentEnd {
+  valid_to: string;
+}
+
+export interface VehicleServiceAssignment {
+  id: UUID;
+  vehicle_id: UUID;
+  service_id: UUID;
+  service_area_id: UUID | null;
+  valid_from: string;
+  valid_to: string | null;
+  revision: number;
+  created_at: string;
+  committed_rides_after_end: CommittedRide[];
+}
+
+export interface VehicleServiceAssignmentPage {
+  items: VehicleServiceAssignment[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export type VehicleOperationalState = 'NOT_READY' | 'RELEASE_PENDING' | 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'BLOCKED' | 'RESTRICTED' | 'ENDED';
 
 export interface MissingRequirement {
@@ -1334,7 +1288,7 @@ export interface GeoServiceAreaCreate {
 }
 
 export interface GeoServiceAreaPage {
-  items: (GeoServiceArea | GeoServiceAreaPassenger)[];
+  items: GeoServiceArea[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -1391,31 +1345,6 @@ export interface GeoStop {
 
 export type GeoTrafficProducts = string[];
 
-export interface GeoStopPassenger {
-  stop_id: UUID;
-  revision: number;
-  name: string;
-  point: Point;
-  accessibility: GeoStopAccessibility;
-  distance_m: number | null;
-}
-
-export interface GeoServiceAreaPassenger {
-  id: UUID;
-  service_id: UUID;
-  revision: number;
-  area: GeoMultiPolygon;
-  area_square_km: number;
-  bounds: {
-    min_latitude: number;
-    min_longitude: number;
-    max_latitude: number;
-    max_longitude: number;
-  };
-  valid_from: Timestamp;
-  valid_to: Timestamp | null;
-}
-
 export interface GeoStopUpdate {
   name: string;
   point: Point;
@@ -1437,31 +1366,8 @@ export interface GeoStopCreate {
   valid_to?: Timestamp | null;
 }
 
-export interface PlaceHit {
-  type: 'ADDRESS' | 'POI' | 'STOP' | 'FAVORITE' | 'MAP_POINT';
-  label: string;
-  point: Point;
-  stop_id: UUID | null;
-  source: string;
-  data_as_of: string;
-  service_area: 'INSIDE' | 'OUTSIDE' | 'UNKNOWN';
-  nearest_stop: PlaceNearestStop | null;
-}
-
-export interface PlaceNearestStop {
-  stop_id: UUID;
-  name: string;
-  distance_m: number;
-}
-
-export interface PlaceSearchResult {
-  items: PlaceHit[];
-  notices: ('GEOCODER_UNAVAILABLE' | 'NO_MATCH')[];
-  as_of: string;
-}
-
 export interface GeoStopPage {
-  items: (GeoStop | GeoStopPassenger)[];
+  items: GeoStop[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -1745,17 +1651,7 @@ export interface Profile {
 
 export interface Favorite {
   label: string;
-  lat: number;
-  lon: number;
-  stop_id: UUID | null;
-  stop_bookable: boolean;
-}
-
-export interface FavoriteInput {
-  label: string;
-  lat?: number;
-  lon?: number;
-  stop_id?: UUID;
+  stop_id: UUID;
 }
 
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'SMS';
@@ -1766,7 +1662,7 @@ export interface ProfileUpdate {
     email?: string;
     phone?: string;
   };
-  favorites?: FavoriteInput[];
+  favorites?: Favorite[];
   preferred_stops?: UUID[];
   notification_channels?: NotificationChannel[];
 }
@@ -2218,83 +2114,6 @@ export interface AccountRecovery {
   started_at: string;
 }
 
-export type TariffClass = string;
-
-export type TariffState = 'ENTWURF' | 'GEPRUEFT' | 'VEROEFFENTLICHT';
-
-export type TariffRuleType = 'FESTPREIS' | 'ZONENPREIS' | 'GRUNDPREIS_STRECKE';
-
-export interface TariffRuleInput {
-  rule_type: TariffRuleType;
-  person_mode?: 'PER_PERSON' | 'PER_BOOKING';
-  amount_minor: number;
-  zone_from?: UUID;
-  zone_to?: UUID;
-  rate_per_km?: string;
-  booking_fee_minor?: number;
-  tax_rate?: string;
-  tax_mode?: 'GROSS' | 'NET';
-  tax_rule_revision: string;
-}
-
-export interface TariffRule {
-  id: UUID;
-  rule_no: number;
-  rule_type: TariffRuleType;
-  person_mode: 'PER_PERSON' | 'PER_BOOKING';
-  amount_minor: number;
-  zone_from: UUID | null;
-  zone_to: UUID | null;
-  rate_per_km: string | null;
-  booking_fee_minor: number;
-  tax_rate: string;
-  tax_mode: 'GROSS' | 'NET';
-  tax_rule_revision: string;
-}
-
-export interface TariffRevisionCreate {
-  service_id: UUID;
-  tariff_class: TariffClass;
-  valid_from: Timestamp;
-  valid_to?: Timestamp | null;
-  currency: string;
-  reason: string;
-  rules: TariffRuleInput[];
-}
-
-export interface TariffRevisionUpdate {
-  valid_from: Timestamp;
-  valid_to?: Timestamp | null;
-  reason: string;
-  rules: TariffRuleInput[];
-}
-
-export interface TariffRevision {
-  id: UUID;
-  service_id: UUID;
-  tariff_class: TariffClass;
-  revision_no: number;
-  state: TariffState;
-  valid_from: Timestamp;
-  valid_to: Timestamp | null;
-  currency: string;
-  reason: string;
-  revision: number;
-  created_by: string;
-  created_at: Timestamp;
-  reviewed_by: string | null;
-  reviewed_at: Timestamp | null;
-  published_by: string | null;
-  published_at: Timestamp | null;
-  rules: TariffRule[];
-}
-
-export interface TariffRevisionPage {
-  items: TariffRevision[];
-  next_cursor: string | null;
-  as_of: string;
-}
-
 export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
@@ -2463,34 +2282,6 @@ export interface Operations {
     body: PublishRequest;
     response: PublishedRevision;
   };
-  listRosterShifts: {
-    path: Record<string, never>;
-    query: { roster_id: UUID; limit?: number; cursor?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: ShiftPage;
-  };
-  createRosterShift: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string };
-    body: ShiftWrite;
-    response: Shift;
-  };
-  getRosterShift: {
-    path: { shift_id: UUID };
-    query: { roster_id: UUID };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: Shift;
-  };
-  updateRosterShift: {
-    path: { shift_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
-    body: ShiftWrite;
-    response: Shift;
-  };
   publishRoster: {
     path: { roster_id: UUID };
     query: Record<string, never>;
@@ -2573,7 +2364,7 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: RideOfferRequest;
-    response: RideOfferResponse;
+    response: RideOffer;
   };
   getRideOffer: {
     path: { ride_offer_id: UUID };
@@ -2967,9 +2758,30 @@ export interface Operations {
     body: CapacityPatch;
     response: CapacityConfiguration;
   };
+  listVehicleServiceAssignments: {
+    path: { vehicle_id: UUID };
+    query: { as_of?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleServiceAssignmentPage;
+  };
+  createVehicleServiceAssignment: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: VehicleServiceAssignmentCreate;
+    response: VehicleServiceAssignment;
+  };
+  endVehicleServiceAssignment: {
+    path: { vehicle_id: UUID; assignment_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: VehicleServiceAssignmentEnd;
+    response: VehicleServiceAssignment;
+  };
   listServiceAreas: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp };
+    query: { limit?: number; cursor?: string; service_id?: UUID };
     headers: { traceparent?: string };
     body: undefined;
     response: GeoServiceAreaPage;
@@ -2986,7 +2798,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoServiceArea | GeoServiceAreaPassenger;
+    response: GeoServiceArea;
   };
   updateServiceArea: {
     path: { area_id: UUID };
@@ -2994,13 +2806,6 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: GeoServiceAreaUpdate;
     response: GeoServiceArea;
-  };
-  searchPlaces: {
-    path: Record<string, never>;
-    query: { q?: string; map_latitude?: number; map_longitude?: number; bias_latitude?: number; bias_longitude?: number; service_id?: UUID; limit?: number };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: PlaceSearchResult;
   };
   listStops: {
     path: Record<string, never>;
@@ -3021,7 +2826,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoStop | GeoStopPassenger;
+    response: GeoStop;
   };
   updateStop: {
     path: { stop_id: UUID };
@@ -3534,55 +3339,6 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
-  listTariffRevisions: {
-    path: Record<string, never>;
-    query: { limit?: number; cursor?: string; service_id?: UUID; state?: TariffState };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: TariffRevisionPage;
-  };
-  createTariffRevision: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string };
-    body: TariffRevisionCreate;
-    response: TariffRevision;
-  };
-  getTariffRevision: {
-    path: { tariff_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: TariffRevision;
-  };
-  updateTariffRevision: {
-    path: { tariff_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
-    body: TariffRevisionUpdate;
-    response: TariffRevision;
-  };
-  reviewTariffRevision: {
-    path: { tariff_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
-    body: undefined;
-    response: TariffRevision;
-  };
-  publishTariffRevision: {
-    path: { tariff_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
-    body: undefined;
-    response: TariffRevision;
-  };
-  getEffectiveTariff: {
-    path: { service_id: UUID };
-    query: { tariff_class?: TariffClass; at?: Timestamp };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: TariffRevision;
-  };
   listTimeEvents: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
@@ -3667,10 +3423,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
-  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
@@ -3682,7 +3434,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   withdrawAbsence: { method: 'POST', path: '/v1/absences/{absence_id}/withdraw', pathParams: ['absence_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['absences:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
-  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
@@ -3739,11 +3491,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
-  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listVehicleServiceAssignments: { method: 'GET', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: ['as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  endVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end', pathParams: ['vehicle_id', 'assignment_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 422, 429, 503] },
+  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  searchPlaces: { method: 'GET', path: '/v1/places', pathParams: [], query: ['q', 'map_latitude', 'map_longitude', 'bias_latitude', 'bias_longitude', 'service_id', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at', 'near_latitude', 'near_longitude', 'near_radius_m', 'active'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -3820,13 +3574,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  listTariffRevisions: { method: 'GET', path: '/v1/tariffs', pathParams: [], query: ['limit', 'cursor', 'service_id', 'state'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createTariffRevision: { method: 'POST', path: '/v1/tariffs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tariffs:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  getTariffRevision: { method: 'GET', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  updateTariffRevision: { method: 'PUT', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['tariffs:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  reviewTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/review', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  publishTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/publish', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getEffectiveTariff: { method: 'GET', path: '/v1/services/{service_id}/tariff', pathParams: ['service_id'], query: ['tariff_class', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },

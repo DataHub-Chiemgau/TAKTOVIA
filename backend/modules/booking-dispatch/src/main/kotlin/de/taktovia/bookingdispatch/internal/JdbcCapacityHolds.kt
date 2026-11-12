@@ -54,7 +54,7 @@ internal class JdbcCapacityHolds(
         //     (WP-M3-04, WP-M3-08) schließt sich vorher ab, die Prüfung sieht danach einen konsistenten Stand; bestehende Holds ändert die Konfiguration nie.
         j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ? FOR SHARE", { _, _ -> 1 }, run.vehicleId)
         // 3. Einsatzfähigkeit unter dem Lock erneut prüfen (Sperre, Freigabe, Schicht)
-        val usable = resources.check(j, run.vehicleId, cmd.serviceId, cmd.window)
+        val usable = resources.check(j, run.vehicleId, cmd.serviceId, cmd.window, cmd.locations)
         if (usable !is VehicleAvailability.Usable) return@run HoldOutcome.Rejected(RejectionReason.RESOURCE_UNUSABLE, null)
         val capacity = ResourceVector.parse(usable.resource.capacityConfig, "/vehicle/capacity_config")
         cmd.reserve.validateAgainst(capacity)
@@ -151,6 +151,12 @@ internal class JdbcCapacityHolds(
             hold.state == "HELD" && hold.expired -> throw ProblemException(ErrorCode.HOLD_EXPIRED, "Die Reservierung ist abgelaufen.")
             hold.state != "HELD" -> throw ProblemException(if (hold.state == "EXPIRED") ErrorCode.HOLD_EXPIRED else ErrorCode.INVALID_STATE_TRANSITION)
         }
+        // Zusage-Commit (WP-M3-06): Fahrzeugzeile gemeinsam sperren (Reihenfolge Lauf, dann Fahrzeug) und die Dienstzuordnung zum Abholbeginn erneut prüfen; endet die Zuordnung parallel,
+        // entsteht keine Zusage nach dem Ende (Beendigung und Commit serialisieren über die Fahrzeugzeile). Das Gebiet wurde im Hold mit den Orten der Fahrt geprüft.
+        val vehicleId = j.queryForObject("SELECT vehicle_id FROM taktovia.vehicle_run WHERE id = ?", UUID::class.java, runId)!!
+        j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ? FOR SHARE", { _, _ -> 1 }, vehicleId)
+        if (!resources.isAssigned(j, vehicleId, serviceId, java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant()))
+            throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Das Fahrzeug ist dem Dienst zum Abholzeitpunkt nicht mehr zugeordnet.")
         // Routeninvariante (gemeinsamer Validator, WP-M2-16): die Belegung der Abschnitte des Holds liegt unter dem Lock innerhalb der Fahrzeugkapazität
         val capacity = ResourceVector.parse(j.queryForObject(
             "SELECT v.capacity_config::text FROM taktovia.vehicle_run r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id WHERE r.id = ?", String::class.java, runId)!!, "/vehicle/capacity_config")

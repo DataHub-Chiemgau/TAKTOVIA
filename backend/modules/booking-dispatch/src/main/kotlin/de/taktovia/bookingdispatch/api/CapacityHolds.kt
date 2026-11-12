@@ -1,6 +1,7 @@
 package de.taktovia.bookingdispatch.api
 
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.geo.GeoPoint
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -23,6 +24,8 @@ data class PlaceHold(
     val runId: UUID, val expectedRunRevision: Long, val serviceId: UUID, val window: TimeWindow, val intervalFrom: Int, val intervalTo: Int,
     val demand: ResourceVector, val reserve: ReserveRule = ReserveRule.NONE, val reference: String, val ttl: Duration = Duration.ofSeconds(180),
     val proposal: PlanProposal? = null,
+    /** Orte der Fahrt, die im Bediengebiet einer gebietsbezogenen Dienstzuordnung liegen müssen (WP-M3-06); ohne Angabe ist eine solche Zuordnung nicht zulässig (fail closed). */
+    val locations: List<GeoPoint> = emptyList(),
 )
 
 /**

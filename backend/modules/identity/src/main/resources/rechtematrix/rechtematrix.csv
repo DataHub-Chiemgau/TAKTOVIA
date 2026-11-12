@@ -164,6 +164,9 @@ getVehicleCapacity;fleet:read;-;M3;N;N;N;J;J;J;N;N;J;J
 createVehicleMaster;fleet:write;-;M3;N;N;N;N;J;N;N;N;N;J
 updateVehicleMaster;fleet:write;-;M3;N;N;N;N;J;N;N;N;N;J
 updateVehicleCapacity;fleet:write;-;M3;N;N;N;N;J;N;N;N;N;J
+listVehicleServiceAssignments;fleet:read;-;M3;N;N;N;J;J;J;N;N;J;J
+createVehicleServiceAssignment;fleet:write;-;M3;N;N;N;N;J;N;N;N;N;J
+endVehicleServiceAssignment;fleet:write;-;M3;N;N;N;N;J;N;N;N;N;J
 listDrivers;drivers:read;HR;M3;N;N;N;N;J;J;N;N;J;N
 getDriver;drivers:read;HR;M3;N;N;N;N;J;J;N;N;J;N
 listDriverQualifications;drivers:read;HR;M3;N;N;N;N;J;J;N;N;J;N
