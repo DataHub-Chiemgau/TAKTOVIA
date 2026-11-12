@@ -4,7 +4,7 @@ Python-Worker für OCR-Anbindung, Malware-Scan und KoSIT-Validierung. Nicht Teil
 
 - **Verantwortlich:** Finanzen/Daten (Rolle laut D-12, noch keine Personen benannt)
 - **Regeln:** [CONTRIBUTING.md](../../CONTRIBUTING.md)
-- **Stand:** Gerüst (WP-M0-07). Keine Fachlogik; OCR und KoSIT-Validierung folgen in M4. Die Malware-Prüfung (clamd-Client, Quarantäne) läuft seit WP-M4-21 im Backend (`documents-finance`), siehe [m4-cluster-c5.md](../../docs/umsetzungsplan/vertraege/m4-cluster-c5.md).
+- **Stand:** Gerüst (WP-M0-07). Keine Fachlogik; OCR und KoSIT-Validierung folgen in M4. Die Malware-Prüfung (clamd-Client, Quarantäne) läuft seit WP-M4-21 im Backend (`documents-finance`), siehe [m4-cluster-c5.md](../../docs/umsetzungsplan/vertraege/m4-cluster-c5.md); die OCR-Feldextraktion (WP-M4-27) und die Integritätsprüfung der Originale (WP-M4-24) ebenfalls (Adapter `ocr`, Modul `documents-finance`), aus demselben Grund (der Worker hat keinen Datenbankzugriff, die Aufrufschnittstelle Kern/Worker ist offen), siehe [m4-cluster-c10.md](../../docs/umsetzungsplan/vertraege/m4-cluster-c10.md).
 
 ## Layout
 

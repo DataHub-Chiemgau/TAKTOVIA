@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.extraction_failed.v1.schema.json",
+  "title": "Extraktion fehlgeschlagen (WP-M4-27)",
+  "description": "Payload von `document.extraction_failed`. Aggregat: extraction_run / Versuch (attempt). Der Lauf ist nach TIMEOUT und ENGINE_ERROR wiederholbar.",
+  "type": "object",
+  "required": ["document_id", "run_id", "failure", "attempt"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "failure": {"enum": ["TIMEOUT", "ENGINE_ERROR", "UNSUPPORTED_CONTENT", "ORIGINAL_UNAVAILABLE"]},
+    "attempt": {"type": "integer", "minimum": 1}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "run_id": "aaaaaaaa-2222-4333-8444-555555555555", "failure": "TIMEOUT", "attempt": 1}
+  ]
+}
