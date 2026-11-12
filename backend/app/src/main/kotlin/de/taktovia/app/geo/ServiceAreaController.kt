@@ -5,11 +5,13 @@ import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
 import de.taktovia.platform.api.Etag
+import de.taktovia.platform.api.Page
 import de.taktovia.platform.api.Paging
 import de.taktovia.platform.problem.ProblemException
 import de.taktovia.platform.problem.Violation
 import de.taktovia.platform.problem.ViolationCode
 import de.taktovia.servicegeo.api.CreateServiceArea
+import de.taktovia.servicegeo.api.PassengerAreaView
 import de.taktovia.servicegeo.api.ReviseServiceArea
 import de.taktovia.servicegeo.api.ServiceAreaView
 import de.taktovia.servicegeo.api.ServicegeoApi
@@ -37,10 +39,12 @@ import java.util.UUID
 class ServiceAreaController(private val geo: ServicegeoApi, private val codec: CursorCodec) {
 
     @GetMapping("/v1/service-areas")
-    fun list(@RequestParam(name = "service_id", required = false) serviceId: String?, @RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?,
-             request: HttpServletRequest): Map<String, Any?> {
+    fun list(@RequestParam(name = "service_id", required = false) serviceId: String?, @RequestParam(required = false) at: String?, @RequestParam(required = false) limit: String?,
+             @RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> {
         val ctx = RequestContexts.require(request)
         val service = serviceId?.let { runCatching { UUID.fromString(it) }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/service_id", ViolationCode.INVALID_FORMAT)) }
+        // Fahrgäste und alle Rollen ohne Stammdatenrecht: zum Zeitpunkt wirksame, generalisierte Gebiete (WP-M2-40)
+        if (!ctx.hasScope("geo:write")) return Page(geo.passenger.areas(ctx, service, GeoWeb.queryInstant(at, "at"), Paging.limit(limit)), null, Instant.now()).toMap(::passengerJson)
         val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "service-areas/" + (service ?: "all"))
         val lim = Paging.limit(limit)
         val rows = geo.areas.list(ctx, service, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
@@ -57,7 +61,13 @@ class ServiceAreaController(private val geo: ServicegeoApi, private val codec: C
     @GetMapping("/v1/service-areas/{area_id}")
     fun get(@PathVariable("area_id") id: UUID, @RequestParam(required = false) revision: String?, request: HttpServletRequest): GeoResource {
         val rev = revision?.let { it.toLongOrNull()?.takeIf { v -> v >= 1 } ?: throw ProblemException.invalid(Violation("/\$query/revision", ViolationCode.INVALID_FORMAT)) }
-        val v = geo.areas.get(RequestContexts.require(request), id, rev)
+        val ctx = RequestContexts.require(request)
+        if (!ctx.hasScope("geo:write")) {
+            if (rev != null) throw ProblemException.notFound()   // ältere Revisionen sind Pflegesicht
+            val v = geo.passenger.area(ctx, id, null)
+            return GeoResource(passengerJson(v), v.revision)
+        }
+        val v = geo.areas.get(ctx, id, rev)
         return GeoResource(json(v), v.revision)
     }
 
@@ -72,6 +82,10 @@ class ServiceAreaController(private val geo: ServicegeoApi, private val codec: C
 
     private fun uuid(body: Map<String, Any?>, field: String): UUID =
         runCatching { UUID.fromString(GeoWeb.string(body, field)) }.getOrNull() ?: throw ProblemException.invalid(Violation("/$field", ViolationCode.INVALID_FORMAT))
+
+    private fun passengerJson(v: PassengerAreaView): Map<String, Any?> = linkedMapOf("id" to v.id.toString(), "service_id" to v.serviceId.toString(), "revision" to v.revision, "area" to v.area,
+        "area_square_km" to Math.round(v.areaSquareKm * 100.0) / 100.0, "bounds" to linkedMapOf("min_latitude" to v.bounds.minLatitude, "min_longitude" to v.bounds.minLongitude,
+            "max_latitude" to v.bounds.maxLatitude, "max_longitude" to v.bounds.maxLongitude), "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString())
 
     private fun json(v: ServiceAreaView): Map<String, Any?> = linkedMapOf("id" to v.id.toString(), "revision_id" to v.revisionId.toString(), "zone_role" to v.zoneRole.name, "service_id" to v.serviceId.toString(),
         "revision" to v.revision, "area" to v.area, "valid_from" to v.validFrom.toString(), "valid_to" to v.validTo?.toString())

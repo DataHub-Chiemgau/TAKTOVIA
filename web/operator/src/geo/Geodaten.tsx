@@ -260,11 +260,22 @@ function parseRing(text: string): number[][] {
     .map((l) => l.split(/[,;\s]+/).map(Number));
 }
 
+/**
+ * Die Pflegeoberfläche läuft mit `geo:write`: dort liefert die API die volle Sicht (`GeoStop`, `GeoServiceArea`). Die Fahrgastsicht (WP-M2-40) erhalten nur Rollen
+ * ohne Stammdatenrecht, sie kommt hier nie an; deshalb ist die Einengung des Union-Typs der Antwort gerechtfertigt.
+ */
+const staffItems = <T,>(page: { items: unknown[] }): { items: T[] } => ({
+  ...page,
+  items: page.items as T[],
+});
+
 /** UI-17 (WP-M2-04, -06): Bediengebiete mit Zonenrolle; Koordinatenliste statt Kartenzeichnung (gleichwertige Alternative), Zustand „Ungültige Geometrie“ und „konkurrierende Version“. */
 export function Bediengebiete({ service }: { service: Service }) {
   const api = useApi();
   const [state, reload] = useLoaded(() =>
-    api.call('listServiceAreas', { query: { service_id: service.id } }),
+    api
+      .call('listServiceAreas', { query: { service_id: service.id } })
+      .then((p) => staffItems<GeoServiceArea>(p)),
   );
   const [selected, setSelected] = useState<GeoServiceArea | undefined>(undefined);
   const [coords, setCoords] = useState('');
@@ -370,7 +381,9 @@ export function Bediengebiete({ service }: { service: Service }) {
 /** UI-17 (WP-M2-05): Haltepunktliste und -formular (Aktivstatus, Verkehrsprodukte, Barrierefreiheit); Deaktivierung ist eine neue Revision. */
 export function Haltepunkte() {
   const api = useApi();
-  const [state, reload] = useLoaded(() => api.call('listStops', { query: { limit: 100 } }));
+  const [state, reload] = useLoaded(() =>
+    api.call('listStops', { query: { limit: 100 } }).then((p) => staffItems<GeoStop>(p)),
+  );
   const [name, setName] = useState('');
   const [lat, setLat] = useState('');
   const [lon, setLon] = useState('');
@@ -543,7 +556,7 @@ export function Relationsregeln({ service }: { service: Service }) {
   const [state, reload] = useLoaded(() =>
     Promise.all([
       api.call('getServiceRelationRule', { path: { service_id: service.id } }),
-      api.call('listStops', { query: { limit: 100 } }),
+      api.call('listStops', { query: { limit: 100 } }).then((p) => staffItems<GeoStop>(p)),
     ]),
   );
   const [chosen, setChosen] = useState<string[] | undefined>(undefined);

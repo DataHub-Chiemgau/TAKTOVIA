@@ -1334,7 +1334,7 @@ export interface GeoServiceAreaCreate {
 }
 
 export interface GeoServiceAreaPage {
-  items: GeoServiceArea[];
+  items: (GeoServiceArea | GeoServiceAreaPassenger)[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -1391,6 +1391,31 @@ export interface GeoStop {
 
 export type GeoTrafficProducts = string[];
 
+export interface GeoStopPassenger {
+  stop_id: UUID;
+  revision: number;
+  name: string;
+  point: Point;
+  accessibility: GeoStopAccessibility;
+  distance_m: number | null;
+}
+
+export interface GeoServiceAreaPassenger {
+  id: UUID;
+  service_id: UUID;
+  revision: number;
+  area: GeoMultiPolygon;
+  area_square_km: number;
+  bounds: {
+    min_latitude: number;
+    min_longitude: number;
+    max_latitude: number;
+    max_longitude: number;
+  };
+  valid_from: Timestamp;
+  valid_to: Timestamp | null;
+}
+
 export interface GeoStopUpdate {
   name: string;
   point: Point;
@@ -1436,7 +1461,7 @@ export interface PlaceSearchResult {
 }
 
 export interface GeoStopPage {
-  items: GeoStop[];
+  items: (GeoStop | GeoStopPassenger)[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -2944,7 +2969,7 @@ export interface Operations {
   };
   listServiceAreas: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string; service_id?: UUID };
+    query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp };
     headers: { traceparent?: string };
     body: undefined;
     response: GeoServiceAreaPage;
@@ -2961,7 +2986,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoServiceArea;
+    response: GeoServiceArea | GeoServiceAreaPassenger;
   };
   updateServiceArea: {
     path: { area_id: UUID };
@@ -2996,7 +3021,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoStop;
+    response: GeoStop | GeoStopPassenger;
   };
   updateStop: {
     path: { stop_id: UUID };
@@ -3714,7 +3739,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
-  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
