@@ -29,6 +29,7 @@ import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Geodaten } from './geo/Geodaten';
 import { Tarife } from './tarife/Tarife';
+import { Checklistenvorlagen } from './flotte/Checklistenvorlagen';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Schichtzuweisung } from './flotte/Schichtzuweisung';
@@ -209,6 +210,14 @@ export function App() {
             element={
               <RequireRight right="shifts">
                 <Schichtzuweisung />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/checklisten"
+            element={
+              <RequireRight right="checklists">
+                <Checklistenvorlagen />
               </RequireRight>
             }
           />

@@ -1,0 +1,9 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+checklist_template_revision;name;nein;FLOTTE_SICHERHEIT;;;;
+checklist_template_revision;approved_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Freigebender (Pseudonym user:<uuid>), nie Name oder Mailadresse
+checklist_step;help_text;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;example_image_name;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;na_requires_reason;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;number_min;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;number_max;nein;FLOTTE_SICHERHEIT;;;;
+checklist_step;number_unit;nein;FLOTTE_SICHERHEIT;;;;

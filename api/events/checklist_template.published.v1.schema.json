@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/checklist_template.published.v1.schema.json",
+  "title": "Checklistenvorlage freigegeben, Ereignistyp checklist_template.published (WP-M3-10, LH-6.21-CHK-003)",
+  "description": "Genau ein Ereignis je Freigabe einer Vorlagenrevision; `aggregate_id` der Hülle (platform.eventenvelope.v1) ist `template_revision_id`, `aggregate_revision` die Revisionszählung der Vorlagenrevision. Enthält weder Prüfinhalte noch Personen (Minimierung). Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["template_revision_id", "template_id", "version", "vehicle_class", "service_mode", "step_count", "revision"],
+  "additionalProperties": false,
+  "properties": {
+    "template_revision_id": {"type": "string", "format": "uuid"},
+    "template_id": {"type": "string", "format": "uuid"},
+    "version": {"type": "integer", "minimum": 1},
+    "vehicle_class": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"},
+    "service_mode": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,39}$"},
+    "step_count": {"type": "integer", "minimum": 1},
+    "revision": {"type": "integer", "minimum": 2}
+  },
+  "examples": [
+    {
+      "template_revision_id": "00000000-0000-4000-8000-0000000000c1",
+      "template_id": "00000000-0000-4000-8000-0000000000c2",
+      "version": 1,
+      "vehicle_class": "PKW",
+      "service_mode": "ONDEMAND",
+      "step_count": 8,
+      "revision": 2
+    }
+  ]
+}

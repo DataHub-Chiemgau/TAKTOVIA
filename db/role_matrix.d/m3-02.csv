@@ -1,6 +1,6 @@
 table;runtime_privileges;note
 checklist_template_revision;SELECT,INSERT,UPDATE;WP-M3-02: Vorlagenrevision; nach Veröffentlichung nur noch Übergang auf RETIRED (Trigger checklist_template_guard), kein DELETE
-checklist_step;SELECT,INSERT,UPDATE;WP-M3-02: Prüfschritt; nur bei Vorlagenrevision im Entwurf änderbar (Trigger checklist_step_guard), kein DELETE
+checklist_step;SELECT,INSERT,UPDATE,DELETE;WP-M3-02/WP-M3-10: Prüfschritt; nur bei Vorlagenrevision im Entwurf änderbar und löschbar (Trigger checklist_step_guard)
 inspection_run;SELECT,INSERT,UPDATE;WP-M3-02: Prüflauf; abgeschlossen/verfallen/abgebrochen unveränderlich (Trigger inspection_run_guard), kein DELETE
 inspection_answer;SELECT,INSERT,UPDATE;WP-M3-02: Prüfantwort; nur im offenen Lauf änderbar (Trigger inspection_answer_guard), kein DELETE
 inspection_amendment;SELECT,INSERT;WP-M3-02: Ergänzungseintrag zur Prüfung; unveränderlich (Trigger), kein UPDATE/DELETE

@@ -29,7 +29,6 @@ holdOffer  # POST /v1/federation/offers/{offer_id}/hold
 holdRideOffer  # POST /v1/ride-offers/{ride_offer_id}/hold
 liftVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift
 listBookings  # GET /v1/bookings
-listChecklistTemplates  # GET /v1/checklist-templates
 listDefects  # GET /v1/defects
 listDriverClearances  # GET /v1/driver-clearances
 listOperatorIncidents  # GET /v1/operator/incidents

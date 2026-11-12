@@ -1269,6 +1269,24 @@
           "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
         },
         {
+          "spalte": "example_image_name",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "help_text",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -1279,6 +1297,42 @@
         },
         {
           "spalte": "mandatory",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "na_requires_reason",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "number_max",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "number_min",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "number_unit",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
           "rechtsgrundlage": "",
@@ -1367,6 +1421,15 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "approved_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Freigebender (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -1386,6 +1449,15 @@
         },
         {
           "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "name",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
           "rechtsgrundlage": "",

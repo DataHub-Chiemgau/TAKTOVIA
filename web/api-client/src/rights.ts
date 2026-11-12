@@ -15,6 +15,8 @@ export type Right =
   | 'drivers.write'
   | 'shifts'
   | 'shifts.write'
+  | 'checklists'
+  | 'checklists.write'
   | 'admin.ui17'
   | 'admin.ui18'
   | 'admin.ui20';
@@ -36,6 +38,8 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'drivers:write': ['drivers', 'drivers.write'],
   'shifts:read': ['shifts'],
   'shifts:write': ['shifts', 'shifts.write'],
+  'checklists:read': ['checklists'],
+  'checklists:write': ['checklists', 'checklists.write'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],

@@ -222,6 +222,416 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/operator/checklist-templates:
+    get:
+      summary: Checklistenvorlagen verwalten – Revisionen auflisten
+      operationId: listChecklistTemplateRevisions
+      security:
+      - oidc:
+        - checklists:read
+      description: 'Alle Revisionen der Checklistenvorlagen des Mandanten (Entwurf, freigegeben, abgelöst), optional nach Zustand, Fahrzeugklasse und Bedienart gefiltert (WP-M3-10, LH-6.21-CHK-003; UI-11). Ungültiger Zustand: 422.'
+      parameters:
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ChecklistTemplateState'
+        description: Zustand der Revision.
+      - name: vehicle_class
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Fahrzeugklasse.
+      - name: service_mode
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Bedienart.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevisionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Checklistenvorlage als Entwurf anlegen
+      operationId: createChecklistTemplate
+      security:
+      - oidc:
+        - checklists:write
+      description: 'Legt eine neue Vorlage (Version 1) als Entwurf an. Jedes Prüfelement braucht Titel, Eingabetyp und Pflichtstatus; fehlt eines davon, ist der Wert ungültig oder der Schlüssel doppelt, ist die Vorlage nicht speicherbar (422 mit Feldverweis `/steps/<n>/<feld>`, CHK-003). Der Hilfetext ist optional (OP, im Fachreview zu bestätigen). Der Mandant folgt aus der Sitzung.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistTemplateWrite'
+  /v1/operator/checklist-templates/{checklist_revision_id}:
+    get:
+      summary: Vorlagenrevision lesen
+      operationId: getChecklistTemplateRevision
+      security:
+      - oidc:
+        - checklists:read
+      description: 'Eine Vorlagenrevision mit allen Prüfelementen und starkem ETag. Fremde oder unbekannte Revision: 404.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Entwurf einer Vorlagenrevision ändern
+      operationId: updateChecklistTemplateDraft
+      security:
+      - oidc:
+        - checklists:write
+      description: 'Ersetzt Name, Fahrzeugklasse, Bedienart und Prüfelemente eines **Entwurfs**. Beispielbilder bleiben je Schlüssel erhalten. Eine freigegebene oder abgelöste Revision ist unveränderlich: 409 `IMMUTABLE_RECORD`; die Änderung erfolgt über eine neue Revision. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistTemplateWrite'
+  /v1/operator/checklist-templates/{checklist_revision_id}/revisions:
+    post:
+      summary: Neue Revision aus einer freigegebenen Revision anlegen
+      operationId: createChecklistTemplateRevision
+      security:
+      - oidc:
+        - checklists:write
+      description: 'Legt aus einer freigegebenen oder abgelösten Revision einen neuen Entwurf (Version + 1, Prüfelemente und Beispielbilder kopiert) an. If-Match: Revision der Quelle; ohne 428, veraltet 412. Besteht für die Vorlage schon ein Entwurf, oder ist die Quelle selbst ein Entwurf: 409. Fremde Revision: 404.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/checklist-templates/{checklist_revision_id}/publish:
+    post:
+      summary: Vorlagenrevision freigeben
+      operationId: publishChecklistTemplateRevision
+      security:
+      - oidc:
+        - checklists:write
+      description: 'Gibt den Entwurf nach dem Vier-Augen-Prinzip frei: der Freigebende ist nie der Ersteller (403) und immer ein Mensch. Die bisher wirksame Revision der Vorlage wird abgelöst; es gibt je Vorlage genau eine wirksame Revision. Bei gleichzeitigen Freigaben derselben Revision gewinnt genau eine, die andere erhält 409. Ohne Prüfelement 422. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image:
+    put:
+      summary: Beispielbild eines Prüfelements setzen
+      operationId: putChecklistStepExampleImage
+      security:
+      - oidc:
+        - checklists:write
+      description: 'Legt das Beispielbild (PNG, JPEG oder WebP, höchstens 512 KiB, Inhalt Base64) im mandantengetrennten Objektspeicher ab und verknüpft es mit dem Prüfelement eines Entwurfs. Andere Medientypen: 415; Inhalt passt nicht zum Typ oder zu groß: 422; nicht mehr Entwurf: 409. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - name: step_code
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          minLength: 1
+          maxLength: 64
+        description: Schlüssel des Prüfelements.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision der Vorlagenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '415':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistExampleImage'
+    get:
+      summary: Beispielbild eines Prüfelements lesen
+      operationId: getChecklistStepExampleImage
+      security:
+      - oidc:
+        - inspections:read
+      description: 'Liefert das Beispielbild des Prüfelements aus dem Objektspeicher des eigenen Mandanten (Base64). Ohne Bild, fremde Revision oder fremder Mandant: 404.'
+      parameters:
+      - name: checklist_revision_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: ID der Vorlagenrevision.
+      - name: step_code
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          minLength: 1
+          maxLength: 64
+        description: Schlüssel des Prüfelements.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistExampleImage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/inspections:
     post:
       summary: Prüflauf starten
@@ -1800,6 +2210,26 @@ components:
                 - TEXT_SHORT
               photo_required_on_defect:
                 type: boolean
+              help_text:
+                oneOf:
+                - type: string
+                - type: 'null'
+              na_requires_reason:
+                type: boolean
+              number_min:
+                oneOf:
+                - type: number
+                - type: 'null'
+              number_max:
+                oneOf:
+                - type: number
+                - type: 'null'
+              number_unit:
+                oneOf:
+                - type: string
+                - type: 'null'
+              has_example_image:
+                type: boolean
             required:
             - step_code
             - title
@@ -2830,3 +3260,248 @@ components:
       - effective
       - vectors
       - revision
+    ChecklistTemplateState:
+      type: string
+      enum:
+      - DRAFT
+      - PUBLISHED
+      - RETIRED
+      description: Entwurf, freigegeben (wirksam), abgelöst.
+    ChecklistStepWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        step_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        help_text:
+          oneOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+        input_kind:
+          type: string
+          enum:
+          - OK_DEFECT_NA
+          - NUMBER
+          - TEXT_SHORT
+          description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar, `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens 200 Zeichen).
+        mandatory:
+          type: boolean
+        safety_critical:
+          type: boolean
+        na_requires_reason:
+          type: boolean
+          description: Bei „Nicht anwendbar" ist eine Begründung Pflicht.
+        photo_required_on_defect:
+          type: boolean
+        number_min:
+          oneOf:
+          - type: number
+          - type: 'null'
+        number_max:
+          oneOf:
+          - type: number
+          - type: 'null'
+        number_unit:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 20
+          - type: 'null'
+      required:
+      - step_code
+      - title
+      - input_kind
+      - mandatory
+      description: Prüfelement in der Eingabe. Titel, Eingabetyp und Pflichtstatus sind Pflicht (CHK-003). Grenzen und Einheit nur bei `NUMBER`.
+    ChecklistTemplateWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        vehicle_class:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        service_mode:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        steps:
+          type: array
+          minItems: 1
+          maxItems: 60
+          items:
+            $ref: '#/components/schemas/ChecklistStepWrite'
+      required:
+      - name
+      - vehicle_class
+      - service_mode
+      - steps
+      description: Vorlage (Entwurf) mit ihren Prüfelementen; die Reihenfolge der Liste ist die Anzeigereihenfolge.
+    ChecklistStepRead:
+      type: object
+      additionalProperties: false
+      properties:
+        step_code:
+          type: string
+        position:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        help_text:
+          oneOf:
+          - type: string
+          - type: 'null'
+        input_kind:
+          type: string
+          enum:
+          - OK_DEFECT_NA
+          - NUMBER
+          - TEXT_SHORT
+        mandatory:
+          type: boolean
+        safety_critical:
+          type: boolean
+        na_requires_reason:
+          type: boolean
+        photo_required_on_defect:
+          type: boolean
+        number_min:
+          oneOf:
+          - type: number
+          - type: 'null'
+        number_max:
+          oneOf:
+          - type: number
+          - type: 'null'
+        number_unit:
+          oneOf:
+          - type: string
+          - type: 'null'
+        has_example_image:
+          type: boolean
+          description: Ein Beispielbild liegt im Objektspeicher des Mandanten vor (Abruf über `getChecklistStepExampleImage`, nie über eine fremde URL).
+      required:
+      - step_code
+      - position
+      - title
+      - help_text
+      - input_kind
+      - mandatory
+      - safety_critical
+      - na_requires_reason
+      - photo_required_on_defect
+      - number_min
+      - number_max
+      - number_unit
+      - has_example_image
+    ChecklistTemplateRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        template_id:
+          $ref: common.yaml#/components/schemas/UUID
+        version:
+          type: integer
+          minimum: 1
+        name:
+          oneOf:
+          - type: string
+          - type: 'null'
+        vehicle_class:
+          type: string
+        service_mode:
+          type: string
+        state:
+          $ref: '#/components/schemas/ChecklistTemplateState'
+        steps:
+          type: array
+          maxItems: 60
+          items:
+            $ref: '#/components/schemas/ChecklistStepRead'
+        created_by:
+          type: string
+        approved_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        published_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - template_id
+      - version
+      - name
+      - vehicle_class
+      - service_mode
+      - state
+      - steps
+      - created_by
+      - approved_by
+      - published_at
+      - revision
+      - created_at
+      description: Revision einer Checklistenvorlage (WP-M3-10). Eine freigegebene Revision ist unveränderlich; jede Änderung erzeugt eine neue Revision.
+    ChecklistTemplateRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplateRevision'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    ChecklistExampleImage:
+      type: object
+      additionalProperties: false
+      properties:
+        content_type:
+          type: string
+          pattern: ^image/[a-z0-9.+-]{1,30}$
+          examples:
+          - image/png
+          description: Medientyp; zulässig sind `image/png`, `image/jpeg` und `image/webp`, andere ergeben 415.
+        data_base64:
+          type: string
+          minLength: 1
+          maxLength: 720000
+          examples:
+          - iVBORw0KGgoBAgM=
+          description: Bildinhalt, Base64 (höchstens 512 KiB Rohdaten).
+      required:
+      - content_type
+      - data_base64

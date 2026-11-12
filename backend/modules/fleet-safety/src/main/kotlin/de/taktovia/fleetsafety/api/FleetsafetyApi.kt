@@ -5,6 +5,7 @@ import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.storage.TenantObjectStore
 import org.springframework.jdbc.core.JdbcOperations
 import java.time.Clock
 import java.time.Instant
@@ -24,10 +25,12 @@ interface FleetsafetyApi {
     val fleetReadPort: de.taktovia.platform.readports.FleetReadPort
     /** Fahrzeugpool: Dienstzuordnung mit Gültigkeitsintervall und Gebietsbezug (WP-M3-06). */
     val vehiclePool: VehiclePool
+    /** Checklistenvorlagen und Prüfelemente (WP-M3-10). */
+    val checklistTemplates: ChecklistTemplates
 
     companion object {
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): FleetsafetyApi =
-            FleetServicesFactory.create(ctxTx, audit, outbox, clock)
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock = Clock.systemUTC()): FleetsafetyApi =
+            FleetServicesFactory.create(ctxTx, audit, outbox, store, clock)
     }
 }
 

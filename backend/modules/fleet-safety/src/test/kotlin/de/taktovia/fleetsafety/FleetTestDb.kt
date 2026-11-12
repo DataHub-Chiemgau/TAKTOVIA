@@ -10,6 +10,7 @@ import de.taktovia.platform.context.ContextRevalidator
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.storage.InMemoryObjectStore
 import de.taktovia.platform.tenant.TenantId
 import de.taktovia.platform.tenant.TenantTransactions
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -46,7 +47,8 @@ class FleetFixture : AutoCloseable {
     private val admin = FleetTestDb.admin()
     val tx = TenantTransactions(ds)
     val ctxTx = ContextTransactions(tx, object : ContextRevalidator { override fun revalidate(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, lock: Boolean) {} })
-    val fleet: FleetsafetyApi = FleetsafetyApi.create(ctxTx, JdbcAuditPort(), Outbox())
+    val store = InMemoryObjectStore()
+    val fleet: FleetsafetyApi = FleetsafetyApi.create(ctxTx, JdbcAuditPort(), Outbox(), store)
 
     /** Ein Mandant mit Rechtsträger, vier Organisationen und einem Fixture-Fahrzeug. */
     class World(val tenant: TenantId, val orgs: List<UUID>, val vehicle: UUID)

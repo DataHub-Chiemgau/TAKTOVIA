@@ -195,3 +195,11 @@ updateStaffShift;shifts:write;HR;M3;N;N;N;N;J;N;N;N;N;N
 listDriverShifts;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
 startDriverShift;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
 endDriverShift;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
+listChecklistTemplateRevisions;checklists:read;-;M3;N;N;N;N;J;N;J;N;N;J
+getChecklistTemplateRevision;checklists:read;-;M3;N;N;N;N;J;N;J;N;N;J
+createChecklistTemplate;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+updateChecklistTemplateDraft;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+createChecklistTemplateRevision;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+publishChecklistTemplateRevision;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+putChecklistStepExampleImage;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+getChecklistStepExampleImage;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J

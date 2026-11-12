@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 class CapacityConfigHoldTest {
     private val env = IdentityEnv
     private val ctxTx by lazy { ContextTransactions(env.tx, object : ContextRevalidator { override fun revalidate(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, lock: Boolean) {} }) }
-    private val fleet by lazy { FleetsafetyApi.create(ctxTx, JdbcAuditPort(), Outbox()) }
+    private val fleet by lazy { FleetsafetyApi.create(ctxTx, JdbcAuditPort(), Outbox(), de.taktovia.platform.storage.InMemoryObjectStore()) }
     private val dispatch by lazy { BookingdispatchApi.create(ctxTx) }
     private val window = TimeWindow(Instant.parse("2026-12-01T06:00:00Z"), Instant.parse("2026-12-01T07:00:00Z"))
 

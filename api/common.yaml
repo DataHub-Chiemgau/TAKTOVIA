@@ -77,6 +77,8 @@ components:
             dispatch:write: dispatch:write
             inspections:read: inspections:read
             inspections:write: inspections:write
+            checklists:read: checklists:read
+            checklists:write: checklists:write
             defects:read: defects:read
             defects:write: defects:write
             defects:triage: defects:triage
@@ -155,6 +157,8 @@ components:
             dispatch:write: dispatch:write
             inspections:read: inspections:read
             inspections:write: inspections:write
+            checklists:read: checklists:read
+            checklists:write: checklists:write
             defects:read: defects:read
             defects:write: defects:write
             defects:triage: defects:triage
