@@ -118,8 +118,8 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         // Kopie der veröffentlichten Schichten (neue Kennungen, Zustand DRAFT); die veröffentlichten Zeilen bleiben unberührt
         j.update(
             "INSERT INTO taktovia.staff_shift (tenant_id, id, roster_id, roster_revision, driver_ref, vehicle_id, starts_at, ends_at, timezone, state, operator_id, depot_id, shift_function, required_qualification, " +
-                "staffing_need, break_plan, created_by, lineage_id) SELECT s.tenant_id, gen_random_uuid(), s.roster_id, ?, s.driver_ref, s.vehicle_id, s.starts_at, s.ends_at, s.timezone, 'DRAFT', s.operator_id, s.depot_id, " +
-                "s.shift_function, s.required_qualification, s.staffing_need, s.break_plan, ?, COALESCE(s.lineage_id, s.id) FROM taktovia.staff_shift s WHERE s.roster_id = ? AND s.roster_revision = ? AND s.state = 'PUBLISHED'",
+                "staffing_need, break_plan, created_by, lineage_id, service_id) SELECT s.tenant_id, gen_random_uuid(), s.roster_id, ?, s.driver_ref, s.vehicle_id, s.starts_at, s.ends_at, s.timezone, 'DRAFT', s.operator_id, s.depot_id, " +
+                "s.shift_function, s.required_qualification, s.staffing_need, s.break_plan, ?, COALESCE(s.lineage_id, s.id), s.service_id FROM taktovia.staff_shift s WHERE s.roster_id = ? AND s.roster_revision = ? AND s.state = 'PUBLISHED'",
             next, "user:" + ctx.actor.subject, rosterId, rev,
         )
         audit.record(j, AuditEntry(ActorRef("user:" + ctx.actor.subject), AuditActions.ROSTER_DRAFT_OPENED, ObjectRef("roster", rosterId), ctx.correlationId, mapOf("revision" to next, "based_on" to rev)))

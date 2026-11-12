@@ -133,7 +133,7 @@ internal class JdbcRosterPublication(
     /** Personen, deren Schichten sich gegenüber der vorherigen veröffentlichten Revision geändert haben (neu, entfallen oder inhaltlich verändert; alte und neue Person). */
     private fun changedPersons(j: JdbcOperations, rosterId: UUID, previous: Long?, draft: Long): Set<UUID> {
         fun load(rev: Long): Map<UUID, Fp> = j.query(
-            "SELECT COALESCE(s.lineage_id, s.id), s.driver_ref, md5(concat_ws('|', s.driver_ref, s.vehicle_id, s.starts_at, s.ends_at, s.shift_function, s.required_qualification, s.staffing_need, s.break_plan::text, s.depot_id, s.operator_id)) " +
+            "SELECT COALESCE(s.lineage_id, s.id), s.driver_ref, md5(concat_ws('|', s.driver_ref, s.vehicle_id, s.starts_at, s.ends_at, s.shift_function, s.required_qualification, s.staffing_need, s.break_plan::text, s.depot_id, s.operator_id, s.service_id)) " +
                 "FROM taktovia.staff_shift s WHERE s.roster_id = ? AND s.roster_revision = ? AND s.state <> 'CANCELLED'",
             { rs, _ -> rs.getObject(1, UUID::class.java) to Fp(rs.getObject(2, UUID::class.java), rs.getString(3)) }, rosterId, rev).toMap()
         val old = if (previous == null) emptyMap() else load(previous); val new = load(draft)

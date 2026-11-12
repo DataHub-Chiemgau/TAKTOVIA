@@ -15,6 +15,9 @@ import java.util.UUID
  * Datenbankabhängige Tests des Moduls `analytics` (WP-M4-45): Zugangsdaten aus der Umgebung; fehlen sie, werden die Tests übersprungen, mit `TAKTOVIA_REQUIRE_DB=true` (CI) schlagen sie fehl.
  * Die Faktenbasis läuft unter der Runtime-Rolle (RLS), Mandanten legt der Administrator an.
  */
+/** Nur die Faktenbasis (ohne Exportaufträge, WP-M4-45). */
+class Facts(val facts: de.taktovia.analytics.api.FactBase)
+
 class AnalyticsFixture : AutoCloseable {
     private fun env(k: String) = System.getenv(k)?.takeIf { it.isNotBlank() }
     init {
@@ -28,7 +31,7 @@ class AnalyticsFixture : AutoCloseable {
     val ds = pool("taktovia_runtime", env("TAKTOVIA_DB_RUNTIME_PASSWORD")!!, 24)
     private val admin = pool(env("TAKTOVIA_DB_ADMIN_USER") ?: "dev_admin", env("TAKTOVIA_DB_ADMIN_PASSWORD")!!, 1)
     val tx = TenantTransactions(ds)
-    val analytics: AnalyticsApi = AnalyticsApi.create(tx)
+    val analytics = Facts(AnalyticsApi.createFacts(tx))
     val mapper = JsonMapper.builder().build()
 
     fun tenant(): TenantId = UUID.randomUUID().let { t -> exec("INSERT INTO taktovia.tenant(id,name,status) VALUES (?,?,'ACTIVE')", t, "t-$t"); TenantId(t) }

@@ -19,6 +19,8 @@ import java.time.Clock
 
 /** Nur innerhalb des Moduls `staff-time` sichtbar (durch Architekturtest erzwungen). */
 internal object StafftimeServicesFactory {
+    fun impactProvider(): de.taktovia.config.api.ImpactProvider = ShiftStaffingImpactProvider()
+
     fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource,
         effects: de.taktovia.stafftime.api.DriverEventEffects = de.taktovia.stafftime.api.DriverEventEffects.NONE,
         planAckSink: de.taktovia.stafftime.api.PlanAckOverdueSink = de.taktovia.stafftime.api.PlanAckOverdueSink.NONE): StafftimeApi {
@@ -51,6 +53,7 @@ internal object StafftimeServicesFactory {
             override val rosterDepotAccess: de.taktovia.stafftime.api.RosterDepotAccess = JdbcRosterDepotAccess(ctxTx, audit)
             override val timeTargetActual: de.taktovia.stafftime.api.TimeTargetActual = JdbcTargetActual(ctxTx, workRules)
             override val driverReadPort: de.taktovia.platform.readports.DriverReadPort = JdbcDriverReadPort(ctxTx)
+            override val shiftStaffing: de.taktovia.platform.readports.ShiftStaffingReadPort = JdbcShiftStaffing(ctxTx)
         }
     }
 }

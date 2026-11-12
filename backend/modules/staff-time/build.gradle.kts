@@ -1,5 +1,6 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
+    implementation(project(":modules:config"))      // ImpactProvider-Port der Wirkungsanalyse (WP-M4-17), nur dessen api-Paket
     implementation("org.slf4j:slf4j-api")
     implementation("tools.jackson.core:jackson-databind")   // Pausenplan (WP-M4-03)
     testImplementation(libs.postgresql)

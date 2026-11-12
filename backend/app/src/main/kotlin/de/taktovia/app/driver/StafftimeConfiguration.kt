@@ -45,6 +45,12 @@ class StafftimeConfiguration {
         effects,   // Wirkung der Fahrerereignisse auf Buchung und Fahrt (WP-M3-29)
         planAckSink.getIfAvailable { de.taktovia.stafftime.api.PlanAckOverdueSink.NONE },   // Hinweis an die Leitstelle bei ausbleibender Bestätigung (WP-M3-27, Alarmdienst WP-M3-52)
     )
+
+    /** ImpactProvider „Schichten“ (WP-M4-17, Zusage an WP-M1-23): wird von `ConfigApi` für die Wirkungsanalyse vor Publikation gesammelt. */
+    @Bean fun shiftImpactProvider(): de.taktovia.config.api.ImpactProvider = StafftimeApi.impactProvider()
+
+    /** Leseport „Schichtbesetzung“ für Disposition und Einsatzfreigabe (WP-M4-17); die Disposition wertet ihn statt der Schicht-Fixture aus (WP-M4-65). */
+    @Bean fun shiftStaffingReadPort(api: StafftimeApi): de.taktovia.platform.readports.ShiftStaffingReadPort = api.shiftStaffing
 }
 
 /** Verbraucher des Ereignisses `booking.confirmed` für den Boarding-Code (WP-M3-30). Ohne Übergabeweg an den Fahrgast (OP-18) bleibt es beim Hash; die Anbindung an die Warteschlange folgt mit dem Übergabeweg. */

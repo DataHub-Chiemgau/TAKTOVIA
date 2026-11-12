@@ -65,8 +65,9 @@ interface RideOffers {
     fun release(ctx: RequestContext, offerId: UUID, ifMatch: Long): RideOfferHold
 
     companion object {
-        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: EffectiveConfig? = null, clock: Clock = Clock.systemUTC(), holdTtl: Duration = DEFAULT_HOLD_TTL): RideOffers =
-            RideOfferServicesFactory.offers(ctxTx, outbox, quotes, config, clock, holdTtl)
+        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: EffectiveConfig? = null, clock: Clock = Clock.systemUTC(), holdTtl: Duration = DEFAULT_HOLD_TTL,
+            staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): RideOffers =
+            RideOfferServicesFactory.offers(ctxTx, outbox, quotes, config, clock, holdTtl, staffing)
 
         /** Hold-Dauer 180 s (Planungsdefault, Kap. 02 §7.2; kein Katalogparameter, M2 OP-20). */
         val DEFAULT_HOLD_TTL: Duration = Duration.ofSeconds(180)

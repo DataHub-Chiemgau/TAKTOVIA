@@ -38,7 +38,9 @@ interface BookingdispatchApi {
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
             plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null }, insertionWorker: InsertionWorker? = null,
+            /** Leseport „Schichtbesetzung“ (WP-M4-17/-65): gesetzt wertet die Disposition die Besetzung daraus statt aus der Schicht-Fixture aus. */
+            staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null,
         ): BookingdispatchApi =
-            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis, plannedPositions, insertionWorker)
+            BookingServicesFactory.create(ctxTx, clock, outbox, routingWorkerUrl, routingBudgetMillis, plannedPositions, insertionWorker, staffing)
     }
 }

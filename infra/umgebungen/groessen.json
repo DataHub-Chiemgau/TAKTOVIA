@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "wp": "WP-M5-02",
+  "status": "vorläufig, D-05 offen (Hosting, Flottenzahl, Regionen); Größen sind Planungsannahmen des Plans, nicht freigegeben",
+  "hinweis": "Zielgrößen der Staging- und Performance-Umgebung nach Kap. 01 §1.8 und Kap. 08 §8.6. Das tatsächlich eingesetzte Gerät eines Messlaufs steht im Umgebungsprotokoll (Feld hardware, tests/performance/datagen/fill.py); die Übertragbarkeit der Messwerte auf Produktion ist bis D-05 offen. Keine Zugangsdaten.",
+  "referenzbestand": {
+    "mandanten": 2,
+    "fahrzeuge_je_mandant": 250,
+    "fahrer_je_mandant": 250,
+    "betriebstage": 3,
+    "buchungen_pro_tag_je_mandant": 30000,
+    "seed": 20261201,
+    "generator": "tests/performance/datagen/fill.py",
+    "quelle_der_zahlen": "Kap. 08 §8.6 (vorläufige Lastenheftziele: 250 Fahrzeuge, 30.000 Buchungen/Tag)"
+  },
+  "umgebungen": {
+    "staging": {
+      "zweck": "produktnahe Abnahme- und Integrationsumgebung",
+      "psp": "simulator",
+      "identitaet": "eigene Domäne (Realm taktovia-staging, siehe umgebungsmatrix.json)",
+      "komponenten": {
+        "app": {"instanzen": 2, "vcpu": 2, "ram_gb": 4},
+        "datenbank": {"instanzen": 1, "vcpu": 4, "ram_gb": 16, "speicher_gb": 200, "postgresql": "17 mit PostGIS 3.5"},
+        "broker": {"instanzen": 1, "vcpu": 2, "ram_gb": 4},
+        "cache": {"instanzen": 1, "vcpu": 1, "ram_gb": 2},
+        "routing": {"instanzen": 1, "vcpu": 4, "ram_gb": 8},
+        "lastgenerator": null
+      },
+      "datenbestand": {"mandanten": 2, "fahrzeuge_je_mandant": 250, "betriebstage": 3, "buchungen_pro_tag_je_mandant": 30000}
+    },
+    "performance": {
+      "zweck": "Lasttests mit produktionsähnlichem synthetischem Volumen, getrennt von Staging",
+      "psp": "simulator",
+      "identitaet": "eigene Domäne (Realm taktovia-performance, siehe umgebungsmatrix.json)",
+      "komponenten": {
+        "app": {"instanzen": 3, "vcpu": 4, "ram_gb": 8},
+        "datenbank": {"instanzen": 1, "vcpu": 8, "ram_gb": 32, "speicher_gb": 500, "postgresql": "17 mit PostGIS 3.5"},
+        "broker": {"instanzen": 1, "vcpu": 2, "ram_gb": 8},
+        "cache": {"instanzen": 1, "vcpu": 2, "ram_gb": 4},
+        "routing": {"instanzen": 2, "vcpu": 4, "ram_gb": 8},
+        "lastgenerator": {"instanzen": 1, "vcpu": 8, "ram_gb": 16}
+      },
+      "datenbestand": {"mandanten": 2, "fahrzeuge_je_mandant": 250, "betriebstage": 3, "buchungen_pro_tag_je_mandant": 30000}
+    }
+  }
+}

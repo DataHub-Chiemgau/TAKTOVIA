@@ -48,3 +48,4 @@ fact_offer;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Angebot
 fact_booking;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Buchung
 fact_stop_event;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Stopp- und Fahrerereignis
 fact_vehicle_state;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Fahrzeugzustand
+export_job;analytics;FREIGABE_UNVERAENDERLICH;;WP-M5-19;Exportauftrag: Auftragsdaten und beendetes Ergebnis unveraenderlich

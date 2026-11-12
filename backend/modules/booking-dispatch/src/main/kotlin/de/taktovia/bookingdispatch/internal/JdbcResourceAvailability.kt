@@ -9,6 +9,7 @@ import de.taktovia.bookingdispatch.api.VehicleResource
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.geo.GeoPoint
+import de.taktovia.platform.readports.ShiftStaffingReadPort
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
 import java.sql.Timestamp
@@ -20,7 +21,11 @@ import java.util.UUID
  * (read-only-Transaktion). Bis die führenden Module liefern (Fahrzeugstamm WP-M3-03, Pool WP-M3-06, Freigabe WP-M3-08, Schichten WP-M4-03/-65), stammen die Zeilen aus dem
  * Seed `tests/acceptance/fixtures/m2_referenzregion/seed.sql`; die Schnittstelle bleibt unverändert.
  */
-internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, private val clock: Clock) : ResourceAvailability {
+internal class JdbcResourceAvailability(
+    private val ctxTx: ContextTransactions, private val clock: Clock,
+    /** Leseport „Schichtbesetzung“ (WP-M4-17); gesetzt löst er die Schicht-Fixture ab (WP-M4-65): Besetzung kommt dann aus `staff-time`, nicht aus einem Join auf `staff_shift`. */
+    private val staffing: ShiftStaffingReadPort? = null,
+) : ResourceAvailability {
 
     private class Row(
         val vehicleId: UUID, val inPool: Boolean, val areaOk: Boolean, val capacity: String, val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean,
@@ -50,7 +55,8 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
      * mindestens zum Fensterende und wurde gegen die aktuelle `safety_revision` des Fahrzeugs ausgestellt. Gebiet (WP-M3-06): hat die gültige Zuordnung einen Gebietsbezug, muss die zum
      * Fensterbeginn gültige Revision der Gebietskette alle [locations] enthalten (ohne Ort: nicht prüfbar, also nicht zulässig). Alle Werte sind gebunden.
      */
-    private fun query(j: JdbcOperations, serviceId: UUID, vehicleId: UUID?, w: TimeWindow, locations: List<GeoPoint>): List<Row> {
+    private fun query(j: JdbcOperations, serviceId: UUID, vehicleId: UUID?, w: TimeWindow, locations: List<GeoPoint>, lock: Boolean = false): List<Row> {
+        if (staffing != null) return viaPort(j, staffing, serviceId, vehicleId, w, locations, lock)
         val from = Timestamp.from(w.from); val to = Timestamp.from(w.to)
         return j.query(
             "SELECT v.id, (p.id IS NOT NULL) AS in_pool, ($AREA_OK) AS area_ok, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, v.active, " +
@@ -68,20 +74,57 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
         )
     }
 
+    /**
+     * Besetzung aus dem Leseport „Schichtbesetzung“ (WP-M4-65): Fahrzeug-, Pool- und Gebietsstand in einem Statement ohne Schichtbezug, die Besetzung je Fahrzeug aus dem Port (in der Transaktion des Aufrufers,
+     * bei [lock] mit Sperre der deckenden Schicht), die Freigabe der gelieferten Schicht in einem weiteren Statement. Nur veröffentlichte, besetzte Schichten machen ein Fahrzeug einsetzbar.
+     */
+    private fun viaPort(j: JdbcOperations, port: ShiftStaffingReadPort, serviceId: UUID, vehicleId: UUID?, w: TimeWindow, locations: List<GeoPoint>, lock: Boolean): List<Row> {
+        val from = Timestamp.from(w.from)
+        val base = j.query(
+            "SELECT v.id, (p.id IS NOT NULL) AS in_pool, ($AREA_OK) AS area_ok, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, v.active " +
+                "FROM taktovia.vehicle v " +
+                "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +
+                "AND p.valid_from <= ? AND (p.valid_to IS NULL OR p.valid_to > ?) " +
+                "WHERE (CAST(? AS uuid) IS NULL AND p.id IS NOT NULL) OR v.id = CAST(? AS uuid) ORDER BY v.id",
+            { rs, _ -> Row(rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getBoolean("area_ok"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"), null, null, null, null, null) },
+            GeoPoint.toJsonArray(locations), from, from, serviceId, from, from, vehicleId, vehicleId,
+        )
+        if (base.isEmpty()) return base
+        // nur Fahrzeuge, die bis hierher einsetzbar sind, brauchen Besetzung und Freigabe
+        val candidates = base.filter { it.inPool && it.areaOk && it.active && !it.activeBlock }
+        val staffed = port.staffing(j, candidates.map { it.vehicleId }, w.from, w.to, lock).filterValues { it.staffed }
+        val releases = if (staffed.isEmpty()) emptyMap() else j.query(
+            "SELECT DISTINCT ON (rr.shift_id) rr.shift_id, rr.id, rr.valid_until FROM taktovia.resource_release rr JOIN taktovia.vehicle v ON v.tenant_id = rr.tenant_id AND v.id = rr.vehicle_id " +
+                "WHERE rr.shift_id = ANY (CAST(? AS uuid[])) AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision AND rr.vehicle_id = ANY (CAST(? AS uuid[])) " +
+                "ORDER BY rr.shift_id, rr.valid_until DESC, rr.id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to (rs.getObject(2, UUID::class.java) to rs.getTimestamp(3).toInstant()) },
+            "{" + staffed.values.joinToString(",") { it.shiftId.toString() } + "}", Timestamp.from(w.to), "{" + staffed.keys.joinToString(",") + "}",
+        ).toMap()
+        return base.map { r ->
+            val s = staffed[r.vehicleId] ?: return@map r
+            val rel = releases[s.shiftId]
+            Row(r.vehicleId, r.inPool, r.areaOk, r.capacity, r.activeBlock, r.safetyRevision, r.active, s.shiftId, s.startsAt, s.endsAt, rel?.first, rel?.second)
+        }
+    }
+
     override fun usableVehicles(ctx: RequestContext, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>): AvailabilitySnapshot {
         val rows = ctxTx.run(ctx, readOnly = true) { j -> query(j, serviceId, null, window, locations) }
         val verdicts = rows.map { it.verdict() }
         return AvailabilitySnapshot(
-            clock.instant(), SOURCE, serviceId, window,
+            clock.instant(), if (staffing != null) SOURCE_PORT else SOURCE, serviceId, window,
             verdicts.filterIsInstance<VehicleAvailability.Usable>().map { it.resource }, verdicts.filterIsInstance<VehicleAvailability.NotUsable>(),
         )
     }
 
     override fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>): VehicleAvailability =
-        ctxTx.run(ctx, readOnly = true) { j -> check(j, vehicleId, serviceId, window, locations) }
+        ctxTx.run(ctx, readOnly = true) { j -> verdict(j, vehicleId, serviceId, window, locations, lock = false) }
 
+    /** In der Transaktion des Aufrufers (Hold): die deckende Schicht wird gesperrt, damit ein paralleler Wegfall der Besetzung bis zum Ende dieser Transaktion wartet (nur mit Leseport, WP-M4-65). */
     override fun check(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>): VehicleAvailability =
-        query(jdbc, serviceId, vehicleId, window, locations).firstOrNull()?.verdict() ?: VehicleAvailability.NotUsable(vehicleId, Unusable.UNKNOWN_VEHICLE)
+        verdict(jdbc, vehicleId, serviceId, window, locations, lock = true)
+
+    private fun verdict(j: JdbcOperations, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>, lock: Boolean): VehicleAvailability =
+        query(j, serviceId, vehicleId, window, locations, lock).firstOrNull()?.verdict() ?: VehicleAvailability.NotUsable(vehicleId, Unusable.UNKNOWN_VEHICLE)
 
     override fun isAssigned(jdbc: JdbcOperations, vehicleId: UUID, serviceId: UUID, at: java.time.Instant): Boolean {
         val ts = Timestamp.from(at)
@@ -93,6 +136,8 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
 
     companion object {
         const val SOURCE = "FIXTURE"
+        /** Herkunft der Besetzung aus dem Leseport „Schichtbesetzung“ (WP-M4-65). */
+        const val SOURCE_PORT = "STAFFING_PORT"
 
         /**
          * Gebietsprüfung der Dienstzuordnung `p` (WP-M3-06, Planungsannahme PA-02/OP-25), dieselbe Regel wie im Pool-Port von `fleet-safety`: die zum Zeitpunkt t gültige Revision der Gebietskette

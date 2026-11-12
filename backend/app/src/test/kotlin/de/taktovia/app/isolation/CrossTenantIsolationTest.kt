@@ -149,8 +149,12 @@ class CrossTenantIsolationTest {
             env.server.ctx.getBean(CommunicationsupportApi::class.java).notifications
                 .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
         }.toString()
+        // Exportauftrag in B (WP-M5-19): Zeile per SQL; der Fremdzugriff aus A muss gleichartig 404 ergeben (kein Hinweis auf Existenz)
+        val exportJob = UUID.randomUUID().toString()
+        env.exec("INSERT INTO taktovia.export_job(tenant_id,id,kind,scope,requested_by,requester_scopes,requester_roles,idempotency_key,request_hash,as_of) VALUES (?,CAST(? AS uuid),'TIME_PROOF','{}'::jsonb,'user:fremd','{}','{}','iso-1',?,now())",
+            b.tenant.value, exportJob, "a".repeat(64))
         return Ids(mapOf(
-            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
+            "job_id" to exportJob, "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(), "booking_id" to booking,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
@@ -304,6 +308,7 @@ class CrossTenantIsolationTest {
             // Belegerfassung per Kamera (WP-M4-25): bearbeitete Ansicht
             "attachReceiptEditedView" to Probe("PUT", "/v1/expenses/receipts/{document_id}/edited-view", """{"mime":"image/jpeg","content_base64":"/9j/4AAQ"}""", true, role = "finance"),
             "getReceiptEditedView" to Probe("GET", "/v1/expenses/receipts/{document_id}/edited-view", role = "finance"),
+            "getReportJob" to Probe("GET", "/v1/reports/jobs/{job_id}", role = "staff_planning"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
             "getRoster" to Probe("GET", "/v1/rosters/{roster_id}", role = "planner"),

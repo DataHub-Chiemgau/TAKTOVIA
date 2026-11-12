@@ -22,10 +22,12 @@ import java.time.Duration
 
 /** Nur innerhalb des Moduls `booking-dispatch` sichtbar (durch Architekturtest erzwungen). */
 internal object BookingServicesFactory {
-    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null, executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE): Bookings {
+    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
+        executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
+        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): Bookings {
         val journeys = JourneyShells.create()
         val plans = JdbcRunPlans(ctxTx, outbox, clock)
-        val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock), outbox, clock, plans, journeys)
+        val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, plans, journeys)
         return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates)
     }
 
@@ -36,8 +38,9 @@ internal object BookingServicesFactory {
 
     fun bookingImpactProvider(): ImpactProvider = BookingImpactProvider()
 
-    fun create(ctxTx: ContextTransactions, clock: Clock, outbox: Outbox, routingWorkerUrl: String?, routingBudgetMillis: Long, plannedPositions: PlannedPositionSource, insertionWorker: InsertionWorker? = null): BookingdispatchApi {
-        val resources = JdbcResourceAvailability(ctxTx, clock)
+    fun create(ctxTx: ContextTransactions, clock: Clock, outbox: Outbox, routingWorkerUrl: String?, routingBudgetMillis: Long, plannedPositions: PlannedPositionSource, insertionWorker: InsertionWorker? = null,
+        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): BookingdispatchApi {
+        val resources = JdbcResourceAvailability(ctxTx, clock, staffing)
         val routingPort: RoutingPort? = routingWorkerUrl?.let { CachingRoutingPort(ctxTx, HttpRoutingClient(it, Duration.ofMillis(routingBudgetMillis))) }
         val runPlans = JdbcRunPlans(ctxTx, outbox, clock)
         val insertionService: InsertionService? = routingPort?.let { rp ->

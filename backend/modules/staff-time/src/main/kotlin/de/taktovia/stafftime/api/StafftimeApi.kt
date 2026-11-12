@@ -53,8 +53,13 @@ interface StafftimeApi {
 
     /** Planbestätigung des Fahrers und Hinweis bei ausbleibender Bestätigung (WP-M3-27). */
     val planAcks: DriverPlanAcks
+    /** Leseport „Schichtbesetzung“ für Disposition und Einsatzfreigabe (WP-M4-17). */
+    val shiftStaffing: de.taktovia.platform.readports.ShiftStaffingReadPort
 
     companion object {
+        /** ImpactProvider „Schichten“ für die Wirkungsanalyse (WP-M1-23, Zusage WP-M4-17): veröffentlichte Schichten des aktiven Mandanten, nur Verweise. */
+        fun impactProvider(): de.taktovia.config.api.ImpactProvider = StafftimeServicesFactory.impactProvider()
+
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
             workRules: WorkRuleSource = WorkRuleSource.DEFAULT, effects: DriverEventEffects = DriverEventEffects.NONE, planAckSink: PlanAckOverdueSink = PlanAckOverdueSink.NONE,

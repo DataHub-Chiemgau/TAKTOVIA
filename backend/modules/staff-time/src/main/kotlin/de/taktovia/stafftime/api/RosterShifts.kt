@@ -58,6 +58,8 @@ data class BreakPlan(val breaks: List<ShiftBreak>) {
 data class RosterShiftInput(
     val startsLocal: String?, val startsOffset: String?, val endsLocal: String?, val endsOffset: String?, val timezone: String?, val breakPlan: Any?,
     val operatorId: UUID, val depotId: UUID, val function: String?, val requiredQualification: String?, val staffingNeed: Int, val driverRef: UUID? = null, val vehicleId: UUID? = null,
+    /** Dienstbezug (geplanter Betrieb, WP-M4-17); optional. */
+    val serviceId: UUID? = null,
 )
 
 /** Schicht mit allen Planungsmerkmalen. [operatingDay] ist das lokale Datum des Beginns (Mitternachtsschicht: Tag des Beginns); [durationMinutes] die reale Dauer (DST-fest). */
@@ -67,6 +69,8 @@ data class RosterShiftView(
     val revision: Long, val createdBy: String, val createdAt: Instant,
     /** Konflikte dieser Schicht im Entwurf (Hinweis beim Speichern, WP-M4-07); `null` = nicht geprüft (Lesen, Listen). */
     val conflicts: List<RosterConflict>? = null,
+    /** Dienstbezug der Schicht (WP-M4-17). */
+    val serviceId: UUID? = null,
 ) {
     val startsLocal get() = startsAt.atZone(timezone).toLocalDateTime()
     val endsLocal get() = endsAt.atZone(timezone).toLocalDateTime()

@@ -79,3 +79,40 @@ data class PositionView(val vehicleId: UUID, val shiftId: UUID, val longitude: D
 interface PositionReadPort {
     fun latest(ctx: RequestContext, vehicleId: UUID): PositionView?
 }
+
+/** Grund, aus dem ein Fahrzeug im Zeitraum nicht personell besetzt ist (WP-M4-17); eine Entwurfsschicht ist für Leser des Ports nicht sichtbar und ergibt [NO_SHIFT]. */
+enum class StaffingGap {
+    /** Keine verbindliche Schicht mit diesem Fahrzeug (offene Fahrerschicht trägt kein Fahrzeug, Entwurf nicht sichtbar). */
+    NO_SHIFT,
+    /** Es gibt eine verbindliche Schicht des Fahrzeugs, sie deckt den angefragten Zeitraum aber nicht vollständig. */
+    OUTSIDE_PERIOD,
+    /** Die Schicht verlangt eine Qualifikation, die der zugeordnete Fahrer zu Schichtbeginn nicht (freigegeben und gültig) hat. */
+    QUALIFICATION_MISSING,
+}
+
+/**
+ * Besetzung eines Fahrzeugs im Zeitraum `[from, to]` (WP-M4-17, LH-6.23-SCH-007). [staffed] gilt nur, wenn eine **veröffentlichte** (oder bereits angetretene) Schicht mit zugeordnetem Fahrer
+ * den Zeitraum vollständig abdeckt; dann sind [shiftId], [shiftRevision], [driverRef], [rosterRevision], [depotId], [serviceId] (geplanter Betrieb) und, wenn die Schicht eine Qualifikation verlangt,
+ * [qualificationCode] und [qualificationRevision] gesetzt, sonst [gap]. „Besetzt“ ersetzt keine technische Freigabe (`resource_release`).
+ */
+data class ShiftStaffingView(
+    val vehicleId: UUID, val from: Instant, val to: Instant, val staffed: Boolean, val gap: StaffingGap?,
+    val shiftId: UUID? = null, val shiftRevision: Long? = null, val driverRef: UUID? = null, val rosterRevision: Long? = null, val depotId: UUID? = null, val serviceId: UUID? = null,
+    val qualificationCode: String? = null, val qualificationRevision: Long? = null, val startsAt: Instant? = null, val endsAt: Instant? = null,
+)
+
+/**
+ * Leseport „Schichtbesetzung“ des Moduls `staff-time` für Disposition und Einsatzfreigabe (WP-M4-17). Nur lesend, nur im Mandanten des Kontexts bzw. der übergebenen Transaktion (RLS); ein Fahrzeug eines
+ * fremden Mandanten liefert [StaffingGap.NO_SHIFT]. Die Variante mit [JdbcOperations] läuft in der Transaktion des Aufrufers (Hold: erneute Prüfung vor dem Commit), jeder Aufruf ist **ein** Statement und
+ * liefert damit nie einen Zwischenstand einer parallelen Zuweisung. Der Port erteilt keine Freigabe.
+ */
+interface ShiftStaffingReadPort {
+    fun staffing(ctx: RequestContext, vehicleId: UUID, from: Instant, to: Instant): ShiftStaffingView
+    /**
+     * In der Transaktion des Aufrufers. [lock]: die deckende Schicht wird `FOR SHARE` gesperrt (nur in schreibenden Transaktionen): eine parallele Wegnahme der Besetzung (Veröffentlichung einer neuen
+     * Revision, Entzug) wartet dann bis zum Ende der Transaktion des Holds; ein bereits committeter Wegfall wird ohnehin gesehen. Der Hold nutzt dies, damit nie eine Zusage nach dem Wirksamwerden entsteht.
+     */
+    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleId: UUID, from: Instant, to: Instant, lock: Boolean = false): ShiftStaffingView
+    /** Besetzung mehrerer Fahrzeuge in einem Statement; [vehicleIds] ohne Eintrag ergeben keine Zeile (nicht im Ergebnis). */
+    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleIds: Collection<UUID>, from: Instant, to: Instant, lock: Boolean = false): Map<UUID, ShiftStaffingView>
+}
