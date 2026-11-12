@@ -23,11 +23,11 @@ internal object RideOfferServicesFactory {
         quotes: FareQuotes?, policy: OfferPolicy, distance: DirectDistance,
     ): RideOfferRequests = JdbcRideOfferRequests(ctxTx, outbox, geo, config, clock, travelTime, gate, GeoEligibilityCheck(geo), quotes, policy, distance)
 
-    private fun holds(ctxTx: ContextTransactions, outbox: Outbox, clock: Clock) =
-        JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock), outbox, clock, JdbcRunPlans(ctxTx, outbox, clock))
+    private fun holds(ctxTx: ContextTransactions, outbox: Outbox, clock: Clock, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null) =
+        JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, JdbcRunPlans(ctxTx, outbox, clock))
 
-    fun offers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: EffectiveConfig?, clock: Clock, holdTtl: Duration): RideOffers =
-        JdbcRideOffers(ctxTx, outbox, quotes, holds(ctxTx, outbox, clock), config, clock, holdTtl)
+    fun offers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: EffectiveConfig?, clock: Clock, holdTtl: Duration, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): RideOffers =
+        JdbcRideOffers(ctxTx, outbox, quotes, holds(ctxTx, outbox, clock, staffing), config, clock, holdTtl)
 
     fun expiry(tx: TenantTransactions, outbox: Outbox, clock: Clock): HoldExpiry {
         // der Job braucht nur die Lock-und-Ablauf-Logik des Holds, keinen Leseport: Einsatzprüfung und Planung sind hier unbenutzt

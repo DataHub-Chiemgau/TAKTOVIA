@@ -126,8 +126,9 @@ interface Bookings {
     fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry>
 
     companion object {
-        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation)
+        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null,
+            staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, staffing)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()

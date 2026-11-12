@@ -37,15 +37,17 @@ class BookingConfiguration {
         RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
-    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments): Bookings =
-        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments))   // Void/Erstattung nach Storno (WP-M2-31)
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort): Bookings =
+        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing)   // Void/Erstattung nach Storno (WP-M2-31)
 
     /** Änderungsstrom der Planrevisionen für Fahrgast und Fahrer (WP-M2-28). */
     @Bean fun planChanges(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.PlanChanges = de.taktovia.bookingdispatch.api.PlanChanges.create(ctxTx)
 
     @Bean fun bookingImpactProvider(): ImpactProvider = Bookings.impactProvider()
 
-    @Bean fun rideOffers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): RideOffers = RideOffers.create(ctxTx, outbox, quotes, config.effective)
+    /** Hold-Pfad: die Besetzung kommt aus dem Leseport „Schichtbesetzung“ von `staff-time` (WP-M4-65), nicht aus der Schicht-Fixture. */
+    @Bean fun rideOffers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort): RideOffers =
+        RideOffers.create(ctxTx, outbox, quotes, config.effective, staffing = staffing)
 
     /**
      * Expiry-Job der Holds (WP-M2-22): läuft nur mit `taktovia.booking.hold-expiry.enabled=true` und einer [TenantSource]-Bean des Betriebs (Mandantenkontext je Lauf); der Takt ist

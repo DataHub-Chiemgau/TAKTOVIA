@@ -104,3 +104,8 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 ## Belegaufteilung, Fiskalperiode, Hauptbuchexport (WP-M4-35, -36, -37)
 
 `V40350` (Umlage: Trigger für „Summe = Basis“ und finale Unveränderlichkeit, `allocation_activation` = genau eine aktive Revision je Ereignis, Beleg-Split `expense_split`/`expense_split_line`), `V40360` (Überlappungsverbot der Fiskalperioden per Exclusion Constraint, Abschließender, Rolle der Journalzeile, Regelwerk der Gegenereignisse, geschützte Abschlussfelder), `V40370` (`ledger_export`, `ledger_export_line`, Exportstatus `NOT_EXPORTED`/`EXPORTED`/`CONFIRMED` nur im Exportjob über den Schalter `app.export_job`). Rechte: `R__runtime_grants_m4_35.sql`, `_m4_37.sql`. Vertrag: [m4-cluster-wave11-c5.md](../docs/umsetzungsplan/vertraege/m4-cluster-wave11-c5.md).
+
+## Dienstbezug und Übernahme der M3-Schichten (WP-M4-17, WP-M4-65)
+
+`V40170` ergänzt `staff_shift.service_id` (Dienstbezug, nullbar, Fremdschlüssel auf `service`) und Indizes für den Leseport „Schichtbesetzung“. `V40650` legt die Funktion `adopt_legacy_staff_shifts(tenant)` an und wendet sie einmal auf den Bestand an: Altzeilen aus M3 (`roster_id` NULL) kommen je Kalenderwoche in eine veröffentlichte Revision 1 des mandantenlokalen Übernahmedepots „Altbestand (Übernahme M3)“; `PLANNED` wird `PUBLISHED`, Kennungen und Freigaben bleiben. Die Migration hebt `FORCE ROW LEVEL SECURITY` für sechs Tabellen innerhalb ihrer Transaktion kurz auf (Eigentümer, kein BYPASSRLS) und stellt es wieder her; die Funktion ist für die Runtime-Rolle nicht ausführbar. Test: `db/tests/test_m4_65_schichtuebernahme.py`.
+

@@ -108,7 +108,11 @@ data class ShiftStaffingView(
  */
 interface ShiftStaffingReadPort {
     fun staffing(ctx: RequestContext, vehicleId: UUID, from: Instant, to: Instant): ShiftStaffingView
-    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleId: UUID, from: Instant, to: Instant): ShiftStaffingView
+    /**
+     * In der Transaktion des Aufrufers. [lock]: die deckende Schicht wird `FOR SHARE` gesperrt (nur in schreibenden Transaktionen): eine parallele Wegnahme der Besetzung (Veröffentlichung einer neuen
+     * Revision, Entzug) wartet dann bis zum Ende der Transaktion des Holds; ein bereits committeter Wegfall wird ohnehin gesehen. Der Hold nutzt dies, damit nie eine Zusage nach dem Wirksamwerden entsteht.
+     */
+    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleId: UUID, from: Instant, to: Instant, lock: Boolean = false): ShiftStaffingView
     /** Besetzung mehrerer Fahrzeuge in einem Statement; [vehicleIds] ohne Eintrag ergeben keine Zeile (nicht im Ergebnis). */
-    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleIds: Collection<UUID>, from: Instant, to: Instant): Map<UUID, ShiftStaffingView>
+    fun staffing(j: org.springframework.jdbc.core.JdbcOperations, vehicleIds: Collection<UUID>, from: Instant, to: Instant, lock: Boolean = false): Map<UUID, ShiftStaffingView>
 }
