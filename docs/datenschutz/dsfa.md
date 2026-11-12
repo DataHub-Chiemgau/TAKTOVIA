@@ -103,6 +103,9 @@ Jedes im Dateninventar als Bewegungs-/Mobilitätsdatum gekennzeichnete Feld ist 
 | `journey_leg.pickup_latest` | V-03 | Ort bzw. Zeitfenster der Fahrt des Fahrgasts | Löschklasse laut Inventar; Frist offen (D-11) |
 | `journey_leg.planned_arrival` | V-03 | Ort bzw. Zeitfenster der Fahrt des Fahrgasts | Löschklasse laut Inventar; Frist offen (D-11) |
 | `journey_leg.planned_departure` | V-03 | Ort bzw. Zeitfenster der Fahrt des Fahrgasts | Löschklasse laut Inventar; Frist offen (D-11) |
+| `position_sample.accuracy_m` | V-06 | Genauigkeit der Standortmessung (Tabelle seit WP-M3-02 angelegt, noch kein Datenfluss) | Löschklasse `LK_STANDORT`; Frist offen (D-11) |
+| `position_sample.measured_at` | V-06 | Messzeitpunkt der Position (Tabelle seit WP-M3-02 angelegt, noch kein Datenfluss) | Löschklasse `LK_STANDORT`; Frist offen (D-11) |
+| `position_sample.position` | V-06 | Position von Fahrzeug bzw. Fahrer (Tabelle seit WP-M3-02 angelegt, noch kein Datenfluss) | Löschklasse `LK_STANDORT`; Frist offen (D-11) |
 | `travel_attempt.coarse_destination` | V-04 | Auflösung grob (Zone), kein Zeitpunkt | Löschklasse laut Inventar; Frist offen (D-11) |
 | `travel_attempt.coarse_origin` | V-04 | Auflösung grob (Zone), kein Zeitpunkt | Löschklasse laut Inventar; Frist offen (D-11) |
 

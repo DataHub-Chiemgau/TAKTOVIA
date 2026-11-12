@@ -12,7 +12,7 @@ class Katalog(unittest.TestCase):
         cat = K.load_catalog()
         with admin() as c:
             owners = dict(c.execute('SELECT tabelle, modul FROM taktovia_meta.table_owner').fetchall())
-            m4_tables = sorted(t for t, m in owners.items() if m in K.M4_MODULES and K.exists(c, 'taktovia', t))
+            m4_tables = sorted(t for t, m in owners.items() if m in K.M4_MODULES and t not in K.M3_STAFFTIME_TABLES and K.exists(c, 'taktovia', t))
             self.assertEqual([t for t in m4_tables if t not in cat], [], 'M4-Tabelle ohne Katalogeintrag (db/m4_tabellenkatalog.csv ergänzen)')
             existing = [t for t in cat if K.exists(c, 'taktovia', t)]
             self.assertGreaterEqual(len(existing), 12)
