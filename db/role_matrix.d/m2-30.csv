@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+payment_operation;SELECT,INSERT;WP-M2-30: Zahlung <-> operation mit stabiler PSP-Kommandoreferenz, unveränderlich

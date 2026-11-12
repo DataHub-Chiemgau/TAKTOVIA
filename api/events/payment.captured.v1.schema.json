@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.captured.v1.schema.json",
+  "title": "Zahlung eingezogen (WP-M2-30)",
+  "description": "Payload von `payment.captured`. Aggregat: payment_intent (Revision nach dem Übergang nach CAPTURED); erst nach bestätigtem PSP-Stand. Geld als bigint in kleinster Einheit (Leitlinie 5). Keine Zahlungsmitteldaten und keine Personendaten im Payload (SEC-008, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "captured_minor",
+    "currency"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "captured_minor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  },
+  "examples": [
+    {
+      "payment_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "booking_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "captured_minor": 950,
+      "currency": "EUR"
+    }
+  ]
+}

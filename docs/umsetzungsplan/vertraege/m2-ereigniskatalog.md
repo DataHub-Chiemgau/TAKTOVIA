@@ -16,6 +16,12 @@ Outbox-Ereignisse der Module `booking-dispatch`, `fare-payment` und `communicati
 | `booking.cancelled` | `booking` / n | Storno mit Grund und Initiator | M4 (Stornoquote), Zahlung (Erstattung), Nachrichten | ja |
 | `dispatch.run_revised` | `vehicle_run` / n | jede Planrevision (Einfügung, Entnahme, manuelle Änderung, Neuplanung) | M3 (Fahrtenplan, Fahrerhinweise), Nachrichten (Zusageänderung) | ja |
 | `payment.state_changed` | `payment_intent` / n | Übergang nach [zahlung-ablauf.md](zustaende/zahlung-ablauf.md) | Buchung (Zahlungsvoraussetzung), M4 | `platform.statechanged` |
+| `payment.authorized` | `payment_intent` / n | Autorisierung bestätigt (Zustand `AUTHORIZED`, Voraussetzung der Buchungsbestätigung, WP-M2-30) | Buchung (Kopplung), M4 | ja |
+| `payment.authorization_failed` | `payment_intent` / n | Autorisierung abgelehnt oder aufgehoben (zu spät, Betrag abweichend, Buchung freigegeben, WP-M2-30) | Buchung (Freigabe), Nachrichten | ja |
+| `payment.captured` | `payment_intent` / n | Einzug vom PSP bestätigt (WP-M2-30) | M4 (Umsatz), Nachrichten | ja |
+| `payment.outcome_unknown` | `payment_intent` / n | PSP-Aufruf ohne bestimmtes Ergebnis oder Einzug als Klärfall (WP-M2-30) | Betreiberwarnung, M4 | ja |
+| `payment.refund_requested` | `refund_case` / n | Erstattung beauftragt, noch nicht vom PSP bestätigt (WP-M2-31) | Nachrichten (Erstattungshinweis), M4 | ja |
+| `payment.refund_failed` | `refund_case` / n | Erstattung vom PSP definitiv abgelehnt; Buchung bleibt storniert, Betrag bleibt offen (WP-M2-31) | Betreiberwarnung | ja |
 | `payment.refund_recorded` | `payment_intent` / n | Erstattung bestätigt | M4 (Umsatz), Nachrichten | ja |
 | `payment.provider_event_received` | `payment_event` / 1 | signiertes PSP-Ereignis dauerhaft gespeichert (WP-M2-29), je Ereignis-ID des Providers genau einmal; kein Zahlstatus-Übergang | Zahlungsautomat (WP-M2-30, Abgleich per Statusabfrage) | ja |
 | `communication.notification_sent` | `notification` / n | Zustellung bestätigt | Betreiberansicht | ja |

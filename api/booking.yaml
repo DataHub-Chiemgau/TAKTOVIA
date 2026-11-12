@@ -988,6 +988,8 @@ components:
           $ref: '#/components/schemas/RideAssistanceCodes'
         promise:
           $ref: '#/components/schemas/RidePromise'
+        payment:
+          $ref: '#/components/schemas/RidePayment'
         revision:
           type: integer
           format: int64
@@ -1003,6 +1005,54 @@ components:
       - passengers
       - wheelchair_spaces
       - promise
+      - revision
+    RidePayment:
+      type: object
+      additionalProperties: false
+      description: 'Zahlungsblock (WP-M2-30, LH-6.10-PAY-004): UI-Projektion des Zahlstatus, **getrennt** vom Buchungsstatus `state` gespeichert und abgerufen. Interne `CAPTURE_UNKNOWN`/`RECONCILING`
+        und eine unbestimmte Autorisierung erscheinen als `UNKNOWN` (Kap. 05 §5.9); `refund_pending` ist eine beauftragte, noch nicht bestätigte Erstattung (WP-M2-31). Fehlt der Block, wurde keine Zahlung begonnen.'
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        status:
+          type: string
+          enum:
+          - CREATED
+          - REQUIRES_ACTION
+          - AUTHORIZED
+          - AUTHORIZATION_FAILED
+          - CAPTURE_PENDING
+          - CAPTURED
+          - VOID_PENDING
+          - VOIDED
+          - PARTIALLY_REFUNDED
+          - REFUNDED
+          - UNKNOWN
+        authorized:
+          $ref: common.yaml#/components/schemas/Money
+        captured:
+          $ref: common.yaml#/components/schemas/Money
+        refunded:
+          $ref: common.yaml#/components/schemas/Money
+        refund_pending:
+          $ref: common.yaml#/components/schemas/Money
+        failure_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{0,63}$
+          description: Stabiler Fehlercode (z. B. `DECLINED`, `AUTHORIZATION_EXPIRED`, `CAPTURE_DECLINED`); nie Freitext.
+        operation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - status
+      - authorized
+      - captured
+      - refunded
       - revision
     RidePromise:
       type: object

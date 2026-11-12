@@ -9896,7 +9896,25 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "authorize_by",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "authorized_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "booking_id",
           "personenbezogen": "nein",
           "zweck": "ZAHLUNGSABWICKLUNG",
           "rechtsgrundlage": "",
@@ -9914,7 +9932,34 @@
           "bemerkung": ""
         },
         {
+          "spalte": "coupled_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "currency",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "failure_code",
           "personenbezogen": "nein",
           "zweck": "ZAHLUNGSABWICKLUNG",
           "rechtsgrundlage": "",
@@ -9941,6 +9986,24 @@
           "bemerkung": ""
         },
         {
+          "spalte": "merchant_ref",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "payment_method_ref",
+          "personenbezogen": "ja",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "vom PSP gelieferter Verweis auf das Zahlungsmittel, nie Kartendaten; Schutzklasse vorläufig (SEC-008)"
+        },
+        {
           "spalte": "provider",
           "personenbezogen": "nein",
           "zweck": "ZAHLUNGSABWICKLUNG",
@@ -9959,7 +10022,34 @@
           "bemerkung": "Referenz beim Zahlungsdienstleister; Schutzklasse vorläufig, Zuordnung offen (SEC-008)"
         },
         {
+          "spalte": "psp_payment_id",
+          "personenbezogen": "ja",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "Zahlungskennung beim Zahlungsdienstleister; Schutzklasse wie provider_ref (vorläufig, SEC-008)"
+        },
+        {
+          "spalte": "quote_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "refunded_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "requested_minor",
           "personenbezogen": "nein",
           "zweck": "ZAHLUNGSABWICKLUNG",
           "rechtsgrundlage": "",
@@ -9977,7 +10067,105 @@
           "bemerkung": ""
         },
         {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "state",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "payment_operation",
+      "aggregat": "Zahlungsoperation (WP-M2-30)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "Verknüpfung Zahlung und operation, nur Referenzen und Beträge",
+      "spalten": [
+        {
+          "spalte": "action",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "amount_minor",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "command_ref",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "operation_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "payment_id",
+          "personenbezogen": "nein",
+          "zweck": "ZAHLUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "seq",
           "personenbezogen": "nein",
           "zweck": "ZAHLUNGSABWICKLUNG",
           "rechtsgrundlage": "",

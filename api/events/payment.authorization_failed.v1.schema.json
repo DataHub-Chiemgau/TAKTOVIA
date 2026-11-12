@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.authorization_failed.v1.schema.json",
+  "title": "Autorisierung fehlgeschlagen (WP-M2-30)",
+  "description": "Payload von `payment.authorization_failed`. Aggregat: payment_intent. Die Autorisierung wurde abgelehnt (`DECLINED`, `REJECTED`) oder wird aufgehoben, weil sie zu spät (`AUTHORIZATION_EXPIRED`, SCA länger als der Hold), mit abweichendem Betrag (`AMOUNT_MISMATCH`) oder für eine freigegebene Buchung (`BOOKING_RELEASED`) eintraf; die Buchung wird nicht bestätigt. Keine Zahlungsmitteldaten und keine Personendaten im Payload (SEC-008, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "failure_code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "failure_code": {
+      "enum": [
+        "DECLINED",
+        "REJECTED",
+        "AUTHORIZATION_EXPIRED",
+        "AMOUNT_MISMATCH",
+        "BOOKING_RELEASED"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "payment_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "booking_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "failure_code": "DECLINED"
+    }
+  ]
+}

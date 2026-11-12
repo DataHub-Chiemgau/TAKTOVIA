@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -1073,6 +1073,19 @@ export interface RideBooking {
   wheelchair_spaces: number;
   assistance_codes?: RideAssistanceCodes;
   promise: RidePromise;
+  payment?: RidePayment;
+  revision: number;
+}
+
+export interface RidePayment {
+  id: UUID;
+  status: 'CREATED' | 'REQUIRES_ACTION' | 'AUTHORIZED' | 'AUTHORIZATION_FAILED' | 'CAPTURE_PENDING' | 'CAPTURED' | 'VOID_PENDING' | 'VOIDED' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'UNKNOWN';
+  authorized: Money;
+  captured: Money;
+  refunded: Money;
+  refund_pending?: Money;
+  failure_code?: string;
+  operation_id?: UUID;
   revision: number;
 }
 
@@ -2606,6 +2619,11 @@ export interface PassengerPage {
   items: Passenger[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export interface StartPaymentRequest {
+  payment_method_ref: string;
+  amount: Money;
 }
 
 export interface ProviderEvent {
@@ -4574,6 +4592,20 @@ export interface Operations {
     body: ProviderEvent;
     response: ProviderEventReceipt;
   };
+  startBookingPayment: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: StartPaymentRequest;
+    response: Operation;
+  };
+  returnBookingPayment: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: undefined;
+    response: Operation;
+  };
   requestReceiptUpload: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -5146,6 +5178,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
+  startBookingPayment: { method: 'POST', path: '/v1/bookings/{booking_id}/payment', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [202, 400, 401, 403, 404, 409, 422, 429, 503] },
+  returnBookingPayment: { method: 'POST', path: '/v1/bookings/{booking_id}/payment/return', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['rides:write'], statuses: [202, 400, 401, 403, 404, 409, 429, 503] },
   requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

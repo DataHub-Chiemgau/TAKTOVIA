@@ -4,7 +4,17 @@ import de.taktovia.adapters.psp.api.PspAdapter
 import de.taktovia.farepayment.api.ProviderEventConfig
 import de.taktovia.farepayment.api.ProviderEventKey
 import de.taktovia.farepayment.api.ProviderEventKeys
+import de.taktovia.farepayment.api.FareQuotes
+import de.taktovia.farepayment.api.PaymentConfig
+import de.taktovia.farepayment.api.PaymentGateway
+import de.taktovia.farepayment.api.Payments
 import de.taktovia.farepayment.api.ProviderEvents
+import de.taktovia.app.payment.PaymentBookingCoupling
+import de.taktovia.app.payment.PspPaymentGateway
+import de.taktovia.bookingdispatch.api.Bookings
+import de.taktovia.platform.context.ContextTransactions
+import de.taktovia.platform.operation.OperationHandler
+import de.taktovia.platform.outbox.TenantSource
 import de.taktovia.platform.audit.SecurityEventPort
 import de.taktovia.platform.outbox.Outbox
 import de.taktovia.platform.secret.SecretRef
@@ -61,9 +71,43 @@ class PaymentConfiguration {
     }
 
     @Bean
-    fun providerEvents(tx: TenantTransactions, keys: ProviderEventKeys, security: SecurityEventPort, outbox: Outbox, env: Environment): ProviderEvents =
+    fun providerEvents(tx: TenantTransactions, keys: ProviderEventKeys, security: SecurityEventPort, outbox: Outbox, env: Environment, payments: Payments): ProviderEvents =
         ProviderEvents.create(tx, keys, security, outbox, ProviderEventConfig(maxBodyBytes = env.getProperty("taktovia.payments.max-event-bytes", Int::class.java, 64 * 1024),
-            tolerance = Duration.ofSeconds(env.getProperty("taktovia.payments.timestamp-tolerance-seconds", Long::class.java, 300))))
+            tolerance = Duration.ofSeconds(env.getProperty("taktovia.payments.timestamp-tolerance-seconds", Long::class.java, 300))), payments = payments)
+
+    /**
+     * Zahlungsautomat (WP-M2-30). Planungsdefaults: `taktovia.payments.authorization-window-seconds` 180 (Hold-Dauer), `taktovia.payments.operation-deadline-minutes` 15,
+     * `taktovia.payments.settlement-poll-seconds` 30; `taktovia.psp.provider` ist der Provider der Zahlungen (ohne Angabe `unconfigured`: dann gibt es keinen Adapter und keine Handler).
+     */
+    @Bean
+    fun payments(tx: TenantTransactions, ctxTx: ContextTransactions, quotes: FareQuotes, outbox: Outbox, env: Environment): Payments =
+        Payments.create(tx, ctxTx, quotes, outbox, PaymentConfig(
+            provider = env.getProperty("taktovia.psp.provider", "unconfigured"),
+            authorizationWindow = Duration.ofSeconds(env.getProperty("taktovia.payments.authorization-window-seconds", Long::class.java, 180)),
+            operationDeadline = Duration.ofMinutes(env.getProperty("taktovia.payments.operation-deadline-minutes", Long::class.java, 15)),
+            settlementPoll = Duration.ofSeconds(env.getProperty("taktovia.payments.settlement-poll-seconds", Long::class.java, 30)),
+        ))
+
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url")
+    fun paymentGateway(psp: PspAdapter): PaymentGateway = PspPaymentGateway(psp)
+
+    // Die Handler der Zahlungsoperationen: nur mit PSP-Adapter. Der Operation-Runner (OperationConfiguration) sammelt alle OperationHandler-Beans.
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun authorizePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "AUTHORIZE_PAYMENT" }
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun capturePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "CAPTURE_PAYMENT" }
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun voidPaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "VOID_PAYMENT" }
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun reconcilePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "RECONCILE_PAYMENT" }
+
+    @Bean
+    fun paymentBookingCoupling(tx: TenantTransactions, payments: Payments, bookings: Bookings, tenants: ObjectProvider<TenantSource>, env: Environment): PaymentBookingCoupling {
+        val coupling = PaymentBookingCoupling(tx, payments, bookings)
+        val source = tenants.getIfAvailable()
+        if (source != null && env.getProperty("taktovia.payments.coupling-enabled", Boolean::class.java, false)) {
+            val poll = env.getProperty("taktovia.payments.coupling-poll-seconds", Long::class.java, 2)
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "payment-coupling").also { it.isDaemon = true } }
+                .scheduleWithFixedDelay({ source.tenants().distinct().forEach { t -> runCatching { coupling.runTenant(t) }.onFailure { log.warn("Zahlungskopplung: Lauf fehlgeschlagen ({})", it.javaClass.simpleName) } } }, poll, poll, java.util.concurrent.TimeUnit.SECONDS)
+        }
+        return coupling
+    }
 
     @Bean @ConditionalOnProperty("taktovia.psp.base-url")
     fun pspAdapter(env: Environment, secrets: ObjectProvider<SecretResolver>): PspAdapter {

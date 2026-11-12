@@ -3,9 +3,12 @@ package de.taktovia.bookingdispatch.internal
 import de.taktovia.bookingdispatch.api.BookingDemand
 import de.taktovia.bookingdispatch.api.BookingDetail
 import de.taktovia.bookingdispatch.api.BookingHistoryEntry
+import de.taktovia.bookingdispatch.api.BookingPaymentContext
 import de.taktovia.bookingdispatch.api.BookingReason
 import de.taktovia.bookingdispatch.api.CancelBooking
 import de.taktovia.bookingdispatch.api.CancelResult
+import de.taktovia.bookingdispatch.api.CouplingOutcome
+import de.taktovia.platform.tenant.TenantId
 import de.taktovia.bookingdispatch.api.CauseClass
 import de.taktovia.bookingdispatch.api.CancellationPolicy
 import de.taktovia.bookingdispatch.api.PlanStop
@@ -113,6 +116,14 @@ internal class JdbcBookings(
 
     // ---- Lesen ------------------------------------------------------------------------------------------------------------------------
 
+    override fun paymentContext(ctx: RequestContext, bookingId: UUID): BookingPaymentContext = ctxTx.run(ctx, readOnly = true) { j ->
+        val r = row(j, bookingId) ?: throw ProblemException.notFound()
+        authorize(j, ctx, r, if (isPassengerView(ctx)) passengerOf(j, ctx) else null)
+        val journeyId = j.query("SELECT journey_id FROM taktovia.booking WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, bookingId).firstOrNull() ?: throw ProblemException.notFound()
+        val quoteId = offerOfHold(j, r.holdId, lock = false)?.quoteId ?: throw ProblemException.notFound()
+        BookingPaymentContext(r.id, r.serviceId, journeyId, quoteId, r.state, r.createdAt)
+    }
+
     private class Row(
         val id: UUID, val bookingNo: String, val serviceId: UUID, val holdId: UUID, val state: String, val revision: Long, val createdAt: Instant, val snapshot: String, val passengerId: UUID?,
         val cancelReason: String?, val cancelCause: String?,
@@ -206,18 +217,54 @@ internal class JdbcBookings(
             if (clock.instant().isAfter(pickup.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))))
                 throw ProblemException(ErrorCode.CANCEL_DEADLINE_EXPIRED, "Die Stornofrist von ${policy.deadlineMin} Minuten vor der Abholung ist abgelaufen.")
         }
-        val confirmed = cur.first == BookingState.CONFIRMED.name
-        transitions.apply(j, ctx, bookingId, if (confirmed) BookingState.CANCEL_PENDING else BookingState.COMPENSATING, cmd.reason, cmd.ifMatch)
+        val planRevision = cancelLocked(j, Caller.of(ctx), actor.name, bookingId, holdId, runId, cur.first == BookingState.CONFIRMED.name, cmd.reason, cmd.ifMatch)
+        CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, planRevision)
+    }
+
+    /**
+     * Gemeinsamer Kern des Stornos unter den gehaltenen Sperren (Umlauf, Hold, Buchung): Übergang, Freigabe der Reservierung, Plan ohne die Buchung, Ereignis `booking.cancelled`. Liefert die neue
+     * Planrevision. [initiator] ist `PASSENGER`, `OPERATOR` oder `SYSTEM`.
+     */
+    private fun cancelLocked(j: JdbcOperations, caller: Caller, initiator: String, bookingId: UUID, holdId: UUID, runId: UUID, confirmed: Boolean, reason: BookingReason, revision: Long): Long? {
+        transitions.apply(j, caller, bookingId, if (confirmed) BookingState.CANCEL_PENDING else BookingState.COMPENSATING, reason, revision)
         // Reservierung freigeben: die Kapazität zählt auf allen Abschnitten und Dimensionen wieder (Belegung = CONSUMED plus gültiges HELD)
         check(j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'CONSUMED'", holdId) == 1) { "Reservierung der Buchung nicht freigebbar" }
-        val planRevision = removeFromPlan(j, ctx, runId, bookingId)
-        transitions.apply(j, ctx, bookingId, BookingState.CANCELED, if (confirmed) BookingReason.CANCEL_COMPLETED else BookingReason.COMPENSATION_DONE, null)
-        val revision = cur.second + 2
-        val initiator = actor.name
-        outbox.append(j, OutboxEvent(bookingId, revision, "booking.cancelled", linkedMapOf(
-            "booking_id" to bookingId.toString(), "reason" to cmd.reason.name, "reason_code" to cmd.reason.name, "cause_class" to cmd.reason.cause!!.name, "initiator" to initiator, "released_hold_id" to holdId.toString(),
-        ), clock.instant(), correlationId = ctx.correlationId))
-        CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, planRevision)
+        val planRevision = removeFromPlan(j, caller.correlationId, runId, bookingId)
+        transitions.apply(j, caller, bookingId, BookingState.CANCELED, if (confirmed) BookingReason.CANCEL_COMPLETED else BookingReason.COMPENSATION_DONE, null)
+        outbox.append(j, OutboxEvent(bookingId, revision + 2, "booking.cancelled", linkedMapOf(
+            "booking_id" to bookingId.toString(), "reason" to reason.name, "reason_code" to reason.name, "cause_class" to reason.cause!!.name, "initiator" to initiator, "released_hold_id" to holdId.toString(),
+        ), clock.instant(), correlationId = caller.correlationId))
+        return planRevision
+    }
+
+    // ---- Zahlungskopplung ohne Personenkontext (WP-M2-30) --------------------------------------------------------------------------------
+
+    private val coupling = Caller.system("payment-coupling")
+
+    override fun confirmAfterPayment(tenant: TenantId, bookingId: UUID): CouplingOutcome = ctxTx.runSystem(tenant) { j ->
+        val cur = j.query("SELECT state FROM taktovia.booking WHERE id = ? AND booking_no IS NOT NULL FOR UPDATE", { rs, _ -> rs.getString(1) }, bookingId).firstOrNull() ?: return@runSystem CouplingOutcome.NOT_APPLICABLE
+        when (cur) {
+            BookingState.CONFIRMING.name -> { transitions.apply(j, coupling, bookingId, BookingState.CONFIRMED, BookingReason.PAYMENT_AUTHORIZED, null); CouplingOutcome.APPLIED }
+            BookingState.CONFIRMED.name -> CouplingOutcome.ALREADY_APPLIED   // Wiederaufnahme nach Abbruch
+            else -> CouplingOutcome.NOT_APPLICABLE                           // storniert, abgeschlossen oder in Klärung: nie durch die Zahlung bestätigt
+        }
+    }
+
+    override fun cancelAfterPaymentFailure(tenant: TenantId, bookingId: UUID): CouplingOutcome = ctxTx.runSystem(tenant) { j ->
+        val pre = row(j, bookingId) ?: return@runSystem CouplingOutcome.NOT_APPLICABLE
+        // Sperren in derselben Reihenfolge wie beim Storno: Umlauf, Hold, Buchung
+        val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, pre.holdId).first()
+        j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
+        j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, pre.holdId)
+        val cur = j.query("SELECT state, revision, cancel_reason_code FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> Triple(rs.getString(1), rs.getLong(2), rs.getString(3)) }, bookingId).first()
+        when {
+            cur.first == BookingState.CONFIRMING.name -> {
+                cancelLocked(j, coupling, "SYSTEM", bookingId, pre.holdId, runId, false, BookingReason.PAYMENT_FAILED, cur.second)
+                CouplingOutcome.APPLIED
+            }
+            cur.first == BookingState.CANCELED.name && cur.third == BookingReason.PAYMENT_FAILED.name -> CouplingOutcome.ALREADY_APPLIED
+            else -> CouplingOutcome.NOT_APPLICABLE   // eine bestätigte Buchung wird durch einen Zahlungsfehler nie storniert
+        }
     }
 
     /**
@@ -225,7 +272,7 @@ internal class JdbcBookings(
      * da waren, entfallen; die Planzeiten der übrigen Stopps bleiben unverändert (zugesagte Fenster bleiben eingehalten), die Fahrzeit zum Folgestopp wird um die entfallene Teilstrecke erweitert
      * (Obergrenze; eine Neuoptimierung gehört nicht zum Umfang). Liefert die neue Revision oder `null`.
      */
-    private fun removeFromPlan(j: JdbcOperations, ctx: RequestContext, runId: UUID, bookingId: UUID): Long? {
+    private fun removeFromPlan(j: JdbcOperations, correlationId: UUID, runId: UUID, bookingId: UUID): Long? {
         val run = j.query("SELECT revision, state FROM taktovia.vehicle_run WHERE id = ?", { rs, _ -> rs.getLong(1) to RunState.valueOf(rs.getString(2)) }, runId).first()
         if (run.second !in RunState.PLAN_CHANGEABLE) return null
         val plan = plans.planIn(j, runId, run.first)
@@ -243,7 +290,7 @@ internal class JdbcBookings(
             } else kept += stripped
         }
         val renumbered = kept.mapIndexed { i, s -> s.copy(seq = i, legDurationSec = if (i == kept.lastIndex) null else s.legDurationSec, legDistanceM = if (i == kept.lastIndex) null else s.legDistanceM) }
-        return plans.appendIn(j, ctx, runId, run.first, renumbered, RevisionCause.BOOKING_REMOVED, listOf(bookingId)).revision
+        return plans.appendIn(j, correlationId, runId, run.first, renumbered, RevisionCause.BOOKING_REMOVED, listOf(bookingId)).revision
     }
 
     // ---- Zustandsübergang und Historie (WP-M2-25) --------------------------------------------------------------------------------------

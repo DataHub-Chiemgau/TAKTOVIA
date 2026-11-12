@@ -1,0 +1,21 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+payment_intent;booking_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;service_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;coupled_at;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;quote_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;requested_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;merchant_ref;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;psp_payment_id;ja;ZAHLUNGSABWICKLUNG;ART6_1_B_VERTRAG;BELEGE_JOURNAL;LK_BELEG;"Zahlungskennung beim Zahlungsdienstleister; Schutzklasse wie provider_ref (vorläufig, SEC-008)"
+payment_intent;payment_method_ref;ja;ZAHLUNGSABWICKLUNG;ART6_1_B_VERTRAG;BELEGE_JOURNAL;LK_BELEG;"vom PSP gelieferter Verweis auf das Zahlungsmittel, nie Kartendaten; Schutzklasse vorläufig (SEC-008)"
+payment_intent;authorize_by;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;failure_code;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;created_at;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_intent;updated_at;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;tenant_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;operation_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;payment_id;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;action;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;seq;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;amount_minor;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;command_ref;nein;ZAHLUNGSABWICKLUNG;;;;
+payment_operation;created_at;nein;ZAHLUNGSABWICKLUNG;;;;

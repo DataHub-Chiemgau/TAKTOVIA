@@ -28,7 +28,7 @@ import java.util.UUID
 
 internal class JdbcProviderEvents(
     private val tx: TenantTransactions, private val keys: ProviderEventKeys, private val security: SecurityEventPort, private val outbox: Outbox,
-    private val config: ProviderEventConfig, private val clock: Clock,
+    private val config: ProviderEventConfig, private val clock: Clock, private val payments: de.taktovia.farepayment.api.Payments? = null,
 ) : ProviderEvents {
     private val log = LoggerFactory.getLogger("taktovia.payment.provider-events")
     private val mapper = JsonMapper.builder().build()
@@ -69,6 +69,8 @@ internal class JdbcProviderEvents(
             if (inserted == 1) {
                 // die fachliche Wirkung (internes Ereignis für den Zahlungsautomaten, WP-M2-30) in derselben Transaktion: genau einmal je Ereignis-ID
                 if (kind != ProviderEventKind.UNMAPPED) outbox.append(j, OutboxEvent(id, 1, PROVIDER_EVENT_RECEIVED, payload(provider, e, kind), now))
+                // Zahlungsautomat: ein Abgleich der Zahlung (Statusabfrage beim PSP); der Payload selbst löst nie einen Übergang aus (Leitlinie 6)
+                if (kind != ProviderEventKind.UNMAPPED) payments?.reactToProviderEventIn(j, provider, e.ref)
                 log.info("PSP-Ereignis gespeichert provider={} kind={}", provider, kind)
                 ProviderEventResult.Accepted(e.eventId)
             } else {

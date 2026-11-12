@@ -101,6 +101,8 @@ holdRideOffer;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
 releaseHold;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
 confirmBooking;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
 cancelBooking;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
+startBookingPayment;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
+returnBookingPayment;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
 getRideOffer;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
 getBooking;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
 listBookings;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N

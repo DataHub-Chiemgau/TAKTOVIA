@@ -1,6 +1,9 @@
 package de.taktovia.farepayment.internal
 
 import de.taktovia.farepayment.api.FareQuotes
+import de.taktovia.farepayment.api.PaymentConfig
+import de.taktovia.farepayment.api.Payments
+import de.taktovia.platform.tenant.TenantTransactions
 import de.taktovia.farepayment.api.Tariffs
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.authz.ObjectAuthorizer
@@ -14,4 +17,6 @@ internal object FarepaymentServicesFactory {
 
     fun quotes(ctxTx: ContextTransactions, tariffs: Tariffs, clock: Clock): FareQuotes =
         JdbcFareQuotes(ctxTx, tariffs as? JdbcTariffs ?: throw IllegalArgumentException("Quote-Bildung braucht die Tarifverwaltung dieses Moduls"), clock)
+
+    fun payments(tx: TenantTransactions, ctxTx: ContextTransactions, quotes: FareQuotes, outbox: Outbox, config: PaymentConfig, clock: Clock): Payments = JdbcPayments(tx, ctxTx, quotes, outbox, config, clock)
 }

@@ -62,8 +62,109 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/bookings/{booking_id}/payment:
+    post:
+      summary: Zahlungsmittel für die Buchung wählen und Zahlung beginnen
+      operationId: startBookingPayment
+      description: 'Zahlungsauswahl im Checkout (WP-M2-30, LH-6.10-PAY-004). Autorisiert wird **exakt** der Preis der Quote der Buchung (`pay_at_platform_minor`); ein abweichender
+        Betrag ist 409 `REQUOTE_REQUIRED`. Die Buchung muss `CONFIRMING` sein und die Zahlungsfrist (Hold-Dauer) darf nicht abgelaufen sein (409 `HOLD_EXPIRED`); für eine
+        Buchung gibt es höchstens eine wirksame Zahlung (eine Wiederholung liefert die laufende Operation). 202: die Autorisierung läuft als Operation (`GET /v1/operations/{operation_id}`),
+        den Zahlstatus liefert `payment` in `GET /v1/bookings/{id}`. `payment_method_ref` ist ein vom PSP gelieferter Verweis, nie Kartendaten (SEC-008).'
+      security:
+      - oidc:
+        - rides:write
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartPaymentRequest'
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/bookings/{booking_id}/payment/return:
+    post:
+      summary: Rückkehr aus der Kundenauthentifizierung (SCA) melden
+      operationId: returnBookingPayment
+      description: 'Der Kunde kehrt aus SCA/3-D-Secure zurück (WP-M2-30). Die Rückkehr ändert den Zahlstatus **nicht**: sie stellt einen Abgleich ein (Statusabfrage beim PSP), erst der
+        verifizierte PSP-Status löst den Übergang aus (Leitlinie 6). Idempotent und mehrfach zulässig (doppelte Rückkehr: höchstens ein noch nicht begonnener Abgleich). Eine
+        nachträglich erfolgreiche Autorisierung nach Ablauf der Zahlungsfrist wird aufgehoben, die Buchung nicht bestätigt.'
+      security:
+      - oidc:
+        - rides:write
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '202':
+          $ref: common.yaml#/components/responses/OperationAccepted
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    StartPaymentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        payment_method_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Vom Zahlungsdienstleister gelieferter Verweis auf das Zahlungsmittel (Token), nie Kartendaten.
+        amount:
+          $ref: common.yaml#/components/schemas/Money
+      required:
+      - payment_method_ref
+      - amount
+      examples:
+      - payment_method_ref: pm_ok
+        amount:
+          amount_minor: 950
+          currency: EUR
+          exponent: 2
     ProviderEvent:
       type: object
       additionalProperties: false

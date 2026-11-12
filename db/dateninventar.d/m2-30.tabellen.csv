@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+payment_operation;Zahlungsoperation (WP-M2-30);LK_BELEG;Verknüpfung Zahlung und operation, nur Referenzen und Beträge

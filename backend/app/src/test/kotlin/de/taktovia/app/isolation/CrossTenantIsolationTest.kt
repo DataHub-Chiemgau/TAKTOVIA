@@ -203,6 +203,8 @@ class CrossTenantIsolationTest {
             "getBooking" to Probe("GET", "/v1/bookings/{booking_id}", role = "passenger"),
             "listBookingHistory" to Probe("GET", "/v1/bookings/{booking_id}/history", role = "passenger"),
             "cancelBooking" to Probe("POST", "/v1/bookings/{booking_id}/cancel", """{"reason":"PASSENGER_REQUEST"}""", true, role = "passenger"),
+            "startBookingPayment" to Probe("POST", "/v1/bookings/{booking_id}/payment", """{"payment_method_ref":"pm_ok","amount":{"amount_minor":950,"currency":"EUR","exponent":2}}""", true, role = "passenger"),
+            "returnBookingPayment" to Probe("POST", "/v1/bookings/{booking_id}/payment/return", null, true, role = "passenger"),
             "getStop" to Probe("GET", "/v1/stops/{stop_id}"),
             "updateStop" to Probe("PUT", "/v1/stops/{stop_id}", """{"name":"Gekapert","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":false,"valid_from":"2027-01-01T00:00:00Z"}""", true),
             "updateService" to Probe("PUT", "/v1/services/{service_id}", """{"name":"Gekapert","timezone":"Europe/Berlin"}""", true),

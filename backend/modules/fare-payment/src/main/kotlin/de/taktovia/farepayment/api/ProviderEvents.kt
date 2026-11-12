@@ -46,8 +46,9 @@ interface ProviderEvents {
     fun receive(provider: String, signatureHeader: String?, timestampHeader: String?, rawBody: ByteArray): ProviderEventResult
 
     companion object {
-        fun create(tx: TenantTransactions, keys: ProviderEventKeys, security: SecurityEventPort, outbox: Outbox, config: ProviderEventConfig = ProviderEventConfig(), clock: Clock = Clock.systemUTC()): ProviderEvents =
-            JdbcProviderEvents(tx, keys, security, outbox, config, clock)
+        /** [payments]: der Zahlungsautomat (WP-M2-30); gesetzt, stellt jedes gespeicherte Ereignis in **derselben** Transaktion einen Abgleich der betroffenen Zahlung ein (Statusabfrage, nie Übergang aus dem Payload). */
+        fun create(tx: TenantTransactions, keys: ProviderEventKeys, security: SecurityEventPort, outbox: Outbox, config: ProviderEventConfig = ProviderEventConfig(), clock: Clock = Clock.systemUTC(), payments: Payments? = null): ProviderEvents =
+            JdbcProviderEvents(tx, keys, security, outbox, config, clock, payments)
     }
 }
 
