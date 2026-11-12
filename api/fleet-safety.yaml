@@ -900,6 +900,158 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InspectionSubmit'
+  /v1/inspections/{inspection_id}/known-defects:
+    get:
+      summary: Bekannte Altschäden zum Prüflauf
+      operationId: listKnownDefects
+      security:
+      - oidc:
+        - inspections:read
+      description: 'Minimierte Fahrerprojektion der offenen Altschäden des Fahrzeugs
+        dieses Prüflaufs (WP-M3-21, CHK-012, DMG-012): Fallnummer, Kategorie, Art,
+        Bereich, nicht vertrauliche Fotos; keine Beschreibung, kein Ort, kein Melder,
+        keine vertraulichen Dokumente. Altschaden (Arbeitsannahme, nicht freigegeben):
+        offene Akte (Status nicht CLOSED/DISMISSED) des Fahrzeugs, die beim Start des
+        Laufs bestand und nicht aus diesem Lauf stammt. Eine leere Liste ist der Leerzustand
+        (`acknowledgement_required` false). Nach dem Abschluss liefert die Liste die
+        quittierten Fälle mit dem Aktenstand zum Quittierungszeitpunkt. Fahrer: nur
+        eigene Läufe; fremder Lauf, Lauf eines anderen Mandanten: 404.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnownDefectList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge:
+    post:
+      summary: Bekannten Altschaden quittieren
+      operationId: acknowledgeKnownDefect
+      security:
+      - oidc:
+        - inspections:write
+      description: 'Der Fahrer markiert den Altschaden als gesehen/bestehend (WP-M3-21,
+        CHK-012, DMG-012). Die Quittierung legt keine Schadenakte an, ändert keine
+        und speichert keine Verursacher- oder Schuldangabe; der Body ist ein leeres
+        Objekt, jedes Feld wird mit 422 abgewiesen. Der Aktenstand (Revision) zum Quittierungszeitpunkt
+        wird mitgespeichert. Je (Prüflauf, Altschaden) gibt es genau einen Eintrag: 201 beim
+        ersten Quittieren, 200 mit demselben Eintrag bei Wiederholung oder Quittierung
+        von einem zweiten Gerät. Akte nicht beim Fahrzeug des Laufs, nicht Altschaden
+        dieses Laufs, fremder Lauf oder fremder Mandant: 404; Fall inzwischen abgeschlossen:
+        409 CONFLICT, `detail` beginnt mit `KNOWN_DEFECT_NOT_OPEN`; Lauf nicht mehr offen:
+        409 INVALID_STATE_TRANSITION. `submitInspection` wird mit 409 CONFLICT (`detail`
+        beginnt mit `KNOWN_DEFECTS_UNACKNOWLEDGED`) abgewiesen, solange ein offener
+        Altschaden unquittiert ist; der spätere Abschluss eines Altschadens verhindert
+        den Prüfabschluss nie.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID des Altschadens.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Bereits quittiert (unverändert).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnownDefect'
+        '201':
+          description: Quittiert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnownDefect'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnownDefectAcknowledge'
+  /v1/vehicles/{vehicle_id}/known-defects:
+    get:
+      summary: Offene Fälle eines Fahrzeugs (Hinweis vor der Neuanlage)
+      operationId: listVehicleKnownDefects
+      security:
+      - oidc:
+        - defects:read
+      description: 'Dieselbe minimierte Projektion wie `listKnownDefects`, je Fahrzeug
+        (alle offenen Akten). Die App zeigt sie vor der Neuanlage eines Schadens; `createDefect`
+        eines Fahrers weist bei offenen Fällen ohne `confirm_new_despite_known` mit
+        409 CONFLICT (`detail` beginnt mit `KNOWN_OPEN_DEFECTS`) ab. Fahrer nur mit
+        Bezug zum Fahrzeug (Schicht), sonst 404; fremder Mandant: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnownDefectList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/defects:
     get:
       summary: Schadenakten auflisten
@@ -3010,6 +3162,96 @@ components:
       description: Antwort auf einen Prüfschritt; `NOT_CHECKABLE` führt zu „technisch
         ungeklärt" (Annahme OP-16). `answered_at` ist die Gerätezeit, die Serverzeit
         steht getrennt in der Antwort.
+    KnownDefect:
+      type: object
+      additionalProperties: false
+      properties:
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        case_number:
+          type: string
+        category_code:
+          $ref: '#/components/schemas/DefectCategory'
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/DefectKind'
+          - type: 'null'
+        vehicle_area:
+          oneOf:
+          - $ref: '#/components/schemas/DefectArea'
+          - type: 'null'
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnownDefectPhoto'
+          description: Nur freigegebene, nicht ersetzte, nicht vertrauliche Fotos.
+        still_open:
+          type: boolean
+        acknowledged:
+          type: boolean
+        acknowledged_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        acknowledged_defect_revision:
+          oneOf:
+          - type: integer
+          - type: 'null'
+          description: Revision der Schadenakte zum Quittierungszeitpunkt.
+      required:
+      - defect_id
+      - case_number
+      - category_code
+      - photos
+      - still_open
+      - acknowledged
+      description: Minimierte Fahrerprojektion eines offenen Falls (WP-M3-21); ohne
+        Beschreibung, Ort, Melder, Klasse und vertrauliche Dokumente.
+    KnownDefectAcknowledge:
+      type: object
+      additionalProperties: false
+      properties: {}
+      description: Quittierung „gesehen/bestehend“; bewusst ohne Felder (keine Verursacher-
+        oder Schuldangabe, DMG-012).
+    KnownDefectList:
+      type: object
+      additionalProperties: false
+      properties:
+        inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        defects:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnownDefect'
+        acknowledgement_required:
+          type: boolean
+          description: Wahr, solange der Prüflauf (PRE_SHIFT, VEHICLE_CHANGE) unquittierte
+            offene Altschäden hat; leere Liste = Leerzustand ohne Quittierungspflicht.
+        unacknowledged_count:
+          type: integer
+          minimum: 0
+      required:
+      - vehicle_id
+      - defects
+      - acknowledgement_required
+      - unacknowledged_count
+    KnownDefectPhoto:
+      type: object
+      additionalProperties: false
+      properties:
+        evidence_id:
+          $ref: common.yaml#/components/schemas/UUID
+        captured_at:
+          type: string
+          format: date-time
+      required:
+      - evidence_id
+      - captured_at
     InspectionCreate:
       type: object
       additionalProperties: false
@@ -3328,6 +3570,12 @@ components:
           $ref: '#/components/schemas/DefectArea'
         observed_effect:
           $ref: '#/components/schemas/DefectEffect'
+        confirm_new_despite_known:
+          type: boolean
+          description: 'Bestätigung des Fahrers, trotz offener Fälle desselben Fahrzeugs
+            neu anzulegen (WP-M3-21, CHK-012). Ohne sie weist `createDefect` eines Fahrers
+            bei offenen Fällen mit 409 `KNOWN_OPEN_DEFECTS` ab; die App zeigt die Fälle
+            zuvor (`listVehicleKnownDefects`).'
         capture_mode:
           type: string
           enum:

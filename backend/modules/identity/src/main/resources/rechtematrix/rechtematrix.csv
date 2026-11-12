@@ -152,6 +152,9 @@ listChecklistTemplates;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J
 createInspection;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 saveInspectionDraft;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 submitInspection;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
+listKnownDefects;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J
+acknowledgeKnownDefect;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
+listVehicleKnownDefects;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
 listDefects;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
 getDefect;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
 createDefect;defects:write;-;M3;N;J;N;N;J;N;N;N;N;J

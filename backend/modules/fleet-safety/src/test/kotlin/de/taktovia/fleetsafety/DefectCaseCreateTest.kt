@@ -110,7 +110,9 @@ class DefectCaseCreateTest {
         // kürzlich beendete Schicht (innerhalb der Karenz von 24 h) trägt den Bezug, eine ältere nicht
         val late = UUID.randomUUID(); val lateCtx = w.ctx("driver", subject = late)
         w.shift(late, startOffsetHours = -30, lengthHours = 8)     // endete vor 22 h
-        assertEquals(d.vehicleId, report(w, lateCtx).defect.vehicleId)
+        // das Fahrzeug hat inzwischen einen offenen Fall: ohne Bestätigung keine stille Neuanlage (WP-M3-21), mit Bestätigung möglich
+        assertEquals(ErrorCode.CONFLICT, problem { report(w, lateCtx) }.code)
+        assertEquals(d.vehicleId, report(w, lateCtx, w.raw(extra = mapOf("confirm_new_despite_known" to true))).defect.vehicleId)
         val old = UUID.randomUUID(); w.shift(old, startOffsetHours = -60, lengthHours = 8)   // endete vor 52 h
         assertEquals(ErrorCode.NOT_FOUND, problem { report(w, w.ctx("driver", subject = old)) }.code)
         // ein Fahrer sieht nur eigene Akten

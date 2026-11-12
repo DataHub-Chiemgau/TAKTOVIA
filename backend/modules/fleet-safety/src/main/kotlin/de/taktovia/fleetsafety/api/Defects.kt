@@ -50,10 +50,12 @@ data class ReportDefect(
     val vehicleId: UUID, val occurredAt: Instant, val locationKind: String?, val locationValue: String?, val categoryCode: String, val description: String,
     val kind: String?, val vehicleArea: String?, val observedEffect: String?, val sourceInspectionId: UUID?, val sourceStepCode: String?,
     val evidenceIds: List<UUID>, val deviceEventId: UUID?, val severityHint: String?, val captureMode: CaptureMode,
+    /** Bestätigung „trotz offener Fälle desselben Fahrzeugs neu anlegen“ (WP-M3-21, CHK-012): Fahrer ohne diese Bestätigung erhalten bei offenen Fällen 409 [KnownDefectCatalog.OPEN_DEFECTS_PENDING]. */
+    val confirmNewDespiteKnown: Boolean = false,
 ) {
     companion object {
         private val FIELDS = setOf("vehicle_id", "occurred_at", "location_kind", "location_value", "category_code", "description", "kind", "vehicle_area", "observed_effect",
-            "source_inspection_id", "source_step_code", "evidence_ids", "device_event_id", "severity_hint", "capture_mode")
+            "source_inspection_id", "source_step_code", "evidence_ids", "device_event_id", "severity_hint", "capture_mode", "confirm_new_despite_known")
 
         fun parse(raw: Map<String, Any?>): ReportDefect {
             val v = Violations()
@@ -80,8 +82,9 @@ data class ReportDefect(
             if (guided && evidence.isEmpty() && !v.has("/evidence_ids")) v.add("/evidence_ids", ViolationCode.TOO_FEW_ITEMS)
             val deviceEvent = v.uuid(raw, "device_event_id", false)
             val hint = v.code(raw, "severity_hint", DefectCatalog.SEVERITIES, false)
+            val confirm = when (val c = raw["confirm_new_despite_known"]) { null -> false; is Boolean -> c; else -> { v.add("/confirm_new_despite_known", ViolationCode.TYPE_MISMATCH); false } }
             v.throwIfAny()
-            return ReportDefect(vehicle!!, occurred!!, locKind, locValue, category!!, description!!, kind, area, effect, inspection, step, evidence, deviceEvent, hint, mode)
+            return ReportDefect(vehicle!!, occurred!!, locKind, locValue, category!!, description!!, kind, area, effect, inspection, step, evidence, deviceEvent, hint, mode, confirm)
         }
     }
 }

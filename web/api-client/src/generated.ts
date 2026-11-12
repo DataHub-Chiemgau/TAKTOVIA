@@ -1360,6 +1360,34 @@ export interface InspectionAnswer {
   answered_at: string;
 }
 
+export interface KnownDefect {
+  defect_id: UUID;
+  case_number: string;
+  category_code: DefectCategory;
+  kind?: DefectKind | null;
+  vehicle_area?: DefectArea | null;
+  photos: KnownDefectPhoto[];
+  still_open: boolean;
+  acknowledged: boolean;
+  acknowledged_at?: string | null;
+  acknowledged_defect_revision?: number | null;
+}
+
+export type KnownDefectAcknowledge = Record<string, never>;
+
+export interface KnownDefectList {
+  inspection_id?: UUID | null;
+  vehicle_id: UUID;
+  defects: KnownDefect[];
+  acknowledgement_required: boolean;
+  unacknowledged_count: number;
+}
+
+export interface KnownDefectPhoto {
+  evidence_id: UUID;
+  captured_at: string;
+}
+
 export interface InspectionCreate {
   shift_id: UUID;
   vehicle_id: UUID;
@@ -1442,6 +1470,7 @@ export interface DefectCreate {
   kind?: DefectKind;
   vehicle_area?: DefectArea;
   observed_effect?: DefectEffect;
+  confirm_new_despite_known?: boolean;
   capture_mode?: 'STANDARD' | 'GUIDED';
 }
 
@@ -3689,6 +3718,27 @@ export interface Operations {
     body: InspectionSubmit;
     response: Inspection;
   };
+  listKnownDefects: {
+    path: { inspection_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: KnownDefectList;
+  };
+  acknowledgeKnownDefect: {
+    path: { inspection_id: UUID; defect_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: KnownDefectAcknowledge;
+    response: KnownDefect;
+  };
+  listVehicleKnownDefects: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: KnownDefectList;
+  };
   listDefects: {
     path: Record<string, never>;
     query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; reported_from?: string; reported_to?: string; limit?: number; cursor?: string };
@@ -4740,6 +4790,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listKnownDefects: { method: 'GET', path: '/v1/inspections/{inspection_id}/known-defects', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  acknowledgeKnownDefect: { method: 'POST', path: '/v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge', pathParams: ['inspection_id', 'defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listVehicleKnownDefects: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/known-defects', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 200] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
