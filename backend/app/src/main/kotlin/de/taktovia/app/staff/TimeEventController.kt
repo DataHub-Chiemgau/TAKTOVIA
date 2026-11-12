@@ -25,6 +25,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import de.taktovia.platform.time.ZonedMoment
+import de.taktovia.platform.time.IanaZones
+import de.taktovia.platform.time.Rfc3339
+import de.taktovia.stafftime.api.LocalPresentation
+import de.taktovia.stafftime.api.WorkTime
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -53,18 +58,20 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
 
     @PostMapping("/v1/time-events")
     fun record(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<Map<String, Any?>> {
+        val moment = moment(body)
         val cmd = RecordTimeEvent(
-            UUID.fromString(body["event_id"] as String), kind(body["kind"] as String), OffsetDateTime.parse(body["occurred_at"] as String).toInstant(),
-            OffsetDateTime.parse(body["device_recorded_at"] as String).toInstant(), TimeEventSource.valueOf(body["channel"] as String), (body["shift_id"] as String?)?.let(UUID::fromString),
+            UUID.fromString(body["event_id"] as String), kind(body["kind"] as String), moment.instant,
+            OffsetDateTime.parse(body["device_recorded_at"] as String).toInstant(), TimeEventSource.valueOf(body["channel"] as String), (body["shift_id"] as String?)?.let(UUID::fromString), moment.zone,
         )
         return respond(staff.timeEvents.record(RequestContexts.require(request), cmd))
     }
 
     @PostMapping("/v1/time-events/backfills")
     fun backfill(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<Map<String, Any?>> {
+        val moment = moment(body)
         val cmd = BackfillTimeEvent(
-            UUID.fromString(body["event_id"] as String), body["person_ref"] as String, kind(body["kind"] as String), OffsetDateTime.parse(body["occurred_at"] as String).toInstant(),
-            (body["shift_id"] as String?)?.let(UUID::fromString), body["reason"] as String,
+            UUID.fromString(body["event_id"] as String), body["person_ref"] as String, kind(body["kind"] as String), moment.instant,
+            (body["shift_id"] as String?)?.let(UUID::fromString), body["reason"] as String, moment.zone,
         )
         return respond(staff.timeEvents.backfill(RequestContexts.require(request), cmd))
     }
@@ -100,6 +107,18 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
         })
     }
 
+    /**
+     * Ereigniszeit mit Zone (WP-M4-10): fehlt `time_zone`, gilt die Plattformzone (kein Zonenname: 422). `occurred_at` trägt immer einen Offset und ist damit ein eindeutiger Zeitpunkt
+     * (auch ein Stempel in UTC oder mit dem anderen Herbst-Offset). Liegt die geschriebene Ortszeit in der Frühjahrslücke der Zone, wird sie mit 422 abgelehnt, nie verschoben.
+     */
+    private fun moment(body: Map<String, Any?>): ZonedMoment {
+        val odt = Rfc3339.parse(body["occurred_at"] as String?, "/occurred_at"); val zone = IanaZones.check((body["time_zone"] as String?) ?: WorkTime.DEFAULT_ZONE.id, "/time_zone")
+        if (!odt.ok || !zone.ok) throw ProblemException.invalid(*(odt.violations + zone.violations).toTypedArray())
+        val o = odt.value!!; val z = zone.value!!
+        if (z.rules.getValidOffsets(o.toLocalDateTime()).isEmpty()) throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.LOCAL_TIME_NONEXISTENT))
+        return ZonedMoment(o.toInstant(), z)
+    }
+
     private fun respond(r: TimeEventResult): ResponseEntity<Map<String, Any?>> = ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(json(r.event))
 
     private fun kind(code: String) = requireNotNull(TimeEventKind.entries.firstOrNull { it.name == code }) { "kind ist durch das Schema geprüft" }
@@ -114,10 +133,17 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
     private fun json(v: TimeEventView): Map<String, Any?> = linkedMapOf(
         "event_id" to v.eventId.toString(), "person_ref" to v.personRef, "kind" to v.kind.name, "occurred_at" to v.occurredAt.toString(), "device_recorded_at" to v.deviceRecordedAt?.toString(),
         "received_at" to v.receivedAt.toString(), "source" to v.source.name, "recorded_by" to v.recordedBy, "shift_id" to v.shiftId?.toString(), "backfill_reason" to v.backfillReason,
+        "time_zone" to v.timeZone.id, "occurred_at_local" to local(v.occurredLocal),
+    )
+
+    private fun local(p: LocalPresentation): Map<String, Any?> = linkedMapOf(
+        "local" to p.localWithOffset(), "offset" to p.offset.id, "operating_day" to p.operatingDay.toString(), "ambiguous" to p.ambiguous,
     )
 
     private fun json(i: WorkInterval): Map<String, Any?> = linkedMapOf(
         "start" to i.start?.toString(), "end" to i.end?.toString(), "breaks" to i.breaks.map { mapOf("start" to it.start.toString(), "end" to it.end?.toString()) },
         "net_seconds" to i.netSeconds, "flags" to i.flags.map { it.name }, "event_ids" to i.eventIds.map { it.toString() },
+        "time_zone" to i.zone.id, "start_local" to i.start?.let { local(WorkTime.present(it, i.zone)) }, "end_local" to i.end?.let { local(WorkTime.present(it, i.zone)) },
+        "operating_day" to i.start?.let { WorkTime.present(it, i.zone).operatingDay.toString() },
     )
 }

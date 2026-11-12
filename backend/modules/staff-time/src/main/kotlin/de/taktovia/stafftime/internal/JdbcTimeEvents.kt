@@ -31,6 +31,7 @@ import java.sql.Timestamp
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 /**
@@ -45,11 +46,11 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
         if (ctx.actor.type != ActorType.HUMAN) throw ProblemException(ErrorCode.FORBIDDEN)
         if (cmd.channel == TimeEventSource.BACKFILL) throw ProblemException.invalid(Violation("/channel", ViolationCode.NOT_IN_ENUM))
         val person = ctx.actor.subject
-        val hash = sha256(listOf(cmd.eventId, person, cmd.kind, cmd.occurredAt, cmd.deviceRecordedAt, cmd.channel, person, cmd.shiftId, null).joinToString("|"))
+        val hash = sha256(listOf(cmd.eventId, person, cmd.kind, cmd.occurredAt, cmd.deviceRecordedAt, cmd.channel, person, cmd.shiftId, null, cmd.timeZone.id).joinToString("|"))
         return ctxTx.run(ctx) { j ->
             existing(j, cmd.eventId)?.let { return@run replay(it, hash, selfPerson = person) }
             if (cmd.shiftId != null) requireOwnShift(j, cmd.shiftId, person, notFound = true)
-            val row = insert(j, ctx, cmd.eventId, person, cmd.kind, cmd.occurredAt, cmd.deviceRecordedAt, cmd.channel, person, cmd.shiftId, null, hash)
+            val row = insert(j, ctx, cmd.eventId, person, cmd.kind, cmd.occurredAt, cmd.deviceRecordedAt, cmd.channel, person, cmd.shiftId, null, hash, cmd.timeZone)
                 ?: return@run replay(existing(j, cmd.eventId) ?: throw ProblemException(ErrorCode.CONFLICT), hash, selfPerson = person)
             publish(j, ctx, row)
             TimeEventResult(row, true)
@@ -62,11 +63,11 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
         val person = cmd.personRef.trim(); val reason = cmd.reason.trim()
         if (person.isEmpty() || person.length > 200) throw ProblemException.invalid(Violation("/person_ref", if (person.isEmpty()) ViolationCode.REQUIRED else ViolationCode.TOO_LONG))
         if (reason.length < 3 || reason.length > 500) throw ProblemException.invalid(Violation("/reason", if (reason.length < 3) ViolationCode.TOO_SHORT else ViolationCode.TOO_LONG))
-        val hash = sha256(listOf(cmd.eventId, person, cmd.kind, cmd.occurredAt, null, TimeEventSource.BACKFILL, ctx.actor.subject, cmd.shiftId, reason).joinToString("|"))
+        val hash = sha256(listOf(cmd.eventId, person, cmd.kind, cmd.occurredAt, null, TimeEventSource.BACKFILL, ctx.actor.subject, cmd.shiftId, reason, cmd.timeZone.id).joinToString("|"))
         return ctxTx.run(ctx) { j ->
             existing(j, cmd.eventId)?.let { return@run replay(it, hash, selfPerson = null) }
             if (cmd.shiftId != null) requireOwnShift(j, cmd.shiftId, person, notFound = false)
-            val row = insert(j, ctx, cmd.eventId, person, cmd.kind, cmd.occurredAt, null, TimeEventSource.BACKFILL, ctx.actor.subject, cmd.shiftId, reason, hash)
+            val row = insert(j, ctx, cmd.eventId, person, cmd.kind, cmd.occurredAt, null, TimeEventSource.BACKFILL, ctx.actor.subject, cmd.shiftId, reason, hash, cmd.timeZone)
                 ?: return@run replay(existing(j, cmd.eventId) ?: throw ProblemException(ErrorCode.CONFLICT), hash, selfPerson = null)
             audited(j, ctx, row)
             publish(j, ctx, row)
@@ -128,11 +129,11 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
 
     private fun insert(
         j: JdbcOperations, ctx: RequestContext, id: UUID, person: String, kind: TimeEventKind, occurredAt: Instant, deviceAt: Instant?, source: TimeEventSource, by: String,
-        shiftId: UUID?, reason: String?, hash: String,
+        shiftId: UUID?, reason: String?, hash: String, zone: ZoneId,
     ): TimeEventView? = j.query(
-        "INSERT INTO taktovia.time_event AS e (tenant_id, id, person_ref, kind, occurred_at, device_recorded_at, source, recorded_by, shift_id, backfill_reason, payload_sha256) " +
-            "VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,?,?) ON CONFLICT (tenant_id, id) DO NOTHING RETURNING $COLUMNS",
-        VIEW, id, person, kind.name, Timestamp.from(occurredAt), deviceAt?.let(Timestamp::from), source.name, by, shiftId, reason, hash,
+        "INSERT INTO taktovia.time_event AS e (tenant_id, id, person_ref, kind, occurred_at, device_recorded_at, source, recorded_by, shift_id, backfill_reason, payload_sha256, timezone) " +
+            "VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (tenant_id, id) DO NOTHING RETURNING $COLUMNS",
+        VIEW, id, person, kind.name, Timestamp.from(occurredAt), deviceAt?.let(Timestamp::from), source.name, by, shiftId, reason, hash, zone.id,
     ).firstOrNull()
 
     @AuditRequired
@@ -161,11 +162,11 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
         const val SCOPE_MANAGE = "time-events:manage"
         val MAX_WINDOW: Duration = Duration.ofDays(31)
         const val MAX_EVENTS = 5000
-        const val COLUMNS = "e.id, e.person_ref, e.kind, e.occurred_at, e.device_recorded_at, e.received_at, e.source, e.recorded_by, e.shift_id, e.backfill_reason"
+        const val COLUMNS = "e.id, e.person_ref, e.kind, e.occurred_at, e.device_recorded_at, e.received_at, e.source, e.recorded_by, e.shift_id, e.backfill_reason, e.timezone"
         val VIEW = RowMapper { rs, _ ->
             TimeEventView(rs.getObject("id", UUID::class.java), rs.getString("person_ref"), TimeEventKind.valueOf(rs.getString("kind")), rs.getTimestamp("occurred_at").toInstant(),
                 rs.getTimestamp("device_recorded_at")?.toInstant(), rs.getTimestamp("received_at").toInstant(), TimeEventSource.valueOf(rs.getString("source")), rs.getString("recorded_by"),
-                rs.getObject("shift_id", UUID::class.java), rs.getString("backfill_reason"))
+                rs.getObject("shift_id", UUID::class.java), rs.getString("backfill_reason"), ZoneId.of(rs.getString("timezone")))
         }
     }
 }

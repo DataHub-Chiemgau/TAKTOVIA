@@ -284,6 +284,10 @@ components:
           format: date-time
           maxLength: 40
           description: Ereigniszeit (wann die Handlung stattfand), mit UTC-Offset.
+        time_zone:
+          type: string
+          maxLength: 64
+          description: 'IANA-Zone, in der die Ereigniszeit lokal gelesen wird (z. B. `Europe/Berlin`); ohne Angabe die Plattformzone. `occurred_at` mit Offset ist ein eindeutiger Zeitpunkt; eine geschriebene Ortszeit in der Frühjahrslücke (z. B. 2026-03-29T02:30 in Europe/Berlin) wird mit 422 abgelehnt, es gibt keine stille Auswahl oder Verschiebung.'
         device_recorded_at:
           type: string
           format: date-time
@@ -322,6 +326,10 @@ components:
           type: string
           format: date-time
           maxLength: 40
+        time_zone:
+          type: string
+          maxLength: 64
+          description: 'IANA-Zone, in der die Ereigniszeit lokal gelesen wird (z. B. `Europe/Berlin`); ohne Angabe die Plattformzone. `occurred_at` mit Offset ist ein eindeutiger Zeitpunkt; eine geschriebene Ortszeit in der Frühjahrslücke (z. B. 2026-03-29T02:30 in Europe/Berlin) wird mit 422 abgelehnt, es gibt keine stille Auswahl oder Verschiebung.'
         shift_id:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
@@ -345,6 +353,30 @@ components:
       - BREAK_START
       - BREAK_END
       description: Arbeitsbeginn, Arbeitsende, Pausenbeginn, Pausenende.
+    LocalTimePresentation:
+      type: object
+      additionalProperties: false
+      description: Lokale Darstellung eines Zeitpunkts (TIM-005). `local` trägt immer den Offset der Zone; die beiden Herbst-02:30 unterscheiden sich in `+02:00` und `+01:00`.
+      properties:
+        local:
+          type: string
+          maxLength: 40
+          description: Ortszeit als RFC 3339 mit dem in der Zone gültigen Offset.
+        offset:
+          type: string
+          maxLength: 10
+        operating_day:
+          type: string
+          format: date
+          description: Bezugstag (lokales Datum des Zeitpunkts in der Zone).
+        ambiguous:
+          type: boolean
+          description: Wahr, wenn die Ortszeit wegen der Herbstumstellung zweimal vorkommt (Offset anzeigen).
+      required:
+      - local
+      - offset
+      - operating_day
+      - ambiguous
     TimeEvent:
       type: object
       additionalProperties: false
@@ -389,7 +421,14 @@ components:
           - type: string
             maxLength: 500
           - type: 'null'
+        time_zone:
+          type: string
+          maxLength: 64
+        occurred_at_local:
+          $ref: '#/components/schemas/LocalTimePresentation'
       required:
+      - time_zone
+      - occurred_at_local
       - event_id
       - person_ref
       - kind
@@ -478,6 +517,23 @@ components:
           maxItems: 200
           items:
             $ref: common.yaml#/components/schemas/UUID
+        time_zone:
+          type: string
+          maxLength: 64
+        start_local:
+          oneOf:
+          - $ref: '#/components/schemas/LocalTimePresentation'
+          - type: 'null'
+        end_local:
+          oneOf:
+          - $ref: '#/components/schemas/LocalTimePresentation'
+          - type: 'null'
+        operating_day:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+          description: Bezugstag des Intervalls = lokales Datum des Beginns (Schicht über Mitternacht gehört zum Tag des Beginns).
       required:
       - start
       - end
@@ -485,6 +541,10 @@ components:
       - net_seconds
       - flags
       - event_ids
+      - time_zone
+      - start_local
+      - end_local
+      - operating_day
     TimeIntervalList:
       type: object
       additionalProperties: false

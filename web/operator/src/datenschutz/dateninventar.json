@@ -12026,6 +12026,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "timezone",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         }
       ]
     },
