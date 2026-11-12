@@ -1807,7 +1807,7 @@ export interface ChecklistTemplate {
     title: string;
     mandatory: boolean;
     safety_critical: boolean;
-    answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+    answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
     photo_required_on_defect: boolean;
     help_text?: string | null;
     na_requires_reason?: boolean;
@@ -1826,7 +1826,7 @@ export interface ChecklistTemplatePage {
 
 export interface InspectionAnswer {
   step_code: string;
-  answer: 'OK' | 'DEFECT' | 'NOT_APPLICABLE' | 'NOT_CHECKABLE';
+  answer: 'OK' | 'DEFECT' | 'NOT_APPLICABLE' | 'NOT_CHECKABLE' | 'JA' | 'NEIN';
   number_value?: number | null;
   text_value?: string | null;
   note?: string | null;
@@ -1953,7 +1953,7 @@ export interface Inspection {
       title: string;
       mandatory: boolean;
       safety_critical: boolean;
-      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
+      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
       photo_required_on_defect?: boolean;
       help_text?: string | null;
       na_requires_reason?: boolean;
@@ -2187,7 +2187,7 @@ export interface ChecklistStepWrite {
   step_code: string;
   title: string;
   help_text?: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
   mandatory: boolean;
   safety_critical?: boolean;
   na_requires_reason?: boolean;
@@ -2210,7 +2210,7 @@ export interface ChecklistStepRead {
   position: number;
   title: string;
   help_text: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
   mandatory: boolean;
   safety_critical: boolean;
   na_requires_reason: boolean;

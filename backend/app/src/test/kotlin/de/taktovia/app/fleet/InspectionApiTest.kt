@@ -44,8 +44,9 @@ class InspectionApiTest {
         }
 
         /** Freigegebene Vorlage über die API (Vier-Augen: Werkstatt legt an, Betriebsleitung gibt frei). */
-        fun template(cls: String, mode: String = "STANDARD", steps: Int = 3): String {
-            val body = """{"name":"Prüfung $cls","vehicle_class":"$cls","service_mode":"$mode","steps":[""" + (1..steps).joinToString(",") { """{"step_code":"S$it","title":"Punkt $it","input_kind":"OK_DEFECT_NA","mandatory":true,"safety_critical":false}""" } + "]}"
+        fun template(cls: String, mode: String = "STANDARD", steps: Int = 3, readinessStep: Boolean = false): String {
+            val body = """{"name":"Prüfung $cls","vehicle_class":"$cls","service_mode":"$mode","steps":[""" + (1..steps).joinToString(",") { """{"step_code":"S$it","title":"Punkt $it","input_kind":"OK_DEFECT_NA","mandatory":true,"safety_critical":false}""" } +
+                (if (readinessStep) """,{"step_code":"EINSATZBEREITSCHAFT","title":"Einsatzbereit","input_kind":"READINESS_YES_NO","mandatory":true,"safety_critical":false}""" else "") + "]}"
             val c = env.post("/v1/operator/checklist-templates", body, authorToken, null, mapOf("Idempotency-Key" to "t-" + UUID.randomUUID())); check(c.status == 201) { c.text }
             val id = c.json["id"].asString()
             val p = env.server.send("POST", "/v1/operator/checklist-templates/$id/publish", null, env.headers(reviewerToken, extra = mapOf("Idempotency-Key" to "p-" + UUID.randomUUID(), "If-Match" to "\"1\"")), null); check(p.status == 200) { p.text }

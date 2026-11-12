@@ -207,6 +207,11 @@ internal class JdbcInspections(
         if (run.kind != "PRE_BOARDING" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
             val r = readiness.issueReleaseIn(j, actor, ctx.correlationId, IssueRelease(run.vehicleId, run.shiftId, id))
             if (r is ReleaseOutcome.Issued) releaseId = r.release.id
+            // Fehlende oder abgelaufene Qualifikation (CHK-010): keine Freigabe, Hinweis an die Leitstelle nur mit Kennungen und Code, ohne Personen- und HR-Inhalte
+            if (r is ReleaseOutcome.Refused && ReleaseBlocker.QUALIFICATION_MISSING in r.missing) {
+                outbox.append(j, OutboxEvent(UUID.randomUUID(), 1, "inspection.release_withheld", linkedMapOf(
+                    "inspection_id" to id.toString(), "shift_id" to run.shiftId.toString(), "vehicle_id" to run.vehicleId.toString(), "reason" to "QUALIFICATION_MISSING"), now, correlationId = ctx.correlationId))
+            }
         }
         val defectSteps = merged.count { it.answer == ChecklistAnswerStatus.DEFECT }
         audit.record(j, AuditEntry(actor, AuditActions.INSPECTION_COMPLETED, ObjectRef("inspection", id), ctx.correlationId, linkedMapOf(
@@ -354,6 +359,8 @@ internal class JdbcInspections(
         if (run.status != "COMPLETED") throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Ein Nachtrag setzt einen abgeschlossenen Prüflauf voraus; vorher wird der Entwurf bearbeitet.")
         val steps = checklists.steps(j, run.templateRevisionId)
         if (steps.none { it.code == cmd.stepCode }) throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
+        // Die Selbstauskunft bleibt Ja oder Nein; eine Änderung ist nur eine neue Prüfung, nie ein Nachtrag (CHK-010)
+        if (steps.single { it.code == cmd.stepCode }.kind == ChecklistInputKind.READINESS_YES_NO) throw ProblemException.invalid(Violation("/step_code", ViolationCode.INVALID_VALUE))
         val violations = ChecklistAnswerValidator.validate(steps.filter { it.code == cmd.stepCode }.map { it.rule() }, listOf(ChecklistAnswer(cmd.stepCode, cmd.newAnswer, cmd.newNumberValue, cmd.newNote)), complete = false).toMutableList()
         if (cmd.newAnswer == ChecklistAnswerStatus.DEFECT && cmd.newNote.isNullOrBlank() && violations.none { it.pointer.endsWith("/note") }) violations += Violation("/answers/${cmd.stepCode}/note", ViolationCode.REQUIRED)
         if (violations.isNotEmpty()) throw ProblemException.invalid(*violations.map { Violation(amendPointer(it.pointer, cmd.stepCode), it.code) }.toTypedArray())

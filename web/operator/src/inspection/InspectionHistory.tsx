@@ -10,6 +10,8 @@ const ANSWER_LABELS: Readonly<Record<InspectionAnswer['answer'], string>> = {
   DEFECT: 'Mangel',
   NOT_APPLICABLE: 'Nicht anwendbar',
   NOT_CHECKABLE: 'Nicht prüfbar',
+  JA: 'Ja',
+  NEIN: 'Nein',
 };
 const OUTCOME_LABELS: Readonly<Record<NonNullable<Inspection['outcome']>, string>> = {
   PASSED: 'bestanden',

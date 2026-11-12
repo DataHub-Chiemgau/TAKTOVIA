@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/inspection.release_withheld.v1.schema.json",
+  "title": "Hinweis an die Leitstelle: Einsatzfreigabe wegen fehlender Qualifikation nicht erteilt, Ereignistyp inspection.release_withheld (WP-M3-19, LH-6.21-CHK-010)",
+  "description": "Entsteht beim Abschluss einer bestandenen Prüfung, wenn der Fahrer keine gültige, freigegebene Qualifikationsrevision hält; es entsteht keine Einsatzfreigabe, der Dienst bleibt gesperrt. Enthält nur Kennungen und einen Code (Minimierung): keine Person, keine Qualifikationsdetails, keine HR-Inhalte, keine Angaben zur Selbstauskunft. `aggregate_id` der Hülle (platform.eventenvelope.v1) ist je Ereignis eine neue Kennung, `aggregate_revision` 1. Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["inspection_id", "shift_id", "vehicle_id", "reason"],
+  "additionalProperties": false,
+  "properties": {
+    "inspection_id": {"type": "string", "format": "uuid"},
+    "shift_id": {"type": "string", "format": "uuid"},
+    "vehicle_id": {"type": "string", "format": "uuid"},
+    "reason": {"type": "string", "enum": ["QUALIFICATION_MISSING"]}
+  },
+  "examples": [
+    {
+      "inspection_id": "00000000-0000-4000-8000-0000000000e1",
+      "shift_id": "00000000-0000-4000-8000-0000000000e2",
+      "vehicle_id": "00000000-0000-4000-8000-0000000000e3",
+      "reason": "QUALIFICATION_MISSING"
+    }
+  ]
+}

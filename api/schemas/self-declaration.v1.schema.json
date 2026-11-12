@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/self-declaration.v1.schema.json",
+  "title": "Selbstauskunft Einsatzbereitschaft (WP-M3-19, LH-6.21-CHK-010)",
+  "description": "Antwort auf das Prüfelement mit Eingabetyp READINESS_YES_NO: ausschließlich Ja oder Nein, kein Freitext, keine Notiz, keine Zahl, keine Diagnose. `additionalProperties: false`; jedes weitere Feld wird mit 422 abgewiesen. Die Datenbank erzwingt dasselbe (CHECK inspection_answer_selfdeclaration_no_text). Der Wortlaut der Frage ist offen (Detailvertrag) und gehört nicht in dieses Schema.",
+  "type": "object",
+  "required": ["step_code", "answer", "answered_at"],
+  "additionalProperties": false,
+  "properties": {
+    "step_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,59}$"},
+    "answer": {"type": "string", "enum": ["JA", "NEIN"]},
+    "answered_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"step_code": "EINSATZBEREITSCHAFT", "answer": "JA", "answered_at": "2026-05-04T05:55:00Z"}
+  ]
+}

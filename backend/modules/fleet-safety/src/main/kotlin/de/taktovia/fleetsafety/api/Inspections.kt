@@ -165,6 +165,9 @@ enum class InspectionOutcome { PASSED, PASSED_RESTRICTED, BLOCKED, CLARIFICATION
 object InspectionOutcomeRule {
     fun evaluate(steps: List<ChecklistStepView>, answers: List<AnswerInput>): InspectionOutcome {
         val critical = steps.filter { it.safetyCritical }.map { it.code }.toSet()
+        // Selbstauskunft „Einsatzbereitschaft“ (CHK-010): NEIN ergibt keine Freigabe (Planungsannahme: Ergebnis BLOCKED; das Verhalten bei „nicht einsatzbereit“ ist als Detailvertrag offen)
+        val readiness = steps.filter { it.kind == ChecklistInputKind.READINESS_YES_NO }.map { it.code }.toSet()
+        if (answers.any { it.answer == ChecklistAnswerStatus.NEIN && it.stepCode in readiness }) return InspectionOutcome.BLOCKED
         return if (answers.any { it.answer == ChecklistAnswerStatus.DEFECT && it.stepCode in critical }) InspectionOutcome.BLOCKED else InspectionOutcome.PASSED
     }
 }
