@@ -1,4 +1,183 @@
 paths:
+  /v1/rosters/shifts:
+    get:
+      summary: Schichten eines Dienstplans lesen
+      operationId: listRosterShifts
+      security:
+      - oidc:
+        - rosters:read
+      description: 'Schichten des Dienstplans nach Beginn und ID (WP-M4-03): Datum (Betriebstag), lokaler und absoluter Beginn/Ende, Pausenplan, Betrieb, Depot, Funktion, erforderliche Qualifikation, Personalbedarf; offene Schichten ohne Fahrer und Fahrzeug. Nur Planer und Personalrolle (Entwurfsdaten, HR).'
+      parameters:
+      - name: roster_id
+        in: query
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dienstplan, zu dem die Schichten gehören (Gruppenschlüssel bis zum Dienstplankopf, WP-M4-04).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Schicht anlegen
+      operationId: createRosterShift
+      security:
+      - oidc:
+        - rosters:write
+      description: 'Legt eine Schicht als Entwurf im Dienstplan `roster_id` an (bis zum Dienstplankopf, WP-M4-04, ein vom Planer gewählter Gruppenschlüssel). Lokaler Beginn und Ende gelten in `timezone`; eine Ortszeit in der Frühjahrslücke wird abgelehnt (422 LOCAL_TIME_NONEXISTENT), eine doppelte Ortszeit im Herbst verlangt den Offset (`starts_offset`/`ends_offset`, sonst 422 LOCAL_TIME_AMBIGUOUS). Ende vor Beginn, mehr als 24 Stunden oder ein ungültiger Pausenplan: 422. Betrieb und Depot müssen zum Mandanten gehören, fremde IDs: 404. Der Betriebstag einer Mitternachtsschicht ist der lokale Tag des Beginns (Vorschlag des Plans, OP-08).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftWrite'
+  /v1/rosters/shifts/{shift_id}:
+    get:
+      summary: Schicht lesen
+      operationId: getRosterShift
+      security:
+      - oidc:
+        - rosters:read
+      description: 'Eine Schicht des Dienstplans mit ETag. Fremde oder unbekannte Schichten sind nicht auffindbar (404).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/shift_id
+      - name: roster_id
+        in: query
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dienstplan, zu dem die Schichten gehören (Gruppenschlüssel bis zum Dienstplankopf, WP-M4-04).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Schicht ändern
+      operationId: updateRosterShift
+      security:
+      - oidc:
+        - rosters:write
+      description: 'Ändert einen Entwurf vollständig. `If-Match` trägt die Revision (veraltet: 412, fehlend: 428); gleichzeitige Änderer mit demselben ETag: genau einer gewinnt. Veröffentlichte Schichten sind hier nicht änderbar (409).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/shift_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftWrite'
   /v1/rosters/{roster_id}/publish:
     post:
       summary: Geprüften Dienstplan veröffentlichen
@@ -52,3 +231,243 @@ paths:
           application/json:
             schema:
               $ref: common.yaml#/components/schemas/PublishRequest
+components:
+  schemas:
+    BreakPlan:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          type: string
+          enum:
+          - '1.0'
+        breaks:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              offset_min:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 1439
+              duration_min:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 240
+              paid:
+                type: boolean
+            required:
+            - offset_min
+            - duration_min
+            - paid
+      required:
+      - schema_version
+      - breaks
+      description: Pausenplan nach `docs/umsetzungsplan/vertraege/schemas/pausenplan.v1.schema.json`; Pausen liegen vollständig in der Schicht und überlappen sich nicht.
+    ShiftWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        roster_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_local:
+          type: string
+          minLength: 16
+          maxLength: 19
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$
+          description: Lokaler Beginn ohne Offset in `timezone`.
+        starts_offset:
+          type: string
+          minLength: 6
+          maxLength: 9
+          description: UTC-Offset des Beginns, nur bei doppelter Ortszeit (Herbstumstellung) nötig.
+        ends_local:
+          type: string
+          minLength: 16
+          maxLength: 19
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$
+        ends_offset:
+          type: string
+          minLength: 6
+          maxLength: 9
+        timezone:
+          type: string
+          minLength: 3
+          maxLength: 64
+        break_plan:
+          $ref: '#/components/schemas/BreakPlan'
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        depot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        function:
+          type: string
+          minLength: 1
+          maxLength: 100
+        required_qualification:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,39}$
+            minLength: 2
+            maxLength: 40
+          - type: 'null'
+        staffing_need:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 50
+        driver_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - roster_id
+      - starts_local
+      - ends_local
+      - timezone
+      - operator_id
+      - depot_id
+      - function
+      - staffing_need
+      examples:
+      - roster_id: 00000000-0000-4000-8000-000000000010
+        starts_local: '2026-12-01T22:00:00'
+        ends_local: '2026-12-02T06:00:00'
+        timezone: Europe/Berlin
+        break_plan:
+          schema_version: '1.0'
+          breaks:
+          - offset_min: 240
+            duration_min: 30
+            paid: false
+        operator_id: 00000000-0000-4000-8000-000000000011
+        depot_id: 00000000-0000-4000-8000-000000000012
+        function: Fahrdienst
+        required_qualification: PERSONENBEFOERDERUNG
+        staffing_need: 2
+    Shift:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        roster_id:
+          $ref: common.yaml#/components/schemas/UUID
+        date:
+          type: string
+          format: date
+          description: Betriebstag (Kalendertag), bei einer Schicht über Mitternacht der lokale Tag des Beginns.
+        starts_local:
+          type: string
+          maxLength: 19
+        ends_local:
+          type: string
+          maxLength: 19
+        timezone:
+          type: string
+          maxLength: 64
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        duration_min:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1440
+          description: Reale Dauer in Minuten (Zeitumstellung berücksichtigt).
+        break_plan:
+          $ref: '#/components/schemas/BreakPlan'
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        depot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        function:
+          type: string
+          maxLength: 100
+        required_qualification:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+        staffing_need:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 50
+        driver_ref:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        state:
+          type: string
+          maxLength: 40
+        created_by:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - roster_id
+      - date
+      - starts_local
+      - ends_local
+      - timezone
+      - starts_at
+      - ends_at
+      - duration_min
+      - break_plan
+      - operator_id
+      - depot_id
+      - function
+      - required_qualification
+      - staffing_need
+      - driver_ref
+      - vehicle_id
+      - state
+      - created_by
+      - created_at
+      - revision
+    ShiftPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Shift'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

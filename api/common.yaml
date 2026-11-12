@@ -28,6 +28,8 @@ components:
             expenses:approve: expenses:approve
             config:publish: config:publish
             rosters:publish: rosters:publish
+            rosters:write: rosters:write
+            rosters:read: rosters:read
             driver:events: driver:events
             me:read: me:read
             tenant:switch: tenant:switch
@@ -99,6 +101,8 @@ components:
             expenses:approve: expenses:approve
             config:publish: config:publish
             rosters:publish: rosters:publish
+            rosters:write: rosters:write
+            rosters:read: rosters:read
             driver:events: driver:events
             me:read: me:read
             tenant:switch: tenant:switch
@@ -267,6 +271,12 @@ components:
         $ref: '#/components/schemas/UUID'
     roster_id:
       name: roster_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    shift_id:
+      name: shift_id
       in: path
       required: true
       schema:

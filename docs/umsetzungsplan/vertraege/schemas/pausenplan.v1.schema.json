@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/pausenplan.v1.schema.json",
+  "title": "Pausenplan einer Schicht `staff_shift.break_plan` (WP-M4-03, Schema-Version 1.0)",
+  "description": "Geplante Pausen als Versatz zum Schichtbeginn in Minuten. Pausen liegen vollständig in der Schicht und überlappen sich nicht (Prüfung im Dienst, nicht im Schema). Pausen als operative Fahrzeugrestriktion sind SCH-018 (M7).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "breaks"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "breaks": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["offset_min", "duration_min", "paid"],
+        "properties": {
+          "offset_min": { "type": "integer", "minimum": 0, "maximum": 1439 },
+          "duration_min": { "type": "integer", "minimum": 1, "maximum": 240 },
+          "paid": { "type": "boolean" }
+        }
+      }
+    }
+  },
+  "examples": [{ "schema_version": "1.0", "breaks": [{ "offset_min": 240, "duration_min": 30, "paid": false }] }]
+}

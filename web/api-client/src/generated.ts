@@ -364,6 +364,62 @@ export interface ExpenseApproval {
   posting_id: UUID | null;
 }
 
+export interface BreakPlan {
+  schema_version: '1.0';
+  breaks: ({
+    offset_min: number;
+    duration_min: number;
+    paid: boolean;
+  })[];
+}
+
+export interface ShiftWrite {
+  roster_id: UUID;
+  starts_local: string;
+  starts_offset?: string;
+  ends_local: string;
+  ends_offset?: string;
+  timezone: string;
+  break_plan?: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification?: string | null;
+  staffing_need: number;
+  driver_ref?: UUID | null;
+  vehicle_id?: UUID | null;
+}
+
+export interface Shift {
+  id: UUID;
+  roster_id: UUID;
+  date: string;
+  starts_local: string;
+  ends_local: string;
+  timezone: string;
+  starts_at: string;
+  ends_at: string;
+  duration_min: number;
+  break_plan: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification: string | null;
+  staffing_need: number;
+  driver_ref: UUID | null;
+  vehicle_id: UUID | null;
+  state: string;
+  created_by: string;
+  created_at: string;
+  revision: number;
+}
+
+export interface ShiftPage {
+  items: Shift[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface DriverEvent {
   event_id: UUID;
   shift_id: UUID;
@@ -2272,6 +2328,34 @@ export interface Operations {
     body: PublishRequest;
     response: PublishedRevision;
   };
+  listRosterShifts: {
+    path: Record<string, never>;
+    query: { roster_id: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ShiftPage;
+  };
+  createRosterShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
+  getRosterShift: {
+    path: { shift_id: UUID };
+    query: { roster_id: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Shift;
+  };
+  updateRosterShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
   publishRoster: {
     path: { roster_id: UUID };
     query: Record<string, never>;
@@ -3392,6 +3476,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },

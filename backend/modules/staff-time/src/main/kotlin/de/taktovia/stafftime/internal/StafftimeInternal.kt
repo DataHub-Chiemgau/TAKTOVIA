@@ -25,6 +25,7 @@ internal object StafftimeServicesFactory {
             override val drivers: Drivers = drivers
             override val absences: Absences = absence
             override val timeEvents: TimeEvents = timeEv
+            override val shifts: de.taktovia.stafftime.api.Shifts = JdbcShifts(ctxTx, audit)
             override val driverReadPort: de.taktovia.platform.readports.DriverReadPort = JdbcDriverReadPort(ctxTx)
         }
     }

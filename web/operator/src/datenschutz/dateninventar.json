@@ -9302,6 +9302,42 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "break_plan",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "geplante Pausen der Schicht (Versatz, Dauer, bezahlt)"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "planende Person (Subject)"
+        },
+        {
+          "spalte": "depot_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "driver_ref",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -9329,7 +9365,70 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operating_day",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "abgeleitet: Kalendertag des Beginns"
+        },
+        {
+          "spalte": "operator_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "required_qualification",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Qualifikationsart (Katalogcode), kein Nachweis"
+        },
+        {
+          "spalte": "roster_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "roster_revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "shift_function",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "shift_revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "staffing_need",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
