@@ -1750,6 +1750,8 @@ paths:
         schema:
           type: string
           format: date-time
+          examples:
+          - '2026-12-01T10:00:00Z'
         description: Zeitpunkt (mit UTC-Offset), zu dem der Stand der Meldung gelesen wird.
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
