@@ -50,8 +50,7 @@ paths:
       security:
       - oidc:
         - driver:positions
-      description: 'Nimmt Messpunkte des eigenen, bestätigt zugeordneten Geräts entgegen; Rohpositionen unterliegen der Aufbewahrungsregel (OP-04).
-        Unbekannte oder fremde Schicht: 404.'
+      description: 'Nimmt Messpunkte des eigenen, an die Sitzung gebundenen Geräts für die eigene, **angetretene** Schicht und ihr Fahrzeug entgegen (WP-M3-34, OP-04). Unbekannte oder fremde Schicht, fremdes Fahrzeug oder Schicht eines anderen Mandanten: einheitlich 404. Schicht nicht angetreten, entzogen: 409 `INVALID_STATE_TRANSITION`, nichts gespeichert (außerhalb eines angetretenen Dienstes werden keine Positionen angenommen). Messzeit (Gerätezeit) und Empfangszeit (Serveruhr) werden getrennt gespeichert; nachgelieferte Punkte behalten ihre Messzeit und gelten nie als aktuelle Position, eine verspätete ältere Meldung überschreibt die „letzte Position“ nicht (sie folgt der jüngsten Messzeit). `speed_mps` und `heading_deg` werden angenommen, aber nicht gespeichert (Datenminimierung). In Produktion ist die Erfassung nur mit einer freigegebenen Aufbewahrungsregel für Standortdaten (`LK_STANDORT`) aktiv, sonst 409 `CONFLICT` (D-10, D-11). Rohpositionen löscht der Löschlauf nach der dort hinterlegten Frist.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -91,8 +90,8 @@ paths:
       security:
       - oidc:
         - driver:run
-      description: 'Nur für die eigene, aktuell zugewiesene Schicht; fremde oder beendete Schicht: 404. ETag/`If-None-Match`: unverändert ergibt
-        304. Vor der Einsatzfreigabe keine Aufträge.'
+      description: 'Nur für die eigene Schicht; fremde, unbekannte oder Schicht eines anderen Mandanten: einheitlich 404. Eine eigene Schicht, die abgelaufen, beendet, entzogen oder nicht angetreten ist, liefert 200 mit Leerzustand (`shift_valid` false, keine Stopps, DRV-001). ETag/`If-None-Match`: unverändert ergibt
+        304. Aufträge nur bei gültiger, angetretener Schicht und bestehender Einsatzfreigabe (`release_state` RELEASED); vorher keine Aufträge, mit `missing_requirements`.'
       parameters:
       - name: shift_id
         in: path
@@ -279,6 +278,123 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/driver/shifts:
+    get:
+      summary: Eigene Schichten lesen
+      operationId: listDriverShifts
+      security:
+      - oidc:
+        - driver:run
+      description: Die eigenen, noch nicht beendeten und nicht entzogenen Schichten mit Ende in der Zukunft, nach Beginn (höchstens 10; UI-09 „Nächster Dienst
+        06:00–14:00 · Fahrzeug A-12“). Eine fremde Schicht erscheint nie. Ohne Zuweisung ist die Liste leer (Leerzustand der App). `valid` ist wahr, wenn
+        die Schicht angetreten ist und die Serverzeit in `[starts_at, ends_at)` liegt; `startable_from` ist `starts_at` minus Antrittstoleranz (Planungsdefault
+        30 Minuten). Die Authentifizierung nutzt ausschließlich das Fahrerkonto (OIDC); ein Konto ohne Rolle `driver` bekommt 403.
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverShiftList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/driver/shift-starts:
+    post:
+      summary: Dienst antreten
+      operationId: startDriverShift
+      security:
+      - oidc:
+        - driver:run
+      description: 'Bestätigt die Zuordnung Fahrer, Schicht, Fahrzeug an einem registrierten Gerät (WP-M3-25, LH-6.6-DRV-001): `shift_id` ist die eigene Schicht
+        (fremd, unbekannt oder anderer Mandant: einheitlich 404), `vehicle_id` das Fahrzeug der Schicht (abweichend: 422; bei bereits angetretener Schicht
+        409), `device_id` ein Gerät des Kontos, an die aktuelle Sitzung gebunden (sonst 403; ein Gerät eines anderen Kontos: 404). Antritt nur im Zustand
+        geplant/veröffentlicht, ab Beginn minus Antrittstoleranz bis vor Schichtende (sonst 409 `INVALID_STATE_TRANSITION`; auch nach Entzug oder Ende). Wiederholung
+        und das gleichzeitige Antreten eines zweiten Geräts desselben Fahrers ergeben genau einen Antritt: die Antwort nennt den bestehenden Zustand mit `already_started`
+        = true. Der Antritt ist weder Arbeitszeiterfassung noch Einsatzfreigabe; Gerät und Zeit stehen im `audit_event`. Ein `tenant_id` im Body gibt kein
+        Recht (422 als unbekanntes Feld).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverShiftStartResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverShiftStart'
+  /v1/driver/shift-ends:
+    post:
+      summary: Dienst beenden
+      operationId: endDriverShift
+      security:
+      - oidc:
+        - driver:run
+      description: 'Beendet die eigene angetretene Schicht (Zustand beendet, Zeit und Gerät im `audit_event`); Wiederholung liefert den Stand. Eine nicht
+        angetretene Schicht: 409 `INVALID_STATE_TRANSITION`; fremde Schicht: 404; Gerät wie beim Antritt. Die Arbeitszeiterfassung (M4) bleibt davon getrennt.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverShift'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverShiftEnd'
 components:
   schemas:
     DriverEvent:
@@ -462,12 +578,33 @@ components:
         accepted:
           type: integer
           minimum: 0
+          description: Neu gespeicherte und bereits gespeicherte Messpunkte (erneute Sendung derselben Messzeit ist idempotent).
         rejected:
           type: integer
           minimum: 0
         received_at:
           type: string
           format: date-time
+          description: Serverempfangszeit der Meldung (Serveruhr); die Gerätemesszeit steht getrennt in `measured_at` je Messpunkt.
+        rejections:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              index:
+                type: integer
+                minimum: 0
+              reason:
+                type: string
+                enum:
+                - FUTURE_TIME
+                - OUTSIDE_SERVICE
+            required:
+            - index
+            - reason
+          description: Einzeln abgewiesene Messpunkte. FUTURE_TIME = Messzeit mehr als die Toleranz (Planungsdefault 5 s) nach der Serverzeit; OUTSIDE_SERVICE = Messzeit vor dem Dienstantritt oder nach dem Dienstende.
       required:
       - accepted
       - rejected
@@ -548,6 +685,14 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         vehicle_id:
           $ref: common.yaml#/components/schemas/UUID
+        shift_state:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Zustand der eigenen Schicht (PLANNED, STARTED, ENDED, CANCELLED oder PUBLISHED).
+        shift_valid:
+          type: boolean
+          description: Angetreten, innerhalb der Schichtzeit und nicht entzogen. Nur dann liefert der Server Aufträge (DRV-001).
         release_state:
           type: string
           enum:
@@ -585,6 +730,8 @@ components:
       required:
       - shift_id
       - vehicle_id
+      - shift_state
+      - shift_valid
       - release_state
       - missing_requirements
       - plan_revision
@@ -674,3 +821,114 @@ components:
       - registered_at
       - revoked_at
       - revision
+    DriverShift:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_label:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        state:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: PLANNED, STARTED, ENDED, CANCELLED (oder PUBLISHED aus dem Dienstplan).
+        startable_from:
+          type: string
+          format: date-time
+        started_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        ended_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        valid:
+          type: boolean
+      required:
+      - shift_id
+      - vehicle_id
+      - vehicle_label
+      - starts_at
+      - ends_at
+      - timezone
+      - state
+      - startable_from
+      - started_at
+      - ended_at
+      - valid
+      description: Die eigene Schicht des Fahrers. `valid` = angetreten und innerhalb der Schichtzeit (Serverzeit); nur dann kann der Server Aufträge liefern.
+    DriverShiftList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverShift'
+          maxItems: 10
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - as_of
+    DriverShiftStart:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - shift_id
+      - vehicle_id
+      - device_id
+      description: 'Dienstantritt (WP-M3-25): eigene Schicht, Fahrzeug der Schicht, registriertes Gerät der Sitzung. Der Mandant steht nie im Body.'
+    DriverShiftEnd:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - shift_id
+      - device_id
+      description: Dienstende (WP-M3-25).
+    DriverShiftStartResult:
+      type: object
+      additionalProperties: false
+      properties:
+        shift:
+          $ref: '#/components/schemas/DriverShift'
+        already_started:
+          type: boolean
+      required:
+      - shift
+      - already_started
+      description: '`already_started` = die Schicht war schon angetreten (Wiederholung oder zweites Gerät): der Zustand bleibt unverändert.'

@@ -262,7 +262,9 @@ class Struktur(unittest.TestCase):
         with admin() as c:
             for t in NEW_TABLES:
                 privs = {r[0] for r in c.execute("SELECT privilege_type FROM information_schema.role_table_grants WHERE table_schema='taktovia' AND table_name=%s AND grantee='taktovia_runtime'", (t,))}
-                self.assertFalse({'TRUNCATE', 'DELETE', 'REFERENCES', 'TRIGGER'} & privs, f'{t}: {privs}')
+                # position_sample: DELETE nur für den Löschlauf der Aufbewahrungsfrist (LK_STANDORT, WP-M3-34, R__runtime_grants_m3_34.sql); alles andere bleibt verboten
+                forbidden = {'TRUNCATE', 'REFERENCES', 'TRIGGER'} | (set() if t == 'position_sample' else {'DELETE'})
+                self.assertFalse(forbidden & privs, f'{t}: {privs}')
                 self.assertGreaterEqual(privs, {'SELECT', 'INSERT'}, t)
             parts = c.execute("SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid=i.inhparent JOIN pg_namespace n ON n.oid=p.relnamespace WHERE n.nspname='taktovia' AND p.relname = ANY(%s)", (NEW_TABLES,)).fetchone()[0]
             self.assertEqual(parts, 0, 'Partitionen sind nicht Teil von M3 (position_sample erst nach gemessenem Volumen)')

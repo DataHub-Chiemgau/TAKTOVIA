@@ -1,0 +1,5 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+staff_shift;revision;nein;PERSONALEINSATZ;;;;Revision der Schichtzuweisung (ETag, WP-M3-07)
+staff_shift;overlap_exception_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Genehmiger der dokumentierten Doppelschicht (Pseudonym user:<uuid>, PA-03)
+staff_shift;overlap_exception_reason;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Grund der Doppelschicht (Freitext, nie Diagnose- oder Gesundheitsangaben)
+staff_shift;overlap_exception_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zeitpunkt der Genehmigung der Doppelschicht (Serverzeit)

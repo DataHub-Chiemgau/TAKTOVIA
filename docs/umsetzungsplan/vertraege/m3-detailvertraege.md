@@ -6,7 +6,8 @@ Eingang für alle folgenden M3-WPs (Fahrer, Leitstelle, Flotte/Sicherheit). Alle
 
 | Datei | Modul (schreibend) | Operationen | Zustand |
 |---|---|---|---|
-| [`api/driver.yaml`](../../../api/driver.yaml) | `staff-time` | `recordDriverEvent` (übernommen aus `openapi.yaml`, erweitert), `recordDriverPosition`, `getDriverRun`, `acknowledgeDriverRunRevision`, `registerDriverDevice`, `revokeDriverDevice` | Vertrag; Gerätebindung und `recordDriverEvent` ab WP-M3-24 gebaut, Rest in `contract-pending.txt` |
+| [`api/driver.yaml`](../../../api/driver.yaml) | `staff-time` | `recordDriverEvent` (übernommen aus `openapi.yaml`, erweitert), `recordDriverPosition`, `getDriverRun`, `acknowledgeDriverRunRevision`, `registerDriverDevice`, `revokeDriverDevice` | Vertrag; Gerätebindung und `recordDriverEvent` ab WP-M3-24, `getDriverRun` und die Dienstanmeldung (`listDriverShifts`, `startDriverShift`, `endDriverShift`, neu: Sammelpfade `/v1/driver/shifts`, `/v1/driver/shift-starts`, `/v1/driver/shift-ends`) ab WP-M3-25, `recordDriverPosition` ab WP-M3-34 gebaut, Rest in `contract-pending.txt` |
+| [`api/shifts.yaml`](../../../api/shifts.yaml) | `staff-time` | `listStaffShifts`, `createStaffShift`, `getStaffShift`, `updateStaffShift` (`/v1/shifts`, WP-M3-07; `/v1/rosters` gehört zu M4) | gebaut |
 | [`api/fleet-safety.yaml`](../../../api/fleet-safety.yaml) | `fleet-safety` | `listOperatorVehicles`, `createVehicleBlock`, `liftVehicleBlock`, `listChecklistTemplates`, `createInspection`, `getInspection`, `saveInspectionDraft`, `submitInspection`, `listDefects`, `createDefect`, `getDefect`, `triageDefect`, `listRepairOrders`, `createRepairOrder`, `createVehicleRelease`, `listOperatorIncidents`, `getOperatorIncident`, `transitionOperatorIncident` | Vertrag, nicht gebaut |
 | [`api/dispatch.yaml`](../../../api/dispatch.yaml) | `booking-dispatch` | `listRunRevisions`, `createRunRevision` (`/v1/runs/{run_id}/revisions`) | Vertrag, nicht gebaut |
 

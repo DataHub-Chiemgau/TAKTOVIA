@@ -12,3 +12,23 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Abwesenheit und Ist-Arbeitszeit (WP-M4-06, WP-M4-08)
 
 `StafftimeApi.absences` (Verfügbarkeitsrestriktion, nur Personalrolle legt an, Planer sehen „nicht verfügbar“) und `StafftimeApi.timeEvents` (unveränderliche Zeitereignisse, Intervallableitung `TimeIntervals`); Verträge und Annahmen: [m4-cluster-c5.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-c5.md).
+
+## Schichtzuweisung der Leitstelle (WP-M3-07)
+
+`StafftimeApi.shifts` (`/v1/shifts`, `api/shifts.yaml`): Anlegen, Lesen, Auflisten, Ändern und Entziehen einer Zuweisung Fahrer, Fahrzeug, `[starts_at, ends_at)`. Überlappung je Fahrer und je Fahrzeug ist ein Konflikt (409 `CONFLICT`, Ursache `/driver_id` oder `/vehicle_id`, kollidierende Schicht im Detail), Ende gleich Beginn nicht; die Dauer folgt aus absoluten Zeitpunkten. Durchgesetzt von der Anwendung (Sperre je Fahrer und Fahrzeug, `staff_shift_lock`/`staff_shift_clash`) **und** vom Datenbank-Trigger `staff_shift_overlap_guard` (V3070) für jeden Schreibpfad. Dokumentierte Doppelschicht (`overlap_exception`: Genehmiger, Grund, Serverzeit) nach Planungsannahme PA-03/OP-07. Zustände und Übergänge: [staff_shift.md](../../../docs/umsetzungsplan/vertraege/zustaende/staff_shift.md). `roster_revision` bleibt vor M4 der Platzhalter 0. Neue Schreibpfade auf `staff_shift` (auch M4) brauchen nichts weiter: der Trigger gilt; sie dürfen aber nur die Zustände `PLANNED`, `STARTED`, `ENDED`, `CANCELLED` und `PUBLISHED` nutzen.
+
+## Dienstanmeldung und Schicht-/Fahrzeugzuordnung (WP-M3-25)
+
+`StafftimeApi.driverShifts` (`GET /v1/driver/shifts`, `POST /v1/driver/shift-starts`, `POST /v1/driver/shift-ends`, `GET /v1/driver/shifts/{id}/run`, `api/driver.yaml`): nur der Fahrer (Rolle `driver`, Scope `driver:run`, Sitzung); eigene Schicht heißt Fahrerstamm über die Mitgliedschaft oder (Altbestand) Subject als `driver_ref` ([ShiftOwnership](src/main/kotlin/de/taktovia/stafftime/internal/ShiftOwnership.kt)), jede andere Schicht ist 404. Antritt ab `starts_at` minus Toleranz (Planungsdefault 30 Minuten, `taktovia.stafftime.shift-start-tolerance-minutes`), mit dem Fahrzeug der Schicht und einem an die Sitzung gebundenen Gerät; gleichzeitige Geräte desselben Fahrers ergeben genau einen Antritt (Zeilensperre). Der Run liefert Aufträge nur bei angetretener, gültiger und freigegebener Schicht (`resource_release`, kein operativer Block); die Stoppliste kommt über den Port `DriverRunSource` (WP-M3-26), bis dahin leer. Der Antritt ist weder Arbeitszeiterfassung noch Einsatzfreigabe. Zustände: [staff_shift.md](../../../docs/umsetzungsplan/vertraege/zustaende/staff_shift.md).
+
+## Positionserfassung und Standortalter (WP-M3-34)
+
+`StafftimeApi.positions` (`POST /v1/driver/positions`, Leitstellenliste `GET /v1/operator/vehicles` über die App-Ebene): angenommen wird nur für die eigene, **angetretene** Schicht und ihr Fahrzeug an einem an die Sitzung gebundenen Gerät (sonst 404/403, nicht angetreten oder entzogen 409, nichts gespeichert). Messzeit (Gerät, `measured_at`) und Empfangszeit (Serveruhr, `received_at`) sind getrennt gespeichert; die Messzeit liegt zwischen Antritt und Ende des Dienstes und höchstens die Toleranz in der Zukunft, sonst wird der Punkt einzeln abgewiesen (`FUTURE_TIME`, `OUTSIDE_SERVICE`). Erneute Sendung derselben Messzeit ist idempotent (Eindeutigkeit `(tenant_id, shift_id, measured_at)`, V3340). „Letzte Position“ ist die jüngste **Messzeit**; verspätete ältere Meldungen überschreiben sie nie und nachgelieferte Punkte sind veraltet. `position_stale` gilt ab Überschreiten der Schwelle, die letzte gemessene Position bleibt sichtbar (nie extrapoliert, AT-10).
+
+| Einstellung (`taktovia.stafftime.…`, Planungsdefaults, OP-04) | Standard |
+|---|---|
+| `position-stale-after-seconds` (Schwelle des Standortalters, kein Katalogparameter) | 30 |
+| `position-future-tolerance-seconds` (Zukunftstoleranz der Messzeit) | 5 |
+| `shift-start-tolerance-minutes` (Antrittstoleranz, WP-M3-25) | 30 |
+
+**Aufbewahrung (D-10, D-11 offen):** Das Löschziel `LK_STANDORT` (`PositionRetention.target()`, nur Aktion DELETE, Frist ab Empfangszeit) löscht Rohpositionen nach der Frist der **freigegebenen** Regel des Aufbewahrungsregisters; ein Standardwert ist im Code nicht hinterlegt (die „30 Tage“ des Detailvertrags sind nur eine Planungsannahme). Mit `taktovia.environment=production` nimmt der Server Positionen nur an, wenn für `LK_STANDORT` eine freigegebene Regel besteht (409 sonst); in den anderen Umgebungen wird auch ohne Regel erfasst. Geschwindigkeit und Fahrtrichtung der Fahrer-App werden angenommen, aber nicht gespeichert (Minimierung, kein Zweck in M3).

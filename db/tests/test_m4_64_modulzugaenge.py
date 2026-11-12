@@ -16,10 +16,14 @@ def seed_vehicle(tenant):
     return v
 
 
+_slot = iter(range(1, 10_000))
+
+
 def shift(c, tenant, veh):
-    sid = uid()
+    """Jede Schicht in einem eigenen Zeitfenster desselben Fahrzeugs (WP-M3-07: überlappende Fahrzeugbelegung ist verboten)."""
+    sid, d = uid(), next(_slot)
     c.execute("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) "
-              "VALUES (%s,%s,%s,%s,now(),now()+interval '8 hours','Europe/Berlin',0,'PLANNED')", (tenant, sid, uid(), veh))
+              "VALUES (%s,%s,%s,%s,now()+make_interval(days => %s),now()+make_interval(days => %s, hours => 8),'Europe/Berlin',0,'PLANNED')", (tenant, sid, uid(), veh, d, d))
     return sid
 
 

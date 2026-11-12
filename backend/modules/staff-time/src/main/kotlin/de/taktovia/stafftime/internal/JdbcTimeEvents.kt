@@ -110,8 +110,11 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
     }
 
     private fun requireOwnShift(j: JdbcOperations, shiftId: UUID, person: String, notFound: Boolean) {
-        val owner = j.query("SELECT driver_ref::text FROM taktovia.staff_shift WHERE id = ?", { rs, _ -> rs.getString(1) }, shiftId).firstOrNull() ?: throw ProblemException.notFound()
-        if (!owner.equals(person, ignoreCase = true)) throw if (notFound) ProblemException.notFound() else ProblemException.invalid(Violation("/shift_id", ViolationCode.INVALID_VALUE))
+        // `driver_ref` ist der Fahrerstamm (über die Mitgliedschaft mit dem Subject verbunden) oder, im Altbestand, das Subject selbst (WP-M3-07, siehe ShiftOwnership)
+        val own = j.query("SELECT s.driver_ref::text = lower(?) OR EXISTS (SELECT 1 FROM taktovia.driver dr JOIN taktovia.membership ms ON ms.tenant_id = dr.tenant_id AND ms.id = dr.membership_id " +
+            "WHERE dr.tenant_id = s.tenant_id AND dr.id = s.driver_ref AND ms.subject = ? AND ms.revoked_at IS NULL) FROM taktovia.staff_shift s WHERE s.id = ?", { rs, _ -> rs.getBoolean(1) }, person, person, shiftId).firstOrNull()
+            ?: throw ProblemException.notFound()
+        if (!own) throw if (notFound) ProblemException.notFound() else ProblemException.invalid(Violation("/shift_id", ViolationCode.INVALID_VALUE))
     }
 
     private fun existing(j: JdbcOperations, id: UUID): Stored? = j.query("SELECT $COLUMNS, e.payload_sha256 FROM taktovia.time_event e WHERE e.id = ?", { rs, i -> Stored(VIEW.mapRow(rs, i)!!, rs.getString("payload_sha256")) }, id).firstOrNull()

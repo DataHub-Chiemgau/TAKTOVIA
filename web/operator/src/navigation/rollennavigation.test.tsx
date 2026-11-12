@@ -94,7 +94,13 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
       ['driver', ['Start']],
       [
         'planner',
-        ['Start', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen', 'Gebiete, Stops, Tarife'],
+        [
+          'Start',
+          'Flotte und Werkstatt',
+          'Fahrer und Qualifikationen',
+          'Schichtzuweisung',
+          'Gebiete, Stops, Tarife',
+        ],
       ],
       [
         'tenant_admin',
@@ -108,7 +114,13 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
       ['finance', ['Start', 'Finanzen']],
       [
         'staff_planning',
-        ['Start', 'Personal', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen'],
+        [
+          'Start',
+          'Personal',
+          'Flotte und Werkstatt',
+          'Fahrer und Qualifikationen',
+          'Schichtzuweisung',
+        ],
       ],
       ['workshop', ['Start', 'Flotte und Werkstatt']],
     ];

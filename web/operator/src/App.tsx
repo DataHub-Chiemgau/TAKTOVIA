@@ -31,6 +31,7 @@ import { Geodaten } from './geo/Geodaten';
 import { Tarife } from './tarife/Tarife';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
+import { Schichtzuweisung } from './flotte/Schichtzuweisung';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -200,6 +201,14 @@ export function App() {
             element={
               <RequireRight right="drivers">
                 <Fahrerstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/schichten"
+            element={
+              <RequireRight right="shifts">
+                <Schichtzuweisung />
               </RequireRight>
             }
           />

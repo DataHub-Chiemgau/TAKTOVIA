@@ -48,7 +48,7 @@ internal class JdbcDriverEvents(private val ctxTx: ContextTransactions, private 
         existing(j, cmd.eventId, hash, ctx)?.let { return it }
 
         // 3. Schicht und Fahrzeug müssen zum Akteur gehören (fremd, fremder Mandant, fremder Fahrer: 404)
-        val shift = j.queryForList("SELECT 1 FROM taktovia.staff_shift WHERE id = ? AND vehicle_id = ? AND driver_ref::text = lower(?)", cmd.shiftId, cmd.vehicleId, ctx.actor.subject)
+        val shift = j.queryForList("SELECT 1 FROM taktovia.staff_shift s WHERE s.id = ? AND s.vehicle_id = ? AND $OWN_SHIFT", cmd.shiftId, cmd.vehicleId, *ShiftOwnership.args(ctx.actor.issuer, ctx.actor.subject))
         if (shift.isEmpty()) throw ProblemException.notFound()
 
         // 4. Planrevision: ein planbezogenes Ereignis auf veralteter Revision ist ein Klärfall, nie ein stiller Zustandswechsel
@@ -86,6 +86,11 @@ internal class JdbcDriverEvents(private val ctxTx: ContextTransactions, private 
         if (row[5] != ctx.actor.subject || row[6] != ctx.actor.issuer) throw ProblemException.notFound()   // Ereignis eines anderen Kontos: nicht auffindbar
         if (row[0] != hash) throw ProblemException(ErrorCode.IDEMPOTENCY_CONFLICT)
         return DriverEventResult(eventId, DriverEventOutcome.DUPLICATE, row[3] as Instant, row[4] as Long, row[2] as String?, DriverEventOutcome.valueOf(row[1] as String))
+    }
+
+    private companion object {
+        /** Eigene Schicht: Fahrerstamm über die Mitgliedschaft oder (Altbestand) die IdP-Subject-UUID (siehe [ShiftOwnership]). */
+        const val OWN_SHIFT = ShiftOwnership.PREDICATE
     }
 
     private fun sha256(s: String) = MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
