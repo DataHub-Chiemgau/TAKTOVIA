@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/expense.cost_assigned.v1.schema.json",
+  "title": "Kostenzuordnung gesetzt (WP-M4-29)",
+  "description": "Payload von `expense.cost_assigned`. Aggregat: expense_document / neue Revision. Nennt nur Anzahl und Arten der zugeordneten Kostenobjekte, keine Kennungen oder Namen.",
+  "type": "object",
+  "required": ["document_id", "revision", "cost_object_count", "kinds", "assigned_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 2},
+    "cost_object_count": {"type": "integer", "minimum": 1, "maximum": 20},
+    "kinds": {"type": "array", "items": {"enum": ["VEHICLE", "COST_CENTER"]}, "uniqueItems": true, "minItems": 1},
+    "assigned_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "revision": 2, "cost_object_count": 2, "kinds": ["COST_CENTER", "VEHICLE"], "assigned_at": "2026-12-01T06:10:00Z"}
+  ]
+}

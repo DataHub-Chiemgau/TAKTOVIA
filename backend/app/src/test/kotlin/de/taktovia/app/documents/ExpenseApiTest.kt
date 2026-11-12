@@ -78,7 +78,7 @@ class ExpenseApiTest {
         val e = env.get("/v1/expenses/$doc", w.driverToken)
         assertEquals(200, e.status, e.text); assertEquals("\"1\"", e.header("ETag"))
         assertEquals("DRIVER_APP", e.json["source_channel"].asString()); assertEquals("FUEL_RECEIPT", e.json["document_kind"].asString()); assertEquals("STORED", e.json["state"].asString())
-        assertTrue(e.json["approvable"].asBoolean()); assertEquals(0, e.json["fields"].size()); assertTrue(e.json["case_ref"].isNull); assertEquals("UNCHECKED", e.json["integrity"].asString())
+        assertFalse(e.json["approvable"].asBoolean()); assertEquals("COST_ASSIGNMENT_MISSING", e.json["blockers"][0].asString(), "ohne Kostenzuordnung nicht freigabefähig (WP-M4-29)"); assertEquals(0, e.json["cost_objects"].size()); assertEquals(0, e.json["fields"].size()); assertTrue(e.json["case_ref"].isNull); assertEquals("UNCHECKED", e.json["integrity"].asString())
         // ohne If-Match 428, veralteter ETag 412, unbekanntes Feld 422
         assertEquals(428, patch("/v1/expenses/$doc", """{"reason":"x","fields":{"amount_minor":1}}""", w.financeToken, null).status)
         val first = patch("/v1/expenses/$doc", """{"reason":"Betrag erfasst","fields":{"amount_minor":8900,"currency":"EUR"}}""", w.financeToken, "\"1\"")

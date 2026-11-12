@@ -1,4 +1,46 @@
 paths:
+  /v1/cost-events:
+    get:
+      summary: Kostenereignisse des Ist-Berichts lesen
+      operationId: listCostEvents
+      security:
+      - oidc:
+        - costs:read
+      description: 'Unveränderliche Kostenereignisse des Szenarios `ACTUAL` **mit gebuchtem Journal** (nur `POSTED` zählt im Ist-Bericht, WP-M4-33), aufsteigend nach Buchungszeit und Kennung, Cursor-Seiten. `as_of` begrenzt auf Ereignisse, die zu diesem Zeitpunkt schon gebucht waren; `legal_entity_id` filtert auf einen Rechtsträger. Beträge in kleinster Einheit als Ganzzahlen.'
+      parameters:
+      - name: as_of
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEventPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/cost-events/{cost_event_id}/allocations:
     post:
       summary: Kostenbasis auf Kostenträger verteilen
@@ -148,7 +190,7 @@ paths:
       security:
       - oidc:
         - receipts:write
-      description: 'Setzt Belegfelder (`fields`) und/oder bestätigt OCR-Vorschläge unverändert (`confirm`); jede Änderung erzeugt genau eine neue, unveränderliche Revision mit Bearbeiter, Zeitpunkt, Grund sowie Alt- und Neuwert je Feld. Das Original wird nie verändert. `If-Match` ist Pflicht (428 ohne, 412 bei veralteter Revision; bei parallelen Korrekturen derselben Revision gewinnt genau eine). Ein Beleg in Quarantäne oder mit Integritätsverletzung ist nicht bearbeitbar (409), ein freigegebener oder gebuchter Beleg ist unveränderlich (409 `IMMUTABLE_RECORD`, Korrektur nur per Gegenereignis). Ein Wert, der dem aktuellen Stand entspricht, ist 422.'
+      description: 'Setzt Belegfelder (`fields`) und/oder bestätigt OCR-Vorschläge unverändert (`confirm`); jede Änderung erzeugt genau eine neue, unveränderliche Revision mit Bearbeiter, Zeitpunkt, Grund sowie Alt- und Neuwert je Feld. Das Original wird nie verändert. `If-Match` ist Pflicht (428 ohne, 412 bei veralteter Revision; bei parallelen Korrekturen derselben Revision gewinnt genau eine). Ein Beleg in Quarantäne oder mit Integritätsverletzung ist nicht bearbeitbar (409), ein freigegebener oder gebuchter Beleg ist unveränderlich (409 `IMMUTABLE_RECORD`, Korrektur nur per Gegenereignis). Ein Wert, der dem aktuellen Stand entspricht, ist 422. Mit `cost_assignment` (statt `fields`/`confirm`, nicht kombinierbar: 422) wird die Kostenzuordnung des Belegs ersetzt (WP-M4-29): Kostenstellen und Fahrzeug-Kostenobjekte (`cost_object_ids`) bzw. Fahrzeuge (`vehicle_ids`) desselben Rechtsträgers wie der Beleg; die Finanzrolle ordnet Kostenstellen und Fahrzeuge zu, der Erfasser nur Fahrzeuge. Fremde, nicht sichtbare oder nicht erlaubte Kennungen ergeben 404 ohne Existenzhinweis, ein Kostenobjekt eines anderen Rechtsträgers oder ein inaktives 422. Eine geänderte Zuordnung erzeugt eine neue Revision; dieselbe Menge ändert nichts.'
       parameters:
       - $ref: common.yaml#/components/parameters/expense_id
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -193,6 +235,45 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExpenseCorrection'
+  /v1/cost-objects:
+    get:
+      summary: Zuordenbare Kostenobjekte lesen
+      operationId: listCostObjects
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Kostenstellen und Fahrzeug-Kostenobjekte des Mandanten, die der Benutzer einem Beleg zuordnen darf (WP-M4-29; Pfad abweichend vom Planungsvorschlag `/v1/cost-events/...`, weil `/v1/cost-events/{id}` für Kostenereignisse reserviert bleibt). Nur erlaubte Objekte sind sichtbar: Kostenstellen mit Dienstbezug nur im Dienstscope, ohne Finanzrolle nur Fahrzeuge. Sortiert nach Kennung, Cursor-Seiten.'
+      parameters:
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - VEHICLE
+          - COST_CENTER
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostObjectPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/revisions:
     get:
       summary: Revisionen eines Belegs lesen
@@ -325,8 +406,10 @@ components:
     ExpenseCorrection:
       type: object
       additionalProperties: false
-      description: Mindestens eines von `fields` und `confirm`. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht) oder `cost_assignment` (nicht kombinierbar). Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
       properties:
+        cost_assignment:
+          $ref: '#/components/schemas/ExpenseCostAssignment'
         reason:
           type: string
           minLength: 1
@@ -339,8 +422,175 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/ExpenseFieldName'
+    ExpenseCostAssignment:
+      type: object
+      additionalProperties: false
+      description: Ersetzt die Kostenzuordnung; mindestens ein Eintrag in `cost_object_ids` oder `vehicle_ids`, zusammen höchstens 20.
+      properties:
+        cost_object_ids:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        vehicle_ids:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+    CostObject:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - VEHICLE
+          - COST_CENTER
+        reference:
+          type: string
+          description: Kennung der Kostenstelle bzw. Fahrzeugkennung/Rechtsträger-Schlüssel des Fahrzeug-Kostenobjekts.
+        name:
+          oneOf:
+          - type: string
+          - type: 'null'
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        active:
+          type: boolean
       required:
-      - reason
+      - id
+      - kind
+      - reference
+      - name
+      - legal_entity_id
+      - vehicle_id
+      - active
+    CostObjectPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostObject'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CostEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        source_system:
+          type: string
+        source_ref:
+          type: string
+        event_type:
+          type: string
+        scenario:
+          type: string
+          enum:
+          - ACTUAL
+        category:
+          type: string
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        net_minor:
+          type: integer
+          format: int64
+        tax_minor:
+          type: integer
+          format: int64
+        gross_minor:
+          type: integer
+          format: int64
+        recoverable_tax_minor:
+          type: integer
+          format: int64
+        cost_basis_minor:
+          type: integer
+          format: int64
+          description: Brutto minus abziehbare Steuer.
+        tax_rule_revision:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        booked_at:
+          type: string
+          format: date-time
+        document_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        reverses_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - source_system
+      - source_ref
+      - event_type
+      - scenario
+      - category
+      - currency
+      - net_minor
+      - tax_minor
+      - gross_minor
+      - recoverable_tax_minor
+      - cost_basis_minor
+      - tax_rule_revision
+      - occurred_at
+      - booked_at
+      - document_id
+      - reverses_id
+    CostEventPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostEvent'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
     ExpenseCaseRef:
       type: object
       additionalProperties: false
@@ -417,7 +667,7 @@ components:
           - VIOLATED
         approvable:
           type: boolean
-          description: Aus dem Dokument folgende Freigabefähigkeit (keine Blocker); weitere Voraussetzungen kommen mit späteren Paketen.
+          description: Freigabefähigkeit aus Dokument und Kostenzuordnung (keine Blocker); weitere Voraussetzungen kommen mit späteren Paketen.
         blockers:
           type: array
           items:
@@ -426,6 +676,14 @@ components:
             - NOT_STORED
             - UNVERIFIED_SENDER
             - INTEGRITY_VIOLATION
+            - COST_ASSIGNMENT_MISSING
+            - COST_OBJECT_INACTIVE
+        cost_objects:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CostObject'
+          description: Zugeordnete Kostenobjekte (WP-M4-29).
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:
@@ -449,6 +707,7 @@ components:
       - integrity
       - approvable
       - blockers
+      - cost_objects
       - fields
       - revision
     ExpenseFieldChange:

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+expense_cost_assignment;SELECT,INSERT,DELETE;WP-M4-29: Zuordnung Beleg-Kostenobjekt, Ersetzen im Entwurfszustand (Trigger), kein UPDATE

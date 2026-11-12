@@ -18,7 +18,7 @@ data class CaseRef(val kind: CaseKind, val id: UUID)
 enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
 
 /** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
-enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION }
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE }
 
 /** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
 object ExpenseFields {
@@ -39,7 +39,10 @@ data class RevisionView(
 )
 
 /** Beleg mit aktuellem Feldstand (WP-M4-22/-23): das Dokument (Original, Zustand, Kanal), die bestätigten oder erfassten Felder und die Freigabehindernisse. */
-data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>)
+data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>, val costObjects: List<CostObjectView> = emptyList()) {
+    /** Freigabefähig, wenn kein Hindernis besteht (Dokument selbst und Kostenzuordnung; weitere Pakete ergänzen Pflichtfelder, Dublette, Split). */
+    val approvable: Boolean get() = blockers.isEmpty()
+}
 
 /** Bearbeitete Ansicht (z. B. zugeschnittenes Foto) als eigenes Objekt; sie ersetzt nie das Original. */
 class EditedView(val mime: String, val bytes: ByteArray)
@@ -166,4 +169,5 @@ interface IntegrityChecks {
  */
 class DocumentServices(
     val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
+    val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
 )

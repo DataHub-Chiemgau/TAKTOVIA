@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+cost_object;active;nein;BUCHHALTUNG_BELEGE;;;;
+cost_object;deactivated_at;nein;BUCHHALTUNG_BELEGE;;;;
+cost_object;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;cost_object_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;cost_object_kind;nein;BUCHHALTUNG_BELEGE;;;;
+expense_cost_assignment;assigned_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+expense_cost_assignment;assigned_at;nein;TECHNISCHER_BETRIEB;;;;

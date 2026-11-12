@@ -30,3 +30,4 @@ dataset_watermark;analytics;VERAENDERLICH;;WP-M4-45;Datenstand
 eta_model_revision;analytics;FREIGABE_UNVERAENDERLICH;;WP-M4-62;freigegebene Modellrevision unveränderlich
 document_settings;documents-finance;VERAENDERLICH;;WP-M4-22;Beleg-Einstellungen je Mandant
 document_integrity_incident;documents-finance;APPEND_ONLY;;WP-M4-24;Integritätsvorfall, unveränderlich
+expense_cost_assignment;documents-finance;VERAENDERLICH;;WP-M4-29;Kostenzuordnung, im Entwurfszustand ersetzbar

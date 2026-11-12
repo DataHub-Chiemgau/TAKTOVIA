@@ -343,9 +343,58 @@ export interface ExpenseFieldValues {
 export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts';
 
 export interface ExpenseCorrection {
-  reason: string;
+  cost_assignment?: ExpenseCostAssignment;
+  reason?: string;
   fields?: ExpenseFieldValues;
   confirm?: ExpenseFieldName[];
+}
+
+export interface ExpenseCostAssignment {
+  cost_object_ids?: UUID[];
+  vehicle_ids?: UUID[];
+}
+
+export interface CostObject {
+  id: UUID;
+  kind: 'VEHICLE' | 'COST_CENTER';
+  reference: string;
+  name: string | null;
+  legal_entity_id: UUID;
+  vehicle_id: UUID | null;
+  active: boolean;
+}
+
+export interface CostObjectPage {
+  items: CostObject[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CostEvent {
+  id: UUID;
+  legal_entity_id: UUID;
+  source_system: string;
+  source_ref: string;
+  event_type: string;
+  scenario: 'ACTUAL';
+  category: string;
+  currency: string;
+  net_minor: number;
+  tax_minor: number;
+  gross_minor: number;
+  recoverable_tax_minor: number;
+  cost_basis_minor: number;
+  tax_rule_revision: string;
+  occurred_at: string;
+  booked_at: string;
+  document_id: UUID | null;
+  reverses_id: UUID | null;
+}
+
+export interface CostEventPage {
+  items: CostEvent[];
+  next_cursor: string | null;
+  as_of: string;
 }
 
 export interface ExpenseCaseRef {
@@ -368,7 +417,8 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE')[];
+  cost_objects: CostObject[];
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -2896,6 +2946,13 @@ export interface Operations {
     body: undefined;
     response: Operation;
   };
+  listCostEvents: {
+    path: Record<string, never>;
+    query: { as_of?: string; legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CostEventPage;
+  };
   allocateCost: {
     path: { cost_event_id: UUID };
     query: Record<string, never>;
@@ -2923,6 +2980,13 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: ExpenseCorrection;
     response: Expense;
+  };
+  listCostObjects: {
+    path: Record<string, never>;
+    query: { kind?: 'VEHICLE' | 'COST_CENTER'; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CostObjectPage;
   };
   listExpenseRevisions: {
     path: { expense_id: UUID };
@@ -4363,10 +4427,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   cancelJourney: { method: 'POST', path: '/v1/federation/journeys/{journey_id}/cancel', pathParams: ['journey_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['journeys:cancel'], statuses: [202, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   receivePartnerEvent: { method: 'POST', path: '/v1/federation/partners/{partner_id}/events', pathParams: ['partner_id'], query: [], headers: ['X-Partner-Key-Id', 'X-Partner-Timestamp'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },

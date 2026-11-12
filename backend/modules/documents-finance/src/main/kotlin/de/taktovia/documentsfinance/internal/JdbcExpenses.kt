@@ -45,7 +45,7 @@ internal class JdbcExpenses(
 
     override fun get(ctx: RequestContext, id: UUID): ExpenseView {
         require(ctx, SCOPE_READ)
-        return ctxTx.run(ctx, readOnly = true) { j -> view(DocumentRows.visible(j, ctx, id)) }
+        return ctxTx.run(ctx, readOnly = true) { j -> view(j, DocumentRows.visible(j, ctx, id)) }
     }
 
     override fun revisions(ctx: RequestContext, id: UUID): List<RevisionView> {
@@ -62,13 +62,16 @@ internal class JdbcExpenses(
     @Suppress("UNCHECKED_CAST")
     private fun change(key: String, v: Any?): FieldChange {
         val m = v as Map<String, Any?>
-        fun n(x: Any?): Any? = x?.let { ExpenseFieldCodec.normalize(key, it) }
+        fun n(x: Any?): Any? = if (key in ExpenseFields.ALL) x?.let { ExpenseFieldCodec.normalize(key, it) } else x   // z. B. `cost_assignment` (WP-M4-29): Kennungslisten unverändert
         return FieldChange(n(m["old"]), n(m["new"]), m["confirmed"] == true, n(m["ocr_proposal"]))
     }
 
     override fun original(ctx: RequestContext, id: UUID): ByteArray = uploads.openOriginal(ctx, id)
 
-    private fun view(r: DocRow) = ExpenseView(r.view, ExpenseFieldCodec.parseStored(r.fieldsJson), r.view.blockers)
+    private fun view(j: JdbcOperations, r: DocRow): ExpenseView {
+        val objects = CostAssignmentRows.assigned(j, r.view.documentId)
+        return ExpenseView(r.view, ExpenseFieldCodec.parseStored(r.fieldsJson), r.view.blockers + CostAssignmentRows.blockers(objects), objects)
+    }
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {
         require(ctx, SCOPE_WRITE)
@@ -122,7 +125,7 @@ internal class JdbcExpenses(
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_EXPENSE_REVISED, ObjectRef("expense", id), ctx.correlationId, mapOf("revision" to newRevision, "fields" to changes.keys.toList())))
         outbox.append(j, OutboxEvent(id, newRevision, "expense.revision_created", linkedMapOf("document_id" to id.toString(), "revision" to newRevision, "fields" to changes.keys.toList(),
             "edited_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
-        return view(DocumentRows.visible(j, ctx, id))
+        return view(j, DocumentRows.visible(j, ctx, id))
     }
 
     private fun changeJson(old: Any?, new: Any, proposal: Any?, confirmed: Boolean): Map<String, Any?> =
