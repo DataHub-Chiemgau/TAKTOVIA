@@ -126,6 +126,10 @@ class CrossTenantIsolationTest {
         env.exec("INSERT INTO taktovia.ride_offer(tenant_id,id,attempt_id,quote_id,service_id,actor_ref,booking_kind,time_kind,pickup_earliest,pickup_latest,arrival_earliest,arrival_latest,arrival_grace_min,direct_seconds,expires_at,created_at,cancellation_policy_ref,demand) " +
             "VALUES (?,?,?,?,CAST(? AS uuid),?,'ADVANCE','DEPARTURE',now()+interval '1 day',now()+interval '1 day 15 minutes',now()+interval '1 day 10 minutes',now()+interval '1 day 25 minutes',5,600,now()+interval '5 minutes',now(),'std-24h',CAST('{\"seats\":2}' AS jsonb))",
             b.tenant.value, rideOffer, offerAttempt, offerQuote, service, "user:${b.passenger}")
+        // Buchung in B (WP-M2-23 bis -26): Zeile per SQL ohne Fremdschlüsselprüfung (replica-Rolle, nur Testaufbau); der Fremdzugriff aus A prüft nur, dass nichts sichtbar oder änderbar ist
+        val booking = UUID.randomUUID().toString()
+        env.exec("SET session_replication_role = replica; INSERT INTO taktovia.booking(tenant_id,id,hold_id,service_id,federation_ref,state,promise_snapshot,revision,booking_no,created_by) VALUES (?,CAST(? AS uuid),?,CAST(? AS uuid),?,'CONFIRMING',CAST(? AS jsonb),1,'BK-2026-000001','user:test')",
+            b.tenant.value, booking, UUID.randomUUID(), service, "fed-$booking", """{"pickup_earliest":"2026-12-01T06:00:00Z","pickup_latest":"2026-12-01T06:15:00Z","arrival_earliest":"2026-12-01T06:10:00Z","arrival_latest":"2026-12-01T06:30:00Z","gross_minor":900,"currency":"EUR","cancellation_policy_ref":"std-24h","vehicle_class":"STANDARD"}""")
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
             env.server.ctx.getBean(CommunicationsupportApi::class.java).notifications
@@ -133,7 +137,7 @@ class CrossTenantIsolationTest {
         }.toString()
         return Ids(mapOf(
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
-            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(),
+            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(), "booking_id" to booking,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
             "tenant_id" to b.tenant.toString(), "object_name" to "defect-evidence-$uploadId", "driver_id" to driverMaster, "notification_id" to notification,
@@ -194,6 +198,10 @@ class CrossTenantIsolationTest {
             "getRideOffer" to Probe("GET", "/v1/ride-offers/{ride_offer_id}", role = "passenger"),
             "holdRideOffer" to Probe("POST", "/v1/ride-offers/{ride_offer_id}/hold", """{"max_gross":{"amount_minor":900,"currency":"EUR","exponent":2}}""", true, role = "passenger"),
             "releaseHold" to Probe("POST", "/v1/ride-offers/{ride_offer_id}/hold/release", null, true, role = "passenger"),
+            // Buchung, Historie und Storno (WP-M2-23 bis -26)
+            "getBooking" to Probe("GET", "/v1/bookings/{booking_id}", role = "passenger"),
+            "listBookingHistory" to Probe("GET", "/v1/bookings/{booking_id}/history", role = "passenger"),
+            "cancelBooking" to Probe("POST", "/v1/bookings/{booking_id}/cancel", """{"reason":"PASSENGER_REQUEST"}""", true, role = "passenger"),
             "getStop" to Probe("GET", "/v1/stops/{stop_id}"),
             "updateStop" to Probe("PUT", "/v1/stops/{stop_id}", """{"name":"Gekapert","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":false,"valid_from":"2027-01-01T00:00:00Z"}""", true),
             "updateService" to Probe("PUT", "/v1/services/{service_id}", """{"name":"Gekapert","timezone":"Europe/Berlin"}""", true),
@@ -267,7 +275,7 @@ class CrossTenantIsolationTest {
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listTimeTargetActual" to "/v1/time-events/target-actual?from=2026-12-01&to=2026-12-02", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "listDefects" to "/v1/defects", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
-        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events",
+        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listBookings" to "/v1/bookings",
     )
     private val selfScoped = setOf(
         "getMe", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
@@ -317,7 +325,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents" -> a.financeToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents" -> a.financeToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
