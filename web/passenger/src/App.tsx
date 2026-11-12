@@ -29,6 +29,7 @@ import { Profil } from './konto/Profil';
 import { PrivacySettings } from './privacy/PrivacySettings';
 import { Registrierung } from './registrierung/Registrierung';
 import { Hilfe } from './hilfe/Hilfe';
+import { Start } from './booking/Start';
 import { OfflineBanner } from './netz/Offline';
 import { useOnline } from './netz/useOnline';
 import { tx } from './texte';
@@ -216,7 +217,7 @@ export function App() {
       <Fragment key={session.me.tenant_id}>
         <OfflineBanner />
         <Routes>
-          <Route path="/" element={<Placeholder screen="ui01" />} />
+          <Route path="/" element={<Start />} />
           <Route
             path="/angebote"
             element={

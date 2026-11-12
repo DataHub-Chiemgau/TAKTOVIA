@@ -20,7 +20,9 @@ internal object ServicegeoServicesFactory {
 
     fun offerModelValidator(): de.taktovia.config.api.RevisionValidator = ServiceConfigRevisionValidator()
 
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock, authorizer: ObjectAuthorizer, outbox: Outbox): ServicegeoApi = object : ServicegeoApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, clock: Clock, authorizer: ObjectAuthorizer, outbox: Outbox,
+        geocoder: de.taktovia.servicegeo.api.Geocoder = de.taktovia.servicegeo.api.Geocoder.unavailable(),
+        geocoderTimeout: java.time.Duration = java.time.Duration.ofSeconds(2)): ServicegeoApi = object : ServicegeoApi {
         override val structure: OrganizationStructure = JdbcOrganizationStructure(ctxTx, audit, config, clock, authorizer)
         override val configurations: de.taktovia.servicegeo.api.ServiceConfigurations = JdbcServiceConfigurations(config, clock)
         override val serviceRevisions: ServiceRevisions = JdbcServiceRevisions(ctxTx, audit, outbox, clock, authorizer)
@@ -28,5 +30,6 @@ internal object ServicegeoServicesFactory {
         override val areas: ServiceAreas = JdbcServiceAreas(ctxTx, audit, outbox, clock, authorizer)
         override val stops: Stops = JdbcStops(ctxTx, audit, outbox, clock)
         override val relations: RelationRules = JdbcRelationRules(ctxTx, audit, outbox, clock, authorizer)
+        override val places: de.taktovia.servicegeo.api.PlaceSearch = JdbcPlaceSearch(ctxTx, stops, areas, geocoder, clock, geocoderTimeout)
     }
 }

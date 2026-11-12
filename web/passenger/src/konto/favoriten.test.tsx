@@ -64,12 +64,12 @@ describe('UI-05 Favoriten, Sprache, Kontakt (WP-M2-36)', () => {
     const server = fakeServer();
     const first = show(server.client);
     await screen.findByRole('heading', { name: 'Profil' });
-    expect(document.documentElement.lang).toBe('de-DE');
+    await waitFor(() => expect(document.documentElement.lang).toBe('de-DE'));
     fireEvent.change(screen.getByLabelText('Sprache'), { target: { value: 'en-GB' } });
     save();
     await screen.findByText('Gespeichert.');
     expect(server.state.profile.locale).toBe('en-GB');
-    expect(document.documentElement.lang).toBe('en-GB');
+    await waitFor(() => expect(document.documentElement.lang).toBe('en-GB'));
     // nach erneutem Laden (anderes Gerät) dieselbe Sprache
     first.unmount();
     document.documentElement.lang = 'de-DE';

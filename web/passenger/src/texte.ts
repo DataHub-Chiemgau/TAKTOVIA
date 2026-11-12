@@ -35,6 +35,34 @@ export const texte = {
   'offline.hint':
     'Es wird nichts gespeichert oder gebucht, solange die Verbindung fehlt. Sobald Sie wieder online sind, geht es hier weiter.',
   'offline.back': 'Wieder online.',
+  'ort.suche.hint': 'Adresse, Ort, Haltestelle oder Favorit eingeben (mindestens 2 Zeichen).',
+  'ort.zuKurz': 'Bitte geben Sie mindestens 2 Zeichen ein.',
+  'ort.keinTreffer':
+    'Kein Ort gefunden. Prüfen Sie die Schreibweise oder wählen Sie eine Haltestelle, einen Favoriten oder einen Punkt auf der Karte.',
+  'ort.geocoderAus':
+    'Die Adress- und Ortssuche ist gerade nicht verfügbar. Haltestellen, Favoriten und der Kartenpunkt funktionieren weiter.',
+  'ort.zuVieleAnfragen':
+    'Zu viele Suchanfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.',
+  'ort.fehler':
+    'Die Suche ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wählen Sie einen Favoriten.',
+  'ort.typ.adresse': 'Adresse',
+  'ort.typ.poi': 'Ort',
+  'ort.typ.haltestelle': 'Haltestelle',
+  'ort.typ.favorit': 'Favorit',
+  'ort.typ.kartenpunkt': 'Kartenpunkt',
+  'ort.ausserhalb': 'außerhalb Bediengebiet',
+  'ort.ausserhalbHinweis':
+    'Dieser Ort liegt außerhalb des Bediengebiets und kann nicht gebucht werden. Bitte wählen Sie einen anderen Ort.',
+  'ort.bestaetigt': 'Treffpunkt bestätigt',
+  'ort.aendern': 'Ändern',
+  'ort.favoriten': 'Meine Favoriten',
+  'ort.karte': 'Punkt auf Karte wählen',
+  'ort.karteHinweis':
+    'Geben Sie die Koordinaten des Punkts ein (die Kartenansicht folgt mit der Karte, WP-M2-40).',
+  'ort.karteUebernehmen': 'Kartenpunkt prüfen',
+  'ort.karteUngueltig':
+    'Breite (-90 bis 90) und Länge (-180 bis 180) müssen gültige Zahlen sein, nicht beide 0.',
+  'ort.nachsteHaltestelle': 'Nächste Haltestelle',
   'sw.updated': 'Die App wurde aktualisiert.',
 } as const;
 

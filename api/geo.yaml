@@ -189,6 +189,89 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/places:
+    get:
+      summary: Ortssuche mit fünf Eingabearten
+      description: 'Adresse, POI, Haltestellenname, Favorit und Kartenpunkt liefern validierte WGS84-Koordinaten (nie 0/0), die unverändert als `origin`/`destination` in `POST /v1/ride-offers` verwendet werden können (`label`, `point`, `stop_id`). Entweder `q` (Suchtext, 2 bis 200 Zeichen: Haltestellen, eigene Favoriten, Adresse/POI über den Geocoder) oder `map_latitude` und `map_longitude` (Kartenpunkt), nie beides. `bias_latitude`/`bias_longitude` ist die Suchkoordinate der aktuellen Anfrage (z. B. Gerätestandort nach Zustimmung): sie wird weder gespeichert noch protokolliert und nur an den Geocoder weitergegeben. Mit `service_id` werden Bediengebiet (`service_area`) und nächster buchbarer Haltepunkt (`nearest_stop`, Umkreis 500 m) zugeordnet; `OUTSIDE` bedeutet „außerhalb Bediengebiet“. Inaktive Haltestellen werden nie vorgeschlagen; ein Favorit mit inaktivem Haltepunkt bleibt als Ort nutzbar, trägt aber keine `stop_id`. Fällt der Geocoder aus, bleiben Haltestelle, Favorit und Kartenpunkt nutzbar (`notices` enthält `GEOCODER_UNAVAILABLE`). Nicht auflösbar: leere `items` und `NO_MATCH`, nie eine Koordinate. Eigene Quote (429 mit `Retry-After`); Suchtexte sind weder Metriklabel noch Logbestandteil.'
+      operationId: searchPlaces
+      security:
+      - oidc:
+        - geo:read
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
+        description: Suchtext; wird nie als Markup interpretiert.
+      - name: map_latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+        description: Kartenpunkt (Breite); nur zusammen mit `map_longitude`, ohne `q`.
+      - name: map_longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: bias_latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -90
+          maximum: 90
+        description: Suchkoordinate der aktuellen Anfrage (nur zusammen mit `bias_longitude`); wird nicht gespeichert.
+      - name: bias_longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: -180
+          maximum: 180
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dienst für Bediengebiets- und Haltepunktzuordnung.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 10
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceSearchResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/stops:
     get:
       summary: Haltepunkte auflisten
@@ -1017,6 +1100,101 @@ components:
         traffic_products:
         - AREA_ON_DEMAND
         valid_from: '2026-12-01T00:00:00+01:00'
+    PlaceHit:
+      type: object
+      additionalProperties: false
+      description: Ortstreffer; `label`, `point` und `stop_id` entsprechen `RidePlace` in `POST /v1/ride-offers`.
+      properties:
+        type:
+          type: string
+          enum:
+          - ADDRESS
+          - POI
+          - STOP
+          - FAVORITE
+          - MAP_POINT
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        point:
+          $ref: common.yaml#/components/schemas/Point
+        stop_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Nur bei einem heute buchbaren Haltepunkt.
+        source:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 'Quelle: `stop_registry`, `favorite`, `map` oder die Kennung des Geocoders.'
+        data_as_of:
+          type: string
+          format: date-time
+          description: Datenstand der Quelle.
+        service_area:
+          type: string
+          enum:
+          - INSIDE
+          - OUTSIDE
+          - UNKNOWN
+          description: Lage zum Bediengebiet des Dienstes; `UNKNOWN` ohne `service_id`.
+        nearest_stop:
+          oneOf:
+          - $ref: '#/components/schemas/PlaceNearestStop'
+          - type: 'null'
+      required:
+      - type
+      - label
+      - point
+      - stop_id
+      - source
+      - data_as_of
+      - service_area
+      - nearest_stop
+    PlaceNearestStop:
+      type: object
+      additionalProperties: false
+      properties:
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        name:
+          type: string
+          maxLength: 200
+        distance_m:
+          type: integer
+          minimum: 0
+          maximum: 100000
+      required:
+      - stop_id
+      - name
+      - distance_m
+    PlaceSearchResult:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PlaceHit'
+        notices:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - GEOCODER_UNAVAILABLE
+            - NO_MATCH
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - notices
+      - as_of
     GeoStopPage:
       type: object
       additionalProperties: false

@@ -14,7 +14,8 @@ import org.springframework.context.annotation.Configuration
 /** Verdrahtung der Organisationsstruktur (WP-M1-09): Region, Betriebshof, Dienstkopf (`service-geo`) und Kostenstellen (`documents-finance`). */
 @Configuration
 class StructureConfiguration {
-    @Bean fun servicegeoApi(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, outbox: Outbox): ServicegeoApi = ServicegeoApi.create(ctxTx, audit, config, outbox = outbox)
+    @Bean fun servicegeoApi(ctxTx: ContextTransactions, audit: AuditPort, config: ConfigApi, outbox: Outbox, geocoder: de.taktovia.servicegeo.api.Geocoder): ServicegeoApi =
+        ServicegeoApi.create(ctxTx, audit, config, outbox = outbox, geocoder = geocoder)
     /** Modellregeln der Dienstkonfiguration (WP-M1-25): laufen bei Validierung und Publikation jeder Dienstrevision; ohne Abhängigkeit von `ConfigApi` (kein Verdrahtungszyklus). */
     @Bean fun offerModelRevisionValidator(): RevisionValidator = ServicegeoApi.offerModelValidator()
     /** ImpactProvider „Bediengebiet“ (WP-M2-04): wird von `ConfigApi` für die Wirkungsanalyse vor Publikation gesammelt. */
