@@ -147,6 +147,7 @@ class CrossTenantIsolationTest {
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
+            "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(),
         ), subject = b.passenger.toString())
     }
 
@@ -257,6 +258,12 @@ class CrossTenantIsolationTest {
             "correctExpense" to Probe("PATCH", "/v1/expenses/{expense_id}", """{"reason":"Fremdversuch","fields":{"amount_minor":1}}""", true, role = "finance"),
             "listExpenseRevisions" to Probe("GET", "/v1/expenses/{expense_id}/revisions", role = "finance"),
             "getExpenseOriginal" to Probe("GET", "/v1/expenses/{expense_id}/original", role = "finance"),
+            "decideExpenseDuplicate" to Probe("POST", "/v1/expenses/{expense_id}/duplicates/{candidate_id}/decision", """{"decision":"EIGENER_VORGANG","reason":"Fremdversuch"}""", true, role = "finance"),
+            "submitExpense" to Probe("POST", "/v1/expenses/{expense_id}/submit", null, true, role = "finance"),
+            "reviewExpense" to Probe("POST", "/v1/expenses/{expense_id}/review", """{"decision":"APPROVED","reason":"Fremdversuch"}""", true, role = "finance"),
+            "approveExpense" to Probe("POST", "/v1/expenses/{expense_id}/approve", """{"reason":"Fremdversuch","validated_document_revision":1}""", true, role = "finance"),
+            "rejectExpense" to Probe("POST", "/v1/expenses/{expense_id}/reject", """{"reason":"Fremdversuch"}""", true, role = "finance"),
+            "acknowledgeExpenseHint" to Probe("POST", "/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement", """{"reason":"Fremdversuch"}""", true, role = "finance"),
             "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
             // Belegerfassung per Kamera (WP-M4-25): bearbeitete Ansicht

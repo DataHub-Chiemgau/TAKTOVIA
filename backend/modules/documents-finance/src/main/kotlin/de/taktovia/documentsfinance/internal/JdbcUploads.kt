@@ -305,8 +305,11 @@ internal class JdbcUploads(
                 val updated = ctxTx.run(ctx) { j ->
                     val u = j.query("UPDATE taktovia.expense_document d SET state = 'STORED', scan_engine = ?, scanned_at = clock_timestamp() WHERE d.id = ? AND d.state = 'QUARANTINED' RETURNING $DOC_COLUMNS",
                         DocumentRows.MAPPER, scanner.engine, doc.view.documentId).firstOrNull()
-                    if (u != null) outbox.append(j, OutboxEvent(doc.view.documentId, 2, "document.quarantine_passed", linkedMapOf(
-                        "document_id" to u.view.documentId.toString(), "mime" to u.view.mime, "scanned_at" to u.view.scannedAt?.toString()), clock.instant(), correlationId = ctx.correlationId))
+                    if (u != null) {
+                        outbox.append(j, OutboxEvent(doc.view.documentId, 2, "document.quarantine_passed", linkedMapOf(
+                            "document_id" to u.view.documentId.toString(), "mime" to u.view.mime, "scanned_at" to u.view.scannedAt?.toString()), clock.instant(), correlationId = ctx.correlationId))
+                        if (u.view.purpose == UploadPurpose.RECEIPT) DuplicateHook.afterChange(j, audit, outbox, clock, ctx, u.view.documentId)   // Dublettenerkennung (WP-M4-32): identische Datei im Mandanten
+                    }
                     u ?: j.query("SELECT $DOC_COLUMNS FROM taktovia.expense_document d WHERE d.id = ?", DocumentRows.MAPPER, doc.view.documentId).single()
                 }
                 store.delete(ObjectKey(ctx.tenant, quarantineKey))   // Quarantänekopie entfernen; das Original liegt im Originalbestand

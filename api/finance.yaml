@@ -140,8 +140,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '428':
           $ref: common.yaml#/components/responses/Problem
-      description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen. POSTED
-        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED. Solange ein Pflichtfeld nicht bestätigt oder korrigiert ist, ein markierter OCR-Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt oder Netto + Steuer ≠ Brutto gilt, weist die Freigabe mit 422 `UNCONFIRMED_FIELDS` ab (`violations[].pointer` = `/fields/<feld>`); die Prüfung läuft in der Freigabetransaktion auf der gesperrten Belegzeile, eine parallele Feldkorrektur auf der alten Revision ergibt 412.
+      description: 'Endgültige Freigabe (WP-M4-34). Erste Freigabe (Budgetfreigabe) eines fachlich geprüften Belegs (`REVIEWED`): bei einem Betrag größer als die Schwelle `approval_stage_thresholds` wartet der Beleg auf die zweite Person (Antwort `WAITING_SECOND_APPROVAL`, `posting_id` null; ein Betrag exakt auf der Schwelle löst sie nicht aus), sonst entsteht das Kostenereignis (`POSTED`, `posting_id`). Zweite Freigabe: eine andere Person als Erfasser und Erstfreigeber (403), dann `POSTED`. Ohne Recht (Scope `expenses:approve`, Finanzrolle, Mensch) 403 ohne Schritteintrag. `validated_document_revision` = exakte Dokumentrevision, `If-Match` ebenso (veraltet 412, fehlend 428). Je Blockade ein eigener Code: 409 `DOCUMENT_INTEGRITY_VIOLATION`, `DUPLICATE_REVIEW_REQUIRED`, `DUPLICATE_EVIDENCE_LINKED`; 422 `UNCONFIRMED_FIELDS`, `COST_ASSIGNMENT_REQUIRED`, `FUEL_FIELDS_MISSING`, `SPLIT_INCOMPLETE`, `HINT_NOT_ACKNOWLEDGED`. Gleicher `Idempotency-Key` mit gleichem Inhalt liefert die gespeicherte Antwort und bucht nicht erneut, mit anderem Inhalt 409 `IDEMPOTENCY_CONFLICT`. Ein bereits freigegebener oder gebuchter Beleg: 409. POSTED
+        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED. Solange ein Pflichtfeld nicht bestätigt oder korrigiert ist, ein markierter OCR-Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt oder Netto + Steuer ≠ Brutto gilt, weist die Freigabe mit 422 `UNCONFIRMED_FIELDS` ab (`violations[].pointer` = `/fields/<feld>`); die Prüfung läuft in der Freigabetransaktion auf der gesperrten Belegzeile, eine parallele Feldkorrektur auf der alten Revision ergibt 412.'
       requestBody:
         required: true
         content:
@@ -304,6 +304,272 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement:
+    post:
+      summary: Plausibilitätshinweis quittieren
+      operationId: acknowledgeExpenseHint
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Quittiert einen offenen Plausibilitätshinweis (Tankvolumen, Literpreis, Kilometerabstand, Tankkarten-ID) der aktuellen Belegrevision mit Begründung (3 bis 1000 Zeichen, sonst 422). Die Quittierung ist ein eigener, unveränderlicher Eintrag mit Akteur und Zeit (Audit `finance.hint.acknowledged`); der Hinweis und die erfassten Werte des Belegs bleiben unverändert. `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428); ein Hinweis einer früheren Revision ist 409 (er wird in der aktuellen Revision neu geprüft), ein bereits freigegebener oder gebuchter Beleg 409 `IMMUTABLE_RECORD`. Recht: Scope `expenses:review` und Finanzrolle (dasselbe Recht wie die Sachprüfung, Planungsannahme bis zur Rollenfestlegung in WP-M4-34); ohne Recht 403. Parallele Quittierungen desselben Hinweises ergeben genau einen Eintrag; die Wiederholung liefert den unveränderten Stand. Fremde Mandanten und unbekannte Hinweise: 404. Ein nicht quittierter Hinweis blockiert die Freigabe (422 `HINT_NOT_ACKNOWLEDGED`).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - name: hint_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Hinweis-ID (`hints[].id` des Belegs).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HintAcknowledgementRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/duplicates/{candidate_id}/decision:
+    post:
+      summary: Dublettentreffer entscheiden
+      operationId: decideExpenseDuplicate
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Entscheidet einen offenen Dublettentreffer (WP-M4-32): `GLEICHE_EVIDENZ` = der neuere Beleg ist weitere Evidenz des Vorgangs des älteren (Verknüpfung zum Kostenereignis, sobald es besteht; der Beleg wird nie eigener Kostenfall), `EIGENER_VORGANG` = der neuere Beleg bleibt ein eigener Kostenfall. Kein Beleg wird gelöscht oder zusammengeführt. Sichere Treffer (identischer Dateihash oder vollständig gleiche Fachdaten) entstehen bereits als `GLEICHE_EVIDENZ` und sind nicht entscheidbar. Die Freigabe eines Belegs mit offenem Treffer ist 409 `DUPLICATE_REVIEW_REQUIRED`, die eines Belegs, der Evidenz eines anderen Vorgangs ist, 409 `DUPLICATE_EVIDENCE_LINKED`. `If-Match` trägt die Revision des Belegs aus dem Pfad (veraltet 412, fehlend 428). Recht: Scope `expenses:review` und Finanzrolle; ohne Recht 403; Begründung 3 bis 1000 Zeichen, sonst 422. Dieselbe Entscheidung wiederholt liefert den unveränderten Stand, eine andere Entscheidung auf einen entschiedenen Treffer 409. Fremde Mandanten und unbekannte Treffer: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - name: candidate_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Treffer-ID (`duplicates[].id` des Belegs).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateDecisionRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/submit:
+    post:
+      summary: Erfassung abschließen und zur fachlichen Prüfung einreichen
+      operationId: submitExpense
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Schließt die Erfassung ab (Schritt `CAPTURE`): `STORED` -> `IN_REVIEW`; der Beleg ist danach nicht mehr bearbeitbar (409 `IMMUTABLE_RECORD`). `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428). Erfasser oder Finanzrolle; fremde Mandanten und andere Akteure: 404. Ein Beleg in Quarantäne oder im falschen Zustand: 409; ein Beleg, der Evidenz einer Dublette ist: 409 `DUPLICATE_EVIDENCE_LINKED`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/review:
+    post:
+      summary: Fachliche Prüfung eines Belegs
+      operationId: reviewExpense
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Fachliche Prüfung (Schritt `REVIEW`) eines eingereichten Belegs (`IN_REVIEW`). `APPROVED`: der Beleg durchläuft alle Blockaden und wird `REVIEWED`; jede Blockade hat ihren eigenen Code: 409 `DOCUMENT_INTEGRITY_VIOLATION`, 409 `DUPLICATE_REVIEW_REQUIRED`/`DUPLICATE_EVIDENCE_LINKED`, 422 `UNCONFIRMED_FIELDS`, `COST_ASSIGNMENT_REQUIRED`, `FUEL_FIELDS_MISSING`, `SPLIT_INCOMPLETE`, `HINT_NOT_ACKNOWLEDGED`. `REJECTED`: zurück in die Erfassung (`STORED`) mit Begründung, ohne Kostenereignis und ohne Journal. Recht: Scope `expenses:review` und Finanzrolle (Mensch); ohne Recht 403 ohne Schritteintrag. `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseReviewRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/reject:
+    post:
+      summary: Belegfreigabe ablehnen
+      operationId: rejectExpense
+      security:
+      - oidc:
+        - expenses:approve
+      description: 'Ablehnung in der Budgetfreigabe oder der zweiten Freigabe (Beleg `REVIEWED` oder `WAITING_SECOND_APPROVAL`): zurück in die Erfassung (`STORED`) mit Begründung (3 bis 1000 Zeichen), ohne Kostenereignis und ohne Journal; der Schritt steht mit Akteur, Revision und Begründung in `approval_steps`. Recht wie `approveExpense` (Scope `expenses:approve`, Finanzrolle, Mensch; sonst 403). `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428). Eine Ablehnung in der fachlichen Prüfung ist `reviewExpense` mit `REJECTED`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HintAcknowledgementRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/original:
     get:
       summary: Belegoriginal abrufen
@@ -413,10 +679,12 @@ components:
     ExpenseCorrection:
       type: object
       additionalProperties: false
-      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht) oder `cost_assignment` (nicht kombinierbar). Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment` oder `fuel` (Tankwerte, WP-M4-30); die drei Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
       properties:
         cost_assignment:
           $ref: '#/components/schemas/ExpenseCostAssignment'
+        fuel:
+          $ref: '#/components/schemas/FuelCapture'
         reason:
           type: string
           minLength: 1
@@ -429,6 +697,401 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/ExpenseFieldName'
+    DuplicateDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - GLEICHE_EVIDENZ
+          - EIGENER_VORGANG
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - decision
+      - reason
+    ExpenseDuplicate:
+      type: object
+      additionalProperties: false
+      description: 'Dublettentreffer (WP-M4-32). `role` = Sicht des Belegs (NEWER: er wird Evidenz oder blockiert, OLDER: Gegenüber). `other_document_id`, `basis` und `other` (Gegenüberstellung) sieht nur die Finanzrolle.'
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        role:
+          type: string
+          enum:
+          - NEWER
+          - OLDER
+        other_document_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        match:
+          type: string
+          enum:
+          - HASH
+          - FACTS
+        certainty:
+          type: string
+          enum:
+          - SAFE
+          - POSSIBLE
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        basis:
+          oneOf:
+          - type: object
+            description: Trefferregel, Schwelle, übereinstimmende und abweichende Felder.
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - OFFEN
+          - GLEICHE_EVIDENZ
+          - EIGENER_VORGANG
+        detected_at:
+          type: string
+          format: date-time
+        decided_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        decided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        reason:
+          oneOf:
+          - type: string
+          - type: 'null'
+        other:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseDuplicateFacts'
+      required:
+      - id
+      - role
+      - other_document_id
+      - match
+      - certainty
+      - score
+      - basis
+      - state
+      - detected_at
+      - decided_by
+      - decided_at
+      - reason
+      - other
+    ExpenseDuplicateFacts:
+      type: object
+      additionalProperties: false
+      properties:
+        merchant:
+          oneOf:
+          - type: string
+          - type: 'null'
+        document_date:
+          oneOf:
+          - type: string
+          - type: 'null'
+        currency:
+          oneOf:
+          - type: string
+          - type: 'null'
+        amount_minor:
+          oneOf:
+          - type: integer
+            format: int64
+          - type: 'null'
+        document_number:
+          oneOf:
+          - type: string
+          - type: 'null'
+        source_channel:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+      required:
+      - merchant
+      - document_date
+      - currency
+      - amount_minor
+      - document_number
+      - source_channel
+      - received_at
+    ExpenseReviewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - decision
+      - reason
+    ExpenseApprovalStep:
+      type: object
+      additionalProperties: false
+      description: Freigabeschritt (`approval_step`, append-only) mit Akteur, Dokumentrevision, Entscheidung, Begründung und Zeit.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        step:
+          type: string
+          enum:
+          - CAPTURE
+          - REVIEW
+          - BUDGET
+          - SECOND_APPROVAL
+        document_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+        decided_by:
+          type: string
+        reason:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - step
+      - document_revision
+      - decision
+      - decided_by
+      - reason
+      - decided_at
+    HintAcknowledgementRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - reason
+    ExpenseHint:
+      type: object
+      additionalProperties: false
+      description: 'Plausibilitätshinweis (WP-M4-31): Regel, Schwelle, Istwert und Berechnungsbasis. Er ändert keinen erfassten Wert; `acknowledgement` = null heißt offen.'
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        rule:
+          type: string
+          enum:
+          - FUEL_VOLUME
+          - FUEL_PRICE
+          - FUEL_ODOMETER_GAP
+          - FUEL_CARD_MISMATCH
+        document_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        threshold:
+          type: string
+        actual_value:
+          type: string
+        basis:
+          type: object
+          description: Berechnungsbasis (Vergleichswert, Schwelle, Quelle; je Regel weitere Angaben wie Abweichung in Prozent oder Stichprobengröße).
+        raised_at:
+          type: string
+          format: date-time
+        acknowledgement:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseHintAcknowledgement'
+      required:
+      - id
+      - rule
+      - document_revision
+      - threshold
+      - actual_value
+      - basis
+      - raised_at
+      - acknowledgement
+    ExpenseHintAcknowledgement:
+      type: object
+      additionalProperties: false
+      properties:
+        acknowledged_by:
+          type: string
+        reason:
+          type: string
+        acknowledged_at:
+          type: string
+          format: date-time
+      required:
+      - acknowledged_by
+      - reason
+      - acknowledged_at
+    ExpensePlausibilityNote:
+      type: object
+      additionalProperties: false
+      description: Vermerk zu einer nicht prüfbaren Regel. `PARAMETER_MISSING` = der Parameter ist nicht konfiguriert (die Regel gilt nie stillschweigend als bestanden), `NO_COMPARISON_BASIS` = kein Vergleichswert (z. B. kein Vorgänger-Kilometerstand).
+      properties:
+        rule:
+          type: string
+          enum:
+          - FUEL_VOLUME
+          - FUEL_PRICE
+          - FUEL_ODOMETER_GAP
+          - FUEL_CARD_MISMATCH
+        code:
+          type: string
+          enum:
+          - PARAMETER_MISSING
+          - NO_COMPARISON_BASIS
+        text:
+          type: string
+      required:
+      - rule
+      - code
+      - text
+    FuelCapture:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Tankwerte eines Belegs der Art FUEL_RECEIPT. Gesetzt wird, was angegeben ist; die übrigen Werte bleiben. Menge und Preis sind Dezimalstrings (nie JSON-Zahlen, nie Gleitkomma), positiv, höchstens 8 Nachkommastellen. Der Bruttobetrag ist das Belegfeld `amount_minor`. Die Einheit folgt der Kraftstoffart (ELECTRIC = kWh, sonst Liter).
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        fuel_type:
+          type: string
+          enum:
+          - PETROL
+          - DIESEL
+          - LPG
+          - ELECTRIC
+        quantity:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+        unit_price:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+        odometer_km:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000
+        fueled_at:
+          type: string
+          format: date-time
+        card_id:
+          type: string
+          pattern: ^[A-Za-z0-9._-]{1,64}$
+    FuelData:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        fuel_type:
+          oneOf:
+          - type: string
+            enum:
+            - PETROL
+            - DIESEL
+            - LPG
+            - ELECTRIC
+          - type: 'null'
+        quantity:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+            enum:
+            - LITER
+            - KWH
+          - type: 'null'
+        unit_price:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          - type: 'null'
+        gross_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Spiegel des Belegfelds `amount_minor`.
+        currency:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        odometer_km:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 10000000
+          - type: 'null'
+        fueled_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        card_id:
+          oneOf:
+          - type: string
+          - type: 'null'
+        missing:
+          type: array
+          description: Fehlende Pflichtwerte einzeln (Kraftstoffart, Menge, Preis je Einheit, Kilometerstand, Fahrzeug); solange `fuel_receipt_required` gilt, ist der Beleg dann nicht freigabefähig.
+          items:
+            type: string
+            enum:
+            - vehicle_id
+            - fuel_type
+            - quantity
+            - unit_price
+            - odometer_km
+        complete:
+          type: boolean
+      required:
+      - vehicle_id
+      - fuel_type
+      - quantity
+      - unit
+      - unit_price
+      - gross_minor
+      - currency
+      - odometer_km
+      - fueled_at
+      - card_id
+      - missing
+      - complete
     ExpenseCostAssignment:
       type: object
       additionalProperties: false
@@ -622,7 +1285,7 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         state:
           type: string
-          description: Belegzustand; QUARANTINED, STORED oder QUARANTINE_REJECTED, danach die Zustände der Freigabe und Buchung (weitere Arbeitspakete).
+          description: Belegzustand; QUARANTINED, STORED (Erfassung) oder QUARANTINE_REJECTED, danach IN_REVIEW, REVIEWED, WAITING_SECOND_APPROVAL und POSTED (Freigabe-Workflow, WP-M4-34).
         source_channel:
           type: string
           enum:
@@ -687,6 +1350,10 @@ components:
             - SUM_MISMATCH
             - COST_ASSIGNMENT_MISSING
             - COST_OBJECT_INACTIVE
+            - FUEL_FIELDS_MISSING
+            - HINT_UNACKNOWLEDGED
+            - DUPLICATE_REVIEW_OPEN
+            - DUPLICATE_EVIDENCE
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -701,6 +1368,40 @@ components:
           items:
             $ref: '#/components/schemas/CostObject'
           description: Zugeordnete Kostenobjekte (WP-M4-29).
+        fuel:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/FuelData'
+          description: Tankwerte (WP-M4-30), nur bei Belegen der Art FUEL_RECEIPT; `missing` nennt die fehlenden Pflichtwerte einzeln.
+        hints:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/ExpenseHint'
+          description: Plausibilitätshinweise der aktuellen Belegrevision (WP-M4-31), offen und quittiert.
+        plausibility_notes:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/ExpensePlausibilityNote'
+        duplicates:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ExpenseDuplicate'
+          description: Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32).
+        approval_steps:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ExpenseApprovalStep'
+          description: Freigabeschritte in zeitlicher Folge (WP-M4-34).
+        export_state:
+          type: string
+          enum:
+          - NOT_EXPORTED
+          - EXPORTED
+          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege.
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

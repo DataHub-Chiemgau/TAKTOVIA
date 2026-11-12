@@ -1,0 +1,22 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+fuel_transaction;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;fuel_type;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;quantity;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;unit;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;unit_price;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;gross_minor;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;currency;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;odometer_km;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;fueled_at;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;card_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_transaction;document_revision;nein;TECHNISCHER_BETRIEB;;;;
+fuel_transaction;recorded_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+fuel_transaction;recorded_at;nein;TECHNISCHER_BETRIEB;;;;
+finance_policy;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+finance_policy;fuel_receipt_required;nein;BUCHHALTUNG_BELEGE;;;;
+finance_policy;revision;nein;TECHNISCHER_BETRIEB;;;;
+finance_policy;updated_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+finance_policy;updated_at;nein;TECHNISCHER_BETRIEB;;;;

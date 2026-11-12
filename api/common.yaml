@@ -27,6 +27,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             expenses:approve: expenses:approve
+            expenses:review: expenses:review
             config:publish: config:publish
             rosters:publish: rosters:publish
             rosters:write: rosters:write
@@ -111,6 +112,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             expenses:approve: expenses:approve
+            expenses:review: expenses:review
             config:publish: config:publish
             rosters:publish: rosters:publish
             rosters:write: rosters:write
@@ -657,12 +659,18 @@ components:
       - CANCEL_DEADLINE_EXPIRED
       - IMMUTABLE_RECORD
       - DOCUMENT_INTEGRITY_VIOLATION
+      - DUPLICATE_REVIEW_REQUIRED
+      - DUPLICATE_EVIDENCE_LINKED
       - INVALID_STATE_TRANSITION
       - REVISION_MISMATCH
       - PAYLOAD_TOO_LARGE
       - UNSUPPORTED_MEDIA_TYPE
       - VALIDATION_FAILED
       - UNCONFIRMED_FIELDS
+      - FUEL_FIELDS_MISSING
+      - HINT_NOT_ACKNOWLEDGED
+      - COST_ASSIGNMENT_REQUIRED
+      - SPLIT_INCOMPLETE
       - PRECONDITION_REQUIRED
       - RATE_LIMITED
       - INTERNAL_ERROR
@@ -687,12 +695,18 @@ components:
         CANCEL_DEADLINE_EXPIRED: 409
         IMMUTABLE_RECORD: 409
         DOCUMENT_INTEGRITY_VIOLATION: 409
+        DUPLICATE_REVIEW_REQUIRED: 409
+        DUPLICATE_EVIDENCE_LINKED: 409
         INVALID_STATE_TRANSITION: 409
         REVISION_MISMATCH: 412
         PAYLOAD_TOO_LARGE: 413
         UNSUPPORTED_MEDIA_TYPE: 415
         VALIDATION_FAILED: 422
         UNCONFIRMED_FIELDS: 422
+        FUEL_FIELDS_MISSING: 422
+        HINT_NOT_ACKNOWLEDGED: 422
+        COST_ASSIGNMENT_REQUIRED: 422
+        SPLIT_INCOMPLETE: 422
         PRECONDITION_REQUIRED: 428
         RATE_LIMITED: 429
         INTERNAL_ERROR: 500

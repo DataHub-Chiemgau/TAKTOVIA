@@ -1,0 +1,15 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+expense_document;export_state;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-34: Exportstatus
+expense_document;exported_at;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-34
+expense_document;exported_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+finance_policy;approval_second_threshold_minor;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-34: Vier-Augen-Schwelle
+finance_policy;approval_threshold_currency;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-34
+approval_step;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;id;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;document_revision;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;step;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;decision;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;reason;nein;BUCHHALTUNG_BELEGE;;;;
+approval_step;decided_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+approval_step;decided_at;nein;TECHNISCHER_BETRIEB;;;;

@@ -60,7 +60,7 @@ internal class JdbcIntegrity(
         val actual = bytes?.let { sha256(it) }
         val failure = when { bytes == null -> IntegrityFailure.OBJECT_MISSING; actual != row.view.sha256 -> IntegrityFailure.HASH_MISMATCH; else -> null }
         return ctxTx.run(ctx) { j ->
-            val cur = j.query("SELECT d.integrity_state FROM taktovia.expense_document d WHERE d.id = ? FOR UPDATE", { rs, _ -> rs.getString(1) }, id).firstOrNull() ?: throw ProblemException.notFound()
+            val cur = j.query("SELECT d.integrity_state FROM taktovia.expense_document d WHERE d.id = ? FOR NO KEY UPDATE", { rs, _ -> rs.getString(1) }, id).firstOrNull() ?: throw ProblemException.notFound()
             if (cur == "VIOLATED") return@run IntegrityResult(id, IntegrityState.VIOLATED, null, null)   // schon festgestellt (parallel)
             if (failure == null) {
                 j.update("UPDATE taktovia.expense_document SET integrity_state = 'VERIFIED', integrity_checked_at = clock_timestamp() WHERE id = ?", id)

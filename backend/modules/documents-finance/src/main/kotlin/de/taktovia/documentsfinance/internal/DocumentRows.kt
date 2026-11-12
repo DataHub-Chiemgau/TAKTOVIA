@@ -52,7 +52,7 @@ internal object DocumentRows {
      * (`upload_ticket_id`). Mit `lock`: Zeilensperre `FOR UPDATE` (serialisiert Korrekturen und Integritätsfeststellung).
      */
     fun visible(j: JdbcOperations, ctx: RequestContext, id: UUID, lock: Boolean = false): DocRow {
-        val r = (if (lock) j.query("SELECT $COLUMNS FROM taktovia.expense_document d WHERE d.id = ? AND d.upload_ticket_id IS NOT NULL FOR UPDATE", MAPPER, id)
+        val r = (if (lock) j.query("SELECT $COLUMNS FROM taktovia.expense_document d WHERE d.id = ? AND d.upload_ticket_id IS NOT NULL FOR NO KEY UPDATE", MAPPER, id)
             else j.query("SELECT $COLUMNS FROM taktovia.expense_document d WHERE d.id = ? AND d.upload_ticket_id IS NOT NULL", MAPPER, id)).firstOrNull() ?: throw ProblemException.notFound()
         if (r.createdBy != ctx.actor.subject && "finance" !in ctx.roles) throw ProblemException.notFound()
         return r

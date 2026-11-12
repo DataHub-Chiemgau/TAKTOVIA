@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/expense.duplicate_detected.v1.schema.json",
+  "title": "Dublettentreffer erzeugt (WP-M4-32)",
+  "description": "Payload von `expense.duplicate_detected`. Aggregat: duplicate_candidate (Revision 1 = Treffer entstanden, Revision 2 = ein offener Treffer wurde mit neuen Fachdaten zum sicheren Treffer neu bewertet). `document_id` ist der neuere Beleg des Paares. Keine Fachdaten, nur Kennungen, Art und Punkte.",
+  "type": "object",
+  "required": ["document_id", "other_document_id", "certainty", "match", "score", "state", "detected_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "other_document_id": {"type": "string", "format": "uuid"},
+    "certainty": {"enum": ["SAFE", "POSSIBLE"]},
+    "match": {"enum": ["HASH", "FACTS"]},
+    "score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "state": {"enum": ["OFFEN", "GLEICHE_EVIDENZ"]},
+    "detected_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "other_document_id": "66666666-7777-4888-8999-000000000000", "certainty": "SAFE", "match": "HASH", "score": 100, "state": "GLEICHE_EVIDENZ", "detected_at": "2026-06-15T08:05:00Z"}
+  ]
+}

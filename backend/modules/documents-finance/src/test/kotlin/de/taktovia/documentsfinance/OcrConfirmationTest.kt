@@ -179,8 +179,8 @@ class OcrConfirmationTest {
     /** Freigabe in einer Transaktion (Prüfung unter Zeilensperre, dann Zustandswechsel) gegen eine parallele Feldkorrektur. */
     @Test
     fun korrektur_parallel_zur_freigabe_ergibt_412() {
-        val w = bf.fx.world(); val fin = bf.financeCtx(w)
         repeat(12) { round ->
+            val w = bf.fx.world(); val fin = bf.financeCtx(w)   // je Runde ein eigener Mandant: gleiche Belegdaten in einem Mandanten wären Dubletten (WP-M4-32)
             val d = extracted(w, *receipt)
             bf.svc.expenses.correct(fin, d.documentId, 1, CorrectExpense("Pflicht $round", confirm = mandatory))   // Revision 2, alles bestätigt, Betrag 89,00
             val pool = Executors.newFixedThreadPool(2); val go = CountDownLatch(1)

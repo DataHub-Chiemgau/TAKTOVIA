@@ -106,6 +106,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
             mapOf("revision" to revision, "cost_object_count" to objects.size)))
         outbox.append(j, OutboxEvent(documentId, revision, "expense.cost_assigned", linkedMapOf("document_id" to documentId.toString(), "revision" to revision, "cost_object_count" to objects.size,
             "kinds" to objects.map { it.kind.name }.toSortedSet().toList(), "assigned_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
+        PlausibilityHook.afterRevision(j, audit, ctx, documentId, revision)
         return view(j, ctx, documentId)
     }
 
@@ -160,12 +161,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
         return o.copy(active = false)
     }
 
-    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView {
-        val r = DocumentRows.visible(j, ctx, id)
-        val objects = CostAssignmentRows.assigned(j, id)
-        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects), review, objects)
-    }
+    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView = ExpenseViews.build(j, DocumentRows.visible(j, ctx, id), ctx)
 
     private companion object {
         const val MAX_OBJECTS = 20

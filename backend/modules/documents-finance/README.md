@@ -22,3 +22,7 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Kostenzuordnung, Kostenereignis, Posting (WP-M4-29, -33)
 
 `DocumentServices.costs` (`CostAssignments`: Beleg einem oder mehreren Kostenobjekten — Kostenstelle oder Fahrzeug — desselben Rechtsträgers zuordnen, zuordenbare Kostenobjekte lesen, Kostenobjekt deaktivieren), `costEvents` (`CostEvents`: einmaliges Posting eines freigegebenen Belegs zu Ereignis und ausgeglichenem Journal in einer Transaktion, Ist-Bericht nur mit `POSTED`, Salden als Projektion) und `accounting` (`AccountingMappings`: Kontierung Kostenart → Konten, Test-Kontenrahmen). Vertrag, Annahmen und offene Punkte: [m4-cluster-c9.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-c9.md).
+
+## Tankbeleg, Plausibilität, Dubletten, Freigabe-Workflow (WP-M4-30, -31, -32, -34)
+
+`DocumentServices.fuel` (Tankwerte je Beleg), `plausibility` (Tankplausibilität mit quittierbaren Hinweisen), `duplicates` (Dublettenerkennung und Evidenzverknüpfung), `approvals` (Erfassung, fachliche Prüfung, Budgetfreigabe, zweite Freigabe, Ablehnung, Exportstatus) und `policies` (Fachparameter je Mandant und Fahrzeug). Die Freigabe prüft alle Blockaden in fester Reihenfolge (`ApprovalGate`) und bucht atomar (WP-M4-33). Vertrag, Annahmen und offene Punkte: [m4-cluster-wave10-c5.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-wave10-c5.md).

@@ -67,6 +67,7 @@ internal class JdbcCostEvents(
         if (row.stateRaw == "POSTED") return existing(j, documentId)                           // einmaliges Posting: derselbe Ursprung liefert dasselbe Ereignis
         if (row.stateRaw != "APPROVED" || doc.second.isNullOrBlank()) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Nur ein freigegebener Beleg kann gebucht werden.")
         integrity.requirePostable(j, documentId)                                                 // verletztes Original: 409, kein Posting
+        DuplicateRows.requireNoBlock(j, documentId, includeOpen = false)                         // Evidenz eines anderen Vorgangs wird nie eigener Kostenfall (WP-M4-32)
         val entity = row.view.legalEntityId ?: throw ProblemException(ErrorCode.CONFLICT, "Der Beleg hat keinen Rechtsträger.")
         val fields = ExpenseFieldCodec.parseStored(row.fieldsJson)
         val amounts = amounts(fields, cmd.tax)
@@ -106,6 +107,7 @@ internal class JdbcCostEvents(
         line(mapping.third, "C", amounts.gross)
         j.update("UPDATE taktovia.journal SET state = 'POSTED', posted_by = ? WHERE id = ? AND state = 'DRAFT'", DocumentRows.actor(ctx).value, journalId)   // Trigger: ausgeglichen, >= 2 Zeilen, offene Periode, Summe = Ereignis
         check(j.update("UPDATE taktovia.expense_document SET state = 'POSTED' WHERE id = ? AND state = 'APPROVED'", documentId) == 1)
+        DuplicateRows.onPosted(j, ctx, documentId, eventId)                                      // PRIMARY-Evidenz und bisher verknüpfte Dubletten (WP-M4-32)
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_COST_EVENT_POSTED, ObjectRef("cost_event", eventId), ctx.correlationId, mapOf("event_type" to "EXPENSE_COST", "currency" to amounts.currency, "reused" to false)))
         outbox.append(j, OutboxEvent(eventId, 1, "cost_event.posted", linkedMapOf("event_id" to eventId.toString(), "document_id" to documentId.toString(), "legal_entity_id" to entity.toString(), "event_type" to "EXPENSE_COST",
             "category" to cmd.category, "currency" to amounts.currency, "gross_minor" to amounts.gross, "cost_basis_minor" to amounts.gross - amounts.recoverable, "booked_at" to now.toString()), now, correlationId = ctx.correlationId))
@@ -184,7 +186,7 @@ internal class JdbcCostEvents(
         const val SCOPE_APPROVE = "expenses:approve"
         const val DOC_COLUMNS = DocumentRows.COLUMNS
         const val OBJ_COLUMNS = CostAssignmentRows.COLUMNS
-        const val DOC_SQL = "SELECT $DOC_COLUMNS, d.approved_by FROM taktovia.expense_document d WHERE d.id = ? AND d.upload_ticket_id IS NOT NULL FOR UPDATE"
+        const val DOC_SQL = "SELECT $DOC_COLUMNS, d.approved_by FROM taktovia.expense_document d WHERE d.id = ? AND d.upload_ticket_id IS NOT NULL FOR NO KEY UPDATE"
         const val ASSIGNED_SQL = "SELECT $OBJ_COLUMNS FROM taktovia.expense_cost_assignment a JOIN taktovia.cost_object o ON o.tenant_id = a.tenant_id AND o.id = a.cost_object_id WHERE a.document_id = ? ORDER BY o.id FOR SHARE OF o"
         const val SCOPE_READ = "costs:read"
         const val MAX_SAFE = 9_007_199_254_740_991L

@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+fuel_transaction;SELECT,INSERT,UPDATE;WP-M4-30: Tankvorgang je Beleg, Aenderung nur im Entwurf (Trigger), kein DELETE
+finance_policy;SELECT,INSERT,UPDATE;WP-M4-30: Fachparameter des Moduls je Mandant

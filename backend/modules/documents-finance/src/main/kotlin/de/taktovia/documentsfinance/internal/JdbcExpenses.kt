@@ -46,7 +46,7 @@ internal class JdbcExpenses(
 
     override fun get(ctx: RequestContext, id: UUID): ExpenseView {
         require(ctx, SCOPE_READ)
-        return ctxTx.run(ctx, readOnly = true) { j -> view(j, DocumentRows.visible(j, ctx, id)) }
+        return ctxTx.run(ctx, readOnly = true) { j -> view(j, DocumentRows.visible(j, ctx, id), ctx) }
     }
 
     override fun revisions(ctx: RequestContext, id: UUID): List<RevisionView> {
@@ -80,10 +80,7 @@ internal class JdbcExpenses(
         return EditedViewContent(found.first, ContentSniffer.detect(bytes) ?: "application/octet-stream", bytes, DocumentRows.sha256(bytes))
     }
 
-    private fun view(j: JdbcOperations, r: DocRow): ExpenseView {
-        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields); val objects = CostAssignmentRows.assigned(j, r.view.documentId)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects), review, objects)
-    }
+    private fun view(j: JdbcOperations, r: DocRow, ctx: RequestContext): ExpenseView = ExpenseViews.build(j, r, ctx)
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {
         require(ctx, SCOPE_WRITE)
@@ -137,7 +134,9 @@ internal class JdbcExpenses(
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_EXPENSE_REVISED, ObjectRef("expense", id), ctx.correlationId, mapOf("revision" to newRevision, "fields" to changes.keys.toList())))
         outbox.append(j, OutboxEvent(id, newRevision, "expense.revision_created", linkedMapOf("document_id" to id.toString(), "revision" to newRevision, "fields" to changes.keys.toList(),
             "edited_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
-        return view(j, DocumentRows.visible(j, ctx, id))
+        PlausibilityHook.afterRevision(j, audit, ctx, id, newRevision)
+        DuplicateHook.afterChange(j, audit, outbox, clock, ctx, id)
+        return view(j, DocumentRows.visible(j, ctx, id), ctx)
     }
 
     private fun changeJson(old: Any?, new: Any, proposal: Any?, confirmed: Boolean): Map<String, Any?> =

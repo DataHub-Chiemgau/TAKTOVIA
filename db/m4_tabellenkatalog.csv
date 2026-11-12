@@ -33,3 +33,8 @@ document_integrity_incident;documents-finance;APPEND_ONLY;;WP-M4-24;Integritäts
 roster_depot_grant;staff-time;FREIGABE_UNVERAENDERLICH;;WP-M4-16;Depotrecht, nur Entzug änderbar
 expense_cost_assignment;documents-finance;VERAENDERLICH;;WP-M4-29;Kostenzuordnung, im Entwurfszustand ersetzbar
 roster_shift_change;staff-time;APPEND_ONLY;actor,snapshot;WP-M4-15;Änderungsprotokoll je Schicht, nur anhängen
+finance_policy;documents-finance;VERAENDERLICH;;WP-M4-30;Fachparameter des Moduls je Mandant
+expense_hint;documents-finance;APPEND_ONLY;;WP-M4-31;Plausibilitätshinweis je Regel und Belegrevision
+expense_hint_ack;documents-finance;APPEND_ONLY;;WP-M4-31;Quittierung eines Hinweises mit Begründung
+fuel_vehicle_policy;documents-finance;VERAENDERLICH;;WP-M4-31;Tankschwellen je Fahrzeug
+duplicate_candidate;documents-finance;VERAENDERLICH;;WP-M4-32;Dublettentreffer, nur offene Treffer änderbar

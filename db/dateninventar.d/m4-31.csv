@@ -1,0 +1,27 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+finance_policy;fuel_max_liters;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-31
+finance_policy;fuel_price_alert_pct;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-31
+finance_policy;fuel_use_alert_pct;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-31
+finance_policy;fuel_price_reference;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-31
+finance_policy;fuel_card_mapping;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-31
+fuel_vehicle_policy;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_vehicle_policy;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_vehicle_policy;fuel_max_liters;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_vehicle_policy;fuel_use_alert_pct;nein;BUCHHALTUNG_BELEGE;;;;
+fuel_vehicle_policy;revision;nein;TECHNISCHER_BETRIEB;;;;
+fuel_vehicle_policy;updated_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+fuel_vehicle_policy;updated_at;nein;TECHNISCHER_BETRIEB;;;;
+expense_hint;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;document_revision;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;rule;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;threshold;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;actual_value;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;basis;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint;created_at;nein;TECHNISCHER_BETRIEB;;;;
+expense_hint_ack;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint_ack;hint_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint_ack;reason;nein;BUCHHALTUNG_BELEGE;;;;
+expense_hint_ack;acked_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+expense_hint_ack;acked_at;nein;TECHNISCHER_BETRIEB;;;;

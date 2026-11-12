@@ -62,6 +62,11 @@ internal object ExpenseFieldCodec {
         return raw.entries.associate { (k, v) -> k to normalize(k, v) }
     }
 
+    /** JSON-Liste aus der Datenbank. */
+    fun parseTreeList(json: String): List<Any?> {
+        @Suppress("UNCHECKED_CAST") return MAPPER.readValue(json, List::class.java) as List<Any?>
+    }
+
     /** Revisionsfeld `{"amount_minor": {"old": …, "new": …}}` aus der Datenbank. */
     fun parseTree(json: String): Map<String, Any?> {
         @Suppress("UNCHECKED_CAST") return MAPPER.readValue(json, Map::class.java) as Map<String, Any?>

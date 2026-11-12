@@ -58,7 +58,7 @@ internal object ReviewRules {
     )
 }
 
-internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock) : ReceiptReview {
+internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock, private val audit: de.taktovia.platform.audit.AuditPort, private val outbox: de.taktovia.platform.outbox.Outbox) : ReceiptReview {
 
     override fun state(ctx: RequestContext, id: UUID): ReviewState {
         require(ctx, SCOPE_READ)
@@ -68,18 +68,66 @@ internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private
     override fun requireApprovable(ctx: RequestContext, id: UUID, expectedRevision: Long): ApprovalClearance {
         require(ctx, SCOPE_WRITE)
         val clearance = integrity.clearForApproval(ctx, id, expectedRevision)   // Hash jetzt prüfen; veraltete Revision 412, nicht STORED 409
+        ctxTx.run(ctx) { j ->   // Treffer und Hinweise zuerst festschreiben (eigene Transaktion), damit sie entscheidbar und quittierbar bleiben
+            val r = DocumentRows.visible(j, ctx, id, lock = true)
+            DuplicateRows.detect(j, audit, outbox, clock, ctx, id); PlausibilityRows.check(j, audit, ctx, r.view.kind, id, r.view.revision)
+        }
         ctxTx.run(ctx) { j -> requireApprovable(j, ctx, id, expectedRevision) }
         return ApprovalClearance(id, expectedRevision, maxOf(clearance.checkedAt, clock.instant()))
     }
 
     override fun requireApprovable(jdbc: JdbcOperations, ctx: RequestContext, id: UUID, expectedRevision: Long) {
         require(ctx, SCOPE_WRITE)
-        val row = DocumentRows.visible(jdbc, ctx, id, lock = true)   // FOR UPDATE: keine Feldkorrektur zwischen Prüfung und Zustandswechsel
+        val row = DocumentRows.visible(jdbc, ctx, id, lock = true)   // FOR NO KEY UPDATE: keine Feldkorrektur zwischen Prüfung und Zustandswechsel
         if (row.view.revision != expectedRevision) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Beleg wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (row.stateRaw != "STORED") throw ProblemException(ErrorCode.CONFLICT, "Nur ein Beleg im Entwurfszustand ist freigabefähig.")
+        ApprovalGate.require(jdbc, audit, outbox, clock, ctx, row, includeCosts = false)
+    }
+}
+
+/**
+ * Blockaden der Freigabe in fester Reihenfolge, je Hindernis ein eigener stabiler Code (WP-M4-34): Integrität 409, Absender, Dublette 409 (WP-M4-32), Pflichtfelder 422 `UNCONFIRMED_FIELDS` (WP-M4-28),
+ * Kostenzuordnung 422 `COST_ASSIGNMENT_REQUIRED` (WP-M4-29), Tankwerte 422 `FUEL_FIELDS_MISSING` (WP-M4-30), Aufteilung 422 `SPLIT_INCOMPLETE` (WP-M4-35), Plausibilitätshinweise 422 `HINT_NOT_ACKNOWLEDGED`
+ * (WP-M4-31). Der Beleg ist gesperrt, `row` frisch gelesen. Der Prüflauf der Hinweise und Treffer muss vorher in eigener Transaktion festgeschrieben sein ([precheck]), damit sie nach einer Abweisung
+ * entscheidbar bleiben.
+ */
+internal object ApprovalGate {
+    fun require(j: JdbcOperations, audit: de.taktovia.platform.audit.AuditPort, outbox: de.taktovia.platform.outbox.Outbox, clock: Clock, ctx: RequestContext, row: DocRow, includeCosts: Boolean) {
+        val id = row.view.documentId
         if (row.view.integrity == IntegrityState.VIOLATED) throw IntegrityChecksSupport.violation()
         if (row.view.senderVerified == false) throw ProblemException(ErrorCode.CONFLICT, "Der Absender ist nicht verifiziert.")
-        val s = ReviewRules.state(jdbc, id, ExpenseFieldCodec.parseStored(row.fieldsJson))
+        DuplicateRows.detect(j, audit, outbox, clock, ctx, id); DuplicateRows.requireNoBlock(j, id)   // Dublette: 409, bevor Einzelprüfungen laufen (WP-M4-32)
+        val s = ReviewRules.state(j, id, ExpenseFieldCodec.parseStored(row.fieldsJson))
         if (!s.ready) throw ReviewRules.problem(s)
+        if (includeCosts) {
+            val blockers = CostAssignmentRows.blockers(CostAssignmentRows.assigned(j, id))
+            if (ReleaseBlocker.COST_ASSIGNMENT_MISSING in blockers) throw ProblemException(ErrorCode.COST_ASSIGNMENT_REQUIRED, "Der Beleg hat keine erlaubte Kostenzuordnung.", listOf(Violation("/cost_assignment", ViolationCode.REQUIRED)))
+            if (ReleaseBlocker.COST_OBJECT_INACTIVE in blockers) throw ProblemException(ErrorCode.COST_ASSIGNMENT_REQUIRED, "Ein zugeordnetes Kostenobjekt ist inaktiv.", listOf(Violation("/cost_assignment", ViolationCode.INVALID_VALUE, "Kostenobjekt inaktiv")))
+        }
+        if (row.view.kind == de.taktovia.documentsfinance.api.DocumentKind.FUEL_RECEIPT) {
+            // Tankwerte vollständig (solange `fuel_receipt_required` gilt) und Plausibilitätshinweise quittiert (WP-M4-30, -31)
+            val fuel = FuelRows.forDocument(j, row.view.kind, id)
+            if (JdbcFinancePolicies.load(j).fuelReceiptRequired && fuel != null && !fuel.complete) throw FuelRows.missingProblem(fuel)
+        }
+        if (includeCosts) SplitGate.require(j, id)
+        PlausibilityRows.requireAcknowledged(j, audit, ctx, row.view.kind, id, row.view.revision)
     }
+
+    /** Prüflauf (Treffer und Hinweise) in eigener, festgeschriebener Transaktion unter Belegsperre; wirkt nur auf Belege in Erfassung oder Workflow. */
+    fun precheck(ctxTx: ContextTransactions, audit: de.taktovia.platform.audit.AuditPort, outbox: de.taktovia.platform.outbox.Outbox, clock: Clock, ctx: RequestContext, id: UUID) {
+        ctxTx.run(ctx) { j ->
+            val r = DocumentRows.visible(j, ctx, id, lock = true)
+            if (r.stateRaw == "STORED" || r.stateRaw in de.taktovia.documentsfinance.api.ExpenseStates.IN_WORKFLOW) {
+                DuplicateRows.detect(j, audit, outbox, clock, ctx, id); PlausibilityRows.check(j, audit, ctx, r.view.kind, id, r.view.revision)
+            }
+        }
+    }
+}
+
+/**
+ * Aufteilung auf mehrere Kostenobjekte (WP-M4-35, DOC-011): der Beleg-Split ist noch nicht gebaut, es gibt daher nie einen unvollständigen Split. Der Einhängepunkt (Code `SPLIT_INCOMPLETE`, 422) ist
+ * vorhanden; WP-M4-35 ersetzt ihn durch die Prüfung „Summe der Teilbeträge = Belegbetrag“.
+ */
+internal object SplitGate {
+    fun require(@Suppress("UNUSED_PARAMETER") j: JdbcOperations, @Suppress("UNUSED_PARAMETER") documentId: UUID) {}
 }
