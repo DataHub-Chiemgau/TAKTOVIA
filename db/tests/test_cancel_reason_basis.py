@@ -1,5 +1,5 @@
 """WP-M2-27 / LH-6.4-BKG-014: Stornoursache in der Datenbank: Verursacherklasse folgt dem Grund (CHECK), der Grund ist nach dem Setzen unveränderlich (auch für die Administration), nur in einem
-Stornozustand setzbar, und die Sicht `booking_cancellation_basis` trennt Fahrgaststorno, Betreiberstorno und Fahrzeugausfall (Datenbasis der Stornoquoten, Mandantentrennung per RLS)."""
+Stornozustand setzbar, und die Abfrage auf Buchung und Statushistorie (die Datenbasis der Stornoquoten) trennt Fahrgaststorno, Betreiberstorno und Fahrzeugausfall (Datenbasis der Stornoquoten, Mandantentrennung per RLS)."""
 import unittest
 
 import psycopg
@@ -32,11 +32,15 @@ class CancelReasonBasis(unittest.TestCase):
             cancelled(c, C, run, svc, 'BK-2026-000503', 'OPERATOR_CANCELLATION', 'BETREIBER')
             numbered_booking(c, C, run, 'BK-2026-000504', svc)                         # nicht storniert: nicht in der Datenbasis
         with tx(C) as c:
-            row = c.execute("SELECT count(*) FILTER (WHERE counts_passenger_cancellation), count(*) FILTER (WHERE counts_operator_cancellation), "
-                            "count(*) FILTER (WHERE counts_vehicle_outage), count(*), count(*) FILTER (WHERE was_confirmed), count(canceled_at) FROM taktovia.booking_cancellation_basis").fetchone()
+            # Datenbasis: je Buchung mit Stornogrund; Nenner „bestätigte Buchungen“ aus der Historie, Stornozeitpunkt separat (Eintrag mit dem Stornogrund)
+            row = c.execute("SELECT count(*) FILTER (WHERE b.cancel_cause_class = 'FAHRGAST'), count(*) FILTER (WHERE b.cancel_cause_class = 'BETREIBER'), "
+                            "count(*) FILTER (WHERE b.cancel_cause_class = 'FAHRZEUGAUSFALL'), count(*), "
+                            "count(*) FILTER (WHERE EXISTS (SELECT 1 FROM taktovia.booking_status_history h WHERE h.booking_id = b.id AND h.to_state = 'CONFIRMED')), "
+                            "count(*) FILTER (WHERE EXISTS (SELECT 1 FROM taktovia.booking_status_history h WHERE h.booking_id = b.id AND h.reason_code = b.cancel_reason_code)) "
+                            "FROM taktovia.booking b WHERE b.cancel_reason_code IS NOT NULL").fetchone()
             self.assertEqual(row, (1, 1, 1, 3, 3, 3))      # Fahrzeugausfall zählt weder als Fahrgast- noch als Betreiberstorno
-        with tx(B) as c:                                    # RLS: die Sicht läuft mit den Rechten des Aufrufers
-            self.assertEqual(c.execute("SELECT count(*) FROM taktovia.booking_cancellation_basis").fetchone()[0], 0)
+        with tx(B) as c:                                    # RLS: Mandant B sieht die Stornos von C nicht
+            self.assertEqual(c.execute("SELECT count(*) FROM taktovia.booking WHERE cancel_reason_code IS NOT NULL").fetchone()[0], 0)
 
     def test_cancel_grund_unveraenderlich_nach_setzen(self):
         with tx(A) as c:

@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 /**
  * WP-M2-27 / LH-6.4-BKG-014: Stornoursache Fahrzeugausfall gegen die echte Datenbank unter der Runtime-Rolle. Kundenstorno (Verursacherklasse FAHRGAST) und Fahrzeugausfall über den betreiberseitigen
  * Storno-Befehl (FAHRZEUGAUSFALL) sind in Buchungsressource, Historie und Ereignis unterscheidbar; der Grund ist nach dem Setzen unveränderlich. Die Auslösung aus dem Störungsablauf folgt mit
- * WP-M3-53/-54, die Berechnung der Quoten mit WP-M4-46 (Datenbasis: Sicht `booking_cancellation_basis`, `db/tests/test_cancel_reason_basis.py`).
+ * WP-M3-53/-54, die Berechnung der Quoten mit WP-M4-46 (Datenbasis: Spalten `booking.cancel_reason_code`/`cancel_cause_class` und Statushistorie, `db/tests/test_cancel_reason_basis.py`).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BookingCancelReasonTest {
@@ -59,8 +59,8 @@ class BookingCancelReasonTest {
         assertTrue(e1.contains("\"cause_class\": \"FAHRGAST\"") && e1.contains("\"reason_code\": \"PASSENGER_REQUEST\""), e1)
         assertTrue(e2.contains("\"cause_class\": \"FAHRZEUGAUSFALL\"") && e2.contains("\"reason_code\": \"VEHICLE_OUTAGE\"") && e2.contains("\"initiator\": \"OPERATOR\""), e2)
         // Datenbasis: Fahrgaststorno zählt nur als Fahrgast, Fahrzeugausfall getrennt (nicht als Betreiberstorno)
-        val basis = cf.fx.base.tx.run(w.tenant) { j -> j.queryForMap("SELECT count(*) FILTER (WHERE counts_passenger_cancellation) AS p, count(*) FILTER (WHERE counts_operator_cancellation) AS o, count(*) FILTER (WHERE counts_vehicle_outage) AS v, count(*) FILTER (WHERE was_confirmed) AS c FROM taktovia.booking_cancellation_basis") }
-        assertEquals(listOf(1L, 0L, 1L), listOf(basis["p"], basis["o"], basis["v"]).map { it as Long })
+        val basis = cf.fx.base.tx.run(w.tenant) { j -> j.queryForMap("SELECT count(*) FILTER (WHERE cancel_cause_class = 'FAHRGAST') AS p, count(*) FILTER (WHERE cancel_cause_class = 'BETREIBER') AS o, count(*) FILTER (WHERE cancel_cause_class = 'FAHRZEUGAUSFALL') AS v FROM taktovia.booking WHERE cancel_reason_code IS NOT NULL") }
+        assertEquals(listOf(1L, 0L, 1L), listOf(basis["p"], basis["o"], basis["v"]).map { it as Long }, "Fahrzeugausfall zählt weder als Fahrgast- noch als Betreiberstorno")
     }
 
     @Test

@@ -832,6 +832,24 @@
           "bemerkung": "WP-M2-23: je Mandant eindeutige lesbare Buchungsnummer (OP-42), keine Personendaten"
         },
         {
+          "spalte": "cancel_cause_class",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-27: Verursacherklasse des Stornos (FAHRGAST, BETREIBER, FAHRZEUGAUSFALL), folgt dem Grund"
+        },
+        {
+          "spalte": "cancel_reason_code",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-27: Stornogrund, einmal gesetzt und danach unveränderlich"
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",

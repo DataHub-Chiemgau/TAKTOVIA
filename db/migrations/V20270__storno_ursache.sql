@@ -1,6 +1,7 @@
 -- WP-M2-27 / LH-6.4-BKG-014: Stornoursache. Der Stornogrund und die Verursacherklasse (FAHRGAST | BETREIBER | FAHRZEUGAUSFALL) stehen als typisierte, nach dem Setzen unveränderliche Spalten an der
 -- Buchung (gesetzt beim Übergang nach CANCEL_PENDING bzw. COMPENSATING, genau einmal); die Klasse folgt zwingend dem Grund (CHECK). Die Datenbasis für `Buchungsstornoquote Fahrgast` und
--- `Buchungsstornoquote Betreiber` (Fahrzeugausfall getrennt, kataloge.csv LH-K.1-Zeile-11/-12) ist die Sicht `booking_cancellation_basis`; die Berechnung der Quoten ist Sache von WP-M4-46.
+-- `Buchungsstornoquote Betreiber` (Fahrzeugausfall getrennt, kataloge.csv LH-K.1-Zeile-11/-12) sind diese Spalten zusammen mit der Statushistorie (Stornozeitpunkt, bestätigte Buchungen als Nenner);
+-- die Konvention verbietet Sichten (V1-Regel), die Abfrage steht im Test `db/tests/test_cancel_reason_basis.py`. Die Berechnung der Quoten ist Sache von WP-M4-46.
 -- Verursacherklassen (Vorschlag, D-05): Kundenstorno, No-Show und gescheiterte Zahlung des Fahrgasts = FAHRGAST; Betreiberstorno und Sicherheit = BETREIBER; Fahrzeugausfall = FAHRZEUGAUSFALL.
 SET search_path = taktovia, public;
 
@@ -41,13 +42,3 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
-
--- Datenbasis der Stornoquoten: je Buchung mit Stornogrund eine Zeile; `was_confirmed` (Nenner „bestätigte Buchungen“), Stornozeitpunkt separat. Die Sicht läuft mit den Rechten des Aufrufers (RLS).
-CREATE VIEW booking_cancellation_basis WITH (security_invoker = true) AS
-  SELECT b.tenant_id, b.id AS booking_id, b.service_id, b.cancel_reason_code, b.cancel_cause_class,
-         (SELECT h.occurred_at FROM booking_status_history h WHERE h.tenant_id = b.tenant_id AND h.booking_id = b.id AND h.reason_code = b.cancel_reason_code ORDER BY h.booking_revision LIMIT 1) AS canceled_at,
-         EXISTS (SELECT 1 FROM booking_status_history h WHERE h.tenant_id = b.tenant_id AND h.booking_id = b.id AND h.to_state = 'CONFIRMED') AS was_confirmed,
-         (b.cancel_cause_class = 'FAHRGAST') AS counts_passenger_cancellation,
-         (b.cancel_cause_class = 'BETREIBER') AS counts_operator_cancellation,
-         (b.cancel_cause_class = 'FAHRZEUGAUSFALL') AS counts_vehicle_outage
-    FROM booking b WHERE b.cancel_reason_code IS NOT NULL;
