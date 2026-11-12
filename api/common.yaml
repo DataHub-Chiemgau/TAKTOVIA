@@ -73,6 +73,8 @@ components:
             defects:read: defects:read
             defects:write: defects:write
             defects:triage: defects:triage
+            defects:state: defects:state
+            defects:history: defects:history
             repair:read: repair:read
             repair:write: repair:write
             fleet:release: fleet:release
@@ -144,6 +146,8 @@ components:
             defects:read: defects:read
             defects:write: defects:write
             defects:triage: defects:triage
+            defects:state: defects:state
+            defects:history: defects:history
             repair:read: repair:read
             repair:write: repair:write
             fleet:release: fleet:release

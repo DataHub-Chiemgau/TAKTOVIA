@@ -22,3 +22,19 @@ internal object DefectContractCases {
             403, { val w = w(); ContractRequest("GET", "/v1/defects", headers = w.env.headers(w.passengerToken)) }, server = { IdentityEnv.server }),
     )
 }
+
+/** Vertragsfälle des Statusautomaten der Schadenakte (WP-M3-47). */
+internal object DefectStateContractCases {
+    private fun idem() = mapOf("Idempotency-Key" to "contract-" + UUID.randomUUID())
+    private fun w() = DefectApiTest.World(IdentityEnv)
+    private fun defect(w: DefectApiTest.World): String = IdentityEnv.post("/v1/defects", w.body(), w.dispatcherToken, null, idem()).json["id"].asString()
+
+    val cases: List<ContractCase> = listOf(
+        ContractCase("transitionDefect",
+            200, { val w = w(); ContractRequest("POST", "/v1/defects/${defect(w)}/transitions", """{"to":"REVIEWED"}""", w.env.headers(w.dispatcherToken, extra = idem() + ("If-Match" to "\"1\""))) },
+            409, { val w = w(); ContractRequest("POST", "/v1/defects/${defect(w)}/transitions", """{"to":"CLOSED"}""", w.env.headers(w.workshopToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { IdentityEnv.server }),
+        ContractCase("listDefectStatusHistory",
+            200, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/status-history", headers = w.env.headers(w.workshopToken)) },
+            403, { val w = w(); ContractRequest("GET", "/v1/defects/${defect(w)}/status-history", headers = w.env.headers(w.driverToken)) }, server = { IdentityEnv.server }),
+    )
+}

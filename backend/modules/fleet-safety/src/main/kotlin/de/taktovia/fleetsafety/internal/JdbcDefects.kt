@@ -2,6 +2,10 @@ package de.taktovia.fleetsafety.internal
 
 import de.taktovia.fleetsafety.api.DefectCatalog
 import de.taktovia.fleetsafety.api.DefectFilter
+import de.taktovia.fleetsafety.api.DefectState
+import de.taktovia.fleetsafety.api.DefectStateMachine
+import de.taktovia.fleetsafety.api.DefectTransition
+import de.taktovia.fleetsafety.api.StatusHistoryEntry
 import de.taktovia.fleetsafety.api.DefectView
 import de.taktovia.fleetsafety.api.Defects
 import de.taktovia.fleetsafety.api.DriverVehicleRelation
@@ -115,6 +119,8 @@ internal class JdbcDefects(
 
     /** Erweiterungspunkt der folgenden Arbeitspakete (Statushistorie, Revision 1, Evidenzanbindung) innerhalb derselben Transaktion. */
     private fun afterInsert(j: JdbcOperations, id: UUID, view: DefectView, actor: ActorRef, cmd: ReportDefect) {
+        j.update("INSERT INTO taktovia.defect_status_history (tenant_id, id, defect_id, from_status, to_status, actor, reason, revision) VALUES (taktovia.current_tenant(), ?, ?, NULL, 'NEW', ?, NULL, ?)",
+            UUID.randomUUID(), id, actor.value, view.revision)
         evidence.attach(j, id, cmd.evidenceIds, actor, 1)
     }
 
@@ -136,6 +142,86 @@ internal class JdbcDefects(
             filter.reportedFrom?.let(Timestamp::from), filter.reportedFrom?.let(Timestamp::from), filter.reportedTo?.let(Timestamp::from), filter.reportedTo?.let(Timestamp::from),
             own, own, afterTs, afterTs, after?.second, limit + 1,
         ))
+    }
+
+    // ---------------- Statusautomat (WP-M3-47) ----------------
+
+    override fun transition(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: DefectTransition): DefectView {
+        val actor = actor(ctx)
+        try {
+            return ctxTx.run(ctx) { j -> doTransition(j, ctx, actor, id, expectedRevision, cmd) }
+        } catch (e: DataIntegrityViolationException) {
+            // zweite Schicht: der Datenbanktrigger weist einen Übergang außerhalb der Tabelle ab, auch wenn die Anwendung ihn je zuließe
+            if (sqlState(e) == "23514") throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Der Übergang ist für diese Akte nicht zulässig.", cause = e)
+            throw e
+        }
+    }
+
+    @AuditRequired
+    private fun doTransition(j: JdbcOperations, ctx: RequestContext, actor: ActorRef, id: UUID, expected: Long, cmd: DefectTransition): DefectView {
+        if (ctx.roles.none { it in DefectStateMachine.TRANSITIONERS }) throw ProblemException(ErrorCode.FORBIDDEN, "Statusübergänge löst nur Disposition, Werkstatt oder Betriebsleitung aus.")
+        val before = j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.id = ? FOR UPDATE", MAPPER, id).firstOrNull() ?: throw ProblemException.notFound()
+        if (before.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Akte wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        val from = DefectState.parse(before.status) ?: throw IllegalStateException("unbekannter Status ${before.status}")
+        val to = cmd.to
+        val reason = cmd.reason?.trim()?.takeIf { it.isNotEmpty() }   // eine leere Begründung ist keine
+        if (cmd.reopen) {
+            if (!from.isFinal || to != DefectState.REVIEWED) throw invalid(from, to, "Eine Wiedereröffnung gilt nur aus einem Endzustand nach REVIEWED.")
+            if (ctx.roles.none { it in DefectStateMachine.REOPEN_ROLES }) throw ProblemException(ErrorCode.FORBIDDEN, "Wiedereröffnen darf nur die Werkstatt oder die Betriebsleitung.")
+            if (reason == null) throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        } else {
+            if (from.isFinal) throw invalid(from, to, "Aus einem Endzustand führt nur die dokumentierte Wiedereröffnung heraus.")
+            if (!DefectStateMachine.MACHINE.allowed(from, to)) throw invalid(from, to, "Der Übergang steht nicht in der Übergangstabelle.")
+            if (ctx.roles.none { it in DefectStateMachine.EDGE_ROLES.getValue(from to to) }) throw ProblemException(ErrorCode.FORBIDDEN, "Für diesen Übergang fehlt die Rolle.")
+            if (to == DefectState.DISMISSED && reason == null) throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+            preconditions(j, id, from, to, before.severity)
+        }
+        val after = j.query(
+            "UPDATE taktovia.defect_case AS d SET status = ?, revision = d.revision + 1, updated_at = clock_timestamp(), reopen_count = d.reopen_count + ?, " +
+                "dismissed_reason = CASE WHEN ? = 'DISMISSED' THEN ? ELSE d.dismissed_reason END WHERE d.id = ? AND d.revision = ? RETURNING $COLUMNS",
+            MAPPER, to.name, if (cmd.reopen) 1 else 0, to.name, reason, id, expected,
+        ).singleOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Akte wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        j.update("INSERT INTO taktovia.defect_status_history (tenant_id, id, defect_id, from_status, to_status, actor, reason, revision, is_reopening) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?)",
+            UUID.randomUUID(), id, from.name, to.name, actor.value, reason, after.revision, cmd.reopen)
+        audit.record(j, AuditEntry(actor, AuditActions.DEFECT_STATE_CHANGED, ObjectRef("defect", id), ctx.correlationId,
+            mapOf("case_number" to after.caseNumber, "from" to from.name, "to" to to.name, "revision" to after.revision, "reopened" to cmd.reopen)))
+        outbox.append(j, OutboxEvent(id, after.revision, "defect.state_changed",
+            mapOf("defect_id" to id.toString(), "case_number" to after.caseNumber, "vehicle_id" to after.vehicleId.toString(), "from_status" to from.name, "to_status" to to.name,
+                "revision" to after.revision, "reopened" to cmd.reopen), clock.instant(), correlationId = ctx.correlationId))
+        return loadOrNull(j, id)!!
+    }
+
+    /**
+     * Vorbedingungen je Übergang (Detailvertrag): Abschluss ohne Reparatur nur nicht sicherheitskritisch und klassifiziert; Reparatur nur mit Reparaturauftrag; Abschluss nach Reparatur nur mit
+     * Reparaturnachweis und, bei `SAFETY_CRITICAL`, mit Freigabeentscheidung; Rückkehr aus der Reparatur nur nach Stornierung aller Aufträge. Alle Tabellen gehören `fleet-safety`.
+     */
+    private fun preconditions(j: JdbcOperations, id: UUID, from: DefectState, to: DefectState, severity: String?) {
+        when {
+            to == DefectState.CLOSED && from == DefectState.REVIEWED && severity !in setOf("COSMETIC", "OTHER") ->
+                throw invalid(from, to, "Ohne Reparatur wird nur ein als COSMETIC oder OTHER klassifizierter Fall abgeschlossen.")
+            to == DefectState.CLOSED && from == DefectState.IN_PROGRESS && (severity == null || severity == "SAFETY_CRITICAL") ->
+                throw invalid(from, to, "Ohne Reparatur wird nur ein klassifizierter, nicht sicherheitskritischer Fall abgeschlossen.")
+            to == DefectState.REPAIR && j.queryForObject(ACTIVE_ORDERS, Int::class.java, id) == 0 ->
+                throw invalid(from, to, "Für die Reparatur fehlt ein Reparaturauftrag.")
+            to == DefectState.IN_PROGRESS && from == DefectState.REPAIR && j.queryForObject(ACTIVE_ORDERS, Int::class.java, id)!! > 0 ->
+                throw invalid(from, to, "Es besteht noch ein nicht stornierter Reparaturauftrag.")
+            to == DefectState.CLOSED && from == DefectState.REPAIR && j.queryForObject(PROVEN_ORDERS, Int::class.java, id) == 0 ->
+                throw invalid(from, to, "Der Reparaturnachweis fehlt.")
+            to == DefectState.CLOSED && from == DefectState.REPAIR && severity == "SAFETY_CRITICAL" && j.queryForObject(RELEASE_DECISIONS, Int::class.java, id) == 0 ->
+                throw invalid(from, to, "Ein sicherheitskritischer Fall wird nur mit Freigabeentscheidung abgeschlossen.")
+        }
+    }
+
+    private fun invalid(from: DefectState, to: DefectState, why: String) = ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Der Übergang von ${from.name} nach ${to.name} ist nicht zulässig: $why")
+
+    override fun statusHistory(ctx: RequestContext, id: UUID): List<StatusHistoryEntry> {
+        if (ctx.roles.none { it in DefectStateMachine.TRANSITIONERS }) throw ProblemException(ErrorCode.FORBIDDEN, "Die Statushistorie sehen Disposition, Werkstatt und Betriebsleitung.")
+        return ctxTx.run(ctx, readOnly = true) { j ->
+            if (j.queryForObject("SELECT count(*) FROM taktovia.defect_case WHERE id = ?", Int::class.java, id) != 1) throw ProblemException.notFound()
+            j.query("SELECT h.id, h.defect_id, h.from_status, h.to_status, h.actor, h.reason, h.revision, h.is_reopening, h.created_at FROM taktovia.defect_status_history h WHERE h.defect_id = ? ORDER BY h.created_at, h.id", { rs, _ ->
+                StatusHistoryEntry(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getLong(7), rs.getBoolean(8), rs.getTimestamp(9).toInstant())
+            }, id)
+        }
     }
 
     // ---------------- Hilfen ----------------
@@ -168,6 +254,10 @@ internal class JdbcDefects(
     internal companion object {
         /** Wie [JdbcDefectEvidence.EV_COLUMNS] (hier als eigene Konstante, damit die Abfrage-Prüfung den Text sieht). */
         const val EVIDENCE_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by"
+        const val ACTIVE_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status <> 'CANCELED'"
+        const val PROVEN_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status = 'PROOF_RECORDED'"
+        const val RELEASE_DECISIONS = "SELECT count(*) FROM taktovia.vehicle_release_decision d JOIN taktovia.repair_order r ON r.tenant_id = d.tenant_id AND r.id = d.repair_order_id " +
+            "WHERE r.defect_id = ? AND d.decision = 'RELEASED'"
         const val COLUMNS = "d.id, d.case_number, d.vehicle_id, d.reported_by, d.reported_at, d.occurred_at, d.location_kind, d.location_value, d.category_code, d.kind, d.vehicle_area, " +
             "d.observed_effect, d.description, d.severity, d.status, d.assignee_ref, d.source_inspection_id, d.source_step_code, d.content_version, d.revision, d.updated_at, d.created_at"
         val MAPPER = RowMapper { rs, _ ->

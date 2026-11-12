@@ -50,3 +50,19 @@ Ergänzt [m3-detailvertraege.md](m3-detailvertraege.md) und die Verträge `LH-6.
   nicht aus dem Pflichtenheft). Freitext höchstens 300 Zeichen in der App (Server: 2000), keine Namen oder Gesundheitsangaben. Anzeigen „Entwurf“, „synchronisiert“, „angenommen“ getrennt, mit Symbol und Text (nicht nur Farbe).
   Die Flutter-Umsetzung (`mobile/driver/lib/schaden/`, Tests unter `mobile/driver/test/`) ist **nicht ausgeführt** (kein Flutter).
 - **Offen:** Aufbewahrung der Schadensbilder (D-11) blockiert nur die Produktivschaltung; echte Malware-Prüfung gegen ClamAV und der S3-Direktupload sind nicht ausgeführt.
+
+## 5. Statusautomat (WP-M3-47, DMG-007)
+
+Quelle der Übergangstabelle ist [zustaende/defect_case.md](zustaende/defect_case.md) (unverändert); hier stehen die Festlegungen, die sie offen lässt.
+
+- **Ausführung:** `POST /v1/defects/{id}/transitions` mit `If-Match` (428 fehlt, 412 veraltet) und Body `{to, reason?, reopen?}`; der Zielzustand ist das Ereignis, `NEW` ist kein Ziel. Reihenfolge der Prüfung: Rolle überhaupt (403), Akte im Mandanten (404), Revision (412),
+  Tabelle (409), Rolle für diesen Übergang (403), Begründung (422), Vorbedingung (409). Zustand, Revision, `dismissed_reason`, `reopen_count`, Statushistorie, Audit `fleet.defect.state_changed` und Ereignis `defect.state_changed` entstehen in **einer** Transaktion unter Zeilensperre
+  (`FOR UPDATE`): bei zwei gleichzeitigen Übergängen derselben Revision gewinnt genau einer, der andere erhält 412. Die Datenbank erzwingt die Tabelle zusätzlich per Trigger (`V30470`), Revisionszählung und den sicherheitskritischen Abschluss.
+- **Rollen** (Arbeitsnamen, OP-34): Disposition `dispatcher` und Werkstatt `workshop` für `NEW -> REVIEWED` und `REVIEWED -> IN_PROGRESS`; nur Werkstatt für Verwerfen, Abschluss ohne Reparatur, `IN_PROGRESS -> REPAIR` und zurück; Werkstatt und Betriebsleitung `tenant_admin` für `REPAIR -> CLOSED`.
+- **Vorbedingungen:** `DISMISSED` nur mit Begründung; Abschluss ohne Reparatur nur klassifiziert und nicht `SAFETY_CRITICAL` (aus `REVIEWED` nur `COSMETIC`/`OTHER`); `REPAIR` nur mit nicht storniertem Reparaturauftrag (WP-M3-51 legt ihn an); `REPAIR -> CLOSED` nur mit Reparaturnachweis (`PROOF_RECORDED`) und, bei
+  `SAFETY_CRITICAL`, mit Freigabeentscheidung `RELEASED`; `REPAIR -> IN_PROGRESS` nur, wenn alle Aufträge storniert sind.
+- **Wiedereröffnung** (Annahme; die Tabelle nannte sie nur als Negativbeispiel): ein Endzustand (`CLOSED`, `DISMISSED`) führt nur mit `reopen=true`, Begründung, Rolle Werkstatt oder Betriebsleitung nach `REVIEWED` zurück; `reopen_count` steigt um 1, die Historie kennzeichnet den Eintrag (`reopening`).
+  Ohne dieses Kennzeichen ist jeder Übergang aus einem Endzustand 409.
+- **Sperre:** das Statusmodul schreibt weder `vehicle`, `vehicle_block` noch `resource_release`; `CLOSED` und `DISMISSED` heben eine bestehende Sperre nie auf (Test mit aktiver Sperre). Entsperrung ausschließlich über WP-M3-51.
+- **Historie:** `defect_status_history` (append-only) enthält schon die Anlage (`from_status` = null); `GET /v1/defects/{id}/status-history` für Disposition, Werkstatt und Betriebsleitung (Scope `defects:state`, neu), Fahrer: 403.
+- **Nicht im Umfang:** Fristüberwachung je Status (M7). Der `versionierte CHECK` des WP-Textes ist die Spalte `status` mit CHECK (V3020) plus Trigger; weitere Zustände kämen additiv mit einer neuen Migration.

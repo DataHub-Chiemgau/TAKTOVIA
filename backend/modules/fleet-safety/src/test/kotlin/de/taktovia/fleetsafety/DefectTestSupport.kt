@@ -27,6 +27,36 @@ class DefectWorld(val fx: FleetFixture) {
 
     /** Setzt die Klasse (Triage, WP-M3-45) per Administration, solange die Triage nicht gebaut ist. */
     fun classify(defect: UUID, severity: String) = fx.exec("UPDATE taktovia.defect_case SET severity = ? WHERE id = ?", severity, defect)
+
+    /** Akte direkt in einem Status (Administration; der Anlagepfad fängt immer bei NEW an): Fixture für tabellengetriebene Übergangstests. */
+    fun caseIn(status: String, severity: String? = null, vehicle: UUID = this.vehicle): UUID = UUID.randomUUID().also { id ->
+        fx.exec("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,status,severity,dismissed_reason) " +
+            "VALUES (?,?,?,?,?,now() - interval '1 hour','BODY','Testakte','user:11111111-1111-4111-8111-111111111111',?,?,?)",
+            tenant.value, id, "SCH-T-" + id.toString().take(12), vehicle, UUID.randomUUID(), status, severity, if (status == "DISMISSED") "Fehlmeldung" else null)
+    }
+
+    fun repairOrder(defect: UUID, status: String = "OPEN"): UUID = UUID.randomUUID().also { id ->
+        fx.exec("INSERT INTO taktovia.repair_order(tenant_id,id,defect_id,vehicle_id,status,created_by) VALUES (?,?,?,?,?,'user:11111111-1111-4111-8111-111111111111')", tenant.value, id, defect, vehicle, status)
+    }
+
+    /** Reparaturauftrag mit Nachweis, Folgeprüfung und Freigabeentscheidung (Vieraugen) zur Akte. */
+    fun releaseDecision(defect: UUID, decision: String = "RELEASED") {
+        val ro = repairOrder(defect, "PROOF_RECORDED"); val shift = UUID.randomUUID(); val tpl = UUID.randomUUID(); val run = UUID.randomUUID()
+        fx.exec("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?,now(),now()+interval '1 hour','Europe/Berlin',0,'PUBLISHED')", tenant.value, shift, UUID.randomUUID(), vehicle)
+        fx.exec("INSERT INTO taktovia.checklist_template_revision(tenant_id,id,template_id,version,vehicle_class,service_mode,created_by) VALUES (?,?,?,1,'PKW','AREA','user:11111111-1111-4111-8111-111111111111')", tenant.value, tpl, UUID.randomUUID())
+        fx.exec("INSERT INTO taktovia.inspection_run(tenant_id,id,shift_id,vehicle_id,driver_ref,template_revision_id,kind,started_at,created_by) VALUES (?,?,?,?,?,?,'FOLLOW_UP',now(),'user:11111111-1111-4111-8111-111111111111')", tenant.value, run, shift, vehicle, UUID.randomUUID(), tpl)
+        fx.exec("INSERT INTO taktovia.vehicle_release_decision(tenant_id,id,vehicle_id,repair_order_id,follow_up_inspection_id,decision,decided_by,second_approver,safety_revision) VALUES (?,?,?,?,?,?,'user:11111111-1111-4111-8111-111111111111',?,1)",
+            tenant.value, UUID.randomUUID(), vehicle, ro, run, decision, if (decision == "RELEASED") "user:22222222-2222-4222-8222-222222222222" else null)
+    }
+
+    /** Aktive Sperre am Fahrzeug (Quelle SAFETY) und `active_block` wie die Sperrkern-Pflege es setzt. */
+    fun block(vehicle: UUID = this.vehicle): UUID = UUID.randomUUID().also { id ->
+        fx.exec("INSERT INTO taktovia.vehicle_block(tenant_id,id,vehicle_id,source,reason_code,set_by) VALUES (?,?,?,'SAFETY','DEFECT_CRITICAL','user:11111111-1111-4111-8111-111111111111')", tenant.value, id, vehicle)
+        fx.exec("UPDATE taktovia.vehicle SET active_block = true WHERE id = ?", vehicle)
+    }
+
+    fun status(defect: UUID): String = fx.strings("SELECT status FROM taktovia.defect_case WHERE id = ?", defect).single()
+    fun revision(defect: UUID): Long = fx.strings("SELECT revision::text FROM taktovia.defect_case WHERE id = ?", defect).single().toLong()
 }
 
 /** Steuerbare Uhr für Ablauf von Ticket und Link. */

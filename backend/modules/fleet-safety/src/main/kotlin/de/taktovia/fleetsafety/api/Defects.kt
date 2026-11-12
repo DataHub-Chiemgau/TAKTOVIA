@@ -122,6 +122,17 @@ interface Defects {
     fun report(ctx: RequestContext, cmd: ReportDefect): ReportedDefect
     fun get(ctx: RequestContext, id: UUID): DefectView
     fun list(ctx: RequestContext, filter: DefectFilter, limit: Int, after: Pair<Instant, UUID>?): List<DefectView>
+
+    /**
+     * Statusübergang (WP-M3-47, DMG-007) nach der Tabelle in [DefectStateMachine]; `expectedRevision` = `If-Match` (fehlt: 428 im Anfragefilter, veraltet: 412). Fremder Mandant oder fremde Akte: 404;
+     * ohne Rolle für den Übergang: 403; nicht in der Tabelle (auch aus einem Endzustand ohne dokumentierte Wiedereröffnung) oder Vorbedingung verletzt: 409 `INVALID_STATE_TRANSITION`;
+     * `DISMISSED` und Wiedereröffnung ohne Begründung: 422 mit Feldverweis. Bei zwei gleichzeitigen Übergängen derselben Revision gelingt genau einer. `CLOSED` und `DISMISSED` heben nie eine
+     * Sperre des Fahrzeugs auf (nur die Wiederfreigabe, WP-M3-51). Statushistorie, Audit und Ereignis `defect.state_changed` entstehen in derselben Transaktion.
+     */
+    fun transition(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: DefectTransition): DefectView
+
+    /** Statushistorie der Akte (Disposition, Werkstatt, Betriebsleitung); Fahrer: 403. */
+    fun statusHistory(ctx: RequestContext, id: UUID): List<StatusHistoryEntry>
 }
 
 /** Hilfen zum Lesen untypisierter JSON-Werte (Feldfehler mit Pointer). */

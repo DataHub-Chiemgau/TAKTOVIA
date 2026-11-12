@@ -2268,6 +2268,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "reopen_count",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zahl der dokumentierten Wiedereröffnungen, WP-M3-47"
+        },
+        {
           "spalte": "reported_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2766,6 +2775,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "is_reopening",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Kennzeichen der Wiedereröffnung, WP-M3-47"
         },
         {
           "spalte": "reason",

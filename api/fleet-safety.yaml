@@ -1548,6 +1548,100 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/transitions:
+    post:
+      summary: Statusübergang der Schadenakte
+      operationId: transitionDefect
+      security:
+      - oidc:
+        - defects:state
+      description: 'Führt einen Übergang nach der Tabelle in `zustaende/defect_case.md` aus (DMG-007). Nicht in der Tabelle, aus einem Endzustand ohne dokumentierte Wiedereröffnung oder Vorbedingung verletzt: 409 `INVALID_STATE_TRANSITION`, auch bei direktem API-Aufruf. `DISMISSED` und Wiedereröffnung verlangen `reason` (422 mit Feldverweis). Ohne Rolle für den Übergang: 403; fremde Akte: 404; ohne `If-Match`: 428; veraltet: 412. `CLOSED` und `DISMISSED` heben eine Sperre des Fahrzeugs nie auf (nur die Wiederfreigabe).'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectTransition'
+  /v1/defects/{defect_id}/status-history:
+    get:
+      summary: Statushistorie der Schadenakte
+      operationId: listDefectStatusHistory
+      security:
+      - oidc:
+        - defects:state
+      description: 'Append-only Historie der Statusübergänge mit Akteur und Zeit (Disposition, Werkstatt, Betriebsleitung); Fahrer: 403, fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectStatusHistoryPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     VehicleOperationalState:
@@ -3159,3 +3253,106 @@ components:
       - url
       - expires_at
       description: Signierter Abruflink; Gültigkeit höchstens 60 s, gilt nur für den Mandanten, der ihn erhielt.
+    DefectTransition:
+      type: object
+      additionalProperties: false
+      properties:
+        to:
+          type: string
+          enum:
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        reopen:
+          type: boolean
+          description: '`true` = dokumentierte Wiedereröffnung eines Endzustands nach `REVIEWED` (verlangt `reason`; Werkstatt oder Betriebsleitung).'
+      required:
+      - to
+      description: Statusübergang (DMG-007). Der Zielzustand ist das Ereignis; ein Rücksprung nach `NEW` gibt es nicht. Die Sperrwirkung steht nicht hier (Triage, WP-M3-45; Wiederfreigabe, WP-M3-51).
+    DefectStatusHistoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        from_status:
+          oneOf:
+          - type: string
+            enum:
+            - NEW
+            - REVIEWED
+            - IN_PROGRESS
+            - REPAIR
+            - CLOSED
+            - DISMISSED
+          - type: 'null'
+        to_status:
+          type: string
+          enum:
+          - NEW
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        actor:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Akteur als Pseudonym `user:<uuid>` bzw. `service:<name>`, nie Name oder Mailadresse.
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        reopening:
+          type: boolean
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - from_status
+      - to_status
+      - actor
+      - reason
+      - revision
+      - reopening
+      - occurred_at
+      description: Eintrag der Statushistorie (append-only).
+    DefectStatusHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/DefectStatusHistoryEntry'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.fleetsafety.api.DefectCatalog
 import de.taktovia.fleetsafety.api.DefectFilter
+import de.taktovia.fleetsafety.api.DefectTransition
 import de.taktovia.fleetsafety.api.DefectView
 import de.taktovia.fleetsafety.api.FleetsafetyApi
 import de.taktovia.fleetsafety.api.ReportDefect
 import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
+import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Paging
 import de.taktovia.platform.api.Revisioned
 import de.taktovia.platform.problem.ProblemException
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
@@ -59,6 +62,19 @@ class DefectController(private val fleet: FleetsafetyApi, private val codec: Cur
         val r = fleet.defects.report(RequestContexts.require(request), ReportDefect.parse(body))
         val res = DefectJson.resource(r.defect)
         return if (r.created) ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/defects/${r.defect.id}")).body(res) else ResponseEntity.ok(res)
+    }
+
+    @PostMapping("/v1/defects/{defect_id}/transitions")
+    fun transition(@PathVariable("defect_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): DefectResource =
+        DefectJson.resource(fleet.defects.transition(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch), DefectTransition.parse(body)))
+
+    @GetMapping("/v1/defects/{defect_id}/status-history")
+    fun statusHistory(@PathVariable("defect_id") id: UUID, request: HttpServletRequest): Map<String, Any?> {
+        val items = fleet.defects.statusHistory(RequestContexts.require(request), id)
+        return linkedMapOf("items" to items.map { h ->
+            linkedMapOf("id" to h.id.toString(), "from_status" to h.fromStatus, "to_status" to h.toStatus, "actor" to h.actor, "reason" to h.reason, "revision" to h.revision,
+                "reopening" to h.reopening, "occurred_at" to h.occurredAt.toString())
+        }, "next_cursor" to null, "as_of" to Instant.now().toString())
     }
 
     @GetMapping("/v1/defects/{defect_id}")

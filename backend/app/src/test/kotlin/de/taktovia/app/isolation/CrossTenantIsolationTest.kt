@@ -173,6 +173,8 @@ class CrossTenantIsolationTest {
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
             "getDefect" to Probe("GET", "/v1/defects/{defect_id}", role = "dispatcher"),
+            "transitionDefect" to Probe("POST", "/v1/defects/{defect_id}/transitions", """{"to":"REVIEWED"}""", true, role = "dispatcher"),
+            "listDefectStatusHistory" to Probe("GET", "/v1/defects/{defect_id}/status-history", role = "dispatcher"),
             "getDefectEvidenceUpload" to Probe("GET", "/v1/defect-evidence-uploads/{upload_id}", role = "dispatcher"),
             "completeDefectEvidenceUpload" to Probe("POST", "/v1/defect-evidence-uploads/{upload_id}/complete", "{}", true, role = "dispatcher"),
             "listDefectEvidence" to Probe("GET", "/v1/defects/{defect_id}/evidence", role = "dispatcher"),
