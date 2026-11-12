@@ -4535,6 +4535,15 @@
           "bemerkung": "Freigeber des Belegs"
         },
         {
+          "spalte": "captured_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-26: Erfassungszeit am Gerät (getrennt von original_received_at)"
+        },
+        {
           "spalte": "case_ref_id",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
@@ -4551,6 +4560,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "client_uuid",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-26: vom Gerät erzeugte Entwurfskennung (Idempotenzschlüssel), kein Personenbezug"
         },
         {
           "spalte": "created_by",
@@ -11607,6 +11625,15 @@
       "bemerkung": "kurzlebig, Aufbewahrung nach D-11",
       "spalten": [
         {
+          "spalte": "captured_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-26: Erfassungszeit am Gerät"
+        },
+        {
           "spalte": "case_ref_id",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
@@ -11623,6 +11650,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "client_uuid",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-26: Entwurfskennung des Geräts"
         },
         {
           "spalte": "declared_mime",

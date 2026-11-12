@@ -70,8 +70,8 @@ def seed(c, t, tenant):
     ids = {k: uid() for k in ('booking', 'expense', 'journal', 'settlement', 'le', 'event')}
     c.execute("""INSERT INTO taktovia.booking(tenant_id,id,hold_id,service_id,federation_ref,state,promise_snapshot,revision)
                  VALUES (%s,%s,%s,%s,%s,'CONFIRMED','{}',1)""", (tenant, ids['booking'], uid(), uid(), f'fed-{uid()}'))
-    c.execute("""INSERT INTO taktovia.expense_document(tenant_id,id,legal_entity_id,object_key,original_sha256,mime,state,revision,created_by,original_received_at)
-                 VALUES (%s,%s,%s,%s,%s,'application/pdf','NEW',1,'u',now())""", (tenant, ids['expense'], ids['le'], f'k-{uid()}', 'a' * 64))
+    c.execute("""INSERT INTO taktovia.expense_document(tenant_id,id,legal_entity_id,object_key,original_sha256,mime,state,revision,created_by,original_received_at,client_uuid)
+                 VALUES (%s,%s,%s,%s,%s,'application/pdf','NEW',1,'u',now(),%s)""", (tenant, ids['expense'], ids['le'], f'k-{uid()}', 'a' * 64, ids['expense']))   # client_uuid: unter replica läuft der Vorgabe-Trigger nicht (WP-M4-26)
     c.execute("""INSERT INTO taktovia.journal(tenant_id,id,event_id,legal_entity_id,currency,period_id,accounting_date,state)
                  VALUES (%s,%s,%s,%s,'EUR',%s,'2026-10-15','DRAFT')""", (tenant, ids['journal'], ids['event'], ids['le'], uid()))
     c.execute("""INSERT INTO taktovia.settlement_line(tenant_id,id,event_id,leg_id,contract_version_id,creditor_ref,debtor_ref,currency,payable_minor,revision)

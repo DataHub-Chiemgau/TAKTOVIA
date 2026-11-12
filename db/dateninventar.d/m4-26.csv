@@ -1,0 +1,5 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+expense_document;client_uuid;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-26: vom Gerät erzeugte Entwurfskennung (Idempotenzschlüssel), kein Personenbezug
+expense_document;captured_at;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-26: Erfassungszeit am Gerät (getrennt von original_received_at)
+upload_ticket;client_uuid;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-26: Entwurfskennung des Geräts
+upload_ticket;captured_at;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-26: Erfassungszeit am Gerät

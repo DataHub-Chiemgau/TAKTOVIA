@@ -6,13 +6,25 @@ paths:
       security:
       - oidc:
         - receipts:write
-      description: 'Stellt ein einmal verbrauchbares Uploadticket mit erlaubter Größe, MIME-Typ (JPEG, PNG, PDF) und erwartetem SHA-256 aus; Planungsdefaults: höchstens 10 MiB, 15 Minuten gültig (nicht freigegeben, Offener Punkt 13). Die Datei wird danach direkt in die Quarantäne des Objektspeichers geladen (`upload.url`, vorsigniert; solange kein Objektspeicher-Adapter angebunden ist, ist `upload` null) und mit `completeReceiptUpload` abgeschlossen. Der Hash wird als base64url ohne Auffüllung (43 Zeichen) übertragen, weil lange Hexfolgen die Kartendatenerkennung (SEC-008) fehldeuten können. Rechtsträger eines anderen Mandanten: 404; Typ, Größe oder Hash unzulässig: 422. Das Ticket gilt auch für andere Module (`purpose` DAMAGE_PHOTO: Fotoevidenz der Schadenmeldung).'
+      description: 'Stellt ein einmal verbrauchbares Uploadticket mit erlaubter Größe, MIME-Typ (JPEG, PNG, PDF) und erwartetem SHA-256 aus; Planungsdefaults: höchstens 10 MiB, 15 Minuten gültig (nicht freigegeben, Offener Punkt 13). Die Datei wird danach direkt in die Quarantäne des Objektspeichers geladen (`upload.url`, vorsigniert; solange kein Objektspeicher-Adapter angebunden ist, ist `upload` null) und mit `completeReceiptUpload` abgeschlossen. Der Hash wird als base64url ohne Auffüllung (43 Zeichen) übertragen, weil lange Hexfolgen die Kartendatenerkennung (SEC-008) fehldeuten können. Rechtsträger eines anderen Mandanten: 404; Typ, Größe oder Hash unzulässig: 422. Das Ticket gilt auch für andere Module (`purpose` DAMAGE_PHOTO: Fotoevidenz der Schadenmeldung). Idempotente Anlage (WP-M4-25/-26): mit `client_uuid` (vom Gerät vor dem Upload erzeugt) liefert 201 ein neues Ticket, 200 dasselbe noch gültige Ticket (Wiederaufnahme eines abgebrochenen Uploads) oder, wenn der Beleg schon angelegt ist, dessen Ticket mit `document_id` (Zustand CONSUMED, nichts mehr hochzuladen). Dieselbe `client_uuid` mit abweichendem Hash, Typ oder Größe ist 409 ohne Überschreiben; ein Vorgang (`case_ref`), der dem Fahrer der Fahrer-App nicht zugewiesen ist, 403 (unbekannt: 404). `captured_at` ist die Erfassungszeit am Gerät und wird getrennt von der Eingangszeit des Servers gespeichert. Ein Abbruch vor dem Abschluss hinterlässt keinen Beleg.'
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       responses:
         '201':
-          description: Erfolgreich.
+          description: Neues Ticket.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptUploadTicket'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '200':
+          description: Vorhandenes Ticket zur `client_uuid` (Wiederaufnahme) oder Ticket des bereits angelegten Belegs (`document_id` gesetzt).
           content:
             application/json:
               schema:
@@ -52,7 +64,7 @@ paths:
       security:
       - oidc:
         - receipts:write
-      description: 'Schließt den Upload ab: der Server liest die Datei aus der Quarantäne und prüft Größe, SHA-256 und tatsächlichen Dateityp gegen das Ticket (Abweichung: 422, das Ticket ist danach verbraucht). Danach läuft die Malware-Prüfung. Antwort `QUARANTINED` (Prüfer nicht verfügbar, bleibt in Quarantäne), `STORED` (Original gespeichert) oder `QUARANTINE_REJECTED` (Schadsoftware, endgültig, Sicherheitsereignis, nie ausgeliefert oder an OCR übergeben). `If-Match` trägt die Ticketrevision (veraltet: 412, fehlend: 428). Ein abgelaufenes oder bereits verbrauchtes Ticket ist nicht wiederverwendbar (409); parallele Abschlüsse ergeben genau ein Dokument; fremde Tickets sind nicht auffindbar (404).'
+      description: 'Schließt den Upload ab: der Server liest die Datei aus der Quarantäne und prüft Größe, SHA-256 und tatsächlichen Dateityp gegen das Ticket (Abweichung: 422, das Ticket ist danach verbraucht). Danach läuft die Malware-Prüfung. Antwort `QUARANTINED` (Prüfer nicht verfügbar, bleibt in Quarantäne), `STORED` (Original gespeichert) oder `QUARANTINE_REJECTED` (Schadsoftware, endgültig, Sicherheitsereignis, nie ausgeliefert oder an OCR übergeben). `If-Match` trägt die Ticketrevision (veraltet: 412, fehlend: 428). Ein abgelaufenes oder bereits verbrauchtes Ticket ist nicht wiederverwendbar (409); parallele Abschlüsse ergeben genau ein Dokument; fremde Tickets sind nicht auffindbar (404). Für Tickets mit `client_uuid` ist der Abschluss idempotent: ein bereits verbrauchtes Ticket liefert 200 mit dem vorhandenen Beleg (nicht 409); läuft der Abschluss gerade in einem parallelen Lauf, 409 zum Wiederholen.'
       parameters:
       - name: ticket_id
         in: path
@@ -65,7 +77,19 @@ paths:
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '201':
-          description: Erfolgreich.
+          description: Beleg neu angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDocument'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '200':
+          description: Der Beleg zu diesem Ticket (Client-UUID) war schon angelegt; keiner zusätzlich.
           content:
             application/json:
               schema:
@@ -221,8 +245,121 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/receipts/{document_id}/edited-view:
+    put:
+      summary: Bearbeitete Ansicht (Zuschnitt, Drehung) eines Belegs ablegen
+      operationId: attachReceiptEditedView
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Legt die bearbeitete Ansicht des Fotos (Zuschnitt, Drehung) als eigenes Objekt ab; das Rohbild (Original) bleibt byteweise unverändert und über `getExpenseOriginal` abrufbar (WP-M4-25). Jede Ablage erzeugt genau eine neue Belegrevision; die jüngste Ansicht gilt. Nur für Belege im Zustand STORED; `If-Match` trägt die Belegrevision (428 ohne, 412 veraltet). Typ (JPEG oder PNG) wird am Inhalt geprüft (422). Sichtbar nur für den Erfasser und die Finanzrolle (sonst 404).'
+      parameters:
+      - name: document_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dokument-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptEditedViewRequest'
+      responses:
+        '200':
+          description: Ansicht abgelegt; der Beleg trägt die neue Revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDocument'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    get:
+      summary: Bearbeitete Ansicht eines Belegs abrufen
+      operationId: getReceiptEditedView
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert die jüngste bearbeitete Ansicht (Bytes, JPEG oder PNG), unabhängig vom Original. Ohne abgelegte Ansicht und für nicht sichtbare Belege 404.'
+      parameters:
+      - name: document_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Dokument-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    ReceiptEditedViewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        content_base64:
+          type: string
+          minLength: 4
+          maxLength: 20000000
+          description: Bearbeitete Ansicht, base64 (Standardalphabet).
+      required:
+      - mime
+      - content_base64
     ReceiptUploadRequest:
       type: object
       additionalProperties: false
@@ -263,7 +400,14 @@ components:
           description: Belegart; Vorgabe RECEIPT.
         case_ref:
           $ref: finance.yaml#/components/schemas/ExpenseCaseRef
-          description: Vorgang (Fahrzeug oder Schicht) des Mandanten; ein unbekannter oder fremder Vorgang ist 404.
+          description: Vorgang (Fahrzeug oder Schicht) des Mandanten; ein unbekannter oder fremder Vorgang ist 404. Aus der Fahrer-App nur ein dem Fahrer zugewiesener Vorgang (Fahrzeug einer eigenen Schicht bzw. eigene Schicht), sonst 403.
+        client_uuid:
+          $ref: common.yaml#/components/schemas/UUID
+          description: Stabile Kennung des Entwurfs, vom Gerät vor dem Upload erzeugt; macht die Anlage idempotent (je Mandant eindeutig, WP-M4-26).
+        captured_at:
+          type: string
+          format: date-time
+          description: Erfassungszeit am Gerät; wird getrennt von der Eingangszeit des Servers gespeichert und nie überschrieben.
       required:
       - legal_entity_id
       - purpose
@@ -306,6 +450,22 @@ components:
           type: string
           enum:
           - ISSUED
+          - CONSUMED
+          description: ISSUED = Upload und Abschluss stehen aus; CONSUMED = der Beleg ist angelegt (`document_id`), nichts mehr hochzuladen.
+        client_uuid:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        captured_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        document_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Gesetzt, sobald der Beleg angelegt ist.
         revision:
           type: integer
           format: int64
@@ -411,6 +571,17 @@ components:
           - UNCHECKED
           - VERIFIED
           - VIOLATED
+        client_uuid:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Kennung des Entwurfs aus der Fahrer-App (Idempotenzschlüssel); bei anderen Kanälen die Beleg-ID.
+        captured_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Erfassungszeit am Gerät, getrennt von `received_at` (Eingangszeit am Server).
       required:
       - source_channel
       - document_kind

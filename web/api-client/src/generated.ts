@@ -2227,6 +2227,11 @@ export interface ProviderEventReceipt {
   status: 'ACCEPTED' | 'ALREADY_RECEIVED';
 }
 
+export interface ReceiptEditedViewRequest {
+  mime: 'image/jpeg' | 'image/png';
+  content_base64: string;
+}
+
 export interface ReceiptUploadRequest {
   legal_entity_id: UUID;
   purpose: UploadPurpose;
@@ -2236,6 +2241,8 @@ export interface ReceiptUploadRequest {
   source_channel?: 'DRIVER_APP' | 'DISPATCH_WEB';
   document_kind?: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
   case_ref?: ExpenseCaseRef;
+  client_uuid?: UUID;
+  captured_at?: string;
 }
 
 export type UploadPurpose = 'RECEIPT' | 'DAMAGE_PHOTO';
@@ -2248,7 +2255,10 @@ export interface ReceiptUploadTicket {
   sha256: string;
   max_bytes: number;
   expires_at: string;
-  state: 'ISSUED';
+  state: 'ISSUED' | 'CONSUMED';
+  client_uuid?: UUID | null;
+  captured_at?: string | null;
+  document_id?: UUID | null;
   revision: number;
   upload_key: string;
   upload: null | {
@@ -2272,6 +2282,8 @@ export interface ReceiptDocument {
   source_channel: 'DRIVER_APP' | 'DISPATCH_WEB' | 'EMAIL_INBOUND' | 'INVOICE_IMPORT';
   document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
+  client_uuid?: UUID | null;
+  captured_at?: string | null;
 }
 
 export interface ExtractedField {
@@ -4023,6 +4035,20 @@ export interface Operations {
     body: undefined;
     response: ExtractionResult;
   };
+  getReceiptEditedView: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
+  attachReceiptEditedView: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: ReceiptEditedViewRequest;
+    response: ReceiptDocument;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
@@ -4519,11 +4545,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
-  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   requestReceiptExtraction: { method: 'POST', path: '/v1/expenses/receipts/{document_id}/extract', pathParams: ['document_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [202, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   getReceiptExtraction: { method: 'GET', path: '/v1/expenses/receipts/{document_id}/extraction', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getReceiptEditedView: { method: 'GET', path: '/v1/expenses/receipts/{document_id}/edited-view', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  attachReceiptEditedView: { method: 'PUT', path: '/v1/expenses/receipts/{document_id}/edited-view', pathParams: ['document_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

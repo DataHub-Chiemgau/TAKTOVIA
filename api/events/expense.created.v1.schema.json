@@ -17,7 +17,9 @@
         {"type": "object", "required": ["kind", "id"], "additionalProperties": false, "properties": {"kind": {"enum": ["VEHICLE", "SHIFT"]}, "id": {"type": "string", "format": "uuid"}}}
       ]
     },
-    "sender_verified": {"type": ["boolean", "null"], "description": "Nur E-Mail-Eingang: Absenderdomäne verifiziert."}
+    "sender_verified": {"type": ["boolean", "null"], "description": "Nur E-Mail-Eingang: Absenderdomäne verifiziert."},
+    "client_uuid": {"type": "string", "format": "uuid", "description": "WP-M4-26: stabile Kennung des Entwurfs aus der Fahrer-App (Idempotenzschlüssel); fehlt bei Kanälen ohne Gerätekennung."},
+    "captured_at": {"type": "string", "format": "date-time", "description": "WP-M4-26: Erfassungszeit am Gerät, getrennt von `received_at` (Eingangszeit am Server)."}
   },
   "examples": [
     {"document_id": "11111111-2222-4333-8444-555555555555", "source_channel": "EMAIL_INBOUND", "document_kind": "INVOICE", "received_at": "2026-12-01T06:00:00Z", "case_ref": null, "sender_verified": true}
