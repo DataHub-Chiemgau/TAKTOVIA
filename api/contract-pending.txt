@@ -6,7 +6,6 @@
 
 acknowledgeDriverRunRevision  # POST /v1/driver/shifts/{shift_id}/run/acknowledgements
 allocateCost  # POST /v1/cost-events/{cost_event_id}/allocations
-approveExpense  # POST /v1/expenses/{expense_id}/approve
 cancelBooking  # POST /v1/bookings/{booking_id}/cancel
 cancelJourney  # POST /v1/federation/journeys/{journey_id}/cancel
 confirmBooking  # POST /v1/bookings

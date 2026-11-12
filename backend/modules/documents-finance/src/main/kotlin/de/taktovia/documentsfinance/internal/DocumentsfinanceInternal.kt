@@ -28,11 +28,13 @@ internal object UploadServicesFactory {
         val guarded = de.taktovia.documentsfinance.api.ProtectedObjectStore(store)
         val integrity = JdbcIntegrity(ctxTx, security, outbox, guarded, clock)
         val uploads = JdbcUploads(ctxTx, audit, security, outbox, guarded, scanner, policy, signer, clock, integrity)
+        val costEvents = JdbcCostEvents(ctxTx, audit, outbox, integrity, clock)
         return de.taktovia.documentsfinance.api.DocumentServices(
             uploads, JdbcExpenses(ctxTx, audit, outbox, guarded, uploads, policy, clock), JdbcIntake(ctxTx, uploads, policy), JdbcDocumentSettings(ctxTx, audit), integrity,
             JdbcExtraction(ctxTx, outbox, guarded, recognizer, extraction, clock), JdbcReceiptReview(ctxTx, integrity, clock, audit, outbox), JdbcCostAssignments(ctxTx, audit, outbox, clock),
-            JdbcCostEvents(ctxTx, audit, outbox, integrity, clock), JdbcAccountingMappings(ctxTx, audit),
+            costEvents, JdbcAccountingMappings(ctxTx, audit),
             JdbcFuelReceipts(ctxTx, audit, outbox, clock), JdbcFinancePolicies(ctxTx, audit), JdbcFuelPlausibility(ctxTx, audit), JdbcDuplicateReview(ctxTx, audit, outbox, clock),
+            JdbcExpenseApprovals(ctxTx, audit, outbox, costEvents, clock),
         )
     }
 }

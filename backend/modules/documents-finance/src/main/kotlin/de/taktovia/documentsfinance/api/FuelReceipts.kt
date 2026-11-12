@@ -74,10 +74,14 @@ data class FinancePolicyView(
     val fuel: FuelParameters = FuelParameters(),
     /** `receipt_duplicate_threshold`: Mindestpunktzahl (1 bis 100, Vorgabe 60) eines Dublettentreffers; ein Treffer löscht oder verschmilzt nie einen Beleg. */
     val duplicateThreshold: Int = 60,
+    /** `approval_stage_thresholds` (Planungsstand, D-06): Beträge **größer** als die Schwelle brauchen eine zweite Freigabe durch eine andere Person; `null` = keine zweite Stufe. Andere Währung als [approvalThresholdCurrency]: stets zweite Stufe. */
+    val approvalSecondThresholdMinor: Long? = null, val approvalThresholdCurrency: String = "EUR",
 )
 
 /** `fuel` ersetzt den gesamten Satz der Tankparameter (nicht Angegebenes wird nicht konfiguriert); `null` lässt ihn unverändert. */
-data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null, val fuel: FuelParameters? = null, val duplicateThreshold: Int? = null)
+data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null, val fuel: FuelParameters? = null, val duplicateThreshold: Int? = null,
+    /** Neue Vier-Augen-Schwelle in kleinster Einheit (> 0); `clearApprovalThreshold` hebt die zweite Stufe auf. */
+    val approvalSecondThresholdMinor: Long? = null, val approvalThresholdCurrency: String? = null, val clearApprovalThreshold: Boolean = false)
 
 /** Schwellen je Fahrzeug (`fuel_max_liters`: an die Tankgröße gebunden; `fuel_use_alert_pct`: je Fahrzeugtyp); `null` = der Wert des Mandanten gilt. */
 data class FuelVehiclePolicy(val vehicleId: UUID, val maxLiters: java.math.BigDecimal?, val useAlertPct: java.math.BigDecimal?, val revision: Long)

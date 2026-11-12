@@ -91,7 +91,7 @@ class DuplicateDetectionTest {
             }
         }
 
-        fun plain(bytes: ByteArray = Samples.jpeg(seed = (Math.random() * 1_000_000).toInt()), kind: DocumentKind = DocumentKind.RECEIPT, channel: SourceChannel = SourceChannel.DISPATCH_WEB) =
+        fun plain(bytes: ByteArray = bf.uniqueJpeg(), kind: DocumentKind = DocumentKind.RECEIPT, channel: SourceChannel = SourceChannel.DISPATCH_WEB) =
             Doc(bf.upload(w, driver, bytes, channel, kind))
 
         fun import(bytes: ByteArray, ref: String, kind: DocumentKind = DocumentKind.FUEL_RECEIPT): Doc {
@@ -206,7 +206,7 @@ class DuplicateDetectionTest {
         repeat(6) { round ->
             val w = World(); val bytes = Samples.pdf("parallel $round")
             // Variante je Runde: identische Datei bzw. verschiedene Datei mit gleichen Fachdaten; Felder per SQL gesetzt, damit die Erkennung erst im Freigabeschritt läuft
-            val docs = (1..2).map { i -> w.plain(if (round % 2 == 0) bytes.copyOf().also { } else Samples.jpeg(seed = round * 10 + i)).assign() }
+            val docs = (1..2).map { i -> w.plain(if (round % 2 == 0) bytes.copyOf().also { } else bf.uniqueJpeg()).assign() }
             if (round % 2 == 0) {   // identische Datei: zweites Ticket derselben Datei ist ein eigener Beleg (anderer Objektschlüssel)
                 assertEquals(2, bf.fx.count("SELECT count(DISTINCT id) FROM taktovia.expense_document WHERE tenant_id=?", w.w.tenant.value))
             }

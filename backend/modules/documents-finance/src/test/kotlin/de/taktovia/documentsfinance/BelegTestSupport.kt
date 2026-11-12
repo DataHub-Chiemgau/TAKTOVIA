@@ -48,6 +48,9 @@ class BelegFixture(val store: TenantObjectStore, recognizer: ReceiptRecognizer? 
         return svc.uploads.complete(ctx, t.ticketId, t.revision)
     }
 
+    /** JPEG mit eindeutigem Inhalt (verschiedener SHA-256 je Aufruf): zwei Belege mit gleichem Hash wären im selben Mandanten Dubletten (WP-M4-32). */
+    fun uniqueJpeg(): ByteArray = Samples.jpeg().also { UUID.randomUUID().toString().toByteArray().copyInto(it, 8) }
+
     fun configureInbound(w: UploadFixture.World, address: String = "rechnung@firma.test", domains: Set<String> = setOf("lieferant.test"), ocr: Boolean = true) {
         svc.settings.update(financeCtx(w), UpdateDocumentSettings(ocr, address, w.legalEntity, domains))
     }

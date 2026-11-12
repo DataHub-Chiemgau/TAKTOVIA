@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+approval_step;SELECT,INSERT;WP-M4-34: Freigabeschritt je Beleg und Revision, append-only, Rollentrennung per Trigger

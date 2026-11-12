@@ -49,7 +49,9 @@ data class ExpenseView(val document: StoredDocumentView, val fields: Map<String,
     /** Plausibilitätshinweise der aktuellen Revision und Vermerke zu nicht prüfbaren Regeln (WP-M4-31). */
     val plausibility: PlausibilityReport = PlausibilityReport.NONE,
     /** Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32). */
-    val duplicates: List<DuplicateCandidateView> = emptyList()) {
+    val duplicates: List<DuplicateCandidateView> = emptyList(),
+    /** Freigabeschritte (WP-M4-34) und Exportstatus. */
+    val approvalSteps: List<ApprovalStepView> = emptyList(), val exportState: ExportState = ExportState.NOT_EXPORTED) {
     /** Freigabefähig, wenn kein Hindernis besteht (Dokument, Bestätigungspflicht und Kostenzuordnung). */
     val approvable: Boolean get() = blockers.isEmpty()
 }
@@ -227,5 +229,5 @@ class DocumentServices(
     val review: ReceiptReview,
     val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
     val fuel: FuelReceipts, val policies: FinancePolicies, val plausibility: FuelPlausibility,
-    val duplicates: DuplicateReview,
+    val duplicates: DuplicateReview, val approvals: ExpenseApprovals,
 )

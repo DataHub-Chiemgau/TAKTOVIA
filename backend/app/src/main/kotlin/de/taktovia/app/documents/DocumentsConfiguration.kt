@@ -111,6 +111,7 @@ class DocumentsConfiguration {
     @Bean fun fuelReceipts(s: DocumentServices): de.taktovia.documentsfinance.api.FuelReceipts = s.fuel
     @Bean fun fuelPlausibility(s: DocumentServices): de.taktovia.documentsfinance.api.FuelPlausibility = s.plausibility
     @Bean fun duplicateReview(s: DocumentServices): de.taktovia.documentsfinance.api.DuplicateReview = s.duplicates
+    @Bean fun expenseApprovals(s: DocumentServices): de.taktovia.documentsfinance.api.ExpenseApprovals = s.approvals
     @Bean fun financePolicies(s: DocumentServices): de.taktovia.documentsfinance.api.FinancePolicies = s.policies
 
     /** Führt angestoßene Extraktionsläufe asynchron aus (Antwort 202); der Lauf selbst ist idempotent und lease-gesichert, ein Neustart verliert höchstens den Anstoß, nicht den Lauf. */

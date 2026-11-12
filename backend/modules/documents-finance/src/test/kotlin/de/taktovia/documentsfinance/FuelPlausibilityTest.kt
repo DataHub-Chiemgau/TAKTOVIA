@@ -80,7 +80,7 @@ class FuelPlausibilityTest {
 
         /** Tankvorgang mit Tankzeit `day` Juni 2026. */
         fun fill(day: Int, odo: Long?, qty: String, price: String = "1.60", card: String? = null, type: FuelType = FuelType.DIESEL, vehicleId: UUID? = vehicle): Fill {
-            val f = Fill(bf.upload(w, driver, bytes = Samples.jpeg(seed = (Math.random() * 1_000_000).toInt()), kind = DocumentKind.FUEL_RECEIPT))
+            val f = Fill(bf.upload(w, driver, bytes = bf.uniqueJpeg(), kind = DocumentKind.FUEL_RECEIPT))
             f.fuel(CaptureFuel(vehicleId, type, dec(qty), dec(price), odo, Instant.parse("2026-06-%02dT08:00:00Z".format(day)), card))
             return f
         }

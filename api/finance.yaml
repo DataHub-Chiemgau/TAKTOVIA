@@ -140,8 +140,8 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '428':
           $ref: common.yaml#/components/responses/Problem
-      description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen. POSTED
-        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED. Solange ein Pflichtfeld nicht bestätigt oder korrigiert ist, ein markierter OCR-Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt oder Netto + Steuer ≠ Brutto gilt, weist die Freigabe mit 422 `UNCONFIRMED_FIELDS` ab (`violations[].pointer` = `/fields/<feld>`); die Prüfung läuft in der Freigabetransaktion auf der gesperrten Belegzeile, eine parallele Feldkorrektur auf der alten Revision ergibt 412.
+      description: 'Endgültige Freigabe (WP-M4-34). Erste Freigabe (Budgetfreigabe) eines fachlich geprüften Belegs (`REVIEWED`): bei einem Betrag größer als die Schwelle `approval_stage_thresholds` wartet der Beleg auf die zweite Person (Antwort `WAITING_SECOND_APPROVAL`, `posting_id` null; ein Betrag exakt auf der Schwelle löst sie nicht aus), sonst entsteht das Kostenereignis (`POSTED`, `posting_id`). Zweite Freigabe: eine andere Person als Erfasser und Erstfreigeber (403), dann `POSTED`. Ohne Recht (Scope `expenses:approve`, Finanzrolle, Mensch) 403 ohne Schritteintrag. `validated_document_revision` = exakte Dokumentrevision, `If-Match` ebenso (veraltet 412, fehlend 428). Je Blockade ein eigener Code: 409 `DOCUMENT_INTEGRITY_VIOLATION`, `DUPLICATE_REVIEW_REQUIRED`, `DUPLICATE_EVIDENCE_LINKED`; 422 `UNCONFIRMED_FIELDS`, `COST_ASSIGNMENT_REQUIRED`, `FUEL_FIELDS_MISSING`, `SPLIT_INCOMPLETE`, `HINT_NOT_ACKNOWLEDGED`. Gleicher `Idempotency-Key` mit gleichem Inhalt liefert die gespeicherte Antwort und bucht nicht erneut, mit anderem Inhalt 409 `IDEMPOTENCY_CONFLICT`. Ein bereits freigegebener oder gebuchter Beleg: 409. POSTED
+        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED. Solange ein Pflichtfeld nicht bestätigt oder korrigiert ist, ein markierter OCR-Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt oder Netto + Steuer ≠ Brutto gilt, weist die Freigabe mit 422 `UNCONFIRMED_FIELDS` ab (`violations[].pointer` = `/fields/<feld>`); die Prüfung läuft in der Freigabetransaktion auf der gesperrten Belegzeile, eine parallele Feldkorrektur auf der alten Revision ergibt 412.'
       requestBody:
         required: true
         content:
@@ -387,6 +387,156 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DuplicateDecisionRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/submit:
+    post:
+      summary: Erfassung abschließen und zur fachlichen Prüfung einreichen
+      operationId: submitExpense
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Schließt die Erfassung ab (Schritt `CAPTURE`): `STORED` -> `IN_REVIEW`; der Beleg ist danach nicht mehr bearbeitbar (409 `IMMUTABLE_RECORD`). `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428). Erfasser oder Finanzrolle; fremde Mandanten und andere Akteure: 404. Ein Beleg in Quarantäne oder im falschen Zustand: 409; ein Beleg, der Evidenz einer Dublette ist: 409 `DUPLICATE_EVIDENCE_LINKED`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/review:
+    post:
+      summary: Fachliche Prüfung eines Belegs
+      operationId: reviewExpense
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Fachliche Prüfung (Schritt `REVIEW`) eines eingereichten Belegs (`IN_REVIEW`). `APPROVED`: der Beleg durchläuft alle Blockaden und wird `REVIEWED`; jede Blockade hat ihren eigenen Code: 409 `DOCUMENT_INTEGRITY_VIOLATION`, 409 `DUPLICATE_REVIEW_REQUIRED`/`DUPLICATE_EVIDENCE_LINKED`, 422 `UNCONFIRMED_FIELDS`, `COST_ASSIGNMENT_REQUIRED`, `FUEL_FIELDS_MISSING`, `SPLIT_INCOMPLETE`, `HINT_NOT_ACKNOWLEDGED`. `REJECTED`: zurück in die Erfassung (`STORED`) mit Begründung, ohne Kostenereignis und ohne Journal. Recht: Scope `expenses:review` und Finanzrolle (Mensch); ohne Recht 403 ohne Schritteintrag. `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseReviewRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/reject:
+    post:
+      summary: Belegfreigabe ablehnen
+      operationId: rejectExpense
+      security:
+      - oidc:
+        - expenses:approve
+      description: 'Ablehnung in der Budgetfreigabe oder der zweiten Freigabe (Beleg `REVIEWED` oder `WAITING_SECOND_APPROVAL`): zurück in die Erfassung (`STORED`) mit Begründung (3 bis 1000 Zeichen), ohne Kostenereignis und ohne Journal; der Schritt steht mit Akteur, Revision und Begründung in `approval_steps`. Recht wie `approveExpense` (Scope `expenses:approve`, Finanzrolle, Mensch; sonst 403). `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428). Eine Ablehnung in der fachlichen Prüfung ist `reviewExpense` mit `REJECTED`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HintAcknowledgementRequest'
       responses:
         '200':
           description: Erfolgreich.
@@ -676,6 +826,61 @@ components:
       - document_number
       - source_channel
       - received_at
+    ExpenseReviewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - decision
+      - reason
+    ExpenseApprovalStep:
+      type: object
+      additionalProperties: false
+      description: Freigabeschritt (`approval_step`, append-only) mit Akteur, Dokumentrevision, Entscheidung, Begründung und Zeit.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        step:
+          type: string
+          enum:
+          - CAPTURE
+          - REVIEW
+          - BUDGET
+          - SECOND_APPROVAL
+        document_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+        decided_by:
+          type: string
+        reason:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - step
+      - document_revision
+      - decision
+      - decided_by
+      - reason
+      - decided_at
     HintAcknowledgementRequest:
       type: object
       additionalProperties: false
@@ -1080,7 +1285,7 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         state:
           type: string
-          description: Belegzustand; QUARANTINED, STORED oder QUARANTINE_REJECTED, danach die Zustände der Freigabe und Buchung (weitere Arbeitspakete).
+          description: Belegzustand; QUARANTINED, STORED (Erfassung) oder QUARANTINE_REJECTED, danach IN_REVIEW, REVIEWED, WAITING_SECOND_APPROVAL und POSTED (Freigabe-Workflow, WP-M4-34).
         source_channel:
           type: string
           enum:
@@ -1185,6 +1390,18 @@ components:
           items:
             $ref: '#/components/schemas/ExpenseDuplicate'
           description: Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32).
+        approval_steps:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ExpenseApprovalStep'
+          description: Freigabeschritte in zeitlicher Folge (WP-M4-34).
+        export_state:
+          type: string
+          enum:
+          - NOT_EXPORTED
+          - EXPORTED
+          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege.
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

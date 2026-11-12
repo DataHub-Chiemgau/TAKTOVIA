@@ -2,7 +2,11 @@ package de.taktovia.app.documents
 
 import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
+import de.taktovia.documentsfinance.api.ApprovalDecision
+import de.taktovia.documentsfinance.api.ApprovalOutcome
+import de.taktovia.documentsfinance.api.ApprovalStepView
 import de.taktovia.documentsfinance.api.AssignCosts
+import de.taktovia.documentsfinance.api.ExpenseApprovals
 import de.taktovia.documentsfinance.api.CaptureFuel
 import de.taktovia.documentsfinance.api.DuplicateCandidateView
 import de.taktovia.documentsfinance.api.DuplicateDecision
@@ -47,12 +51,15 @@ private val DECIMAL = Regex("[0-9]{1,12}(\\.[0-9]{1,8})?")
 
 class ExpenseResource(@get:JsonValue val data: Map<String, Any?>, override val revision: Long) : Revisioned
 
+/** Antwort der endgültigen Freigabe (`ExpenseApproval`, WP-M4-34). */
+class ApprovalResource(@get:JsonValue val data: Map<String, Any?>, override val revision: Long) : Revisioned
+
 /**
  * Beleg lesen, Revisionen, Korrektur und Original (WP-M4-22, WP-M4-23, WP-M4-24; Modul `documents-finance`). Rechte (`receipts:read|write`) aus der Rechtematrix im Filter; Mandant und Akteur aus
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview, private val approvals: ExpenseApprovals) {
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -131,6 +138,44 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         return resource(duplicates.decide(RequestContexts.require(request), id, candidateId, revision, decision, reason))
     }
 
+    /** Erfassung abschließen (WP-M4-34, Schritt CAPTURE); `If-Match` trägt die Belegrevision. */
+    @PostMapping("/v1/expenses/{expense_id}/submit")
+    fun submit(@PathVariable("expense_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): ExpenseResource =
+        resource(approvals.submit(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch)))
+
+    /** Fachliche Prüfung (Schritt REVIEW): `APPROVED` oder `REJECTED` mit Begründung. */
+    @PostMapping("/v1/expenses/{expense_id}/review")
+    fun review(@PathVariable("expense_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ExpenseResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val decision = ApprovalDecision.entries.firstOrNull { it.name == body["decision"] } ?: throw ProblemException.invalid(Violation("/decision", if (body["decision"] == null) ViolationCode.REQUIRED else ViolationCode.NOT_IN_ENUM))
+        val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        return resource(approvals.review(RequestContexts.require(request), id, revision, decision, reason))
+    }
+
+    /** Endgültige Freigabe (Budgetfreigabe bzw. zweite Freigabe); `If-Match` und `validated_document_revision` nennen dieselbe exakte Dokumentrevision. */
+    @PostMapping("/v1/expenses/{expense_id}/approve")
+    fun approve(@PathVariable("expense_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ApprovalResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val ctx = RequestContexts.require(request)
+        val validated = (body["validated_document_revision"] as? Number)?.toLong() ?: throw ProblemException.invalid(Violation("/validated_document_revision", ViolationCode.REQUIRED))
+        val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        if (validated != revision) throw ProblemException(de.taktovia.platform.problem.ErrorCode.REVISION_MISMATCH, "If-Match und validated_document_revision nennen verschiedene Revisionen.")
+        return approval(approvals.approve(ctx, id, validated, reason))
+    }
+
+    /** Ablehnung in Budgetfreigabe oder zweiter Freigabe: zurück in die Erfassung. */
+    @PostMapping("/v1/expenses/{expense_id}/reject")
+    fun reject(@PathVariable("expense_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ExpenseResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        return resource(approvals.reject(RequestContexts.require(request), id, revision, reason))
+    }
+
+    private fun approval(o: ApprovalOutcome): ApprovalResource = ApprovalResource(linkedMapOf("expense_id" to o.documentId.toString(), "revision" to o.revision, "state" to o.state, "posting_id" to o.postingId?.toString()), o.revision)
+
+    private fun stepJson(st: ApprovalStepView): Map<String, Any?> = linkedMapOf("id" to st.id.toString(), "step" to st.step.name, "document_revision" to st.documentRevision, "decision" to st.decision.name,
+        "decided_by" to st.decidedBy, "reason" to st.reason, "decided_at" to st.decidedAt.toString())
+
     @GetMapping("/v1/expenses/{expense_id}/revisions")
     fun revisions(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): Map<String, Any?> =
         linkedMapOf("items" to expenses.revisions(RequestContexts.require(request), id).map(::json))
@@ -151,7 +196,7 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
             "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson),
             "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) },
-            "duplicates" to e.duplicates.map(::duplicateJson), "fields" to e.fields, "revision" to d.revision,
+            "duplicates" to e.duplicates.map(::duplicateJson), "approval_steps" to e.approvalSteps.map(::stepJson), "export_state" to e.exportState.name, "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 

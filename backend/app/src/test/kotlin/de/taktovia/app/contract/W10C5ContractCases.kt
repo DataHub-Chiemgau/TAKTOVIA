@@ -20,10 +20,17 @@ internal object W10C5ContractCases {
                 j.update("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (?,?,'LE','DE')", tenant.value, le)
                 j.update("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config) VALUES (?,?,'org',CAST('{}' AS jsonb))", tenant.value, vehicle)
                 j.update("INSERT INTO taktovia.finance_policy(tenant_id,updated_by,fuel_max_liters) VALUES (?,'contract',80)", tenant.value)
+                j.update("INSERT INTO taktovia.fiscal_period(tenant_id,id,legal_entity_id,starts_on,ends_on) VALUES (?,?,?,DATE '2026-01-01',DATE '2027-01-01')", tenant.value, UUID.randomUUID(), le)
+                j.update("INSERT INTO taktovia.accounting_mapping(tenant_id,legal_entity_id,category,expense_account,input_tax_account,payable_account,updated_by) VALUES (?,?,'FUEL','6600','1576','1600','contract')", tenant.value, le)
             }
             env.grant(tenant, finance, "finance")
         }
         val token = env.token(finance)
+
+        /** Weitere Finanzkräfte (Prüfer, Freigeber): Erfasser, Prüfer und Freigeber sind verschiedene Personen. */
+        fun financeUser(): String { val u = UUID.randomUUID(); env.grant(tenant, u, "finance"); return env.token(u) }
+        val reviewerToken: String by lazy { financeUser() }; val approverToken: String by lazy { financeUser() }
+        val approver2Token: String by lazy { financeUser() }
 
         /** Beleg im Zustand STORED (Art je nach `kind`); Revision 1. */
         fun fuelDocument(bytes: ByteArray = ("%PDF-1.4\n${UUID.randomUUID()}\n" + "x".repeat(600)).toByteArray(Charsets.ISO_8859_1), kind: String = "FUEL_RECEIPT"): String {
@@ -44,6 +51,26 @@ internal object W10C5ContractCases {
         }
     }
 
+    /** Ein vollständiger Tankbeleg (Pflichtfelder, Kostenzuordnung, Tankwerte unter der Schwelle) bis zum gewünschten Zustand (`STORED`, `IN_REVIEW`, `REVIEWED`); liefert Beleg und Revision. */
+    fun World.readyDocument(upTo: String = "STORED"): Pair<String, Long> {
+        val doc = fuelDocument()
+        var rev = 1L
+        fun patch(body: String): Long {
+            val p = env.server.send("PATCH", "/v1/expenses/$doc", body, env.headers(token, extra = idem() + im(rev)))
+            check(p.status == 200) { p.text }
+            return p.json["revision"].asLong()
+        }
+        val n = UUID.randomUUID().toString().take(8)
+        rev = patch("""{"reason":"erfasst","fields":{"amount_minor":11900,"currency":"EUR","document_date":"2026-06-15","merchant":"Tankstelle $n","document_number":"$n","vat_amounts":[{"vat_rate_pct":"19","amount_minor":1900}]}}""")
+        rev = patch("""{"cost_assignment":{"vehicle_ids":["$vehicle"]}}""")
+        rev = patch("""{"fuel":{"vehicle_id":"$vehicle","fuel_type":"DIESEL","quantity":"40","unit_price":"1.65","odometer_km":1000}}""")
+        if (upTo == "STORED") return doc to rev
+        val sub = env.post("/v1/expenses/$doc/submit", "", token, extra = idem() + im(rev)); check(sub.status == 200) { sub.text }
+        if (upTo == "IN_REVIEW") return doc to rev
+        val rv = env.post("/v1/expenses/$doc/review", """{"decision":"APPROVED","reason":"Sachlich geprüft"}""", reviewerToken, extra = idem() + im(rev)); check(rv.status == 200) { rv.text }
+        return doc to rev
+    }
+
     /** Zwei Belege mit gleichem Händler, Datum und gleicher Belegnummer, aber anderem Betrag: möglicher Treffer am neueren Beleg; liefert Beleg, Treffer und Revision. */
     fun World.documentWithDuplicate(): Triple<String, String, Long> {
         fun fields(doc: String, amount: Long): Long {
@@ -59,6 +86,18 @@ internal object W10C5ContractCases {
     }
 
     val cases: List<ContractCase> = listOf(
+        ContractCase("submitExpense",
+            200, { val w = World(); val (doc, rev) = w.readyDocument("STORED"); ContractRequest("POST", "/v1/expenses/$doc/submit", null, env.headers(w.token, extra = idem() + im(rev))) },
+            404, { val w = World(); ContractRequest("POST", "/v1/expenses/${UUID.randomUUID()}/submit", null, env.headers(w.token, extra = idem() + im(1))) }, server = { env.server }),
+        ContractCase("reviewExpense",
+            200, { val w = World(); val (doc, rev) = w.readyDocument("IN_REVIEW"); ContractRequest("POST", "/v1/expenses/$doc/review", """{"decision":"APPROVED","reason":"Sachlich geprüft"}""", env.headers(w.reviewerToken, extra = idem() + im(rev))) },
+            422, { val w = World(); val (doc, rev) = w.readyDocument("IN_REVIEW"); ContractRequest("POST", "/v1/expenses/$doc/review", """{"decision":"REJECTED","reason":"ab"}""", env.headers(w.reviewerToken, extra = idem() + im(rev))) }, server = { env.server }),
+        ContractCase("approveExpense",
+            200, { val w = World(); val (doc, rev) = w.readyDocument("REVIEWED"); ContractRequest("POST", "/v1/expenses/$doc/approve", """{"reason":"Freigegeben","validated_document_revision":$rev}""", env.headers(w.approverToken, extra = idem() + im(rev))) },
+            403, { val w = World(); val (doc, rev) = w.readyDocument("REVIEWED"); ContractRequest("POST", "/v1/expenses/$doc/approve", """{"reason":"Selbstfreigabe","validated_document_revision":$rev}""", env.headers(w.token, extra = idem() + im(rev))) }, server = { env.server }),
+        ContractCase("rejectExpense",
+            200, { val w = World(); val (doc, rev) = w.readyDocument("REVIEWED"); ContractRequest("POST", "/v1/expenses/$doc/reject", """{"reason":"Budget überschritten"}""", env.headers(w.approverToken, extra = idem() + im(rev))) },
+            404, { val w = World(); ContractRequest("POST", "/v1/expenses/${UUID.randomUUID()}/reject", """{"reason":"Budget überschritten"}""", env.headers(w.approverToken, extra = idem() + im(1))) }, server = { env.server }),
         ContractCase("decideExpenseDuplicate",
             200, { val w = World(); val (doc, c, rev) = w.documentWithDuplicate(); ContractRequest("POST", "/v1/expenses/$doc/duplicates/$c/decision", """{"decision":"EIGENER_VORGANG","reason":"Zweite Tankung am selben Tag"}""", env.headers(w.token, extra = idem() + im(rev))) },
             422, { val w = World(); val (doc, c, rev) = w.documentWithDuplicate(); ContractRequest("POST", "/v1/expenses/$doc/duplicates/$c/decision", """{"decision":"EIGENER_VORGANG","reason":"ab"}""", env.headers(w.token, extra = idem() + im(rev))) }, server = { env.server }),

@@ -39,20 +39,24 @@ internal class JdbcFinancePolicies(private val ctxTx: ContextTransactions, priva
         if (!DocumentRows.isFinance(ctx)) throw ProblemException(ErrorCode.FORBIDDEN)
         cmd.fuel?.let(::validate)
         cmd.duplicateThreshold?.let { if (it !in 1..100) throw ProblemException.invalid(Violation("/duplicate_threshold", ViolationCode.INVALID_VALUE)) }
+        cmd.approvalSecondThresholdMinor?.let { if (it <= 0 || it > 9_007_199_254_740_991L) throw ProblemException.invalid(Violation("/approval_second_threshold_minor", ViolationCode.MONEY_OUT_OF_RANGE)) }
+        cmd.approvalThresholdCurrency?.let { if (!Regex("[A-Z]{3}").matches(it)) throw ProblemException.invalid(Violation("/approval_threshold_currency", ViolationCode.PATTERN_MISMATCH)) }
         return ctxTx.run(ctx) { j ->
             val current = load(j)
             val required = cmd.fuelReceiptRequired ?: current.fuelReceiptRequired
             val fp = cmd.fuel ?: current.fuel
             val threshold = cmd.duplicateThreshold ?: current.duplicateThreshold
+            val second = if (cmd.clearApprovalThreshold) null else cmd.approvalSecondThresholdMinor ?: current.approvalSecondThresholdMinor
+            val secondCurrency = cmd.approvalThresholdCurrency ?: current.approvalThresholdCurrency
             cmd.fuel?.cardMapping?.map { it.vehicleId }?.distinct()?.forEach { v -> if (j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, v) != 1) throw ProblemException.notFound() }
             val v = j.query(
-                "INSERT INTO taktovia.finance_policy AS p (tenant_id, fuel_receipt_required, fuel_max_liters, fuel_price_alert_pct, fuel_use_alert_pct, fuel_price_reference, fuel_card_mapping, receipt_duplicate_threshold, updated_by) " +
-                    "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET fuel_receipt_required = EXCLUDED.fuel_receipt_required, " +
+                "INSERT INTO taktovia.finance_policy AS p (tenant_id, fuel_receipt_required, fuel_max_liters, fuel_price_alert_pct, fuel_use_alert_pct, fuel_price_reference, fuel_card_mapping, receipt_duplicate_threshold, approval_second_threshold_minor, approval_threshold_currency, updated_by) " +
+                    "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET fuel_receipt_required = EXCLUDED.fuel_receipt_required, " +
                     "fuel_max_liters = EXCLUDED.fuel_max_liters, fuel_price_alert_pct = EXCLUDED.fuel_price_alert_pct, fuel_use_alert_pct = EXCLUDED.fuel_use_alert_pct, " +
-                    "fuel_price_reference = EXCLUDED.fuel_price_reference, fuel_card_mapping = EXCLUDED.fuel_card_mapping, receipt_duplicate_threshold = EXCLUDED.receipt_duplicate_threshold, updated_by = EXCLUDED.updated_by, updated_at = clock_timestamp(), revision = p.revision + 1 " +
+                    "fuel_price_reference = EXCLUDED.fuel_price_reference, fuel_card_mapping = EXCLUDED.fuel_card_mapping, receipt_duplicate_threshold = EXCLUDED.receipt_duplicate_threshold, approval_second_threshold_minor = EXCLUDED.approval_second_threshold_minor, approval_threshold_currency = EXCLUDED.approval_threshold_currency, updated_by = EXCLUDED.updated_by, updated_at = clock_timestamp(), revision = p.revision + 1 " +
                     "RETURNING $COLUMNS", MAPPER, required, fp.maxLiters, fp.priceAlertPct, fp.useAlertPct, ExpenseFieldCodec.toJson(fp.priceReference.entries.associate { it.key.name to it.value.stripTrailingZeros().toPlainString() }),
                 ExpenseFieldCodec.toJson(fp.cardMapping.map { linkedMapOf("card_id" to it.cardId, "vehicle_id" to it.vehicleId.toString(), "valid_from" to it.validFrom.toString(), "valid_to" to it.validTo?.toString()) }),
-                threshold, ctx.actor.subject.take(200)).single()
+                threshold, second, secondCurrency, ctx.actor.subject.take(200)).single()
             audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_POLICY_CHANGED, ObjectRef("finance_policy", ctx.tenant.value.toString()), ctx.correlationId, mapOf("revision" to v.revision)))
             v
         }
@@ -94,7 +98,7 @@ internal class JdbcFinancePolicies(private val ctxTx: ContextTransactions, priva
     companion object {
         private val MAX_LITERS = BigDecimal(100000); private val MAX_PCT = BigDecimal(1000)
         private val CARD = Regex("[A-Za-z0-9._-]{1,64}")
-        private const val COLUMNS = "fuel_receipt_required, revision, fuel_max_liters, fuel_price_alert_pct, fuel_use_alert_pct, fuel_price_reference::text AS price_ref, fuel_card_mapping::text AS card_map, receipt_duplicate_threshold"
+        private const val COLUMNS = "fuel_receipt_required, revision, fuel_max_liters, fuel_price_alert_pct, fuel_use_alert_pct, fuel_price_reference::text AS price_ref, fuel_card_mapping::text AS card_map, receipt_duplicate_threshold, approval_second_threshold_minor, approval_threshold_currency"
 
         private val MAPPER = RowMapper { rs, _ ->
             val refs = ExpenseFieldCodec.parseTree(rs.getString("price_ref")).entries.associate { (k, v) -> FuelType.valueOf(k) to BigDecimal(v.toString()) }
@@ -102,7 +106,7 @@ internal class JdbcFinancePolicies(private val ctxTx: ContextTransactions, priva
                 FuelCardMapping(it["card_id"] as String, UUID.fromString(it["vehicle_id"] as String), LocalDate.parse(it["valid_from"] as String), (it["valid_to"] as String?)?.let(LocalDate::parse))
             }
             FinancePolicyView(rs.getBoolean("fuel_receipt_required"), rs.getLong("revision"),
-                FuelParameters(rs.getBigDecimal("fuel_max_liters")?.let(FuelRows::plain), rs.getBigDecimal("fuel_price_alert_pct")?.let(FuelRows::plain), rs.getBigDecimal("fuel_use_alert_pct")?.let(FuelRows::plain), refs, cards), rs.getInt("receipt_duplicate_threshold"))
+                FuelParameters(rs.getBigDecimal("fuel_max_liters")?.let(FuelRows::plain), rs.getBigDecimal("fuel_price_alert_pct")?.let(FuelRows::plain), rs.getBigDecimal("fuel_use_alert_pct")?.let(FuelRows::plain), refs, cards), rs.getInt("receipt_duplicate_threshold"), (rs.getObject("approval_second_threshold_minor") as Number?)?.toLong(), rs.getString("approval_threshold_currency").trim())
         }
 
         /** Parameter des Mandanten der laufenden Transaktion (RLS); Vorgaben ohne Zeile. */

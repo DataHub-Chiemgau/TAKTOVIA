@@ -84,7 +84,8 @@ internal object ExpenseViews {
             if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.GLEICHE_EVIDENZ }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_EVIDENCE)
             if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.OFFEN }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_REVIEW_OPEN)
         }
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers + duplicateBlockers, review, objects, fuel, plausibility, duplicates)
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers + duplicateBlockers, review, objects, fuel, plausibility, duplicates,
+            ApprovalRows.steps(j, r.view.documentId), ApprovalRows.exportState(j, r.view.documentId))
     }
 }
 
