@@ -562,6 +562,45 @@ components:
           minimum: 1
           maximum: 86400
           description: Zugrunde gelegte Direktfahrzeit (Planungsschätzung, nicht die Zusage).
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        expires_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        gross:
+          $ref: common.yaml#/components/schemas/Money
+        fare_components:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: federation.yaml#/components/schemas/FareComponent
+          description: 'Preisaufschlüsselung des unveränderlichen Preisstands (`fare_quote`, WP-M2-09): Netto (`TRANSPORT`), Gebühren (`SURCHARGE`) und
+            enthaltene Steuer (`TAX`); die Summe der Komponenten ist `gross`. `COMMISSION` ist nie eine Kundenkomponente.'
+        tariff_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        cancellation_policy_ref:
+          type: string
+          minLength: 1
+          maxLength: 64
+        pickup_stop:
+          $ref: '#/components/schemas/RideOfferStop'
+        dropoff_stop:
+          $ref: '#/components/schemas/RideOfferStop'
+        run_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Planrevision, an die das Angebot gebunden ist; fehlt, solange keine Fahrt zugeordnet ist (ein Hold ergibt dann 409 CAPACITY_UNAVAILABLE).
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Angebotsrevision (ETag von `GET /v1/ride-offers/{id}`), Bedingung `If-Match` für Hold und Freigabe.
       required:
       - service_id
       - booking_kind
@@ -570,7 +609,25 @@ components:
       - arrival_window
       - arrival_grace_min
       - direct_seconds
-      description: Angebotenes Zeitfenster ohne Preis und ohne gesicherte Kapazität (Kap. 01 §1.4 Schritt 4 folgt mit Hold und Angebotsobjekt).
+      - id
+      - expires_at
+      - gross
+      - fare_components
+      - revision
+      description: Angebot mit Zeitfenster, Ablauf (`expires_at`) und unveränderlichem Preisstand, aber ohne gesicherte Kapazität (Kap. 01 §1.4 Schritt 4); Hold und Bestätigung folgen. Ein abgelaufenes
+        Angebot kann nicht gehalten werden (409 OFFER_EXPIRED).
+    RideOfferStop:
+      type: object
+      additionalProperties: false
+      properties:
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - stop_id
+      - revision_id
+      description: Haltepunkt und die Haltepunktrevision, die zum Angebotszeitpunkt galt (Teil des Angebots, ändert sich nie).
     RideRejectionCode:
       type: string
       enum:
@@ -650,6 +707,37 @@ components:
             latest_at: '2026-12-01T07:25:00Z'
           arrival_grace_min: 5
           direct_seconds: 600
+          id: 00000000-0000-4000-8000-0000000000b1
+          expires_at: '2026-12-01T06:05:00Z'
+          gross:
+            amount_minor: 950
+            currency: EUR
+            exponent: 2
+          fare_components:
+          - code: TRANSPORT
+            description: Fahrpreis (netto)
+            amount:
+              amount_minor: 841
+              currency: EUR
+              exponent: 2
+            tariff_revision: '3'
+          - code: SURCHARGE
+            description: Buchungsgebühr (netto)
+            amount:
+              amount_minor: 47
+              currency: EUR
+              exponent: 2
+            tariff_revision: '3'
+          - code: TAX
+            description: Umsatzsteuer (enthalten)
+            amount:
+              amount_minor: 62
+              currency: EUR
+              exponent: 2
+            tariff_revision: '3'
+          tariff_revision: 3
+          cancellation_policy_ref: std-24h
+          revision: 1
         rejection: null
     RideOffer:
       type: object
@@ -690,6 +778,17 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        fare_components:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: federation.yaml#/components/schemas/FareComponent
+          description: Preisaufschlüsselung des gebundenen Preisstands (Netto, Gebühren, Steuer); Summe = `gross`.
+        pickup_stop:
+          $ref: '#/components/schemas/RideOfferStop'
+        dropoff_stop:
+          $ref: '#/components/schemas/RideOfferStop'
         demand:
           $ref: '#/components/schemas/RideResourceVector'
         hold:
@@ -710,6 +809,9 @@ components:
       - arrival_window
       - expires_at
       - gross
+      - fare_components
+      - pickup_stop
+      - dropoff_stop
       - demand
       - hold
       - revision

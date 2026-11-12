@@ -2,6 +2,8 @@ package de.taktovia.bookingdispatch.api
 
 import de.taktovia.bookingdispatch.internal.RideOfferServicesFactory
 import de.taktovia.config.api.EffectiveConfig
+import de.taktovia.farepayment.api.FareQuotes
+import de.taktovia.farepayment.api.QuoteView
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
@@ -43,8 +45,14 @@ data class RideOfferCommand(
     val passengers: Int, val idempotencyKey: String, val wheelchairSpaces: Int = 0, val equipment: Set<EquipmentCode> = emptySet(),
     val assistanceCodes: Set<AssistanceCode> = emptySet(), val channel: String = "WEB",
 ) {
-    /** Bedarf als Ressourcenvektor (Sitze = Personen, Rollstuhlplätze, Ausstattung). */
-    fun demand(): ResourceVector = ResourceVector(seats = passengers, wheelchair = wheelchairSpaces, equipment = equipment)
+    /**
+     * Bedarf als Ressourcenvektor wie [BookingDemand.of]: Personen schließen die Rollstuhlplätze ein, Sitzbedarf = Personen minus Rollstuhlplätze (`m2-detailvertraege.md` §8); `ASSISTANCE_ANIMAL`
+     * verlangt zusätzlich das Merkmal `ASSISTANCE_DOG_SPACE`. Der Bedarf des Angebots ist damit derselbe Vektor, den der Hold hält und die Bestätigung als Bedarf der Buchung erwartet.
+     */
+    fun demand(): ResourceVector = ResourceVector(
+        seats = maxOf(0, passengers - wheelchairSpaces), wheelchair = wheelchairSpaces,
+        equipment = equipment + (if (AssistanceCode.ASSISTANCE_ANIMAL in assistanceCodes) setOf(EquipmentCode.ASSISTANCE_DOG_SPACE) else emptySet()),
+    )
 
     /** Rollstuhlnutzung: Rollstuhlplätze oder der Unterstützungscode `WHEELCHAIR_SPACE`. */
     fun needsWheelchair(): Boolean = wheelchairSpaces > 0 || AssistanceCode.WHEELCHAIR_SPACE in assistanceCodes
@@ -62,6 +70,14 @@ data class RideTimeWindow(val earliestAt: Instant, val latestAt: Instant) {
 data class RideOfferProposal(
     val serviceId: UUID, val bookingKind: RideBookingKind, val timeKind: RideTimeKind, val pickupWindow: RideTimeWindow, val arrivalWindow: RideTimeWindow,
     val arrivalGraceMin: Int, val directSeconds: Int,
+    /** Das ausgestellte Angebotsobjekt (WP-M2-21) mit Preisstand; `null` nur, wenn die Angebotsbildung ohne Preisbildung betrieben wird (Tests der Anfrageerfassung, WP-M2-11). */
+    val offer: IssuedOffer? = null,
+)
+
+/** Angebotsobjekt in der Antwort der Anfrage: ID, Ablauf, unveränderlicher Preisstand, Haltepunkte (Revision) und Planbindung. Es verspricht keine Kapazität. */
+data class IssuedOffer(
+    val id: UUID, val expiresAt: Instant, val quote: QuoteView, val cancellationPolicyRef: String, val pickupStop: OfferStop?, val dropoffStop: OfferStop?,
+    val runRevision: Long?, val revision: Long,
 )
 
 /** Normierter Ablehnungsgrund (WP-M2-13): genau ein Primärgrund, weitere Ursachen als Sekundärgründe. */
@@ -79,6 +95,8 @@ data class RideOfferResult(val attemptId: UUID, val retry: Boolean, val outcome:
  */
 data class RideOfferParameters(
     val minBookingLeadMin: Int, val maxBookingHorizonDays: Int, val pickupWindowMin: Int, val arrivalGraceMin: Int, val stopWalkMaxM: Int, val defaulted: Set<String> = emptySet(),
+    /** Konfigurationsrevision, aus der die Parameter stammen (Preisbindung, `fare_quote.config_revision_id`); `null` = nur Planungsdefaults. */
+    val configRevisionId: UUID? = null,
 ) {
     companion object {
         const val IMMEDIATE_TOLERANCE_MIN = 5L
@@ -115,6 +133,8 @@ data class CandidateSearchRequest(val serviceId: UUID, val demand: ResourceVecto
 /** Ergebnis der Kandidatensuche: gefunden oder nicht erfüllbar mit den festgestellten Gründen (Kapazität, Personal, Ausstattung). */
 sealed interface CandidateGateResult {
     data object Reached : CandidateGateResult
+    /** Kandidat gefunden und an eine Planrevision gebunden (WP-M2-21): das Angebot hält später genau gegen diesen Umlauf, diese Revision und dieses Abschnittsintervall. */
+    data class Assigned(val assignment: OfferAssignment) : CandidateGateResult
     data class NoCandidate(val causes: List<RejectionCode>) : CandidateGateResult
 }
 
@@ -147,6 +167,34 @@ interface RideOfferRequests {
         fun create(
             ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: EffectiveConfig, clock: Clock = Clock.systemUTC(),
             travelTime: DirectTravelTime = HaversineTravelTime(), gate: CandidateGate = CandidateGate.PASS_THROUGH,
-        ): RideOfferRequests = RideOfferServicesFactory.create(ctxTx, outbox, geo, config, clock, travelTime, gate)
+            /** Preisbildung (WP-M2-09): gesetzt = jedes Angebot erhält einen unveränderlichen `fare_quote` und ein Angebotsobjekt (WP-M2-21); `null` = nur Zeitfenster (Anfrageerfassung allein). */
+            quotes: FareQuotes? = null, offerPolicy: OfferPolicy = OfferPolicy(), distance: DirectDistance = HaversineDistance(),
+        ): RideOfferRequests = RideOfferServicesFactory.create(ctxTx, outbox, geo, config, clock, travelTime, gate, quotes, offerPolicy, distance)
+    }
+}
+
+
+/**
+ * Regel für Gültigkeit und Tarif der Angebote (Planungsannahmen, kein Katalogparameter: M2 OP-20): [validity] ab Ausstellung (Standard 300 s, `m2-detailvertraege.md` §6), Tarifklasse und
+ * Stornoregel-Verweis des Preisstands. Die Uhrenreserve gegenüber dem Client liegt beim Client; serverseitig gilt `now >= expires_at` ohne Toleranz als abgelaufen.
+ */
+data class OfferPolicy(
+    val validity: java.time.Duration = java.time.Duration.ofSeconds(300), val tariffClass: String = de.taktovia.farepayment.api.DEFAULT_TARIFF_CLASS,
+    val cancellationPolicyRef: String = de.taktovia.farepayment.api.DEFAULT_CANCELLATION_POLICY_REF,
+) { init { require(!validity.isNegative && !validity.isZero) { "Angebotsgültigkeit muss positiv sein" } } }
+
+/** Tarifliche Strecke in Metern für die Bepreisung (Routingadapter folgt mit der Einfügeheuristik; bis dahin Planungsschätzung wie [DirectTravelTime]). */
+fun interface DirectDistance {
+    fun meters(origin: GeoPoint, destination: GeoPoint): Long
+}
+
+/** Großkreisentfernung mal [detourFactor] (Planungsannahme, nicht die Zusage; die tatsächliche Strecke liefert später das Routing). */
+class HaversineDistance(private val detourFactor: Double = 1.3) : DirectDistance {
+    override fun meters(origin: GeoPoint, destination: GeoPoint): Long {
+        val r = 6_371_000.0
+        val p1 = Math.toRadians(origin.latitude); val p2 = Math.toRadians(destination.latitude)
+        val dp = p2 - p1; val dl = Math.toRadians(destination.longitude - origin.longitude)
+        val a = sin(dp / 2) * sin(dp / 2) + cos(p1) * cos(p2) * sin(dl / 2) * sin(dl / 2)
+        return max(1L, (2 * r * atan2(sqrt(a), sqrt(1 - a)) * detourFactor).toLong())
     }
 }

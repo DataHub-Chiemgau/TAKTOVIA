@@ -168,10 +168,13 @@ internal class JdbcTariffs(
         }
     }
 
-    override fun effective(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant): TariffRevisionView? = ctxTx.run(ctx, readOnly = true) { j ->
+    override fun effective(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant): TariffRevisionView? = ctxTx.run(ctx, readOnly = true) { j -> effectiveIn(j, serviceId, tariffClass, at) }
+
+    /** Wie [effective], aber in der laufenden Transaktion des Aufrufers (Quote-Bildung, WP-M2-09). */
+    fun effectiveIn(j: JdbcOperations, serviceId: UUID, tariffClass: String, at: Instant): TariffRevisionView? {
         val head = j.query("SELECT $COLS FROM taktovia.tariff_revision r WHERE r.service_id = ? AND r.tariff_class = ? AND r.state = 'VEROEFFENTLICHT' " +
             "AND r.valid_from <= ? AND (r.valid_to IS NULL OR ? < r.valid_to) ORDER BY r.valid_from DESC LIMIT 1", HEAD, serviceId, tariffClass, Timestamp.from(at), Timestamp.from(at)).singleOrNull()
-        head?.let { withRules(j, listOf(it)).single() }
+        return head?.let { withRules(j, listOf(it)).single() }
     }
 
     override fun price(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant, request: FareRequest): PriceResult {
