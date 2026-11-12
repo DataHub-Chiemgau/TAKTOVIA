@@ -29,3 +29,5 @@ export type { OidcConfig, PendingStore, TokenSet } from './auth/oidc';
 export { challengeS256, randomString } from './auth/pkce';
 /** Sitzungsressource der API (`Session` des Vertrags); `Session` heißt hier der Zustand der geladenen Anmeldung. */
 export type { Session as SessionResource } from './generated';
+export { maskiereFehlerbericht, maskiereRoute, maskiereText } from './fehlerbericht';
+export type { Fehlerbericht } from './fehlerbericht';

@@ -109,7 +109,7 @@ class OperatorAlertService(
             append("{\"event\":\"").append(event).append('"')
             for ((k, v) in kv) {
                 append(",\"").append(k).append("\":")
-                when (v) { null -> append("null"); is Number -> append(v); else -> append('"').append(v.toString().replace("\\", "\\\\").replace("\"", "\\\"")).append('"') }
+                when (v) { null -> append("null"); is Number -> append(v); else -> append('"').append(de.taktovia.platform.logging.Maskierung.alertText(v.toString()).replace("\\", "\\\\").replace("\"", "\\\"")).append('"') }
             }
             append('}')
         }
