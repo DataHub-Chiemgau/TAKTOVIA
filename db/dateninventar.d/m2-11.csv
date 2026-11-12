@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+travel_attempt;service_id;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;time_kind;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;booking_kind;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;desired_at;nein;NACHFRAGEANALYSE;;;;"Zeitwunsch ohne Personenbezug (Datenbasis Nachfragetrichter)"
+travel_attempt;passengers;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;wheelchair_spaces;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;outcome;nein;NACHFRAGEANALYSE;;;;
+travel_attempt;request_scope;ja;TECHNISCHER_BETRIEB;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_TECHNISCH;"Hash aus Akteur und Idempotency-Key (Wiederholungserkennung), nicht rückrechenbar"
+travel_attempt;request_fingerprint;nein;TECHNISCHER_BETRIEB;;;;"Hash des Anfrageinhalts, enthält keine lesbaren Orte"
+travel_attempt;result;nein;NACHFRAGEANALYSE;;;;"Zeitfenster und Ablehnungsgrund der Antwort, ohne Orte und Personenbezug"

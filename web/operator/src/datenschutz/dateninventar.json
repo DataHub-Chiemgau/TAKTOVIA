@@ -9658,6 +9658,15 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "booking_kind",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "channel",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -9694,7 +9703,34 @@
           "bemerkung": ""
         },
         {
+          "spalte": "desired_at",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zeitwunsch ohne Personenbezug (Datenbasis Nachfragetrichter)"
+        },
+        {
           "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "outcome",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "passengers",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
@@ -9712,6 +9748,33 @@
           "bemerkung": ""
         },
         {
+          "spalte": "request_fingerprint",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Hash des Anfrageinhalts, enthält keine lesbaren Orte"
+        },
+        {
+          "spalte": "request_scope",
+          "personenbezogen": "ja",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_TECHNISCH",
+          "bemerkung": "Hash aus Akteur und Idempotency-Key (Wiederholungserkennung), nicht rückrechenbar"
+        },
+        {
+          "spalte": "result",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zeitfenster und Ablehnungsgrund der Antwort, ohne Orte und Personenbezug"
+        },
+        {
           "spalte": "secondary_rejections",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -9721,7 +9784,34 @@
           "bemerkung": ""
         },
         {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "time_kind",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "wheelchair_spaces",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
