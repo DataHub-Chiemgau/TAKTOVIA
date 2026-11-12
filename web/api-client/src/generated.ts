@@ -836,7 +836,7 @@ export interface DriverPositionResult {
 export interface DriverRunStop {
   route_stop_id: UUID;
   sequence: number;
-  kind: 'PICKUP' | 'DROPOFF' | 'WAYPOINT';
+  kind: 'PICKUP' | 'DROPOFF' | 'WAYPOINT' | 'PICKUP_DROPOFF';
   planned_at: string;
   forecast_at: string | null;
   stop_name: string;
@@ -845,6 +845,19 @@ export interface DriverRunStop {
   booking_ids: UUID[];
   change: 'NEW' | 'REMOVED' | 'MOVED' | 'TIME_CHANGED' | null;
   support_hints: string[];
+  stop_revision_id: UUID | null;
+  boarding_count: number;
+  alighting_count: number;
+  resource_need: {
+    seats: number;
+    wheelchair: number;
+    equipment: string[];
+  } | null;
+  assistance?: {
+    wheelchair_required: boolean;
+    boarding_assist: boolean;
+    alighting_assist: boolean;
+  };
 }
 
 export interface DriverRun {

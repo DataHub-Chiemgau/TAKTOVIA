@@ -702,6 +702,7 @@ components:
           - PICKUP
           - DROPOFF
           - WAYPOINT
+          - PICKUP_DROPOFF
         planned_at:
           type: string
           format: date-time
@@ -741,6 +742,62 @@ components:
             type: string
             minLength: 1
             maxLength: 64
+          description: Reserviert (leer); die notwendige Unterstützung steht in `assistance`.
+        stop_revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Revision des Haltepunkts (Grundlage der Navigation, WP-M3-28).
+        boarding_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Zahl der Einsteiger an diesem Stopp.
+        alighting_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Zahl der Aussteiger an diesem Stopp.
+        resource_need:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              seats:
+                type: integer
+                minimum: 0
+              wheelchair:
+                type: integer
+                minimum: 0
+              equipment:
+                type: array
+                maxItems: 20
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+            required:
+            - seats
+            - wheelchair
+            - equipment
+          - type: 'null'
+          description: Ressourcenbedarf der Einsteiger (Sitze, Rollstuhlplätze, Ausstattung); null ohne Einsteiger.
+        assistance:
+          type: object
+          additionalProperties: false
+          properties:
+            wheelchair_required:
+              type: boolean
+            boarding_assist:
+              type: boolean
+            alighting_assist:
+              type: boolean
+          required:
+          - wheelchair_required
+          - boarding_assist
+          - alighting_assist
+          description: 'Notwendige Unterstützung (WP-M3-32, DRV-008): nur Rollstuhlbedarf und Ein-/Ausstiegshilfe, keine Diagnosen. Nur bei eigener, angetretener
+            Schicht, aktuellem Plan und offenem Fenster (nicht nach Fahrtabschluss oder Schichtende); der Abruf wird protokolliert. Fehlt bei keinem Bedarf.'
       required:
       - route_stop_id
       - sequence
@@ -753,8 +810,12 @@ components:
       - booking_ids
       - change
       - support_hints
-      description: Stopp der Fahrerprojektion. Keine Fahrgastkontakte, keine Zahlungsdaten; `support_hints` sind Codes nach Rolle und Zuordnung
-        (DRV-008).
+      - stop_revision_id
+      - boarding_count
+      - alighting_count
+      - resource_need
+      description: 'Stopp der Fahrerprojektion (Schema `vertraege/schemas/driver-run-projection.v1.schema.json`). Feldminimierung: nur Haltepunkt, Zeiten, Personenzahl,
+        Ressourcenbedarf und (freigegeben) Unterstützung; keine Fahrgastkontakte, keine Zahlungsdaten, keine Diagnosen. `forecast_at` null = keine Prognose.'
     DriverRun:
       type: object
       additionalProperties: false
