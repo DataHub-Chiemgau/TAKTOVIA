@@ -81,6 +81,25 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
         )
     }
 
+    /** Soll/Ist je Tag (WP-M4-09): reine Leseprojektion, Rechte wie die übrigen Leseoperationen. */
+    @GetMapping("/v1/time-events/target-actual")
+    fun targetActual(
+        @RequestParam(name = "person_ref", required = false) person: String?, @RequestParam from: String, @RequestParam to: String, @RequestParam(required = false) timezone: String?, request: HttpServletRequest,
+    ): Map<String, Any?> {
+        val ctx = RequestContexts.require(request)
+        checkPerson(person)
+        fun date(raw: String, name: String) = runCatching { java.time.LocalDate.parse(raw) }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT))
+        val zone = runCatching { java.time.ZoneId.of(timezone ?: "Europe/Berlin") }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/timezone", ViolationCode.INVALID_FORMAT))
+        val days = staff.timeTargetActual.days(ctx, person, date(from, "from"), date(to, "to"), zone)
+        return linkedMapOf("person_ref" to (person ?: ctx.actor.subject), "timezone" to zone.id, "days" to days.map { d ->
+            linkedMapOf(
+                "day" to d.day.toString(),
+                "planned" to d.planned.map { linkedMapOf("shift_id" to it.shiftId.toString(), "starts_at" to it.startsAt.toString(), "ends_at" to it.endsAt.toString(), "timezone" to it.timezone.id, "planned_seconds" to it.plannedSeconds, "state" to it.state) },
+                "planned_seconds" to d.plannedSeconds, "actual" to d.actual.map { json(it) }, "actual_net_seconds" to d.actualNetSeconds, "flags" to d.flags.map { it.name },
+            )
+        })
+    }
+
     private fun respond(r: TimeEventResult): ResponseEntity<Map<String, Any?>> = ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(json(r.event))
 
     private fun kind(code: String) = requireNotNull(TimeEventKind.entries.firstOrNull { it.name == code }) { "kind ist durch das Schema geprüft" }

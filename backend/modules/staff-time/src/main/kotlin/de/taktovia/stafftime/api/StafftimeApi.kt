@@ -17,6 +17,8 @@ interface StafftimeApi {
     val absences: Absences
     /** Ist-Arbeitszeit als Zeitereignisse (WP-M4-08). */
     val timeEvents: TimeEvents
+    /** Soll/Ist je Person und Tag als Leseprojektion (WP-M4-09). */
+    val timeTargetActual: TimeTargetActual
 
     /** Schichten eines Dienstplans mit Pausenplan, Qualifikation und Personalbedarf (WP-M4-03). */
     val rosterShifts: RosterShifts
