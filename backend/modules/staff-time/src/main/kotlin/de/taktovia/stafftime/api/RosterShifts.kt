@@ -65,6 +65,8 @@ data class RosterShiftView(
     val id: UUID, val rosterId: UUID, val operatingDay: LocalDate, val timezone: ZoneId, val startsAt: Instant, val endsAt: Instant, val durationMinutes: Long, val breakPlan: BreakPlan,
     val operatorId: UUID, val depotId: UUID, val function: String, val requiredQualification: String?, val staffingNeed: Int, val driverRef: UUID?, val vehicleId: UUID?, val state: String,
     val revision: Long, val createdBy: String, val createdAt: Instant,
+    /** Konflikte dieser Schicht im Entwurf (Hinweis beim Speichern, WP-M4-07); `null` = nicht geprüft (Lesen, Listen). */
+    val conflicts: List<RosterConflict>? = null,
 ) {
     val startsLocal get() = startsAt.atZone(timezone).toLocalDateTime()
     val endsLocal get() = endsAt.atZone(timezone).toLocalDateTime()
@@ -74,12 +76,16 @@ data class RosterShiftView(
  * Schichten eines Dienstplans (WP-M4-03, LH-6.23-SCH-002). Rechte: `rosters:write` (anlegen, ändern), `rosters:read` (lesen), als zweite Verteidigungslinie im Dienst geprüft. Mandant nur aus dem Kontext (RLS);
  * Depot, Betrieb und Fahrzeug eines anderen Mandanten sind nicht referenzierbar (404). Anlegen und Ändern stehen mit Akteur, Zeit und Objekt im `audit_event`. Neue Schichten sind Entwürfe (`DRAFT`);
  * nur Entwürfe sind änderbar, veröffentlichte Schichten ändert der Dienstplan (WP-M4-04): 409. Änderung mit der erwarteten Revision (`If-Match`): veraltet 412, ohne Zielzeile 404.
- * [rosterId] ist bis zum Dienstplankopf (WP-M4-04) ein vom Planer gewählter Gruppenschlüssel.
+ * [rosterId] ist der Dienstplan (WP-M4-04, [Rosters]): eine neue Schicht gehört zu seinem Entwurf (ohne Entwurf: 409), Depot der Schicht = Depot des Dienstplans, der Betriebstag liegt in
+ * seiner Woche. Jede Änderung der Schichten schreibt den Stand des Entwurfs (ETag des Dienstplans) fort; Entwurfsänderungen erzeugen keine Outbox-Ereignisse.
  */
 interface RosterShifts {
     fun create(ctx: RequestContext, rosterId: UUID, input: RosterShiftInput): RosterShiftView
     fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): RosterShiftView
-    /** Schichten des Dienstplans nach `(Beginn, ID)`, mit `limit + 1` Zeilen für die Folgeseite. */
-    fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<RosterShiftView>
+    /**
+     * Schichten des Dienstplans nach `(Beginn, ID)`, mit `limit + 1` Zeilen für die Folgeseite. [RosterViewKind.PLANNER]: die Arbeitsrevision (Entwurf, sonst die veröffentlichte),
+     * [RosterViewKind.PUBLISHED]: nur die veröffentlichte Revision. [openOnly]: nur offene Schichten (ohne zugeordnete Person, WP-M4-05).
+     */
+    fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?, view: RosterViewKind = RosterViewKind.PLANNER, openOnly: Boolean = false): List<RosterShiftView>
     fun update(ctx: RequestContext, rosterId: UUID, shiftId: UUID, expectedRevision: Long, input: RosterShiftInput): RosterShiftView
 }

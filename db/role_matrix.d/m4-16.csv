@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+roster_depot_grant;SELECT,INSERT,UPDATE;WP-M4-16: Depotrecht je Person; nur Entzug änderbar (Trigger), kein DELETE

@@ -60,7 +60,7 @@ export interface PublishedRevision {
 
 export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
-export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED';
+export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
 
 export interface Money {
   amount_minor: number;
@@ -479,12 +479,63 @@ export interface Shift {
   created_by: string;
   created_at: string;
   revision: number;
+  conflicts?: RosterConflict[] | null;
 }
 
 export interface ShiftPage {
   items: Shift[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export interface NeedLine {
+  date: string;
+  function: string;
+  need: number;
+  assigned: number;
+  unstaffed: number;
+}
+
+export interface RosterSide {
+  revision: number;
+  state: 'DRAFT' | 'PUBLISHED';
+  author: string;
+  created_at: string;
+  published_at: string | null;
+  etag: number;
+  shift_count: number;
+  open_shifts: number;
+  unstaffed_need: number;
+  need_lines: NeedLine[];
+}
+
+export interface RosterConflict {
+  code: 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
+  person_ref: UUID;
+  shift_ids: UUID[];
+  cause: string;
+  missing_qualification: string | null;
+}
+
+export interface Roster {
+  id: UUID;
+  depot_id: UUID;
+  week_start: string;
+  draft: RosterSide | null;
+  published: RosterSide | null;
+  conflicts: RosterConflict[] | null;
+  revision: number;
+}
+
+export interface RosterPage {
+  items: Roster[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface RosterCreate {
+  depot_id: UUID;
+  week_start: string;
 }
 
 export interface DriverEvent {
@@ -2991,7 +3042,7 @@ export interface Operations {
   };
   listRosterShifts: {
     path: Record<string, never>;
-    query: { roster_id: UUID; limit?: number; cursor?: string };
+    query: { roster_id: UUID; view?: 'planner' | 'published'; open?: boolean; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: ShiftPage;
@@ -3023,6 +3074,34 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: PublishRequest;
     response: PublishedRevision;
+  };
+  listRosters: {
+    path: Record<string, never>;
+    query: { depot_id?: UUID; from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: RosterPage;
+  };
+  createRoster: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: RosterCreate;
+    response: Roster;
+  };
+  getRoster: {
+    path: { roster_id: UUID };
+    query: { view?: 'planner' | 'published' };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Roster;
+  };
+  openRosterDraft: {
+    path: { roster_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: Roster;
   };
   recordDriverEvent: {
     path: Record<string, never>;
@@ -4414,11 +4493,15 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
-  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'view', 'open', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listRosters: { method: 'GET', path: '/v1/rosters', pathParams: [], query: ['depot_id', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createRoster: { method: 'POST', path: '/v1/rosters', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getRoster: { method: 'GET', path: '/v1/rosters/{roster_id}', pathParams: ['roster_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  openRosterDraft: { method: 'POST', path: '/v1/rosters/{roster_id}/draft', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDriverRun: { method: 'GET', path: '/v1/driver/shifts/{shift_id}/run', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 422, 429, 503, 304] },

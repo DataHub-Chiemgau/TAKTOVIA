@@ -105,7 +105,8 @@ class CrossTenantIsolationTest {
         // WP-M4-06: Abwesenheit in B (Personalrolle)
         val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
         // WP-M4-03: Schicht in B (Planer von B)
-        val roster = UUID.randomUUID().toString()
+        env.exec("INSERT INTO taktovia.roster_depot_grant(tenant_id,id,subject,scope_kind,depot_id,granted_by) VALUES (?,?,?,'DEPOT',CAST(? AS uuid),'user:test-admin')", b.tenant.value, UUID.randomUUID(), b.planner.toString().lowercase(), depot)
+        val roster = create("/v1/rosters", """{"depot_id":"$depot","week_start":"2026-11-30"}""", b.plannerToken).json["id"].asString()
         val rosterShift = create("/v1/rosters/shifts", """{"roster_id":"$roster","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"$org","depot_id":"$depot","function":"Fahrdienst","staffing_need":2}""", b.plannerToken).json["id"].asString()
         // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
         val timeEvent = UUID.randomUUID().toString()
@@ -249,6 +250,8 @@ class CrossTenantIsolationTest {
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
+            "getRoster" to Probe("GET", "/v1/rosters/{roster_id}", role = "planner"),
+            "openRosterDraft" to Probe("POST", "/v1/rosters/{roster_id}/draft", null, true, role = "planner"),
             "getRosterShift" to Probe("GET", "/v1/rosters/shifts/{roster_shift_id}?roster_id={roster_id}", role = "planner"),
             "updateRosterShift" to Probe("PUT", "/v1/rosters/shifts/{roster_shift_id}", """{"roster_id":"00000000-0000-4000-8000-0000000000c1","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"00000000-0000-4000-8000-0000000000c2","depot_id":"00000000-0000-4000-8000-0000000000c3","function":"Fahrdienst","staffing_need":2}""", true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
@@ -258,7 +261,7 @@ class CrossTenantIsolationTest {
     private val listPaths = mapOf(
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
-        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
+        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "listDefects" to "/v1/defects", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
@@ -310,8 +313,8 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listRosterShifts", "listStaffShifts" -> a.plannerToken; else -> a.adminToken })
-            assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; else -> a.adminToken })
+            assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
                 assertFalse(r.text.contains(b.tenant.toString()), "$op: Liste von A nennt Mandant B")

@@ -1,8 +1,17 @@
 """WP-M4-03 / LH-6.23-SCH-002: `staff_shift` mit Betrieb, Depot, Funktion, Qualifikation, Personalbedarf und Pausenplan unter der echten Runtime-Rolle: Betriebstag aus dem lokalen Beginn (Datum in der Zone des Aggregats),
 Mitternachtsschicht, Mandantenbezug von Depot und Betrieb, offene Schichten, Revision je Änderung und Verträglichkeit mit den Altzeilen aus M2/M3."""
 import unittest
+from contextlib import contextmanager
 import psycopg
-from helpers import admin, tx, uid, seed_tenant
+from helpers import admin, tx as _tx, uid, seed_tenant
+
+
+@contextmanager
+def tx(tenant):
+    """Wie helpers.tx, mit Planerrecht für Entwurfszeilen (WP-M4-04: `app.roster_draft_access`; die Schichten dieses Tests sind Entwürfe)."""
+    with _tx(tenant) as c:
+        c.execute("SELECT set_config('app.roster_draft_access', 'on', true)")
+        yield c
 
 A, B = uid(), uid()
 LE = {A: uid(), B: uid()}; ORG = {A: uid(), B: uid()}; DEPOT = {A: uid(), B: uid()}; REGION = {A: uid(), B: uid()}
@@ -85,10 +94,14 @@ class Schichtmodell(unittest.TestCase):
     def test_dienstplanzuordnung_ist_endgueltig(self):
         r1, r2 = uid(), uid()
         with tx(A) as c:
+            # WP-M4-04: die Zuordnung verweist auf eine Dienstplanrevision (Fremdschlüssel); die zweite Kennung gibt es ebenfalls
+            for r in (r1, r2):
+                c.execute("INSERT INTO taktovia.roster_revision(tenant_id,id,roster_id,depot_id,week_start,revision,author) VALUES (%s,%s,%s,%s,%s,1,'user:planer')",
+                          (A, uid(), r, DEPOT[A], '2026-11-30' if r == r1 else '2026-12-07'))
             sid = shift(c, A)
-            c.execute("UPDATE taktovia.staff_shift SET roster_id=%s WHERE id=%s", (r1, sid))   # erstes Setzen
+            c.execute("UPDATE taktovia.staff_shift SET roster_id=%s, roster_revision=1 WHERE id=%s", (r1, sid))   # erstes Setzen
         with tx(A) as c:
-            with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.staff_shift SET roster_id=%s WHERE id=%s", (r2, sid))
+            with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.staff_shift SET roster_id=%s, roster_revision=1 WHERE id=%s", (r2, sid))
 
     def test_rls_fremder_mandant_sieht_nichts(self):
         with tx(A) as c: sid = shift(c, A)

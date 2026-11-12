@@ -26,6 +26,7 @@ internal object StafftimeServicesFactory {
         val driverShiftsImpl = JdbcDriverShifts(ctxTx, audit, clock, settings, runSource)
         val positionsImpl = JdbcPositions(ctxTx, clock, settings)
         val absence = JdbcAbsences(ctxTx, audit)
+        val conflictChecker = RosterConflictChecker(drivers, absence)
         val timeEv = JdbcTimeEvents(ctxTx, audit, outbox, clock)
         return object : StafftimeApi {
             override val driverDevices: DriverDevices = devices
@@ -36,7 +37,9 @@ internal object StafftimeServicesFactory {
             override val positions: Positions = positionsImpl
             override val absences: Absences = absence
             override val timeEvents: TimeEvents = timeEv
-            override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit)
+            override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit, conflictChecker)
+            override val rosters: de.taktovia.stafftime.api.Rosters = JdbcRosters(ctxTx, audit, conflictChecker)
+            override val rosterDepotAccess: de.taktovia.stafftime.api.RosterDepotAccess = JdbcRosterDepotAccess(ctxTx, audit)
             override val driverReadPort: de.taktovia.platform.readports.DriverReadPort = JdbcDriverReadPort(ctxTx)
         }
     }

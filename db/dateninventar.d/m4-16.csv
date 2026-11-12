@@ -1,0 +1,10 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+roster_depot_grant;tenant_id;nein;PERSONALEINSATZ;;;;
+roster_depot_grant;id;nein;PERSONALEINSATZ;;;;
+roster_depot_grant;subject;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;IdP-Subject der berechtigten Person, kein Klarname
+roster_depot_grant;scope_kind;nein;PERSONALEINSATZ;;;;
+roster_depot_grant;depot_id;nein;PERSONALEINSATZ;;;;
+roster_depot_grant;granted_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;vergebende Person (Subject)
+roster_depot_grant;granted_at;nein;TECHNISCHER_BETRIEB;;;;
+roster_depot_grant;revoked_at;nein;PERSONALEINSATZ;;;;
+roster_depot_grant;revoked_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;entziehende Person (Subject)

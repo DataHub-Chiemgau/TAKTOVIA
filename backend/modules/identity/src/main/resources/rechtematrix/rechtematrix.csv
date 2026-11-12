@@ -199,6 +199,10 @@ createRosterShift;rosters:write;HR;M4;N;N;N;N;N;J;N;N;J;N
 updateRosterShift;rosters:write;HR;M4;N;N;N;N;N;J;N;N;J;N
 listRosterShifts;rosters:read;HR;M4;N;N;N;N;N;J;N;N;J;N
 getRosterShift;rosters:read;HR;M4;N;N;N;N;N;J;N;N;J;N
+createRoster;rosters:write;HR;M4;N;N;N;N;N;J;N;N;J;N
+openRosterDraft;rosters:write;HR;M4;N;N;N;N;N;J;N;N;J;N
+getRoster;rosters:read;HR;M4;N;N;N;N;N;J;N;N;J;N
+listRosters;rosters:read;HR;M4;N;N;N;N;N;J;N;N;J;N
 listStaffShifts;shifts:read;HR;M3;N;N;N;N;J;J;N;N;J;N
 getStaffShift;shifts:read;HR;M3;N;N;N;N;J;J;N;N;J;N
 createStaffShift;shifts:write;HR;M3;N;N;N;N;J;N;N;N;N;N

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+roster_revision;SELECT,INSERT,UPDATE;WP-M4-04: Entwurf und veröffentlichte Revision je Dienstplan; Zustandswechsel und Unveränderlichkeit per Trigger, kein DELETE

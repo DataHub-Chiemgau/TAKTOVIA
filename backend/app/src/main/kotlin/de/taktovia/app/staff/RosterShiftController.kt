@@ -13,6 +13,7 @@ import de.taktovia.platform.problem.Violation
 import de.taktovia.platform.problem.ViolationCode
 import de.taktovia.stafftime.api.RosterShiftInput
 import de.taktovia.stafftime.api.RosterShiftView
+import de.taktovia.stafftime.api.RosterViewKind
 import de.taktovia.stafftime.api.StafftimeApi
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
@@ -33,17 +34,21 @@ class ShiftResource(@get:JsonValue val data: Map<String, Any?>, override val rev
 
 /**
  * Schichten eines Dienstplans (WP-M4-03, Modul `staff-time`): `/v1/rosters/shifts`. Rechte (`rosters:write|read`) aus der Rechtematrix im Filter und im Dienst; Mandant und Akteur stammen aus dem Kontext,
- * nie aus dem Body. Der Dienstplan wird als `roster_id` (Gruppenschlüssel bis WP-M4-04) im Body bzw. in der Abfrage geführt.
+ * nie aus dem Body. Der Dienstplan (`POST /v1/rosters`) wird als `roster_id` im Body bzw. in der Abfrage geführt.
  */
 @RestController
 class RosterShiftController(private val staff: StafftimeApi, private val codec: CursorCodec) {
 
     @GetMapping("/v1/rosters/shifts")
-    fun list(@RequestParam("roster_id") roster: UUID, @RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> {
+    fun list(
+        @RequestParam("roster_id") roster: UUID, @RequestParam(required = false) view: String?, @RequestParam(required = false) open: Boolean?,
+        @RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, request: HttpServletRequest,
+    ): Map<String, Any?> {
         val ctx = RequestContexts.require(request)
-        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "shifts|$roster")
+        val kind = when (view) { null, "planner" -> RosterViewKind.PLANNER; "published" -> RosterViewKind.PUBLISHED; else -> throw ProblemException.invalid(Violation("/\$query/view", ViolationCode.NOT_IN_ENUM)) }
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "shifts|$roster|$kind|${open == true}")
         val lim = Paging.limit(limit)
-        val rows = staff.rosterShifts.list(ctx, roster, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
+        val rows = staff.rosterShifts.list(ctx, roster, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id }, kind, open == true)
         return Paging.page(rows, lim, { CursorPosition(it.startsAt, it.id) }, codec, scope, Instant.now()).toMap { json(it) }
     }
 
@@ -77,5 +82,5 @@ class RosterShiftController(private val staff: StafftimeApi, private val codec: 
         "timezone" to v.timezone.id, "starts_at" to v.startsAt.toString(), "ends_at" to v.endsAt.toString(), "duration_min" to v.durationMinutes, "break_plan" to v.breakPlan.toMap(),
         "operator_id" to v.operatorId.toString(), "depot_id" to v.depotId.toString(), "function" to v.function, "required_qualification" to v.requiredQualification, "staffing_need" to v.staffingNeed,
         "driver_ref" to v.driverRef?.toString(), "vehicle_id" to v.vehicleId?.toString(), "state" to v.state, "created_by" to v.createdBy, "created_at" to v.createdAt.toString(), "revision" to v.revision,
-    )
+    ).also { m -> v.conflicts?.let { c -> m["conflicts"] = c.map(RosterJson::conflict) } }
 }

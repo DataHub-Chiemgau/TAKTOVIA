@@ -84,6 +84,10 @@ enum class ViolationCode(val message: String) {
     // Konfiguration (CFG-002, CFG-004)
     UNIT_MISMATCH("Einheit passt nicht zum Parameter"),
     SAFETY_INVARIANT_VIOLATED("Sicherheitsprüfungen dürfen nicht abgeschaltet werden"),
+    // Dienstplan (SCH-006): stabile Konfliktcodes der Konfliktprüfung, in Problem-Details bei der Veröffentlichung (409)
+    ROSTER_DOUBLE_BOOKING("Dieselbe Person ist in überlappenden Schichten eingeplant"),
+    ROSTER_QUALIFICATION_MISSING("Geforderte Qualifikation fehlt oder gilt nicht im Schichtzeitraum"),
+    ROSTER_ABSENCE_OVERLAP("Person ist im Schichtzeitraum nicht verfügbar"),
 }
 
 /** Eine Feldverletzung: `pointer` ist ein JSON-Pointer (RFC 6901); Nicht-Body-Orte tragen `/$query/…` bzw. `/$header/…`. */

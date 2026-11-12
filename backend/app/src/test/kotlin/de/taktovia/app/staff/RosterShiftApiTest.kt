@@ -17,7 +17,7 @@ class RosterShiftApiTest {
         assertEquals("2026-12-01", c.json["date"].asString()); assertEquals(480, c.json["duration_min"].asInt()); assertEquals("2026-12-02T06:00", c.json["ends_local"].asString())
         assertEquals(2, c.json["staffing_need"].asInt()); assertEquals("DRAFT", c.json["state"].asString()); assertTrue(c.json["driver_ref"].isNull)
         val r = w.get("/v1/rosters/shifts/$id?roster_id=${w.roster}")
-        assertEquals(200, r.status, r.text); assertEquals(c.json, r.json)
+        assertEquals(200, r.status, r.text); assertEquals((c.json as tools.jackson.databind.node.ObjectNode).deepCopy().without("conflicts"), r.json, "Lesen prüft keine Konflikte; Anlegen liefert die Hinweise")
         val l = w.get("/v1/rosters/shifts?roster_id=${w.roster}")
         assertEquals(listOf(id), l.json["items"].values().map { it["id"].asString() })
         assertEquals(1, w.g.count("SELECT count(*) FROM taktovia.audit_event WHERE action = 'staff.roster_shift.created' AND tenant_id = ?", w.g.tenant.value))
