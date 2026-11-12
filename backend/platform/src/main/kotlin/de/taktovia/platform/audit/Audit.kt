@@ -277,6 +277,12 @@ object AuditActions {
     const val FINANCE_PERIOD_CLOSED = "finance.period.closed"
     /** Gegenereignis zu einem gebuchten Kostenereignis (WP-M4-36): Objekt `cost_event:<id des Gegenereignisses>`, `details`: `reverses_id`, `period_id`, `reason`. */
     const val FINANCE_COST_EVENT_REVERSED = "finance.cost_event.reversed"
+    /** Umklassifikation eines gebuchten Kostenereignisses (WP-M4-39; Gegenereignis plus Neubuchung): Objekt `cost_event:<id der Neubuchung>`, `details`: `reclassified_from_id`, `reversal_id`, neue und vorherige Klassifikation, `reason`. */
+    const val FINANCE_COST_EVENT_RECLASSIFIED = "finance.cost_event.reclassified"
+    /** Manuelles Fahrzeugkostenereignis erfasst (WP-M4-40): Objekt `manual_cost_event:<id>`, `details`: `category`, `currency`, `reused` (nie Beträge). */
+    const val FINANCE_MANUAL_COST_EVENT_CREATED = "finance.manual_cost_event.created"
+    /** Freigabeschritt eines manuellen Kostenereignisses (WP-M4-40): Objekt `manual_cost_event:<id>`, `details`: `step`, `decision`, `revision`, `state`. */
+    const val FINANCE_MANUAL_COST_EVENT_STEP = "finance.manual_cost_event.approval_step"
     /** Exportbatch des Hauptbuchs bereitgestellt (WP-M4-37): Objekt `ledger_export:<id>`, `details`: `batch_ref`, `journal_count`, `content_sha256`. */
     const val FINANCE_LEDGER_EXPORT_CREATED = "finance.ledger_export.created"
     /** Exportbatch durch den Exportjob bereitgestellt (WP-M4-37): Objekt `ledger_export:<id>`, `details`: `batch_ref`, `journal_count`, `content_sha256`; Akteur ist das Dienstkonto des Exportjobs. */
@@ -294,7 +300,7 @@ object AuditActions {
         SECURITY_TENANT_MISMATCH, SECURITY_PAYLOAD_HASH_MISMATCH, SECURITY_RECIPIENT_MISMATCH, SECURITY_ACCESS_DENIED, SECURITY_MFA_MISSING,
         SECURITY_SESSION_LOGOUT, SECURITY_SESSION_LOGOUT_ALL, SECURITY_SESSION_REVOKED, SECURITY_ACCOUNT_LOCKED, SECURITY_ACCOUNT_UNLOCKED,
         SECURITY_ACCOUNT_RECOVERY_STARTED, SECURITY_ACCOUNT_RECOVERY_DENIED,
-        FINANCE_ALLOCATION_POSTED, FINANCE_EXPENSE_SPLIT_SET, FINANCE_PERIOD_CLOSED, FINANCE_COST_EVENT_REVERSED, FINANCE_LEDGER_EXPORT_CREATED, FINANCE_LEDGER_EXPORT_PROVIDED, FINANCE_LEDGER_EXPORT_DOWNLOADED, FINANCE_LEDGER_EXPORT_CONFIRMED,
+        FINANCE_ALLOCATION_POSTED, FINANCE_EXPENSE_SPLIT_SET, FINANCE_PERIOD_CLOSED, FINANCE_COST_EVENT_REVERSED, FINANCE_COST_EVENT_RECLASSIFIED, FINANCE_MANUAL_COST_EVENT_CREATED, FINANCE_MANUAL_COST_EVENT_STEP, FINANCE_LEDGER_EXPORT_CREATED, FINANCE_LEDGER_EXPORT_PROVIDED, FINANCE_LEDGER_EXPORT_DOWNLOADED, FINANCE_LEDGER_EXPORT_CONFIRMED,
         FINANCE_EXPENSE_COST_ASSIGNED, FINANCE_COST_OBJECT_DEACTIVATED, FINANCE_COST_EVENT_POSTED, FINANCE_ACCOUNTING_MAPPING_CHANGED,
         FINANCE_FUEL_RECORDED, FINANCE_POLICY_CHANGED, FINANCE_HINT_RAISED, FINANCE_HINT_ACKNOWLEDGED, FINANCE_DUPLICATE_DETECTED, FINANCE_DUPLICATE_DECIDED, FINANCE_EXPENSE_APPROVAL_STEP, FINANCE_EXPENSE_EXPORTED,
         SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_CONTAINMENT_EXECUTED, AUDIT_READ,

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/cost_event.reclassified.v1.schema.json",
+  "title": "Kostenereignis umklassifiziert (WP-M4-39)",
+  "description": "Payload von `cost_event.reclassified`. Aggregat: economic_event (die Neubuchung, Revision 1). Entsteht in derselben Transaktion wie Gegenereignis, Neubuchung und deren Journale. Enthält Kennungen, die neue Klassifikation und die Kostenbasis in kleinster Einheit, keine Konten oder Begründungen.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "reclassified_from_id",
+    "reversal_id",
+    "legal_entity_id",
+    "currency",
+    "cost_behavior",
+    "attribution",
+    "cost_basis_minor",
+    "booked_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reclassified_from_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reversal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "legal_entity_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "cost_behavior": {
+      "enum": [
+        "FIXED",
+        "VARIABLE",
+        "MIXED"
+      ]
+    },
+    "attribution": {
+      "enum": [
+        "DIRECT",
+        "ALLOCATED"
+      ]
+    },
+    "cost_basis_minor": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "booked_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "event_id": "11111111-2222-4333-8444-555555555555",
+      "reclassified_from_id": "66666666-7777-4888-8999-000000000000",
+      "reversal_id": "99999999-8888-4777-8666-555555555555",
+      "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      "currency": "EUR",
+      "cost_behavior": "FIXED",
+      "attribution": "ALLOCATED",
+      "cost_basis_minor": 10000,
+      "booked_at": "2026-11-12T06:10:00Z"
+    }
+  ]
+}

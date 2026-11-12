@@ -60,7 +60,12 @@ describe('operator Anwendungsrahmen', () => {
 
   it('rollenbezogene Navigation: Finanzrolle sieht Finanzen, aber keinen Adminbereich', async () => {
     setup(['FINANCE']);
-    expect(await navLinks()).toEqual(['Start', 'Finanzen', 'Belege prüfen und freigeben']);
+    expect(await navLinks()).toEqual([
+      'Start',
+      'Finanzen',
+      'Belege prüfen und freigeben',
+      'Fahrzeugkosten je Monat',
+    ]);
   });
 
   it('ohne bekannte Rolle bleibt nur der Start sichtbar', async () => {

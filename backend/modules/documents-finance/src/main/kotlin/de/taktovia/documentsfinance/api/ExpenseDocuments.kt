@@ -247,4 +247,5 @@ class DocumentServices(
     val allocations: CostAllocations, val splits: ExpenseSplits, val periods: FiscalPeriods, val corrections: CostEventCorrections, val exports: LedgerExports,
     val fuel: FuelReceipts, val policies: FinancePolicies, val plausibility: FuelPlausibility,
     val duplicates: DuplicateReview, val approvals: ExpenseApprovals,
+    val classifications: CostClassifications, val manualCosts: ManualCostEvents, val vehicleCosts: VehicleCosts,
 )

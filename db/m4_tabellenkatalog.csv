@@ -49,3 +49,5 @@ fact_booking;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Buchung
 fact_stop_event;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Stopp- und Fahrerereignis
 fact_vehicle_state;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Fahrzeugzustand
 export_job;analytics;FREIGABE_UNVERAENDERLICH;;WP-M5-19;Exportauftrag: Auftragsdaten und beendetes Ergebnis unveraenderlich
+manual_cost_event;documents-finance;VERAENDERLICH;;WP-M4-40;manuelles Fahrzeugkostenereignis, Inhalt unveränderlich
+manual_cost_event_step;documents-finance;APPEND_ONLY;;WP-M4-40;Freigabeschritt des manuellen Kostenereignisses

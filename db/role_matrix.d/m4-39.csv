@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+cost_category;SELECT,INSERT;WP-M4-39: Kostenartenkatalog je Mandant mit Standardverhalten, Seed per Funktion, kein Aendern/Loeschen (D-07)
+manual_cost_event;SELECT,INSERT,UPDATE;WP-M4-40: manuelles Fahrzeugkostenereignis, Inhalt unveraenderlich, Zustandsautomat per Trigger, kein DELETE
+manual_cost_event_step;SELECT,INSERT;WP-M4-40: Freigabeschritt, append-only, Rollentrennung per Trigger

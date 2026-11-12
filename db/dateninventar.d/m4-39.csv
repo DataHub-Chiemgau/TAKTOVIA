@@ -1,0 +1,42 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+cost_category;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;category;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;label;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;cost_group;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;default_behavior;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;default_attribution;nein;BUCHHALTUNG_BELEGE;;;;
+cost_category;created_at;nein;TECHNISCHER_BETRIEB;;;;
+manual_cost_event;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;cost_object_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;category;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;currency;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;net_minor;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;tax_minor;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;gross_minor;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;tax_treatment;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;accounting_date;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;service_from;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;service_to;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;description;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;origin_key;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;state;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;revision;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;created_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;Erfasser des Kostenereignisses
+manual_cost_event;approved_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;Freigeber des Kostenereignisses
+manual_cost_event;event_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event;created_at;nein;TECHNISCHER_BETRIEB;;;;
+manual_cost_event;updated_at;nein;TECHNISCHER_BETRIEB;;;;
+manual_cost_event_step;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;manual_cost_event_id;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;revision;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;step;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;decision;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;decided_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+manual_cost_event_step;reason;nein;BUCHHALTUNG_BELEGE;;;;
+manual_cost_event_step;decided_at;nein;TECHNISCHER_BETRIEB;;;;
+economic_event;cost_object_id;nein;BUCHHALTUNG_BELEGE;;;;
+economic_event;reclassified_from_id;nein;BUCHHALTUNG_BELEGE;;;;

@@ -112,6 +112,16 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="createManualCostEvent"><h3><span class="m">POST</span> <code>/v1/cost-events</code></h3><p>Manuelles Fahrzeugkostenereignis anlegen (freigabepflichtig)</p><dl><dt>operationId</dt><dd><code>createManualCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="allocateCost"><h3><span class="m">POST</span> <code>/v1/cost-events/{cost_event_id}/allocations</code></h3><p>Kostenbasis auf Kostenträger verteilen</p><dl><dt>operationId</dt><dd><code>allocateCost</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:allocate</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -871,6 +881,79 @@
 <li>401: <code>UNAUTHENTICATED</code></li>
 <li>403: <code>FORBIDDEN</code></li>
 <li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<h2 id="costs">costs.yaml</h2>
+<article id="getCostClassification"><h3><span class="m">GET</span> <code>/v1/cost-events/classification</code></h3><p>Kostenklassifikation als Kreuztabelle je Kostenobjekt und Periode</p><dl><dt>operationId</dt><dd><code>getCostClassification</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="reclassifyCostEvent"><h3><span class="m">POST</span> <code>/v1/cost-events/{cost_event_id}/reclassifications</code></h3><p>Kostenereignis umklassifizieren (Gegenereignis plus Neubuchung)</p><dl><dt>operationId</dt><dd><code>reclassifyCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:reverse</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getVehicleTotalCost"><h3><span class="m">GET</span> <code>/v1/vehicles/{vehicle_id}/total-cost</code></h3><p>Fahrzeugkosten je Monat und Kostenart (P1-Ausschnitt)</p><dl><dt>operationId</dt><dd><code>getVehicleTotalCost</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getManualCostEvent"><h3><span class="m">GET</span> <code>/v1/manual-cost-events/{manual_cost_event_id}</code></h3><p>Manuelles Kostenereignis lesen</p><dl><dt>operationId</dt><dd><code>getManualCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="reviewManualCostEvent"><h3><span class="m">POST</span> <code>/v1/manual-cost-events/{manual_cost_event_id}/review</code></h3><p>Manuelles Kostenereignis fachlich prüfen</p><dl><dt>operationId</dt><dd><code>reviewManualCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>expenses:review</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="approveManualCostEvent"><h3><span class="m">POST</span> <code>/v1/manual-cost-events/{manual_cost_event_id}/approve</code></h3><p>Manuelles Kostenereignis freigeben</p><dl><dt>operationId</dt><dd><code>approveManualCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>expenses:approve</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="rejectManualCostEvent"><h3><span class="m">POST</span> <code>/v1/manual-cost-events/{manual_cost_event_id}/reject</code></h3><p>Manuelles Kostenereignis ablehnen</p><dl><dt>operationId</dt><dd><code>rejectManualCostEvent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>expenses:approve</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

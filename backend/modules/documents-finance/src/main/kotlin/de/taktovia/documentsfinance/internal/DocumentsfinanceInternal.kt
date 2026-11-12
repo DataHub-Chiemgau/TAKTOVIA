@@ -36,6 +36,7 @@ internal object UploadServicesFactory {
             JdbcFiscalPeriods(ctxTx, audit, outbox, clock), JdbcCostEventCorrections(ctxTx, audit, outbox, clock), JdbcLedgerExports(ctxTx, audit, outbox, clock, ledger),
             JdbcFuelReceipts(ctxTx, audit, outbox, clock), JdbcFinancePolicies(ctxTx, audit), JdbcFuelPlausibility(ctxTx, audit), JdbcDuplicateReview(ctxTx, audit, outbox, clock),
             JdbcExpenseApprovals(ctxTx, audit, outbox, costEvents, clock),
+            JdbcCostClassification(ctxTx, audit, outbox, clock), JdbcManualCostEvents(ctxTx, audit, outbox, clock), JdbcVehicleCosts(ctxTx, clock),
         )
     }
 }

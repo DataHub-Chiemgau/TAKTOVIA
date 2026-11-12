@@ -49,5 +49,6 @@ internal object CostEventJson {
         "category" to e.category, "currency" to e.currency, "net_minor" to e.netMinor, "tax_minor" to e.taxMinor, "gross_minor" to e.grossMinor, "recoverable_tax_minor" to e.recoverableTaxMinor,
         "cost_basis_minor" to e.costBasisMinor, "tax_rule_revision" to e.taxRuleRevision, "occurred_at" to e.occurredAt.toString(), "booked_at" to e.bookedAt.toString(),
         "document_id" to e.documentId?.toString(), "reverses_id" to e.reversesId?.toString(),
+        "cost_behavior" to e.costBehavior, "attribution" to e.attribution, "reclassified_from_id" to e.reclassifiedFromId?.toString(),
     )
 }

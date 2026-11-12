@@ -528,6 +528,9 @@ export interface CostEvent {
   booked_at: string;
   document_id: UUID | null;
   reverses_id: UUID | null;
+  cost_behavior?: 'FIXED' | 'VARIABLE' | 'MIXED' | null;
+  attribution?: 'DIRECT' | 'ALLOCATED' | null;
+  reclassified_from_id?: UUID | null;
 }
 
 export interface FiscalPeriod {
@@ -1646,6 +1649,146 @@ export interface RetentionRulePage {
   items: RetentionRule[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export interface ManualCostEventCreate {
+  legal_entity_id: UUID;
+  vehicle_id: UUID;
+  category: string;
+  gross: Money;
+  tax?: Money;
+  tax_treatment?: 'FULLY_DEDUCTIBLE' | 'NON_DEDUCTIBLE';
+  accounting_date: string;
+  service_from?: string;
+  service_to?: string;
+  description?: string;
+  origin_key: string;
+}
+
+export interface ManualCostDecisionRequest {
+  reason: string;
+}
+
+export interface ManualCostEventStep {
+  id: UUID;
+  step: 'CAPTURE' | 'REVIEW' | 'BUDGET' | 'SECOND_APPROVAL';
+  revision: number;
+  decision: 'APPROVED' | 'REJECTED';
+  decided_by: string;
+  reason: string;
+  decided_at: string;
+}
+
+export interface ManualCostEvent {
+  id: UUID;
+  legal_entity_id: UUID;
+  vehicle_id: UUID;
+  cost_object_id: UUID;
+  category: string;
+  currency: string;
+  net_minor: number;
+  tax_minor: number;
+  gross_minor: number;
+  tax_treatment: 'FULLY_DEDUCTIBLE' | 'NON_DEDUCTIBLE';
+  accounting_date: string;
+  service_from: string | null;
+  service_to: string | null;
+  description: string | null;
+  origin_key: string;
+  state: 'IN_REVIEW' | 'REVIEWED' | 'WAITING_SECOND_APPROVAL' | 'POSTED' | 'REJECTED';
+  revision: number;
+  created_by: string;
+  approved_by: string | null;
+  event_id: UUID | null;
+  created_at: string;
+  steps: ManualCostEventStep[];
+  posting_id?: UUID | null;
+}
+
+export interface CostClassTotals {
+  fixed_minor: number;
+  variable_minor: number;
+  mixed_minor: number;
+  unclassified_minor: number;
+  direct_minor: number;
+  allocated_minor: number;
+  total_minor: number;
+}
+
+export interface CostClassCell {
+  cost_behavior: 'FIXED' | 'VARIABLE' | 'MIXED' | null;
+  attribution: 'DIRECT' | 'ALLOCATED' | null;
+  amount_minor: number;
+  event_count: number;
+}
+
+export interface CostClassificationRow {
+  cost_object_id: UUID | null;
+  cost_object_kind: string;
+  business_ref: string | null;
+  vehicle_id: UUID | null;
+  totals: CostClassTotals;
+  cells: CostClassCell[];
+}
+
+export interface CostClassification {
+  valuation: 'ACTUAL';
+  currency: string;
+  period_from: string;
+  period_to: string;
+  period_basis: 'ACCOUNTING_DATE';
+  as_of: string;
+  event_count: number;
+  totals: CostClassTotals;
+  rows: CostClassificationRow[];
+}
+
+export interface CostEventReclassificationRequest {
+  cost_behavior: 'FIXED' | 'VARIABLE' | 'MIXED';
+  attribution: 'DIRECT' | 'ALLOCATED';
+  reason: string;
+  accounting_date?: string;
+}
+
+export interface CostEventReclassification {
+  reversal: CostEvent;
+  rebooking: CostEvent;
+  reversal_journal_id: UUID;
+  rebooking_journal_id: UUID;
+  period_id: UUID;
+  accounting_date: string;
+}
+
+export interface VehicleCostItem {
+  month: string;
+  category: string;
+  cost_group: 'ACQUISITION_LEASE' | 'INSURANCE' | 'VEHICLE_TAX' | 'ENERGY' | 'MAINTENANCE' | 'REPAIR' | null;
+  label: string | null;
+  amount_minor: number;
+  event_count: number;
+  by_service_period_events: number;
+  by_accounting_date_events: number;
+}
+
+export interface VehicleTotalCost {
+  vehicle_id: UUID;
+  valuation: 'ACTUAL';
+  currency: string;
+  month_from: string;
+  month_to: string;
+  assignment_rule: string;
+  as_of: string;
+  total_minor: number;
+  items: VehicleCostItem[];
+  month_totals: ({
+    month: string;
+    amount_minor: number;
+  })[];
+  category_totals: ({
+    category: string;
+    cost_group: string | null;
+    amount_minor: number;
+  })[];
 }
 
 export interface RunStopChange {
@@ -3885,6 +4028,13 @@ export interface Operations {
     body: undefined;
     response: CostEventPage;
   };
+  createManualCostEvent: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ManualCostEventCreate;
+    response: ManualCostEvent;
+  };
   allocateCost: {
     path: { cost_event_id: UUID };
     query: Record<string, never>;
@@ -4437,6 +4587,55 @@ export interface Operations {
     headers: { traceparent?: string };
     body: undefined;
     response: ErasureJournalPage;
+  };
+  getCostClassification: {
+    path: Record<string, never>;
+    query: { valuation?: 'ACTUAL'; currency?: string; period_from?: string; period_to?: string; legal_entity_id?: UUID; vehicle_id?: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CostClassification;
+  };
+  reclassifyCostEvent: {
+    path: { cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CostEventReclassificationRequest;
+    response: CostEventReclassification;
+  };
+  getVehicleTotalCost: {
+    path: { vehicle_id: UUID };
+    query: { valuation?: 'ACTUAL'; currency?: string; month_from?: string; month_to?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleTotalCost;
+  };
+  getManualCostEvent: {
+    path: { manual_cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ManualCostEvent;
+  };
+  reviewManualCostEvent: {
+    path: { manual_cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ExpenseReviewRequest;
+    response: ManualCostEvent;
+  };
+  approveManualCostEvent: {
+    path: { manual_cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ManualCostDecisionRequest;
+    response: ManualCostEvent;
+  };
+  rejectManualCostEvent: {
+    path: { manual_cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ManualCostDecisionRequest;
+    response: ManualCostEvent;
   };
   listRunRevisions: {
     path: { run_id: UUID };
@@ -5710,6 +5909,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   receivePartnerEvent: { method: 'POST', path: '/v1/federation/partners/{partner_id}/events', pathParams: ['partner_id'], query: [], headers: ['X-Partner-Key-Id', 'X-Partner-Timestamp'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createManualCostEvent: { method: 'POST', path: '/v1/cost-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listFiscalPeriods: { method: 'GET', path: '/v1/fiscal-periods', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['periods:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['periods:manage'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
@@ -5789,6 +5989,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listErasureJobs: { method: 'GET', path: '/v1/erasure-jobs', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   startErasureJob: { method: 'POST', path: '/v1/erasure-jobs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['retention:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listErasureJournal: { method: 'GET', path: '/v1/erasure-journal', pathParams: [], query: ['job_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['retention:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getCostClassification: { method: 'GET', path: '/v1/cost-events/classification', pathParams: [], query: ['valuation', 'currency', 'period_from', 'period_to', 'legal_entity_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  reclassifyCostEvent: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/reclassifications', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:reverse'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getVehicleTotalCost: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/total-cost', pathParams: ['vehicle_id'], query: ['valuation', 'currency', 'month_from', 'month_to'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getManualCostEvent: { method: 'GET', path: '/v1/manual-cost-events/{manual_cost_event_id}', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  reviewManualCostEvent: { method: 'POST', path: '/v1/manual-cost-events/{manual_cost_event_id}/review', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:review'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  approveManualCostEvent: { method: 'POST', path: '/v1/manual-cost-events/{manual_cost_event_id}/approve', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  rejectManualCostEvent: { method: 'POST', path: '/v1/manual-cost-events/{manual_cost_event_id}/reject', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRunRevisions: { method: 'GET', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRunRevision: { method: 'POST', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['dispatch:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },

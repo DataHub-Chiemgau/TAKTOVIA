@@ -27,6 +27,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             costs:reverse: costs:reverse
+            costs:write: costs:write
             periods:read: periods:read
             periods:manage: periods:manage
             periods:close: periods:close
@@ -123,6 +124,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             costs:reverse: costs:reverse
+            costs:write: costs:write
             periods:read: periods:read
             periods:manage: periods:manage
             periods:close: periods:close
