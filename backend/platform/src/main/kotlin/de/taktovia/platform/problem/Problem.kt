@@ -31,6 +31,7 @@ enum class ErrorCode(val status: Int, val title: String) {
     PAYLOAD_TOO_LARGE(413, "Anfrage zu groß"),
     UNSUPPORTED_MEDIA_TYPE(415, "Medientyp nicht unterstützt"),
     VALIDATION_FAILED(422, "Eingabe ungültig"),
+    UNCONFIRMED_FIELDS(422, "Unbestätigte Belegfelder"),
     PRECONDITION_REQUIRED(428, "Revision erforderlich"),
     RATE_LIMITED(429, "Zu viele Anfragen"),
     INTERNAL_ERROR(500, "Interner Fehler"),

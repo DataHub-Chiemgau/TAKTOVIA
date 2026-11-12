@@ -3383,6 +3383,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "receipt_mandatory_fields",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-28: Pflichtfelder je Mandant (Feldnamen)"
+        },
+        {
           "spalte": "receipt_ocr_enabled",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
@@ -4936,6 +4945,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "flag_reason",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-28: Markierung des OCR-Vorschlags (LOW_CONFIDENCE, SUM_MISMATCH)"
         },
         {
           "spalte": "id",

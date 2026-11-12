@@ -21,6 +21,7 @@
     { "schema": "PartnerEventData", "feld": "state", "grund": "Zustand, den ein signierter Partner für sein eigenes Objekt meldet (Ereigniseingang, M6); wird nie als Zustand eines TAKTOVIA-Objekts übernommen" },
     { "schema": "PartnerEventData", "feld": "state", "grund": "Zustand, den ein signierter Partner für sein eigenes Objekt meldet (Ereigniseingang, M6); wird nie als Zustand eines TAKTOVIA-Objekts übernommen" },
     { "schema": "ExpenseVatAmount", "feld": "amount_minor", "grund": "Mehrwertsteuerbetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (der OCR-Vorschlag bleibt erhalten); Betrag des Belegs, nie ein Preis des Dienstes" },
-    { "schema": "ExpenseFieldValues", "feld": "amount_minor", "grund": "Bruttobetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (WP-M4-23); der Server prüft Typ, Grenzen und Zustand des Belegs" }
+    { "schema": "ExpenseFieldValues", "feld": "amount_minor", "grund": "Bruttobetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (WP-M4-23); der Server prüft Typ, Grenzen und Zustand des Belegs" },
+    { "schema": "ExpenseFieldValues", "feld": "net_amount_minor", "grund": "Nettobetrag eines Belegs, von einem berechtigten Menschen erfasst oder korrigiert (WP-M4-28); der Server prüft Typ, Grenzen und die Summenregel Netto + Steuer = Brutto vor der Freigabe, nie ein Preis" }
   ]
 }

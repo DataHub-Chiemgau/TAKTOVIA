@@ -1,6 +1,7 @@
 package de.taktovia.documentsfinance.internal
 
 import de.taktovia.documentsfinance.api.ExtractedFieldKind
+import de.taktovia.documentsfinance.api.FlagReason
 import de.taktovia.documentsfinance.api.RecognitionResult
 import de.taktovia.documentsfinance.api.RecognizedLine
 import de.taktovia.documentsfinance.api.SourceLocation
@@ -10,6 +11,8 @@ import java.time.format.DateTimeParseException
 /** Ein erkannter Feldvorschlag. `normalized == null` = nicht sichtbar, nichts geraten. */
 internal class ParsedField(
     val kind: ExtractedFieldKind, val occurrence: Int, val raw: String?, val normalized: String?, val qualifier: String?, val confidence: Double?, val source: SourceLocation?, val suspicious: Boolean,
+    /** Markierung (WP-M4-28); `SUM_MISMATCH` hat Vorrang vor `LOW_CONFIDENCE`. */
+    val flag: FlagReason? = null,
 )
 
 /**
@@ -29,13 +32,37 @@ internal object ReceiptFieldParser {
     private val HAS_LETTERS = Regex("\\p{L}{3,}")
     private val NOT_MERCHANT = Regex("(?i)(^\\s*[0-9.,:/ -]+\\s*$|\\b(datum|uhrzeit|beleg|bon|rechnung|kasse|tel|telefon|fax|www|http|ust-?id|steuernr|str\\.|straße|strasse|plz)\\b)")
 
-    fun parse(r: RecognitionResult): List<ParsedField> {
+    /** Mit `lowConfidenceThreshold`: Vorschläge darunter werden `LOW_CONFIDENCE` markiert; Netto + Steuer ≠ Brutto markiert Brutto, Netto und Steuer mit `SUM_MISMATCH` (WP-M4-28). */
+    fun parse(r: RecognitionResult, lowConfidenceThreshold: Double = 0.80): List<ParsedField> {
         val lines = r.lines.filter { it.text.isNotBlank() }
         val out = ArrayList<ParsedField>()
         out += merchant(lines); out += date(lines); out += number(lines)
         val total = amount(lines)
         out += total.first; out += currency(lines, total.second); out += vat(lines)
-        return out
+        out += net(lines)
+        return flag(out, lowConfidenceThreshold)
+    }
+
+    private fun flag(fields: List<ParsedField>, threshold: Double): List<ParsedField> {
+        val gross = fields.firstOrNull { it.kind == ExtractedFieldKind.AMOUNT && it.normalized != null }
+        val net = fields.firstOrNull { it.kind == ExtractedFieldKind.NET_AMOUNT && it.normalized != null }
+        val vats = fields.filter { it.kind == ExtractedFieldKind.VAT_AMOUNT && it.normalized != null }
+        val mismatch = gross != null && net != null && vats.isNotEmpty() && net.normalized!!.toLong() + vats.sumOf { it.normalized!!.toLong() } != gross.normalized!!.toLong()
+        return fields.map { f ->
+            val sum = mismatch && (f === gross || f === net || f in vats)
+            val low = f.normalized != null && f.confidence != null && f.confidence < threshold
+            val reason = if (sum) FlagReason.SUM_MISMATCH else if (low) FlagReason.LOW_CONFIDENCE else null
+            if (reason == null) f else ParsedField(f.kind, f.occurrence, f.raw, f.normalized, f.qualifier, f.confidence, f.source, f.suspicious, reason)
+        }
+    }
+
+    private val NET_KEY = Regex("(?i)netto")
+
+    /** Nettobetrag aus einer Zeile mit Schlüsselwort „netto“ (Mehrwertsteuerzeilen zählen nicht); sonst ausdrücklich leer. */
+    private fun net(lines: List<RecognizedLine>): ParsedField {
+        val l = lines.lastOrNull { NET_KEY.containsMatchIn(it.text) && !VAT_KEY.containsMatchIn(it.text) && AMOUNT.containsMatchIn(it.text) } ?: return empty(ExtractedFieldKind.NET_AMOUNT)
+        val m = AMOUNT.findAll(l.text).last()
+        return found(ExtractedFieldKind.NET_AMOUNT, 0, l, m.value, minor(m).toString())
     }
 
     private fun loc(l: RecognizedLine) = SourceLocation(l.page, l.x, l.y, l.width, l.height)
@@ -70,7 +97,7 @@ internal object ReceiptFieldParser {
 
     /** Betrag aus einer Summenzeile (Schlüsselwort Pflicht; Mehrwertsteuerzeilen zählen nicht). Liefert das Feld und die Fundzeile für die Währung. */
     private fun amount(lines: List<RecognizedLine>): Pair<ParsedField, RecognizedLine?> {
-        val total = lines.filter { TOTAL_KEY.containsMatchIn(it.text) && !VAT_KEY.containsMatchIn(it.text) && AMOUNT.containsMatchIn(it.text) }
+        val total = lines.filter { TOTAL_KEY.containsMatchIn(it.text) && !VAT_KEY.containsMatchIn(it.text) && !NET_KEY.containsMatchIn(it.text) && AMOUNT.containsMatchIn(it.text) }
         // Priorität: Gesamt/Summe/Total/zu zahlen vor dem allgemeinen „Betrag“; bei mehreren gleichwertigen die letzte (Schlusssumme)
         val strong = total.filter { Regex("(?i)gesamt|summe|total|zu\\s+zahlen|zahlbetrag|endbetrag|rechnungsbetrag").containsMatchIn(it.text) }
         val l = (strong.ifEmpty { total }).lastOrNull() ?: return empty(ExtractedFieldKind.AMOUNT) to null

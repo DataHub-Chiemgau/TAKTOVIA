@@ -46,7 +46,7 @@ internal class JdbcExpenses(
 
     override fun get(ctx: RequestContext, id: UUID): ExpenseView {
         require(ctx, SCOPE_READ)
-        return ctxTx.run(ctx, readOnly = true) { j -> view(DocumentRows.visible(j, ctx, id)) }
+        return ctxTx.run(ctx, readOnly = true) { j -> view(j, DocumentRows.visible(j, ctx, id)) }
     }
 
     override fun revisions(ctx: RequestContext, id: UUID): List<RevisionView> {
@@ -80,7 +80,10 @@ internal class JdbcExpenses(
         return EditedViewContent(found.first, ContentSniffer.detect(bytes) ?: "application/octet-stream", bytes, DocumentRows.sha256(bytes))
     }
 
-    private fun view(r: DocRow) = ExpenseView(r.view, ExpenseFieldCodec.parseStored(r.fieldsJson), r.view.blockers)
+    private fun view(j: JdbcOperations, r: DocRow): ExpenseView {
+        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields)
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review), review)
+    }
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {
         require(ctx, SCOPE_WRITE)
@@ -134,7 +137,7 @@ internal class JdbcExpenses(
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_EXPENSE_REVISED, ObjectRef("expense", id), ctx.correlationId, mapOf("revision" to newRevision, "fields" to changes.keys.toList())))
         outbox.append(j, OutboxEvent(id, newRevision, "expense.revision_created", linkedMapOf("document_id" to id.toString(), "revision" to newRevision, "fields" to changes.keys.toList(),
             "edited_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
-        return view(DocumentRows.visible(j, ctx, id))
+        return view(j, DocumentRows.visible(j, ctx, id))
     }
 
     private fun changeJson(old: Any?, new: Any, proposal: Any?, confirmed: Boolean): Map<String, Any?> =
@@ -154,7 +157,7 @@ internal class Proposals private constructor(private val runId: UUID?, private v
         val mine = rows.filter { it.kind == kind }
         if (mine.isEmpty()) return null
         return if (kind == ExtractedFieldKind.VAT_AMOUNT) mine.filter { it.normalized != null }.map { linkedMapOf<String, Any>("vat_rate_pct" to (it.qualifier ?: return null), "amount_minor" to it.normalized!!.toLong()) }.takeIf { it.isNotEmpty() }
-        else mine.first().normalized?.let { if (kind == ExtractedFieldKind.AMOUNT) it.toLong() else it }
+        else mine.first().normalized?.let { if (kind == ExtractedFieldKind.AMOUNT || kind == ExtractedFieldKind.NET_AMOUNT) it.toLong() else it }
     }
 
     fun recordDecisions(j: JdbcOperations, documentId: UUID, values: Map<String, Any>, confirm: Set<String>, by: String, clock: Clock) {

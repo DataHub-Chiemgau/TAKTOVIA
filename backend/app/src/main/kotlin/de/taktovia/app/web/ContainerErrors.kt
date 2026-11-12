@@ -14,7 +14,7 @@ object ContainerProblems {
     private val json = JsonMapper.builder().build()
     /** Codes, die nur durch Fachlogik entstehen und nicht allein aus dem Status folgen. */
     private val SPECIFIC = setOf(ErrorCode.INVALID_CURSOR, ErrorCode.COOPERATION_NOT_ALLOWED, ErrorCode.IDEMPOTENCY_CONFLICT, ErrorCode.OPERATION_IN_PROGRESS, ErrorCode.OFFER_EXPIRED,
-        ErrorCode.HOLD_EXPIRED, ErrorCode.REQUOTE_REQUIRED, ErrorCode.CAPACITY_UNAVAILABLE, ErrorCode.IMMUTABLE_RECORD, ErrorCode.PROVIDER_UNAVAILABLE)
+        ErrorCode.HOLD_EXPIRED, ErrorCode.REQUOTE_REQUIRED, ErrorCode.CAPACITY_UNAVAILABLE, ErrorCode.IMMUTABLE_RECORD, ErrorCode.PROVIDER_UNAVAILABLE, ErrorCode.UNCONFIRMED_FIELDS)
 
     fun codeFor(status: Int): ErrorCode = ErrorCode.entries.firstOrNull { it.status == status && it !in SPECIFIC }
         ?: when (status) { in 400..499 -> ErrorCode.BAD_REQUEST; 503 -> ErrorCode.SERVICE_UNAVAILABLE; else -> ErrorCode.INTERNAL_ERROR }

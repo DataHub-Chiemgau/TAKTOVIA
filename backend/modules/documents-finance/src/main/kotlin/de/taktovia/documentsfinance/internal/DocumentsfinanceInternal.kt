@@ -30,7 +30,7 @@ internal object UploadServicesFactory {
         val uploads = JdbcUploads(ctxTx, audit, security, outbox, guarded, scanner, policy, signer, clock, integrity)
         return de.taktovia.documentsfinance.api.DocumentServices(
             uploads, JdbcExpenses(ctxTx, audit, outbox, guarded, uploads, policy, clock), JdbcIntake(ctxTx, uploads, policy), JdbcDocumentSettings(ctxTx, audit), integrity,
-            JdbcExtraction(ctxTx, outbox, guarded, recognizer, extraction, clock),
+            JdbcExtraction(ctxTx, outbox, guarded, recognizer, extraction, clock), JdbcReceiptReview(ctxTx, integrity, clock),
         )
     }
 }

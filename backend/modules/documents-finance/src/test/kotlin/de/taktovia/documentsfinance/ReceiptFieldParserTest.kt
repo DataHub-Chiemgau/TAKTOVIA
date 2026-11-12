@@ -1,6 +1,7 @@
 package de.taktovia.documentsfinance
 
 import de.taktovia.documentsfinance.api.ExtractedFieldKind
+import de.taktovia.documentsfinance.api.FlagReason
 import de.taktovia.documentsfinance.api.ExtractedFieldKind.AMOUNT
 import de.taktovia.documentsfinance.api.ExtractedFieldKind.CURRENCY
 import de.taktovia.documentsfinance.api.ExtractedFieldKind.DOCUMENT_DATE
@@ -68,7 +69,7 @@ class ReceiptFieldParserTest {
         assertEquals(0.98, high.one(DOCUMENT_DATE).confidence); assertEquals(0.98, high.one(AMOUNT).confidence)
         assertEquals(0.882, high.one(MERCHANT).confidence, "erste Kopfzeile ist eine Annahme: gemindert")
         val low = ReceiptFieldParser.parse(ocr(0.40, "REWE Markt", "Datum 14.03.2026", "SUMME EUR 3,78"))
-        assertEquals(0.4, low.one(AMOUNT).confidence); assertEquals(6, low.size, "fünf Einzelfelder und ein (leeres) Steuerfeld")
+        assertEquals(0.4, low.one(AMOUNT).confidence); assertEquals(7, low.size, "fünf Einzelfelder, ein (leeres) Steuerfeld und der (leere) Nettobetrag")
     }
 
     @Test
@@ -106,5 +107,18 @@ class ReceiptFieldParserTest {
         assertFalse(Neutralizer.looksActive("REWE Markt GmbH")); assertFalse(Neutralizer.looksActive("Summe 3,78 EUR"))
         val f = ReceiptFieldParser.parse(ocr(0.98, "=SUMME(A1:A9) Bäckerei", "Summe 1,00 EUR"))
         assertTrue(f.one(MERCHANT).suspicious); assertEquals("'=SUMME(A1:A9) Bäckerei", Neutralizer.display(f.one(MERCHANT).raw!!))
+    }
+
+    @Test
+    fun markierung_niedrige_konfidenz_und_summenabweichung_wp_m4_28() {
+        val low = ReceiptFieldParser.parse(ocr(0.40, "REWE Markt", "Datum 14.03.2026", "SUMME EUR 3,78"))
+        assertEquals(FlagReason.LOW_CONFIDENCE, low.one(AMOUNT).flag); assertNull(low.one(ExtractedFieldKind.DOCUMENT_NUMBER).flag, "nicht erkannt: keine Markierung")
+        assertNull(ReceiptFieldParser.parse(ocr(0.98, "REWE Markt", "SUMME EUR 3,78")).one(AMOUNT).flag)
+        assertNull(ReceiptFieldParser.parse(ocr(0.75, "REWE Markt", "SUMME EUR 3,78"), lowConfidenceThreshold = 0.7).one(AMOUNT).flag, "die Schwelle ist einstellbar")
+        val bad = ReceiptFieldParser.parse(ocr(0.98, "Werkstatt", "Netto 70,00", "MwSt 19% 13,30", "Gesamtbetrag EUR 89,00"))
+        assertEquals(setOf(AMOUNT, ExtractedFieldKind.NET_AMOUNT, VAT_AMOUNT), bad.filter { it.flag == FlagReason.SUM_MISMATCH }.map { it.kind }.toSet())
+        assertEquals("7000", bad.one(ExtractedFieldKind.NET_AMOUNT).normalized); assertEquals("8900", bad.one(AMOUNT).normalized, "Netto-Zeile zählt nicht als Gesamtbetrag")
+        val sumLine = ReceiptFieldParser.parse(ocr(0.98, "Werkstatt", "Summe netto 74,79", "MwSt 19% 14,21", "Gesamtbetrag EUR 89,00"))
+        assertEquals("8900", sumLine.one(AMOUNT).normalized); assertTrue(sumLine.none { it.flag != null })
     }
 }
