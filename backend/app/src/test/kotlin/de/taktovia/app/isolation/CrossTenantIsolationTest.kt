@@ -31,14 +31,15 @@ class CrossTenantIsolationTest {
     private fun idem() = mapOf("Idempotency-Key" to "iso-" + UUID.randomUUID())
 
     private class Side(val tenant: TenantId, val admin: UUID, val adminToken: String, val callcenter: UUID, val ccToken: String, val passenger: UUID, val passengerToken: String,
-        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String)
+        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String, val finance: UUID, val financeToken: String)
 
     private fun side(): Side {
         val t = env.tenant("Iso-" + UUID.randomUUID()); val a = UUID.randomUUID(); val c = UUID.randomUUID(); val p = UUID.randomUUID()
         env.grant(t, a, "tenant_admin"); env.grant(t, c, "callcenter"); env.grant(t, p, "passenger")
         val pl = UUID.randomUUID(); val di = UUID.randomUUID(); val dr = UUID.randomUUID()
         env.grant(t, pl, "staff_planning"); env.grant(t, di, "dispatcher"); env.grant(t, dr, "driver")
-        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr))
+        val fi = UUID.randomUUID(); env.grant(t, fi, "finance")
+        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr), fi, env.token(fi))
     }
 
     private class Ids(val map: Map<String, String>, val subject: String)
@@ -75,6 +76,12 @@ class CrossTenantIsolationTest {
         // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
         val timeEvent = UUID.randomUUID().toString()
         create("/v1/time-events", """{"event_id":"$timeEvent","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}""", b.driverToken)
+        // WP-M4-21: Beleg-Original in B (Finanzrolle von B legt Ticket an, lädt in die Quarantäne und schließt ab)
+        val jpeg = ByteArray(512) { (it * 3).toByte() }.also { it[0] = 0xFF.toByte(); it[1] = 0xD8.toByte(); it[2] = 0xFF.toByte() }
+        val hash = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(jpeg))
+        val ticketJson = create("/v1/expenses/receipts", """{"legal_entity_id":"$le","purpose":"RECEIPT","mime":"image/jpeg","size_bytes":${jpeg.size},"sha256":"$hash"}""", b.financeToken).json
+        env.server.ctx.getBean(de.taktovia.platform.storage.TenantObjectStore::class.java).put(de.taktovia.platform.storage.ObjectKey(b.tenant, ticketJson["upload_key"].asString()), jpeg, "image/jpeg")
+        val receipt = env.post("/v1/expenses/receipts/${ticketJson["ticket_id"].asString()}/complete", "", b.financeToken, extra = idem() + ("If-Match" to "\"1\"")).also { check(it.status == 201) { it.text } }.json["document_id"].asString()
         val recipient = UUID.randomUUID()
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
@@ -85,7 +92,7 @@ class CrossTenantIsolationTest {
             "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "time_event_id" to timeEvent,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
 
@@ -126,6 +133,8 @@ class CrossTenantIsolationTest {
             "getDriverReleaseProjection" to Probe("GET", "/v1/driver-releases/{release_id}/projection?service_id=${UUID.randomUUID()}", role = "dispatcher"),
             "revokeDriverDevice" to Probe("DELETE", "/v1/driver/devices/{device_id}", null, true, role = "driver"),
             "getNotification" to Probe("GET", "/v1/notifications/{notification_id}"),
+            "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
+            "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
@@ -154,7 +163,7 @@ class CrossTenantIsolationTest {
         return listOf(r.status, j["type"]?.asString(), j["code"]?.asString(), j["title"]?.asString(), j["detail"]?.asString()).joinToString("|")
     }
 
-    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
+    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
         env.server.send(p.method, path, p.body, env.headers(token, extra = (if (p.method != "GET") idem() else emptyMap()) + (if (p.ifMatch) mapOf("If-Match" to "\"1\"") else emptyMap()) + (if (p.purpose) mapOf("X-Access-Purpose" to "BOOKING_ASSISTANCE") else emptyMap())))
 
     private fun snapshot(b: Side): String = listOf("/v1/regions", "/v1/depots", "/v1/legal-entities", "/v1/organizations", "/v1/services", "/v1/cost-centers", "/v1/config/revisions", "/v1/memberships", "/v1/webhook-subscriptions")

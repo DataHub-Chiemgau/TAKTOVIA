@@ -89,7 +89,8 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
         if (person != null && (person.isEmpty() || person.length > 200)) throw ProblemException.invalid(Violation("/\$query/person_ref", ViolationCode.INVALID_FORMAT))
     }
 
-    private fun instant(raw: String?, name: String): Instant? = raw?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT)) }
+    /** Ein unkodiertes `+` im Offset kommt als Leerzeichen an und wird zurückgewandelt. */
+    private fun instant(raw: String?, name: String): Instant? = raw?.let { runCatching { OffsetDateTime.parse(it.replace(' ', '+')).toInstant() }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT)) }
 
     private fun json(v: TimeEventView): Map<String, Any?> = linkedMapOf(
         "event_id" to v.eventId.toString(), "person_ref" to v.personRef, "kind" to v.kind.name, "occurred_at" to v.occurredAt.toString(), "device_recorded_at" to v.deviceRecordedAt?.toString(),

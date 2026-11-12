@@ -1,0 +1,21 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+upload_ticket;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;id;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;purpose;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;declared_mime;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;declared_size;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;declared_sha256;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;quarantine_key;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;state;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;reject_reason;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;issued_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;ausstellender Akteur (Subject)
+upload_ticket;issued_at;nein;TECHNISCHER_BETRIEB;;;;
+upload_ticket;expires_at;nein;TECHNISCHER_BETRIEB;;;;
+upload_ticket;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+upload_ticket;revision;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;upload_ticket_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;size_bytes;nein;BUCHHALTUNG_BELEGE;;;;
+expense_document;scan_engine;nein;SICHERHEITSPROTOKOLL;;;;
+expense_document;scanned_at;nein;SICHERHEITSPROTOKOLL;;;;
+expense_document;scan_signature;nein;SICHERHEITSPROTOKOLL;;;;

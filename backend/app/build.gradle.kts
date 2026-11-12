@@ -46,6 +46,7 @@ tasks.withType<Test>().configureEach {
     // Datenbankabhängige Tests dürfen nie aus Cache oder „up-to-date“ als bestanden gelten: Umgebung ist kein Task-Input.
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }
+    maxHeapSize = "2g"   // viele Spring-Kontexte und ArchUnit-Importe in einer Test-JVM (OutOfMemoryError mit dem Standard von 512 MB)
     systemProperty("taktovia.repoRoot", rootProject.projectDir.parentFile.absolutePath)
     // Datenbank-Integrationstests: Verbindungsdaten aus der Umgebung (Runtime-Rolle, nie Migrator)
     listOf("TAKTOVIA_DB_HOST", "TAKTOVIA_DB_PORT", "TAKTOVIA_DB_NAME", "TAKTOVIA_DB_RUNTIME_PASSWORD", "TAKTOVIA_DB_MIGRATOR_PASSWORD",

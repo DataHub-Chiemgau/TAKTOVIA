@@ -91,7 +91,7 @@ internal class JdbcTimeEvents(private val ctxTx: ContextTransactions, private va
 
     override fun intervals(ctx: RequestContext, personRef: String?, from: Instant, to: Instant): DerivedTime {
         require(ctx, SCOPE_READ)
-        if (!to.isAfter(from) || Duration.between(from, to) > MAX_WINDOW) throw ProblemException.invalid(Violation("/\$query/to", ViolationCode.INVALID_VALUE))
+        if (to.isBefore(from) || Duration.between(from, to) > MAX_WINDOW) throw ProblemException.invalid(Violation("/\$query/to", ViolationCode.INVALID_VALUE))
         val person = visiblePerson(ctx, personRef) ?: return DerivedTime(emptyList(), emptyList())
         val events = ctxTx.run(ctx, readOnly = true) { j ->
             j.query("SELECT $COLUMNS FROM taktovia.time_event e WHERE e.person_ref = ? AND e.occurred_at >= ? AND e.occurred_at < ? ORDER BY e.occurred_at, e.received_at, e.id LIMIT ?",

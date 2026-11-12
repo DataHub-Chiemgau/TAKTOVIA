@@ -21,7 +21,6 @@ paths:
         required: false
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Beginn des Zeitfensters (RFC 3339 mit Offset); nur Abwesenheiten, die nach diesem Zeitpunkt enden.
       - name: to
@@ -29,7 +28,6 @@ paths:
         required: false
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Ende des Zeitfensters (RFC 3339 mit Offset, exklusiv); nur Abwesenheiten, die vor diesem Zeitpunkt beginnen.
       - $ref: common.yaml#/components/parameters/Limit

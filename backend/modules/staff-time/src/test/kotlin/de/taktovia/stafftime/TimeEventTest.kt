@@ -102,6 +102,8 @@ class TimeEventTest {
         assertEquals(at(6), d3.start); assertEquals(null, d3.end); assertEquals(setOf(de.taktovia.stafftime.api.IntervalFlag.MISSING_END), d3.flags); assertEquals(null, d3.netSeconds)
         assertEquals(1, fx.count("SELECT count(*) FROM taktovia.time_event WHERE tenant_id=? AND person_ref=?", t.value, p2.toString()), "das einzelne Ende ist gespeichert, nicht verworfen")
         assertEquals(422, problem { fx.staff.timeEvents.intervals(ctx, null, at(0), at(0).plusSeconds(32L * 86400)) }.code.status, "Fenster höchstens 31 Tage")
+        assertEquals(422, problem { fx.staff.timeEvents.intervals(ctx, null, at(5), at(4)) }.code.status, "Ende vor Beginn")
+        assertEquals(emptyList<Any>(), fx.staff.timeEvents.intervals(ctx, null, at(5), at(5)).intervals, "leeres Fenster ist gültig und leer")
     }
 
     @Test

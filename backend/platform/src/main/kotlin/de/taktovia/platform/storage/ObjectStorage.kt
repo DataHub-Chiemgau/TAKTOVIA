@@ -34,6 +34,11 @@ data class ObjectKey(val tenant: TenantId, val name: String) {
 /** Objektspeicher (MinIO/S3 in Betrieb, in M1 nur die prozesslokale Umsetzung ausgeführt; der S3-Adapter folgt mit WP-M0-08-Umgebung). Alle Methoden nehmen nur [ObjectKey]. */
 interface TenantObjectStore {
     fun put(key: ObjectKey, bytes: ByteArray, contentType: String)
+    /** Schreibt nur, wenn das Objekt noch nicht existiert (Schreibschutz für Originale, WP-M4-21); `false`, wenn es schon da ist. Umsetzungen machen das atomar. */
+    fun putIfAbsent(key: ObjectKey, bytes: ByteArray, contentType: String): Boolean {
+        if (get(key) != null) return false
+        put(key, bytes, contentType); return true
+    }
     fun get(key: ObjectKey): ByteArray?
     fun delete(key: ObjectKey)
     /** Namen aller Objekte **dieses** Mandanten mit dem Präfix [namePrefix]. */
@@ -43,6 +48,7 @@ interface TenantObjectStore {
 class InMemoryObjectStore : TenantObjectStore {
     private val data = ConcurrentHashMap<String, Pair<ByteArray, String>>()
     override fun put(key: ObjectKey, bytes: ByteArray, contentType: String) { data[key.path()] = bytes.copyOf() to contentType }
+    override fun putIfAbsent(key: ObjectKey, bytes: ByteArray, contentType: String): Boolean = data.putIfAbsent(key.path(), bytes.copyOf() to contentType) == null
     override fun get(key: ObjectKey): ByteArray? = data[key.path()]?.first?.copyOf()
     override fun delete(key: ObjectKey) { data.remove(key.path()) }
     override fun list(tenant: TenantId, namePrefix: String): List<String> {

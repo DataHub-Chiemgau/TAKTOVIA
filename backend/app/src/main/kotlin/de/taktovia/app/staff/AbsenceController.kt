@@ -77,7 +77,8 @@ class AbsenceController(private val staff: StafftimeApi, private val codec: Curs
         return AbsenceResource(json(v), v.revision)
     }
 
-    private fun instant(raw: String?, name: String): Instant? = raw?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT)) }
+    /** Ein unkodiertes `+` im Offset kommt als Leerzeichen an und wird zurückgewandelt. */
+    private fun instant(raw: String?, name: String): Instant? = raw?.let { runCatching { OffsetDateTime.parse(it.replace(' ', '+')).toInstant() }.getOrNull() ?: throw ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT)) }
 
     private fun json(v: AbsenceView): Map<String, Any?> = linkedMapOf(
         "id" to v.id.toString(), "person_ref" to v.personRef, "from" to v.from.toString(), "to" to v.to.toString(), "kind" to v.kind.name, "state" to v.state.name,

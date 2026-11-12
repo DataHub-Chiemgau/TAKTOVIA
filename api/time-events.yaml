@@ -21,7 +21,6 @@ paths:
         required: false
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Nur Ereignisse ab dieser Ereigniszeit (RFC 3339 mit Offset).
       - name: to
@@ -29,7 +28,6 @@ paths:
         required: false
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Nur Ereignisse vor dieser Ereigniszeit (exklusiv).
       - name: shift_id
@@ -177,7 +175,6 @@ paths:
         required: true
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Beginn des Fensters (RFC 3339 mit Offset).
       - name: to
@@ -185,7 +182,6 @@ paths:
         required: true
         schema:
           type: string
-          format: date-time
           maxLength: 40
         description: Ende des Fensters (exklusiv), höchstens 31 Tage nach `from`.
       - $ref: common.yaml#/components/parameters/Traceparent

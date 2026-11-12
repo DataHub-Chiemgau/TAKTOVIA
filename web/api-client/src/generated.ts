@@ -1461,6 +1461,47 @@ export interface ProviderEventReceipt {
   status: 'ACCEPTED' | 'ALREADY_RECEIVED';
 }
 
+export interface ReceiptUploadRequest {
+  legal_entity_id: UUID;
+  purpose: UploadPurpose;
+  mime: 'image/jpeg' | 'image/png' | 'application/pdf';
+  size_bytes: number;
+  sha256: string;
+}
+
+export type UploadPurpose = 'RECEIPT' | 'DAMAGE_PHOTO';
+
+export interface ReceiptUploadTicket {
+  ticket_id: UUID;
+  purpose: UploadPurpose;
+  mime: string;
+  size_bytes: number;
+  sha256: string;
+  max_bytes: number;
+  expires_at: string;
+  state: 'ISSUED';
+  revision: number;
+  upload_key: string;
+  upload: null | {
+    method: 'PUT';
+    url: string;
+    headers: Record<string, unknown>;
+  };
+}
+
+export interface ReceiptDocument {
+  document_id: UUID;
+  ticket_id: UUID;
+  purpose: UploadPurpose;
+  state: 'QUARANTINED' | 'STORED' | 'QUARANTINE_REJECTED';
+  mime: string;
+  size_bytes: number;
+  sha256: string;
+  received_at: string;
+  scanned_at: string | null;
+  revision: number;
+}
+
 export interface EffectiveConfig {
   as_of: string;
   values: Record<string, unknown>;
@@ -2549,6 +2590,27 @@ export interface Operations {
     body: ProviderEvent;
     response: ProviderEventReceipt;
   };
+  requestReceiptUpload: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ReceiptUploadRequest;
+    response: ReceiptUploadTicket;
+  };
+  completeReceiptUpload: {
+    path: { ticket_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: ReceiptDocument;
+  };
+  getReceiptDocument: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ReceiptDocument;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
@@ -2882,6 +2944,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
+  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
