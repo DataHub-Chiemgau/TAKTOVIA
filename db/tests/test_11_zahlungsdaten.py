@@ -1,6 +1,6 @@
 """WP-M1-37 (LH-6.18-SEC-008): Schema-Lint „keine Spalte für PAN, CVC, Ablaufdatum oder Karteninhaber“.
 
-`payment_intent.provider_ref` ist die einzige PSP-Referenz. Die Regel ist als Funktion `card_column_violations` auch auf neue DDL anwendbar
+`payment_intent.provider_ref` ist die PSP-Referenz (WP-M2-30 ergänzt Verweise ohne Kartendaten, siehe unten). Die Regel ist als Funktion `card_column_violations` auch auf neue DDL anwendbar
 (eine Migration mit Kartendatenspalte scheitert); gleiche Namensmuster wie der OpenAPI-Lint (`api/tools/lint.py`).
 """
 import re
@@ -26,9 +26,10 @@ class KeineKartendatenspalte(unittest.TestCase):
         self.assertGreater(len(cols), 200)
         self.assertEqual(card_column_violations(cols), [])
         self.assertIn(('payment_intent', 'provider_ref'), cols)   # die einzige PSP-Referenz ist vorhanden (Prüfung wirksam)
-        # nur provider_ref trägt eine PSP-Referenz: keine weitere Spalte mit Referenz-/Tokennamen in payment_intent
+        # Referenzspalten in payment_intent: provider_ref (PSP-Referenz) und seit WP-M2-30 die drei weiteren **Verweise** des Zahlungsautomaten (eigene Händlerreferenz, PSP-Zahlungs-ID,
+        # vom PSP gelieferter Zahlungsmittelverweis); alle sind Verweise ohne Kartendaten (Namenslint oben), jede weitere Referenz-/Tokenspalte scheitert hier
         pi = sorted(c for t, c in cols if t == 'payment_intent')
-        self.assertEqual([c for c in pi if re.search(r'(?i)(_ref$|token|psp)', c)], ['provider_ref'])
+        self.assertEqual([c for c in pi if re.search(r'(?i)(_ref$|token|psp)', c)], ['merchant_ref', 'payment_method_ref', 'provider_ref', 'psp_payment_id'])
 
     def test_migration_mit_kartendatenspalte_scheitert_am_lint(self):
         for col in ('card_number', 'pan', 'cvc', 'cvv2', 'expiry_date', 'expiration_month', 'exp_year', 'cardholder_name', 'card_holder'):

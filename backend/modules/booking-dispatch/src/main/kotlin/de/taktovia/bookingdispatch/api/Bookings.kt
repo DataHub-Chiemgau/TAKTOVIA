@@ -29,6 +29,15 @@ data class BookingDetail(
     val cancelReason: BookingReason? = null, val cancelCause: CauseClass? = null,
 )
 
+/**
+ * Bezüge einer Buchung für die Zahlung (WP-M2-30): Dienst, Journey-Hülle und Quote (Preisstand des Angebots), dazu der Buchungszustand und der Bestätigungszeitpunkt. Nur Lesen, mit derselben
+ * Objektberechtigung wie [Bookings.get] (fremde Buchung `404`); die Zahlung selbst führt das Modul `fare-payment`.
+ */
+data class BookingPaymentContext(val bookingId: UUID, val serviceId: UUID, val journeyId: UUID, val quoteId: UUID, val state: String, val createdAt: Instant)
+
+/** Ergebnis einer Kopplungsoperation der Zahlung (ohne Personenkontext): [APPLIED] ausgeführt, [ALREADY_APPLIED] war bereits so (Wiederaufnahme), [NOT_APPLICABLE] die Buchung ist in einem Zustand, in dem die Zahlung nichts ändern darf. */
+enum class CouplingOutcome { APPLIED, ALREADY_APPLIED, NOT_APPLICABLE }
+
 /** Befehl „Hold bestätigen“: [ifMatch] = Revision des Angebots, die der Hold-Antwort als ETag mitgegeben wurde; [maxGrossMinor] der akzeptierte Betrag. */
 data class ConfirmBooking(val holdId: UUID, val ifMatch: Long, val maxGrossMinor: Long, val currency: String, val paymentReference: String? = null)
 
@@ -38,8 +47,23 @@ data class ConfirmedBooking(val booking: BookingDetail, val replayed: Boolean)
 /** Storno-Befehl: [ifMatch] = Revision der Buchung (ETag), [reason] einer der Stornogründe des Katalogs (Art `CANCELLATION`). */
 data class CancelBooking(val ifMatch: Long, val reason: BookingReason)
 
-/** Ergebnis: die stornierte Buchung, die freigegebene Reservierung und die neue Planrevision des Umlaufs (`null`, wenn der Plan die Buchung nicht enthielt oder nicht änderbar war). */
-data class CancelResult(val booking: BookingDetail, val releasedHoldId: UUID, val planRevision: Long?)
+/**
+ * Ergebnis: die stornierte Buchung, die freigegebene Reservierung und die neue Planrevision des Umlaufs (`null`, wenn der Plan die Buchung nicht enthielt oder nicht änderbar war). [refundHint] ist der
+ * Erstattungshinweis der Zahlung (WP-M2-31, `null` ohne Zahlung): [RefundHint.status] nennt, was beauftragt ist (nie „erstattet“, solange der PSP nicht bestätigt hat).
+ */
+data class CancelResult(val booking: BookingDetail, val releasedHoldId: UUID, val planRevision: Long?, val refundHint: RefundHint? = null)
+
+/** Erstattungshinweis zum Storno: [status] (`NONE`, `VOID_REQUESTED`, `PENDING_CAPTURE`, `REQUESTED`, `CONFIRMED`, `FAILED`, `NOT_DUE`) und Betrag in kleinster Einheit. */
+data class RefundHint(val status: String, val amountMinor: Long, val currency: String)
+
+/** Anlass der Zahlungsreaktion beim Storno (WP-M2-31): Grund, Verursacherklasse (Erstattungsregel, BKG-014) und Initiator. */
+data class CancellationEvent(val bookingId: UUID, val reason: BookingReason, val cause: CauseClass, val initiator: String)
+
+/**
+ * Port: Reaktion eines anderen Moduls auf einen Storno **in derselben Transaktion** (Zahlung: Void bzw. Erstattung beauftragen, WP-M2-31). Der Aufruf geschieht nach dem Übergang der Buchung und der
+ * Freigabe der Reservierung; wirft er, rollt der ganze Storno zurück. Er ruft nie einen externen Dienst (Leitlinie 3), der PSP-Aufruf folgt als Operation.
+ */
+fun interface CancellationListener { fun onCancelled(j: org.springframework.jdbc.core.JdbcOperations, event: CancellationEvent): RefundHint? }
 
 /** Wirksame Stornoregeln eines Dienstes (Planungsannahmen, wenn die Konfiguration keinen Wert nennt; [defaulted] nennt die Parameter mit Planungsdefault). */
 data class CancellationPolicy(val deadlineMin: Int, val reasons: Set<BookingReason>, val defaulted: Set<String>) {
@@ -64,6 +88,9 @@ interface Bookings {
     fun confirm(ctx: RequestContext, cmd: ConfirmBooking): ConfirmedBooking
     fun get(ctx: RequestContext, bookingId: UUID): BookingDetail
 
+    /** Bezüge der Buchung für die Zahlung (Dienst, Journey, Quote, Zustand); Objektberechtigung wie [get]. */
+    fun paymentContext(ctx: RequestContext, bookingId: UUID): BookingPaymentContext
+
     /** Eigene Buchungen (Fahrgast) bzw. Buchungen der Dienste des Scopes (Betrieb), aufsteigend nach `(created_at, id)`; [limit] + 1 Zeilen ab [after] (Seitenbildung beim Aufrufer). */
     fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?): List<BookingDetail>
 
@@ -83,12 +110,24 @@ interface Bookings {
      */
     fun cancel(ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult
 
+    /**
+     * Zahlungskopplung (WP-M2-30, OP-5) als Systemauftrag ohne Personenkontext (der Mandant kommt aus dem Auftrag, nie aus einer Eingabe): Zahlung `AUTHORIZED` bestätigt die Buchung
+     * (`CONFIRMING` -> `CONFIRMED`, Grund `PAYMENT_AUTHORIZED`, Akteur `service:payment-coupling`). In jedem anderen Zustand ändert sich nichts ([CouplingOutcome.NOT_APPLICABLE]).
+     */
+    fun confirmAfterPayment(tenant: de.taktovia.platform.tenant.TenantId, bookingId: UUID): CouplingOutcome
+
+    /**
+     * Zahlungskopplung (WP-M2-30): Autorisierung abgelehnt, abgelaufen oder aufgehoben: eine Buchung im Zustand `CONFIRMING` wird mit Grund `PAYMENT_FAILED` storniert (Hold und Kapazität werden
+     * frei, Ereignis `booking.cancelled`). Eine bestätigte oder bereits anders beendete Buchung bleibt unberührt ([CouplingOutcome.NOT_APPLICABLE]).
+     */
+    fun cancelAfterPaymentFailure(tenant: de.taktovia.platform.tenant.TenantId, bookingId: UUID): CouplingOutcome
+
     /** Statushistorie in der [view]; die Prüfersicht ist Fahrgästen verwehrt (403), fremde Buchungen und Dienste ohne Scope sind 404. */
     fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry>
 
     companion object {
-        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config)
+        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()

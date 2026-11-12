@@ -96,7 +96,11 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
     internal fun planIn(j: JdbcOperations, runId: UUID, revision: Long): RunPlan = readPlan(j, runId, revision)
 
     /** Wie [appendRevision], aber in der Transaktion des Aufrufers; der Zeilenlock des Umlaufs wird (erneut) genommen. */
-    internal fun appendIn(j: JdbcOperations, ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan {
+    internal fun appendIn(j: JdbcOperations, ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan =
+        appendIn(j, ctx.correlationId, runId, expectedRevision, stops, cause, affectedBookingIds)
+
+    /** Wie oben, mit der Korrelation statt des Kontexts (Systemaufträge ohne Personenkontext, WP-M2-30). */
+    internal fun appendIn(j: JdbcOperations, correlationId: UUID, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan {
         val run = load(j, runId, true)
         if (run.revision != expectedRevision) throw ProblemException(
             ErrorCode.REVISION_MISMATCH, "Der Fahrtenplan wurde zwischenzeitlich geändert; aktuelle Revision ${run.revision} lesen.", headers = mapOf("ETag" to Etag.format(run.revision)),
@@ -131,7 +135,7 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
         j.update("INSERT INTO taktovia.plan_change(tenant_id, id, run_id, run_revision, previous_revision, cause) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?)", changeId, runId, next, run.revision, cause.name)
         val numbered = changes.map { c ->
             // fortlaufende Nummer der Änderungen einer Buchung; der Advisory-Lock hält zwei Umläufe, die dieselbe Buchung berühren, in Reihe
-            j.query("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", { _, _ -> 0 }, "plan_change_booking|${ctx.tenant}|${c.bookingId}")
+            j.query("SELECT pg_advisory_xact_lock(hashtextextended('plan_change_booking|' || taktovia.current_tenant()::text || '|' || ?, 0))", { _, _ -> 0 }, c.bookingId.toString())
             val n = j.queryForObject("SELECT coalesce(max(booking_seq), 0) + 1 FROM taktovia.plan_change_booking WHERE booking_id = ?", Long::class.java, c.bookingId)!!
             j.update(
                 "INSERT INTO taktovia.plan_change_booking(tenant_id, plan_change_id, booking_id, kind, booking_seq, pickup_before, pickup_after, dropoff_before, dropoff_after) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -148,7 +152,7 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
                     c.dropoffBefore?.let { m["dropoff_before"] = it.toString() }; c.dropoffAfter?.let { m["dropoff_after"] = it.toString() }
                 }
             },
-        ), clock.instant(), correlationId = ctx.correlationId))
+        ), clock.instant(), correlationId = correlationId))
         return RunPlan(runId, next, ordered)
     }
 }

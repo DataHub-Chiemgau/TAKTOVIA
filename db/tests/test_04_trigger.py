@@ -201,7 +201,7 @@ class Trigger(unittest.TestCase):
                     c.execute("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (%s,%s,%s,now())", (T, pid, str(uid())))
                     c.execute("INSERT INTO taktovia.journey(tenant_id,id,passenger_id,quote_id,state,created_at,currency) VALUES (%s,%s,%s,%s,'HELD',now(),'EUR')", (T, jid, pid, q))
                     c.execute("""INSERT INTO taktovia.payment_intent(tenant_id,id,journey_id,provider,provider_ref,state,currency,authorized_minor,captured_minor,refunded_minor)
-                                 VALUES (%s,%s,%s,'psp',%s,'AUTH','EUR',10,%s,%s)""", (T, uid(), jid, str(uid()), cap, ref))
+                                 VALUES (%s,%s,%s,'psp',%s,'AUTHORIZED','EUR',10,%s,%s)""", (T, uid(), jid, str(uid()), cap, ref))
 
     def test_fare_quote_unveraenderlich(self):
         from helpers import admin

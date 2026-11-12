@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.refund_failed.v1.schema.json",
+  "title": "Erstattung fehlgeschlagen (WP-M2-31)",
+  "description": "Payload von `payment.refund_failed`. Aggregat: `refund_case`. Der PSP hat die Erstattung definitiv abgelehnt: die Buchung bleibt storniert, der Betrag bleibt offen und sichtbar (Betreiberwarnung, Klärfall). Geld als bigint in kleinster Einheit (Leitlinie 5); keine Zahlungsmitteldaten und keine Personendaten im Payload (SEC-008, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "refund_case_id",
+    "refund_minor",
+    "currency",
+    "failure_code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "refund_case_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "refund_minor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "failure_code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+    }
+  },
+  "examples": [
+    {
+      "payment_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "refund_case_id": "1a2b3c4d-1111-4222-8333-444455556666",
+      "booking_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "refund_minor": 950,
+      "currency": "EUR",
+      "failure_code": "REFUND_DECLINED"
+    }
+  ]
+}

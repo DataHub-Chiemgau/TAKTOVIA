@@ -7,7 +7,7 @@
 ## Entscheidungen zu OP-15 (journey_id, kind)
 
 - `operation.journey_id` ist **nullable** (Fremdschlüssel bleibt): nicht reisebezogene M1-Befehle (Konfigurationspublikation, Wirkungsanalyse, Aufbewahrungslauf) brauchen keine Reise. Im API-Schema ist `journey_id` bereits nullable.
-- `kind`: `HOLD`, `CONFIRM`, `CANCEL`, `RECONCILE` (Kap. 02 §7.3) plus `PUBLISH_CONFIG`, `IMPACT_ANALYSIS`, `RETENTION_RUN`, `TEST_COMMAND`. Das Enum steht in `OperationKind` und im Schema `Operation.kind` (`api/common.yaml`); die Spalte bleibt Text (spätere Meilensteine ergänzen Arten ohne Migration). **Fachliche Bestätigung der M1-Arten offen** (OP-15).
+- `kind`: `HOLD`, `CONFIRM`, `CANCEL`, `RECONCILE` (Kap. 02 §7.3) plus `PUBLISH_CONFIG`, `IMPACT_ANALYSIS`, `RETENTION_RUN`, `TEST_COMMAND` sowie die Zahlungsoperationen `AUTHORIZE_PAYMENT`, `CAPTURE_PAYMENT`, `VOID_PAYMENT`, `REFUND_PAYMENT`, `RECONCILE_PAYMENT` (WP-M2-30/-31). Das Enum steht in `OperationKind` und im Schema `Operation.kind` (`api/common.yaml`); die Spalte bleibt Text (spätere Meilensteine ergänzen Arten ohne Migration). **Fachliche Bestätigung der M1-Arten offen** (OP-15).
 
 ## Lease und Fencing
 

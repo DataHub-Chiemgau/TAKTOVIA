@@ -8,6 +8,8 @@ import de.taktovia.bookingdispatch.api.BookingReason
 import de.taktovia.bookingdispatch.api.CancelBooking
 import de.taktovia.bookingdispatch.api.ConfirmBooking
 import de.taktovia.bookingdispatch.api.HistoryView
+import de.taktovia.app.payment.PaymentController
+import de.taktovia.farepayment.api.Payments
 import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
@@ -40,7 +42,7 @@ class BookingResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * `If-Match` ist die Angebotsrevision (ETag der Hold-Antwort): fehlt er 428, ist er veraltet 412. Der `Idempotency-Key` ist Pflicht (Filter): Wiederholung liefert das gespeicherte Ergebnis.
  */
 @RestController
-class BookingController(private val bookings: Bookings, private val codec: CursorCodec) {
+class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments) {
 
     @PostMapping("/v1/bookings")
     @Suppress("UNCHECKED_CAST")
@@ -56,11 +58,12 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
 
     @GetMapping("/v1/bookings/{booking_id}")
     fun get(@PathVariable("booking_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): BookingResource {
-        val b = bookings.get(RequestContexts.require(request), id)
+        val ctx = RequestContexts.require(request)
+        val b = bookings.get(ctx, id)
         // Ein Client, der seinen Stand mitsendet, bekommt bei veralteter Revision 412 mit dem aktuellen ETag (WP-M2-28)
         if (ifMatch != null && Etag.parseIfMatch(ifMatch) != b.revision)
             throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung hat die Revision ${b.revision}; ohne If-Match neu lesen.", headers = mapOf("ETag" to Etag.format(b.revision)))
-        return BookingResource(render(b), b.revision)
+        return BookingResource(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), b.revision)
     }
 
     @GetMapping("/v1/bookings")
@@ -80,8 +83,12 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     fun cancel(@PathVariable("booking_id") id: UUID, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): BookingResource {
         val expected = Etag.parseIfMatch(ifMatch)
         val reason = BookingReason.parse(body["reason"] as String) ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
-        val r = bookings.cancel(RequestContexts.require(request), id, CancelBooking(expected, reason))
-        return BookingResource(render(r.booking), r.booking.revision)
+        val ctx = RequestContexts.require(request)
+        val r = bookings.cancel(ctx, id, CancelBooking(expected, reason))
+        // Erstattungshinweis (WP-M2-31): was beauftragt ist, nie „erstattet“ vor der PSP-Bestätigung; dazu der Zahlungsblock (Stand der Zahlung, getrennt vom Buchungsstatus)
+        val body = withPayment(render(r.booking), payments.forBooking(ctx, id), r.booking.promise.exponent)
+        val withHint = r.refundHint?.let { h -> LinkedHashMap(body).also { it["refund_hint"] = linkedMapOf("status" to h.status, "amount" to money(h.amountMinor, h.currency, r.booking.promise.exponent)) } } ?: body
+        return BookingResource(withHint, r.booking.revision)
     }
 
     /**
@@ -113,6 +120,10 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         }
         return linkedMapOf("items" to items, "view" to if (v == HistoryView.AUDIT) "audit" else "reduced")
     }
+
+    /** Zahlungsblock (WP-M2-30): getrennt vom Buchungsstatus gelesen und angefügt; fehlt die Zahlung, fehlt der Block. */
+    private fun withPayment(booking: Map<String, Any?>, p: de.taktovia.farepayment.api.PaymentView?, exponent: Int): Map<String, Any?> =
+        if (p == null) booking else LinkedHashMap(booking).also { it["payment"] = PaymentController.render(p, exponent) }
 
     companion object {
         fun money(minor: Long, currency: String, exponent: Int) = linkedMapOf("amount_minor" to minor, "currency" to currency, "exponent" to exponent)

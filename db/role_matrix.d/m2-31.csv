@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+refund_case;SELECT,INSERT,UPDATE;WP-M2-31: Erstattungsfall je Zahlung und Anlass, Zustandsautomat refund_case, Summe nie über erfasstem Betrag, kein DELETE

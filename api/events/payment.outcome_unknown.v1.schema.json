@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/payment.outcome_unknown.v1.schema.json",
+  "title": "Zahlungsergebnis unbestimmt (WP-M2-30)",
+  "description": "Payload von `payment.outcome_unknown`. Aggregat: payment_intent. Ein PSP-Aufruf ist ohne bestimmtes Ergebnis geblieben (Timeout) oder ein Einzug wurde abgelehnt und ist ein Klärfall (`CAPTURE_UNKNOWN`/`RECONCILING`); `phase` nennt, welcher Schritt unbestimmt ist. Der Abgleich läuft über die Statusabfrage (Leitlinie 6). Keine Zahlungsmitteldaten und keine Personendaten im Payload (SEC-008, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "phase"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "phase": {
+      "enum": [
+        "AUTHORIZE",
+        "CAPTURE",
+        "REFUND"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "payment_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "booking_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "phase": "AUTHORIZE"
+    }
+  ]
+}

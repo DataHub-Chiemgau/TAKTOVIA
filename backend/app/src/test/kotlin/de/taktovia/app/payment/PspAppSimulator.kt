@@ -37,11 +37,12 @@ class PspAppSimulator private constructor(private val process: Process, val url:
     override fun close() { process.destroy(); if (!process.waitFor(5, TimeUnit.SECONDS)) process.destroyForcibly() }
 
     companion object {
-        fun start(): PspAppSimulator {
+        /** [seed] bestimmt Schlüssel und Ereignis-IDs des Simulators; Testklassen mit eigenem Mandanten nehmen einen eigenen Wert (gleiche Seeds ergeben gleiche Ereignis-IDs und kollidieren im Eingang). */
+        fun start(seed: Int = 1): PspAppSimulator {
             val repo = Path.of(System.getProperty("taktovia.repoRoot"))
             val python = System.getenv("TAKTOVIA_PYTHON")?.takeIf { it.isNotBlank() } ?: "python3"
             val p = try {
-                ProcessBuilder(python, "-I", repo.resolve("tests/sandbox/psp/psp_sim.py").toString(), "--port", "0", "--seed", "1", "--clock-start", Instant.now().toString()).redirectErrorStream(true).start()
+                ProcessBuilder(python, "-I", repo.resolve("tests/sandbox/psp/psp_sim.py").toString(), "--port", "0", "--seed", seed.toString(), "--clock-start", Instant.now().toString()).redirectErrorStream(true).start()
             } catch (e: java.io.IOException) {
                 if (System.getenv("TAKTOVIA_REQUIRE_DB") == "true") throw AssertionError("python3 für den PSP-Simulator nicht verfügbar", e)
                 assumeTrue(false, "python3 nicht verfügbar"); throw e

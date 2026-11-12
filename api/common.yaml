@@ -473,6 +473,11 @@ components:
           - IMPACT_ANALYSIS
           - RETENTION_RUN
           - TEST_COMMAND
+          - AUTHORIZE_PAYMENT
+          - CAPTURE_PAYMENT
+          - VOID_PAYMENT
+          - REFUND_PAYMENT
+          - RECONCILE_PAYMENT
         status:
           type: string
           enum:
