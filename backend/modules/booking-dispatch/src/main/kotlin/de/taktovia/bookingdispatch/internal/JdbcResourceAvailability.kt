@@ -88,7 +88,7 @@ internal class JdbcResourceAvailability(
                 "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +
                 "AND p.valid_from <= ? AND (p.valid_to IS NULL OR p.valid_to > ?) " +
                 "WHERE (CAST(? AS uuid) IS NULL AND p.id IS NOT NULL) OR v.id = CAST(? AS uuid) ORDER BY v.id",
-            { rs, _ -> Row(rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getBoolean("area_ok"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"), null, null, null, null, null) },
+            { rs, _ -> Row(rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getBoolean("area_ok"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"), null, null, null, null, null, null) },
             GeoPoint.toJsonArray(locations), from, from, serviceId, from, from, vehicleId, vehicleId,
         )
         if (base.isEmpty()) return base
@@ -102,10 +102,15 @@ internal class JdbcResourceAvailability(
             { rs, _ -> rs.getObject(1, UUID::class.java) to (rs.getObject(2, UUID::class.java) to rs.getTimestamp(3).toInstant()) },
             "{" + staffed.values.joinToString(",") { it.shiftId.toString() } + "}", Timestamp.from(w.to), "{" + staffed.keys.joinToString(",") + "}",
         ).toMap()
+        // Dienststatus der besetzten Schichten (WP-M3-31); ohne Statuszeile gilt der Status als unbekannt und blockiert nicht (wie im direkten Pfad)
+        val statuses = if (staffed.isEmpty()) emptyMap() else j.query(
+            "SELECT st.shift_id, st.status FROM taktovia.vehicle_service_status st WHERE st.shift_id = ANY (CAST(? AS uuid[]))",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getString(2) }, "{" + staffed.values.joinToString(",") { it.shiftId.toString() } + "}",
+        ).toMap()
         return base.map { r ->
             val s = staffed[r.vehicleId] ?: return@map r
             val rel = releases[s.shiftId]
-            Row(r.vehicleId, r.inPool, r.areaOk, r.capacity, r.activeBlock, r.safetyRevision, r.active, s.shiftId, s.startsAt, s.endsAt, rel?.first, rel?.second)
+            Row(r.vehicleId, r.inPool, r.areaOk, r.capacity, r.activeBlock, r.safetyRevision, r.active, s.shiftId, s.startsAt, s.endsAt, rel?.first, rel?.second, statuses[s.shiftId])
         }
     }
 

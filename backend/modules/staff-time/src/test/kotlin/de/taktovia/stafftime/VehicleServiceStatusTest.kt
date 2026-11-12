@@ -91,7 +91,7 @@ class VehicleServiceStatusTest {
         val s = Scene()
         s.at("2026-12-01T06:01:00Z"); s.report(ServiceStatus.AVAILABLE)
         s.at("2026-12-01T06:02:00Z"); s.report(ServiceStatus.EN_ROUTE)
-        s.at("2026-12-01T06:03:00Z"); s.event(DriverEventType.ARRIVAL)   // abgeleitet: Auslöser SYSTEM
+        s.at("2026-12-01T06:03:00Z"); s.event(DriverEventType.ARRIVAL, stop = UUID.randomUUID())   // abgeleitet: Auslöser SYSTEM
         s.at("2026-12-01T06:04:00Z"); s.event(DriverEventType.BREAK_START)   // Handlung des Fahrers
         val disp = s.w.dispatcher(); s.at("2026-12-01T06:05:00Z"); s.svc.byDispatch(disp, s.shift, ServiceStatus.DISRUPTED)
         val h = s.svc.current(s.ctx, s.shift).history
@@ -118,7 +118,7 @@ class VehicleServiceStatusTest {
         val s = Scene()
         s.report(ServiceStatus.AVAILABLE); s.report(ServiceStatus.EN_ROUTE)
         s.at("2026-12-01T07:00:00Z")
-        assertEquals(DriverEventOutcome.APPLIED, s.event(DriverEventType.ARRIVAL).outcome); assertEquals(ServiceStatus.WAITING, s.status())
+        assertEquals(DriverEventOutcome.APPLIED, s.event(DriverEventType.ARRIVAL, stop = UUID.randomUUID()).outcome); assertEquals(ServiceStatus.WAITING, s.status())
         s.event(DriverEventType.BREAK_START); assertEquals(ServiceStatus.BREAK, s.status(), "Pause aus der Wartezeit (Klärfall bei zugesagten Stopps, Zusagen bleiben)")
         s.event(DriverEventType.BREAK_END); assertEquals(ServiceStatus.AVAILABLE, s.status())
         s.event(DriverEventType.DISRUPTION); assertEquals(ServiceStatus.DISRUPTED, s.status())
