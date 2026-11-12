@@ -154,20 +154,7 @@ internal class JdbcDriverShifts(
     private class Gate(val state: RunReleaseState, val missing: List<String>)
 
     /** Einsatzfreigabe des Fahrzeugs für diese Schicht (Lesesicht): gültige, nicht widerrufene `resource_release` mit aktueller `safety_revision` und kein operativer Block. */
-    private fun releaseGate(j: JdbcOperations, s: Own, now: Instant): Gate {
-        val v = j.query("SELECT active_block, safety_revision FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getBoolean(1) to rs.getLong(2) }, s.vehicleId).firstOrNull()
-            ?: return Gate(RunReleaseState.NOT_RELEASED, listOf("NO_INSPECTION"))
-        val rel = j.query("SELECT safety_revision, valid_until, revoked_at FROM taktovia.resource_release WHERE shift_id = ? AND vehicle_id = ? ORDER BY valid_until DESC, id LIMIT 1",
-            { rs, _ -> Triple(rs.getLong(1), rs.getTimestamp(2).toInstant(), rs.getTimestamp(3)?.toInstant()) }, s.id, s.vehicleId).firstOrNull()
-        return when {
-            rel == null -> Gate(RunReleaseState.NOT_RELEASED, listOf("NO_INSPECTION"))
-            rel.third != null -> Gate(RunReleaseState.NOT_RELEASED, listOf("RELEASE_REVOKED"))
-            !rel.second.isAfter(now) -> Gate(RunReleaseState.NOT_RELEASED, listOf("NO_INSPECTION"))
-            rel.first != v.second -> Gate(RunReleaseState.NOT_RELEASED, listOf("SAFETY_REVISION_CHANGED"))
-            v.first -> Gate(RunReleaseState.BLOCKED, listOf("OPERATIONAL_BLOCK"))
-            else -> Gate(RunReleaseState.RELEASED, emptyList())
-        }
-    }
+    private fun releaseGate(j: JdbcOperations, s: Own, now: Instant): Gate = ReleaseCheck.check(j, s.id, s.vehicleId, now).let { Gate(it.first, it.second) }
 
     private fun guard(ctx: RequestContext) {
         if (ctx.actor.type != ActorType.HUMAN || ctx.actor.sessionId == null || "driver" !in ctx.roles || !ctx.hasScope(SCOPE)) throw ProblemException(ErrorCode.FORBIDDEN)

@@ -1,0 +1,6 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+driver_event;effective_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Plausibilisierte Ereigniszeit (Wartefrist und Pünktlichkeitskennzahlen)
+driver_event;offline_recorded;nein;TECHNISCHER_BETRIEB;;;;
+driver_event;no_show_reason;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;no_show_wait_seconds;nein;BUCHUNGSABWICKLUNG;;;;
+driver_event;no_show_grace_min;nein;BUCHUNGSABWICKLUNG;;;;

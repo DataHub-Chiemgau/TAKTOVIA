@@ -45,7 +45,7 @@ class DriverSyncTest {
         fx.staff.driverDevices.register(fx.context(w.tenant, w.subject), RegisterDriverDevice(id, DevicePlatform.ANDROID, "1.0.0", null)); return id
     }
 
-    private fun cmd(w: StaffFixture.World, device: UUID, id: UUID = UUID.randomUUID(), type: DriverEventType = DriverEventType.ARRIVAL, planRevision: Long = 1, recordedAt: Instant = Instant.parse("2020-01-01T00:00:00Z")) =
+    private fun cmd(w: StaffFixture.World, device: UUID, id: UUID = UUID.randomUUID(), type: DriverEventType = DriverEventType.BREAK_START, planRevision: Long = 1, recordedAt: Instant = Instant.parse("2020-01-01T00:00:00Z")) =
         DriverEventCommand(id, device, w.shift, w.vehicle, planRevision, type, if (type.needsBooking) UUID.randomUUID() else null, if (type.needsBooking) UUID.randomUUID() else null, recordedAt, recordedAt, true)
 
     @Test
@@ -69,7 +69,7 @@ class DriverSyncTest {
     @Test
     fun hundert_identische_wiederholungen_ergeben_eine_wirkung() {
         val w = fx.world(); val ctx = fx.context(w.tenant, w.subject); val d = device(w)
-        val c = cmd(w, d, type = DriverEventType.CHECK_IN)
+        val c = cmd(w, d)
         val pool = Executors.newFixedThreadPool(20); val start = CountDownLatch(1)
         val futures = (1..100).map { pool.submit<Any> { start.await(); try { fx.staff.driverEvents.record(ctx, c) } catch (e: Throwable) { e } } }
         start.countDown()
@@ -85,7 +85,7 @@ class DriverSyncTest {
     fun gleiche_event_id_mit_anderem_inhalt_ist_ein_konflikt() {
         val w = fx.world(); val ctx = fx.context(w.tenant, w.subject); val d = device(w)
         val c = cmd(w, d); fx.staff.driverEvents.record(ctx, c)
-        assertEquals(ErrorCode.IDEMPOTENCY_CONFLICT, problem { fx.staff.driverEvents.record(ctx, c.copy(type = DriverEventType.BREAK_START)) }.code)
+        assertEquals(ErrorCode.IDEMPOTENCY_CONFLICT, problem { fx.staff.driverEvents.record(ctx, c.copy(type = DriverEventType.DISRUPTION)) }.code)
         assertEquals(ErrorCode.IDEMPOTENCY_CONFLICT, problem { fx.staff.driverEvents.record(ctx, c.copy(occurredAt = c.occurredAt.plusSeconds(1))) }.code)
         assertEquals(1, fx.count("SELECT count(*) FROM taktovia.driver_event WHERE event_id = ?", c.eventId), "die Wirkung des ersten Ereignisses bleibt")
     }
@@ -143,17 +143,24 @@ class DriverSyncTest {
     @Test
     fun veralteter_plan_ist_ein_klaerfall_und_statusereignisse_nicht() {
         val w = fx.world(runRevision = 5); val ctx = fx.context(w.tenant, w.subject); val d = device(w)
-        val stale = fx.staff.driverEvents.record(ctx, cmd(w, d, type = DriverEventType.CHECK_IN, planRevision = 4))
-        assertEquals(DriverEventOutcome.REVIEW_REQUIRED, stale.outcome); assertEquals("STALE_PLAN", stale.reasonCode); assertEquals(5L, stale.currentPlanRevision)
-        val staleCmd = cmd(w, d, type = DriverEventType.CHECK_IN, planRevision = 4)
-        val first = fx.staff.driverEvents.record(ctx, staleCmd); val repeat = fx.staff.driverEvents.record(ctx, staleCmd)
+        // angetretene, freigegebene Schicht (ab WP-M3-29 nimmt der Eingang stoppbezogene Ereignisse nur dann an)
+        fx.exec("UPDATE taktovia.staff_shift SET state='STARTED', started_at=now(), started_device_id=? WHERE id=?", d, w.shift)
+        fx.exec("INSERT INTO taktovia.resource_release(tenant_id,id,vehicle_id,shift_id,safety_revision,inspection_ref,qualification_revision,valid_until) VALUES (?,?,?,?,1,?,1,now()+interval '4 hours')",
+            w.tenant.value, UUID.randomUUID(), w.vehicle, w.shift, UUID.randomUUID())
+        fx.exec("UPDATE taktovia.vehicle SET active_block = false WHERE tenant_id = ? AND id = ?", w.tenant.value, w.vehicle)
+        val now = Instant.now()
+        fun checkIn(rev: Long) = cmd(w, d, type = DriverEventType.CHECK_IN, planRevision = rev, recordedAt = now)
+        val staleCmd = checkIn(4)
+        val first = fx.staff.driverEvents.record(ctx, staleCmd)
+        assertEquals(DriverEventOutcome.REVIEW_REQUIRED, first.outcome); assertEquals("STALE_PLAN", first.reasonCode); assertEquals(5L, first.currentPlanRevision)
+        val repeat = fx.staff.driverEvents.record(ctx, staleCmd)
         assertEquals(DriverEventOutcome.DUPLICATE, repeat.outcome); assertEquals(DriverEventOutcome.REVIEW_REQUIRED, repeat.originalOutcome, "ein Klärfall bleibt bei Wiederholung erkennbar")
         assertEquals("STALE_PLAN", repeat.reasonCode); assertEquals(first.receivedAt, repeat.receivedAt)
-        val current = fx.staff.driverEvents.record(ctx, cmd(w, d, type = DriverEventType.CHECK_IN, planRevision = 5))
+        val current = fx.staff.driverEvents.record(ctx, checkIn(5))
         assertEquals(DriverEventOutcome.APPLIED, current.outcome)
         val status = fx.staff.driverEvents.record(ctx, cmd(w, d, type = DriverEventType.BREAK_START, planRevision = 1))
         assertEquals(DriverEventOutcome.APPLIED, status.outcome, "Statusereignisse sind nicht planbezogen")
-        assertNotEquals(0, fx.count("SELECT count(*) FROM taktovia.driver_event WHERE event_id = ? AND outcome='REVIEW_REQUIRED'", stale.eventId))
+        assertNotEquals(0, fx.count("SELECT count(*) FROM taktovia.driver_event WHERE event_id = ? AND outcome='REVIEW_REQUIRED'", first.eventId))
     }
 
     @Test

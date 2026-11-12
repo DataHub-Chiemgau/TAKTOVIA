@@ -18,6 +18,10 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `defect.amended` | `fleet-safety` | `defect_case` / n | Nachtrag zur Meldung (WP-M3-48) | Leitstelle, Prüfer | `defect_case` |
 | `repair.order_created` | `fleet-safety` | `repair_order` / 1 | Reparaturauftrag | Leitstelle, M4 (Kostenbezug) | `reparaturauftrag` |
 | `driver.event_recorded` | `staff-time` | `driver_event` / 1 | Fahrerereignis verarbeitet (`APPLIED` oder `REVIEW_REQUIRED`) | `booking-dispatch` (Fahrtstatus, No-Show), Leitstelle | – |
+| `driver.passenger_boarded` | `staff-time` | `driver_event` / 1 | Einstieg wirksam (WP-M3-29) | Analytics (Fakten), Leitstelle | `fahrerereignis` |
+| `driver.passenger_alighted` | `staff-time` | `driver_event` / 1 | Ausstieg wirksam (WP-M3-29) | Analytics (Fakten), Leitstelle | `fahrerereignis` |
+| `driver.no_show_recorded` | `staff-time` | `driver_event` / 1 | No-Show festgestellt mit Grund, Wartezeit und Regelstand, ohne Gebühr (WP-M3-29) | Tarif/Zahlung (M2/M7), Analytics | `fahrerereignis` |
+| `driver.review_opened` | `staff-time` | `driver_event` / 1 | Klärfall: Fahrerereignis nicht wirksam (WP-M3-29) | Leitstelle | `fahrerereignis` |
 | `driver.run_acknowledged` | `staff-time` | Bestätigung / 1 | Fahrer bestätigt Planrevision | Leitstelle (ausbleibende Bestätigung) | – |
 | `vehicle.service_status_changed` | `staff-time` | `vehicle_service_status` / n | Dienststatuswechsel | `booking-dispatch` (nicht neu disponieren), Leitstelle | `fahrzeug_dienststatus` |
 | `incident.opened` | `fleet-safety` | `incident` / 1 | Workflowregel (Fahrzeugausfall) | Leitstelle, `booking-dispatch` (Ersatzsuche) | `incident` |

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver.no_show_recorded.v1.schema.json",
+  "title": "No-Show festgestellt (WP-M3-29)",
+  "description": "Payload von `driver.no_show_recorded`. Aggregat: driver_event / 1. Mit Grund, Wartezeit und Regelstand (`grace_min` der Wartefrist) für Tarif und Zahlung. Nur Kennungen, Codes, Zähler und Zeitpunkte: keine Namen, Kontakt- oder Zahlungsdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "shift_id",
+    "booking_id",
+    "route_stop_id",
+    "effective_at",
+    "reason",
+    "wait_seconds",
+    "grace_min",
+    "fee_booked"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "route_stop_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason": {
+      "enum": [
+        "NOT_PRESENT",
+        "REFUSED_TO_BOARD",
+        "OTHER"
+      ]
+    },
+    "wait_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "grace_min": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fee_booked": {
+      "const": false,
+      "description": "Dieses Paket bucht keine Gebühr (LH-6.4-BKG-015 ist P2, OP-21)."
+    }
+  },
+  "examples": [
+    {
+      "event_id": "11111111-2222-4333-8444-555555555555",
+      "shift_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "route_stop_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "effective_at": "2026-11-12T08:15:00Z",
+      "reason": "NOT_PRESENT",
+      "wait_seconds": 660,
+      "grace_min": 10,
+      "fee_booked": false
+    }
+  ]
+}

@@ -88,6 +88,9 @@ class HttpDriverEventApi implements DriverEventApi {
       'offline_recorded': true,
       if (e.payload['bookingId'] != null) 'booking_id': e.payload['bookingId'],
       if (e.payload['stopId'] != null) 'route_stop_id': e.payload['stopId'],
+      // WP-M3-29: No-Show mit Grund (Pflicht am Server) und der am Geraet gemessenen Wartezeit (nur Hinweis; der Server rechnet ab der plausibilisierten Ankunftszeit)
+      if (e.payload['noShowReason'] != null) 'no_show_reason': e.payload['noShowReason'],
+      if (e.payload['noShowWaitSeconds'] != null) 'no_show_wait_seconds': e.payload['noShowWaitSeconds'],
     };
     final HttpReply r;
     try {

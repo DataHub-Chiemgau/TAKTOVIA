@@ -19,9 +19,10 @@ import java.time.Clock
 
 /** Nur innerhalb des Moduls `staff-time` sichtbar (durch Architekturtest erzwungen). */
 internal object StafftimeServicesFactory {
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource): StafftimeApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource,
+        effects: de.taktovia.stafftime.api.DriverEventEffects = de.taktovia.stafftime.api.DriverEventEffects.NONE): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
-        val events = JdbcDriverEvents(ctxTx, outbox, clock)
+        val events = JdbcDriverEvents(ctxTx, outbox, clock, settings, effects)
         val drivers = JdbcDrivers(ctxTx, audit)
         val shiftsImpl = JdbcShifts(ctxTx, audit)
         val driverShiftsImpl = JdbcDriverShifts(ctxTx, audit, clock, settings, runSource)

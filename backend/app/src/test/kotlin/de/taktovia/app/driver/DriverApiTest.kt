@@ -34,7 +34,7 @@ class DriverApiTest {
 
     private fun register(token: String, device: UUID = UUID.randomUUID()) = env.post("/v1/driver/devices", """{"device_id":"$device","platform":"ANDROID","app_version":"1.0.0"}""", token, null, idem())
 
-    private fun event(w: World, device: UUID, id: UUID = UUID.randomUUID(), type: String = "ARRIVAL", extra: String = "") =
+    private fun event(w: World, device: UUID, id: UUID = UUID.randomUUID(), type: String = "BREAK_START", extra: String = "") =
         """{"event_id":"$id","device_id":"$device","shift_id":"${w.shift}","vehicle_id":"${w.vehicle}","plan_revision":1,"event_type":"$type","occurred_at":"2026-11-12T08:00:00Z","device_recorded_at":"2026-11-12T08:00:00Z","offline_recorded":true$extra}"""
 
     @Test
@@ -58,7 +58,7 @@ class DriverApiTest {
     @Test
     fun hundert_identische_wiederholungen_ueber_http_ergeben_eine_wirkung() {
         val w = World(env); val token = env.token(w.driver); val dev = UUID.randomUUID(); assertEquals(201, register(token, dev).status)
-        val id = UUID.randomUUID(); val body = event(w, dev, id, "CHECK_IN", ""","booking_id":"${UUID.randomUUID()}","route_stop_id":"${UUID.randomUUID()}"""")
+        val id = UUID.randomUUID(); val body = event(w, dev, id)   // Statusereignis: die Wirkung auf Buchung und Fahrt prüft DriverEventEffectsHttpTest
         val pool = Executors.newFixedThreadPool(16); val start = CountDownLatch(1)
         val futures = (1..100).map { pool.submit<Pair<Int, String>> { start.await(); val r = env.post("/v1/driver/events", body, token, null, idem()); r.status to (if (r.status == 200) r.json["state"].asString() else r.text) } }
         start.countDown(); val results = futures.map { it.get(120, TimeUnit.SECONDS) }; pool.shutdown()
@@ -95,7 +95,7 @@ class DriverApiTest {
         assertEquals(422, bad.status, bad.text)
         val id = UUID.randomUUID()
         assertEquals(200, env.post("/v1/driver/events", event(w, dev, id), token, null, idem()).status)
-        val conflict = env.post("/v1/driver/events", event(w, dev, id, "BREAK_START"), token, null, idem())
+        val conflict = env.post("/v1/driver/events", event(w, dev, id, "DISRUPTION"), token, null, idem())
         assertEquals(409, conflict.status, conflict.text); assertEquals("IDEMPOTENCY_CONFLICT", conflict.json["code"].asString())
         // ein anderer Fahrer sendet dieselbe event_id: nicht auffindbar, kein Hinweis auf das Ereignis des ersten
         val otherToken = env.token(w.otherDriver); val otherDev = UUID.randomUUID(); assertEquals(201, register(otherToken, otherDev).status)

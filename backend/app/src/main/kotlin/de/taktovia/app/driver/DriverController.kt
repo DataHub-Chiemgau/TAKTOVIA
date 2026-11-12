@@ -9,6 +9,7 @@ import de.taktovia.stafftime.api.DriverDeviceView
 import de.taktovia.stafftime.api.DriverEventCommand
 import de.taktovia.stafftime.api.DriverEventResult
 import de.taktovia.stafftime.api.DriverEventType
+import de.taktovia.stafftime.api.NoShowReason
 import de.taktovia.stafftime.api.RegisterDriverDevice
 import de.taktovia.stafftime.api.StafftimeApi
 import jakarta.servlet.http.HttpServletRequest
@@ -55,6 +56,7 @@ class DriverController(private val staff: StafftimeApi) {
             bookingId = (body["booking_id"] as String?)?.let(UUID::fromString), routeStopId = (body["route_stop_id"] as String?)?.let(UUID::fromString),
             occurredAt = OffsetDateTime.parse(body["occurred_at"] as String).toInstant(), deviceRecordedAt = OffsetDateTime.parse(body["device_recorded_at"] as String).toInstant(),
             offlineRecorded = body["offline_recorded"] as Boolean,
+            noShowReason = (body["no_show_reason"] as String?)?.let(NoShowReason::valueOf), noShowWaitSeconds = (body["no_show_wait_seconds"] as Number?)?.toInt(),
         )
         return json(staff.driverEvents.record(RequestContexts.require(request), cmd))
     }

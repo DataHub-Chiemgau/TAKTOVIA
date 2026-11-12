@@ -203,12 +203,12 @@ class ShiftStartTest {
     @Test
     fun fahrerereignis_und_zeitereignis_gelten_auch_fuer_schichten_mit_fahrerstamm_als_driver_ref() {
         val (p, v, s) = scene(); val ctx = w.driverCtx(p, scopes = setOf("driver:run", "driver:events", "driver:devices", "time-events:write")); val dev = w.device(p)
-        val result = w.staff.driverEvents.record(ctx, de.taktovia.stafftime.api.DriverEventCommand(UUID.randomUUID(), dev, s, v, 1, de.taktovia.stafftime.api.DriverEventType.ARRIVAL, null, null,
+        val result = w.staff.driverEvents.record(ctx, de.taktovia.stafftime.api.DriverEventCommand(UUID.randomUUID(), dev, s, v, 1, de.taktovia.stafftime.api.DriverEventType.BREAK_START, null, null,
             Instant.parse("2026-12-01T06:00:00Z"), Instant.parse("2026-12-01T06:00:00Z"), false))
         assertEquals(de.taktovia.stafftime.api.DriverEventOutcome.APPLIED, result.outcome)
         val other = w.person()
         assertEquals(ErrorCode.NOT_FOUND, ShiftWorld.problem { w.staff.driverEvents.record(w.driverCtx(other), de.taktovia.stafftime.api.DriverEventCommand(UUID.randomUUID(), w.device(other), s, v, 1,
-            de.taktovia.stafftime.api.DriverEventType.ARRIVAL, null, null, Instant.parse("2026-12-01T06:00:00Z"), Instant.parse("2026-12-01T06:00:00Z"), false)) }.code)
+            de.taktovia.stafftime.api.DriverEventType.BREAK_START, null, null, Instant.parse("2026-12-01T06:00:00Z"), Instant.parse("2026-12-01T06:00:00Z"), false)) }.code)
     }
 
     @Test

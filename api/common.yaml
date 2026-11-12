@@ -794,6 +794,7 @@ components:
       - ROSTER_DOUBLE_BOOKING
       - ROSTER_QUALIFICATION_MISSING
       - ROSTER_ABSENCE_OVERLAP
+      - NO_SHOW_GRACE_NOT_ELAPSED
     Money:
       type: object
       additionalProperties: false

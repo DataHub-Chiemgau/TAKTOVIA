@@ -36,7 +36,7 @@ paths:
         überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte Beförderungsbuchung. Das Ereignis ist
         an das registrierte Gerät der Sitzung gebunden (`device_id`); eine gesperrte oder beendete Sitzung ergibt 401/403, der Client behält das
         Ereignis dann in der Outbox. Die Serverempfangszeit (`received_at`) setzt der Server; die Gerätezeit ersetzt sie nie. `tenant_id` im Body
-        gibt kein Recht (fremder Wert: 404 mit Sicherheitsereignis, eigener Wert: 422 als unbekanntes Feld).'
+        gibt kein Recht (fremder Wert: 404 mit Sicherheitsereignis, eigener Wert: 422 als unbekanntes Feld). Wirkung (WP-M3-29): ARRIVAL startet die Wartefrist am Stopp; CHECK_IN setzt das Fahrtsegment auf BOARDED, CHECK_OUT auf ALIGHTED und die Buchung auf COMPLETED, NO_SHOW (Pflicht: `no_show_reason`) das Segment auf NO_SHOW und die Buchung auf CANCELED (Grund NO_SHOW, keine Gebühr). NO_SHOW vor Ablauf von `no_show_grace_min`, gerechnet ab der plausibilisierten Ankunftszeit, ist 422 `NO_SHOW_GRACE_NOT_ELAPSED` ohne Speicherung. 404: Schicht, Fahrzeug, Stopp oder Buchung gehören nicht zur eigenen Schicht. 409: Schicht nicht angetreten. REVIEW_REQUIRED (Klärfall, nie eine Statuswirkung): STALE_PLAN, OUTSIDE_STOP (falscher Stopp), CLOCK_SKEW (Uhrabweichung), INVALID_ORDER (z. B. Ausstieg ohne Einstieg), RELEASE_REQUIRED (Fahrzeug ohne Einsatzfreigabe; der Ausstieg ist davon ausgenommen), SHIFT_ENDED (Ereignis nach Schichtende), BOOKING_CANCELED (Widerspruch zu einem Storno).'
       requestBody:
         required: true
         content:
@@ -580,6 +580,7 @@ components:
             - INVALID_ORDER
             - RELEASE_REQUIRED
             - SHIFT_ENDED
+            - BOOKING_CANCELED
           - type: 'null'
         original_state:
           oneOf:

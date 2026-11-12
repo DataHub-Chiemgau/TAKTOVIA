@@ -15,11 +15,17 @@ data class StafftimeSettings(
     val positionFutureTolerance: Duration = Duration.ofSeconds(5),
     /** In Produktion wird nur erfasst, wenn für `LK_STANDORT` eine freigegebene Aufbewahrungsregel besteht (WP-M3-34 Kriterium 5, D-10, D-11). */
     val positionRequiresRetentionRule: Boolean = false,
+    /** Zulässige Uhrabweichung zwischen Gerät und Server für Fahrerereignisse (WP-M3-29, Planungsannahme: das Pflichtenheft legt sie nicht fest; kein Katalogparameter). */
+    val clockSkewTolerance: Duration = Duration.ofMinutes(2),
+    /** Wartefrist des Nicht-Erscheinens, wenn die Konfiguration keinen Wert nennt (Planungsannahme 10 Minuten, `no_show_grace_min` ist 1 bis 120). */
+    val noShowGraceDefault: Duration = Duration.ofMinutes(10),
 ) {
     init {
         require(!shiftStartTolerance.isNegative && shiftStartTolerance <= Duration.ofHours(12)) { "Antrittstoleranz außerhalb 0..12 h" }
         require(positionStaleAfter.seconds in 1..3600) { "Schwelle des Standortalters außerhalb 1..3600 s" }
         require(!positionFutureTolerance.isNegative && positionFutureTolerance <= Duration.ofMinutes(5)) { "Zukunftstoleranz außerhalb 0..5 min" }
+        require(!clockSkewTolerance.isNegative && clockSkewTolerance <= Duration.ofMinutes(30)) { "Uhrabweichung außerhalb 0..30 min" }
+        require(noShowGraceDefault.toMinutes() in 1..120) { "Wartefrist außerhalb 1..120 min" }
     }
 }
 

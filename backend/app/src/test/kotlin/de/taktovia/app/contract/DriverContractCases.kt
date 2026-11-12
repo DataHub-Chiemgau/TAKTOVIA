@@ -22,7 +22,7 @@ internal object DriverContractCases {
         }
         val token = env.token(driver); val passengerToken = env.token(passenger)
         fun register(deviceId: UUID = UUID.randomUUID(), t: String = token) = env.post("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", t, extra = idem())
-        fun event(device: UUID, shiftId: UUID = shift) = """{"event_id":"${UUID.randomUUID()}","device_id":"$device","shift_id":"$shiftId","vehicle_id":"$vehicle","plan_revision":1,"event_type":"ARRIVAL","occurred_at":"2026-11-12T08:00:00Z","device_recorded_at":"2026-11-12T08:00:00Z","offline_recorded":true}"""
+        fun event(device: UUID, shiftId: UUID = shift) = """{"event_id":"${UUID.randomUUID()}","device_id":"$device","shift_id":"$shiftId","vehicle_id":"$vehicle","plan_revision":1,"event_type":"BREAK_START","occurred_at":"2026-11-12T08:00:00Z","device_recorded_at":"2026-11-12T08:00:00Z","offline_recorded":true}"""
     }
 
     val cases: List<ContractCase> = listOf(

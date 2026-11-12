@@ -30,4 +30,12 @@ internal class JdbcJourneyShells : JourneyShells {
         j.update("UPDATE taktovia.journey SET state = ?, revision = revision + 1 WHERE id = ?", state, journeyId)
         j.update("UPDATE taktovia.journey_leg SET state = ? WHERE journey_id = ?", state, journeyId)
     }
+
+    override fun executionState(j: JdbcOperations, journeyId: UUID, forUpdate: Boolean): String? =
+        (if (forUpdate) j.query("SELECT execution_state FROM taktovia.journey_leg WHERE journey_id = ? FOR UPDATE", { rs, _ -> rs.getString(1) }, journeyId)
+        else j.query("SELECT execution_state FROM taktovia.journey_leg WHERE journey_id = ?", { rs, _ -> rs.getString(1) }, journeyId)).firstOrNull()
+
+    override fun setExecutionState(j: JdbcOperations, journeyId: UUID, to: String) {
+        j.update("UPDATE taktovia.journey_leg SET execution_state = ? WHERE journey_id = ?", to, journeyId)
+    }
 }

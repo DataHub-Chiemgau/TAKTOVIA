@@ -52,8 +52,8 @@ interface StafftimeApi {
     companion object {
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
-            workRules: WorkRuleSource = WorkRuleSource.DEFAULT,
-        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules)
+            workRules: WorkRuleSource = WorkRuleSource.DEFAULT, effects: DriverEventEffects = DriverEventEffects.NONE,
+        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules, effects)
     }
 }
 
@@ -81,18 +81,28 @@ interface DriverDevices {
 /** Art des Fahrerereignisses (Server-Enum von `recordDriverEvent`, OP-03). */
 enum class DriverEventType(val planRelative: Boolean, val needsBooking: Boolean) {
     CHECK_IN(true, true), CHECK_OUT(true, true), NO_SHOW(true, true), ARRIVAL(true, false), BREAK_START(false, false), BREAK_END(false, false), DISRUPTION(false, false), SHIFT_END(false, false);
+
+    /** Ereignisse am Stopp (Ankunft, Ein-/Ausstieg, Nicht-Erscheinen): mit Prüfkette und Wirkung auf Buchung und Fahrt (WP-M3-29); die übrigen sind Dienststatusereignisse. */
+    val stopRelated: Boolean get() = planRelative
+
     companion object { fun parse(code: String): DriverEventType? = entries.firstOrNull { it.name == code } }
 }
 
 enum class DriverEventOutcome { APPLIED, DUPLICATE, REVIEW_REQUIRED }
 
+/** Grund des Nicht-Erscheinens (Fahrerangabe, Pflicht bei `NO_SHOW`). */
+enum class NoShowReason { NOT_PRESENT, REFUSED_TO_BOARD, OTHER }
+
 /** Nutzlast des Ereignisses; `deviceRecordedAt` ist die Gerätezeit und wird nie als Serverzeit übernommen. */
 data class DriverEventCommand(
     val eventId: UUID, val deviceId: UUID?, val shiftId: UUID, val vehicleId: UUID, val planRevision: Long, val type: DriverEventType,
     val bookingId: UUID?, val routeStopId: UUID?, val occurredAt: Instant, val deviceRecordedAt: Instant, val offlineRecorded: Boolean,
+    /** Nur `NO_SHOW` (WP-M3-29): Grund (Pflicht) und die vom Gerät gemessene Wartezeit (nur Hinweis; die Wartefrist rechnet der Server aus der plausibilisierten Ankunftszeit). */
+    val noShowReason: NoShowReason? = null, val noShowWaitSeconds: Int? = null,
 ) {
     /** Inhalt, über den „gleiche event_id, anderer Inhalt“ erkannt wird (feste Feldreihenfolge). */
-    fun contentFingerprint(): String = listOf(eventId, deviceId, shiftId, vehicleId, planRevision, type, bookingId, routeStopId, occurredAt, deviceRecordedAt, offlineRecorded).joinToString("|")
+    fun contentFingerprint(): String =
+        listOf(eventId, deviceId, shiftId, vehicleId, planRevision, type, bookingId, routeStopId, occurredAt, deviceRecordedAt, offlineRecorded, noShowReason, noShowWaitSeconds).joinToString("|")
 }
 
 data class DriverEventResult(

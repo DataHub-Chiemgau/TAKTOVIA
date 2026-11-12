@@ -4256,6 +4256,15 @@
           "bemerkung": "Gerätezeit des Ereignisses (Tätigkeitsnachweis des Fahrers)"
         },
         {
+          "spalte": "effective_at",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Plausibilisierte Ereigniszeit (Wartefrist und Pünktlichkeitskennzahlen)"
+        },
+        {
           "spalte": "event_id",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
@@ -4274,6 +4283,33 @@
           "bemerkung": ""
         },
         {
+          "spalte": "no_show_grace_min",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "no_show_reason",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "no_show_wait_seconds",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "occurred_at",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -4281,6 +4317,15 @@
           "schutzklasse": "PERSONAL_HR",
           "loeschklasse": "LK_BETRIEB",
           "bemerkung": "Zeitpunkt der Tätigkeit"
+        },
+        {
+          "spalte": "offline_recorded",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         },
         {
           "spalte": "outcome",
