@@ -27,6 +27,7 @@ import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Belegpruefung } from './belege/Belegpruefung';
+import { Fahrzeugkosten } from './kosten/Fahrzeugkosten';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { EigeneZeit } from './zeit/EigeneZeit';
 import { Dienstplan } from './dienstplan/Dienstplan';
@@ -187,6 +188,14 @@ export function App() {
             element={
               <RequireRight right="finance">
                 <Belegpruefung />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/finanzen/fahrzeugkosten"
+            element={
+              <RequireRight right="finance">
+                <Fahrzeugkosten />
               </RequireRight>
             }
           />

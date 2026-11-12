@@ -159,7 +159,7 @@ class CrossTenantIsolationTest {
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
-            "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
+            "manual_cost_event_id" to UUID.randomUUID().toString(), "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
         ), subject = b.passenger.toString())
     }
 
@@ -285,6 +285,13 @@ class CrossTenantIsolationTest {
             "allocateCost" to Probe("POST", "/v1/cost-events/{cost_event_id}/allocations", """{"allocation_policy_revision":"fremd","reason":"Fremdversuch","lines":[{"cost_object_type":"COST_CENTER","cost_object_id":"${UUID.randomUUID()}","amount":{"amount_minor":10000,"currency":"EUR","exponent":2}}]}""", true, role = "finance"),
             "closeFiscalPeriod" to Probe("POST", "/v1/fiscal-periods/{period_id}/close", null, false, role = "finance"),
             "createCostEventReversal" to Probe("POST", "/v1/cost-events/{cost_event_id}/reversals", """{"reason":"Fremdversuch"}""", false, role = "finance"),
+            // Kostenklassifikation, Fahrzeugkosten, manuelles Kostenereignis (WP-M4-39, -40)
+            "reclassifyCostEvent" to Probe("POST", "/v1/cost-events/{cost_event_id}/reclassifications", """{"cost_behavior":"FIXED","attribution":"DIRECT","reason":"Fremdversuch"}""", false, role = "finance"),
+            "getVehicleTotalCost" to Probe("GET", "/v1/vehicles/{vehicle_id}/total-cost?valuation=ACTUAL&currency=EUR&month_from=2026-01&month_to=2026-03", role = "finance"),
+            "getManualCostEvent" to Probe("GET", "/v1/manual-cost-events/{manual_cost_event_id}", role = "finance"),
+            "reviewManualCostEvent" to Probe("POST", "/v1/manual-cost-events/{manual_cost_event_id}/review", """{"decision":"APPROVED","reason":"Fremdversuch"}""", true, role = "finance"),
+            "approveManualCostEvent" to Probe("POST", "/v1/manual-cost-events/{manual_cost_event_id}/approve", """{"reason":"Fremdversuch"}""", true, role = "finance"),
+            "rejectManualCostEvent" to Probe("POST", "/v1/manual-cost-events/{manual_cost_event_id}/reject", """{"reason":"Fremdversuch"}""", true, role = "finance"),
             // ERP-Export (WP-M4-37)
             "getLedgerExport" to Probe("GET", "/v1/ledger/exports/{export_id}", role = "finance"),
             "listLedgerExportLines" to Probe("GET", "/v1/ledger/exports/{export_id}/lines", role = "finance"),
@@ -318,7 +325,7 @@ class CrossTenantIsolationTest {
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listTimeTargetActual" to "/v1/time-events/target-actual?from=2026-12-01&to=2026-12-02", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "listDefects" to "/v1/defects", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
-        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "listExpenses" to "/v1/expenses", "listBookings" to "/v1/bookings",
+        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "getCostClassification" to "/v1/cost-events/classification?valuation=ACTUAL&currency=EUR&period_from=2026-01-01&period_to=2027-01-01", "listExpenses" to "/v1/expenses", "listBookings" to "/v1/bookings",
     )
     private val selfScoped = setOf(
         "getMe", "listOwnRosterShifts", "listOwnAbsences", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
@@ -370,7 +377,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "listFiscalPeriods", "listLedgerExports", "listExpenses" -> a.financeToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "getCostClassification", "listFiscalPeriods", "listLedgerExports", "listExpenses" -> a.financeToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

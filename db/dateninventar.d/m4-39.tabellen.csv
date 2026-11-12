@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+cost_category;Kostenartenkatalog (WP-M4-39);LK_STAMM;
+manual_cost_event;Manuelles Fahrzeugkostenereignis (WP-M4-40);LK_BELEG;
+manual_cost_event_step;Freigabeschritt manuelles Kostenereignis (WP-M4-40);LK_BELEG;an das Kostenereignis gebunden

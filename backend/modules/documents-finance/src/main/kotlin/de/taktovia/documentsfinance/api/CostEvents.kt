@@ -20,6 +20,8 @@ data class CostEventView(
     val id: UUID, val legalEntityId: UUID, val sourceSystem: String, val sourceRef: String, val eventType: String, val scenario: String, val category: String, val currency: String,
     val netMinor: Long, val taxMinor: Long, val grossMinor: Long, val recoverableTaxMinor: Long, val costBasisMinor: Long, val taxRuleRevision: String,
     val occurredAt: Instant, val bookedAt: Instant, val documentId: UUID?, val reversesId: UUID?,
+    /** Klassifikation (WP-M4-39): `FIXED`/`VARIABLE`/`MIXED` und `DIRECT`/`ALLOCATED`, beide `null` = nicht klassifiziert; `reclassifiedFromId` = Ursprung einer Neubuchung nach Umklassifikation. */
+    val costBehavior: String? = null, val attribution: String? = null, val reclassifiedFromId: UUID? = null,
 )
 
 data class JournalLineView(val account: String, val side: String, val amountMinor: Long)

@@ -41,6 +41,63 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Manuelles Fahrzeugkostenereignis anlegen (freigabepflichtig)
+      operationId: createManualCostEvent
+      security:
+      - oidc:
+        - costs:write
+      description: 'WP-M4-40 (FCO-002): legt ein manuelles Kostenereignis zu einem Fahrzeug an (z. B. Versicherung, Kfz-Steuer, Leasingrate ohne Beleg). Es ist **freigabepflichtig** und durchläuft denselben Automaten wie ein Beleg (Prüfung `…/review`, Budgetfreigabe `…/approve`, bei Überschreiten der Vier-Augen-Schwelle zweite Freigabe durch eine dritte Person, kein Selbstfreigeben); erst die endgültige Freigabe bucht das Kostenereignis. Der fachliche Ursprungsschlüssel `origin_key` macht Anlegen und Buchen einmalig: dasselbe Ereignis erneut (auch parallel) liefert den vorhandenen Vorgang mit 200, derselbe Schlüssel mit anderem Inhalt 409. Unbekannte Kostenart 422, Fahrzeug oder Rechtsträger eines anderen Mandanten 404, fehlende Kontierungsregel 409. Anschaffung wird in P1 weder abgeschrieben noch verteilt.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: costs.yaml#/components/schemas/ManualCostEventCreate
+      responses:
+        '201':
+          description: Neuer Vorgang.
+          content:
+            application/json:
+              schema:
+                $ref: costs.yaml#/components/schemas/ManualCostEvent
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '200':
+          description: Vorhandener Vorgang zum selben Ursprungsschlüssel.
+          content:
+            application/json:
+              schema:
+                $ref: costs.yaml#/components/schemas/ManualCostEvent
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/cost-events/{cost_event_id}/allocations:
     post:
       summary: Kostenbasis auf Kostenträger verteilen
@@ -1787,6 +1844,28 @@ components:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
+        cost_behavior:
+          oneOf:
+          - type: string
+            enum:
+            - FIXED
+            - VARIABLE
+            - MIXED
+          - type: 'null'
+          description: Kostenverhalten (WP-M4-39), beim Posting aus dem Kostenartenkatalog gesetzt und unveränderlich; `null` zusammen mit `attribution` = nicht klassifiziert.
+        attribution:
+          oneOf:
+          - type: string
+            enum:
+            - DIRECT
+            - ALLOCATED
+          - type: 'null'
+          description: Zurechnung (WP-M4-39) direkt oder umgelegt; unabhängig von `cost_behavior` (zwei Achsen, nie addiert).
+        reclassified_from_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Ursprung, wenn dieses Ereignis die Neubuchung nach einer Umklassifikation ist (WP-M4-39).
       required:
       - id
       - legal_entity_id

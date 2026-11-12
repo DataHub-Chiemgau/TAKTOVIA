@@ -1,0 +1,4 @@
+table;owner;quelle
+cost_category;documents-finance;WP-M4-39 (Kostenartenkatalog)
+manual_cost_event;documents-finance;WP-M4-40 (manuelles Fahrzeugkostenereignis)
+manual_cost_event_step;documents-finance;WP-M4-40 (Freigabeschritt)

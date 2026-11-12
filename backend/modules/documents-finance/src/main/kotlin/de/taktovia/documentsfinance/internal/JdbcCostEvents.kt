@@ -91,11 +91,13 @@ internal class JdbcCostEvents(
 
         val now = clock.instant()
         val eventId = UUID.randomUUID(); val journalId = UUID.randomUUID()
+        // Klassifikation beim Posting (WP-M4-39): Standardverhalten der Kostenart; ein auf mehrere Kostenobjekte aufgeteilter Beleg ist umgelegt; ohne Katalogeintrag: nicht klassifiziert
+        val cls = CostCatalog.classify(j, cmd.category, split = objects.size > 1)
         val inserted = j.update(
             "INSERT INTO taktovia.economic_event (tenant_id, id, legal_entity_id, source_system, source_ref, event_type, scenario, category, currency, net_minor, tax_minor, gross_minor, recoverable_tax_minor, " +
-                "tax_rule_revision, occurred_at, booked_at, document_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_COST', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+                "tax_rule_revision, occurred_at, booked_at, document_id, cost_behavior, attribution, cost_object_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_COST', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
             eventId, entity, documentId.toString(), cmd.category, amounts.currency, amounts.net, amounts.tax, amounts.gross, amounts.recoverable, TAX_RULE_REVISION,
-            Timestamp.from(date.atStartOfDay().toInstant(ZoneOffset.UTC)), Timestamp.from(now), documentId)
+            Timestamp.from(date.atStartOfDay().toInstant(ZoneOffset.UTC)), Timestamp.from(now), documentId, cls?.first, cls?.second, objects.singleOrNull()?.id)
         if (inserted == 0) return existing(j, documentId)   // paralleler Auslöser desselben Ursprungs hat gebucht
         j.update("INSERT INTO taktovia.journal (tenant_id, id, event_id, legal_entity_id, currency, period_id, accounting_date, state) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, 'DRAFT')",
             journalId, eventId, entity, amounts.currency, period.first, java.sql.Date.valueOf(date))
@@ -188,7 +190,7 @@ internal class JdbcCostEvents(
         val CATEGORY = Regex("[A-Z][A-Z0-9_]{0,39}")
 
         const val EVENT_COLUMNS = "e.id, e.legal_entity_id, e.source_system, e.source_ref, e.event_type, e.scenario, e.category, e.currency, e.net_minor, e.tax_minor, e.gross_minor, e.recoverable_tax_minor, " +
-            "e.cost_basis_minor, e.tax_rule_revision, e.occurred_at, e.booked_at, e.document_id, e.reverses_id"
+            "e.cost_basis_minor, e.tax_rule_revision, e.occurred_at, e.booked_at, e.document_id, e.reverses_id, e.cost_behavior, e.attribution, e.reclassified_from_id"
 
         /** Ist-Sicht: nur Ereignisse mit gebuchtem Journal, Szenario ACTUAL. */
         const val LIST_SQL = "SELECT $EVENT_COLUMNS FROM taktovia.economic_event e JOIN taktovia.journal jn ON jn.tenant_id = e.tenant_id AND jn.event_id = e.id AND jn.state = 'POSTED' " +
@@ -199,7 +201,7 @@ internal class JdbcCostEvents(
             CostEventView(rs.getObject("id", UUID::class.java), rs.getObject("legal_entity_id", UUID::class.java), rs.getString("source_system"), rs.getString("source_ref"), rs.getString("event_type"),
                 rs.getString("scenario"), rs.getString("category"), rs.getString("currency").trim(), rs.getLong("net_minor"), rs.getLong("tax_minor"), rs.getLong("gross_minor"), rs.getLong("recoverable_tax_minor"),
                 rs.getLong("cost_basis_minor"), rs.getString("tax_rule_revision"), rs.getTimestamp("occurred_at").toInstant(), rs.getTimestamp("booked_at").toInstant(),
-                rs.getObject("document_id", UUID::class.java), rs.getObject("reverses_id", UUID::class.java))
+                rs.getObject("document_id", UUID::class.java), rs.getObject("reverses_id", UUID::class.java), rs.getString("cost_behavior"), rs.getString("attribution"), rs.getObject("reclassified_from_id", UUID::class.java))
         }
     }
 }

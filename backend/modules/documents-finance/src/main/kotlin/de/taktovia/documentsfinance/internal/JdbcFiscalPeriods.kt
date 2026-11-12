@@ -139,15 +139,19 @@ internal class JdbcCostEventCorrections(private val ctxTx: ContextTransactions, 
     }
 
     private class Origin(val id: UUID, val entity: UUID, val currency: String, val category: String, val net: Long, val tax: Long, val gross: Long, val recoverable: Long, val taxRule: String,
-        val occurredAt: java.time.Instant, val serviceFrom: java.time.Instant?, val serviceTo: java.time.Instant?, val documentId: UUID?, val reverses: UUID?, val scenario: String, val journalId: UUID?, val journalState: String?)
+        val occurredAt: java.time.Instant, val serviceFrom: java.time.Instant?, val serviceTo: java.time.Instant?, val documentId: UUID?, val reverses: UUID?, val scenario: String, val journalId: UUID?, val journalState: String?,
+        val behavior: String?, val attribution: String?, val costObjectId: UUID?)
+
+    /** Gegenereignis in der laufenden Mandantentransaktion des Aufrufers (Umklassifikation, WP-M4-39). */
+    internal fun reverseIn(j: JdbcOperations, ctx: RequestContext, eventId: UUID, cmd: ReverseCostEvent, reason: String): ReversalResult = doReverse(j, ctx, eventId, cmd, reason)
 
     @AuditRequired
     private fun doReverse(j: JdbcOperations, ctx: RequestContext, eventId: UUID, cmd: ReverseCostEvent, reason: String): ReversalResult {
         j.queryForObject("SELECT pg_advisory_xact_lock(hashtextextended('economic_event_reversal:' || taktovia.current_tenant()::text || ':' || ?, 0))::text", String::class.java, eventId.toString())
-        val o = j.query("SELECT e.id, e.legal_entity_id, e.currency, e.category, e.net_minor, e.tax_minor, e.gross_minor, e.recoverable_tax_minor, e.tax_rule_revision, e.occurred_at, e.service_from, e.service_to, e.document_id, e.reverses_id, e.scenario, jn.id, jn.state " +
+        val o = j.query("SELECT e.id, e.legal_entity_id, e.currency, e.category, e.net_minor, e.tax_minor, e.gross_minor, e.recoverable_tax_minor, e.tax_rule_revision, e.occurred_at, e.service_from, e.service_to, e.document_id, e.reverses_id, e.scenario, jn.id, jn.state, e.cost_behavior, e.attribution, e.cost_object_id " +
             "FROM taktovia.economic_event e LEFT JOIN taktovia.journal jn ON jn.tenant_id = e.tenant_id AND jn.event_id = e.id WHERE e.id = ?",
             { rs, _ -> Origin(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3).trim(), rs.getString(4), rs.getLong(5), rs.getLong(6), rs.getLong(7), rs.getLong(8), rs.getString(9), rs.getTimestamp(10).toInstant(),
-                rs.getTimestamp(11)?.toInstant(), rs.getTimestamp(12)?.toInstant(), rs.getObject(13, UUID::class.java), rs.getObject(14, UUID::class.java), rs.getString(15), rs.getObject(16, UUID::class.java), rs.getString(17)) }, eventId).firstOrNull() ?: throw ProblemException.notFound()
+                rs.getTimestamp(11)?.toInstant(), rs.getTimestamp(12)?.toInstant(), rs.getObject(13, UUID::class.java), rs.getObject(14, UUID::class.java), rs.getString(15), rs.getObject(16, UUID::class.java), rs.getString(17), rs.getString(18), rs.getString(19), rs.getObject(20, UUID::class.java)) }, eventId).firstOrNull() ?: throw ProblemException.notFound()
         if (o.reverses != null) throw ProblemException(ErrorCode.CONFLICT, "Ein Gegenereignis wird nicht selbst aufgehoben.")
         if (o.scenario != "ACTUAL" || o.journalState != "POSTED" || o.journalId == null) throw ProblemException(ErrorCode.CONFLICT, "Korrigiert wird nur ein gebuchtes Ist-Kostenereignis.")
 
@@ -186,9 +190,9 @@ internal class JdbcCostEventCorrections(private val ctxTx: ContextTransactions, 
 
         val now = clock.instant(); val newId = UUID.randomUUID(); val journalId = UUID.randomUUID()
         val inserted = j.update("INSERT INTO taktovia.economic_event (tenant_id, id, legal_entity_id, source_system, source_ref, event_type, scenario, category, currency, net_minor, tax_minor, gross_minor, recoverable_tax_minor, tax_rule_revision, " +
-            "occurred_at, booked_at, service_from, service_to, document_id, reverses_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_REVERSAL', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            "occurred_at, booked_at, service_from, service_to, document_id, reverses_id, cost_behavior, attribution, cost_object_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_REVERSAL', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
             newId, o.entity, "$eventId:REV:$credit", o.category, o.currency, -net, -tax, -credit, -rec, o.taxRule, Timestamp.from(accountingDate.atStartOfDay().toInstant(ZoneOffset.UTC)), Timestamp.from(now),
-            Timestamp.from(o.serviceFrom ?: o.occurredAt), Timestamp.from(o.serviceTo ?: o.occurredAt), o.documentId, eventId)
+            Timestamp.from(o.serviceFrom ?: o.occurredAt), Timestamp.from(o.serviceTo ?: o.occurredAt), o.documentId, eventId, o.behavior, o.attribution, o.costObjectId)   // das Gegenereignis trägt Klassifikation und Kostenobjekt des Ursprungs (Summe je Klasse bleibt konsistent)
         if (inserted == 0) throw ProblemException(ErrorCode.ALREADY_REVERSED, "Zu diesem Kostenereignis besteht bereits ein Gegenereignis in dieser Höhe (einmalige Wirkung).")
 
         // Gegenbuchung: dieselben Konten wie der Ursprung, Seiten getauscht, nur positive Zeilen (Kern-DDL: amount_minor > 0)

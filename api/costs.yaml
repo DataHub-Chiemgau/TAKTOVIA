@@ -1,0 +1,922 @@
+paths:
+  /v1/cost-events/classification:
+    get:
+      summary: Kostenklassifikation als Kreuztabelle je Kostenobjekt und Periode
+      operationId: getCostClassification
+      security:
+      - oidc:
+        - costs:read
+      description: 'WP-M4-39 (FCO-001): Auswertung der Ist-Kosten nach den zwei Achsen fix/variabel/gemischt und direkt/zugerechnet je Kostenobjekt (Fahrzeug, Dienst, Kostenstelle, …) in einer Periode (`[period_from, period_to)`, Buchungsdatum, höchstens 400 Tage). `totals.total_minor` ist die Summe der wirksamen Ist-Kosten, **nicht** die Addition der Klassen; Original und Umlage derselben Kosten zählen einmal. Ereignisse ohne Klassifikation stehen separat als „nicht klassifiziert“ (`unclassified_minor`, Zellen mit `null`). Nur gebuchte (`POSTED`) Ereignisse zählen. **Bewertungsart, Periode und Währung sind Pflicht**; fehlt eine Angabe oder ist `valuation` nicht `ACTUAL`, folgt 422. Fremdes oder unbekanntes Fahrzeug bzw. fremder Rechtsträger 404. `as_of` nennt den Datenstand (eine konsistente Momentaufnahme).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - name: valuation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ACTUAL
+        description: 'Bewertungsart, **Pflicht** (Kap. 03 §1.1): in P1 nur `ACTUAL` (Plan/Forecast ist FCO-017, andere Werte 422); der Server bildet sie auf die DDL-Spalte `scenario` ab. Fehlt sie, folgt 422.'
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+        description: Währung (ISO 4217), **Pflicht**; fehlt sie, folgt 422. Es wird nie zwischen Währungen umgerechnet.
+      - name: period_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Beginn der Periode (inklusive), **Pflicht**.
+      - name: period_to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Ende der Periode (exklusiv), **Pflicht**.
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Auf einen Rechtsträger begrenzen.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Auf die Kostenobjekte eines Fahrzeugs begrenzen (Kostenaufstellung eines Fahrzeugs).
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostClassification'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/cost-events/{cost_event_id}/reclassifications:
+    post:
+      summary: Kostenereignis umklassifizieren (Gegenereignis plus Neubuchung)
+      operationId: reclassifyCostEvent
+      security:
+      - oidc:
+        - costs:reverse
+      description: 'WP-M4-39: ein gebuchtes Kostenereignis ist unveränderlich; seine Klassifikation ändert nur eine Umklassifikation als Gegenereignis des Ursprungs (volle Höhe, Klassifikation des Ursprungs) plus Neubuchung mit der neuen Klassifikation in derselben Transaktion und Periode (erste offene Periode ab `accounting_date`, Vorgabe heute UTC). Je Ursprung ist höchstens eine Neubuchung möglich: zwei parallele Umklassifikationen ergeben genau eine, die andere 409 `ALREADY_REVERSED`. Unveränderte Klassifikation, Gegenereignisse und nicht gebuchte Ereignisse als Ursprung: 409; fremdes Ereignis 404. Recht `costs:reverse` und Finanzrolle.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/cost_event_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostEventReclassificationRequest'
+      responses:
+        '201':
+          description: Gegenereignis und Neubuchung.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEventReclassification'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/vehicles/{vehicle_id}/total-cost:
+    get:
+      summary: Fahrzeugkosten je Monat und Kostenart (P1-Ausschnitt)
+      operationId: getVehicleTotalCost
+      security:
+      - oidc:
+        - costs:read
+      description: 'WP-M4-40 (FCO-002, OP 20): gebuchte Ist-Kosten eines Fahrzeugs je Monat und Kostenart ohne manuelle Tabellen. Anschaffung/Leasing erscheint mit der erfassten Position (keine Abschreibung, keine Verteilung). Monatszuordnung (`assignment_rule`): Beginn des Leistungszeitraums (`service_from`, UTC), sonst das Buchungsdatum; keine anteilige Verteilung auf Monate. Ein Zeitraum ohne Kosten liefert eine leere Auswertung (200). **Bewertungsart, Zeitraum und Währung sind Pflicht** (422 ohne), höchstens 60 Monate; fremdes oder unbekanntes Fahrzeug 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug des Mandanten.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - name: valuation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ACTUAL
+        description: 'Bewertungsart, **Pflicht** (Kap. 03 §1.1): in P1 nur `ACTUAL` (Plan/Forecast ist FCO-017, andere Werte 422); der Server bildet sie auf die DDL-Spalte `scenario` ab. Fehlt sie, folgt 422.'
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+        description: Währung (ISO 4217), **Pflicht**; fehlt sie, folgt 422. Es wird nie zwischen Währungen umgerechnet.
+      - name: month_from
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+        description: Erster Monat (inklusive, `JJJJ-MM`), **Pflicht**.
+      - name: month_to
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+        description: Letzter Monat (inklusive, `JJJJ-MM`), **Pflicht**.
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleTotalCost'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/manual-cost-events/{manual_cost_event_id}:
+    get:
+      summary: Manuelles Kostenereignis lesen
+      operationId: getManualCostEvent
+      security:
+      - oidc:
+        - costs:read
+      description: 'WP-M4-40: Vorgang mit Zustand (`IN_REVIEW`, `REVIEWED`, `WAITING_SECOND_APPROVAL`, `POSTED`, `REJECTED`), Revision (ETag) und allen Freigabeschritten. Fremder Mandant 404.'
+      parameters:
+      - name: manual_cost_event_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Manuelles Kostenereignis des Mandanten.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualCostEvent'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/manual-cost-events/{manual_cost_event_id}/review:
+    post:
+      summary: Manuelles Kostenereignis fachlich prüfen
+      operationId: reviewManualCostEvent
+      security:
+      - oidc:
+        - expenses:review
+      description: 'WP-M4-40: fachliche Prüfung (Scope `expenses:review`, Finanzrolle, Mensch); `REJECTED` beendet den Vorgang. Nur im Zustand `IN_REVIEW` (sonst 409), exakte Revision per `If-Match` (412).'
+      parameters:
+      - name: manual_cost_event_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Manuelles Kostenereignis des Mandanten.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: finance.yaml#/components/schemas/ExpenseReviewRequest
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualCostEvent'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/manual-cost-events/{manual_cost_event_id}/approve:
+    post:
+      summary: Manuelles Kostenereignis freigeben
+      operationId: approveManualCostEvent
+      security:
+      - oidc:
+        - expenses:approve
+      description: 'WP-M4-40: Budgetfreigabe bzw. zweite Freigabe (Scope `expenses:approve`, Finanzrolle, Mensch). Der Erfasser gibt nie selbst frei (403), die zweite Freigabe erteilt nie der Erstfreigeber (403). Ein Betrag größer als die Schwelle `approval_second_threshold_minor` wartet auf die zweite Person (`WAITING_SECOND_APPROVAL`), sonst bucht die Freigabe in derselben Transaktion Ereignis, Journal und Outbox (`POSTED`, `event_id`). Eine parallele zweite Freigabe sieht den neuen Zustand (409); es entsteht höchstens ein Kostenereignis je Ursprung.'
+      parameters:
+      - name: manual_cost_event_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Manuelles Kostenereignis des Mandanten.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualCostDecisionRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualCostEvent'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/manual-cost-events/{manual_cost_event_id}/reject:
+    post:
+      summary: Manuelles Kostenereignis ablehnen
+      operationId: rejectManualCostEvent
+      security:
+      - oidc:
+        - expenses:approve
+      description: 'WP-M4-40: Ablehnung in Budgetfreigabe oder zweiter Freigabe (Recht wie `approve`); endgültig, ohne Kostenereignis und ohne Journal.'
+      parameters:
+      - name: manual_cost_event_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Manuelles Kostenereignis des Mandanten.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualCostDecisionRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualCostEvent'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ManualCostEventCreate:
+      type: object
+      additionalProperties: false
+      description: Manuelles Fahrzeugkostenereignis (WP-M4-40). Beträge in kleinster Einheit; die Steuer ist Teil des Bruttobetrags (`tax` höchstens `gross`).
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        category:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{0,39}$
+          description: 'Kostenart aus dem Katalog `cost_category` (u. a. `ACQUISITION_LEASE`, `INSURANCE`, `VEHICLE_TAX`, `ENERGY`, `MAINTENANCE`, `REPAIR`); unbekannt: 422.'
+        gross:
+          $ref: common.yaml#/components/schemas/Money
+        tax:
+          $ref: common.yaml#/components/schemas/Money
+        tax_treatment:
+          type: string
+          enum:
+          - FULLY_DEDUCTIBLE
+          - NON_DEDUCTIBLE
+          description: 'Vorgabe `FULLY_DEDUCTIBLE` (Testregel D-06: Vorsteuer voll abziehbar).'
+        accounting_date:
+          type: string
+          format: date
+          description: Buchungsdatum; bestimmt die Fiskalperiode (muss offen sein).
+        service_from:
+          type: string
+          format: date
+          description: Beginn des Leistungszeitraums (bestimmt den Monat der Auswertung).
+        service_to:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        origin_key:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Fachlicher Ursprungsschlüssel, je Rechtsträger einmalig.
+      required:
+      - legal_entity_id
+      - vehicle_id
+      - category
+      - gross
+      - accounting_date
+      - origin_key
+      examples:
+      - legal_entity_id: 00000000-0000-4000-8000-0000000000a1
+        vehicle_id: 00000000-0000-4000-8000-0000000000b1
+        category: INSURANCE
+        gross:
+          amount_minor: 50000
+          currency: EUR
+          exponent: 2
+        accounting_date: '2026-09-15'
+        service_from: '2026-09-01'
+        service_to: '2026-09-30'
+        origin_key: kfz-versicherung-2026-09
+    ManualCostDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - reason
+    ManualCostEventStep:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        step:
+          type: string
+          enum:
+          - CAPTURE
+          - REVIEW
+          - BUDGET
+          - SECOND_APPROVAL
+        revision:
+          type: integer
+          format: int64
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+        decided_by:
+          type: string
+        reason:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - step
+      - revision
+      - decision
+      - decided_by
+      - reason
+      - decided_at
+    ManualCostEvent:
+      type: object
+      additionalProperties: false
+      description: Manuelles Kostenereignis mit Zustand und Freigabeschritten (WP-M4-40). `posting_id` nur in der Antwort der endgültigen Freigabe.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        category:
+          type: string
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        net_minor:
+          type: integer
+          format: int64
+        tax_minor:
+          type: integer
+          format: int64
+        gross_minor:
+          type: integer
+          format: int64
+        tax_treatment:
+          type: string
+          enum:
+          - FULLY_DEDUCTIBLE
+          - NON_DEDUCTIBLE
+        accounting_date:
+          type: string
+          format: date
+        service_from:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+        service_to:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+        description:
+          oneOf:
+          - type: string
+          - type: 'null'
+        origin_key:
+          type: string
+        state:
+          type: string
+          enum:
+          - IN_REVIEW
+          - REVIEWED
+          - WAITING_SECOND_APPROVAL
+          - POSTED
+          - REJECTED
+        revision:
+          type: integer
+          format: int64
+        created_by:
+          type: string
+        approved_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        event_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManualCostEventStep'
+        posting_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - vehicle_id
+      - cost_object_id
+      - category
+      - currency
+      - net_minor
+      - tax_minor
+      - gross_minor
+      - tax_treatment
+      - accounting_date
+      - service_from
+      - service_to
+      - description
+      - origin_key
+      - state
+      - revision
+      - created_by
+      - approved_by
+      - event_id
+      - created_at
+      - steps
+    CostClassTotals:
+      type: object
+      additionalProperties: false
+      description: 'Summen je Achse und insgesamt. `total_minor` = Summe der wirksamen Ist-Kosten: `fixed + variable + mixed + unclassified = total` und `direct + allocated + unclassified = total`; die Achsen werden nie addiert.'
+      properties:
+        fixed_minor:
+          type: integer
+          format: int64
+        variable_minor:
+          type: integer
+          format: int64
+        mixed_minor:
+          type: integer
+          format: int64
+        unclassified_minor:
+          type: integer
+          format: int64
+        direct_minor:
+          type: integer
+          format: int64
+        allocated_minor:
+          type: integer
+          format: int64
+        total_minor:
+          type: integer
+          format: int64
+      required:
+      - fixed_minor
+      - variable_minor
+      - mixed_minor
+      - unclassified_minor
+      - direct_minor
+      - allocated_minor
+      - total_minor
+    CostClassCell:
+      type: object
+      additionalProperties: false
+      description: Eine Zelle der Kreuztabelle; beide Achsen `null` = nicht klassifiziert.
+      properties:
+        cost_behavior:
+          oneOf:
+          - type: string
+            enum:
+            - FIXED
+            - VARIABLE
+            - MIXED
+          - type: 'null'
+        attribution:
+          oneOf:
+          - type: string
+            enum:
+            - DIRECT
+            - ALLOCATED
+          - type: 'null'
+        amount_minor:
+          type: integer
+          format: int64
+        event_count:
+          type: integer
+          format: int64
+      required:
+      - cost_behavior
+      - attribution
+      - amount_minor
+      - event_count
+    CostClassificationRow:
+      type: object
+      additionalProperties: false
+      description: Eine Zeile je Kostenobjekt; `cost_object_kind` `UNALLOCATED` (ohne `cost_object_id`) sammelt Kosten ohne eindeutiges Kostenobjekt.
+      properties:
+        cost_object_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        cost_object_kind:
+          type: string
+        business_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        totals:
+          $ref: '#/components/schemas/CostClassTotals'
+        cells:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostClassCell'
+      required:
+      - cost_object_id
+      - cost_object_kind
+      - business_ref
+      - vehicle_id
+      - totals
+      - cells
+    CostClassification:
+      type: object
+      additionalProperties: false
+      description: Kostenklassifikation (WP-M4-39) mit Bewertungsart, Periode, Währung und Datenstand.
+      properties:
+        valuation:
+          type: string
+          enum:
+          - ACTUAL
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+        period_basis:
+          type: string
+          enum:
+          - ACCOUNTING_DATE
+          description: Die Periode bezieht sich auf das Buchungsdatum des gebuchten Journals.
+        as_of:
+          type: string
+          format: date-time
+          description: Datenstand der Momentaufnahme.
+        event_count:
+          type: integer
+          format: int64
+        totals:
+          $ref: '#/components/schemas/CostClassTotals'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostClassificationRow'
+      required:
+      - valuation
+      - currency
+      - period_from
+      - period_to
+      - period_basis
+      - as_of
+      - event_count
+      - totals
+      - rows
+    CostEventReclassificationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        cost_behavior:
+          type: string
+          enum:
+          - FIXED
+          - VARIABLE
+          - MIXED
+        attribution:
+          type: string
+          enum:
+          - DIRECT
+          - ALLOCATED
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        accounting_date:
+          type: string
+          format: date
+          description: Buchungsdatum der Korrektur (Vorgabe heute, UTC).
+      required:
+      - cost_behavior
+      - attribution
+      - reason
+    CostEventReclassification:
+      type: object
+      additionalProperties: false
+      properties:
+        reversal:
+          $ref: finance.yaml#/components/schemas/CostEvent
+        rebooking:
+          $ref: finance.yaml#/components/schemas/CostEvent
+        reversal_journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        rebooking_journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        period_id:
+          $ref: common.yaml#/components/schemas/UUID
+        accounting_date:
+          type: string
+          format: date
+      required:
+      - reversal
+      - rebooking
+      - reversal_journal_id
+      - rebooking_journal_id
+      - period_id
+      - accounting_date
+    VehicleCostItem:
+      type: object
+      additionalProperties: false
+      properties:
+        month:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+        category:
+          type: string
+        cost_group:
+          oneOf:
+          - type: string
+            enum:
+            - ACQUISITION_LEASE
+            - INSURANCE
+            - VEHICLE_TAX
+            - ENERGY
+            - MAINTENANCE
+            - REPAIR
+          - type: 'null'
+        label:
+          oneOf:
+          - type: string
+          - type: 'null'
+        amount_minor:
+          type: integer
+          format: int64
+        event_count:
+          type: integer
+          format: int64
+        by_service_period_events:
+          type: integer
+          format: int64
+        by_accounting_date_events:
+          type: integer
+          format: int64
+      required:
+      - month
+      - category
+      - cost_group
+      - label
+      - amount_minor
+      - event_count
+      - by_service_period_events
+      - by_accounting_date_events
+    VehicleTotalCost:
+      type: object
+      additionalProperties: false
+      description: Fahrzeugkosten je Monat und Kostenart (WP-M4-40); `assignment_rule` nennt die Monatszuordnung.
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        valuation:
+          type: string
+          enum:
+          - ACTUAL
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        month_from:
+          type: string
+        month_to:
+          type: string
+        assignment_rule:
+          type: string
+        as_of:
+          type: string
+          format: date-time
+        total_minor:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleCostItem'
+        month_totals:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              month:
+                type: string
+              amount_minor:
+                type: integer
+                format: int64
+            required:
+            - month
+            - amount_minor
+        category_totals:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              category:
+                type: string
+              cost_group:
+                oneOf:
+                - type: string
+                - type: 'null'
+              amount_minor:
+                type: integer
+                format: int64
+            required:
+            - category
+            - cost_group
+            - amount_minor
+      required:
+      - vehicle_id
+      - valuation
+      - currency
+      - month_from
+      - month_to
+      - assignment_rule
+      - as_of
+      - total_minor
+      - items
+      - month_totals
+      - category_totals
