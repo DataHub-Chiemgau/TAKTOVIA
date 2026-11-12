@@ -96,6 +96,8 @@ object AuditActions {
     const val SHIFT_ENDED = "staff.shift.ended"
     /** Abruf der Unterstützungsmerkmale durch den zugeordneten Fahrer (WP-M3-32, DRV-008); Objekt `staff_shift:<id>`, Details mit Planrevision und Stopp-IDs, nie mit Merkmalswerten. */
     const val DRIVER_ASSISTANCE_VIEWED = "staff.driver.assistance_viewed"
+    /** Bestätigung einer Planrevision durch den Fahrer (WP-M3-27, DRV-004); Objekt `staff_shift:<id>`, Details mit Revision und Gerät, nie mit Fahrgast- oder Ortsdaten. */
+    const val DRIVER_PLAN_ACKNOWLEDGED = "staff.driver.plan_acknowledged"
     /** Schadenakte (WP-M3-43/-47/-48): gemeldet, Statuswechsel, Nachtrag, Historie gelesen; Objekt `defect:<id>`, Details nennen nie Beschreibungstexte. */
     const val DEFECT_REPORTED = "fleet.defect.reported"
     const val DEFECT_STATE_CHANGED = "fleet.defect.state_changed"
@@ -288,7 +290,7 @@ object AuditActions {
         SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_CONTAINMENT_EXECUTED, AUDIT_READ,
         PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
         SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED,
-        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED, DRIVER_ASSISTANCE_VIEWED)
+        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED, DRIVER_ASSISTANCE_VIEWED, DRIVER_PLAN_ACKNOWLEDGED)
 }
 
 /**

@@ -15,11 +15,17 @@ data class StafftimeSettings(
     val positionFutureTolerance: Duration = Duration.ofSeconds(5),
     /** In Produktion wird nur erfasst, wenn für `LK_STANDORT` eine freigegebene Aufbewahrungsregel besteht (WP-M3-34 Kriterium 5, D-10, D-11). */
     val positionRequiresRetentionRule: Boolean = false,
+    /** Ab dieser Zeitverschiebung eines unveränderten Stopps ist die Änderung bestätigungspflichtig, darunter wird sie angezeigt und automatisch übernommen (`plan_ack_time_shift_min`, Planungsdefault 5 min, WP-M3-27). */
+    val planAckTimeShift: Duration = Duration.ofMinutes(5),
+    /** Hinweis an die Leitstelle, wenn eine bestätigungspflichtige Revision so lange unbestätigt ist (`plan_ack_overdue_min`, Planungsdefault 5 min, WP-M3-27). */
+    val planAckOverdue: Duration = Duration.ofMinutes(5),
 ) {
     init {
         require(!shiftStartTolerance.isNegative && shiftStartTolerance <= Duration.ofHours(12)) { "Antrittstoleranz außerhalb 0..12 h" }
         require(positionStaleAfter.seconds in 1..3600) { "Schwelle des Standortalters außerhalb 1..3600 s" }
         require(!positionFutureTolerance.isNegative && positionFutureTolerance <= Duration.ofMinutes(5)) { "Zukunftstoleranz außerhalb 0..5 min" }
+        require(planAckTimeShift >= Duration.ofMinutes(1) && planAckTimeShift <= Duration.ofHours(1)) { "Zeitverschiebungsschwelle außerhalb 1..60 min" }
+        require(!planAckOverdue.isNegative && planAckOverdue <= Duration.ofHours(1)) { "Überfälligkeit der Bestätigung außerhalb 0..60 min" }
     }
 }
 
@@ -63,6 +69,8 @@ data class DriverRunStopView(
     val routeStopId: UUID, val sequence: Int, val kind: String, val plannedAt: Instant, val forecastAt: Instant?, val stopName: String, val longitude: Double, val latitude: Double,
     val passengerCount: Int, val bookingIds: List<UUID>, val change: String?, val supportHints: List<String>,
     val stopRevisionId: UUID? = null, val boardingCount: Int = 0, val alightingCount: Int = 0, val resourceNeed: DriverResourceNeed? = null, val assistance: DriverAssistance? = null,
+    /** Bei `change == "MOVED"`: die Planzeit der Vergleichsbasis (WP-M3-27). */
+    val previousPlannedAt: Instant? = null,
 )
 
 /** [runState] ist der Zustand des Umlaufs (`COMPLETED`/`CANCELED` schließen das Sichtbarkeitsfenster der Unterstützungsmerkmale); `null` = unbekannt (Quelle ohne Zustand). */
@@ -74,11 +82,24 @@ data class DriverRunProjection(val planRevision: Long, val stops: List<DriverRun
  */
 fun interface DriverRunSource {
     fun projection(ctx: RequestContext, shiftId: UUID, vehicleId: UUID): DriverRunProjection?
+
+    /**
+     * Plan einer bestimmten Revision (Vergleichsbasis der Änderungsanzeige und Überwachung unbestätigter Revisionen, WP-M3-27); `null` = unbekannt (dann gibt es keine Änderungsanzeige, nie eine erfundene).
+     * Ohne Personenkontext und ohne Merkmale der Unterstützung: nur für den serverseitigen Vergleich, nie für die Auslieferung an den Client.
+     */
+    fun revision(tenant: de.taktovia.platform.tenant.TenantId, shiftId: UUID, vehicleId: UUID, revision: Long): DriverRunProjection? = null
 }
 
 data class DriverRunView(
     val shiftId: UUID, val vehicleId: UUID, val shiftState: String, val shiftValid: Boolean, val releaseState: RunReleaseState, val missingRequirements: List<String>,
     val planRevision: Long?, val planAsOf: Instant, val stops: List<DriverRunStopView>, val acknowledgedRevision: Long?,
+    /** Status der Revision aus Sicht des Fahrers (WP-M3-27): abgeleitet aus Plan und bestätigter Revision. */
+    val revisionState: PlanRevisionState = PlanRevisionState.CURRENT,
+    /** Wahr, wenn die Änderung bestätigungspflichtig und noch nicht bestätigt ist; die App verlangt die Bestätigung beim nächsten Halt, nie während der Fahrbewegung. */
+    val acknowledgementRequired: Boolean = false,
+    /** Revision der Vergleichsbasis (zuletzt bestätigt, sonst die erste Planrevision), gegen die [stops] und [removedStops] verglichen wurden. */
+    val baseRevision: Long? = null,
+    val removedStops: List<DriverRemovedStop> = emptyList(),
 )
 
 /**
@@ -103,4 +124,10 @@ interface DriverShifts {
     fun end(ctx: RequestContext, cmd: EndShiftCommand): DriverShiftView
 
     fun run(ctx: RequestContext, shiftId: UUID): DriverRunView
+
+    /**
+     * Kennungen der eigenen, noch nicht beendeten Schichten (geplant, veröffentlicht, angetreten; Ende in der Zukunft): die Berechtigungsgrundlage des Live-Kanals des Fahrers
+     * (WP-M3-35). Wird bei jedem Abruf des Kanals neu bestimmt; eine neu zugewiesene oder entzogene Schicht wirkt damit sofort.
+     */
+    fun liveShiftIds(ctx: RequestContext): Set<UUID>
 }

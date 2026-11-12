@@ -735,6 +735,12 @@ components:
             - MOVED
             - TIME_CHANGED
           - type: 'null'
+        previous_planned_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Bei `change` = MOVED die Planzeit der Vergleichsbasis.
         support_hints:
           type: array
           maxItems: 10
@@ -866,6 +872,31 @@ components:
             minimum: 1
             maximum: 9007199254740991
           - type: 'null'
+        revision_state:
+          type: string
+          enum:
+          - CURRENT
+          - NEW_UNCONFIRMED
+          - AUTO_ADOPTED
+          - CONFIRMED
+          description: 'Revisionsstatus der Fahrersicht (WP-M3-27, Zustandsautomat plan_revision_fahrer): CURRENT keine Änderung, NEW_UNCONFIRMED bestätigungspflichtige Änderung, AUTO_ADOPTED kleine Zeitverschiebung nach Regel automatisch übernommen, CONFIRMED die aktuelle Revision ist bestätigt. „Vergangen“ erkennt nur der Client (zwischengespeicherte Revision kleiner als `plan_revision`).'
+        acknowledgement_required:
+          type: boolean
+          description: Wahr, wenn die Änderung bestätigt werden muss und noch nicht bestätigt ist. Die App fragt die Bestätigung nie während der Fahrbewegung ab, sondern beim nächsten Halt (Kap. 06 §6.7).
+        base_revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Vergleichsbasis der Änderungsanzeige (zuletzt bestätigte Revision, sonst die erste Planrevision).
+        removed_stops:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/DriverRemovedStop'
+          description: Gegenüber der Vergleichsbasis entfallene Stopps (nur Haltepunktname, Art, frühere Planzeit, Buchungsreferenzen).
       required:
       - shift_id
       - vehicle_id
@@ -877,12 +908,43 @@ components:
       - plan_as_of
       - stops
       - acknowledged_revision
+      - revision_state
+      - acknowledgement_required
+      - base_revision
+      - removed_stops
       description: Dienst und Stoppliste des Fahrers. Vor der serverseitigen Einsatzfreigabe sind `stops` leer und nur Dienst, Fahrzeug und `missing_requirements`
         gefüllt (CHK-001).
+    DriverRemovedStop:
+      type: object
+      additionalProperties: false
+      properties:
+        stop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          type: string
+          maxLength: 32
+        planned_at:
+          type: string
+          format: date-time
+        booking_ids:
+          type: array
+          maxItems: 20
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+      required:
+      - stop_name
+      - kind
+      - planned_at
+      - booking_ids
+      description: Ein gegenüber der Vergleichsbasis entfallener Stopp (WP-M3-27); keine Personendaten.
     DriverRunAck:
       type: object
       additionalProperties: false
       properties:
+        device_id:
+          $ref: common.yaml#/components/schemas/UUID
         plan_revision:
           type: integer
           format: int64

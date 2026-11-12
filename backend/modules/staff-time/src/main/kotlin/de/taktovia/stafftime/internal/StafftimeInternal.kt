@@ -19,13 +19,14 @@ import java.time.Clock
 
 /** Nur innerhalb des Moduls `staff-time` sichtbar (durch Architekturtest erzwungen). */
 internal object StafftimeServicesFactory {
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource): StafftimeApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource, planAckSink: de.taktovia.stafftime.api.PlanAckOverdueSink): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
         val events = JdbcDriverEvents(ctxTx, outbox, clock)
         val drivers = JdbcDrivers(ctxTx, audit)
         val shiftsImpl = JdbcShifts(ctxTx, audit)
         val driverShiftsImpl = JdbcDriverShifts(ctxTx, audit, clock, settings, runSource)
         val positionsImpl = JdbcPositions(ctxTx, clock, settings)
+        val planAcksImpl = JdbcDriverPlanAcks(ctxTx, audit, outbox, clock, settings, runSource, planAckSink, driverShiftsImpl)
         val absence = JdbcAbsences(ctxTx, audit)
         val conflictChecker = RosterConflictChecker(drivers, absence)
         val timeEv = JdbcTimeEvents(ctxTx, audit, outbox, clock)
@@ -36,6 +37,7 @@ internal object StafftimeServicesFactory {
             override val shifts: Shifts = shiftsImpl
             override val driverShifts: DriverShifts = driverShiftsImpl
             override val positions: Positions = positionsImpl
+            override val planAcks: de.taktovia.stafftime.api.DriverPlanAcks = planAcksImpl
             override val absences: Absences = absence
             override val timeEvents: TimeEvents = timeEv
             override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit, conflictChecker)

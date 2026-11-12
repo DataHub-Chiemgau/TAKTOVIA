@@ -104,6 +104,11 @@ class DriverRunProjectionTest {
     fun bedingter_abruf_etag_304() {
         val d = w.driver(); val a = w.booking(); val rev = w.plan(d.run, listOf(a))
         val first = d.get(); val etag = first.header("ETag")!!; assertEquals("\"$rev\"", etag)
+        // WP-M3-27: solange eine bestätigungspflichtige Änderung offen ist, antwortet der bedingte Abruf nie 304; nach der Bestätigung gilt er wie zuvor
+        assertEquals(200, d.get(etag).status)
+        val ack = env.server.send("POST", "/v1/driver/shifts/${d.shift}/run/acknowledgements", """{"plan_revision":$rev,"acknowledged_at":"2026-11-05T09:00:00Z"}""",
+            env.headers(d.token, extra = mapOf("Idempotency-Key" to "ack-" + java.util.UUID.randomUUID(), "If-Match" to etag)))
+        assertEquals(200, ack.status, ack.text)
         val same = d.get(etag); assertEquals(304, same.status); assertEquals(etag, same.header("ETag")); assertTrue(same.text.isNullOrEmpty())
         // neue Planrevision: anderer ETag, 200 mit neuem Inhalt
         val rev2 = w.plan(d.run, listOf(a), base = w.t0.plusSeconds(600))
@@ -116,10 +121,11 @@ class DriverRunProjectionTest {
     fun projektion_ohne_kontakt_und_zahlungsdaten() {
         val d = w.driver(); val a = w.booking(assistanceCodes = listOf("BOARDING_HELP"), wheelchair = true); w.plan(d.run, listOf(a))
         val r = d.get(); val s = stops(r.json)
-        val allowedStop = setOf("route_stop_id", "sequence", "kind", "planned_at", "forecast_at", "stop_name", "position", "passenger_count", "booking_ids", "change", "support_hints", "stop_revision_id",
+        val allowedStop = setOf("route_stop_id", "sequence", "kind", "planned_at", "forecast_at", "stop_name", "position", "passenger_count", "booking_ids", "change", "previous_planned_at", "support_hints", "stop_revision_id",
             "boarding_count", "alighting_count", "resource_need", "assistance")
         s.forEach { st -> assertTrue(st.propertyNames().all { it in allowedStop }, "unerwartetes Feld: ${st.propertyNames()}") }
-        assertEquals(setOf("shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision"), r.json.propertyNames().toSet())
+        assertEquals(setOf("shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision",
+            "revision_state", "acknowledgement_required", "base_revision", "removed_stops"), r.json.propertyNames().toSet())
         val text = r.text
         for (forbidden in listOf("contact", "email", "phone", "payment", "gross", "amount", "iban", "diagnos", "passenger_id", "booking_no")) assertFalse(text.contains(forbidden, ignoreCase = true), "Feld/Wert '$forbidden' in der Fahrerprojektion")
     }

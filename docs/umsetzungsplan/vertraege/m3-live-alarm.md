@@ -31,4 +31,20 @@ Siehe `zustaende/plan_revision_fahrer.md`. API: `acknowledgeDriverRunRevision` (
 
 ## 3. Alarm-Grundlage (WP-M3-52)
 
-Siehe Abschnitt 3 im Anschluss (wird mit dem Paket ergänzt).
+**Tabellen** (`V3020`, erweitert in `V3520`): `alert_policy_revision` (Regeln je Revision, unveränderlich), `business_alert`, `alert_acknowledgement` (Quittierung unveränderlich, höchstens eine je Alarm). Neue Spalten an `business_alert`: `service_id`, `source_event_id`, `recipient_role`, `escalation_level`, `escalate_at`, `escalated_at`, `resolved_at`, `reason_code`, `ref_type`, `ref_id`; Zustand `RESOLVED` zusätzlich (technische Alarme, WP-M5-04); `alert_acknowledgement.cause_code`. Zustandsautomat `zustaende/alarm.md`, in der Datenbank zusätzlich als Trigger `business_alert_guard` (Inhalt unveränderlich, Stufe sinkt nie, Revision +1).
+
+**Alarmtypen P1:** `VEHICLE_BLOCK_CRITICAL` (kritisch, entsteht eskaliert), `TECHNICAL_EVENT` (hoch), `OVERDUE` (hoch, Überfälligkeit WP-M3-42), `VEHICLE_OUTAGE` (hoch, Fahrzeugausfall WP-M3-53; Schwelle `vehicle_unavailability_alert_min`), `PLAN_ACK_OVERDUE` (normal, ausbleibende Planbestätigung WP-M3-27). Technische Betriebsalarme tragen das Präfix `TECH_` (Standard hoch, WP-M5-04). Die Standardregeln sind Revision 1 jedes Mandanten (angelegt beim ersten Alarm); eine neue Revision (`Alerts.publishPolicy`, Disposition und Betriebsleitung) wirkt auf neue Ereignisse, jeder Alarm nennt `policy_revision_no`. Die Auslöser selbst (Sperre, Technikereignis, Überfälligkeit, Ausfall) gehören den Paketen WP-M3-46, -42, -53 und rufen den Port `platform.alert.BusinessAlertPort` in ihrer Transaktion; dieses Paket baut die Grundlage, nicht die Auslöser.
+
+**Dedupe:** ereignisbasiert über `(alert_kind, source_event_id, recipient_role)` in jedem Zustand (partieller Unique-Index `business_alert_source_dedupe`; `INSERT … ON CONFLICT DO NOTHING`, hundert parallele Zustellungen ergeben einen Alarm und ein Ereignis `alert.raised`); bedingungsbasiert über `dedupe_key`, höchstens ein offener Alarm je Schlüssel (`business_alert_dedupe_open`), nach `resolve` entsteht bei erneutem Auftreten ein neuer.
+
+**Eskalation:** `alert_escalation_delay_min` (Planungsdefault 10 min, im Parameterkatalog nicht beziffert; `taktovia.alerts.escalation-delay-minutes`); kritische Alarme umgehen sie (Stufe 1 ab Anlage). Der Betriebsauftrag `Alerts.escalateDue(tenant)` ist ein einziges bedingtes UPDATE hinter einer Advisory-Sperre je Mandant (Lease des Laufs): ein Alarm eskaliert je Stufe genau einmal, auch bei parallelen Läufen. P1 kennt eine Stufe (`taktovia.alerts.max-escalation-level`). `AlertWorker` läuft nur mit `taktovia.alerts.worker-enabled=true` und einer `TenantSource`-Bean des Betriebs (wie Outbox-Relay und Operation-Runner, OP-06/OP-08); eine Mandantenliste liefert die Anwendung nicht (RLS).
+
+**API** (`api/alerts.yaml`): `listOperatorAlerts` und `getOperatorAlert` (`operator:read`), `acknowledgeOperatorAlert` (`operator:write`, `Idempotency-Key`, `If-Match` = Alarmrevision: bei zwei gleichzeitigen Quittierungen wirkt genau eine, die andere erhält 412). Sichtbar sind Alarme der berechtigten Dienste (Alarme ohne Dienstbezug mandantenweit), fremder Dienst und Mandant sind 404. Ereignisse: `alert.raised`, `alert.acknowledged`, `alert.escalated`, `alert.resolved` (Live-Kanal, Familie `alert`).
+
+**Keine Personendaten:** `BusinessAlertRequest` nimmt nur Codes (`kind`, `reasonCode`), Kennungen und Typnamen an (Freitext wird bei der Auslösung abgewiesen); die Quittierung trägt einen kurzen Vermerk (`note`, höchstens 500 Zeichen) und eine Ursache aus festem Katalog.
+
+**UI-07:** `web/operator/src/alarm/Arbeitsliste.tsx` (Route `/leitstelle/stoerungen`, Recht `alerts`), Live-Neuabruf bei `alert.*`, Leerzustand, Ladefehler, Datenstand, Quittierung mit Ursache.
+
+## 4. Alerting kritischer Fehlerszenarien (WP-M5-04)
+
+Siehe `infra/alerting/README.md` und `infra/alerting/katalog.yaml`: Szenariokatalog mit Schwelle, Schweregrad, Empfänger, Eskalationsstufe, Runbook-Verweis, Dedupe- und Stummschaltregel; Alarmregeln als Code unter `infra/alerting/`; Übergabe betrieblich relevanter technischer Alarme an die Fachalarmierung über `BusinessAlertPort` (`TECH_*`).

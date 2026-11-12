@@ -33,6 +33,13 @@ internal class JdbcDriverRunPlans(private val ctxTx: ContextTransactions) : Driv
         }
     }
 
+    override fun planAt(tenant: de.taktovia.platform.tenant.TenantId, shiftId: UUID, vehicleId: UUID, revision: Long): DriverPlanView? = ctxTx.runSystem(tenant, readOnly = true) { j ->
+        val run = j.query("SELECT id, revision, state FROM taktovia.vehicle_run WHERE shift_id = ? AND vehicle_id = ?",
+            { rs, _ -> Triple(rs.getObject(1, UUID::class.java), rs.getLong(2), RunState.valueOf(rs.getString(3))) }, shiftId, vehicleId).firstOrNull() ?: return@runSystem null
+        if (revision < 1 || revision > run.second) return@runSystem null
+        DriverPlanView(run.first, shiftId, vehicleId, revision, run.third, stops(j, run.first, revision))
+    }
+
     private class Raw(
         val id: UUID, val seq: Int, val stopRevisionId: UUID, val plannedAt: java.time.Instant, val boardings: List<Move>, val alightings: List<Move>, val legDurationSec: Int?,
         val name: String, val lon: Double, val lat: Double,

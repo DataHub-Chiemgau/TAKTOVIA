@@ -17,6 +17,10 @@ internal object W12C5ContractCases {
 
     private fun get(path: String, token: String) = ContractRequest("GET", path, null, env.headers(token))
 
+    private fun ack(shift: UUID?, token: String, world: de.taktovia.app.driver.DriverRunHttpWorld.Driver, revision: Long) =
+        ContractRequest("POST", "/v1/driver/shifts/${shift ?: world.shift}/run/acknowledgements", """{"plan_revision":$revision,"acknowledged_at":"2026-11-05T09:00:00Z"}""",
+            env.headers(token, extra = mapOf("Idempotency-Key" to "ack-" + UUID.randomUUID(), "If-Match" to "\"$revision\"")))
+
     val cases: List<ContractCase> = listOf(
         ContractCase("streamOperatorLiveEvents",
             200, { val w = World(); get("/v1/operator/live/events?wait_seconds=0", w.dispatcher) },
@@ -27,5 +31,8 @@ internal object W12C5ContractCases {
         ContractCase("streamDriverLiveEvents",
             200, { val w = World(); get("/v1/driver/live/events?wait_seconds=0", w.driver) },
             403, { val w = World(); get("/v1/driver/live/events?wait_seconds=0", w.passenger) }, server = { env.server }),
+        ContractCase("acknowledgeDriverRunRevision",
+            200, { val w = de.taktovia.app.driver.DriverRunHttpWorld(); val d = w.driver(); val rev = w.plan(d.run, listOf(w.booking())); ack(null, d.token, d, rev) },
+            404, { val w = de.taktovia.app.driver.DriverRunHttpWorld(); val d = w.driver(); val rev = w.plan(d.run, listOf(w.booking())); ack(UUID.randomUUID(), d.token, d, rev) }, server = { env.server }),
     )
 }

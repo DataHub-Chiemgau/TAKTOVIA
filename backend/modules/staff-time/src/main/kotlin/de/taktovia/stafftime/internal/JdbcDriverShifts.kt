@@ -13,7 +13,11 @@ import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.problem.ProblemException
 import de.taktovia.platform.problem.Violation
 import de.taktovia.platform.problem.ViolationCode
+import de.taktovia.stafftime.api.DriverRemovedStop
 import de.taktovia.stafftime.api.DriverRunProjection
+import de.taktovia.stafftime.api.DriverRunStopView
+import de.taktovia.stafftime.api.PlanRevisionRules
+import de.taktovia.stafftime.api.PlanRevisionState
 import de.taktovia.stafftime.api.DriverRunSource
 import de.taktovia.stafftime.api.DriverRunView
 import de.taktovia.stafftime.api.DriverShiftView
@@ -48,6 +52,15 @@ internal class JdbcDriverShifts(
         }
     }
 
+    override fun liveShiftIds(ctx: RequestContext): Set<UUID> {
+        guard(ctx)
+        val now = clock.instant()
+        return ctxTx.run(ctx, readOnly = true) { j ->
+            j.query("SELECT s.id FROM taktovia.staff_shift s WHERE $OWN_SHIFT AND s.state IN ('PLANNED', 'PUBLISHED', 'STARTED') AND s.ends_at > ?", { rs, _ -> rs.getObject(1, UUID::class.java) },
+                *ShiftOwnership.args(ctx.actor.issuer, ctx.actor.subject), Timestamp.from(now)).toSet()
+        }
+    }
+
     override fun start(ctx: RequestContext, cmd: StartShiftCommand): ShiftStartResult {
         guard(ctx)
         return ctxTx.run(ctx) { j -> doStart(j, ctx, cmd) }
@@ -78,7 +91,34 @@ internal class JdbcDriverShifts(
         val stops = raw?.stops.orEmpty().map { if (windowOpen || it.assistance == null) it else it.copy(assistance = null) }
         if (windowOpen) recordAssistanceAccess(ctx, s.id, raw!!.planRevision, stops.filter { it.assistance != null }.map { it.routeStopId })
         val missing = if (!valid) emptyList() else gate.missing
-        return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, stops, null)
+        val (acked, atStart) = ctxTx.run(ctx, readOnly = true) { j ->
+            val a = j.query("SELECT max(plan_revision) FROM taktovia.driver_plan_ack WHERE shift_id = ?", { rs, _ -> rs.getObject(1) as Long? }, s.id).firstOrNull()
+            // Vergleichsbasis ohne Bestätigung: der Plan, den der Fahrer beim Dienstantritt vorfand (letzte Revision bis zum Antritt, sonst die erste); was danach geändert wird, ist zu bestätigen
+            val start = s.startedAt?.let { at -> j.query("SELECT max(pc.run_revision) FROM taktovia.plan_change pc JOIN taktovia.vehicle_run r ON r.tenant_id = pc.tenant_id AND r.id = pc.run_id WHERE r.shift_id = ? AND pc.recorded_at <= ?",
+                { rs, _ -> rs.getObject(1) as Long? }, s.id, Timestamp.from(at)).firstOrNull() }
+            a to (start ?: 1L)
+        }
+        val shown = if (raw == null) null else revisionView(ctx, s.id, s.vehicleId, raw.planRevision, acked, atStart, stops)
+        val effectiveStops = shown?.stops ?: stops
+        return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, effectiveStops, acked,
+            shown?.state ?: PlanRevisionState.CURRENT, shown?.required ?: false, shown?.base, shown?.removed ?: emptyList())
+    }
+
+    private class Shown(val stops: List<DriverRunStopView>, val state: PlanRevisionState, val required: Boolean, val base: Long?, val removed: List<DriverRemovedStop>)
+
+    /**
+     * Änderungsanzeige gegenüber der Vergleichsbasis (WP-M3-27): zuletzt bestätigte Revision, ohne Bestätigung der Plan beim Dienstantritt. Ist die Basis nicht lesbar, wird **nie** still übernommen:
+     * die Revision gilt dann als bestätigungspflichtig, aber ohne Einzelkennzeichnung.
+     */
+    private fun revisionView(ctx: RequestContext, shiftId: UUID, vehicleId: UUID, current: Long, acked: Long?, atStart: Long, stops: List<DriverRunStopView>): Shown {
+        if (acked != null && acked >= current) return Shown(stops, PlanRevisionState.CONFIRMED, false, acked, emptyList())
+        val base = acked ?: atStart
+        if (current <= base) return Shown(stops, PlanRevisionState.CURRENT, false, base, emptyList())
+        val before = source?.revision(ctx.tenant, shiftId, vehicleId, base) ?: return Shown(stops, PlanRevisionState.NEW_UNCONFIRMED, true, base, emptyList())
+        val diff = PlanRevisionRules.diff(before.stops, stops, settings.planAckTimeShift)
+        val marked = stops.map { st -> diff.changes[st.routeStopId]?.let { st.copy(change = it.kind, previousPlannedAt = it.previousPlannedAt) } ?: st }
+        val state = when { diff.acknowledgementRequired -> PlanRevisionState.NEW_UNCONFIRMED; diff.isEmpty -> PlanRevisionState.CURRENT; else -> PlanRevisionState.AUTO_ADOPTED }
+        return Shown(marked, state, diff.acknowledgementRequired, base, diff.removed)
     }
 
     /** Abrufprotokoll der Unterstützungsmerkmale (DRV-008): je Abruf, der Merkmale ausliefert, genau ein `audit_event` mit Schicht, Planrevision, Zweck und Stopps, ohne Merkmalswerte. */

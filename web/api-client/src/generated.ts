@@ -1019,6 +1019,7 @@ export interface DriverRunStop {
   passenger_count: number;
   booking_ids: UUID[];
   change: 'NEW' | 'REMOVED' | 'MOVED' | 'TIME_CHANGED' | null;
+  previous_planned_at?: string | null;
   support_hints: string[];
   stop_revision_id: UUID | null;
   boarding_count: number;
@@ -1046,9 +1047,21 @@ export interface DriverRun {
   plan_as_of: string;
   stops: DriverRunStop[];
   acknowledged_revision: number | null;
+  revision_state: 'CURRENT' | 'NEW_UNCONFIRMED' | 'AUTO_ADOPTED' | 'CONFIRMED';
+  acknowledgement_required: boolean;
+  base_revision: number | null;
+  removed_stops: DriverRemovedStop[];
+}
+
+export interface DriverRemovedStop {
+  stop_name: string;
+  kind: string;
+  planned_at: string;
+  booking_ids: UUID[];
 }
 
 export interface DriverRunAck {
+  device_id?: UUID;
   plan_revision: number;
   acknowledged_at: string;
 }
