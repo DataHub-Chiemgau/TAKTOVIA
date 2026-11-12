@@ -1,0 +1,3 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+time_event;origin;nein;PERSONALEINSATZ;;;;ONLINE oder OFFLINE (lokale Queue der Fahrer-App)
+time_event;conflict_flag;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;möglicher Konflikt (Gerätezeit unplausibel, widersprüchliche Reihenfolge)

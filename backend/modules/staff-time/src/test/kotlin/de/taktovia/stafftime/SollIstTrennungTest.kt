@@ -126,7 +126,7 @@ class SollIstTrennungTest {
         val p = w.person(); val v = w.vehicle(); val ctx = me(p)
         val shift = w.staff.shifts.create(w.dispatcher(), input(p, v, "2026-12-01T06:00:00Z", "2026-12-01T14:00:00Z"))
         val kinds = listOf(TimeEventKind.WORK_START, TimeEventKind.BREAK_START, TimeEventKind.BREAK_END, TimeEventKind.WORK_END)
-        val stamps = (0 until 40).map { rec(kinds[it % 4], "2026-12-01T06:00:00Z", shift.id).copy(occurredAt = t("2026-12-01T06:00:00Z").plusSeconds(60L * it)) }
+        val stamps = (0 until 40).map { rec(kinds[it % 4], "2026-12-01T06:00:00Z", shift.id).copy(occurredAt = t("2026-12-01T06:00:00Z").plusSeconds(60L * it), origin = de.taktovia.stafftime.api.TimeEventOrigin.OFFLINE) }   // Ankunft in beliebiger Reihenfolge wie bei einem Sync-Lauf (WP-M4-12)
         val pool = Executors.newFixedThreadPool(8); val go = CountDownLatch(1)
         val stampJobs = stamps.map { c -> pool.submit<Any> { go.await(); try { w.staff.timeEvents.record(ctx, c) } catch (e: Throwable) { e } } }
         // Neuveröffentlichung der Schicht: Revision wiederholt erhöhen (Änderung des Soll), parallel zu den Stempeln

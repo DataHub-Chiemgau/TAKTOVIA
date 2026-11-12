@@ -13,6 +13,7 @@ import de.taktovia.stafftime.api.DerivedTime
 import de.taktovia.stafftime.api.RecordTimeEvent
 import de.taktovia.stafftime.api.StafftimeApi
 import de.taktovia.stafftime.api.TimeEventKind
+import de.taktovia.stafftime.api.TimeEventOrigin
 import de.taktovia.stafftime.api.TimeEventResult
 import de.taktovia.stafftime.api.TimeEventSource
 import de.taktovia.stafftime.api.TimeEventView
@@ -62,6 +63,7 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
         val cmd = RecordTimeEvent(
             UUID.fromString(body["event_id"] as String), kind(body["kind"] as String), moment.instant,
             OffsetDateTime.parse(body["device_recorded_at"] as String).toInstant(), TimeEventSource.valueOf(body["channel"] as String), (body["shift_id"] as String?)?.let(UUID::fromString), moment.zone,
+            (body["origin"] as String?)?.let(TimeEventOrigin::valueOf) ?: TimeEventOrigin.ONLINE, body["person_ref"] as String?,
         )
         return respond(staff.timeEvents.record(RequestContexts.require(request), cmd))
     }
@@ -119,7 +121,9 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
         return ZonedMoment(o.toInstant(), z)
     }
 
-    private fun respond(r: TimeEventResult): ResponseEntity<Map<String, Any?>> = ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(json(r.event))
+    /** Ergebnis der Annahme (`result`): `APPLIED`, `DUPLICATE` (200, keine zweite Zeile) oder `REVIEW_REQUIRED` (201, übernommen und als möglicher Konflikt markiert). */
+    private fun respond(r: TimeEventResult): ResponseEntity<Map<String, Any?>> =
+        ResponseEntity.status(if (r.created) HttpStatus.CREATED else HttpStatus.OK).body(json(r.event) + ("result" to r.outcome.name))
 
     private fun kind(code: String) = requireNotNull(TimeEventKind.entries.firstOrNull { it.name == code }) { "kind ist durch das Schema geprüft" }
 
@@ -133,7 +137,7 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
     private fun json(v: TimeEventView): Map<String, Any?> = linkedMapOf(
         "event_id" to v.eventId.toString(), "person_ref" to v.personRef, "kind" to v.kind.name, "occurred_at" to v.occurredAt.toString(), "device_recorded_at" to v.deviceRecordedAt?.toString(),
         "received_at" to v.receivedAt.toString(), "source" to v.source.name, "recorded_by" to v.recordedBy, "shift_id" to v.shiftId?.toString(), "backfill_reason" to v.backfillReason,
-        "time_zone" to v.timeZone.id, "occurred_at_local" to local(v.occurredLocal),
+        "time_zone" to v.timeZone.id, "occurred_at_local" to local(v.occurredLocal), "origin" to v.origin.name, "conflict_flag" to v.conflict?.name,
     )
 
     private fun local(p: LocalPresentation): Map<String, Any?> = linkedMapOf(

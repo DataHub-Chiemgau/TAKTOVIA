@@ -3646,8 +3646,16 @@ export interface TimeEventCreate {
   time_zone?: string;
   device_recorded_at: string;
   channel: 'APP' | 'WEB';
+  origin?: TimeEventOrigin;
+  person_ref?: string;
   shift_id?: UUID | null;
 }
+
+export type TimeEventOrigin = 'ONLINE' | 'OFFLINE';
+
+export type TimeEventConflict = 'CLOCK_SKEW' | 'INVALID_ORDER';
+
+export type TimeEventResultCode = 'APPLIED' | 'DUPLICATE' | 'REVIEW_REQUIRED';
 
 export interface TimeEventBackfillCreate {
   event_id: UUID;
@@ -3681,6 +3689,9 @@ export interface TimeEvent {
   backfill_reason: string | null;
   time_zone: string;
   occurred_at_local: LocalTimePresentation;
+  origin: TimeEventOrigin;
+  conflict_flag: TimeEventConflict | null;
+  result?: TimeEventResultCode;
 }
 
 export interface TimeEventPage {

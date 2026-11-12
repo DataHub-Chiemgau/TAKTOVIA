@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://taktovia.example/schemas/staff.time_event_recorded.v1.schema.json",
   "title": "Zeitereignis erfasst (WP-M4-08)",
-  "description": "Payload von `staff.time_event_recorded`. Aggregat: time_event / 1. Nur Kennungen und Codes (Minimierungsregel, Kap. 05 §5.1): keine Namen, Kontaktdaten oder Begründungstexte; `person_ref` ist die pseudonyme Kennung (IdP-Subject).",
+  "description": "Payload von `staff.time_event_recorded`. Aggregat: time_event / 1. Nur Kennungen und Codes (Minimierungsregel, Kap. 05 §5.1): keine Namen, Kontaktdaten oder Begründungstexte; `person_ref` ist die pseudonyme Kennung (IdP-Subject). `origin` und `conflict_flag` (WP-M4-12, optional und additiv): Herkunft des Stempels und möglicher Konflikt.",
   "type": "object",
   "required": [
     "event_id",
@@ -57,6 +57,25 @@
     "received_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "origin": {
+      "enum": [
+        "ONLINE",
+        "OFFLINE"
+      ]
+    },
+    "conflict_flag": {
+      "oneOf": [
+        {
+          "enum": [
+            "CLOCK_SKEW",
+            "INVALID_ORDER"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "examples": [

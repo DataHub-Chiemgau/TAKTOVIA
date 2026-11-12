@@ -106,6 +106,32 @@ class Zeitereignis(unittest.TestCase):
         with admin() as c:
             self.assertEqual(c.execute('SELECT count(*) FROM taktovia.time_event WHERE id=%s', (eid,)).fetchone()[0], 1)
 
+    def test_ereignis_id_eindeutig_je_mandant(self):  # TIM-003: dauerhafte Deduplikation, unabhängig vom Response-Cache
+        eid = uid()
+        with tx(A) as c: ev(c, A, eid=eid)
+        with tx(A) as c:
+            with self.assertRaises(psycopg.errors.UniqueViolation): ev(c, A, eid=eid, person='emp-2')   # auch für eine andere Person im selben Mandanten
+        with tx(B) as c: ev(c, B, eid=eid)   # die ID ist je Mandant eindeutig, nicht global
+
+    def test_herkunft_und_konfliktmarke(self):  # TIM-003 AK 2 und 3
+        def ins(c, origin=None, flag=None, source='APP', by='emp-1', reason=None, device=T0):
+            cols = "tenant_id,id,person_ref,kind,occurred_at,device_recorded_at,source,recorded_by,backfill_reason,payload_sha256" + (",origin" if origin else "") + (",conflict_flag" if flag else "")
+            vals = [A, uid(), 'emp-1', 'WORK_START', T0, device, source, by, reason, 'c' * 64] + ([origin] if origin else []) + ([flag] if flag else [])
+            c.execute(f"INSERT INTO taktovia.time_event({cols}) VALUES ({','.join(['%s'] * len(vals))})", vals)
+        with tx(A) as c: ins(c)                                   # Vorgabe: ONLINE, keine Marke
+        with tx(A) as c: ins(c, origin='OFFLINE', flag='CLOCK_SKEW')
+        with tx(A) as c: ins(c, origin='OFFLINE', flag='INVALID_ORDER')
+        with tx(A) as c:
+            self.assertEqual(c.execute("SELECT origin, conflict_flag FROM taktovia.time_event WHERE person_ref='emp-1' AND recorded_by='emp-1' AND payload_sha256=%s ORDER BY origin LIMIT 1", ('c' * 64,)).fetchone()[0], 'OFFLINE')
+        for origin, flag in (('SYNC', None), ('OFFLINE', 'MAYBE')):
+            with tx(A) as c:
+                with self.assertRaises(psycopg.errors.CheckViolation): ins(c, origin=origin, flag=flag)
+        with tx(A) as c:   # Nacherfassung ist nie offline und nie markiert
+            with self.assertRaises(psycopg.errors.CheckViolation): ins(c, origin='OFFLINE', source='BACKFILL', by='hr-1', reason='vergessen', device=None)
+        with tx(A) as c:   # Marke nachträglich entfernen scheitert (unveränderlich)
+            with self.assertRaises((psycopg.errors.CheckViolation, psycopg.errors.InsufficientPrivilege)):
+                c.execute("UPDATE taktovia.time_event SET conflict_flag = NULL WHERE person_ref='emp-1'")
+
 
 if __name__ == '__main__':
     unittest.main()
