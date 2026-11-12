@@ -24,6 +24,11 @@ interface CommunicationsupportApi {
     /** Ereignisverbraucher über die Inbox: `consumer` = [NotificationEventConsumer.CONSUMER]. */
     fun eventConsumer(processor: InboxProcessor, triggers: List<NotificationTrigger>): NotificationEventConsumer
 
+    /** Ereignisverbraucher mit den Standardauslösern der fünf Szenarien (WP-M2-34); Konsumentenname je Quellereignis `communication-support.<ereignis>`. */
+    fun transactionalConsumer(
+        processor: InboxProcessor, facts: BookingFactsSource, directory: RecipientDirectory, purposes: DeliveryPurposePolicy = DeliveryPurposePolicy.OPERATIONAL_ONLY, settings: TriggerSettings = TriggerSettings(),
+    ): NotificationEventConsumer
+
     companion object {
         fun create(tx: TenantTransactions, ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): CommunicationsupportApi =
             CommunicationServicesFactory.create(tx, ctxTx, audit, outbox, clock)
