@@ -36,6 +36,7 @@ import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Schichtzuweisung } from './flotte/Schichtzuweisung';
 import { Schadenakte } from './flotte/Schadenakte';
+import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -205,6 +206,14 @@ export function App() {
             element={
               <RequireRight right="defects">
                 <Schadenakte />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/pruefungen"
+            element={
+              <RequireRight right="inspections">
+                <InspectionHistory />
               </RequireRight>
             }
           />

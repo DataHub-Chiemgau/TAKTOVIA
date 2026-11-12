@@ -21,6 +21,8 @@ export type Right =
   | 'shifts.write'
   | 'checklists'
   | 'checklists.write'
+  | 'inspections'
+  | 'inspections.amend'
   | 'defects'
   | 'defects.write'
   | 'defects.state'
@@ -52,6 +54,10 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'shifts:write': ['shifts', 'shifts.write'],
   'checklists:read': ['checklists'],
   'checklists:write': ['checklists', 'checklists.write'],
+  // UI-11 Prüfnachweis (WP-M3-14, WP-M3-15): Lesen der Prüfhistorie und Nachtrag mit Pflichtgrund
+  // Der Bildschirm öffnet für Disposition, Werkstatt und Betriebsleitung (Scope `inspections:justify`); Fahrer arbeiten mit ihren Prüfungen in der Fahrer-App, nicht im Operator-Web.
+  'inspections:justify': ['inspections'],
+  'inspections:amend': ['inspections', 'inspections.amend'],
   // Der Bereich „Schadenakten“ des Operator-Web öffnet das Triagerecht (Disposition, Werkstatt); Fahrer lesen und melden über die Fahrer-App, nicht im Operator-Web.
   'defects:triage': ['defects'],
   'defects:write': ['defects.write'],

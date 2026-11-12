@@ -109,6 +109,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         [
           'Start',
           'Checklistenvorlagen',
+          'Prüfnachweise',
           'Gebiete, Stops, Tarife',
           'Kooperation und Rollen',
           'Datenschutz, Audit, Support',
@@ -134,6 +135,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Eigene Zeit und Abwesenheit',
           'Flotte und Werkstatt',
           'Checklistenvorlagen',
+          'Prüfnachweise',
           'Schadenakten',
         ],
       ],
