@@ -4,7 +4,7 @@
 --    der partielle Unique-Index macht das Setzen idempotent (kein zweiter Sperrgrund, kein zweiter Revisionssprung), auch bei gleichzeitigen Aufrufen.
 -- 2. resource_release bekommt Ausstellung (Zeit, Akteur) und Widerruf (Akteur, Grund). Eine Einsatzfreigabe gehört genau zu einem Prüflauf (Unique-Index auf inspection_ref):
 --    nach einem Widerruf entsteht keine Wiederaufnahme, sondern nur eine neue Freigabe aus einer neuen Prüfung (Zustandsautomat einsatzfreigabe.md).
---    Der Wächter lässt nur noch den Übergang "ausgestellt -> widerrufen" zu; der Zustand EXPIRED wird aus valid_until abgeleitet, nie gespeichert.
+--    Löschen darf die Laufzeitrolle nicht (kein DELETE-Recht); der Wächter lässt nur noch den Übergang "ausgestellt -> widerrufen" zu; der Zustand EXPIRED wird aus valid_until abgeleitet, nie gespeichert.
 -- 3. vehicle.safety_revision steigt nur (Wächter): niemand kann sie senken und damit eine veraltete Freigabe wieder gültig machen.
 SET search_path = taktovia, public;
 
@@ -34,7 +34,6 @@ CREATE UNIQUE INDEX resource_release_one_per_inspection ON resource_release (ten
 
 CREATE FUNCTION resource_release_guard() RETURNS trigger LANGUAGE plpgsql SET search_path = taktovia, pg_catalog AS $$
 BEGIN
-  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'resource release is append-only' USING ERRCODE = '23514'; END IF;
   IF OLD.revoked_at IS NOT NULL
      OR NEW.revoked_at IS NULL
      OR NEW.id IS DISTINCT FROM OLD.id OR NEW.vehicle_id IS DISTINCT FROM OLD.vehicle_id OR NEW.shift_id IS DISTINCT FROM OLD.shift_id
@@ -45,7 +44,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER resource_release_guard BEFORE UPDATE OR DELETE ON resource_release FOR EACH ROW EXECUTE FUNCTION resource_release_guard();
+CREATE TRIGGER resource_release_guard BEFORE UPDATE ON resource_release FOR EACH ROW EXECUTE FUNCTION resource_release_guard();
 
 CREATE FUNCTION vehicle_safety_revision_guard() RETURNS trigger LANGUAGE plpgsql SET search_path = taktovia, pg_catalog AS $$
 BEGIN

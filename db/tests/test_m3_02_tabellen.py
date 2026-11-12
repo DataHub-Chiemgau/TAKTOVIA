@@ -197,7 +197,7 @@ class Unveraenderlichkeit(unittest.TestCase):
                       "VALUES (%s,%s,%s,%s,%s,'RELEASED',%s,%s,2)", (A, rel, w['vehicle'], w['repair'], w['followup'], ACTOR, ACTOR2))
             c.execute("INSERT INTO taktovia.defect_status_history(tenant_id,id,defect_id,from_status,to_status,actor) VALUES (%s,%s,%s,NULL,'NEW',%s)", (A, hist, w['defect'], ACTOR))
             c.execute("INSERT INTO taktovia.vehicle_status_history(tenant_id,id,vehicle_id,shift_id,from_status,to_status,trigger,created_by) VALUES (%s,%s,%s,%s,NULL,'NOT_READY','SYSTEM',%s)", (A, vsh, w['vehicle'], w['shift'], ACTOR))
-            c.execute("INSERT INTO taktovia.inspection_amendment(tenant_id,id,inspection_id,step_code,amended_by,reason,new_answer) VALUES (%s,%s,%s,'BRAKES',%s,'Korrektur','DEFECT')", (A, amend, w['run'], ACTOR))
+            c.execute("INSERT INTO taktovia.inspection_amendment(tenant_id,id,inspection_id,step_code,answer_id,version,kind,amended_by,reason,new_answer) VALUES (%s,%s,%s,'BRAKES',%s,1,'CORRECTION',%s,'Korrektur','DEFECT')", (A, amend, w['run'], w['answer'], ACTOR))   # WP-M3-15: Bezug auf die Originalantwort und Version sind Pflicht
         for table, key in (('defect_evidence', ev), ('vehicle_release_decision', rel), ('defect_status_history', hist), ('vehicle_status_history', vsh), ('inspection_amendment', amend)):
             self._mutation_scheitert(f"UPDATE taktovia.{table} SET revision = revision + 1 WHERE id=%s", (key,))   # noqa: S608
             self._mutation_scheitert(f"DELETE FROM taktovia.{table} WHERE id=%s", (key,))                          # noqa: S608
