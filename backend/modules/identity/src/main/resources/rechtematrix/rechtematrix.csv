@@ -173,3 +173,10 @@ createTimeEventBackfill;time-events:manage;HR;M4;N;N;N;N;N;N;N;N;J;N
 requestReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 completeReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 getReceiptDocument;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+listStaffShifts;shifts:read;HR;M3;N;N;N;N;J;J;N;N;J;N
+getStaffShift;shifts:read;HR;M3;N;N;N;N;J;J;N;N;J;N
+createStaffShift;shifts:write;HR;M3;N;N;N;N;J;N;N;N;N;N
+updateStaffShift;shifts:write;HR;M3;N;N;N;N;J;N;N;N;N;N
+listDriverShifts;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
+startDriverShift;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
+endDriverShift;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N

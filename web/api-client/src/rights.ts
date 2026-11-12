@@ -13,6 +13,8 @@ export type Right =
   | 'fleet.write'
   | 'drivers'
   | 'drivers.write'
+  | 'shifts'
+  | 'shifts.write'
   | 'admin.ui17'
   | 'admin.ui18'
   | 'admin.ui20';
@@ -32,6 +34,8 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'fleet:write': ['fleet', 'fleet.write'],
   'drivers:read': ['drivers'],
   'drivers:write': ['drivers', 'drivers.write'],
+  'shifts:read': ['shifts'],
+  'shifts:write': ['shifts', 'shifts.write'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],
@@ -46,13 +50,13 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
   PASSENGER: ['passenger.app'],
   CALLCENTER: ['callcenter'],
   SUPPORT: ['callcenter', 'admin.ui20'],
-  DISPATCHER: ['callcenter', 'fleet', 'fleet.write', 'drivers'],
+  DISPATCHER: ['callcenter', 'fleet', 'fleet.write', 'drivers', 'shifts', 'shifts.write'],
   WORKSHOP: ['fleet', 'fleet.write'],
-  PLANNER: ['admin.ui17', 'fleet', 'drivers'],
+  PLANNER: ['admin.ui17', 'fleet', 'drivers', 'shifts'],
   ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
   TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
   FINANCE: ['finance'],
-  STAFF_PLANNING: ['staff', 'drivers', 'drivers.write'],
+  STAFF_PLANNING: ['staff', 'drivers', 'drivers.write', 'shifts'],
 };
 
 export function rightsOf(me: Pick<Me, 'roles'> & { scopes?: string[] | undefined }): Set<Right> {

@@ -9249,6 +9249,15 @@
           "bemerkung": "Fahrer der Schicht"
         },
         {
+          "spalte": "ended_at",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitpunkt des Dienstendes (keine Arbeitszeiterfassung, WP-M3-25)"
+        },
+        {
           "spalte": "ends_at",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -9267,6 +9276,42 @@
           "bemerkung": ""
         },
         {
+          "spalte": "overlap_exception_at",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitpunkt der Genehmigung der Doppelschicht (Serverzeit)"
+        },
+        {
+          "spalte": "overlap_exception_by",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Genehmiger der dokumentierten Doppelschicht (Pseudonym user:<uuid>, PA-03)"
+        },
+        {
+          "spalte": "overlap_exception_reason",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Grund der Doppelschicht (Freitext, nie Diagnose- oder Gesundheitsangaben)"
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Revision der Schichtzuweisung (ETag, WP-M3-07)"
+        },
+        {
           "spalte": "roster_revision",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
@@ -9274,6 +9319,24 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "started_at",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitpunkt des Dienstantritts (keine Arbeitszeiterfassung, WP-M3-25)"
+        },
+        {
+          "spalte": "started_device_id",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Gerät des Dienstantritts (Pseudonym-ID)"
         },
         {
           "spalte": "starts_at",

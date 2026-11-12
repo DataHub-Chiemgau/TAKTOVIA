@@ -19,6 +19,12 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
     href: '/flotte/fahrer',
     requires: 'drivers',
   },
+  {
+    id: 'ui11-schichten',
+    label: 'Schichtzuweisung',
+    href: '/flotte/schichten',
+    requires: 'shifts',
+  },
   { id: 'ui17', label: 'Gebiete, Stops, Tarife', href: '/admin/gebiete', requires: 'admin.ui17' },
   {
     id: 'ui18',

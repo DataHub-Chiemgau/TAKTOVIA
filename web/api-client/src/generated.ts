@@ -410,6 +410,10 @@ export interface DriverPositionResult {
   accepted: number;
   rejected: number;
   received_at: string;
+  rejections?: ({
+    index: number;
+    reason: 'FUTURE_TIME' | 'OUTSIDE_SERVICE';
+  })[];
 }
 
 export interface DriverRunStop {
@@ -429,6 +433,8 @@ export interface DriverRunStop {
 export interface DriverRun {
   shift_id: UUID;
   vehicle_id: UUID;
+  shift_state: string;
+  shift_valid: boolean;
   release_state: 'NOT_RELEASED' | 'RELEASED' | 'BLOCKED' | 'RESTRICTED';
   missing_requirements: MissingRequirement[];
   plan_revision: number | null;
@@ -457,6 +463,41 @@ export interface DriverDevice {
   registered_at: string;
   revoked_at: string | null;
   revision: number;
+}
+
+export interface DriverShift {
+  shift_id: UUID;
+  vehicle_id: UUID;
+  vehicle_label: string | null;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  state: string;
+  startable_from: string;
+  started_at: string | null;
+  ended_at: string | null;
+  valid: boolean;
+}
+
+export interface DriverShiftList {
+  items: DriverShift[];
+  as_of: string;
+}
+
+export interface DriverShiftStart {
+  shift_id: UUID;
+  vehicle_id: UUID;
+  device_id: UUID;
+}
+
+export interface DriverShiftEnd {
+  shift_id: UUID;
+  device_id: UUID;
+}
+
+export interface DriverShiftStartResult {
+  shift: DriverShift;
+  already_started: boolean;
 }
 
 export interface AbsenceCreate {
@@ -923,6 +964,7 @@ export interface OperatorVehicle {
   active_blocks: VehicleBlock[];
   position: Point | null;
   position_measured_at: string | null;
+  position_received_at?: string | null;
   position_age_seconds: number | null;
   position_stale: boolean;
   open_defect_count: number;
@@ -2078,6 +2120,51 @@ export interface AccountRecovery {
   started_at: string;
 }
 
+export type StaffShiftState = 'PLANNED' | 'STARTED' | 'ENDED' | 'CANCELLED';
+
+export interface ShiftOverlapExceptionInput {
+  approved_by?: string;
+  reason?: string;
+}
+
+export interface ShiftOverlapException {
+  approved_by: string;
+  reason: string;
+  approved_at: string;
+}
+
+export interface StaffShiftInput {
+  driver_id: UUID;
+  vehicle_id: UUID;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  withdrawn?: boolean;
+  overlap_exception?: ShiftOverlapExceptionInput;
+}
+
+export interface StaffShift {
+  id: UUID;
+  driver_id: UUID;
+  vehicle_id: UUID;
+  starts_at: string;
+  ends_at: string;
+  duration_minutes: number;
+  timezone: string;
+  state: string;
+  roster_revision: number;
+  revision: number;
+  overlap_exception: ShiftOverlapException | null;
+  started_at: string | null;
+  ended_at: string | null;
+}
+
+export interface StaffShiftPage {
+  items: StaffShift[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
@@ -2294,6 +2381,27 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: undefined;
     response: undefined;
+  };
+  listDriverShifts: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverShiftList;
+  };
+  startDriverShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverShiftStart;
+    response: DriverShiftStartResult;
+  };
+  endDriverShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverShiftEnd;
+    response: DriverShift;
   };
   listAbsences: {
     path: Record<string, never>;
@@ -3282,6 +3390,34 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
+  listStaffShifts: {
+    path: Record<string, never>;
+    query: { driver_id?: UUID; vehicle_id?: UUID; from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: StaffShiftPage;
+  };
+  createStaffShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: StaffShiftInput;
+    response: StaffShift;
+  };
+  getStaffShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: StaffShift;
+  };
+  updateStaffShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: StaffShiftInput;
+    response: StaffShift;
+  };
   listTimeEvents: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
@@ -3373,6 +3509,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   acknowledgeDriverRunRevision: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/run/acknowledgements', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   registerDriverDevice: { method: 'POST', path: '/v1/driver/devices', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:devices'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   revokeDriverDevice: { method: 'DELETE', path: '/v1/driver/devices/{device_id}', pathParams: ['device_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['driver:devices'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listDriverShifts: { method: 'GET', path: '/v1/driver/shifts', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 429, 503] },
+  startDriverShift: { method: 'POST', path: '/v1/driver/shift-starts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
@@ -3514,6 +3653,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listStaffShifts: { method: 'GET', path: '/v1/shifts', pathParams: [], query: ['driver_id', 'vehicle_id', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createStaffShift: { method: 'POST', path: '/v1/shifts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getStaffShift: { method: 'GET', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateStaffShift: { method: 'PUT', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },

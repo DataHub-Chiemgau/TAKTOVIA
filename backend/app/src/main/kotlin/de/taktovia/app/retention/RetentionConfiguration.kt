@@ -11,6 +11,7 @@ import de.taktovia.platform.retention.RetentionRules
 import de.taktovia.platform.retention.RetentionTarget
 import de.taktovia.platform.storage.TenantObjectStore
 import de.taktovia.platform.tenant.TenantTransactions
+import de.taktovia.stafftime.api.PositionRetention
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -26,6 +27,9 @@ class RetentionConfiguration {
     @Bean fun retentionRules(ctxTx: ContextTransactions, audit: AuditPort, operations: OperationService) = RetentionRules(ctxTx, audit, operations, Clock.systemUTC())
 
     @Bean fun passengerRetentionTarget(): RetentionTarget = PassengerRetention.target()
+
+    /** Löschziel der Rohpositionen (`LK_STANDORT`, WP-M3-34); die Frist liefert die freigegebene Aufbewahrungsregel, nie ein Standardwert. */
+    @Bean fun positionRetentionTarget(): RetentionTarget = PositionRetention.target()
 
     @Bean fun passengerArchive(ctxTx: ContextTransactions, audit: AuditPort): PassengerArchive = PassengerRetention.archive(ctxTx, audit)
 

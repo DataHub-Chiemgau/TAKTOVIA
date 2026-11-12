@@ -6,7 +6,7 @@ paths:
       security:
       - oidc:
         - operator:read
-      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`, `depot_id`. Fremdmandanten sind nie sichtbar. Der Standort
+      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`, `depot_id` (in M3 nicht unterstützt, dann 422; kein Betriebshofbezug am Fahrzeug, OP-22). Fremdmandanten sind nie sichtbar. Der Standort
         trägt `measured_at` und `position_age_seconds`; ab `position_stale_after_sec` ist `position_stale` wahr (OP-04).
       parameters:
       - name: state
@@ -1368,6 +1368,12 @@ components:
           - type: string
             format: date-time
           - type: 'null'
+        position_received_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Serverempfangszeit der letzten Position (Serveruhr), getrennt von der Gerätemesszeit `position_measured_at`.
         position_age_seconds:
           oneOf:
           - type: integer
@@ -1403,7 +1409,7 @@ components:
       - current_run_id
       - revision
       description: Fahrzeug in der Leitstellenansicht (OPS-001, CHK-016). Das Standortalter berechnet der Server aus `measured_at` (Messzeit)
-        und seiner Uhr; `position_stale` folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s).
+        und seiner Uhr; `position_stale` folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s). Ohne bekannte Position ist `position` null und `position_stale` wahr; die letzte gemessene Position bleibt nach Überschreiten der Schwelle sichtbar und wird nie extrapoliert (AT-10). Bis WP-M3-08/-31/-36 tragen `release_valid_until`, `missing_requirements`, `active_blocks`, `open_defect_count` und `current_run_id` noch keine Werte und `operational_state` leitet sich nur aus der Sperrkennung ab.
     OperatorVehiclePage:
       type: object
       additionalProperties: false

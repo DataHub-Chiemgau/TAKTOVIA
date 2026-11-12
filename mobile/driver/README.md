@@ -61,3 +61,11 @@ Anmeldung (`lib/auth`: PKCE, OIDC-Ablauf, `SessionGate`), Offline-Aktionsliste (
 - **Zeiten:** Erfassungszeit (Geräteuhr) wird nie überschrieben; die Serverempfangszeit steht getrennt. Lokale Reihenfolge folgt `seq`, nicht der Uhr.
 - **Manipulation:** HMAC je Zeile über die unveränderlichen Felder (Schlüssel getrennt vom Datenbankschlüssel zu halten); fehlerhafte Zeilen werden in Quarantäne gesetzt und nie gesendet. Die Verschlüsselung der Datei (Seitenauthentisierung) schützt zusätzlich die Gesamtdatei.
 - **Klärfall Check-in vs. Storno:** nur Erkennung und Kennzeichnung (`conflictHint`, `ReviewReason`). Der Workflow ist M3.
+
+## Dienststart (WP-M3-25), nicht ausgeführt
+
+`lib/shift/shift_start.dart` (Modelle, Port `ShiftApi`, Adapter `HttpShiftApi` für `GET /v1/driver/shifts`, `POST /v1/driver/shift-starts|shift-ends`, Anzeigezustand `ShiftScreenState` für UI-09: Leerzustand, noch nicht startbar, startbar, angetreten, entzogen) und `test/shift/shift_start_test.dart`. **Nicht ausgeführt** (kein Flutter in der Umgebung, siehe oben): kein `flutter analyze`, kein `flutter test`. Die Gegenstelle ist durch `backend/app/src/test/kotlin/de/taktovia/app/driver/DriverShiftApiTest.kt` gegen den echten Server nachgewiesen. Die App entscheidet nie selbst, ob ein Dienst gültig ist (Serverzeit, `valid`), und zeigt keine Aufträge ohne Serverbestätigung.
+
+## Positionserfassung (WP-M3-34), nicht ausgeführt
+
+`lib/position/position_capture.dart` (Erfassungsregel `PositionCapturePolicy`: nur im vom Server als angetreten und gültig gemeldeten Dienst, Hinweis `position.notice`; Puffer und Nachlieferung in Paketen zu höchstens 100 Punkten mit der ursprünglichen Messzeit; Adapter `HttpPositionApi` für `POST /v1/driver/positions`) und `test/position/position_capture_test.dart`. **Nicht ausgeführt** (kein Flutter in der Umgebung): kein `flutter analyze`, kein `flutter test`; die Anbindung an die Plattform-Ortung (Android/iOS, Hintergrundortung, Berechtigungsdialog) ist nicht gebaut und gehört zur Zielgeräteliste (D-05) und zur Freigabe von D-09/D-10. Planungsannahmen: Sendeintervall 10 s (D-05 offen), keine Geschwindigkeit und Richtung (Minimierung). Die Gegenstelle ist durch `backend/app/src/test/kotlin/de/taktovia/app/driver/DriverPositionApiTest.kt` gegen den echten Server nachgewiesen.

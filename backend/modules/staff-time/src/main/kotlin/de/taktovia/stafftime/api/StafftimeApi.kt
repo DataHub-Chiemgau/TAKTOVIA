@@ -21,9 +21,19 @@ interface StafftimeApi {
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers
 
+    /** Schichtzuweisung der Leitstelle mit eindeutigen Schichtgrenzen (WP-M3-07). */
+    val shifts: Shifts
+
+    /** Dienstanmeldung und Schicht-/Fahrzeugzuordnung des Fahrers (WP-M3-25). */
+    val driverShifts: DriverShifts
+
+    /** Positionserfassung und Standortalter (WP-M3-34). */
+    val positions: Positions
+
     companion object {
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): StafftimeApi =
-            StafftimeServicesFactory.create(ctxTx, audit, outbox, clock)
+        fun create(
+            ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
+        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource)
     }
 }
 

@@ -1,0 +1,4 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+staff_shift;started_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zeitpunkt des Dienstantritts (keine Arbeitszeiterfassung, WP-M3-25)
+staff_shift;started_device_id;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Gerät des Dienstantritts (Pseudonym-ID)
+staff_shift;ended_at;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zeitpunkt des Dienstendes (keine Arbeitszeiterfassung, WP-M3-25)

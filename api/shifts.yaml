@@ -1,0 +1,382 @@
+paths:
+  /v1/shifts:
+    get:
+      summary: Schichtzuweisungen auflisten
+      operationId: listStaffShifts
+      security:
+      - oidc:
+        - shifts:read
+      description: Schichtzuweisungen des Mandanten (WP-M3-07), Listenform {items,next_cursor,as_of}, nach Beginn sortiert. Filter `driver_id`, `vehicle_id`
+        und das Fenster `from`/`to` (halboffen; Schichten, die es überlappen). Fremde Mandanten sind nie sichtbar.
+      parameters:
+      - name: driver_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Schichten dieses Fahrers.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Schichten dieses Fahrzeugs.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Beginn des Fensters (RFC 3339 mit Offset).
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Ende des Fensters (RFC 3339 mit Offset, exklusiv).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffShiftPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Schichtzuweisung anlegen
+      operationId: createStaffShift
+      security:
+      - oidc:
+        - shifts:write
+      description: 'Legt eine Schichtzuweisung für Fahrer und Fahrzeug an (WP-M3-07, LH-6.8-FLT-003; Dienstpläne gehören zu M4, `roster_revision` ist bis
+        dahin 0). `starts_at` und `ends_at` sind Pflicht mit UTC-Offset, `ends_at` liegt nach `starts_at`; die Dauer folgt aus den absoluten Zeitpunkten,
+        `timezone` dient nur der Anzeige. Überlappung mit einer anderen Schicht desselben Fahrers oder desselben Fahrzeugs (halboffen `[starts_at, ends_at)`,
+        Ende = Beginn überlappt nicht): 409 `CONFLICT`, `violations[].pointer` nennt die Ursache (`/driver_id` oder `/vehicle_id`), `detail` die kollidierende
+        Schicht. Nur eine vollständige dokumentierte Ausnahme `overlap_exception` (Genehmiger `approved_by`, Grund `reason`; der Zeitpunkt kommt vom Server)
+        lässt die Doppelbelegung zu (Planungsannahme PA-03, OP-07); ohne eine der Angaben bleibt es beim Konflikt. Fahrer oder Fahrzeug unbekannt oder eines
+        anderen Mandanten: 404; inaktiver Fahrer oder inaktives Fahrzeug: 422.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffShift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffShiftInput'
+  /v1/shifts/{shift_id}:
+    get:
+      summary: Schichtzuweisung lesen
+      operationId: getStaffShift
+      security:
+      - oidc:
+        - shifts:read
+      description: 'Eine Schichtzuweisung mit starkem ETag. Fremde oder unbekannte Schicht: 404.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffShift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Schichtzuweisung ändern
+      operationId: updateStaffShift
+      security:
+      - oidc:
+        - shifts:write
+      description: 'Ändert Fahrer, Fahrzeug, Zeiten und Zeitzone und entzieht (`withdrawn` = true, Zustand `CANCELLED`) oder erneuert die Zuweisung. Die
+        Konfliktprüfung gilt gegen alle anderen Schichten, nie gegen die Schicht selbst; Regeln und Fehler wie beim Anlegen. Eine angetretene Schicht ist
+        nur noch zu entziehen, eine beendete unveränderlich (409 `INVALID_STATE_TRANSITION`). If-Match: Revision der Schicht; ohne 428, veraltet 412.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffShift'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffShiftInput'
+components:
+  schemas:
+    StaffShiftState:
+      type: string
+      enum:
+      - PLANNED
+      - STARTED
+      - ENDED
+      - CANCELLED
+      description: 'Zustand der Schichtzuweisung (vertraege/zustaende/staff_shift.md): geplant, angetreten, beendet, entzogen. Ein Dienstplan (M4) kennt
+        zusätzlich `PUBLISHED`.'
+    ShiftOverlapExceptionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        approved_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      description: 'Dokumentierte Ausnahme (Doppelschicht, PA-03): beide Angaben sind nötig, sonst bleibt die Überlappung ein Konflikt. Der Server setzt
+        den Zeitpunkt.'
+    ShiftOverlapException:
+      type: object
+      additionalProperties: false
+      properties:
+        approved_by:
+          type: string
+          minLength: 1
+          maxLength: 200
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        approved_at:
+          type: string
+          format: date-time
+      required:
+      - approved_by
+      - reason
+      - approved_at
+      description: Gespeicherte Ausnahme mit Genehmiger, Grund und Zeitpunkt.
+    StaffShiftInput:
+      type: object
+      additionalProperties: false
+      properties:
+        driver_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: IANA-Zone, nur zur Anzeige.
+        withdrawn:
+          type: boolean
+          description: 'Nur beim Ändern: `true` entzieht die Zuweisung (Zustand `CANCELLED`), `false` nimmt einen Entzug zurück (Zustand `PLANNED`, erneut
+            geprüft).'
+        overlap_exception:
+          $ref: '#/components/schemas/ShiftOverlapExceptionInput'
+      required:
+      - driver_id
+      - vehicle_id
+      - starts_at
+      - ends_at
+      - timezone
+      description: Schichtzuweisung (WP-M3-07). `withdrawn` nur beim Ändern. Der Mandant steht nie im Body.
+    StaffShift:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        driver_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          minimum: 1
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        state:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Eine der Zustände aus StaffShiftState oder `PUBLISHED` (Dienstplan, M4).
+        roster_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Platzhalter 0 bis zum Dienstplan (M4, OP-07).
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        overlap_exception:
+          oneOf:
+          - $ref: '#/components/schemas/ShiftOverlapException'
+          - type: 'null'
+        started_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        ended_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - driver_id
+      - vehicle_id
+      - starts_at
+      - ends_at
+      - duration_minutes
+      - timezone
+      - state
+      - roster_revision
+      - revision
+      - overlap_exception
+      - started_at
+      - ended_at
+      description: Schichtzuweisung. `duration_minutes` folgt aus den absoluten Zeitpunkten (nie aus der Wandzeit der Zone).
+    StaffShiftPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffShift'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

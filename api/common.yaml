@@ -56,6 +56,8 @@ components:
             fleet:write: fleet:write
             drivers:read: drivers:read
             drivers:write: drivers:write
+            shifts:read: shifts:read
+            shifts:write: shifts:write
             me:write: me:write
             accounts:write: accounts:write
             rides:read: rides:read
@@ -127,6 +129,8 @@ components:
             fleet:write: fleet:write
             drivers:read: drivers:read
             drivers:write: drivers:write
+            shifts:read: shifts:read
+            shifts:write: shifts:write
             me:write: me:write
             accounts:write: accounts:write
             rides:read: rides:read
