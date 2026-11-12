@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+document_revision;SELECT,INSERT;WP-M4-23: Belegrevision, unveränderlich (Trigger), kein UPDATE/DELETE

@@ -58,7 +58,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED';
 
@@ -324,6 +324,73 @@ export interface TransferRisk {
   predicted_margin_seconds: number | null;
   observed_at: string;
   reason_code: string;
+}
+
+export interface ExpenseVatAmount {
+  vat_rate_pct: string;
+  amount_minor: number;
+}
+
+export interface ExpenseFieldValues {
+  amount_minor?: number;
+  currency?: string;
+  document_date?: string;
+  merchant?: string;
+  document_number?: string;
+  vat_amounts?: ExpenseVatAmount[];
+}
+
+export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts';
+
+export interface ExpenseCorrection {
+  reason: string;
+  fields?: ExpenseFieldValues;
+  confirm?: ExpenseFieldName[];
+}
+
+export interface ExpenseCaseRef {
+  kind: 'VEHICLE' | 'SHIFT';
+  id: UUID;
+}
+
+export interface Expense {
+  document_id: UUID;
+  legal_entity_id: UUID;
+  state: string;
+  source_channel: 'DRIVER_APP' | 'DISPATCH_WEB' | 'EMAIL_INBOUND' | 'INVOICE_IMPORT';
+  document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
+  case_ref: null | ExpenseCaseRef;
+  mime: string;
+  size_bytes: number;
+  sha256: string;
+  received_at: string;
+  scanned_at: string | null;
+  sender_verified: boolean | null;
+  integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
+  approvable: boolean;
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION')[];
+  fields: ExpenseFieldValues;
+  revision: number;
+}
+
+export interface ExpenseFieldChange {
+  old: unknown;
+  new: unknown;
+  confirmed: boolean;
+  ocr_proposal?: unknown;
+}
+
+export interface ExpenseRevision {
+  revision: number;
+  fields: Record<string, unknown>;
+  edited_by: string;
+  edited_at: string;
+  reason: string;
+  edited_view_key: string | null;
+}
+
+export interface ExpenseRevisionList {
+  items: ExpenseRevision[];
 }
 
 export type DecimalQuantity = string;
@@ -1876,6 +1943,9 @@ export interface ReceiptUploadRequest {
   mime: 'image/jpeg' | 'image/png' | 'application/pdf';
   size_bytes: number;
   sha256: string;
+  source_channel?: 'DRIVER_APP' | 'DISPATCH_WEB';
+  document_kind?: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
+  case_ref?: ExpenseCaseRef;
 }
 
 export type UploadPurpose = 'RECEIPT' | 'DAMAGE_PHOTO';
@@ -1909,6 +1979,52 @@ export interface ReceiptDocument {
   received_at: string;
   scanned_at: string | null;
   revision: number;
+  source_channel: 'DRIVER_APP' | 'DISPATCH_WEB' | 'EMAIL_INBOUND' | 'INVOICE_IMPORT';
+  document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
+  integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
+}
+
+export interface ExtractedField {
+  id: UUID;
+  field: 'DOCUMENT_DATE' | 'AMOUNT' | 'CURRENCY' | 'MERCHANT' | 'DOCUMENT_NUMBER' | 'VAT_AMOUNT';
+  occurrence: number;
+  origin: 'OCR' | 'HUMAN';
+  status: 'PROPOSED' | 'CONFIRMED' | 'CORRECTED';
+  raw_value: string | null;
+  normalized_value: string | null;
+  display_value: string | null;
+  qualifier: string | null;
+  confidence: number | null;
+  source: null | {
+    page: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  suspicious: boolean;
+  corrects_field_id: UUID | null;
+  decided_by: string | null;
+  decided_at: string | null;
+}
+
+export interface ExtractionRun {
+  run_id: UUID;
+  document_id: UUID;
+  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  engine: string;
+  ocr_version: string;
+  attempt: number;
+  failure: 'TIMEOUT' | 'ENGINE_ERROR' | 'UNSUPPORTED_CONTENT' | 'ORIGINAL_UNAVAILABLE' | null;
+  field_count: number | null;
+  requested_at: string;
+  finished_at: string | null;
+}
+
+export interface ExtractionResult {
+  run: ExtractionRun;
+  proposals: ExtractedField[];
+  current: ExtractedField[];
 }
 
 export interface EffectiveConfig {
@@ -2381,6 +2497,34 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: ApprovalRequest;
     response: ExpenseApproval;
+  };
+  getExpense: {
+    path: { expense_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Expense;
+  };
+  correctExpense: {
+    path: { expense_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ExpenseCorrection;
+    response: Expense;
+  };
+  listExpenseRevisions: {
+    path: { expense_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ExpenseRevisionList;
+  };
+  getExpenseOriginal: {
+    path: { expense_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: undefined;
   };
   publishConfig: {
     path: { revision_id: UUID };
@@ -3320,6 +3464,20 @@ export interface Operations {
     body: undefined;
     response: ReceiptDocument;
   };
+  requestReceiptExtraction: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: ExtractionRun;
+  };
+  getReceiptExtraction: {
+    path: { document_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ExtractionResult;
+  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
@@ -3585,6 +3743,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
@@ -3719,6 +3881,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  requestReceiptExtraction: { method: 'POST', path: '/v1/expenses/receipts/{document_id}/extract', pathParams: ['document_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [202, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
+  getReceiptExtraction: { method: 'GET', path: '/v1/expenses/receipts/{document_id}/extraction', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

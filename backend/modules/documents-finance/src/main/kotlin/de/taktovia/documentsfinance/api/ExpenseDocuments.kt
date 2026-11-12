@@ -1,0 +1,169 @@
+package de.taktovia.documentsfinance.api
+
+import de.taktovia.platform.context.RequestContext
+import java.time.Instant
+import java.util.UUID
+
+/** Herkunftskanal eines Belegs (WP-M4-22, DOC-006). Alle vier Kanäle erzeugen dieselbe fachliche Struktur und durchlaufen Uploadticket und Quarantäne. */
+enum class SourceChannel { DRIVER_APP, DISPATCH_WEB, EMAIL_INBOUND, INVOICE_IMPORT }
+
+/** Belegart (Tankbelege erhalten mit WP-M4-30 einen eigenen Feldsatz). */
+enum class DocumentKind { RECEIPT, FUEL_RECEIPT, INVOICE, OTHER }
+
+/** Vorgang, an dem ein Beleg hängt: Fahrzeug oder Schicht. */
+enum class CaseKind { VEHICLE, SHIFT }
+data class CaseRef(val kind: CaseKind, val id: UUID)
+
+/** Ergebnis der Integritätsprüfung am Beleg; `VIOLATED` ist endgültig und sperrt Freigabe und Posting (WP-M4-24). */
+enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
+
+/** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION }
+
+/** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
+object ExpenseFields {
+    const val AMOUNT_MINOR = "amount_minor"
+    const val CURRENCY = "currency"
+    const val DOCUMENT_DATE = "document_date"
+    const val MERCHANT = "merchant"
+    const val DOCUMENT_NUMBER = "document_number"
+    const val VAT_AMOUNTS = "vat_amounts"
+    val ALL = setOf(AMOUNT_MINOR, CURRENCY, DOCUMENT_DATE, MERCHANT, DOCUMENT_NUMBER, VAT_AMOUNTS)
+}
+
+/** Ein Feld einer Revision: Alt- und Neuwert; `confirmed` = ausdrückliche Bestätigung eines OCR-Vorschlags ohne Wertänderung; `ocrProposal` = der OCR-Vorschlag, den die Entscheidung betrifft. */
+data class FieldChange(val old: Any?, val new: Any?, val confirmed: Boolean = false, val ocrProposal: Any? = null)
+
+data class RevisionView(
+    val revision: Long, val fields: Map<String, FieldChange>, val editedBy: String, val editedAt: Instant, val reason: String, val editedViewKey: String?,
+)
+
+/** Beleg mit aktuellem Feldstand (WP-M4-22/-23): das Dokument (Original, Zustand, Kanal), die bestätigten oder erfassten Felder und die Freigabehindernisse. */
+data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>)
+
+/** Bearbeitete Ansicht (z. B. zugeschnittenes Foto) als eigenes Objekt; sie ersetzt nie das Original. */
+class EditedView(val mime: String, val bytes: ByteArray)
+
+/**
+ * Korrektur eines Belegs (WP-M4-23): `fields` setzt Werte (muss vom aktuellen Wert abweichen), `confirm` bestätigt einen OCR-Vorschlag unverändert. Mindestens eines von beiden, der Grund ist Pflicht.
+ * Eine Korrektur erzeugt genau eine neue Revision.
+ */
+data class CorrectExpense(val reason: String, val fields: Map<String, Any?> = emptyMap(), val confirm: Set<String> = emptySet(), val editedView: EditedView? = null)
+
+/** Beleg lesen, Revisionen abrufen, korrigieren und das Original abrufen (WP-M4-22, WP-M4-23). */
+interface Expenses {
+    /** Fremder Mandant und fremde Belege (nicht Erfasser, keine Finanzrolle): 404. */
+    fun get(ctx: RequestContext, id: UUID): ExpenseView
+
+    /** Alle Revisionen ab 1, aufsteigend. */
+    fun revisions(ctx: RequestContext, id: UUID): List<RevisionView>
+
+    /**
+     * Korrigiert Felder (`expectedRevision` = `If-Match`: veraltet 412, bei parallelen Korrekturen derselben Revision gewinnt genau eine). Nur im Entwurfszustand `STORED`: ein
+     * gebuchter oder freigegebener Beleg ist unveränderlich (409 `IMMUTABLE_RECORD`), ebenso ein Beleg in Quarantäne. Das Original wird nie berührt.
+     */
+    fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView
+
+    /** Das Original, byteweise unverändert; geprüft gegen den gespeicherten Hash (Verletzung: Vorfall und 409 `DOCUMENT_INTEGRITY_VIOLATION`). */
+    fun original(ctx: RequestContext, id: UUID): ByteArray
+}
+
+// ---- Kanäle (WP-M4-22) ----
+
+/** Datei eines serverseitigen Kanals (E-Mail-Anhang, Importdatei). */
+class InboundAttachment(val filename: String, val mime: String?, val bytes: ByteArray)
+
+/** Eingehende E-Mail an die Rechnungseingangsadresse des Mandanten (`invoice_email_inbound`). */
+class InboundEmail(val messageId: String, val from: String, val to: String, val attachments: List<InboundAttachment>)
+
+/** Datei aus dem Rechnungsimport. `sourceRef` (z. B. Importlauf und Dateiname) dedupliziert Wiederholungen; ohne Angabe gibt es keine Deduplikation. */
+class ImportFile(val legalEntityId: UUID, val filename: String, val mime: String?, val bytes: ByteArray, val kind: DocumentKind = DocumentKind.INVOICE, val sourceRef: String? = null)
+
+enum class IntakeRejection { NO_ATTACHMENT, NOT_CONFIGURED, WRONG_RECIPIENT, INVALID_FILE, UNSUPPORTED_TYPE, TOO_LARGE }
+
+sealed interface IntakeOutcome {
+    val filename: String
+    /** Beleg angelegt (Zustand je nach Prüfung `STORED` oder `QUARANTINED`). */
+    data class Created(override val filename: String, val document: StoredDocumentView) : IntakeOutcome
+    /** Dieselbe Quelle ist schon bekannt (zweite Zustellung): kein weiterer Beleg; `document` fehlt, solange die erste Verarbeitung noch läuft. */
+    data class Duplicate(override val filename: String, val document: StoredDocumentView?) : IntakeOutcome
+    data class Rejected(override val filename: String, val reason: IntakeRejection) : IntakeOutcome
+}
+
+data class EmailIntakeResult(val messageId: String, val rejection: IntakeRejection?, val senderVerified: Boolean, val outcomes: List<IntakeOutcome>)
+
+/**
+ * Serverseitige Eingangskanäle (E-Mail-Eingang, Rechnungsimport). Beide rufen denselben Anlagebefehl wie die Web- und App-Kanäle ([Uploads]) und durchlaufen Ticket und Quarantäne; kein Kanal
+ * umgeht die Prüfung. Der Aufrufer (Adapter) liefert einen Kontext mit Scope `receipts:write` des Mandanten, dem die Nachricht gehört.
+ */
+interface ReceiptIntake {
+    /**
+     * Legt je Anhang einen Beleg an. Ohne Anhang, ohne konfigurierte Eingangsadresse oder an eine andere Adresse: abgewiesen, nichts angelegt. Ist die Absenderdomäne nicht verifiziert, entsteht ein Beleg, der
+     * nicht freigabefähig ist ([ReleaseBlocker.UNVERIFIED_SENDER]). Dieselbe Nachricht ein zweites Mal ergibt [IntakeOutcome.Duplicate].
+     */
+    fun receiveEmail(ctx: RequestContext, mail: InboundEmail): EmailIntakeResult
+
+    /** Rechnungsimport einer Datei; defekte oder nicht unterstützte Dateien werden abgewiesen. */
+    fun importFile(ctx: RequestContext, file: ImportFile): IntakeOutcome
+}
+
+// ---- Einstellungen ----
+
+data class DocumentSettingsView(
+    val receiptOcrEnabled: Boolean, val invoiceEmailInbound: String?, val inboundLegalEntityId: UUID?, val verifiedSenderDomains: Set<String>, val revision: Long,
+)
+
+data class UpdateDocumentSettings(
+    val receiptOcrEnabled: Boolean, val invoiceEmailInbound: String?, val inboundLegalEntityId: UUID?, val verifiedSenderDomains: Set<String>,
+)
+
+/** Mandanteneinstellungen der Belege (`receipt_ocr_enabled`, `invoice_email_inbound`). Ohne gespeicherte Einstellung: OCR an, kein E-Mail-Eingang. Ändern darf die Finanzrolle. */
+interface DocumentSettings {
+    fun get(ctx: RequestContext): DocumentSettingsView
+    fun update(ctx: RequestContext, cmd: UpdateDocumentSettings): DocumentSettingsView
+}
+
+// ---- Integrität (WP-M4-24) ----
+
+enum class IntegrityTrigger { DELIVERY, APPROVAL, SCHEDULED, MANUAL }
+enum class IntegrityFailure { HASH_MISMATCH, OBJECT_MISSING }
+
+data class IntegrityResult(val documentId: UUID, val state: IntegrityState, val failure: IntegrityFailure?, val incidentId: UUID?)
+data class SweepResult(val checked: Int, val violations: Int, val nextCursor: UUID?)
+
+/** Bescheinigung, dass das Original bei der Freigabe unverändert war. Sie ersetzt nie die Prüfung im Posting ([IntegrityChecks.requirePostable]). */
+data class ApprovalClearance(val documentId: UUID, val revision: Long, val checkedAt: Instant)
+
+/**
+ * Integritätsprüfung der Originale (WP-M4-24): SHA-256 des Objekts gegen den gespeicherten Hash. Eine Abweichung oder ein fehlendes Objekt setzt den Beleg endgültig auf
+ * [IntegrityState.VIOLATED], schreibt einen unveränderlichen Vorfall, ein Sicherheitsereignis und ein Outbox-Ereignis. Die Prüfung liest das Objekt außerhalb einer Datenbanktransaktion.
+ */
+interface IntegrityChecks {
+    /** Prüft ein Dokument im Mandanten des Kontexts (fremde Dokumente: 404). Nur `STORED`-Dokumente haben ein Original; Dokumente in Quarantäne bleiben unberührt (`UNCHECKED`). */
+    fun check(ctx: RequestContext, documentId: UUID, trigger: IntegrityTrigger = IntegrityTrigger.MANUAL): IntegrityResult
+
+    /**
+     * Periodischer Prüfjob, fortsetzbar: prüft bis zu `limit` Belege im Mandanten des Kontexts in der Reihenfolge `(integrity_checked_at, id)` und liefert den Cursor für die Fortsetzung
+     * (`null`, wenn alle geprüft sind). Bereits verletzte Belege werden übersprungen. Läuft je Mandant im Tenantkontext (kein Zugriff auf fremde Objekte).
+     */
+    fun sweep(ctx: RequestContext, limit: Int, after: UUID? = null): SweepResult
+
+    /**
+     * Vor der Freigabe (Kap. 05 §5.5): prüft den Originalhash **jetzt** und bescheinigt ihn. Ein verletzter Beleg wird mit 409 `DOCUMENT_INTEGRITY_VIOLATION` abgewiesen; `expectedRevision`
+     * (veraltet: 412) bindet die Bescheinigung an den Stand des Belegs. Die Freigabeschritte selbst folgen mit WP-M4-34.
+     */
+    fun clearForApproval(ctx: RequestContext, documentId: UUID, expectedRevision: Long): ApprovalClearance
+
+    /**
+     * Sperre im Posting: in der **laufenden Transaktion des Postings** (`jdbc` im Mandantenkontext) wird die Beleg-Zeile gesperrt und der Integritätszustand gelesen. Ein verletzter Beleg wirft
+     * 409 `DOCUMENT_INTEGRITY_VIOLATION`; ein parallel festgestellter Vorfall wird entweder vor dem Posting sichtbar oder wartet auf dessen Ende (kein Posting auf verletztem Original).
+     */
+    fun requirePostable(jdbc: org.springframework.jdbc.core.JdbcOperations, documentId: UUID)
+}
+
+/**
+ * Bündel der Belegbausteine (WP-M4-21 bis -27); die Ports (Objektspeicher, Prüfer, OCR) liefert die Anwendung.
+ */
+class DocumentServices(
+    val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
+)

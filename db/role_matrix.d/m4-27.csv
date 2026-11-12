@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+extraction_run;SELECT,INSERT,UPDATE;WP-M4-27: OCR-Lauf, Zustand nur vorwärts (Trigger), kein DELETE
+extracted_field;SELECT,INSERT;WP-M4-27: OCR-Vorschlag und Entscheidung, unveränderlich (Trigger), kein UPDATE/DELETE

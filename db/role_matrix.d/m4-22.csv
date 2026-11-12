@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+document_settings;SELECT,INSERT,UPDATE;WP-M4-22: Mandanteneinstellungen der Belege, kein DELETE

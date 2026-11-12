@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.extraction_completed.v1.schema.json",
+  "title": "Extraktion abgeschlossen (WP-M4-27)",
+  "description": "Payload von `document.extraction_completed`. Aggregat: extraction_run / Versuch (attempt). Die Felder selbst stehen nicht im Ereignis (nur Anzahl); sie sind unbestätigte Vorschläge.",
+  "type": "object",
+  "required": ["document_id", "run_id", "fields_found", "attempt"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "fields_found": {"type": "integer", "minimum": 0},
+    "attempt": {"type": "integer", "minimum": 1}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "run_id": "aaaaaaaa-2222-4333-8444-555555555555", "fields_found": 5, "attempt": 1}
+  ]
+}

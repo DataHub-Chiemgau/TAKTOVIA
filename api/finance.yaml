@@ -106,8 +106,408 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ApprovalRequest'
+  /v1/expenses/{expense_id}:
+    get:
+      summary: Beleg mit Feldstand lesen
+      operationId: getExpense
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert den Beleg (Herkunftskanal, Belegart, Eingangszeit, Original-Metadaten, Integritätszustand), den aktuellen Feldstand und die Freigabehindernisse (`blockers`). Sichtbar für den Erfasser und die Finanzrolle; fremde Mandanten und andere Akteure: 404. Die Revision steht als starker ETag (`If-Match` bei Änderungen).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    patch:
+      summary: Belegfelder korrigieren oder OCR-Vorschläge bestätigen
+      operationId: correctExpense
+      security:
+      - oidc:
+        - receipts:write
+      description: 'Setzt Belegfelder (`fields`) und/oder bestätigt OCR-Vorschläge unverändert (`confirm`); jede Änderung erzeugt genau eine neue, unveränderliche Revision mit Bearbeiter, Zeitpunkt, Grund sowie Alt- und Neuwert je Feld. Das Original wird nie verändert. `If-Match` ist Pflicht (428 ohne, 412 bei veralteter Revision; bei parallelen Korrekturen derselben Revision gewinnt genau eine). Ein Beleg in Quarantäne oder mit Integritätsverletzung ist nicht bearbeitbar (409), ein freigegebener oder gebuchter Beleg ist unveränderlich (409 `IMMUTABLE_RECORD`, Korrektur nur per Gegenereignis). Ein Wert, der dem aktuellen Stand entspricht, ist 422.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseCorrection'
+  /v1/expenses/{expense_id}/revisions:
+    get:
+      summary: Revisionen eines Belegs lesen
+      operationId: listExpenseRevisions
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Alle Revisionen ab 1 aufsteigend: je Feld Alt- und Neuwert, Bearbeiter, Zeitpunkt, Grund; bei OCR-Feldern der unveränderte Vorschlag. Revision 1 ist die Anlage ohne Feldwerte. Sichtbarkeit wie `getExpense`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseRevisionList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/original:
+    get:
+      summary: Belegoriginal abrufen
+      operationId: getExpenseOriginal
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert das Original byteweise unverändert, nur wenn die Quarantäneprüfung bestanden ist (sonst 404). Vor der Auslieferung wird der Hash geprüft: eine Abweichung oder ein fehlendes Objekt ergibt 409 `DOCUMENT_INTEGRITY_VIOLATION` und einen Integritätsvorfall. Die Auslieferung über eine signierte, kurzlebige URL des Objektspeichers ist nicht ausgeführt (kein Objektspeicher-Adapter); die Antwort enthält die Bytes direkt.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    ExpenseVatAmount:
+      type: object
+      additionalProperties: false
+      properties:
+        vat_rate_pct:
+          type: string
+          pattern: ^[0-9]{1,2}(\.[0-9]{1,2})?$
+          description: Mehrwertsteuersatz in Prozent als Dezimalstring.
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Mehrwertsteuerbetrag in kleinster Einheit.
+      required:
+      - vat_rate_pct
+      - amount_minor
+    ExpenseFieldValues:
+      type: object
+      additionalProperties: false
+      description: Belegfelder in Normalform. Nicht erfasste Felder fehlen.
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Bruttobetrag in kleinster Einheit.
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        document_date:
+          type: string
+          format: date
+        merchant:
+          type: string
+          minLength: 1
+          maxLength: 200
+        document_number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        vat_amounts:
+          type: array
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/ExpenseVatAmount'
+    ExpenseFieldName:
+      type: string
+      enum:
+      - amount_minor
+      - currency
+      - document_date
+      - merchant
+      - document_number
+      - vat_amounts
+    ExpenseCorrection:
+      type: object
+      additionalProperties: false
+      description: Mindestens eines von `fields` und `confirm`. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        fields:
+          $ref: '#/components/schemas/ExpenseFieldValues'
+        confirm:
+          type: array
+          maxItems: 6
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/ExpenseFieldName'
+      required:
+      - reason
+    ExpenseCaseRef:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+          - VEHICLE
+          - SHIFT
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - kind
+      - id
+    Expense:
+      type: object
+      additionalProperties: false
+      properties:
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          description: Belegzustand; QUARANTINED, STORED oder QUARANTINE_REJECTED, danach die Zustände der Freigabe und Buchung (weitere Arbeitspakete).
+        source_channel:
+          type: string
+          enum:
+          - DRIVER_APP
+          - DISPATCH_WEB
+          - EMAIL_INBOUND
+          - INVOICE_IMPORT
+        document_kind:
+          type: string
+          enum:
+          - RECEIPT
+          - FUEL_RECEIPT
+          - INVOICE
+          - OTHER
+        case_ref:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseCaseRef'
+        mime:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1073741824
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Serverseitig berechneter SHA-256 des Originals, base64url.
+        received_at:
+          type: string
+          format: date-time
+          description: Eingangszeit des Originals (Server).
+        scanned_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        sender_verified:
+          oneOf:
+          - type: boolean
+          - type: 'null'
+          description: Nur E-Mail-Eingang; false = Absenderdomäne nicht verifiziert, der Beleg ist nicht freigabefähig.
+        integrity:
+          type: string
+          enum:
+          - UNCHECKED
+          - VERIFIED
+          - VIOLATED
+        approvable:
+          type: boolean
+          description: Aus dem Dokument folgende Freigabefähigkeit (keine Blocker); weitere Voraussetzungen kommen mit späteren Paketen.
+        blockers:
+          type: array
+          items:
+            type: string
+            enum:
+            - NOT_STORED
+            - UNVERIFIED_SENDER
+            - INTEGRITY_VIOLATION
+        fields:
+          $ref: '#/components/schemas/ExpenseFieldValues'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - document_id
+      - legal_entity_id
+      - state
+      - source_channel
+      - document_kind
+      - case_ref
+      - mime
+      - size_bytes
+      - sha256
+      - received_at
+      - scanned_at
+      - sender_verified
+      - integrity
+      - approvable
+      - blockers
+      - fields
+      - revision
+    ExpenseFieldChange:
+      type: object
+      additionalProperties: false
+      properties:
+        old: {}
+        new: {}
+        confirmed:
+          type: boolean
+        ocr_proposal: {}
+      required:
+      - old
+      - new
+      - confirmed
+    ExpenseRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExpenseFieldChange'
+        edited_by:
+          type: string
+          maxLength: 200
+        edited_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          maxLength: 500
+        edited_view_key:
+          oneOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+      required:
+      - revision
+      - fields
+      - edited_by
+      - edited_at
+      - reason
+      - edited_view_key
+    ExpenseRevisionList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseRevision'
+      required:
+      - items
     DecimalQuantity:
       type: string
       pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$

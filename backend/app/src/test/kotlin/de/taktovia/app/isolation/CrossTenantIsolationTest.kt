@@ -130,6 +130,7 @@ class CrossTenantIsolationTest {
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent, "shift_id" to shift, "roster_id" to roster,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
 
@@ -223,6 +224,13 @@ class CrossTenantIsolationTest {
             "getDriverRun" to Probe("GET", "/v1/driver/shifts/{shift_id}/run", role = "driver"),
             "getStaffShift" to Probe("GET", "/v1/shifts/{shift_id}", role = "dispatcher"),
             "updateStaffShift" to Probe("PUT", "/v1/shifts/{shift_id}", """{"driver_id":"${UUID.randomUUID()}","vehicle_id":"${UUID.randomUUID()}","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin","withdrawn":true}""", true, role = "dispatcher"),
+            // Belege: Aggregat, Revisionen, Original, Extraktion (WP-M4-22 bis -27)
+            "getExpense" to Probe("GET", "/v1/expenses/{expense_id}", role = "finance"),
+            "correctExpense" to Probe("PATCH", "/v1/expenses/{expense_id}", """{"reason":"Fremdversuch","fields":{"amount_minor":1}}""", true, role = "finance"),
+            "listExpenseRevisions" to Probe("GET", "/v1/expenses/{expense_id}/revisions", role = "finance"),
+            "getExpenseOriginal" to Probe("GET", "/v1/expenses/{expense_id}/original", role = "finance"),
+            "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
+            "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
             "getRosterShift" to Probe("GET", "/v1/rosters/shifts/{shift_id}?roster_id={roster_id}", role = "planner"),
