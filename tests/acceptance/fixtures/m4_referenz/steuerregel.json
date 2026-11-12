@@ -1,0 +1,14 @@
+{
+  "_hinweis": "Test-Steuerregel als Testdatum (Kap. 03). Keine steuerliche Aussage; die freigegebene Regel liefert der Auftraggeber (D-06/D-07).",
+  "revision": "test-steuerregel-1",
+  "satz_prozent": 19,
+  "abzugsfaehig": "VOLL",
+  "beispiel": {
+    "brutto_minor": 11900,
+    "netto_minor": 10000,
+    "steuer_minor": 1900,
+    "vorsteuer_minor": 1900,
+    "waehrung": "EUR",
+    "exponent": 2
+  }
+}

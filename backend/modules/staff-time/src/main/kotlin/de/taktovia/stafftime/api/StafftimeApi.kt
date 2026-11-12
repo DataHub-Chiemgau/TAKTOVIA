@@ -21,6 +21,9 @@ interface StafftimeApi {
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers
 
+    /** Leseport Fahrer und Qualifikationen für M4 (WP-M4-02). */
+    val driverReadPort: de.taktovia.platform.readports.DriverReadPort
+
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): StafftimeApi =
             StafftimeServicesFactory.create(ctxTx, audit, outbox, clock)

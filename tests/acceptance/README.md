@@ -41,3 +41,5 @@ python tests/acceptance/m1_gate/traceability.py [--strict]   # CI-Regeln: keine 
 ```
 
 Die Szenarien prüfen den in M1 prüfbaren Umfang ([m1-gate-umfang.md](docs/m1-gate-umfang.md)); nicht prüfbare Teilschritte stehen dort mit Zielmeilenstein (OP-02). Die Abnahmeentscheidung bleibt `PENDING`/`Ausstehend`.
+
+- `test_m4_referenz.py` (WP-M4-02): Referenzdaten M4 (zwei Mandanten, Musterfahrt, Sollwerte PH-AT-012/-013/-015/-021, DST-Stichtage) laden reproduzierbar und mandantengetrennt; Beschreibung in `fixtures/m4_referenz/README.md`.

@@ -18,6 +18,7 @@ internal object FleetServicesFactory {
             override val vehicleRoles: VehicleRoles = roles
             override val vehicles: Vehicles = vehicles
             override val vehicleCapacities: VehicleCapacities = vehicles
+            override val fleetReadPort: de.taktovia.platform.readports.FleetReadPort = JdbcFleetReadPort(ctxTx)
         }
     }
 }

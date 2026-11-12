@@ -32,6 +32,7 @@ internal object BookingServicesFactory {
             override val runs: RunPlans = runPlans
             override val insertion: InsertionService? = insertionService
             override val audit: ConfirmedRideAudit = JdbcConfirmedRideAudit(ctxTx, runPlans)
+            override val tripPlans: de.taktovia.platform.readports.TripPlanReadPort = JdbcTripPlanReadPort(ctxTx)
         }
     }
 }

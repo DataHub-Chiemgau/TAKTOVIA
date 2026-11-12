@@ -1,0 +1,203 @@
+{
+  "_hinweis": "Katalog der Referenzdaten M4 (Seed fixtures/m4_referenz/seed.sql): IDs sind md5('m4ref/<mandant>/<schlüssel>')::uuid. Dient als einzige Quelle der Stub-Implementierungen der Leseports und ihres Vertragstests; der DB-Seed muss dieselben Werte liefern (Test).",
+  "mandanten": {
+    "a": "00000000-0000-4000-8000-0000000000a4",
+    "b": "00000000-0000-4000-8000-0000000000b4"
+  },
+  "je_mandant": {
+    "rechtstraeger": [
+      "le-x",
+      "le-y"
+    ],
+    "depots": [
+      "dep-1",
+      "dep-2"
+    ],
+    "kostenstellen": [
+      {
+        "key": "cc-1",
+        "business_ref": "KST-100"
+      },
+      {
+        "key": "cc-2",
+        "business_ref": "KST-200"
+      }
+    ],
+    "fahrzeuge": [
+      {
+        "key": "veh-1",
+        "seats": 4,
+        "wheelchair": 0,
+        "equipment": [],
+        "rollen": [
+          {
+            "org": "org-x",
+            "role": "OWNER"
+          },
+          {
+            "org": "org-y",
+            "role": "OPERATOR"
+          }
+        ]
+      },
+      {
+        "key": "veh-2",
+        "seats": 6,
+        "wheelchair": 1,
+        "equipment": [
+          "RAMP"
+        ],
+        "rollen": [
+          {
+            "org": "org-x",
+            "role": "OWNER"
+          },
+          {
+            "org": "org-y",
+            "role": "OPERATOR"
+          }
+        ]
+      }
+    ],
+    "fahrer": [
+      {
+        "key": "drv-1",
+        "qualifikationen": [
+          {
+            "code": "PERSONENBEFOERDERUNG",
+            "revision": 1,
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_to": null
+          },
+          {
+            "code": "ROLLSTUHLBEFOERDERUNG",
+            "revision": 1,
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_to": null
+          }
+        ]
+      },
+      {
+        "key": "drv-2",
+        "qualifikationen": [
+          {
+            "code": "PERSONENBEFOERDERUNG",
+            "revision": 1,
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_to": "2026-12-31T23:00:00Z"
+          }
+        ]
+      }
+    ],
+    "schichten": [
+      {
+        "key": "shift-day",
+        "fahrer": "drv-1",
+        "fahrzeug": "veh-1",
+        "von": "2026-12-01T05:00:00Z",
+        "bis": "2026-12-01T13:00:00Z"
+      },
+      {
+        "key": "shift-dst-autumn",
+        "fahrer": "drv-1",
+        "fahrzeug": "veh-1",
+        "von": "2026-10-24T20:00:00Z",
+        "bis": "2026-10-25T05:00:00Z"
+      },
+      {
+        "key": "shift-dst-spring",
+        "fahrer": "drv-2",
+        "fahrzeug": "veh-2",
+        "von": "2027-03-27T21:00:00Z",
+        "bis": "2027-03-28T04:00:00Z"
+      }
+    ]
+  },
+  "mandant_a": {
+    "buchung": {
+      "key": "bkg-1",
+      "service": "svc-1",
+      "state": "CONFIRMED",
+      "run": "run-1",
+      "passagiere": 2,
+      "zusage": {
+        "pickup_earliest": "2026-12-01T06:10:00Z",
+        "pickup_latest": "2026-12-01T06:25:00Z",
+        "arrival_earliest": "2026-12-01T06:30:00Z",
+        "arrival_latest": "2026-12-01T06:45:00Z"
+      }
+    },
+    "fahrtenplan": {
+      "run": "run-1",
+      "revision": 1,
+      "shift": "shift-day",
+      "vehicle": "veh-1",
+      "state": "ACTIVE",
+      "stopps": [
+        {
+          "seq": 0,
+          "stop": "stoprev-depot",
+          "planned_at": "2026-12-01T06:00:00Z",
+          "dauer_s": 900,
+          "strecke_m": 4200,
+          "boarding": [],
+          "alighting": []
+        },
+        {
+          "seq": 1,
+          "stop": "stoprev-pickup",
+          "planned_at": "2026-12-01T06:15:00Z",
+          "dauer_s": 1260,
+          "strecke_m": 8200,
+          "boarding": [
+            "bkg-1"
+          ],
+          "alighting": []
+        },
+        {
+          "seq": 2,
+          "stop": "stoprev-dropoff",
+          "planned_at": "2026-12-01T06:36:00Z",
+          "dauer_s": null,
+          "strecke_m": null,
+          "boarding": [],
+          "alighting": [
+            "bkg-1"
+          ]
+        }
+      ]
+    },
+    "fahrerereignisse": [
+      {
+        "event": "ev-1",
+        "shift": "shift-day",
+        "type": "CHECK_IN",
+        "booking": "bkg-1",
+        "occurred_at": "2026-12-01T06:17:00Z"
+      },
+      {
+        "event": "ev-2",
+        "shift": "shift-day",
+        "type": "ARRIVAL",
+        "booking": "bkg-1",
+        "occurred_at": "2026-12-01T06:38:00Z"
+      }
+    ],
+    "positionen": [
+      {
+        "key": "pos-1",
+        "vehicle": "veh-1",
+        "lon": 13.741,
+        "lat": 51.049,
+        "measured_at": "2026-12-01T06:16:00Z"
+      },
+      {
+        "key": "pos-2",
+        "vehicle": "veh-1",
+        "lon": 13.799,
+        "lat": 51.079,
+        "measured_at": "2026-12-01T06:37:00Z"
+      }
+    ]
+  }
+}

@@ -20,6 +20,9 @@ interface FleetsafetyApi {
     /** Kapazitäts- und Stellplatzkonfiguration (WP-M3-04). */
     val vehicleCapacities: VehicleCapacities
 
+    /** Leseport Fahrzeugstamm und Rollen für M4 (WP-M4-02). */
+    val fleetReadPort: de.taktovia.platform.readports.FleetReadPort
+
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): FleetsafetyApi =
             FleetServicesFactory.create(ctxTx, audit, outbox, clock)
