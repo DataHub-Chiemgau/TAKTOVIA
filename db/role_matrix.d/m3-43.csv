@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+defect_case_counter;SELECT,INSERT,UPDATE;WP-M3-43: Fallnummernzähler je Mandant und Jahr; steigt nur um 1 (Trigger), kein DELETE

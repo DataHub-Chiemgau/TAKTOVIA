@@ -33,6 +33,7 @@ import { Checklistenvorlagen } from './flotte/Checklistenvorlagen';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Schichtzuweisung } from './flotte/Schichtzuweisung';
+import { Schadenakte } from './flotte/Schadenakte';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -194,6 +195,14 @@ export function App() {
             element={
               <RequireRight right="fleet">
                 <Fahrzeugstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/schaeden"
+            element={
+              <RequireRight right="defects">
+                <Schadenakte />
               </RequireRight>
             }
           />

@@ -1,0 +1,3 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+defect_case;reopen_count;nein;FLOTTE_SICHERHEIT;;;;Zahl der dokumentierten Wiedereröffnungen, WP-M3-47
+defect_status_history;is_reopening;nein;FLOTTE_SICHERHEIT;;;;Kennzeichen der Wiedereröffnung, WP-M3-47

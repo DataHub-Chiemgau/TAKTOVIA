@@ -123,7 +123,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Schichtzuweisung',
         ],
       ],
-      ['workshop', ['Start', 'Flotte und Werkstatt', 'Checklistenvorlagen']],
+      ['workshop', ['Start', 'Flotte und Werkstatt', 'Checklistenvorlagen', 'Schadenakten']],
     ];
     for (const [role, expected] of cases) {
       const view = renderFor(role);

@@ -6,8 +6,11 @@ paths:
       security:
       - oidc:
         - operator:read
-      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`, `depot_id` (in M3 nicht unterstützt, dann 422; kein Betriebshofbezug am Fahrzeug, OP-22). Fremdmandanten sind nie sichtbar. Der Standort
-        trägt `measured_at` und `position_age_seconds`; ab `position_stale_after_sec` ist `position_stale` wahr (OP-04).
+      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`,
+        `depot_id` (in M3 nicht unterstützt, dann 422; kein Betriebshofbezug am Fahrzeug,
+        OP-22). Fremdmandanten sind nie sichtbar. Der Standort trägt `measured_at`
+        und `position_age_seconds`; ab `position_stale_after_sec` ist `position_stale`
+        wahr (OP-04).
       parameters:
       - name: state
         in: query
@@ -52,9 +55,10 @@ paths:
       security:
       - oidc:
         - operator:write
-      description: 'Setzt eine Sperre der Quelle OPERATIONS und erhöht `safety_revision` im selben Commit; das Fahrzeug ist danach nicht mehr
-        Kandidat neuer Zuweisungen (OPS-005). If-Match: Revision des Fahrzeugs (`OperatorVehicle.revision`). Fremdes Fahrzeug: 404. Wiederholter
-        Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+      description: 'Setzt eine Sperre der Quelle OPERATIONS und erhöht `safety_revision`
+        im selben Commit; das Fahrzeug ist danach nicht mehr Kandidat neuer Zuweisungen
+        (OPS-005). If-Match: Revision des Fahrzeugs (`OperatorVehicle.revision`).
+        Fremdes Fahrzeug: 404. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
       parameters:
       - name: vehicle_id
         in: path
@@ -115,8 +119,9 @@ paths:
       security:
       - oidc:
         - operator:write
-      description: 'Hebt nur eine Sperre der Quelle OPERATIONS auf; eine Sperre der Quelle SAFETY ergibt 409 INVALID_STATE_TRANSITION (Aufhebung
-        nur über `createVehicleRelease`). If-Match: Revision der Sperre.'
+      description: 'Hebt nur eine Sperre der Quelle OPERATIONS auf; eine Sperre der
+        Quelle SAFETY ergibt 409 INVALID_STATE_TRANSITION (Aufhebung nur über `createVehicleRelease`).
+        If-Match: Revision der Sperre.'
       parameters:
       - name: vehicle_id
         in: path
@@ -179,8 +184,9 @@ paths:
       security:
       - oidc:
         - inspections:read
-      description: Nur freigegebene Revisionen, optional gefiltert nach Fahrzeugklasse und Bedienart (CHK-002, Ergänzungsvorschlag zu OP-14).
-        Die App cached die Revision, die der Prüflauf verwendet.
+      description: Nur freigegebene Revisionen, optional gefiltert nach Fahrzeugklasse
+        und Bedienart (CHK-002, Ergänzungsvorschlag zu OP-14). Die App cached die
+        Revision, die der Prüflauf verwendet.
       parameters:
       - name: vehicle_class
         in: query
@@ -229,7 +235,9 @@ paths:
       security:
       - oidc:
         - checklists:read
-      description: 'Alle Revisionen der Checklistenvorlagen des Mandanten (Entwurf, freigegeben, abgelöst), optional nach Zustand, Fahrzeugklasse und Bedienart gefiltert (WP-M3-10, LH-6.21-CHK-003; UI-11). Ungültiger Zustand: 422.'
+      description: 'Alle Revisionen der Checklistenvorlagen des Mandanten (Entwurf,
+        freigegeben, abgelöst), optional nach Zustand, Fahrzeugklasse und Bedienart
+        gefiltert (WP-M3-10, LH-6.21-CHK-003; UI-11). Ungültiger Zustand: 422.'
       parameters:
       - name: state
         in: query
@@ -281,7 +289,11 @@ paths:
       security:
       - oidc:
         - checklists:write
-      description: 'Legt eine neue Vorlage (Version 1) als Entwurf an. Jedes Prüfelement braucht Titel, Eingabetyp und Pflichtstatus; fehlt eines davon, ist der Wert ungültig oder der Schlüssel doppelt, ist die Vorlage nicht speicherbar (422 mit Feldverweis `/steps/<n>/<feld>`, CHK-003). Der Hilfetext ist optional (OP, im Fachreview zu bestätigen). Der Mandant folgt aus der Sitzung.'
+      description: Legt eine neue Vorlage (Version 1) als Entwurf an. Jedes Prüfelement
+        braucht Titel, Eingabetyp und Pflichtstatus; fehlt eines davon, ist der Wert
+        ungültig oder der Schlüssel doppelt, ist die Vorlage nicht speicherbar (422
+        mit Feldverweis `/steps/<n>/<feld>`, CHK-003). Der Hilfetext ist optional
+        (OP, im Fachreview zu bestätigen). Der Mandant folgt aus der Sitzung.
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -327,7 +339,8 @@ paths:
       security:
       - oidc:
         - checklists:read
-      description: 'Eine Vorlagenrevision mit allen Prüfelementen und starkem ETag. Fremde oder unbekannte Revision: 404.'
+      description: 'Eine Vorlagenrevision mit allen Prüfelementen und starkem ETag.
+        Fremde oder unbekannte Revision: 404.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -367,7 +380,11 @@ paths:
       security:
       - oidc:
         - checklists:write
-      description: 'Ersetzt Name, Fahrzeugklasse, Bedienart und Prüfelemente eines **Entwurfs**. Beispielbilder bleiben je Schlüssel erhalten. Eine freigegebene oder abgelöste Revision ist unveränderlich: 409 `IMMUTABLE_RECORD`; die Änderung erfolgt über eine neue Revision. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      description: 'Ersetzt Name, Fahrzeugklasse, Bedienart und Prüfelemente eines
+        **Entwurfs**. Beispielbilder bleiben je Schlüssel erhalten. Eine freigegebene
+        oder abgelöste Revision ist unveränderlich: 409 `IMMUTABLE_RECORD`; die Änderung
+        erfolgt über eine neue Revision. If-Match: Revision der Vorlagenrevision;
+        ohne 428, veraltet 412.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -424,7 +441,11 @@ paths:
       security:
       - oidc:
         - checklists:write
-      description: 'Legt aus einer freigegebenen oder abgelösten Revision einen neuen Entwurf (Version + 1, Prüfelemente und Beispielbilder kopiert) an. If-Match: Revision der Quelle; ohne 428, veraltet 412. Besteht für die Vorlage schon ein Entwurf, oder ist die Quelle selbst ein Entwurf: 409. Fremde Revision: 404.'
+      description: 'Legt aus einer freigegebenen oder abgelösten Revision einen neuen
+        Entwurf (Version + 1, Prüfelemente und Beispielbilder kopiert) an. If-Match:
+        Revision der Quelle; ohne 428, veraltet 412. Besteht für die Vorlage schon
+        ein Entwurf, oder ist die Quelle selbst ein Entwurf: 409. Fremde Revision:
+        404.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -477,7 +498,12 @@ paths:
       security:
       - oidc:
         - checklists:write
-      description: 'Gibt den Entwurf nach dem Vier-Augen-Prinzip frei: der Freigebende ist nie der Ersteller (403) und immer ein Mensch. Die bisher wirksame Revision der Vorlage wird abgelöst; es gibt je Vorlage genau eine wirksame Revision. Bei gleichzeitigen Freigaben derselben Revision gewinnt genau eine, die andere erhält 409. Ohne Prüfelement 422. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      description: 'Gibt den Entwurf nach dem Vier-Augen-Prinzip frei: der Freigebende
+        ist nie der Ersteller (403) und immer ein Mensch. Die bisher wirksame Revision
+        der Vorlage wird abgelöst; es gibt je Vorlage genau eine wirksame Revision.
+        Bei gleichzeitigen Freigaben derselben Revision gewinnt genau eine, die andere
+        erhält 409. Ohne Prüfelement 422. If-Match: Revision der Vorlagenrevision;
+        ohne 428, veraltet 412.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -528,7 +554,11 @@ paths:
       security:
       - oidc:
         - checklists:write
-      description: 'Legt das Beispielbild (PNG, JPEG oder WebP, höchstens 512 KiB, Inhalt Base64) im mandantengetrennten Objektspeicher ab und verknüpft es mit dem Prüfelement eines Entwurfs. Andere Medientypen: 415; Inhalt passt nicht zum Typ oder zu groß: 422; nicht mehr Entwurf: 409. If-Match: Revision der Vorlagenrevision; ohne 428, veraltet 412.'
+      description: 'Legt das Beispielbild (PNG, JPEG oder WebP, höchstens 512 KiB,
+        Inhalt Base64) im mandantengetrennten Objektspeicher ab und verknüpft es mit
+        dem Prüfelement eines Entwurfs. Andere Medientypen: 415; Inhalt passt nicht
+        zum Typ oder zu groß: 422; nicht mehr Entwurf: 409. If-Match: Revision der
+        Vorlagenrevision; ohne 428, veraltet 412.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -595,7 +625,9 @@ paths:
       security:
       - oidc:
         - inspections:read
-      description: 'Liefert das Beispielbild des Prüfelements aus dem Objektspeicher des eigenen Mandanten (Base64). Ohne Bild, fremde Revision oder fremder Mandant: 404.'
+      description: 'Liefert das Beispielbild des Prüfelements aus dem Objektspeicher
+        des eigenen Mandanten (Base64). Ohne Bild, fremde Revision oder fremder Mandant:
+        404.'
       parameters:
       - name: checklist_revision_id
         in: path
@@ -639,9 +671,11 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Legt einen Prüflauf für genau die Kombination Fahrer (aus dem Token), Fahrzeug und Schicht an. Fremde Schicht oder fremdes
-        Fahrzeug: 404; Schicht eines anderen Fahrers: 404; Vorlagenrevision nicht die freigegebene: 422. Ein zweiter offener Prüflauf derselben
-        Kombination liefert den ersten (200 ist nicht vorgesehen, daher 409 CONFLICT mit Verweis).'
+      description: 'Legt einen Prüflauf für genau die Kombination Fahrer (aus dem
+        Token), Fahrzeug und Schicht an. Fremde Schicht oder fremdes Fahrzeug: 404;
+        Schicht eines anderen Fahrers: 404; Vorlagenrevision nicht die freigegebene:
+        422. Ein zweiter offener Prüflauf derselben Kombination liefert den ersten
+        (200 ist nicht vorgesehen, daher 409 CONFLICT mit Verweis).'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -691,7 +725,8 @@ paths:
       security:
       - oidc:
         - inspections:read
-      description: 'Mit Antworten, fehlenden Voraussetzungen und, nach serverseitiger Bestätigung, der Einsatzfreigabe. Fremde Prüfung: 404.'
+      description: 'Mit Antworten, fehlenden Voraussetzungen und, nach serverseitiger
+        Bestätigung, der Einsatzfreigabe. Fremde Prüfung: 404.'
       parameters:
       - name: inspection_id
         in: path
@@ -733,8 +768,9 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Speichert den Entwurf der Antworten (CHK-006); nur im Zustand IN_PROGRESS, danach 409 IMMUTABLE_RECORD. If-Match: Revision
-        des Prüflaufs; veraltet: 412.'
+      description: 'Speichert den Entwurf der Antworten (CHK-006); nur im Zustand
+        IN_PROGRESS, danach 409 IMMUTABLE_RECORD. If-Match: Revision des Prüflaufs;
+        veraltet: 412.'
       parameters:
       - name: inspection_id
         in: path
@@ -791,9 +827,10 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Schließt den Lauf ab; Pflichtschritte fehlen: 422 VALIDATION_FAILED; abgelaufen: 409 INVALID_STATE_TRANSITION. Die Antwort
-        enthält Ergebnis und Freigabe, die allein der Server entscheidet (CHK-001, CHK-013). Wiederholung mit demselben Idempotency-Key liefert
-        dieselbe Antwort.'
+      description: 'Schließt den Lauf ab; Pflichtschritte fehlen: 422 VALIDATION_FAILED;
+        abgelaufen: 409 INVALID_STATE_TRANSITION. Die Antwort enthält Ergebnis und
+        Freigabe, die allein der Server entscheidet (CHK-001, CHK-013). Wiederholung
+        mit demselben Idempotency-Key liefert dieselbe Antwort.'
       parameters:
       - name: inspection_id
         in: path
@@ -850,7 +887,9 @@ paths:
       security:
       - oidc:
         - defects:read
-      description: Filter `vehicle_id`, `status`, `severity`; Fahrer sehen nur eigene Meldungen (DMG-011).
+      description: Filter `vehicle_id`, `status`, `severity` und Zeitraum `reported_from`/`reported_to`
+        (auffindbar über Fahrzeug und Datum, DMG-002); Fahrer sehen nur eigene Meldungen
+        (DMG-011).
       parameters:
       - name: vehicle_id
         in: query
@@ -877,6 +916,20 @@ paths:
         schema:
           $ref: '#/components/schemas/DefectSeverity'
         description: Nur Akten dieser Klasse.
+      - name: reported_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Nur Akten mit Meldezeitpunkt ab diesem Zeitpunkt (einschließlich).
+      - name: reported_to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Nur Akten mit Meldezeitpunkt vor diesem Zeitpunkt.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -907,8 +960,10 @@ paths:
       security:
       - oidc:
         - defects:write
-      description: 'Legt die Akte mit Fallnummer im Status NEW an; wiederholte Meldung mit demselben Idempotency-Key oder derselben `device_event_id`
-        liefert dieselbe Akte. Fremdes Fahrzeug: 404.'
+      description: 'Legt die Akte mit Fallnummer im Status NEW an (201); wiederholte
+        Meldung mit demselben Idempotency-Key liefert dieselbe Antwort, mit derselben
+        `device_event_id` dieselbe Akte (200). Fremdes Fahrzeug, Fahrer ohne Bezug
+        zum Fahrzeug: 404. Fehlende Pflichtdaten, Ereigniszeit in der Zukunft: 422.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -945,6 +1000,19 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+        '200':
+          description: Wiederholung mit derselben `device_event_id`; dieselbe Akte,
+            keine zweite.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
       requestBody:
         required: true
         content:
@@ -1001,8 +1069,9 @@ paths:
       security:
       - oidc:
         - defects:triage
-      description: 'Setzt Klasse, Zuständigen und Folgestatus nach defect_case.md. Sicherheitskritisch sperrt das Fahrzeug im selben Commit (DMG-005/-006).
-        Unzulässiger Statussprung: 409 INVALID_STATE_TRANSITION; veraltete Revision: 412.'
+      description: 'Setzt Klasse, Zuständigen und Folgestatus nach defect_case.md.
+        Sicherheitskritisch sperrt das Fahrzeug im selben Commit (DMG-005/-006). Unzulässiger
+        Statussprung: 409 INVALID_STATE_TRANSITION; veraltete Revision: 412.'
       parameters:
       - name: defect_id
         in: path
@@ -1103,7 +1172,8 @@ paths:
       security:
       - oidc:
         - repair:write
-      description: 'Zulässig, wenn die Akte im Status IN_PROGRESS ist; setzt die Akte auf REPAIR. Fremde Akte: 404.'
+      description: 'Zulässig, wenn die Akte im Status IN_PROGRESS ist; setzt die Akte
+        auf REPAIR. Fremde Akte: 404.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -1153,9 +1223,10 @@ paths:
       security:
       - oidc:
         - fleet:release
-      description: 'Verlangt Reparaturnachweis, bestandene Folgeprüfung und die berechtigte Rolle; ohne zweite Person: Entscheidung PENDING_SECOND_APPROVAL
-        (Vieraugenpflicht). Der Aufrufer mit gleicher Identität wie der Erstfreigeber kann nicht zweiter Freigeber sein (403). If-Match: Revision
-        des Fahrzeugs.'
+      description: 'Verlangt Reparaturnachweis, bestandene Folgeprüfung und die berechtigte
+        Rolle; ohne zweite Person: Entscheidung PENDING_SECOND_APPROVAL (Vieraugenpflicht).
+        Der Aufrufer mit gleicher Identität wie der Erstfreigeber kann nicht zweiter
+        Freigeber sein (403). If-Match: Revision des Fahrzeugs.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1309,7 +1380,8 @@ paths:
       security:
       - oidc:
         - operator:write
-      description: 'Löst ein Ereignis des Incident-Automaten aus; unzulässig: 409 INVALID_STATE_TRANSITION. If-Match: Revision des Incidents.'
+      description: 'Löst ein Ereignis des Incident-Automaten aus; unzulässig: 409
+        INVALID_STATE_TRANSITION. If-Match: Revision des Incidents.'
       parameters:
       - name: incident_id
         in: path
@@ -1366,7 +1438,10 @@ paths:
       security:
       - oidc:
         - fleet:read
-      description: 'Stammdaten der Fahrzeuge des Mandanten (WP-M3-03, LH-6.8-FLT-001), Listenform {items,next_cursor,as_of}. Filter `active`. Deaktivierte Fahrzeuge bleiben lesbar. Die Leitstellenansicht mit Betriebszustand und Standortalter ist `listOperatorVehicles`.'
+      description: Stammdaten der Fahrzeuge des Mandanten (WP-M3-03, LH-6.8-FLT-001),
+        Listenform {items,next_cursor,as_of}. Filter `active`. Deaktivierte Fahrzeuge
+        bleiben lesbar. Die Leitstellenansicht mit Betriebszustand und Standortalter
+        ist `listOperatorVehicles`.
       parameters:
       - name: active
         in: query
@@ -1402,7 +1477,13 @@ paths:
       security:
       - oidc:
         - fleet:write
-      description: 'Legt ein Fahrzeug mit Kennung, Betreiber, Typ, Kapazität, Ausstattung und Aktivstatus an. Negative, fehlende oder nicht ganzzahlige Kapazität: 422 mit Feldverweis, nichts wird gespeichert. Doppelte Kennung im Mandanten: 409 mit Feldverweis /vehicle_label. Betreiber aus einem fremden Mandanten: 422 an /operator_organization_id. Ein neues Fahrzeug ist bis zur Einsatzfreigabe nicht disponierbar (`dispatch_blocked`, OP-01). Der Mandant folgt aus der Sitzung, nie aus dem Body.'
+      description: 'Legt ein Fahrzeug mit Kennung, Betreiber, Typ, Kapazität, Ausstattung
+        und Aktivstatus an. Negative, fehlende oder nicht ganzzahlige Kapazität: 422
+        mit Feldverweis, nichts wird gespeichert. Doppelte Kennung im Mandanten: 409
+        mit Feldverweis /vehicle_label. Betreiber aus einem fremden Mandanten: 422
+        an /operator_organization_id. Ein neues Fahrzeug ist bis zur Einsatzfreigabe
+        nicht disponierbar (`dispatch_blocked`, OP-01). Der Mandant folgt aus der
+        Sitzung, nie aus dem Body.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -1450,7 +1531,8 @@ paths:
       security:
       - oidc:
         - fleet:read
-      description: 'Ein Fahrzeug des Mandanten mit starkem ETag. Fremdes oder unbekanntes Fahrzeug: 404.'
+      description: 'Ein Fahrzeug des Mandanten mit starkem ETag. Fremdes oder unbekanntes
+        Fahrzeug: 404.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1490,7 +1572,11 @@ paths:
       security:
       - oidc:
         - fleet:write
-      description: 'Ersetzt die Stammdaten (alle Pflichtfelder). `active: false` deaktiviert das Fahrzeug (kein neues Disponieren, Historie bleibt lesbar). If-Match: Stammdaten-Revision (`VehicleMaster.revision`); ohne 428, veraltet 412, bei gleichzeitiger Änderung gewinnt genau eine. Besteht eine Kapazitätskonfiguration, müssen Kapazität und Ausstattung dem wirksamen Stand entsprechen, sonst 409 (Pflege über `/capacity`).'
+      description: 'Ersetzt die Stammdaten (alle Pflichtfelder). `active: false` deaktiviert
+        das Fahrzeug (kein neues Disponieren, Historie bleibt lesbar). If-Match: Stammdaten-Revision
+        (`VehicleMaster.revision`); ohne 428, veraltet 412, bei gleichzeitiger Änderung
+        gewinnt genau eine. Besteht eine Kapazitätskonfiguration, müssen Kapazität
+        und Ausstattung dem wirksamen Stand entsprechen, sonst 409 (Pflege über `/capacity`).'
       parameters:
       - name: vehicle_id
         in: path
@@ -1547,7 +1633,10 @@ paths:
       security:
       - oidc:
         - fleet:read
-      description: 'Kapazitätskonfiguration des Fahrzeugs (WP-M3-04): Stellplätze, Kombinationen (Umrüstzustände), Restriktionen und der verfügbare Ressourcenvektor je Konfiguration. Ohne Konfiguration ist `layout` null und der einzige Vektor die Grundkapazität. Fremdes Fahrzeug: 404.'
+      description: 'Kapazitätskonfiguration des Fahrzeugs (WP-M3-04): Stellplätze,
+        Kombinationen (Umrüstzustände), Restriktionen und der verfügbare Ressourcenvektor
+        je Konfiguration. Ohne Konfiguration ist `layout` null und der einzige Vektor
+        die Grundkapazität. Fremdes Fahrzeug: 404.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1587,7 +1676,13 @@ paths:
       security:
       - oidc:
         - fleet:write
-      description: 'Ändert die Teile `spaces`, `equipment`, `combinations` (mit `active_combination`) und `restrictions` unabhängig voneinander; nicht genannte Teile bleiben unverändert. Gibt es noch keine Konfiguration, sind `spaces`, `combinations` und `active_combination` Pflicht. Widersprüchliche Kombination (mehr belegte Fläche als vorhanden), unbekannte Dimension oder ungültiger Wert: 422 mit Feldverweis. If-Match: Stammdaten-Revision; ohne 428, veraltet 412. Wirkt nicht rückwirkend auf bestehende Holds und Buchungen.'
+      description: 'Ändert die Teile `spaces`, `equipment`, `combinations` (mit `active_combination`)
+        und `restrictions` unabhängig voneinander; nicht genannte Teile bleiben unverändert.
+        Gibt es noch keine Konfiguration, sind `spaces`, `combinations` und `active_combination`
+        Pflicht. Widersprüchliche Kombination (mehr belegte Fläche als vorhanden),
+        unbekannte Dimension oder ungültiger Wert: 422 mit Feldverweis. If-Match:
+        Stammdaten-Revision; ohne 428, veraltet 412. Wirkt nicht rückwirkend auf bestehende
+        Holds und Buchungen.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1642,9 +1737,13 @@ paths:
       security:
       - oidc:
         - fleet:read
-      description: 'Zuordnungen des Fahrzeugs zu Diensten (Fahrzeugpool, WP-M3-06, LH-6.8-FLT-002), Listenform {items,next_cursor,as_of}, nach Anlage sortiert. Filter `as_of`:
-        nur die zu diesem Zeitpunkt gültigen Zuordnungen (Intervall links geschlossen, rechts offen). Bei beendeten Zuordnungen nennt `committed_rides_after_end` die zugesagten
-        Fahrten des Dienstes auf diesem Fahrzeug, deren Abholung nach dem Ende liegt; sie bleiben sichtbar und werden nicht entfernt. Fremdes Fahrzeug: 404.'
+      description: 'Zuordnungen des Fahrzeugs zu Diensten (Fahrzeugpool, WP-M3-06,
+        LH-6.8-FLT-002), Listenform {items,next_cursor,as_of}, nach Anlage sortiert.
+        Filter `as_of`: nur die zu diesem Zeitpunkt gültigen Zuordnungen (Intervall
+        links geschlossen, rechts offen). Bei beendeten Zuordnungen nennt `committed_rides_after_end`
+        die zugesagten Fahrten des Dienstes auf diesem Fahrzeug, deren Abholung nach
+        dem Ende liegt; sie bleiben sichtbar und werden nicht entfernt. Fremdes Fahrzeug:
+        404.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1689,10 +1788,14 @@ paths:
       security:
       - oidc:
         - fleet:write
-      description: 'Ordnet das Fahrzeug einem Dienst mit Gültigkeitsintervall `[valid_from, valid_to)` und optional einem Bediengebiet dieses Dienstes zu (`service_area_id`;
-        wirksam ist die zum Prüfzeitpunkt gültige Revision des Gebiets, Planungsannahme PA-02, OP-25 offen). Ein Fahrzeug kann gleichzeitig mehreren Diensten zugeordnet sein; im selben
-        Dienst überschneiden sich Zuordnungen nicht (409). Dienst, Gebiet oder Fahrzeug eines anderen Mandanten: 404. Gebiet eines anderen Dienstes: 422 an /service_area_id.
-        Genau ein Audit und ein Ereignis `vehicle.pool_assignment_created` je Anlage. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+      description: 'Ordnet das Fahrzeug einem Dienst mit Gültigkeitsintervall `[valid_from,
+        valid_to)` und optional einem Bediengebiet dieses Dienstes zu (`service_area_id`;
+        wirksam ist die zum Prüfzeitpunkt gültige Revision des Gebiets, Planungsannahme
+        PA-02, OP-25 offen). Ein Fahrzeug kann gleichzeitig mehreren Diensten zugeordnet
+        sein; im selben Dienst überschneiden sich Zuordnungen nicht (409). Dienst,
+        Gebiet oder Fahrzeug eines anderen Mandanten: 404. Gebiet eines anderen Dienstes:
+        422 an /service_area_id. Genau ein Audit und ein Ereignis `vehicle.pool_assignment_created`
+        je Anlage. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1748,10 +1851,15 @@ paths:
       security:
       - oidc:
         - fleet:write
-      description: 'Setzt das Ende (`valid_to`, exklusiv) einer laufenden Zuordnung (If-Match: Revision der Zuordnung, ohne 428, veraltet 412); das Ende darf nicht vor dem Beginn und nicht in der Vergangenheit liegen (422). Bereits beendete
-        Zuordnung: 409 INVALID_STATE_TRANSITION. Ab dem Ende erhält das Fahrzeug aus diesem Dienst keine neue Fahrt. Bereits zugesagte Fahrten bleiben unverändert sichtbar; sie stehen
-        in `committed_rides_after_end` und im Ereignis `vehicle.pool_assignment_ended` als Hinweis an die Leitstelle (kein stilles Entfernen). Die Beendigung wird mit einem Hold
-        desselben Fahrzeugs serialisiert: entweder ist der Hold zugesagt (und erscheint als Hinweis) oder er wird abgewiesen. Fremde Zuordnung: 404.'
+      description: 'Setzt das Ende (`valid_to`, exklusiv) einer laufenden Zuordnung
+        (If-Match: Revision der Zuordnung, ohne 428, veraltet 412); das Ende darf
+        nicht vor dem Beginn und nicht in der Vergangenheit liegen (422). Bereits
+        beendete Zuordnung: 409 INVALID_STATE_TRANSITION. Ab dem Ende erhält das Fahrzeug
+        aus diesem Dienst keine neue Fahrt. Bereits zugesagte Fahrten bleiben unverändert
+        sichtbar; sie stehen in `committed_rides_after_end` und im Ereignis `vehicle.pool_assignment_ended`
+        als Hinweis an die Leitstelle (kein stilles Entfernen). Die Beendigung wird
+        mit einem Hold desselben Fahrzeugs serialisiert: entweder ist der Hold zugesagt
+        (und erscheint als Hinweis) oder er wird abgewiesen. Fremde Zuordnung: 404.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1807,12 +1915,566 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/VehicleServiceAssignmentEnd'
+  /v1/defect-evidence-uploads:
+    post:
+      summary: Uploadticket für ein Schadenfoto
+      operationId: requestDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:write
+      description: 'Stellt ein Uploadticket (Größe, MIME, SHA-256 base64url, Aufnahmezeit)
+        aus; die Datei wird direkt in die Quarantäne unter `upload_key` geladen und
+        dann mit `completeDefectEvidenceUpload` abgeschlossen. Dieselbe Datei desselben
+        Urhebers liefert das bestehende Ticket (Wiederholung nach Zeitüberschreitung).
+        Unzulässiger Typ oder zu große Datei: 422 mit Feldverweis.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectEvidenceUploadRequest'
+  /v1/defect-evidence-uploads/{upload_id}:
+    get:
+      summary: Uploadticket lesen
+      operationId: getDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:read
+      description: 'Zustand des Fotos auf dem Weg zur Akte: ISSUED (Upload offen),
+        IN_REVIEW (in Prüfung), RELEASED (sichtbar), REJECTED (abgewiesen). Mit ETag.
+        Fremdes Ticket: 404.'
+      parameters:
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Ticket-ID (zugleich Evidenz-ID).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defect-evidence-uploads/{upload_id}/complete:
+    post:
+      summary: Upload abschließen und prüfen lassen
+      operationId: completeDefectEvidenceUpload
+      security:
+      - oidc:
+        - defects:write
+      description: 'Prüft Größe, Hash und Typ am gespeicherten Objekt und startet
+        die Medienprüfung. Abweichung, fehlendes Objekt, Schadsoftware oder ungültiges
+        Bild: 422, das Foto wird nie an die Akte gehängt. Bereits abgeschlossen: 409;
+        veraltete Revision: 412.'
+      parameters:
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Ticket-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceUpload'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/evidence:
+    get:
+      summary: Freigegebene Fotos einer Schadenakte
+      operationId: listDefectEvidence
+      security:
+      - oidc:
+        - defects:read
+      description: 'Nur Fotos mit bestandener Medienprüfung; Fotos in Prüfung zählt
+        die Akte (`evidence_pending`). Fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidencePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/evidence/{evidence_id}/download:
+    get:
+      summary: Signierten Abruflink für ein Schadenfoto erzeugen
+      operationId: getDefectEvidenceDownload
+      security:
+      - oidc:
+        - defects:read
+      description: Erst nach Objekt- und Zweckprüfung (freigegebene Evidenz einer
+        sichtbaren Akte); der Link gilt höchstens 60 s und nur für den Mandanten,
+        der ihn erhielt.
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - name: evidence_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Evidenz-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectEvidenceLink'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/objects/{tenant_id}/{object_name}:
+    get:
+      summary: Objekt über signierten Link abrufen
+      operationId: readSignedObject
+      security:
+      - oidc:
+        - defects:read
+      description: 'Liefert das Objekt zu einem signierten Link (Parameter `exp`,
+        `purpose`, `sig`). Ungültige, abgelaufene oder mandantenfremde Links sind
+        nicht von einem fehlenden Objekt zu unterscheiden: 404.'
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Mandant im Objektschlüssel.
+      - name: object_name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9._-]{1,200}$
+        description: Objektname ohne Mandantenpräfix.
+      - name: exp
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Ablauf (Unix-Sekunden).
+      - name: purpose
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{1,40}$
+        description: Zweck der Signatur.
+      - name: sig
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        description: Signatur (HMAC-SHA256, hexadezimal).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/transitions:
+    post:
+      summary: Statusübergang der Schadenakte
+      operationId: transitionDefect
+      security:
+      - oidc:
+        - defects:state
+      description: 'Führt einen Übergang nach der Tabelle in `zustaende/defect_case.md`
+        aus (DMG-007). Nicht in der Tabelle, aus einem Endzustand ohne dokumentierte
+        Wiedereröffnung oder Vorbedingung verletzt: 409 `INVALID_STATE_TRANSITION`,
+        auch bei direktem API-Aufruf. `DISMISSED` und Wiedereröffnung verlangen `reason`
+        (422 mit Feldverweis). Ohne Rolle für den Übergang: 403; fremde Akte: 404;
+        ohne `If-Match`: 428; veraltet: 412. `CLOSED` und `DISMISSED` heben eine Sperre
+        des Fahrzeugs nie auf (nur die Wiederfreigabe).'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectTransition'
+  /v1/defects/{defect_id}/status-history:
+    get:
+      summary: Statushistorie der Schadenakte
+      operationId: listDefectStatusHistory
+      security:
+      - oidc:
+        - defects:state
+      description: 'Append-only Historie der Statusübergänge mit Akteur und Zeit (Disposition,
+        Werkstatt, Betriebsleitung); Fahrer: 403, fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectStatusHistoryPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/amendments:
+    post:
+      summary: Nachtrag zur Schadenmeldung
+      operationId: amendDefect
+      security:
+      - oidc:
+        - defects:write
+      description: 'Legt eine neue Version der Meldung an (DMG-008): Autor, Zeit und
+        Änderungsgrund (`change_reason`, Pflicht) werden festgehalten, frühere Fassungen
+        und Anhänge bleiben unverändert erhalten. Anhänge hinzufügen (`add_evidence_ids`)
+        und ersetzen (`replace_evidence`, der ersetzte bleibt als frühere Version
+        erhalten). Gleichzeitige Nachträge werden fortlaufend versioniert. Ohne Grund
+        oder ohne Änderung: 422; fremde Akte: 404; Fahrer nur eigene Akten.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectAmendment'
+  /v1/defects/{defect_id}/history:
+    get:
+      summary: Versionsverlauf der Schadenmeldung
+      operationId: listDefectHistory
+      security:
+      - oidc:
+        - defects:history
+      description: 'Alle Fassungen der Meldung samt Anhängen, älteste zuerst, nur
+        für berechtigte Prüfer (Werkstatt, Betriebsleitung); der Lesezugriff wird
+        im Audit protokolliert. Ohne Prüferrolle: 403, fremde Akte: 404.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectRevisionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/defects/{defect_id}/as-of:
+    get:
+      summary: Stand der Schadenmeldung zu einem Zeitpunkt
+      operationId: getDefectAsOf
+      security:
+      - oidc:
+        - defects:history
+      description: 'Gültige Fassung, damals sichtbare Anhänge und Status zum Zeitpunkt
+        `at`; vor der Meldung: 404. Nur für berechtigte Prüfer, protokolliert im Audit.'
+      parameters:
+      - name: defect_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schadenakten-ID.
+      - name: at
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          examples:
+          - '2026-12-01T10:00:00Z'
+        description: Zeitpunkt (mit UTC-Offset), zu dem der Stand der Meldung gelesen
+          wird.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefectAsOf'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     CommittedRide:
       type: object
       additionalProperties: false
-      description: Zugesagte Fahrt, die nach dem Ende einer Dienstzuordnung liegt (Hinweis an die Leitstelle).
+      description: Zugesagte Fahrt, die nach dem Ende einer Dienstzuordnung liegt
+        (Hinweis an die Leitstelle).
       properties:
         booking_id:
           $ref: common.yaml#/components/schemas/UUID
@@ -1840,7 +2502,8 @@ components:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
-          description: Bediengebiet des Dienstes (eine Revision der Gebietskette); ohne Angabe gilt keine geografische Einschränkung.
+          description: Bediengebiet des Dienstes (eine Revision der Gebietskette);
+            ohne Angabe gilt keine geografische Einschränkung.
         valid_from:
           type: string
           format: date-time
@@ -1860,7 +2523,8 @@ components:
         valid_to:
           type: string
           format: date-time
-          description: Ende der Zuordnung (exklusiv); nicht vor dem Beginn, nicht in der Vergangenheit.
+          description: Ende der Zuordnung (exklusiv); nicht vor dem Beginn, nicht
+            in der Vergangenheit.
       required:
       - valid_to
     VehicleServiceAssignment:
@@ -1896,7 +2560,8 @@ components:
           maxItems: 500
           items:
             $ref: '#/components/schemas/CommittedRide'
-          description: Nur bei beendeten Zuordnungen; leer, wenn keine zugesagte Fahrt nach dem Ende liegt.
+          description: Nur bei beendeten Zuordnungen; leer, wenn keine zugesagte Fahrt
+            nach dem Ende liegt.
       required:
       - id
       - vehicle_id
@@ -1931,8 +2596,8 @@ components:
       - as_of
     VehicleOperationalState:
       type: string
-      description: Betriebszustand des Fahrzeugs aus Sicht der Leitstelle (Zustandsautomat fahrzeug_dienststatus.md, abgeleitet aus Sperren, Einsatzfreigabe
-        und Dienststatus).
+      description: Betriebszustand des Fahrzeugs aus Sicht der Leitstelle (Zustandsautomat
+        fahrzeug_dienststatus.md, abgeleitet aus Sperren, Einsatzfreigabe und Dienststatus).
       enum:
       - NOT_READY
       - RELEASE_PENDING
@@ -1973,7 +2638,8 @@ components:
             maxLength: 64
       required:
       - code
-      description: Eine noch fehlende Voraussetzung der Einsatzfreigabe (LH-6.21-CHK-001); keine Diagnosetexte, nur Codes.
+      description: Eine noch fehlende Voraussetzung der Einsatzfreigabe (LH-6.21-CHK-001);
+        keine Diagnosetexte, nur Codes.
     VehicleBlock:
       type: object
       additionalProperties: false
@@ -2028,7 +2694,8 @@ components:
       - lifted_at
       - lifted_by
       - revision
-      description: Sperrgrund je Quelle (OP-01); eine operative Aufhebung ändert eine sicherheitskritische Sperre nie.
+      description: Sperrgrund je Quelle (OP-01); eine operative Aufhebung ändert eine
+        sicherheitskritische Sperre nie.
     OperatorVehicle:
       type: object
       additionalProperties: false
@@ -2075,7 +2742,8 @@ components:
           - type: string
             format: date-time
           - type: 'null'
-          description: Serverempfangszeit der letzten Position (Serveruhr), getrennt von der Gerätemesszeit `position_measured_at`.
+          description: Serverempfangszeit der letzten Position (Serveruhr), getrennt
+            von der Gerätemesszeit `position_measured_at`.
         position_age_seconds:
           oneOf:
           - type: integer
@@ -2110,8 +2778,15 @@ components:
       - open_defect_count
       - current_run_id
       - revision
-      description: Fahrzeug in der Leitstellenansicht (OPS-001, CHK-016). Das Standortalter berechnet der Server aus `measured_at` (Messzeit)
-        und seiner Uhr; `position_stale` folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s). Ohne bekannte Position ist `position` null und `position_stale` wahr; die letzte gemessene Position bleibt nach Überschreiten der Schwelle sichtbar und wird nie extrapoliert (AT-10). Bis WP-M3-08/-31/-36 tragen `release_valid_until`, `missing_requirements`, `active_blocks`, `open_defect_count` und `current_run_id` noch keine Werte und `operational_state` leitet sich nur aus der Sperrkennung ab.
+      description: Fahrzeug in der Leitstellenansicht (OPS-001, CHK-016). Das Standortalter
+        berechnet der Server aus `measured_at` (Messzeit) und seiner Uhr; `position_stale`
+        folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s). Ohne
+        bekannte Position ist `position` null und `position_stale` wahr; die letzte
+        gemessene Position bleibt nach Überschreiten der Schwelle sichtbar und wird
+        nie extrapoliert (AT-10). Bis WP-M3-08/-31/-36 tragen `release_valid_until`,
+        `missing_requirements`, `active_blocks`, `open_defect_count` und `current_run_id`
+        noch keine Werte und `operational_state` leitet sich nur aus der Sperrkennung
+        ab.
     OperatorVehiclePage:
       type: object
       additionalProperties: false
@@ -2150,8 +2825,9 @@ components:
           maxLength: 500
       required:
       - reason_code
-      description: Operative Sperre durch die Leitstelle (OPS-005). Sicherheitskritische Sperren setzt nur der Server (Mangel, Schaden), nie dieser
-        Endpunkt; die Quelle `OPERATIONS` steht fest.
+      description: Operative Sperre durch die Leitstelle (OPS-005). Sicherheitskritische
+        Sperren setzt nur der Server (Mangel, Schaden), nie dieser Endpunkt; die Quelle
+        `OPERATIONS` steht fest.
     VehicleBlockLift:
       type: object
       additionalProperties: false
@@ -2160,7 +2836,8 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-      description: Aufhebung einer operativen Sperre; eine Sperre der Quelle SAFETY lässt sich hier nie aufheben (409).
+      description: Aufhebung einer operativen Sperre; eine Sperre der Quelle SAFETY
+        lässt sich hier nie aufheben (409).
     ChecklistTemplate:
       type: object
       additionalProperties: false
@@ -2305,8 +2982,9 @@ components:
       - step_code
       - answer
       - answered_at
-      description: Antwort auf einen Prüfschritt; `NOT_CHECKABLE` führt zu „technisch ungeklärt" (Annahme OP-16). `answered_at` ist die Gerätezeit,
-        die Serverzeit steht getrennt in der Antwort.
+      description: Antwort auf einen Prüfschritt; `NOT_CHECKABLE` führt zu „technisch
+        ungeklärt" (Annahme OP-16). `answered_at` ist die Gerätezeit, die Serverzeit
+        steht getrennt in der Antwort.
     InspectionCreate:
       type: object
       additionalProperties: false
@@ -2344,8 +3022,8 @@ components:
       - template_revision_id
       - kind
       - client_started_at
-      description: Prüflauf starten (CHK-004); der Server prüft, dass die Vorlagenrevision genau die für Fahrzeugklasse und Bedienart freigegebene
-        ist.
+      description: Prüflauf starten (CHK-004); der Server prüft, dass die Vorlagenrevision
+        genau die für Fahrzeugklasse und Bedienart freigegebene ist.
     InspectionDraft:
       type: object
       additionalProperties: false
@@ -2357,7 +3035,8 @@ components:
             $ref: '#/components/schemas/InspectionAnswer'
       required:
       - answers
-      description: Entwurfsstand der Antworten; nicht rechtswirksam, bis `submitInspection` sie abschließt (CHK-006).
+      description: Entwurfsstand der Antworten; nicht rechtswirksam, bis `submitInspection`
+        sie abschließt (CHK-006).
     InspectionSubmit:
       type: object
       additionalProperties: false
@@ -2376,7 +3055,8 @@ components:
       required:
       - answers
       - client_submitted_at
-      description: 'Abschluss: die Antworten werden unveränderlich gespeichert; Ergebnis und Freigabe entscheidet allein der Server.'
+      description: 'Abschluss: die Antworten werden unveränderlich gespeichert; Ergebnis
+        und Freigabe entscheidet allein der Server.'
     Inspection:
       type: object
       additionalProperties: false
@@ -2476,8 +3156,8 @@ components:
       - completed_at
       - received_at
       - revision
-      description: Prüflauf. `release` ist nur gesetzt, wenn der Server die Einsatzfreigabe erteilt hat; `received_at` ist die Serverzeit des
-        Abschlusses, nie die Gerätezeit.
+      description: Prüflauf. `release` ist nur gesetzt, wenn der Server die Einsatzfreigabe
+        erteilt hat; `received_at` ist die Serverzeit des Abschlusses, nie die Gerätezeit.
     DefectSeverity:
       type: string
       enum:
@@ -2506,9 +3186,7 @@ components:
           minLength: 1
           maxLength: 200
         category_code:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: '#/components/schemas/DefectCategory'
         description:
           type: string
           minLength: 1
@@ -2528,16 +3206,34 @@ components:
           maxItems: 10
           items:
             $ref: common.yaml#/components/schemas/UUID
+          description: Ids vorab hochgeladener Fotos (Uploadtickets, `/v1/defect-evidence-uploads`);
+            sie werden mit der Meldung an die Akte gebunden.
         device_event_id:
           $ref: common.yaml#/components/schemas/UUID
         severity_hint:
           $ref: '#/components/schemas/DefectSeverity'
+        kind:
+          $ref: '#/components/schemas/DefectKind'
+        vehicle_area:
+          $ref: '#/components/schemas/DefectArea'
+        observed_effect:
+          $ref: '#/components/schemas/DefectEffect'
+        capture_mode:
+          type: string
+          enum:
+          - STANDARD
+          - GUIDED
+          description: '`GUIDED` = geführte mobile Erfassung (DMG-004): `kind`, `vehicle_area`,
+            `observed_effect` und mindestens ein Eintrag in `evidence_ids` sind Pflicht
+            (422 mit Feldverweis).'
       required:
       - vehicle_id
       - occurred_at
       - category_code
       - description
-      description: Schaden melden (DMG-001 bis DMG-004). Keine Unfall- oder Gesundheitsangaben in diesem Schema (DMG-011, OP-23); `severity_hint`
+      description: Schaden melden (DMG-001 bis DMG-004). Mandant, Meldender, Meldezeitpunkt,
+        Fallnummer und Status setzt der Server; sie sind keine Felder dieser Anfrage.
+        Keine Unfall- oder Gesundheitsangaben in diesem Schema (DMG-011, OP-23); `severity_hint`
         ist ein Vorschlag, die Klassifikation setzt die Triage.
     DefectTriage:
       type: object
@@ -2564,8 +3260,9 @@ components:
       required:
       - severity
       - decision
-      description: Klassifikation und Zuständigkeit (DMG-005, DMG-006). `DISMISSED` verlangt `reason`; die Sperrwirkung entscheidet der Server
-        aus `severity` (SAFETY_CRITICAL sperrt, siehe Vertrag DMG-005).
+      description: Klassifikation und Zuständigkeit (DMG-005, DMG-006). `DISMISSED`
+        verlangt `reason`; die Sperrwirkung entscheidet der Server aus `severity`
+        (SAFETY_CRITICAL sperrt, siehe Vertrag DMG-005).
     Defect:
       type: object
       additionalProperties: false
@@ -2587,9 +3284,7 @@ components:
           type: string
           format: date-time
         category_code:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: '#/components/schemas/DefectCategory'
         severity:
           oneOf:
           - $ref: '#/components/schemas/DefectSeverity'
@@ -2625,6 +3320,54 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        location_kind:
+          oneOf:
+          - type: string
+            enum:
+            - COORDINATE
+            - ADDRESS_TEXT
+            - FREE_TEXT
+            - DEPOT
+          - type: 'null'
+        location_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/DefectKind'
+          - type: 'null'
+        vehicle_area:
+          oneOf:
+          - $ref: '#/components/schemas/DefectArea'
+          - type: 'null'
+        observed_effect:
+          oneOf:
+          - $ref: '#/components/schemas/DefectEffect'
+          - type: 'null'
+        source_inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        source_step_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        evidence_pending:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Anzahl Fotos in Medienprüfung (nicht sichtbar, nicht abrufbar);
+            `evidence_ids` nennt nur freigegebene Fotos.
+        content_version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          description: Version des Meldungsinhalts (steigt mit jedem Nachtrag, WP-M3-48).
       required:
       - id
       - case_number
@@ -2640,8 +3383,8 @@ components:
       - evidence_ids
       - description
       - revision
-      description: Schadenakte. `description` ist nur mit dem Recht `defects:read` im Vertraulichkeitsbereich der Akte sichtbar (DMG-011), sonst
-        `null`.
+      description: Schadenakte. `description` ist nur mit dem Recht `defects:read`
+        im Vertraulichkeitsbereich der Akte sichtbar (DMG-011), sonst `null`.
     DefectPage:
       type: object
       additionalProperties: false
@@ -2689,7 +3432,8 @@ components:
           - type: 'null'
       required:
       - defect_id
-      description: Reparaturauftrag zu einer Schadenakte (WP-M3-51); `cost_reference` ist ein Verweis auf eine Kostenstelle/-träger, keine Betragsangabe.
+      description: Reparaturauftrag zu einer Schadenakte (WP-M3-51); `cost_reference`
+        ist ein Verweis auf eine Kostenstelle/-träger, keine Betragsangabe.
     RepairOrder:
       type: object
       additionalProperties: false
@@ -2784,9 +3528,10 @@ components:
       - repair_order_id
       - follow_up_inspection_id
       - reason
-      description: 'Wiederfreigabe nach Sicherheitssperre (Kap. 05 §5.7): Reparaturnachweis, bestandene Folgeprüfung und berechtigte technische
-        Freigabe; die Vieraugenpflicht erfüllt eine zweite, andere Person über `second_approver_ref` oder eine zweite Anfrage (Vertrag WP-M3-51).
-        Der Server entscheidet nach Rolle, nie nach Clientangabe.'
+      description: 'Wiederfreigabe nach Sicherheitssperre (Kap. 05 §5.7): Reparaturnachweis,
+        bestandene Folgeprüfung und berechtigte technische Freigabe; die Vieraugenpflicht
+        erfüllt eine zweite, andere Person über `second_approver_ref` oder eine zweite
+        Anfrage (Vertrag WP-M3-51). Der Server entscheidet nach Rolle, nie nach Clientangabe.'
     VehicleRelease:
       type: object
       additionalProperties: false
@@ -2896,7 +3641,8 @@ components:
       - affected_run_ids
       - replacement_operation_id
       - revision
-      description: Incident (AUT-001, OP-02). Je Dedupe-Schlüssel (Fahrzeug, Ursache, offener Zeitraum) höchstens ein offener Incident.
+      description: Incident (AUT-001, OP-02). Je Dedupe-Schlüssel (Fahrzeug, Ursache,
+        offener Zeitraum) höchstens ein offener Incident.
     IncidentPage:
       type: object
       additionalProperties: false
@@ -2937,7 +3683,8 @@ components:
           - type: 'null'
       required:
       - event
-      description: Übergang des Incident-Automaten (incident.md). Das Ziel ergibt sich aus dem Ereignis, der Client setzt keinen Zustand.
+      description: Übergang des Incident-Automaten (incident.md). Das Ziel ergibt
+        sich aus dem Ereignis, der Client setzt keinen Zustand.
     VehicleEquipment:
       type: string
       enum:
@@ -2948,7 +3695,8 @@ components:
       - LUGGAGE_SPACE
       - ASSISTANCE_DOG_SPACE
       - STRETCHER_FIXING
-      description: Ausstattungsmerkmale wie im Ressourcenvektor `resource-vector.v1`; Platzhalterkatalog bis zur Festlegung durch den Auftraggeber (OP-14).
+      description: Ausstattungsmerkmale wie im Ressourcenvektor `resource-vector.v1`;
+        Platzhalterkatalog bis zur Festlegung durch den Auftraggeber (OP-14).
     VehicleCapacityBasic:
       type: object
       additionalProperties: false
@@ -2964,7 +3712,8 @@ components:
       required:
       - seats
       - wheelchair
-      description: Grundkapazität des Fahrzeugs getrennt nach Sitzplätzen und Rollstuhlplätzen; keine Dimension ersetzt die andere.
+      description: Grundkapazität des Fahrzeugs getrennt nach Sitzplätzen und Rollstuhlplätzen;
+        keine Dimension ersetzt die andere.
     VehicleMasterWrite:
       type: object
       additionalProperties: false
@@ -2997,7 +3746,8 @@ components:
       - capacity
       - equipment
       - active
-      description: Pflichtangaben des Fahrzeugstamms (FLT-001). Der Mandant steht nicht im Body.
+      description: Pflichtangaben des Fahrzeugstamms (FLT-001). Der Mandant steht
+        nicht im Body.
     VehicleMaster:
       type: object
       additionalProperties: false
@@ -3030,7 +3780,8 @@ components:
           type: boolean
         dispatch_blocked:
           type: boolean
-          description: Sperre bzw. fehlende Einsatzfreigabe (`vehicle.active_block`); ein neues Fahrzeug ist gesperrt (OP-01).
+          description: Sperre bzw. fehlende Einsatzfreigabe (`vehicle.active_block`);
+            ein neues Fahrzeug ist gesperrt (OP-01).
         dispatchable:
           type: boolean
           description: Aktiv und nicht gesperrt.
@@ -3067,7 +3818,8 @@ components:
       - revision
       - created_at
       - updated_at
-      description: Fahrzeugstamm (WP-M3-03). `vehicle_label`, `vehicle_type` und `operator_organization_id` sind nur bei Altbestand ohne diese Angaben null.
+      description: Fahrzeugstamm (WP-M3-03). `vehicle_label`, `vehicle_type` und `operator_organization_id`
+        sind nur bei Altbestand ohne diese Angaben null.
     VehicleMasterPage:
       type: object
       additionalProperties: false
@@ -3106,7 +3858,8 @@ components:
           type: integer
           minimum: 0
           maximum: 99
-          description: n, wie viele Sitzplätze ein belegter Rollstuhlplatz ersetzt (Konfigurationsdatum des Fahrzeugs).
+          description: n, wie viele Sitzplätze ein belegter Rollstuhlplatz ersetzt
+            (Konfigurationsdatum des Fahrzeugs).
       required:
       - seat_places
       - wheelchair_spaces
@@ -3178,7 +3931,8 @@ components:
       - combinations
       - active_combination
       - restrictions
-      description: Kapazitätskonfiguration (Schema `capacity_config.v1`); Stellplätze, Ausstattung, Kombinationen und Restriktionen sind getrennte Teile.
+      description: Kapazitätskonfiguration (Schema `capacity_config.v1`); Stellplätze,
+        Ausstattung, Kombinationen und Restriktionen sind getrennte Teile.
     CapacityPatch:
       type: object
       additionalProperties: false
@@ -3231,7 +3985,8 @@ components:
       - seats
       - wheelchair
       - equipment
-      description: Verfügbarer Ressourcenvektor einer Konfiguration (Form von `resource-vector.v1`); `booking-dispatch` liest ihn als Angebot des Fahrzeugs.
+      description: Verfügbarer Ressourcenvektor einer Konfiguration (Form von `resource-vector.v1`);
+        `booking-dispatch` liest ihn als Angebot des Fahrzeugs.
     CapacityConfiguration:
       type: object
       additionalProperties: false
@@ -3289,7 +4044,9 @@ components:
           - OK_DEFECT_NA
           - NUMBER
           - TEXT_SHORT
-          description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar, `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens 200 Zeichen).
+          description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar,
+            `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens
+            200 Zeichen).
         mandatory:
           type: boolean
         safety_critical:
@@ -3318,7 +4075,8 @@ components:
       - title
       - input_kind
       - mandatory
-      description: Prüfelement in der Eingabe. Titel, Eingabetyp und Pflichtstatus sind Pflicht (CHK-003). Grenzen und Einheit nur bei `NUMBER`.
+      description: Prüfelement in der Eingabe. Titel, Eingabetyp und Pflichtstatus
+        sind Pflicht (CHK-003). Grenzen und Einheit nur bei `NUMBER`.
     ChecklistTemplateWrite:
       type: object
       additionalProperties: false
@@ -3344,7 +4102,8 @@ components:
       - vehicle_class
       - service_mode
       - steps
-      description: Vorlage (Entwurf) mit ihren Prüfelementen; die Reihenfolge der Liste ist die Anzeigereihenfolge.
+      description: Vorlage (Entwurf) mit ihren Prüfelementen; die Reihenfolge der
+        Liste ist die Anzeigereihenfolge.
     ChecklistStepRead:
       type: object
       additionalProperties: false
@@ -3388,7 +4147,8 @@ components:
           - type: 'null'
         has_example_image:
           type: boolean
-          description: Ein Beispielbild liegt im Objektspeicher des Mandanten vor (Abruf über `getChecklistStepExampleImage`, nie über eine fremde URL).
+          description: Ein Beispielbild liegt im Objektspeicher des Mandanten vor
+            (Abruf über `getChecklistStepExampleImage`, nie über eine fremde URL).
       required:
       - step_code
       - position
@@ -3462,7 +4222,8 @@ components:
       - published_at
       - revision
       - created_at
-      description: Revision einer Checklistenvorlage (WP-M3-10). Eine freigegebene Revision ist unveränderlich; jede Änderung erzeugt eine neue Revision.
+      description: Revision einer Checklistenvorlage (WP-M3-10). Eine freigegebene
+        Revision ist unveränderlich; jede Änderung erzeugt eine neue Revision.
     ChecklistTemplateRevisionPage:
       type: object
       additionalProperties: false
@@ -3494,7 +4255,8 @@ components:
           pattern: ^image/[a-z0-9.+-]{1,30}$
           examples:
           - image/png
-          description: Medientyp; zulässig sind `image/png`, `image/jpeg` und `image/webp`, andere ergeben 415.
+          description: Medientyp; zulässig sind `image/png`, `image/jpeg` und `image/webp`,
+            andere ergeben 415.
         data_base64:
           type: string
           minLength: 1
@@ -3505,3 +4267,586 @@ components:
       required:
       - content_type
       - data_base64
+    DefectCategory:
+      type: string
+      enum:
+      - BODY
+      - GLASS
+      - TIRES_WHEELS
+      - LIGHTS
+      - BRAKES
+      - DRIVETRAIN
+      - STEERING_SUSPENSION
+      - ELECTRICAL_HV
+      - INTERIOR
+      - ACCESSIBILITY_EQUIPMENT
+      - SAFETY_EQUIPMENT
+      - CLEANLINESS
+      - OTHER
+      description: Kategorie der Schadenakte (Detailvertrag m3-schadenakte.md, Planungsannahme).
+    DefectKind:
+      type: string
+      enum:
+      - SCRATCH
+      - DENT
+      - CRACK_BREAK
+      - MALFUNCTION
+      - MISSING_PART
+      - LEAK
+      - WEAR
+      - CONTAMINATION
+      - OTHER
+      description: Art des Schadens (DMG-004).
+    DefectArea:
+      type: string
+      enum:
+      - FRONT
+      - REAR
+      - LEFT_SIDE
+      - RIGHT_SIDE
+      - ROOF
+      - UNDERBODY
+      - WHEELS_TIRES
+      - INTERIOR_PASSENGER
+      - INTERIOR_DRIVER
+      - LUGGAGE
+      - WHEELCHAIR_AREA
+      - ENGINE_BATTERY
+      - OTHER
+      description: Fahrzeugbereich (DMG-004).
+    DefectEffect:
+      type: string
+      enum:
+      - NONE_VISIBLE
+      - COSMETIC_ONLY
+      - FUNCTION_LIMITED
+      - NOT_ROADWORTHY
+      - FLUID_LEAK
+      - WARNING_LIGHT
+      - NOISE_VIBRATION
+      - OTHER
+      description: Beobachtete Auswirkung (DMG-004).
+    DefectEvidenceUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche
+            Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+      required:
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      description: Ticketanforderung für ein Schadenfoto (DMG-004). EXIF-Angaben entfernt
+        der Server; die Aufnahmezeit steht neben dem Bild (OP-31).
+    DefectEvidenceUpload:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - ISSUED
+          - IN_REVIEW
+          - RELEASED
+          - REJECTED
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche
+            Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+        max_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        expires_at:
+          type: string
+          format: date-time
+        upload_key:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Objektname in der Quarantäne (ohne Mandantenpräfix); der vorsignierte
+            Direktupload ist an die Objektspeicheranbindung gebunden (WP-M0-08).
+        reject_reason:
+          oneOf:
+          - type: string
+            enum:
+            - EXPIRED
+            - OBJECT_MISSING
+            - SIZE_MISMATCH
+            - HASH_MISMATCH
+            - MIME_MISMATCH
+            - SIZE_LIMIT
+            - MALWARE
+            - MEDIA_INVALID
+          - type: 'null'
+        defect_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - state
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      - max_bytes
+      - expires_at
+      - upload_key
+      - reject_reason
+      - defect_id
+      - revision
+      description: Uploadticket und Prüfzustand eines Schadenfotos. Ein Foto ist erst
+        mit `RELEASED` an der Akte sichtbar und abrufbar.
+    DefectEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        defect_id:
+          $ref: common.yaml#/components/schemas/UUID
+        mime:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: SHA-256 der Datei, base64url ohne Auffüllung (kartennummernähnliche
+            Hexfolgen würden die Eingabeprüfung SEC-008 auslösen).
+        captured_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        added_in_version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          description: Version der Akte, mit der das Foto hinzukam (WP-M3-48).
+        replaces_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Vorgänger, den dieses Foto ersetzt; der Vorgänger bleibt als
+            frühere Version erhalten.
+      required:
+      - id
+      - defect_id
+      - mime
+      - size_bytes
+      - sha256
+      - captured_at
+      - received_at
+      - added_in_version
+      - replaces_id
+      description: Freigegebenes Foto einer Schadenakte (unveränderlich).
+    DefectEvidencePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DefectEvidence'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DefectEvidenceLink:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - url
+      - expires_at
+      description: Signierter Abruflink; Gültigkeit höchstens 60 s, gilt nur für den
+        Mandanten, der ihn erhielt.
+    DefectTransition:
+      type: object
+      additionalProperties: false
+      properties:
+        to:
+          type: string
+          enum:
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        reopen:
+          type: boolean
+          description: '`true` = dokumentierte Wiedereröffnung eines Endzustands nach
+            `REVIEWED` (verlangt `reason`; Werkstatt oder Betriebsleitung).'
+      required:
+      - to
+      description: Statusübergang (DMG-007). Der Zielzustand ist das Ereignis; ein
+        Rücksprung nach `NEW` gibt es nicht. Die Sperrwirkung steht nicht hier (Triage,
+        WP-M3-45; Wiederfreigabe, WP-M3-51).
+    DefectStatusHistoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        from_status:
+          oneOf:
+          - type: string
+            enum:
+            - NEW
+            - REVIEWED
+            - IN_PROGRESS
+            - REPAIR
+            - CLOSED
+            - DISMISSED
+          - type: 'null'
+        to_status:
+          type: string
+          enum:
+          - NEW
+          - REVIEWED
+          - IN_PROGRESS
+          - REPAIR
+          - CLOSED
+          - DISMISSED
+        actor:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Akteur als Pseudonym `user:<uuid>` bzw. `service:<name>`, nie
+            Name oder Mailadresse.
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        reopening:
+          type: boolean
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - from_status
+      - to_status
+      - actor
+      - reason
+      - revision
+      - reopening
+      - occurred_at
+      description: Eintrag der Statushistorie (append-only).
+    DefectStatusHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/DefectStatusHistoryEntry'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DefectAmendment:
+      type: object
+      additionalProperties: false
+      properties:
+        change_reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Änderungsgrund (Pflicht); Freitext, keine Unfall- oder Gesundheitsangaben.
+        occurred_at:
+          type: string
+          format: date-time
+        location_kind:
+          type: string
+          enum:
+          - COORDINATE
+          - ADDRESS_TEXT
+          - FREE_TEXT
+          - DEPOT
+        location_value:
+          type: string
+          minLength: 1
+          maxLength: 200
+        category_code:
+          $ref: '#/components/schemas/DefectCategory'
+        kind:
+          $ref: '#/components/schemas/DefectKind'
+        vehicle_area:
+          $ref: '#/components/schemas/DefectArea'
+        observed_effect:
+          $ref: '#/components/schemas/DefectEffect'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        add_evidence_ids:
+          type: array
+          maxItems: 10
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        replace_evidence:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              evidence_id:
+                $ref: common.yaml#/components/schemas/UUID
+              ticket_id:
+                $ref: common.yaml#/components/schemas/UUID
+            required:
+            - evidence_id
+            - ticket_id
+      required:
+      - change_reason
+      description: Nachtrag zur Meldung. Nur gesetzte Felder ändern sich; der Ort
+        nur als Paar (`location_kind` und `location_value`). Mandant, Meldender, Status
+        und Fallnummer sind keine Felder.
+    DefectContent:
+      type: object
+      additionalProperties: false
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+        location_kind:
+          oneOf:
+          - type: string
+            enum:
+            - COORDINATE
+            - ADDRESS_TEXT
+            - FREE_TEXT
+            - DEPOT
+          - type: 'null'
+        location_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        category_code:
+          $ref: '#/components/schemas/DefectCategory'
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/DefectKind'
+          - type: 'null'
+        vehicle_area:
+          oneOf:
+          - $ref: '#/components/schemas/DefectArea'
+          - type: 'null'
+        observed_effect:
+          oneOf:
+          - $ref: '#/components/schemas/DefectEffect'
+          - type: 'null'
+        description:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 2000
+          - type: 'null'
+        source_inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        source_step_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - occurred_at
+      - location_kind
+      - location_value
+      - category_code
+      - kind
+      - vehicle_area
+      - observed_effect
+      - description
+      - source_inspection_id
+      - source_step_code
+      description: Inhalt einer Fassung der Meldung.
+    DefectRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        author:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Autor als Pseudonym `user:<uuid>`, nie Name oder Mailadresse.
+        change_reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+        content:
+          $ref: '#/components/schemas/DefectContent'
+        evidence:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DefectEvidence'
+          description: Mit dieser Version hinzugekommene Anhänge (auch später ersetzte).
+      required:
+      - version
+      - author
+      - change_reason
+      - created_at
+      - content
+      - evidence
+      description: Eine unveränderliche Fassung der Meldung.
+    DefectRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/DefectRevision'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    DefectAsOf:
+      type: object
+      additionalProperties: false
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        version_created_at:
+          type: string
+          format: date-time
+        status:
+          oneOf:
+          - type: string
+            enum:
+            - NEW
+            - REVIEWED
+            - IN_PROGRESS
+            - REPAIR
+            - CLOSED
+            - DISMISSED
+          - type: 'null'
+        content:
+          $ref: '#/components/schemas/DefectContent'
+        evidence:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DefectEvidence'
+      required:
+      - as_of
+      - version
+      - version_created_at
+      - status
+      - content
+      - evidence
+      description: Stand der Meldung zu einem Zeitpunkt (Leseansicht, DMG-008).

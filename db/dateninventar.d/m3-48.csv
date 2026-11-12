@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+defect_case_revision;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_revision;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_revision;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_revision;version;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_revision;snapshot;nein;FLOTTE_SICHERHEIT;;;;Inhalt der Meldung in dieser Fassung (Codes und begrenzter Freitext)
+defect_case_revision;author;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Autor (Pseudonym user:<uuid>), nie Name oder Mailadresse
+defect_case_revision;change_reason;nein;FLOTTE_SICHERHEIT;;;;Änderungsgrund (Freitext, begrenzt)
+defect_case_revision;created_at;nein;FLOTTE_SICHERHEIT;;;;
+defect_evidence;replaces_evidence_id;nein;FLOTTE_SICHERHEIT;;;;Vorgänger-Anhang, den dieser ersetzt (WP-M3-48)
+defect_evidence;defect_version;nein;FLOTTE_SICHERHEIT;;;;Version der Akte, mit der der Anhang hinzukam
+defect_evidence_upload;attached_in_version;nein;FLOTTE_SICHERHEIT;;;;Version der Akte bei der Bindung
+defect_evidence_upload;replaces_evidence_id;nein;FLOTTE_SICHERHEIT;;;;Vorgänger-Anhang bei Ersetzung

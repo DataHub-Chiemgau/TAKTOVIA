@@ -1,0 +1,9 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+defect_case_counter;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_counter;case_year;nein;FLOTTE_SICHERHEIT;;;;
+defect_case_counter;last_number;nein;FLOTTE_SICHERHEIT;;;;
+defect_case;device_event_id;nein;FLOTTE_SICHERHEIT;;;;Geräteereignis-ID zur Dublettenerkennung, WP-M3-43
+defect_case;content_version;nein;FLOTTE_SICHERHEIT;;;;Version des Meldungsinhalts (Nachträge, WP-M3-48)
+defect_case;kind;nein;FLOTTE_SICHERHEIT;;;;Art des Schadens (Katalog), WP-M3-44
+defect_case;vehicle_area;nein;FLOTTE_SICHERHEIT;;;;Fahrzeugbereich (Katalog), WP-M3-44
+defect_case;observed_effect;nein;FLOTTE_SICHERHEIT;;;;beobachtete Auswirkung (Katalog), WP-M3-44

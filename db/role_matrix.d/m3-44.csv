@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+defect_evidence_upload;SELECT,INSERT,UPDATE;WP-M3-44: Uploadticket und Quarantäne der Schadenevidenz; Zustand nur vorwärts (Trigger), kein DELETE

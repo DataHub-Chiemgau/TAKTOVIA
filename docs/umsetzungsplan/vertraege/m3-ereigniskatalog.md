@@ -13,6 +13,8 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `inspection.completed` | `fleet-safety` | `inspection_run` / n | `submitInspection` bestätigt | Leitstelle (Prüfstatus), Schadenakte (Mangel zu Schaden) | `inspection_run` |
 | `defect.reported` | `fleet-safety` | `defect_case` / 1 | Schaden gemeldet | Leitstelle, Alarm (WP-M3-46) | `defect_case` |
 | `defect.triaged` | `fleet-safety` | `defect_case` / n | Klasse gesetzt | Sperrkern, Alarm, Incident | `defect_case` |
+| `defect.state_changed` | `fleet-safety` | `defect_case` / n | Status gewechselt (WP-M3-47, auch Wiedereröffnung) | Leitstelle, Alarm | `defect_case` |
+| `defect.amended` | `fleet-safety` | `defect_case` / n | Nachtrag zur Meldung (WP-M3-48) | Leitstelle, Prüfer | `defect_case` |
 | `repair.order_created` | `fleet-safety` | `repair_order` / 1 | Reparaturauftrag | Leitstelle, M4 (Kostenbezug) | `reparaturauftrag` |
 | `driver.event_recorded` | `staff-time` | `driver_event` / 1 | Fahrerereignis verarbeitet (`APPLIED` oder `REVIEW_REQUIRED`) | `booking-dispatch` (Fahrtstatus, No-Show), Leitstelle | – |
 | `driver.run_acknowledged` | `staff-time` | Bestätigung / 1 | Fahrer bestätigt Planrevision | Leitstelle (ausbleibende Bestätigung) | – |

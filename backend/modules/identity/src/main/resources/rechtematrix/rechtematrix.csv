@@ -155,6 +155,17 @@ listDefects;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
 getDefect;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
 createDefect;defects:write;-;M3;N;J;N;N;J;N;N;N;N;J
 triageDefect;defects:triage;-;M3;N;N;N;N;J;N;N;N;N;J
+requestDefectEvidenceUpload;defects:write;-;M3;N;J;N;N;J;N;N;N;N;J
+completeDefectEvidenceUpload;defects:write;-;M3;N;J;N;N;J;N;N;N;N;J
+getDefectEvidenceUpload;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
+listDefectEvidence;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
+getDefectEvidenceDownload;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
+readSignedObject;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J
+transitionDefect;defects:state;-;M3;N;N;N;N;J;N;J;N;N;J
+listDefectStatusHistory;defects:state;-;M3;N;N;N;N;J;N;J;N;N;J
+amendDefect;defects:write;-;M3;N;J;N;N;J;N;N;N;N;J
+listDefectHistory;defects:history;-;M3;N;N;N;N;N;N;J;N;N;J
+getDefectAsOf;defects:history;-;M3;N;N;N;N;N;N;J;N;N;J
 listRepairOrders;repair:read;-;M3;N;N;N;N;J;N;J;N;N;J
 createRepairOrder;repair:write;-;M3;N;N;N;N;N;N;N;N;N;J
 createVehicleRelease;fleet:release;-;M3;N;N;N;N;N;N;J;N;N;J

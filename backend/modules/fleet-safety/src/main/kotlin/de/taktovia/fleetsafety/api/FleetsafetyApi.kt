@@ -28,9 +28,17 @@ interface FleetsafetyApi {
     /** Checklistenvorlagen und Prüfelemente (WP-M3-10). */
     val checklistTemplates: ChecklistTemplates
 
+    /** Schadenakte: Meldung, Pflichtdaten, Fallnummer (WP-M3-43). */
+    val defects: Defects
+
+    /** Fotoevidenz der Schadenakte: Uploadticket, Quarantäne, Medienprüfung, signierter Abruf (WP-M3-44). */
+    val defectEvidence: DefectEvidenceUploads
+
     companion object {
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock = Clock.systemUTC()): FleetsafetyApi =
-            FleetServicesFactory.create(ctxTx, audit, outbox, store, clock)
+        /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
+            evidence: DefectEvidenceWiring? = null,
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence)
     }
 }
 

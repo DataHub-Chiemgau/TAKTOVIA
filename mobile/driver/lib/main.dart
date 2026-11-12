@@ -20,6 +20,7 @@ class DriverApp extends StatelessWidget {
     this.snapshot,
     this.pendingEvents = 0,
     this.onSignIn,
+    this.onReportDefect,
     this.strings = Strings.de,
   });
 
@@ -28,6 +29,7 @@ class DriverApp extends StatelessWidget {
   final DutySnapshot? snapshot;
   final int pendingEvents;
   final VoidCallback? onSignIn;
+  final VoidCallback? onReportDefect;
   final Strings strings;
 
   @override
@@ -35,7 +37,7 @@ class DriverApp extends StatelessWidget {
     return MaterialApp(
       title: strings.of('app.title'),
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      home: state == SessionState.active ? _RunScreen(strings: strings, online: online, snapshot: snapshot, pendingEvents: pendingEvents) : _LoginScreen(strings: strings, state: state, onSignIn: onSignIn),
+      home: state == SessionState.active ? _RunScreen(strings: strings, online: online, snapshot: snapshot, pendingEvents: pendingEvents, onReportDefect: onReportDefect) : _LoginScreen(strings: strings, state: state, onSignIn: onSignIn),
     );
   }
 }
@@ -76,11 +78,12 @@ class _LoginScreen extends StatelessWidget {
 }
 
 class _RunScreen extends StatelessWidget {
-  const _RunScreen({required this.strings, required this.online, required this.snapshot, required this.pendingEvents});
+  const _RunScreen({required this.strings, required this.online, required this.snapshot, required this.pendingEvents, this.onReportDefect});
   final Strings strings;
   final bool online;
   final DutySnapshot? snapshot;
   final int pendingEvents;
+  final VoidCallback? onReportDefect;
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +92,15 @@ class _RunScreen extends StatelessWidget {
       body: Column(
         children: <Widget>[
           OfflineBanner(online: online, planAsOfUtc: snapshot?.asOfUtc, pendingEvents: pendingEvents, strings: strings),
+          // Einstieg „Mangel melden“ ohne aktive Fahrt (WP-M3-43/-44): die Meldung verlangt weder Fahrt noch Buchung noch laufende Prüfung
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton(
+              onPressed: onReportDefect,
+              style: FilledButton.styleFrom(minimumSize: const Size(kMinTouchTarget, kMinTouchTarget)),
+              child: Text(strings.of('defect.report')),
+            ),
+          ),
           Expanded(
             child: snapshot == null
                 ? const SizedBox.shrink()

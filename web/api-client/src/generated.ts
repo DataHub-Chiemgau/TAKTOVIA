@@ -410,10 +410,6 @@ export interface DriverPositionResult {
   accepted: number;
   rejected: number;
   received_at: string;
-  rejections?: ({
-    index: number;
-    reason: 'FUTURE_TIME' | 'OUTSIDE_SERVICE';
-  })[];
 }
 
 export interface DriverRunStop {
@@ -433,8 +429,6 @@ export interface DriverRunStop {
 export interface DriverRun {
   shift_id: UUID;
   vehicle_id: UUID;
-  shift_state: string;
-  shift_valid: boolean;
   release_state: 'NOT_RELEASED' | 'RELEASED' | 'BLOCKED' | 'RESTRICTED';
   missing_requirements: MissingRequirement[];
   plan_revision: number | null;
@@ -463,41 +457,6 @@ export interface DriverDevice {
   registered_at: string;
   revoked_at: string | null;
   revision: number;
-}
-
-export interface DriverShift {
-  shift_id: UUID;
-  vehicle_id: UUID;
-  vehicle_label: string | null;
-  starts_at: string;
-  ends_at: string;
-  timezone: string;
-  state: string;
-  startable_from: string;
-  started_at: string | null;
-  ended_at: string | null;
-  valid: boolean;
-}
-
-export interface DriverShiftList {
-  items: DriverShift[];
-  as_of: string;
-}
-
-export interface DriverShiftStart {
-  shift_id: UUID;
-  vehicle_id: UUID;
-  device_id: UUID;
-}
-
-export interface DriverShiftEnd {
-  shift_id: UUID;
-  device_id: UUID;
-}
-
-export interface DriverShiftStartResult {
-  shift: DriverShift;
-  already_started: boolean;
 }
 
 export interface AbsenceCreate {
@@ -934,42 +893,6 @@ export interface DriverClearancePage {
   as_of: string;
 }
 
-export interface CommittedRide {
-  booking_id: UUID;
-  state: string;
-  pickup_earliest: string;
-  pickup_latest: string;
-}
-
-export interface VehicleServiceAssignmentCreate {
-  service_id: UUID;
-  service_area_id?: UUID | null;
-  valid_from: string;
-  valid_to?: string | null;
-}
-
-export interface VehicleServiceAssignmentEnd {
-  valid_to: string;
-}
-
-export interface VehicleServiceAssignment {
-  id: UUID;
-  vehicle_id: UUID;
-  service_id: UUID;
-  service_area_id: UUID | null;
-  valid_from: string;
-  valid_to: string | null;
-  revision: number;
-  created_at: string;
-  committed_rides_after_end: CommittedRide[];
-}
-
-export interface VehicleServiceAssignmentPage {
-  items: VehicleServiceAssignment[];
-  next_cursor: string | null;
-  as_of: string;
-}
-
 export type VehicleOperationalState = 'NOT_READY' | 'RELEASE_PENDING' | 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'BLOCKED' | 'RESTRICTED' | 'ENDED';
 
 export interface MissingRequirement {
@@ -1000,7 +923,6 @@ export interface OperatorVehicle {
   active_blocks: VehicleBlock[];
   position: Point | null;
   position_measured_at: string | null;
-  position_received_at?: string | null;
   position_age_seconds: number | null;
   position_stale: boolean;
   open_defect_count: number;
@@ -1037,12 +959,6 @@ export interface ChecklistTemplate {
     safety_critical: boolean;
     answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
     photo_required_on_defect: boolean;
-    help_text?: string | null;
-    na_requires_reason?: boolean;
-    number_min?: number | null;
-    number_max?: number | null;
-    number_unit?: string | null;
-    has_example_image?: boolean;
   })[];
 }
 
@@ -1103,6 +1019,14 @@ export interface Inspection {
   revision: number;
 }
 
+export type DefectCategory = 'BODY' | 'GLASS' | 'TIRES_WHEELS' | 'LIGHTS' | 'BRAKES' | 'DRIVETRAIN' | 'STEERING_SUSPENSION' | 'ELECTRICAL_HV' | 'INTERIOR' | 'ACCESSIBILITY_EQUIPMENT' | 'SAFETY_EQUIPMENT' | 'CLEANLINESS' | 'OTHER';
+
+export type DefectKind = 'SCRATCH' | 'DENT' | 'CRACK_BREAK' | 'MALFUNCTION' | 'MISSING_PART' | 'LEAK' | 'WEAR' | 'CONTAMINATION' | 'OTHER';
+
+export type DefectArea = 'FRONT' | 'REAR' | 'LEFT_SIDE' | 'RIGHT_SIDE' | 'ROOF' | 'UNDERBODY' | 'WHEELS_TIRES' | 'INTERIOR_PASSENGER' | 'INTERIOR_DRIVER' | 'LUGGAGE' | 'WHEELCHAIR_AREA' | 'ENGINE_BATTERY' | 'OTHER';
+
+export type DefectEffect = 'NONE_VISIBLE' | 'COSMETIC_ONLY' | 'FUNCTION_LIMITED' | 'NOT_ROADWORTHY' | 'FLUID_LEAK' | 'WARNING_LIGHT' | 'NOISE_VIBRATION' | 'OTHER';
+
 export type DefectSeverity = 'SAFETY_CRITICAL' | 'OPERATIONALLY_RELEVANT' | 'COSMETIC' | 'OTHER';
 
 export interface DefectCreate {
@@ -1110,13 +1034,17 @@ export interface DefectCreate {
   occurred_at: string;
   location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT';
   location_value?: string;
-  category_code: string;
+  category_code: DefectCategory;
+  kind?: DefectKind;
+  vehicle_area?: DefectArea;
+  observed_effect?: DefectEffect;
   description: string;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
   evidence_ids?: UUID[];
   device_event_id?: UUID;
   severity_hint?: DefectSeverity;
+  capture_mode?: 'STANDARD' | 'GUIDED';
 }
 
 export interface DefectTriage {
@@ -1133,7 +1061,16 @@ export interface Defect {
   reported_by: UUID;
   reported_at: string;
   occurred_at: string;
-  category_code: string;
+  category_code: DefectCategory;
+  location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT' | null;
+  location_value?: string | null;
+  kind?: DefectKind | null;
+  vehicle_area?: DefectArea | null;
+  observed_effect?: DefectEffect | null;
+  source_inspection_id?: UUID | null;
+  source_step_code?: string | null;
+  evidence_pending?: number;
+  content_version?: number;
   severity: DefectSeverity | null;
   status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
   assignee_ref: UUID | null;
@@ -1304,70 +1241,126 @@ export interface CapacityConfiguration {
   revision: number;
 }
 
-export type ChecklistTemplateState = 'DRAFT' | 'PUBLISHED' | 'RETIRED';
-
-export interface ChecklistStepWrite {
-  step_code: string;
-  title: string;
-  help_text?: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
-  mandatory: boolean;
-  safety_critical?: boolean;
-  na_requires_reason?: boolean;
-  photo_required_on_defect?: boolean;
-  number_min?: number | null;
-  number_max?: number | null;
-  number_unit?: string | null;
+export interface DefectEvidenceUploadRequest {
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
 }
 
-export interface ChecklistTemplateWrite {
-  name: string;
-  vehicle_class: string;
-  service_mode: string;
-  steps: ChecklistStepWrite[];
-}
-
-export interface ChecklistStepRead {
-  step_code: string;
-  position: number;
-  title: string;
-  help_text: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
-  mandatory: boolean;
-  safety_critical: boolean;
-  na_requires_reason: boolean;
-  photo_required_on_defect: boolean;
-  number_min: number | null;
-  number_max: number | null;
-  number_unit: string | null;
-  has_example_image: boolean;
-}
-
-export interface ChecklistTemplateRevision {
+export interface DefectEvidenceUpload {
   id: UUID;
-  template_id: UUID;
-  version: number;
-  name: string | null;
-  vehicle_class: string;
-  service_mode: string;
-  state: ChecklistTemplateState;
-  steps: ChecklistStepRead[];
-  created_by: string;
-  approved_by: string | null;
-  published_at: string | null;
+  state: 'ISSUED' | 'IN_REVIEW' | 'RELEASED' | 'REJECTED';
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
+  max_bytes: number;
+  expires_at: string;
+  upload_key: string;
+  reject_reason: 'EXPIRED' | 'OBJECT_MISSING' | 'SIZE_MISMATCH' | 'HASH_MISMATCH' | 'MIME_MISMATCH' | 'SIZE_LIMIT' | 'MALWARE' | 'MEDIA_INVALID' | null;
+  defect_id: UUID | null;
   revision: number;
-  created_at: string;
 }
 
-export interface ChecklistTemplateRevisionPage {
-  items: ChecklistTemplateRevision[];
+export interface DefectEvidence {
+  id: UUID;
+  defect_id: UUID;
+  mime: 'image/jpeg' | 'image/png';
+  size_bytes: number;
+  sha256: string;
+  captured_at: string;
+  received_at: string;
+  added_in_version: number;
+  replaces_id: UUID | null;
+}
+
+export interface DefectEvidencePage {
+  items: DefectEvidence[];
   next_cursor: string | null;
   as_of: string;
 }
 
-export interface ChecklistExampleImage {
-  content_type: string;
-  data_base64: string;
+export interface DefectEvidenceLink {
+  url: string;
+  expires_at: string;
+}
+
+export interface DefectTransition {
+  to: 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
+  reason?: string | null;
+  reopen?: boolean;
+}
+
+export interface DefectStatusHistoryEntry {
+  id: UUID;
+  from_status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED' | null;
+  to_status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
+  actor: string;
+  reason: string | null;
+  revision: number;
+  reopening: boolean;
+  occurred_at: string;
+}
+
+export interface DefectStatusHistoryPage {
+  items: DefectStatusHistoryEntry[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface DefectAmendment {
+  change_reason: string;
+  occurred_at?: string;
+  location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT';
+  location_value?: string;
+  category_code?: DefectCategory;
+  kind?: DefectKind;
+  vehicle_area?: DefectArea;
+  observed_effect?: DefectEffect;
+  description?: string;
+  add_evidence_ids?: UUID[];
+  replace_evidence?: ({
+    evidence_id: UUID;
+    ticket_id: UUID;
+  })[];
+}
+
+export interface DefectContent {
+  occurred_at: string;
+  location_kind: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT' | null;
+  location_value: string | null;
+  category_code: DefectCategory;
+  kind: DefectKind | null;
+  vehicle_area: DefectArea | null;
+  observed_effect: DefectEffect | null;
+  description: string | null;
+  source_inspection_id: UUID | null;
+  source_step_code: string | null;
+}
+
+export interface DefectRevision {
+  version: number;
+  author: string;
+  change_reason: string;
+  created_at: string;
+  content: DefectContent;
+  evidence: DefectEvidence[];
+}
+
+export interface DefectRevisionPage {
+  items: DefectRevision[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface DefectAsOf {
+  as_of: string;
+  version: number;
+  version_created_at: string;
+  status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED' | null;
+  content: DefectContent;
+  evidence: DefectEvidence[];
 }
 
 export interface GeoMultiPolygon {
@@ -2228,51 +2221,6 @@ export interface AccountRecovery {
   started_at: string;
 }
 
-export type StaffShiftState = 'PLANNED' | 'STARTED' | 'ENDED' | 'CANCELLED';
-
-export interface ShiftOverlapExceptionInput {
-  approved_by?: string;
-  reason?: string;
-}
-
-export interface ShiftOverlapException {
-  approved_by: string;
-  reason: string;
-  approved_at: string;
-}
-
-export interface StaffShiftInput {
-  driver_id: UUID;
-  vehicle_id: UUID;
-  starts_at: string;
-  ends_at: string;
-  timezone: string;
-  withdrawn?: boolean;
-  overlap_exception?: ShiftOverlapExceptionInput;
-}
-
-export interface StaffShift {
-  id: UUID;
-  driver_id: UUID;
-  vehicle_id: UUID;
-  starts_at: string;
-  ends_at: string;
-  duration_minutes: number;
-  timezone: string;
-  state: string;
-  roster_revision: number;
-  revision: number;
-  overlap_exception: ShiftOverlapException | null;
-  started_at: string | null;
-  ended_at: string | null;
-}
-
-export interface StaffShiftPage {
-  items: StaffShift[];
-  next_cursor: string | null;
-  as_of: string;
-}
-
 export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
@@ -2489,27 +2437,6 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: undefined;
     response: undefined;
-  };
-  listDriverShifts: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: DriverShiftList;
-  };
-  startDriverShift: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; traceparent?: string };
-    body: DriverShiftStart;
-    response: DriverShiftStartResult;
-  };
-  endDriverShift: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; traceparent?: string };
-    body: DriverShiftEnd;
-    response: DriverShift;
   };
   listAbsences: {
     path: Record<string, never>;
@@ -2798,62 +2725,6 @@ export interface Operations {
     body: undefined;
     response: ChecklistTemplatePage;
   };
-  listChecklistTemplateRevisions: {
-    path: Record<string, never>;
-    query: { state?: ChecklistTemplateState; vehicle_class?: string; service_mode?: string; limit?: number; cursor?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: ChecklistTemplateRevisionPage;
-  };
-  createChecklistTemplate: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; traceparent?: string };
-    body: ChecklistTemplateWrite;
-    response: ChecklistTemplateRevision;
-  };
-  getChecklistTemplateRevision: {
-    path: { checklist_revision_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: ChecklistTemplateRevision;
-  };
-  updateChecklistTemplateDraft: {
-    path: { checklist_revision_id: UUID };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: ChecklistTemplateWrite;
-    response: ChecklistTemplateRevision;
-  };
-  createChecklistTemplateRevision: {
-    path: { checklist_revision_id: UUID };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: undefined;
-    response: ChecklistTemplateRevision;
-  };
-  publishChecklistTemplateRevision: {
-    path: { checklist_revision_id: UUID };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: undefined;
-    response: ChecklistTemplateRevision;
-  };
-  getChecklistStepExampleImage: {
-    path: { checklist_revision_id: UUID; step_code: string };
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: ChecklistExampleImage;
-  };
-  putChecklistStepExampleImage: {
-    path: { checklist_revision_id: UUID; step_code: string };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: ChecklistExampleImage;
-    response: ChecklistTemplateRevision;
-  };
   createInspection: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -2884,7 +2755,7 @@ export interface Operations {
   };
   listDefects: {
     path: Record<string, never>;
-    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; limit?: number; cursor?: string };
+    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; reported_from?: string; reported_to?: string; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: DefectPage;
@@ -2994,26 +2865,82 @@ export interface Operations {
     body: CapacityPatch;
     response: CapacityConfiguration;
   };
-  listVehicleServiceAssignments: {
-    path: { vehicle_id: UUID };
-    query: { as_of?: string; limit?: number; cursor?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: VehicleServiceAssignmentPage;
-  };
-  createVehicleServiceAssignment: {
-    path: { vehicle_id: UUID };
+  requestDefectEvidenceUpload: {
+    path: Record<string, never>;
     query: Record<string, never>;
     headers: { 'Idempotency-Key': string; traceparent?: string };
-    body: VehicleServiceAssignmentCreate;
-    response: VehicleServiceAssignment;
+    body: DefectEvidenceUploadRequest;
+    response: DefectEvidenceUpload;
   };
-  endVehicleServiceAssignment: {
-    path: { vehicle_id: UUID; assignment_id: UUID };
+  getDefectEvidenceUpload: {
+    path: { upload_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidenceUpload;
+  };
+  completeDefectEvidenceUpload: {
+    path: { upload_id: UUID };
     query: Record<string, never>;
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: VehicleServiceAssignmentEnd;
-    response: VehicleServiceAssignment;
+    body: undefined;
+    response: DefectEvidenceUpload;
+  };
+  listDefectEvidence: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidencePage;
+  };
+  getDefectEvidenceDownload: {
+    path: { defect_id: UUID; evidence_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectEvidenceLink;
+  };
+  readSignedObject: {
+    path: { tenant_id: UUID; object_name: string };
+    query: { exp: number; purpose: string; sig: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
+  transitionDefect: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: DefectTransition;
+    response: Defect;
+  };
+  listDefectStatusHistory: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectStatusHistoryPage;
+  };
+  amendDefect: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DefectAmendment;
+    response: Defect;
+  };
+  listDefectHistory: {
+    path: { defect_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectRevisionPage;
+  };
+  getDefectAsOf: {
+    path: { defect_id: UUID };
+    query: { at: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DefectAsOf;
   };
   listServiceAreas: {
     path: Record<string, never>;
@@ -3575,34 +3502,6 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
-  listStaffShifts: {
-    path: Record<string, never>;
-    query: { driver_id?: UUID; vehicle_id?: UUID; from?: string; to?: string; limit?: number; cursor?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: StaffShiftPage;
-  };
-  createStaffShift: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; traceparent?: string };
-    body: StaffShiftInput;
-    response: StaffShift;
-  };
-  getStaffShift: {
-    path: { shift_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: StaffShift;
-  };
-  updateStaffShift: {
-    path: { shift_id: UUID };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: StaffShiftInput;
-    response: StaffShift;
-  };
   listTimeEvents: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
@@ -3694,9 +3593,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   acknowledgeDriverRunRevision: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/run/acknowledgements', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   registerDriverDevice: { method: 'POST', path: '/v1/driver/devices', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:devices'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   revokeDriverDevice: { method: 'DELETE', path: '/v1/driver/devices/{device_id}', pathParams: ['device_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['driver:devices'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  listDriverShifts: { method: 'GET', path: '/v1/driver/shifts', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 429, 503] },
-  startDriverShift: { method: 'POST', path: '/v1/driver/shift-starts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
-  endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
@@ -3738,20 +3634,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   liftVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift', pathParams: ['vehicle_id', 'block_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listChecklistTemplates: { method: 'GET', path: '/v1/checklist-templates', pathParams: [], query: ['vehicle_class', 'service_mode', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  listChecklistTemplateRevisions: { method: 'GET', path: '/v1/operator/checklist-templates', pathParams: [], query: ['state', 'vehicle_class', 'service_mode', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['checklists:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createChecklistTemplate: { method: 'POST', path: '/v1/operator/checklist-templates', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [201, 400, 401, 403, 422, 429, 503] },
-  getChecklistTemplateRevision: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}', pathParams: ['checklist_revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['checklists:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  updateChecklistTemplateDraft: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  createChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/revisions', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
-  publishChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/publish', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getChecklistStepExampleImage: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  putChecklistStepExampleImage: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 415, 422, 429, 503] },
   createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   triageDefect: { method: 'POST', path: '/v1/defects/{defect_id}/triage', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:triage'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRepairOrders: { method: 'GET', path: '/v1/repair-orders', pathParams: [], query: ['defect_id', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['repair:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -3766,9 +3654,17 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
-  listVehicleServiceAssignments: { method: 'GET', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: ['as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  createVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  endVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end', pathParams: ['vehicle_id', 'assignment_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 422, 429, 503] },
+  requestDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getDefectEvidenceUpload: { method: 'GET', path: '/v1/defect-evidence-uploads/{upload_id}', pathParams: ['upload_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  completeDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads/{upload_id}/complete', pathParams: ['upload_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listDefectEvidence: { method: 'GET', path: '/v1/defects/{defect_id}/evidence', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getDefectEvidenceDownload: { method: 'GET', path: '/v1/defects/{defect_id}/evidence/{evidence_id}/download', pathParams: ['defect_id', 'evidence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  readSignedObject: { method: 'GET', path: '/v1/objects/{tenant_id}/{object_name}', pathParams: ['tenant_id', 'object_name'], query: ['exp', 'purpose', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  transitionDefect: { method: 'POST', path: '/v1/defects/{defect_id}/transitions', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:state'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listDefectStatusHistory: { method: 'GET', path: '/v1/defects/{defect_id}/status-history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:state'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  amendDefect: { method: 'POST', path: '/v1/defects/{defect_id}/amendments', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listDefectHistory: { method: 'GET', path: '/v1/defects/{defect_id}/history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getDefectAsOf: { method: 'GET', path: '/v1/defects/{defect_id}/as-of', pathParams: ['defect_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -3849,10 +3745,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  listStaffShifts: { method: 'GET', path: '/v1/shifts', pathParams: [], query: ['driver_id', 'vehicle_id', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createStaffShift: { method: 'POST', path: '/v1/shifts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  getStaffShift: { method: 'GET', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  updateStaffShift: { method: 'PUT', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },

@@ -42,7 +42,9 @@ class ContractRunner(private val defaultServer: ProbeServer, private val default
         if (kind == "Fehlerfall" && r.status >= 400 && r.header("Content-Type")?.startsWith("application/problem+json") != true)
             out += "$who: Fehlerantwort ist nicht application/problem+json"
         val schema = registry.responseSchema(op, r.status.toString())
-        if (schema != null && r.text.isNotEmpty()) {
+        // Binäre Antworten (z. B. Schadenfoto über signierten Link, WP-M3-44) haben kein JSON-Schema zu prüfen
+        val isJson = r.header("Content-Type")?.let { it.contains("json") } ?: true
+        if (schema != null && r.text.isNotEmpty() && isJson) {
             registry.schemaErrors(schema, r.json).forEach { out += "$who: Antwort verletzt das Vertragsschema: $it" }
         }
         return out
