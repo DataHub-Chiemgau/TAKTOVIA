@@ -44,11 +44,14 @@ interface FleetsafetyApi {
     /** Sperr- und Freigabekern: Sperren, Einsatzfreigabe, synchrone Dispositionsprüfung (WP-M3-08). */
     val readiness: Readiness
 
+    /** Alarm-Grundlage: Alarm, Dedupe, Quittierung, Eskalation, Richtlinienrevisionen (WP-M3-52). */
+    val alerts: Alerts
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
-            evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(),
-        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy)
+            evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(), alertSettings: AlertSettings = AlertSettings(),
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings)
     }
 }
 

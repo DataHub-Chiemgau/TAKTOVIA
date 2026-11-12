@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/alert.resolved.v1.schema.json",
+  "title": "Betriebsalarm nach Behebung gelöst (WP-M3-52, WP-M5-04)",
+  "description": "Payload von `alert.resolved`. Aggregat: business_alert. Nur Kennungen und Codes (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "alert_id",
+    "state"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "alert_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "enum": [
+        "RESOLVED"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "alert_id": "11111111-2222-4333-8444-555555555555",
+      "state": "RESOLVED"
+    }
+  ]
+}

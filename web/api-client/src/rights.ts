@@ -27,6 +27,8 @@ export type Right =
   | 'defects.write'
   | 'defects.state'
   | 'defects.history'
+  | 'alerts'
+  | 'alerts.ack'
   | 'admin.ui17'
   | 'admin.ui18'
   | 'admin.ui20';
@@ -63,6 +65,9 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'defects:write': ['defects.write'],
   'defects:state': ['defects.state'],
   'defects:history': ['defects.history'],
+  // UI-07 Leitstelle: Arbeitsliste „Offene Störungen“ (WP-M3-52): Lesen mit `operator:read`, Quittieren nur mit `operator:write`
+  'operator:read': ['alerts'],
+  'operator:write': ['alerts', 'alerts.ack'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],

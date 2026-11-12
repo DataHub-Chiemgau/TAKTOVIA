@@ -18,7 +18,7 @@ import java.time.Clock
 
 /** Nur innerhalb des Moduls `fleet-safety` sichtbar (durch Architekturtest erzwungen). */
 internal object FleetServicesFactory {
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock, driverRelation: DriverVehicleRelation?, evidenceWiring: DefectEvidenceWiring?, releasePolicy: de.taktovia.fleetsafety.api.ReleasePolicy = de.taktovia.fleetsafety.api.ReleasePolicy()): FleetsafetyApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock, driverRelation: DriverVehicleRelation?, evidenceWiring: DefectEvidenceWiring?, releasePolicy: de.taktovia.fleetsafety.api.ReleasePolicy = de.taktovia.fleetsafety.api.ReleasePolicy(), alertSettings: de.taktovia.fleetsafety.api.AlertSettings = de.taktovia.fleetsafety.api.AlertSettings()): FleetsafetyApi {
         val roles = JdbcVehicleRoles(ctxTx, audit, outbox, clock)
         val vehicles = JdbcVehicles(ctxTx, audit, outbox, clock)
         val pool = JdbcVehiclePool(ctxTx, audit, outbox, clock)
@@ -28,6 +28,7 @@ internal object FleetServicesFactory {
         val readinessService = JdbcReadiness(ctxTx, audit, outbox, clock, releasePolicy)
         val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock, readinessService)
         val knownDefectService = JdbcKnownDefects(ctxTx, audit, driverRelation ?: ShiftDriverRelation(), clock)
+        val alertService = JdbcAlerts(ctxTx, audit, outbox, clock, alertSettings)
         return object : FleetsafetyApi {
             override val checklistTemplates: ChecklistTemplates = checklists
             override val vehicleRoles: VehicleRoles = roles
@@ -40,6 +41,7 @@ internal object FleetServicesFactory {
             override val inspections: de.taktovia.fleetsafety.api.Inspections = inspectionService
             override val knownDefects: de.taktovia.fleetsafety.api.KnownDefects = knownDefectService
             override val readiness: de.taktovia.fleetsafety.api.Readiness = readinessService
+            override val alerts: de.taktovia.fleetsafety.api.Alerts = alertService
         }
     }
 }
