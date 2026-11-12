@@ -1,0 +1,8 @@
+table;owner;quelle
+analytics_event_inbox;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+fact_attempt;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+fact_offer;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+fact_booking;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+fact_stop_event;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+fact_vehicle_state;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)
+dataset_watermark;analytics;WP-M4-45 (Analytics-Faktenbasis und Datenstand)

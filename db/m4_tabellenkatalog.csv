@@ -42,3 +42,9 @@ expense_split;documents-finance;VERAENDERLICH;;WP-M4-35;Aufteilungsplan des Bele
 expense_split_line;documents-finance;VERAENDERLICH;;WP-M4-35;Zeilen des Aufteilungsplans
 ledger_export;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;bereitgestellter Exportbatch unveränderlich
 ledger_export_line;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;Batchzeile, je Journal genau ein Batch
+analytics_event_inbox;analytics;APPEND_ONLY;;WP-M4-45;Ereigniseingang der Faktenbasis, Dedupe je Mandant und Ereignis
+fact_attempt;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Versuch
+fact_offer;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Angebot
+fact_booking;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Buchung
+fact_stop_event;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Stopp- und Fahrerereignis
+fact_vehicle_state;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Fahrzeugzustand

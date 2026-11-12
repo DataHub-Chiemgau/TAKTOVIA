@@ -269,6 +269,7 @@ class CrossTenantIsolationTest {
             "getReceiptDocument" to Probe("GET", "/v1/expenses/receipts/{document_id}", role = "finance"),
             "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
             "getDriverRun" to Probe("GET", "/v1/driver/shifts/{shift_id}/run", role = "driver"),
+            "listExpectedPassengers" to Probe("GET", "/v1/driver/shifts/{shift_id}/passengers", role = "driver"),
             "getStaffShift" to Probe("GET", "/v1/shifts/{shift_id}", role = "dispatcher"),
             "updateStaffShift" to Probe("PUT", "/v1/shifts/{shift_id}", """{"driver_id":"${UUID.randomUUID()}","vehicle_id":"${UUID.randomUUID()}","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin","withdrawn":true}""", true, role = "dispatcher"),
             // Belege: Aggregat, Revisionen, Original, Extraktion (WP-M4-22 bis -27)
