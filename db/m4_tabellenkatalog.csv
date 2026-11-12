@@ -42,3 +42,4 @@ expense_split;documents-finance;VERAENDERLICH;;WP-M4-35;Aufteilungsplan des Bele
 expense_split_line;documents-finance;VERAENDERLICH;;WP-M4-35;Zeilen des Aufteilungsplans
 ledger_export;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;bereitgestellter Exportbatch unveränderlich
 ledger_export_line;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;Batchzeile, je Journal genau ein Batch
+export_job;analytics;FREIGABE_UNVERAENDERLICH;;WP-M5-19;Exportauftrag: Auftragsdaten und beendetes Ergebnis unveraenderlich

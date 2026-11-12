@@ -1,0 +1,21 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+export_job;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+export_job;id;nein;TECHNISCHER_BETRIEB;;;;
+export_job;kind;nein;TECHNISCHER_BETRIEB;;;;
+export_job;scope;ja;FLOTTE_SICHERHEIT;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;PERSONAL_HR;LK_BETRIEB;"Umfang (Fahrzeug, Zeitraum, optional Personenbezug für den Zeitnachweis)"
+export_job;requested_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_AUDIT;"Auftraggeber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+export_job;requester_scopes;nein;TECHNISCHER_BETRIEB;;;;
+export_job;requester_roles;nein;TECHNISCHER_BETRIEB;;;;
+export_job;idempotency_key;nein;TECHNISCHER_BETRIEB;;;;
+export_job;request_hash;nein;TECHNISCHER_BETRIEB;;;;
+export_job;state;nein;TECHNISCHER_BETRIEB;;;;
+export_job;as_of;nein;TECHNISCHER_BETRIEB;;;;
+export_job;created_at;nein;TECHNISCHER_BETRIEB;;;;
+export_job;started_at;nein;TECHNISCHER_BETRIEB;;;;
+export_job;finished_at;nein;TECHNISCHER_BETRIEB;;;;
+export_job;result;ja;FLOTTE_SICHERHEIT;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;PERSONAL_HR;LK_BETRIEB;"Exportinhalt (Prüfnachweise, Schadenakte, Zeitnachweis, Dienstplan); nur für den Auftraggeber abrufbar, nie im Audit"
+export_job;result_sha256;nein;TECHNISCHER_BETRIEB;;;;
+export_job;result_bytes;nein;TECHNISCHER_BETRIEB;;;;
+export_job;categories;nein;TECHNISCHER_BETRIEB;;;;
+export_job;failure_code;nein;TECHNISCHER_BETRIEB;;;;
+export_job;revision;nein;TECHNISCHER_BETRIEB;;;;

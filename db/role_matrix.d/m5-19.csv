@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+export_job;SELECT,INSERT,UPDATE;WP-M5-19: Exportauftrag mit Datenstand, Nachweisen und Ergebnis; Zustandswechsel und Unveraenderlichkeit per Trigger, kein DELETE

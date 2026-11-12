@@ -3235,6 +3235,49 @@ export interface ConfigRevisionPage {
   as_of: string;
 }
 
+export interface ReportJobRequest {
+  kind: 'PBEFG_DATA' | 'INSPECTION_PROOF' | 'DEFECT_CASE' | 'TIME_PROOF' | 'ROSTER_ARCHIVE';
+  scope: ReportJobScope;
+}
+
+export interface ReportJobScope {
+  vehicle_id?: UUID;
+  depot_id?: UUID;
+  person_ref?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface ReportCategory {
+  code: string;
+  status: 'PRESENT' | 'MISSING' | 'NOT_AUTHORIZED';
+  rows: number;
+}
+
+export interface ReportJob {
+  job_id: UUID;
+  kind: 'PBEFG_DATA' | 'INSPECTION_PROOF' | 'DEFECT_CASE' | 'TIME_PROOF' | 'ROSTER_ARCHIVE';
+  scope: ReportJobScope;
+  state: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+  as_of: string;
+  created_at: string;
+  finished_at: string | null;
+  categories: ReportCategory[] | null;
+  result_sha256: string | null;
+  result_bytes: number | null;
+  failure_code: string | null;
+  download_url: string | null;
+  download_expires_at: string | null;
+}
+
+export interface ReportExport {
+  schema_version: string;
+  kind: string;
+  as_of: string;
+  categories: ReportCategory[];
+  data: Record<string, unknown>;
+}
+
 export type OfferModel = 'AREA_ON_DEMAND' | 'LINE_ON_DEMAND' | 'STATION_FEEDER';
 
 export interface ServiceOfferModelRules {
@@ -5170,6 +5213,20 @@ export interface Operations {
     body: undefined;
     response: ConfigImpactReport;
   };
+  createReportJob: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ReportJobRequest;
+    response: ReportJob;
+  };
+  getReportJob: {
+    path: { job_id: UUID };
+    query: { download_token?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ReportJob;
+  };
   listServices: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -5654,6 +5711,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   rollbackConfigRevision: { method: 'POST', path: '/v1/config/revisions/{revision_id}/rollback', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getConfigImpactReport: { method: 'GET', path: '/v1/config/impact-reports/{impact_report_id}', pathParams: ['impact_report_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   requestConfigImpact: { method: 'POST', path: '/v1/config/revisions/{revision_id}/impact', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['config:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createReportJob: { method: 'POST', path: '/v1/reports/jobs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['reports:write'], statuses: [202, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getReportJob: { method: 'GET', path: '/v1/reports/jobs/{job_id}', pathParams: ['job_id'], query: ['download_token'], headers: ['traceparent'], hasBody: false, scopes: ['reports:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   listServices: { method: 'GET', path: '/v1/services', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['services:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createService: { method: 'POST', path: '/v1/services', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['services:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   updateService: { method: 'PUT', path: '/v1/services/{service_id}', pathParams: ['service_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['services:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

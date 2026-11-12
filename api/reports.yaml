@@ -1,0 +1,254 @@
+paths:
+  /v1/reports/jobs:
+    post:
+      summary: Exportauftrag anlegen
+      operationId: createReportJob
+      security:
+      - oidc:
+        - reports:write
+      description: 'Legt einen asynchronen Exportauftrag an (WP-M5-19, Kap. 05 §5.7). Der Auftrag hält die Funktionsrechte und Rollen des Auftraggebers; der Export enthält nur, wozu der Auftraggeber berechtigt ist (Kategorie ohne Recht: `NOT_AUTHORIZED`, Kategorie ohne Quelle im P1-Umfang: `MISSING`). Den Datenstand (`as_of`) setzt der Server. Derselbe `Idempotency-Key` desselben Auftraggebers mit gleichem Umfang liefert denselben Auftrag (200), mit anderem Umfang 409 `IDEMPOTENCY_CONFLICT`. Der Mandant steht nie im Umfang; Fahrzeug oder Depot eines anderen Mandanten ist 404. Auftrag und Abruf stehen im Audit, nie mit Exportinhalt.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '202':
+          description: Auftrag angenommen; der Status wird über `getReportJob` gelesen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+        '200':
+          description: Wiederholung desselben Auftrags (gleicher Schlüssel, gleicher Umfang).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportJobRequest'
+  /v1/reports/jobs/{job_id}:
+    get:
+      summary: Exportauftrag lesen oder Ergebnis abrufen
+      operationId: getReportJob
+      security:
+      - oidc:
+        - reports:read
+      description: 'Ohne `download_token`: Status, Datenstand, Kategorien mit Status und Zeilenzahl, SHA-256 und Größe des Ergebnisses; beim erfolgreichen Auftrag zusätzlich ein kurzlebiger, mandanten- und auftragsgebundener `download_url`. Mit `download_token` (aus dem `download_url`): die Exportdatei (`application/vnd.taktovia.export+json`). Nur der Auftraggeber sieht den Auftrag; fremde, unbekannte, nicht fertige oder abgelaufene Abrufe sind 404 ohne Hinweis auf die Existenz.'
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Auftrags-ID.
+      - name: download_token
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 20
+          maxLength: 400
+        description: Kurzlebiger Abruflink-Schlüssel aus `download_url`.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Auftrag oder Exportdatei.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+            application/vnd.taktovia.export+json:
+              schema:
+                $ref: '#/components/schemas/ReportExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    ReportJobRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+          - PBEFG_DATA
+          - INSPECTION_PROOF
+          - DEFECT_CASE
+          - TIME_PROOF
+          - ROSTER_ARCHIVE
+          description: Art des Exports. `PBEFG_DATA` bündelt die Kategorien der Freigabecheckliste (Arbeitsannahme, OP-13).
+        scope:
+          $ref: '#/components/schemas/ReportJobScope'
+      required:
+      - kind
+      - scope
+    ReportJobScope:
+      type: object
+      additionalProperties: false
+      description: Umfang des Exports; der Mandant steht nie im Umfang. Beim Zeitnachweis sind `from` und `to` Pflicht.
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        depot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+    ReportCategory:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+          enum:
+          - PRESENT
+          - MISSING
+          - NOT_AUTHORIZED
+        rows:
+          type: integer
+          minimum: 0
+      required:
+      - code
+      - status
+      - rows
+    ReportJob:
+      type: object
+      additionalProperties: false
+      properties:
+        job_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - PBEFG_DATA
+          - INSPECTION_PROOF
+          - DEFECT_CASE
+          - TIME_PROOF
+          - ROSTER_ARCHIVE
+        scope:
+          $ref: '#/components/schemas/ReportJobScope'
+        state:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - SUCCEEDED
+          - FAILED
+        as_of:
+          type: string
+          format: date-time
+          description: Datenstand (Snapshot-Zeitpunkt), vom Server beim Auftrag gesetzt.
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        categories:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/ReportCategory'
+          - type: 'null'
+        result_sha256:
+          oneOf:
+          - type: string
+            pattern: ^[0-9a-f]{64}$
+          - type: 'null'
+        result_bytes:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        failure_code:
+          oneOf:
+          - type: string
+          - type: 'null'
+        download_url:
+          oneOf:
+          - type: string
+          - type: 'null'
+          description: Kurzlebiger Abruflink, nur beim erfolgreichen Auftrag und nur für den Auftraggeber.
+        download_expires_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - job_id
+      - kind
+      - scope
+      - state
+      - as_of
+      - created_at
+      - finished_at
+      - categories
+      - result_sha256
+      - result_bytes
+      - failure_code
+      - download_url
+      - download_expires_at
+    ReportExport:
+      type: object
+      description: Exportdatei mit Kopf (Version, Art, Datenstand, Kategorien mit Status) und Daten je Kategorie.
+      properties:
+        schema_version:
+          type: string
+        kind:
+          type: string
+        as_of:
+          type: string
+          format: date-time
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportCategory'
+        data:
+          type: object
+          additionalProperties: true
+      required:
+      - schema_version
+      - kind
+      - as_of
+      - categories
+      - data

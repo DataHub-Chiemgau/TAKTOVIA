@@ -110,6 +110,8 @@ components:
             time-events:manage: time-events:manage
             receipts:read: receipts:read
             receipts:write: receipts:write
+            reports:read: reports:read
+            reports:write: reports:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -204,6 +206,8 @@ components:
             time-events:manage: time-events:manage
             receipts:read: receipts:read
             receipts:write: receipts:write
+            reports:read: reports:read
+            reports:write: reports:write
     partnerSignature:
       type: apiKey
       in: header
