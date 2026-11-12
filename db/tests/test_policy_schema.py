@@ -54,8 +54,17 @@ class Katalog(unittest.TestCase):
             catalog = {r['name_original'] for r in csv.DictReader(f, delimiter=';') if r['katalogtyp'] == 'Parameter'}
         with admin() as c:
             names = {r[0] for r in c.execute("SELECT parameter FROM taktovia.policy_schema WHERE parameter <> 'service_config'")}
-        self.assertEqual(names - catalog, set(), 'Parameter im Schema, die kataloge.csv nicht kennt')
+        # Ausnahme: die vier Gewichte der Mehrzielbewertung (WP-M2-20, OP-18) stehen bewusst nicht im Pflichtenheft-Katalog
+        ohne_katalog = {'opt_weight_wait', 'opt_weight_detour', 'opt_weight_empty', 'opt_weight_quality'}
+        self.assertEqual(names - catalog - ohne_katalog, set(), 'Parameter im Schema, die kataloge.csv nicht kennt')
         self.assertTrue(set(START) <= names)
+
+    def test_gewichte_der_mehrzielbewertung_sind_registriert_und_begrenzt(self):  # WP-M2-20 / OPT-008
+        with admin() as c:
+            rows = {r[0]: r[1:] for r in c.execute("SELECT parameter, value_type, min_value, max_value, default_value FROM taktovia.policy_schema WHERE parameter LIKE 'opt_weight_%'")}
+        self.assertEqual(set(rows), {'opt_weight_wait', 'opt_weight_detour', 'opt_weight_empty', 'opt_weight_quality'})
+        for typ, lo, hi, _ in rows.values():
+            self.assertEqual((typ, lo, hi), ('integer', 0, 100))
 
     def test_spalten_folgen_den_schemadateien(self):
         with admin() as c:

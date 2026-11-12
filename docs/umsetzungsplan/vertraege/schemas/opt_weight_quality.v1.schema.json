@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/opt_weight_quality.v1.schema.json",
+  "title": "opt_weight_quality",
+  "description": "Gewicht Betriebsqualität der Mehrzielbewertung",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 100,
+  "default": 15,
+  "x-unit": "WEIGHT",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "nicht im Katalog (WP-M2-20, OP-18)",
+  "x-catalog-range": "0..100, Summe der vier Gewichte größer 0; Produktionswerte nach D-05"
+}

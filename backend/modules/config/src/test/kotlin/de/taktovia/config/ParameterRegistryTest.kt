@@ -79,8 +79,8 @@ class ParameterRegistryTest {
             }
             assertEquals(row["definition_original"], p.description, "Beschreibung von $name")
         }
-        // Jeder Parameter des Registers (außer der Dienstkonfiguration) existiert im Katalog des Pflichtenhefts
-        assertEquals(emptySet<String>(), byName.keys - "service_config" - rows.keys)
+        // Jeder Parameter des Registers (außer der Dienstkonfiguration und den vier Gewichten der Mehrzielbewertung, die der Katalog nicht kennt: WP-M2-20, OP-18) existiert im Katalog des Pflichtenhefts
+        assertEquals(emptySet<String>(), byName.keys - "service_config" - rows.keys - setOf("opt_weight_wait", "opt_weight_detour", "opt_weight_empty", "opt_weight_quality"))
         // und das JSON-Schema im Register ist das dokumentierte (docs/umsetzungsplan/vertraege/schemas)
         val mapper = tools.jackson.databind.json.JsonMapper.builder().build()
         byName.values.forEach { p ->
