@@ -35,6 +35,9 @@ interface FleetsafetyApi {
     /** Fotoevidenz der Schadenakte: Uploadticket, Quarantäne, Medienprüfung, signierter Abruf (WP-M3-44). */
     val defectEvidence: DefectEvidenceUploads
 
+    /** Prüflauf-Start mit exakt freigegebener Vorlage (WP-M3-13). */
+    val inspections: Inspections
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,

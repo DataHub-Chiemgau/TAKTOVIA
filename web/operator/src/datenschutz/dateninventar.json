@@ -11894,6 +11894,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operation_kind",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Bedienart (Vorlagenwahl, WP-M3-13)"
+        },
+        {
           "spalte": "owner_org_ref",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",

@@ -88,6 +88,10 @@ class CrossTenantIsolationTest {
         val shift = create("/v1/shifts", """{"driver_id":"$driverMaster","vehicle_id":"$vehicleMaster","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin"}""", b.dispatcherToken).json["id"].asString()
         // WP-M3-10: Checklistenvorlage in B (Werkstatt von B legt an)
         val checklist = create("/v1/operator/checklist-templates", """{"name":"Iso-B","vehicle_class":"PKW","service_mode":"ONDEMAND","steps":[{"step_code":"BRAKES","title":"Bremsen","input_kind":"OK_DEFECT_NA","mandatory":true}]}""", b.adminToken).json["id"].asString()
+        // WP-M3-13: Prüflauf in B (Direktanlage mit der Entwurfsvorlage von B; der Startpfad prüft InspectionApiTest)
+        val inspection = UUID.randomUUID().toString()
+        env.exec("INSERT INTO taktovia.inspection_run(tenant_id,id,shift_id,vehicle_id,driver_ref,template_revision_id,kind,started_at,created_by) VALUES (?,?,?,?,?,?,'PRE_SHIFT',now(),'system:test')",
+            b.tenant.value, UUID.fromString(inspection), UUID.fromString(shift), UUID.fromString(vehicleMaster), UUID.fromString(driverMaster), UUID.fromString(checklist))
         // Schadenakte mit freigegebenem Foto in B (WP-M3-43/-44): Ticket, Direktupload in die Quarantäne, Abschluss mit Medienprüfung, Meldung mit Foto
         val photo = de.taktovia.app.fleet.DefectEvidenceApiTest.jpeg(777)
         val ticket = env.post("/v1/defect-evidence-uploads", de.taktovia.app.fleet.DefectEvidenceApiTest.ticketBody(photo), b.dispatcherToken, null, idem())
@@ -125,7 +129,7 @@ class CrossTenantIsolationTest {
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
             "tenant_id" to b.tenant.toString(), "object_name" to "defect-evidence-$uploadId", "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop,
-            "area_id" to area, "stop_id" to stop, "checklist_revision_id" to checklist, "step_code" to "BRAKES",
+            "area_id" to area, "stop_id" to stop, "checklist_revision_id" to checklist, "step_code" to "BRAKES", "inspection_id" to inspection,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
@@ -203,6 +207,7 @@ class CrossTenantIsolationTest {
             "putChecklistStepExampleImage" to Probe("PUT", "/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image", """{"content_type":"image/png","data_base64":"iVBORw0KGgoBAgM="}""", true),
             "getChecklistStepExampleImage" to Probe("GET", "/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image", role = "dispatcher"),
             "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
+            "getInspection" to Probe("GET", "/v1/inspections/{inspection_id}", role = "dispatcher"),
             "getDefect" to Probe("GET", "/v1/defects/{defect_id}", role = "dispatcher"),
             "transitionDefect" to Probe("POST", "/v1/defects/{defect_id}/transitions", """{"to":"REVIEWED"}""", true, role = "dispatcher"),
             "listDefectStatusHistory" to Probe("GET", "/v1/defects/{defect_id}/status-history", role = "dispatcher"),

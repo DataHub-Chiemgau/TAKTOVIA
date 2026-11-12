@@ -32,6 +32,11 @@ class Strings {
     'position.notActivated': 'Die Standorterfassung ist noch nicht aktiviert.',
     'defect.report': 'Mangel melden',
     'defect.reportHint': 'Einen Schaden oder Mangel melden, auch ohne aktive Fahrt.',
+    'inspection.start': 'Pflichtpruefung starten',
+    'inspection.progress': 'Pruefung {n} / {total}',
+    'inspection.needShift': 'Die Pruefung beginnt erst nach der Dienstanmeldung.',
+    'inspection.noTemplate': 'Fuer dieses Fahrzeug gibt es keine eindeutige Pruefvorlage. Die Leitstelle wurde informiert, die Freigabe bleibt aus.',
+    'inspection.offline': 'Ohne Verbindung kann die Pruefung nicht gestartet werden.',
     'action.unavailableOffline': 'Ohne Verbindung nicht verfuegbar. Die Freigabe erteilt nur der Server.',
   });
 
