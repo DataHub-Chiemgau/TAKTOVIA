@@ -17,7 +17,7 @@ CREATE TABLE plan_change (
   recorded_at       timestamptz NOT NULL DEFAULT clock_timestamp(),
   PRIMARY KEY (tenant_id, id),
   UNIQUE (tenant_id, run_id, run_revision),
-  UNIQUE (seq),
+  UNIQUE (tenant_id, seq),
   CHECK (previous_revision = run_revision - 1),
   FOREIGN KEY (tenant_id, run_id) REFERENCES vehicle_run(tenant_id, id)
 );
