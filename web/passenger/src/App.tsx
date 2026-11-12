@@ -30,6 +30,7 @@ import { PrivacySettings } from './privacy/PrivacySettings';
 import { Registrierung } from './registrierung/Registrierung';
 import { Hilfe } from './hilfe/Hilfe';
 import { Start } from './booking/Start';
+import { OfferScreen } from './booking/OfferScreen';
 import { OfflineBanner } from './netz/Offline';
 import { useOnline } from './netz/useOnline';
 import { tx } from './texte';
@@ -222,7 +223,7 @@ export function App() {
             path="/angebote"
             element={
               <RequirePassenger>
-                <Placeholder screen="ui02" />
+                <OfferScreen />
               </RequirePassenger>
             }
           />
