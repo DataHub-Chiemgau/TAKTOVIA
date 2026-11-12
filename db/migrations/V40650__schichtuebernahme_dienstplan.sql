@@ -17,13 +17,13 @@ BEGIN
   ALTER TABLE staff_shift DISABLE TRIGGER staff_shift_overlap_guard;
   ALTER TABLE staff_shift DISABLE TRIGGER staff_shift_state_guard;
   FOR t IN SELECT DISTINCT tenant_id FROM staff_shift WHERE roster_id IS NULL AND state IN ('PLANNED', 'STARTED', 'ENDED', 'CANCELLED') AND (p_tenant IS NULL OR tenant_id = p_tenant) ORDER BY tenant_id LOOP
-    v_region := md5('wp-m4-65|region|' || t.tenant_id::text)::uuid;
-    v_depot  := md5('wp-m4-65|depot|' || t.tenant_id::text)::uuid;
+    v_region := substr(encode(sha256(convert_to('wp-m4-65|region|' || t.tenant_id::text, 'UTF8')), 'hex'), 1, 32)::uuid;
+    v_depot  := substr(encode(sha256(convert_to('wp-m4-65|depot|' || t.tenant_id::text, 'UTF8')), 'hex'), 1, 32)::uuid;
     INSERT INTO region (tenant_id, id, name, created_by) VALUES (t.tenant_id, v_region, 'Altbestand (Übernahme M3)', v_actor) ON CONFLICT DO NOTHING;
     INSERT INTO depot (tenant_id, id, region_id, name, created_by) VALUES (t.tenant_id, v_depot, v_region, 'Altbestand (Übernahme M3)', v_actor) ON CONFLICT DO NOTHING;
     FOR g IN SELECT date_trunc('week', (s.starts_at AT TIME ZONE s.timezone)::timestamp)::date AS week_start, min(s.starts_at) AS first_start
                FROM staff_shift s WHERE s.tenant_id = t.tenant_id AND s.roster_id IS NULL AND s.state IN ('PLANNED', 'STARTED', 'ENDED', 'CANCELLED') GROUP BY 1 ORDER BY 1 LOOP
-      v_roster := md5('wp-m4-65|roster|' || t.tenant_id::text || '|' || g.week_start::text)::uuid;
+      v_roster := substr(encode(sha256(convert_to('wp-m4-65|roster|' || t.tenant_id::text || '|' || g.week_start::text, 'UTF8')), 'hex'), 1, 32)::uuid;
       IF EXISTS (SELECT 1 FROM roster_revision r WHERE r.tenant_id = t.tenant_id AND r.depot_id = v_depot AND r.week_start = g.week_start) THEN CONTINUE; END IF;
       INSERT INTO roster_revision (tenant_id, id, roster_id, depot_id, week_start, revision, state, author) VALUES (t.tenant_id, v_roster, v_roster, v_depot, g.week_start, 1, 'DRAFT', v_actor);
       UPDATE staff_shift s SET roster_id = v_roster, roster_revision = 1, depot_id = v_depot, lineage_id = COALESCE(s.lineage_id, s.id), state = CASE s.state WHEN 'PLANNED' THEN 'PUBLISHED' ELSE s.state END

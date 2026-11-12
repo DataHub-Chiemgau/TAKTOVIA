@@ -6247,6 +6247,15 @@
           "bemerkung": "Auftraggeber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
         },
         {
+          "spalte": "requester_roles",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "requester_scopes",
           "personenbezogen": "nein",
           "zweck": "TECHNISCHER_BETRIEB",
