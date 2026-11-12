@@ -55,13 +55,13 @@ data class BreakPlan(val breaks: List<ShiftBreak>) {
  * Eingabe einer Schicht. Lokaler Beginn und Ende ([startsLocal], [endsLocal]: `yyyy-MM-ddTHH:mm[:ss]` ohne Offset) gelten in [timezone] (IANA); eine Ortszeit in der Frühjahrslücke wird abgelehnt,
  * eine doppelte Ortszeit (Herbst) verlangt den Offset ([startsOffset]/[endsOffset], z. B. `+02:00`). Betrieb ([operatorId]) und Depot ([depotId]) gehören zum Mandanten. [driverRef] und [vehicleId] fehlen bei offenen Schichten.
  */
-data class ShiftInput(
+data class RosterShiftInput(
     val startsLocal: String?, val startsOffset: String?, val endsLocal: String?, val endsOffset: String?, val timezone: String?, val breakPlan: Any?,
     val operatorId: UUID, val depotId: UUID, val function: String?, val requiredQualification: String?, val staffingNeed: Int, val driverRef: UUID? = null, val vehicleId: UUID? = null,
 )
 
 /** Schicht mit allen Planungsmerkmalen. [operatingDay] ist das lokale Datum des Beginns (Mitternachtsschicht: Tag des Beginns); [durationMinutes] die reale Dauer (DST-fest). */
-data class ShiftView(
+data class RosterShiftView(
     val id: UUID, val rosterId: UUID, val operatingDay: LocalDate, val timezone: ZoneId, val startsAt: Instant, val endsAt: Instant, val durationMinutes: Long, val breakPlan: BreakPlan,
     val operatorId: UUID, val depotId: UUID, val function: String, val requiredQualification: String?, val staffingNeed: Int, val driverRef: UUID?, val vehicleId: UUID?, val state: String,
     val revision: Long, val createdBy: String, val createdAt: Instant,
@@ -76,10 +76,10 @@ data class ShiftView(
  * nur Entwürfe sind änderbar, veröffentlichte Schichten ändert der Dienstplan (WP-M4-04): 409. Änderung mit der erwarteten Revision (`If-Match`): veraltet 412, ohne Zielzeile 404.
  * [rosterId] ist bis zum Dienstplankopf (WP-M4-04) ein vom Planer gewählter Gruppenschlüssel.
  */
-interface Shifts {
-    fun create(ctx: RequestContext, rosterId: UUID, input: ShiftInput): ShiftView
-    fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): ShiftView
+interface RosterShifts {
+    fun create(ctx: RequestContext, rosterId: UUID, input: RosterShiftInput): RosterShiftView
+    fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): RosterShiftView
     /** Schichten des Dienstplans nach `(Beginn, ID)`, mit `limit + 1` Zeilen für die Folgeseite. */
-    fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<ShiftView>
-    fun update(ctx: RequestContext, rosterId: UUID, shiftId: UUID, expectedRevision: Long, input: ShiftInput): ShiftView
+    fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<RosterShiftView>
+    fun update(ctx: RequestContext, rosterId: UUID, shiftId: UUID, expectedRevision: Long, input: RosterShiftInput): RosterShiftView
 }

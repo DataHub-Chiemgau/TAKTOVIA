@@ -5,7 +5,7 @@ import de.taktovia.app.staff.ShiftHttpWorld
 import java.util.UUID
 
 /** Vertragsfälle der Schichten (WP-M4-03): je Operation ein positiver Fall und ein Fehlerfall gegen die echte Anwendung. */
-internal object ShiftContractCases {
+internal object RosterShiftContractCases {
     private fun idem(w: ShiftHttpWorld, extra: Map<String, String> = emptyMap()) = w.g.env.headers(w.plannerToken, extra = w.g.idem() + extra)
     private fun hg(w: ShiftHttpWorld) = w.g.env.headers(w.plannerToken)
 

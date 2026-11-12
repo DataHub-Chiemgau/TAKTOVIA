@@ -19,7 +19,7 @@ interface StafftimeApi {
     val timeEvents: TimeEvents
 
     /** Schichten eines Dienstplans mit Pausenplan, Qualifikation und Personalbedarf (WP-M4-03). */
-    val shifts: Shifts
+    val rosterShifts: RosterShifts
 
     /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
     val drivers: Drivers

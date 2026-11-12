@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 /** WP-M4-03 über die echte Anwendung (HTTP, Runtime-Rolle, Test-Issuer): `/v1/rosters/shifts` mit ETag/If-Match, 404/412/422/428, Rechten und Mandantentrennung. */
-class ShiftApiTest {
+class RosterShiftApiTest {
     private val w by lazy { ShiftHttpWorld() }
 
     @Test
@@ -20,7 +20,7 @@ class ShiftApiTest {
         assertEquals(200, r.status, r.text); assertEquals(c.json, r.json)
         val l = w.get("/v1/rosters/shifts?roster_id=${w.roster}")
         assertEquals(listOf(id), l.json["items"].values().map { it["id"].asString() })
-        assertEquals(1, w.g.count("SELECT count(*) FROM taktovia.audit_event WHERE action = 'staff.shift.created' AND tenant_id = ?", w.g.tenant.value))
+        assertEquals(1, w.g.count("SELECT count(*) FROM taktovia.audit_event WHERE action = 'staff.roster_shift.created' AND tenant_id = ?", w.g.tenant.value))
     }
 
     @Test

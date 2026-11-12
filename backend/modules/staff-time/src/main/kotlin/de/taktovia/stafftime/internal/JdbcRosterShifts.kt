@@ -16,9 +16,9 @@ import de.taktovia.platform.time.IanaZones
 import de.taktovia.platform.time.LocalDateTimes
 import de.taktovia.platform.time.ZonedMoments
 import de.taktovia.stafftime.api.BreakPlan
-import de.taktovia.stafftime.api.ShiftInput
-import de.taktovia.stafftime.api.ShiftView
-import de.taktovia.stafftime.api.Shifts
+import de.taktovia.stafftime.api.RosterShiftInput
+import de.taktovia.stafftime.api.RosterShiftView
+import de.taktovia.stafftime.api.RosterShifts
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
@@ -34,21 +34,21 @@ import java.util.UUID
  * Schichtmodell (WP-M4-03) auf `staff_shift`. Zeitpunkte entstehen aus lokaler Zeit und Zone nach Kap. 05 §5.1 (Lücke abgelehnt, doppelte Ortszeit nur mit Offset); Betriebstag und Revision leitet die
  * Datenbank ab (Trigger). Die bedingte Änderung (`shift_revision = ?`) serialisiert gleichzeitige Änderer: genau einer gewinnt, der andere erhält 412, nie ein stilles Überschreiben.
  */
-internal class JdbcShifts(private val ctxTx: ContextTransactions, private val audit: AuditPort) : Shifts {
+internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private val audit: AuditPort) : RosterShifts {
     private val json = JsonMapper.builder().build()
 
-    override fun create(ctx: RequestContext, rosterId: UUID, input: ShiftInput): ShiftView {
+    override fun create(ctx: RequestContext, rosterId: UUID, input: RosterShiftInput): RosterShiftView {
         require(ctx, SCOPE_WRITE)
         val c = check(input)
         return try { ctxTx.run(ctx) { j -> doCreate(j, ctx, rosterId, input, c) } } catch (e: DataIntegrityViolationException) { throw mapReference(e) }
     }
 
-    override fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): ShiftView {
+    override fun get(ctx: RequestContext, rosterId: UUID, shiftId: UUID): RosterShiftView {
         require(ctx, SCOPE_READ)
         return ctxTx.run(ctx, readOnly = true) { j -> j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ?", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound() }
     }
 
-    override fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<ShiftView> {
+    override fun list(ctx: RequestContext, rosterId: UUID, limit: Int, after: Pair<Instant, UUID>?): List<RosterShiftView> {
         require(ctx, SCOPE_READ)
         return ctxTx.run(ctx, readOnly = true) { j ->
             j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.roster_id = ? AND (CAST(? AS timestamptz) IS NULL OR (s.starts_at, s.id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY s.starts_at, s.id LIMIT ?",
@@ -56,14 +56,14 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
         }
     }
 
-    override fun update(ctx: RequestContext, rosterId: UUID, shiftId: UUID, expectedRevision: Long, input: ShiftInput): ShiftView {
+    override fun update(ctx: RequestContext, rosterId: UUID, shiftId: UUID, expectedRevision: Long, input: RosterShiftInput): RosterShiftView {
         require(ctx, SCOPE_WRITE)
         val c = check(input)
         return try { ctxTx.run(ctx) { j -> doUpdate(j, ctx, rosterId, shiftId, expectedRevision, input, c) } } catch (e: DataIntegrityViolationException) { throw mapReference(e) }
     }
 
     @AuditRequired
-    private fun doCreate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, i: ShiftInput, c: Checked): ShiftView {
+    private fun doCreate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, i: RosterShiftInput, c: Checked): RosterShiftView {
         val id = UUID.randomUUID()
         val v = j.query(
             "INSERT INTO taktovia.staff_shift AS s (tenant_id, id, roster_id, driver_ref, vehicle_id, starts_at, ends_at, timezone, roster_revision, state, operator_id, depot_id, shift_function, " +
@@ -71,12 +71,12 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
             VIEW, id, rosterId, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
             json.writeValueAsString(c.plan.toMap()), "user:" + ctx.actor.subject,
         ).single()
-        audit.record(j, entry(ctx, v, AuditActions.SHIFT_CREATED))
+        audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CREATED))
         return v
     }
 
     @AuditRequired
-    private fun doUpdate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, shiftId: UUID, expected: Long, i: ShiftInput, c: Checked): ShiftView {
+    private fun doUpdate(j: JdbcOperations, ctx: RequestContext, rosterId: UUID, shiftId: UUID, expected: Long, i: RosterShiftInput, c: Checked): RosterShiftView {
         val cur = j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? AND s.roster_id = ? FOR UPDATE", VIEW, shiftId, rosterId).firstOrNull() ?: throw ProblemException.notFound()
         if (cur.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Schicht wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (cur.state != "DRAFT") throw ProblemException(ErrorCode.CONFLICT, "Nur Entwürfe sind änderbar; veröffentlichte Schichten ändert der Dienstplan.")
@@ -86,14 +86,14 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
             VIEW, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
             json.writeValueAsString(c.plan.toMap()), shiftId, expected,
         ).firstOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH)
-        if (v.revision != cur.revision) audit.record(j, entry(ctx, v, AuditActions.SHIFT_CHANGED))
+        if (v.revision != cur.revision) audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
         return v
     }
 
     private class Checked(val start: Instant, val end: Instant, val zone: ZoneId, val plan: BreakPlan)
 
     /** Formale Prüfung (422 mit Feldverweisen, nichts wird gespeichert): Zone, Ortszeiten nach Kap. 05 §5.1, Ende nach Beginn, höchstens 24 h, Pausenplan, Pflichtmerkmale. */
-    private fun check(i: ShiftInput): Checked {
+    private fun check(i: RosterShiftInput): Checked {
         val v = mutableListOf<Violation>()
         val zone = IanaZones.check(i.timezone, "/timezone"); v += zone.violations
         fun moment(local: String?, offset: String?, name: String): Instant? {
@@ -124,7 +124,7 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
         return if (msg.contains("foreign key", ignoreCase = true)) ProblemException.notFound() else throw e
     }
 
-    private fun entry(ctx: RequestContext, v: ShiftView, action: String) =
+    private fun entry(ctx: RequestContext, v: RosterShiftView, action: String) =
         AuditEntry(ActorRef("user:" + ctx.actor.subject), action, ObjectRef("shift", v.id), ctx.correlationId, mapOf("revision" to v.revision, "state" to v.state, "operating_day" to v.operatingDay.toString()))
 
     private fun require(ctx: RequestContext, scope: String) { if (!ctx.hasScope(scope)) throw ProblemException(ErrorCode.FORBIDDEN) }
@@ -139,7 +139,7 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
         val VIEW = RowMapper { rs, _ ->
             val starts = rs.getTimestamp("starts_at").toInstant(); val ends = rs.getTimestamp("ends_at").toInstant()
             val plan = mapper.readTree(rs.getString("break_plan")).get("breaks").values().map { b -> de.taktovia.stafftime.api.ShiftBreak(b.get("offset_min").asInt(), b.get("duration_min").asInt(), b.get("paid").asBoolean()) }
-            ShiftView(rs.getObject("id", UUID::class.java), rs.getObject("roster_id", UUID::class.java), rs.getDate("operating_day").toLocalDate(), ZoneId.of(rs.getString("timezone")), starts, ends,
+            RosterShiftView(rs.getObject("id", UUID::class.java), rs.getObject("roster_id", UUID::class.java), rs.getDate("operating_day").toLocalDate(), ZoneId.of(rs.getString("timezone")), starts, ends,
                 Duration.between(starts, ends).toMinutes(), BreakPlan(plan), rs.getObject("operator_id", UUID::class.java), rs.getObject("depot_id", UUID::class.java), rs.getString("shift_function"),
                 rs.getString("required_qualification"), rs.getInt("staffing_need"), rs.getObject("driver_ref", UUID::class.java), rs.getObject("vehicle_id", UUID::class.java), rs.getString("state"),
                 rs.getLong("shift_revision"), rs.getString("created_by") ?: "", rs.getTimestamp("created_at").toInstant())
