@@ -17,6 +17,8 @@ import de.taktovia.bookingdispatch.api.ResourceAvailability
 import de.taktovia.bookingdispatch.api.ResourceVector
 import de.taktovia.bookingdispatch.api.RunPlanValidator
 import de.taktovia.bookingdispatch.api.VehicleAvailability
+import de.taktovia.journeyfederation.api.JourneyShells
+import de.taktovia.journeyfederation.api.SingleLegJourney
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
@@ -36,10 +38,16 @@ import java.util.UUID
  */
 internal class JdbcCapacityHolds(
     private val ctxTx: ContextTransactions, private val resources: ResourceAvailability, private val outbox: Outbox, private val clock: Clock, private val plans: JdbcRunPlans,
+    private val journeys: JourneyShells? = null,
 ) : CapacityHolds {
     private val json = JsonMapper.builder().build()
 
     private class RunRow(val revision: Long, val state: String, val vehicleId: UUID)
+
+    /** Angaben für die vollständige Buchung (WP-M2-23): Fahrgast, Urheber, Preisbindung und Bezüge der Journey-Hülle. */
+    internal class ConfirmIdentity(
+        val passengerId: UUID, val createdBy: String, val quoteId: UUID, val operatorRef: String, val originRef: String, val destinationRef: String,
+    )
 
     override fun place(ctx: RequestContext, cmd: PlaceHold): HoldOutcome = ctxTx.run(ctx) { j -> placeIn(j, ctx, cmd) }
 
@@ -143,7 +151,14 @@ internal class JdbcCapacityHolds(
         reference,
     ).firstOrNull()
 
-    override fun confirm(ctx: RequestContext, holdId: UUID, serviceId: UUID, promise: PromiseCore, demand: BookingDemand): BookingView = ctxTx.run(ctx) { j ->
+    override fun confirm(ctx: RequestContext, holdId: UUID, serviceId: UUID, promise: PromiseCore, demand: BookingDemand): BookingView =
+        ctxTx.run(ctx) { j -> confirmIn(j, ctx, holdId, serviceId, promise, demand, null) }
+
+    /**
+     * Bestätigung in der Transaktion des Aufrufers (WP-M2-23). Mit [identity] entsteht eine vollständige Buchung (Fahrgast, Journey-Hülle, Buchungsnummer, Urheber, Zustandsfolge) und ein Hold einer
+     * seit dem Hold veränderten Planrevision wird abgewiesen (`CAPACITY_UNAVAILABLE`, nie still umgedeutet); ohne [identity] gilt das bisherige Verhalten des Kernels (Tests der Kapazitätsprüfung).
+     */
+    internal fun confirmIn(j: JdbcOperations, ctx: RequestContext, holdId: UUID, serviceId: UUID, promise: PromiseCore, demand: BookingDemand, identity: ConfirmIdentity?): BookingView = kotlin.run {
         // Sperrreihenfolge wie beim Hold: erst der Lauf, dann die Hold-Zeile
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).firstOrNull() ?: throw ProblemException.notFound()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
@@ -156,6 +171,11 @@ internal class JdbcCapacityHolds(
         when {
             hold.state == "HELD" && hold.expired -> throw ProblemException(ErrorCode.HOLD_EXPIRED, "Die Reservierung ist abgelaufen.")
             hold.state != "HELD" -> throw ProblemException(if (hold.state == "EXPIRED") ErrorCode.HOLD_EXPIRED else ErrorCode.INVALID_STATE_TRANSITION)
+        }
+        if (identity != null) {
+            val currentRevision = j.queryForObject("SELECT revision FROM taktovia.vehicle_run WHERE id = ?", Long::class.java, runId)!!
+            if (hold.window == null && currentRevision != hold.runRevision)
+                throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Der Fahrtenplan hat sich seit dem Hold geändert; die Abschnitte der Reservierung gelten nicht mehr.")
         }
         // Zusage-Commit (WP-M3-06): Fahrzeugzeile gemeinsam sperren (Reihenfolge Lauf, dann Fahrzeug) und die Dienstzuordnung zum Abholbeginn erneut prüfen; endet die Zuordnung parallel,
         // entsteht keine Zusage nach dem Ende (Beendigung und Commit serialisieren über die Fahrzeugzeile). Das Gebiet wurde im Hold mit den Orten der Fahrt geprüft.
@@ -193,10 +213,25 @@ internal class JdbcCapacityHolds(
         if (violations.isNotEmpty()) throw ProblemException.invalid(*violations.toTypedArray())
         j.update("UPDATE taktovia.capacity_hold SET state = 'CONSUMED' WHERE id = ?", holdId)
         val bookingId = window?.bookingId ?: UUID.randomUUID(); val snapshotText = json.writeValueAsString(snapshot)
-        j.update(
-            "INSERT INTO taktovia.booking(tenant_id, id, hold_id, service_id, federation_ref, state, promise_snapshot, revision) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, 'CONFIRMING', ?::jsonb, 1)",
-            bookingId, holdId, serviceId, hold.reference, snapshotText,
-        )
+        if (identity == null) {
+            j.update(
+                "INSERT INTO taktovia.booking(tenant_id, id, hold_id, service_id, federation_ref, state, promise_snapshot, revision) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, 'CONFIRMING', ?::jsonb, 1)",
+                bookingId, holdId, serviceId, hold.reference, snapshotText,
+            )
+        } else {
+            val shell = journeys!!.createSingleLeg(j, SingleLegJourney(
+                identity.passengerId, identity.quoteId, promise.currency, "CONFIRMING", hold.reference, identity.operatorRef, serviceId.toString(),
+                java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant(), java.time.OffsetDateTime.parse(promise.pickupLatest).toInstant(),
+                java.time.OffsetDateTime.parse(promise.arrivalEarliest).toInstant(), java.time.OffsetDateTime.parse(promise.arrivalLatest).toInstant(),
+                promise.grossMinor, 1, identity.originRef, identity.destinationRef,
+            ))
+            val number = j.queryForObject("SELECT taktovia.next_booking_number()", String::class.java)!!
+            j.update(
+                "INSERT INTO taktovia.booking(tenant_id, id, hold_id, service_id, federation_ref, state, promise_snapshot, revision, passenger_id, journey_id, booking_no, created_at, created_by) " +
+                    "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, 'CONFIRMING', ?::jsonb, 1, ?, ?, ?, clock_timestamp(), ?)",
+                bookingId, holdId, serviceId, hold.reference, snapshotText, identity.passengerId, shell.journeyId, number, identity.createdBy,
+            )
+        }
         val kinds = List(demand.vector.seats) { "SEAT" } + List(demand.vector.wheelchair) { "WHEELCHAIR" }
         val codes = demand.assistance.map { it.name }.sorted().joinToString(",", "{", "}")
         kinds.forEachIndexed { i, kind ->

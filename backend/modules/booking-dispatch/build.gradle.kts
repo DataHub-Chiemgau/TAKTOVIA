@@ -3,6 +3,7 @@ dependencies {
     implementation(project(":modules:service-geo"))   // Zulässigkeitsprüfung über die Fachoperationen von service-geo (WP-M2-12), nur deren api-Paket
     implementation(project(":modules:config"))        // wirksame Dienstparameter (EffectiveConfig, WP-M2-11)
     implementation(project(":modules:fare-payment"))  // Preisstand der Angebote (FareQuotes, WP-M2-09/-21), nur deren api-Paket
+    implementation(project(":modules:journey-federation"))   // Journey-Hülle der Einbetreiberbuchung (WP-M2-23, OP-3), nur deren api-Paket
     implementation("org.slf4j:slf4j-api")
     implementation("tools.jackson.core:jackson-databind")   // Routing-Client (WP-M2-10), Ressourcenvektor (WP-M2-14)
     testImplementation(libs.postgresql)

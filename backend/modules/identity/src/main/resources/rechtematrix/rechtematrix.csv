@@ -104,6 +104,7 @@ cancelBooking;rides:write;-;M2;J;N;J;N;J;N;N;N;N;N
 getRideOffer;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
 getBooking;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
 listBookings;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
+listBookingHistory;rides:read;-;M2;J;N;J;J;J;N;N;N;N;N
 getServiceOperatingHours;services:read;-;M2;N;N;J;J;J;J;J;N;N;N
 listServiceOperatingHoursRevisions;services:read;-;M2;N;N;J;J;J;J;J;N;N;N
 putServiceOperatingHours;services:write;-;M2;N;N;N;N;N;J;J;N;N;N

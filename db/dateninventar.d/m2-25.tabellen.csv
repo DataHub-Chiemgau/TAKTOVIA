@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+booking_status_history;Buchung (WP-M2-25);LK_BETRIEB;Statushistorie je Buchung mit Grund und Akteur (Pseudonym), Aufbewahrung nach D-11
+booking_status_reason;Katalog der Änderungs- und Stornogründe (WP-M2-25);LK_STAMM;globaler Katalog, keine Personendaten

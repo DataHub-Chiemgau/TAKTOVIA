@@ -1,6 +1,8 @@
 package de.taktovia.app.booking
 
+import de.taktovia.bookingdispatch.api.Bookings
 import de.taktovia.bookingdispatch.api.CandidateGate
+import de.taktovia.config.api.ImpactProvider
 import de.taktovia.bookingdispatch.api.HoldExpiry
 import de.taktovia.bookingdispatch.api.RideOfferRequests
 import de.taktovia.bookingdispatch.api.RideOffers
@@ -33,6 +35,11 @@ class BookingConfiguration {
 
     @Bean fun rideOfferRequests(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: ConfigApi, quotes: FareQuotes): RideOfferRequests =
         RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
+
+    /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): Bookings = Bookings.create(ctxTx, outbox, quotes, config = config.effective)
+
+    @Bean fun bookingImpactProvider(): ImpactProvider = Bookings.impactProvider()
 
     @Bean fun rideOffers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): RideOffers = RideOffers.create(ctxTx, outbox, quotes, config.effective)
 

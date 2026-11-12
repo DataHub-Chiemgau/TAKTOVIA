@@ -199,14 +199,16 @@ paths:
     post:
       summary: Hold in Buchung bestätigen
       operationId: confirmBooking
-      description: 'Konvertiert einen gültigen Hold in derselben Transaktion in eine Buchung. 409: `HOLD_EXPIRED`, `REQUOTE_REQUIRED`,
-        `OPERATION_IN_PROGRESS`, `INVALID_STATE_TRANSITION`.'
+      description: 'Konvertiert einen gültigen Hold in derselben Transaktion in eine Buchung. `If-Match` ist die Angebotsrevision aus dem ETag der Hold-Antwort
+        (fehlt er: 428, veraltet: 412). Wiederholte Bestätigung desselben Holds liefert dieselbe Buchung. 409: `HOLD_EXPIRED`, `REQUOTE_REQUIRED`, `CAPACITY_UNAVAILABLE`,
+        `OPERATION_IN_PROGRESS`, `INVALID_STATE_TRANSITION`. Fremder Hold: 404; ohne Fahrgastkonto: 403.'
       security:
       - oidc:
         - rides:write
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
       requestBody:
         required: true
         content:
@@ -240,7 +242,11 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
         '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
           $ref: common.yaml#/components/responses/Problem
         '429':
           $ref: common.yaml#/components/responses/Problem
@@ -310,6 +316,54 @@ paths:
         '403':
           $ref: common.yaml#/components/responses/Problem
         '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/bookings/{booking_id}/history:
+    get:
+      summary: Statushistorie der Buchung
+      operationId: listBookingHistory
+      description: 'Unveränderliche Historie aller Zustandsübergänge mit Änderungsgrund (WP-M2-25, LH-6.4-BKG-013), aufsteigend nach Revision. `view=reduced` (Standard für Fahrgäste):
+        Zeitpunkt, Zustand und Grund in Fahrgastsprache, ohne Akteur-IDs und Verknüpfungen. `view=audit` (Standard für Betriebspersonal im Dienstscope und Prüfer): zusätzlich Akteur,
+        Korrelation und Verknüpfungen zu Anfrage, Angebot, Hold und Preisangebot; für Fahrgäste `403`. Fremde Buchung, fremder Dienst oder Mandant: `404`.'
+      security:
+      - oidc:
+        - rides:read
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID.
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - reduced
+          - audit
+        description: Sichtweise; Standard `reduced` für Fahrgäste, `audit` sonst.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideBookingHistory'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
           $ref: common.yaml#/components/responses/Problem
         '429':
           $ref: common.yaml#/components/responses/Problem
@@ -886,6 +940,10 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         hold_id:
           $ref: common.yaml#/components/schemas/UUID
+        booking_number:
+          type: string
+          pattern: ^BK-[0-9]{4}-[0-9]{6,}$
+          description: Je Mandant eindeutige, lesbare Buchungsnummer (M2 OP-42, Vorschlag `BK-<Jahr>-<laufende Nummer>`); erscheint unverändert in Bestätigung, UI-04 und Nachrichten.
         state:
           type: string
           enum:
@@ -897,6 +955,25 @@ components:
           - CANCELED
           - COMPLETED
           - FAILED
+        created_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        cancel_reason:
+          type: string
+          enum:
+          - PASSENGER_REQUEST
+          - OPERATOR_CANCELLATION
+          - NO_SHOW
+          - PAYMENT_FAILED
+          - SAFETY
+          - VEHICLE_OUTAGE
+          description: Stornogrund (WP-M2-27); nur bei stornierten Buchungen, nach dem Setzen unveränderlich.
+        cancel_cause_class:
+          type: string
+          enum:
+          - FAHRGAST
+          - BETREIBER
+          - FAHRZEUGAUSFALL
+          description: Verursacherklasse des Stornos (WP-M2-27); folgt dem Grund. Datenbasis der Stornoquoten (Fahrzeugausfall getrennt).
         passengers:
           type: integer
           format: int64
@@ -918,9 +995,11 @@ components:
           maximum: 9007199254740991
       required:
       - id
+      - booking_number
       - service_id
       - hold_id
       - state
+      - created_at
       - passengers
       - wheelchair_spaces
       - promise
@@ -971,11 +1050,98 @@ components:
           - NO_SHOW
           - PAYMENT_FAILED
           - SAFETY
+          - VEHICLE_OUTAGE
       required:
       - reason
-      description: Einstufiges Storno (M2 OP-24, Annahme). Die Antwort nennt Erstattung und neuen Zustand.
+      description: 'Einstufiges Storno (M2 OP-24, Annahme). Fahrgäste dürfen nur `PASSENGER_REQUEST` setzen (sonst 403) und nur innerhalb der Stornofrist des Dienstes
+        (`409 CANCEL_DEADLINE_EXPIRED`); Betrieb im Dienstscope setzt jeden für den Dienst zulässigen Grund (sonst 422), auch `VEHICLE_OUTAGE`. Antwort: die stornierte Buchung (Erstattungshinweis folgt mit WP-M2-31).'
       examples:
       - reason: PASSENGER_REQUEST
+    RideBookingHistoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Buchungsrevision nach dem Übergang (laufend ab 1, ohne Lücke).
+        from_state:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 40
+          - type: 'null'
+        to_state:
+          type: string
+          minLength: 1
+          maxLength: 40
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 40
+          description: Grund aus dem Katalog der Änderungs- und Stornogründe (z. B. `HOLD_CONFIRMED`, `PASSENGER_REQUEST`, `VEHICLE_OUTAGE`).
+        reason_text:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Grund in Fahrgastsprache.
+        occurred_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        actor_kind:
+          type: string
+          enum:
+          - PASSENGER
+          - OPERATOR
+          - SYSTEM
+        actor_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Nur Prüfersicht (Pseudonym des Akteurs).
+        correlation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        links:
+          type: object
+          additionalProperties: false
+          description: Nur Prüfersicht. Verknüpfungen zur Rekonstruktion der Kette Anfrage, Angebot, Hold, Bestätigung (und Zahlung).
+          properties:
+            attempt_id:
+              $ref: common.yaml#/components/schemas/UUID
+            offer_id:
+              $ref: common.yaml#/components/schemas/UUID
+            hold_id:
+              $ref: common.yaml#/components/schemas/UUID
+            quote_id:
+              $ref: common.yaml#/components/schemas/UUID
+            payment_intent_id:
+              $ref: common.yaml#/components/schemas/UUID
+      required:
+      - revision
+      - from_state
+      - to_state
+      - reason
+      - reason_text
+      - occurred_at
+      - actor_kind
+    RideBookingHistory:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RideBookingHistoryEntry'
+          maxItems: 100
+        view:
+          type: string
+          enum:
+          - reduced
+          - audit
+      required:
+      - items
+      - view
     RideBookingPage:
       type: object
       additionalProperties: false

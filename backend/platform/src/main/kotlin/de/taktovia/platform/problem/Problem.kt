@@ -24,6 +24,7 @@ enum class ErrorCode(val status: Int, val title: String) {
     HOLD_EXPIRED(409, "Reservierung abgelaufen"),
     REQUOTE_REQUIRED(409, "Neue Preisauskunft erforderlich"),
     CAPACITY_UNAVAILABLE(409, "Kapazität nicht verfügbar"),
+    CANCEL_DEADLINE_EXPIRED(409, "Stornofrist abgelaufen"),
     IMMUTABLE_RECORD(409, "Datensatz unveränderlich"),
     DOCUMENT_INTEGRITY_VIOLATION(409, "Belegintegrität verletzt"),
     INVALID_STATE_TRANSITION(409, "Zustandsübergang nicht erlaubt"),
