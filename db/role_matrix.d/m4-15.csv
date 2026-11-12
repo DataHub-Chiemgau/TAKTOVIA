@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+roster_shift_change;SELECT,INSERT;WP-M4-15: Änderungsprotokoll je Schicht; unveränderlich (Trigger), kein UPDATE/DELETE

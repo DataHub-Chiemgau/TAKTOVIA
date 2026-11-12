@@ -38,6 +38,8 @@ data class RosterConflict(val kind: RosterConflictKind, val personRef: UUID, val
 /** Dienstplan eines Depots für eine Kalenderwoche ([weekStart] = Montag). [conflicts] ist `null`, wo die Prüfung nicht Teil der Sicht ist (Listen, verbindliche Sicht). */
 data class RosterView(
     val rosterId: UUID, val depotId: UUID, val weekStart: LocalDate, val draft: RosterSide?, val published: RosterSide?, val conflicts: List<RosterConflict>?, val etag: Long,
+    /** Regelhinweise (Ruhezeit, Tagesarbeitszeit, Pflichtpause, WP-M4-13) der Arbeitsrevision (Entwurf, sonst veröffentlicht); `null` wie [conflicts]. Warnungen, nie eine Sperre. */
+    val hints: List<RuleHint>? = null,
 )
 
 data class CreateRoster(val depotId: UUID, val weekStart: LocalDate)

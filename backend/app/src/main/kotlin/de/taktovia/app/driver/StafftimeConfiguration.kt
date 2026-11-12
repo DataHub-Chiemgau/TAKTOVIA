@@ -20,7 +20,7 @@ import java.time.Duration
 @Configuration
 class StafftimeConfiguration {
     @Bean fun stafftimeApi(
-        ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, runSource: ObjectProvider<DriverRunSource>,
+        ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, runSource: ObjectProvider<DriverRunSource>, config: ObjectProvider<de.taktovia.config.api.ConfigApi>,
         @Value("\${taktovia.stafftime.shift-start-tolerance-minutes:30}") startToleranceMinutes: Long,
         @Value("\${taktovia.stafftime.position-stale-after-seconds:30}") positionStaleAfterSeconds: Long,
         @Value("\${taktovia.stafftime.position-future-tolerance-seconds:5}") positionFutureToleranceSeconds: Long,
@@ -34,5 +34,6 @@ class StafftimeConfiguration {
             positionRequiresRetentionRule = environment.trim() == "production",
         ),
         runSource.getIfAvailable(),
+        de.taktovia.app.staff.ConfigWorkRuleSource { config.getObject().effective },   // Regelparameter der Arbeitszeit-Hinweise (WP-M4-13) aus der wirksamen Konfiguration
     )
 }

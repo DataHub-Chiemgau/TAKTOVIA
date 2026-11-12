@@ -26,6 +26,12 @@ interface StafftimeApi {
     /** Dienstplan je Depot und Woche mit getrenntem Entwurf und veröffentlichtem Plan (WP-M4-04). */
     val rosters: Rosters
 
+    /** Veröffentlichung des Dienstplans und Eigensicht der veröffentlichten Schichten (WP-M4-14). */
+    val publishedRosters: PublishedRosters
+
+    /** Revisionsliste, historische veröffentlichte Fassungen und Änderungsprotokoll je Schicht (WP-M4-15). */
+    val rosterHistory: RosterHistory
+
     /** Depotberechtigung im Dienstplan (WP-M4-16): Vergabe, Entzug und Abfrage der Depotrechte. */
     val rosterDepotAccess: RosterDepotAccess
 
@@ -46,7 +52,8 @@ interface StafftimeApi {
     companion object {
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
-        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource)
+            workRules: WorkRuleSource = WorkRuleSource.DEFAULT,
+        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules)
     }
 }
 

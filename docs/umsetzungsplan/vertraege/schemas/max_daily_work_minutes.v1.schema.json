@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/max_daily_work_minutes.v1.schema.json",
+  "title": "max_daily_work_minutes",
+  "description": "Arbeitszeitgrenze je Tag (ohne Pausen)",
+  "type": "integer",
+  "minimum": 60,
+  "maximum": 600,
+  "default": 600,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.4-max_daily_work_minutes",
+  "x-catalog-range": "Rechtliche Vorgaben nicht überschreibbar: Obergrenze 600 Minuten (Planungsannahme, Regelmatrix OP 3)"
+}

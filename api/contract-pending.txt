@@ -24,7 +24,6 @@ listOperatorIncidents  # GET /v1/operator/incidents
 listRepairOrders  # GET /v1/repair-orders
 listRunRevisions  # GET /v1/runs/{run_id}/revisions
 planJourney  # POST /v1/federation/journeys/plan
-publishRoster  # POST /v1/rosters/{roster_id}/publish
 quoteCancellation  # POST /v1/federation/journeys/{journey_id}/cancellation-quotes
 receivePartnerEvent  # POST /v1/federation/partners/{partner_id}/events
 saveInspectionDraft  # PUT /v1/inspections/{inspection_id}

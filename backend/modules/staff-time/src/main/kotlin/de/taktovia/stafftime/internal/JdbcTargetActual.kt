@@ -16,6 +16,12 @@ import de.taktovia.stafftime.api.TimeEventView
 import de.taktovia.stafftime.api.TimeIntervals
 import de.taktovia.stafftime.api.TimeTargetActual
 import de.taktovia.stafftime.api.WorkInterval
+import de.taktovia.stafftime.api.HintBasis
+import de.taktovia.stafftime.api.RuleHint
+import de.taktovia.stafftime.api.WorkRuleEngine
+import de.taktovia.stafftime.api.WorkRuleSource
+import de.taktovia.stafftime.api.WorkSpan
+import tools.jackson.databind.json.JsonMapper
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
@@ -28,7 +34,7 @@ import java.util.UUID
  * Soll/Ist-Projektion (WP-M4-09). Nur lesend (`readOnly`-Transaktion): `staff_shift` liefert das Soll, `time_event` das Ist; keiner der beiden Pfade wird verändert.
  * Die Intervallableitung ist [TimeIntervals] (WP-M4-08); das Ist-Fenster reicht einen Tag über beide Ränder, damit Schichten über Mitternacht vollständig abgeleitet werden.
  */
-internal class JdbcTargetActual(private val ctxTx: ContextTransactions) : TimeTargetActual {
+internal class JdbcTargetActual(private val ctxTx: ContextTransactions, private val rules: WorkRuleSource = WorkRuleSource.DEFAULT) : TimeTargetActual {
 
     override fun days(ctx: RequestContext, personRef: String?, from: LocalDate, to: LocalDate, zone: ZoneId): List<TargetActualDay> {
         if (!ctx.hasScope(SCOPE_READ)) throw ProblemException(ErrorCode.FORBIDDEN)
@@ -38,12 +44,13 @@ internal class JdbcTargetActual(private val ctxTx: ContextTransactions) : TimeTa
         if (person != self && !ctx.hasScope(SCOPE_MANAGE)) throw ProblemException.notFound()
 
         val winFrom = from.minusDays(1).atStartOfDay(zone).toInstant(); val winTo = to.plusDays(2).atStartOfDay(zone).toInstant()
-        val (shifts, events) = ctxTx.run(ctx, readOnly = true) { j ->
+        val (loaded, events) = ctxTx.run(ctx, readOnly = true) { j ->
             val s = j.query(
                 SHIFTS_SQL,
                 { rs, _ -> Planned(PlannedShift(rs.getObject("id", UUID::class.java), rs.getTimestamp("starts_at").toInstant(), rs.getTimestamp("ends_at").toInstant(), ZoneId.of(rs.getString("timezone")),
-                    Duration.between(rs.getTimestamp("starts_at").toInstant(), rs.getTimestamp("ends_at").toInstant()).seconds, rs.getString("state")), rs.getObject("operating_day", LocalDate::class.java)) },
-                *ShiftOwnership.args(ctx.actor.issuer, person), from, to,
+                    Duration.between(rs.getTimestamp("starts_at").toInstant(), rs.getTimestamp("ends_at").toInstant()).seconds, rs.getString("state"),
+                    json.readTree(rs.getString("break_plan")).get("breaks").values().sumOf { it.get("duration_min").asLong() }), rs.getObject("operating_day", LocalDate::class.java)) },
+                *ShiftOwnership.args(ctx.actor.issuer, person), from.minusDays(1), to.plusDays(1),
             )
             val e = j.query(
                 "SELECT e.id, e.person_ref, e.kind, e.occurred_at, e.device_recorded_at, e.received_at, e.source, e.recorded_by, e.shift_id, e.backfill_reason FROM taktovia.time_event e " +
@@ -53,14 +60,25 @@ internal class JdbcTargetActual(private val ctxTx: ContextTransactions) : TimeTa
                     rs.getObject("shift_id", UUID::class.java), rs.getString("backfill_reason")) },
                 person, Timestamp.from(winFrom), Timestamp.from(winTo), MAX_EVENTS + 1,
             )
-            s to e
+            val r = if (person == self) rules.rules(j, ctx, winFrom) else null
+            (s to r) to e
         }
+        val shifts = loaded.first; val workRules = loaded.second
         if (events.size > MAX_EVENTS) throw ProblemException.invalid(Violation("/\$query/to", ViolationCode.TOO_MANY_ITEMS))
 
         val intervals = TimeIntervals.derive(events).intervals
         fun dayOf(i: WorkInterval): LocalDate = ((i.start ?: i.end)!!).atZone(zone).toLocalDate()
         val actualByDay = intervals.groupBy(::dayOf)
         val plannedByDay = shifts.groupBy { it.day }
+        // Regelhinweise (WP-M4-13) nur in der Eigensicht: Plan (ohne Entwurf) und Ist getrennt berechnet, Ausgabe nur für Tage des Fensters
+        val hints: List<RuleHint> = if (workRules == null) emptyList() else {
+            val planSpans = shifts.filter { it.shift.state !in NOT_BINDING }.map { WorkSpan(person, it.shift.startsAt, it.shift.endsAt, it.shift.timezone, it.shift.breakMinutes, it.shift.shiftId) }
+            val actualSpans = intervals.filter { it.start != null && it.end != null }.map { i ->
+                WorkSpan(person, i.start!!, i.end!!, i.zone, i.breaks.sumOf { b -> Duration.between(b.start, b.end ?: i.end).toMinutes() }, null, i.eventIds)
+            }
+            (WorkRuleEngine.evaluate(planSpans, workRules, HintBasis.PLAN) + WorkRuleEngine.evaluate(actualSpans, workRules, HintBasis.ACTUAL)).filter { !it.day.isBefore(from) && !it.day.isAfter(to) }
+        }
+        val hintsByDay = hints.groupBy { it.day }
         return generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.map { d ->
             val planned = plannedByDay[d].orEmpty().map { it.shift }
             val actual = actualByDay[d].orEmpty()
@@ -69,15 +87,18 @@ internal class JdbcTargetActual(private val ctxTx: ContextTransactions) : TimeTa
             if (planned.isEmpty() && actual.isNotEmpty()) flags += TargetActualFlag.ACTUAL_WITHOUT_PLAN
             if (actual.any { IntervalFlag.MISSING_END in it.flags || IntervalFlag.END_WITHOUT_START in it.flags }) flags += TargetActualFlag.ACTUAL_INCOMPLETE
             val complete = actual.isNotEmpty() && actual.none { it.netSeconds == null }
-            TargetActualDay(d, planned, planned.sumOf { it.plannedSeconds }, actual, if (complete) actual.sumOf { it.netSeconds!! } else null, flags)
+            TargetActualDay(d, planned, planned.sumOf { it.plannedSeconds }, actual, if (complete) actual.sumOf { it.netSeconds!! } else null, flags, hintsByDay[d].orEmpty())
         }.toList()
     }
+
+    private val json = JsonMapper.builder().build()
 
     private class Planned(val shift: PlannedShift, val day: LocalDate)
 
     private companion object {
-        const val SHIFTS_SQL = "SELECT s.id, s.starts_at, s.ends_at, s.timezone, s.state, s.operating_day FROM taktovia.staff_shift s WHERE " + ShiftOwnership.PREDICATE +
-            " AND s.operating_day BETWEEN ? AND ? AND s.state <> 'DRAFT' ORDER BY s.starts_at, s.id"
+        const val SHIFTS_SQL = "SELECT s.id, s.starts_at, s.ends_at, s.timezone, s.state, s.operating_day, s.break_plan::text AS break_plan FROM taktovia.staff_shift s WHERE " + ShiftOwnership.PREDICATE +
+            " AND s.operating_day BETWEEN ? AND ? AND s.state NOT IN ('DRAFT', 'SUPERSEDED') ORDER BY s.starts_at, s.id"
+        val NOT_BINDING = setOf("DRAFT", "SUPERSEDED", "CANCELLED")
         const val SCOPE_READ = "time-events:read"
         const val SCOPE_MANAGE = "time-events:manage"
         const val MAX_DAYS = 31L

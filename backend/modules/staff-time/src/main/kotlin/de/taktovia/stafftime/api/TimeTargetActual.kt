@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** Geplante Schicht als Soll eines Tages (Quelle `staff_shift`); [plannedSeconds] ist die absolute Dauer aus den Zeitpunkten (DST-fest). */
-data class PlannedShift(val shiftId: java.util.UUID, val startsAt: java.time.Instant, val endsAt: java.time.Instant, val timezone: ZoneId, val plannedSeconds: Long, val state: String)
+data class PlannedShift(val shiftId: java.util.UUID, val startsAt: java.time.Instant, val endsAt: java.time.Instant, val timezone: ZoneId, val plannedSeconds: Long, val state: String, val breakMinutes: Long = 0)
 
 /** Kennzeichen eines Tages der Soll/Ist-Sicht. [NO_ACTUAL_BOOKING]: Soll vorhanden, keine Ist-Buchung (der Planwert ersetzt nie den Istwert). */
 enum class TargetActualFlag { NO_ACTUAL_BOOKING, ACTUAL_WITHOUT_PLAN, ACTUAL_INCOMPLETE }
@@ -13,6 +13,8 @@ enum class TargetActualFlag { NO_ACTUAL_BOOKING, ACTUAL_WITHOUT_PLAN, ACTUAL_INC
 /** Ein Tag je Person: Soll aus `staff_shift`, Ist aus `time_event`. [actualNetSeconds] ist `null`, wenn keine vollständige Ist-Buchung vorliegt (nie mit [plannedSeconds] gefüllt). */
 data class TargetActualDay(
     val day: LocalDate, val planned: List<PlannedShift>, val plannedSeconds: Long, val actual: List<WorkInterval>, val actualNetSeconds: Long?, val flags: Set<TargetActualFlag>,
+    /** Regelhinweise (WP-M4-13) für den Tag aus Plan und Ist; nur in der Eigensicht der Person (fremde Personen: leer). Berechnet, ändert weder Soll noch Ist. */
+    val hints: List<RuleHint> = emptyList(),
 )
 
 /**

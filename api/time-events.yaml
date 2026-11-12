@@ -679,6 +679,12 @@ components:
             - NO_ACTUAL_BOOKING
             - ACTUAL_WITHOUT_PLAN
             - ACTUAL_INCOMPLETE
+        hints:
+          type: array
+          maxItems: 100
+          description: Regelhinweise (Ruhezeit, Tagesarbeitszeit, Pflichtpause; WP-M4-13) für den Tag aus Plan und Ist; nur in der Eigensicht der Person, sonst leer. Warnungen, keine Rechtsentscheidung.
+          items:
+            $ref: common.yaml#/components/schemas/RuleHint
       required:
       - day
       - planned

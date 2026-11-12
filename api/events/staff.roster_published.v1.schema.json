@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/staff.roster_published.v1.schema.json",
+  "title": "Dienstplan veröffentlicht (WP-M4-14)",
+  "description": "Payload von `staff.roster_published`. Aggregat: roster / Planrevision (die Nummer der veröffentlichten Revision). `changed_persons` nennt nur Personen, deren Schichten sich gegenüber der vorherigen veröffentlichten Revision geändert haben (neu, entfallen oder verändert); nur diese werden benachrichtigt (Fahrermeldung mit der neuen Planrevision über Betriebsnachrichten, WP-M2-32). Nur Kennungen (Minimierungsregel, Kap. 05 §5.1): keine Namen, Kontaktdaten oder Begründungstexte; `subject` ist die pseudonyme Kontenkennung (IdP-Subject).",
+  "type": "object",
+  "required": ["roster_id", "depot_id", "week_start", "revision", "effective_from", "published_at", "published_by", "changed_persons"],
+  "additionalProperties": false,
+  "properties": {
+    "roster_id": { "type": "string", "format": "uuid" },
+    "depot_id": { "type": "string", "format": "uuid" },
+    "week_start": { "type": "string", "format": "date" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "effective_from": { "type": "string", "format": "date-time" },
+    "published_at": { "type": "string", "format": "date-time" },
+    "published_by": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "changed_persons": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "required": ["driver_ref", "subject"],
+        "additionalProperties": false,
+        "properties": {
+          "driver_ref": { "type": "string", "format": "uuid" },
+          "subject": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "roster_id": "11111111-2222-4333-8444-555555555555",
+      "depot_id": "22222222-3333-4444-8555-666666666666",
+      "week_start": "2026-11-30",
+      "revision": 2,
+      "effective_from": "2026-12-01T00:00:00Z",
+      "published_at": "2026-11-27T09:15:00Z",
+      "published_by": "user:5b3f6c0e-0f4a-4f0e-9f57-2c1a7b8d9e10",
+      "changed_persons": [
+        { "driver_ref": "33333333-4444-4555-8666-777777777777", "subject": "5b3f6c0e-0f4a-4f0e-9f57-2c1a7b8d9e11" }
+      ]
+    }
+  ]
+}

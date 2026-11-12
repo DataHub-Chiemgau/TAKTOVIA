@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/shift_publish_notice_hours.v1.schema.json",
+  "title": "shift_publish_notice_hours",
+  "description": "Veröffentlichungsvorlauf des Dienstplans",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 720,
+  "default": 0,
+  "x-unit": "HOURS",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.4-shift_publish_notice_hours",
+  "x-catalog-range": "0..720 Stunden (Planungsannahme); Wirkung bei Unterschreitung offen (OP 9), keine Sperre"
+}

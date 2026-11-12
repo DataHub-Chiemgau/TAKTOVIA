@@ -55,6 +55,20 @@ class AbsenceController(private val staff: StafftimeApi, private val codec: Curs
         return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { json(it) }
     }
 
+    /** Eigensicht (WP-M4-20, UI-13): die eigenen genehmigten Abwesenheitszeiträume, neutral; die Person ist immer der Akteur. */
+    @GetMapping("/v1/absences/own")
+    fun own(
+        @RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, @RequestParam(required = false) from: String?, @RequestParam(required = false) to: String?,
+        request: HttpServletRequest,
+    ): Map<String, Any?> {
+        val ctx = RequestContexts.require(request)
+        val f = instant(from, "from"); val t = instant(to, "to")
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "absences-own|${f ?: "-"}|${t ?: "-"}")
+        val lim = Paging.limit(limit)
+        val rows = staff.absences.own(ctx, f, t, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
+        return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { json(it) }
+    }
+
     @PostMapping("/v1/absences")
     fun create(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<AbsenceResource> {
         val cmd = CreateAbsence(

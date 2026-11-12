@@ -91,11 +91,12 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
   it('nur_erlaubte_bereiche_sichtbar: feste Erwartungen der Fachlogik (Gegenprobe zur generierten Erwartung)', async () => {
     const cases: [string, string[]][] = [
       ['passenger', ['Start']],
-      ['driver', ['Start']],
+      ['driver', ['Start', 'Eigene Zeit und Abwesenheit']],
       [
         'planner',
         [
           'Start',
+          'Eigene Zeit und Abwesenheit',
           'Flotte und Werkstatt',
           'Fahrer und Qualifikationen',
           'Schichtzuweisung',
@@ -112,18 +113,28 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Datenschutz, Audit, Support',
         ],
       ],
-      ['finance', ['Start', 'Finanzen']],
+      ['finance', ['Start', 'Finanzen', 'Eigene Zeit und Abwesenheit']],
       [
         'staff_planning',
         [
           'Start',
           'Personal',
+          'Eigene Zeit und Abwesenheit',
           'Flotte und Werkstatt',
           'Fahrer und Qualifikationen',
           'Schichtzuweisung',
         ],
       ],
-      ['workshop', ['Start', 'Flotte und Werkstatt', 'Checklistenvorlagen', 'Schadenakten']],
+      [
+        'workshop',
+        [
+          'Start',
+          'Eigene Zeit und Abwesenheit',
+          'Flotte und Werkstatt',
+          'Checklistenvorlagen',
+          'Schadenakten',
+        ],
+      ],
     ];
     for (const [role, expected] of cases) {
       const view = renderFor(role);
