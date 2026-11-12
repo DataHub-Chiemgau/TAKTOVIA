@@ -96,10 +96,10 @@ class DefectCaseCreateTest {
         // ohne Schicht: 404 ohne Hinweis auf die Existenz, kein Datensatz
         assertEquals(ErrorCode.NOT_FOUND, problem { report(w, ctx) }.code)
         // Schicht für ein anderes Fahrzeug begründet keinen Bezug
-        w.shift(driver, fx.vehicle(w.tenant))
+        w.shift(driver, fx.vehicle(w.tenant), startOffsetHours = -30)
         assertEquals(ErrorCode.NOT_FOUND, problem { report(w, ctx) }.code)
         // Schicht eines anderen Fahrers: kein Bezug
-        w.shift(UUID.randomUUID())
+        w.shift(UUID.randomUUID(), startOffsetHours = -100)
         assertEquals(ErrorCode.NOT_FOUND, problem { report(w, ctx) }.code)
         assertEquals(0, fx.count("SELECT count(*) FROM taktovia.defect_case WHERE tenant_id=?", w.tenant.value))
         // mit Schicht für das Fahrzeug (laufend) meldet der Fahrer, auch ohne Buchung und ohne laufende Prüfung

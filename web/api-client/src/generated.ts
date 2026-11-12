@@ -431,6 +431,62 @@ export interface ExpenseApproval {
   posting_id: UUID | null;
 }
 
+export interface BreakPlan {
+  schema_version: '1.0';
+  breaks: ({
+    offset_min: number;
+    duration_min: number;
+    paid: boolean;
+  })[];
+}
+
+export interface ShiftWrite {
+  roster_id: UUID;
+  starts_local: string;
+  starts_offset?: string;
+  ends_local: string;
+  ends_offset?: string;
+  timezone: string;
+  break_plan?: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification?: string | null;
+  staffing_need: number;
+  driver_ref?: UUID | null;
+  vehicle_id?: UUID | null;
+}
+
+export interface Shift {
+  id: UUID;
+  roster_id: UUID;
+  date: string;
+  starts_local: string;
+  ends_local: string;
+  timezone: string;
+  starts_at: string;
+  ends_at: string;
+  duration_min: number;
+  break_plan: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification: string | null;
+  staffing_need: number;
+  driver_ref: UUID | null;
+  vehicle_id: UUID | null;
+  state: string;
+  created_by: string;
+  created_at: string;
+  revision: number;
+}
+
+export interface ShiftPage {
+  items: Shift[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface DriverEvent {
   event_id: UUID;
   shift_id: UUID;
@@ -477,6 +533,10 @@ export interface DriverPositionResult {
   accepted: number;
   rejected: number;
   received_at: string;
+  rejections?: ({
+    index: number;
+    reason: 'FUTURE_TIME' | 'OUTSIDE_SERVICE';
+  })[];
 }
 
 export interface DriverRunStop {
@@ -496,6 +556,8 @@ export interface DriverRunStop {
 export interface DriverRun {
   shift_id: UUID;
   vehicle_id: UUID;
+  shift_state: string;
+  shift_valid: boolean;
   release_state: 'NOT_RELEASED' | 'RELEASED' | 'BLOCKED' | 'RESTRICTED';
   missing_requirements: MissingRequirement[];
   plan_revision: number | null;
@@ -524,6 +586,41 @@ export interface DriverDevice {
   registered_at: string;
   revoked_at: string | null;
   revision: number;
+}
+
+export interface DriverShift {
+  shift_id: UUID;
+  vehicle_id: UUID;
+  vehicle_label: string | null;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  state: string;
+  startable_from: string;
+  started_at: string | null;
+  ended_at: string | null;
+  valid: boolean;
+}
+
+export interface DriverShiftList {
+  items: DriverShift[];
+  as_of: string;
+}
+
+export interface DriverShiftStart {
+  shift_id: UUID;
+  vehicle_id: UUID;
+  device_id: UUID;
+}
+
+export interface DriverShiftEnd {
+  shift_id: UUID;
+  device_id: UUID;
+}
+
+export interface DriverShiftStartResult {
+  shift: DriverShift;
+  already_started: boolean;
 }
 
 export interface AbsenceCreate {
@@ -584,11 +681,37 @@ export interface RideOfferRequest {
   wheelchair_spaces?: number;
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
   assistance_codes?: RideAssistanceCodes;
+  channel?: 'WEB' | 'APP' | 'API';
 }
 
 export interface RideWindow {
   earliest_at: Timestamp;
   latest_at: Timestamp;
+}
+
+export interface RideOfferProposal {
+  service_id: UUID;
+  booking_kind: 'IMMEDIATE' | 'ADVANCE';
+  time_kind: 'DEPARTURE' | 'ARRIVAL';
+  pickup_window: RideWindow;
+  arrival_window: RideWindow;
+  arrival_grace_min: number;
+  direct_seconds: number;
+}
+
+export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
+
+export interface RideRejection {
+  code: RideRejectionCode;
+  secondary_codes: RideRejectionCode[];
+  text: string;
+  next_action: string;
+}
+
+export interface RideOfferResponse {
+  attempt_id: UUID;
+  offers: RideOfferProposal[];
+  rejection: RideRejection | null;
 }
 
 export interface RideOffer {
@@ -960,6 +1083,42 @@ export interface DriverClearancePage {
   as_of: string;
 }
 
+export interface CommittedRide {
+  booking_id: UUID;
+  state: string;
+  pickup_earliest: string;
+  pickup_latest: string;
+}
+
+export interface VehicleServiceAssignmentCreate {
+  service_id: UUID;
+  service_area_id?: UUID | null;
+  valid_from: string;
+  valid_to?: string | null;
+}
+
+export interface VehicleServiceAssignmentEnd {
+  valid_to: string;
+}
+
+export interface VehicleServiceAssignment {
+  id: UUID;
+  vehicle_id: UUID;
+  service_id: UUID;
+  service_area_id: UUID | null;
+  valid_from: string;
+  valid_to: string | null;
+  revision: number;
+  created_at: string;
+  committed_rides_after_end: CommittedRide[];
+}
+
+export interface VehicleServiceAssignmentPage {
+  items: VehicleServiceAssignment[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export type VehicleOperationalState = 'NOT_READY' | 'RELEASE_PENDING' | 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'BLOCKED' | 'RESTRICTED' | 'ENDED';
 
 export interface MissingRequirement {
@@ -990,6 +1149,7 @@ export interface OperatorVehicle {
   active_blocks: VehicleBlock[];
   position: Point | null;
   position_measured_at: string | null;
+  position_received_at?: string | null;
   position_age_seconds: number | null;
   position_stale: boolean;
   open_defect_count: number;
@@ -1026,6 +1186,12 @@ export interface ChecklistTemplate {
     safety_critical: boolean;
     answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
     photo_required_on_defect: boolean;
+    help_text?: string | null;
+    na_requires_reason?: boolean;
+    number_min?: number | null;
+    number_max?: number | null;
+    number_unit?: string | null;
+    has_example_image?: boolean;
   })[];
 }
 
@@ -1086,14 +1252,6 @@ export interface Inspection {
   revision: number;
 }
 
-export type DefectCategory = 'BODY' | 'GLASS' | 'TIRES_WHEELS' | 'LIGHTS' | 'BRAKES' | 'DRIVETRAIN' | 'STEERING_SUSPENSION' | 'ELECTRICAL_HV' | 'INTERIOR' | 'ACCESSIBILITY_EQUIPMENT' | 'SAFETY_EQUIPMENT' | 'CLEANLINESS' | 'OTHER';
-
-export type DefectKind = 'SCRATCH' | 'DENT' | 'CRACK_BREAK' | 'MALFUNCTION' | 'MISSING_PART' | 'LEAK' | 'WEAR' | 'CONTAMINATION' | 'OTHER';
-
-export type DefectArea = 'FRONT' | 'REAR' | 'LEFT_SIDE' | 'RIGHT_SIDE' | 'ROOF' | 'UNDERBODY' | 'WHEELS_TIRES' | 'INTERIOR_PASSENGER' | 'INTERIOR_DRIVER' | 'LUGGAGE' | 'WHEELCHAIR_AREA' | 'ENGINE_BATTERY' | 'OTHER';
-
-export type DefectEffect = 'NONE_VISIBLE' | 'COSMETIC_ONLY' | 'FUNCTION_LIMITED' | 'NOT_ROADWORTHY' | 'FLUID_LEAK' | 'WARNING_LIGHT' | 'NOISE_VIBRATION' | 'OTHER';
-
 export type DefectSeverity = 'SAFETY_CRITICAL' | 'OPERATIONALLY_RELEVANT' | 'COSMETIC' | 'OTHER';
 
 export interface DefectCreate {
@@ -1102,15 +1260,15 @@ export interface DefectCreate {
   location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT';
   location_value?: string;
   category_code: DefectCategory;
-  kind?: DefectKind;
-  vehicle_area?: DefectArea;
-  observed_effect?: DefectEffect;
   description: string;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
   evidence_ids?: UUID[];
   device_event_id?: UUID;
   severity_hint?: DefectSeverity;
+  kind?: DefectKind;
+  vehicle_area?: DefectArea;
+  observed_effect?: DefectEffect;
   capture_mode?: 'STANDARD' | 'GUIDED';
 }
 
@@ -1129,6 +1287,13 @@ export interface Defect {
   reported_at: string;
   occurred_at: string;
   category_code: DefectCategory;
+  severity: DefectSeverity | null;
+  status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
+  assignee_ref: UUID | null;
+  blocks_vehicle: boolean;
+  evidence_ids: UUID[];
+  description: string | null;
+  revision: number;
   location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT' | null;
   location_value?: string | null;
   kind?: DefectKind | null;
@@ -1138,13 +1303,6 @@ export interface Defect {
   source_step_code?: string | null;
   evidence_pending?: number;
   content_version?: number;
-  severity: DefectSeverity | null;
-  status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
-  assignee_ref: UUID | null;
-  blocks_vehicle: boolean;
-  evidence_ids: UUID[];
-  description: string | null;
-  revision: number;
 }
 
 export interface DefectPage {
@@ -1308,6 +1466,80 @@ export interface CapacityConfiguration {
   revision: number;
 }
 
+export type ChecklistTemplateState = 'DRAFT' | 'PUBLISHED' | 'RETIRED';
+
+export interface ChecklistStepWrite {
+  step_code: string;
+  title: string;
+  help_text?: string | null;
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+  mandatory: boolean;
+  safety_critical?: boolean;
+  na_requires_reason?: boolean;
+  photo_required_on_defect?: boolean;
+  number_min?: number | null;
+  number_max?: number | null;
+  number_unit?: string | null;
+}
+
+export interface ChecklistTemplateWrite {
+  name: string;
+  vehicle_class: string;
+  service_mode: string;
+  steps: ChecklistStepWrite[];
+}
+
+export interface ChecklistStepRead {
+  step_code: string;
+  position: number;
+  title: string;
+  help_text: string | null;
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+  mandatory: boolean;
+  safety_critical: boolean;
+  na_requires_reason: boolean;
+  photo_required_on_defect: boolean;
+  number_min: number | null;
+  number_max: number | null;
+  number_unit: string | null;
+  has_example_image: boolean;
+}
+
+export interface ChecklistTemplateRevision {
+  id: UUID;
+  template_id: UUID;
+  version: number;
+  name: string | null;
+  vehicle_class: string;
+  service_mode: string;
+  state: ChecklistTemplateState;
+  steps: ChecklistStepRead[];
+  created_by: string;
+  approved_by: string | null;
+  published_at: string | null;
+  revision: number;
+  created_at: string;
+}
+
+export interface ChecklistTemplateRevisionPage {
+  items: ChecklistTemplateRevision[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface ChecklistExampleImage {
+  content_type: string;
+  data_base64: string;
+}
+
+export type DefectCategory = 'BODY' | 'GLASS' | 'TIRES_WHEELS' | 'LIGHTS' | 'BRAKES' | 'DRIVETRAIN' | 'STEERING_SUSPENSION' | 'ELECTRICAL_HV' | 'INTERIOR' | 'ACCESSIBILITY_EQUIPMENT' | 'SAFETY_EQUIPMENT' | 'CLEANLINESS' | 'OTHER';
+
+export type DefectKind = 'SCRATCH' | 'DENT' | 'CRACK_BREAK' | 'MALFUNCTION' | 'MISSING_PART' | 'LEAK' | 'WEAR' | 'CONTAMINATION' | 'OTHER';
+
+export type DefectArea = 'FRONT' | 'REAR' | 'LEFT_SIDE' | 'RIGHT_SIDE' | 'ROOF' | 'UNDERBODY' | 'WHEELS_TIRES' | 'INTERIOR_PASSENGER' | 'INTERIOR_DRIVER' | 'LUGGAGE' | 'WHEELCHAIR_AREA' | 'ENGINE_BATTERY' | 'OTHER';
+
+export type DefectEffect = 'NONE_VISIBLE' | 'COSMETIC_ONLY' | 'FUNCTION_LIMITED' | 'NOT_ROADWORTHY' | 'FLUID_LEAK' | 'WARNING_LIGHT' | 'NOISE_VIBRATION' | 'OTHER';
+
 export interface DefectEvidenceUploadRequest {
   mime: 'image/jpeg' | 'image/png';
   size_bytes: number;
@@ -1462,7 +1694,7 @@ export interface GeoServiceAreaCreate {
 }
 
 export interface GeoServiceAreaPage {
-  items: GeoServiceArea[];
+  items: (GeoServiceArea | GeoServiceAreaPassenger)[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -1519,6 +1751,31 @@ export interface GeoStop {
 
 export type GeoTrafficProducts = string[];
 
+export interface GeoStopPassenger {
+  stop_id: UUID;
+  revision: number;
+  name: string;
+  point: Point;
+  accessibility: GeoStopAccessibility;
+  distance_m: number | null;
+}
+
+export interface GeoServiceAreaPassenger {
+  id: UUID;
+  service_id: UUID;
+  revision: number;
+  area: GeoMultiPolygon;
+  area_square_km: number;
+  bounds: {
+    min_latitude: number;
+    min_longitude: number;
+    max_latitude: number;
+    max_longitude: number;
+  };
+  valid_from: Timestamp;
+  valid_to: Timestamp | null;
+}
+
 export interface GeoStopUpdate {
   name: string;
   point: Point;
@@ -1540,8 +1797,31 @@ export interface GeoStopCreate {
   valid_to?: Timestamp | null;
 }
 
+export interface PlaceHit {
+  type: 'ADDRESS' | 'POI' | 'STOP' | 'FAVORITE' | 'MAP_POINT';
+  label: string;
+  point: Point;
+  stop_id: UUID | null;
+  source: string;
+  data_as_of: string;
+  service_area: 'INSIDE' | 'OUTSIDE' | 'UNKNOWN';
+  nearest_stop: PlaceNearestStop | null;
+}
+
+export interface PlaceNearestStop {
+  stop_id: UUID;
+  name: string;
+  distance_m: number;
+}
+
+export interface PlaceSearchResult {
+  items: PlaceHit[];
+  notices: ('GEOCODER_UNAVAILABLE' | 'NO_MATCH')[];
+  as_of: string;
+}
+
 export interface GeoStopPage {
-  items: GeoStop[];
+  items: (GeoStop | GeoStopPassenger)[];
   next_cursor: string | null;
   as_of: string;
 }
@@ -1825,7 +2105,17 @@ export interface Profile {
 
 export interface Favorite {
   label: string;
-  stop_id: UUID;
+  lat: number;
+  lon: number;
+  stop_id: UUID | null;
+  stop_bookable: boolean;
+}
+
+export interface FavoriteInput {
+  label: string;
+  lat?: number;
+  lon?: number;
+  stop_id?: UUID;
 }
 
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'SMS';
@@ -1836,7 +2126,7 @@ export interface ProfileUpdate {
     email?: string;
     phone?: string;
   };
-  favorites?: Favorite[];
+  favorites?: FavoriteInput[];
   preferred_stops?: UUID[];
   notification_channels?: NotificationChannel[];
 }
@@ -2337,6 +2627,128 @@ export interface AccountRecovery {
   started_at: string;
 }
 
+export type StaffShiftState = 'PLANNED' | 'STARTED' | 'ENDED' | 'CANCELLED';
+
+export interface ShiftOverlapExceptionInput {
+  approved_by?: string;
+  reason?: string;
+}
+
+export interface ShiftOverlapException {
+  approved_by: string;
+  reason: string;
+  approved_at: string;
+}
+
+export interface StaffShiftInput {
+  driver_id: UUID;
+  vehicle_id: UUID;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  withdrawn?: boolean;
+  overlap_exception?: ShiftOverlapExceptionInput;
+}
+
+export interface StaffShift {
+  id: UUID;
+  driver_id: UUID;
+  vehicle_id: UUID;
+  starts_at: string;
+  ends_at: string;
+  duration_minutes: number;
+  timezone: string;
+  state: string;
+  roster_revision: number;
+  revision: number;
+  overlap_exception: ShiftOverlapException | null;
+  started_at: string | null;
+  ended_at: string | null;
+}
+
+export interface StaffShiftPage {
+  items: StaffShift[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export type TariffClass = string;
+
+export type TariffState = 'ENTWURF' | 'GEPRUEFT' | 'VEROEFFENTLICHT';
+
+export type TariffRuleType = 'FESTPREIS' | 'ZONENPREIS' | 'GRUNDPREIS_STRECKE';
+
+export interface TariffRuleInput {
+  rule_type: TariffRuleType;
+  person_mode?: 'PER_PERSON' | 'PER_BOOKING';
+  amount_minor: number;
+  zone_from?: UUID;
+  zone_to?: UUID;
+  rate_per_km?: string;
+  booking_fee_minor?: number;
+  tax_rate?: string;
+  tax_mode?: 'GROSS' | 'NET';
+  tax_rule_revision: string;
+}
+
+export interface TariffRule {
+  id: UUID;
+  rule_no: number;
+  rule_type: TariffRuleType;
+  person_mode: 'PER_PERSON' | 'PER_BOOKING';
+  amount_minor: number;
+  zone_from: UUID | null;
+  zone_to: UUID | null;
+  rate_per_km: string | null;
+  booking_fee_minor: number;
+  tax_rate: string;
+  tax_mode: 'GROSS' | 'NET';
+  tax_rule_revision: string;
+}
+
+export interface TariffRevisionCreate {
+  service_id: UUID;
+  tariff_class: TariffClass;
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  currency: string;
+  reason: string;
+  rules: TariffRuleInput[];
+}
+
+export interface TariffRevisionUpdate {
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+  rules: TariffRuleInput[];
+}
+
+export interface TariffRevision {
+  id: UUID;
+  service_id: UUID;
+  tariff_class: TariffClass;
+  revision_no: number;
+  state: TariffState;
+  valid_from: Timestamp;
+  valid_to: Timestamp | null;
+  currency: string;
+  reason: string;
+  revision: number;
+  created_by: string;
+  created_at: Timestamp;
+  reviewed_by: string | null;
+  reviewed_at: Timestamp | null;
+  published_by: string | null;
+  published_at: Timestamp | null;
+  rules: TariffRule[];
+}
+
+export interface TariffRevisionPage {
+  items: TariffRevision[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
@@ -2533,6 +2945,34 @@ export interface Operations {
     body: PublishRequest;
     response: PublishedRevision;
   };
+  listRosterShifts: {
+    path: Record<string, never>;
+    query: { roster_id: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ShiftPage;
+  };
+  createRosterShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
+  getRosterShift: {
+    path: { shift_id: UUID };
+    query: { roster_id: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Shift;
+  };
+  updateRosterShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
   publishRoster: {
     path: { roster_id: UUID };
     query: Record<string, never>;
@@ -2582,6 +3022,27 @@ export interface Operations {
     body: undefined;
     response: undefined;
   };
+  listDriverShifts: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverShiftList;
+  };
+  startDriverShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverShiftStart;
+    response: DriverShiftStartResult;
+  };
+  endDriverShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverShiftEnd;
+    response: DriverShift;
+  };
   listAbsences: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; limit?: number; cursor?: string };
@@ -2615,7 +3076,7 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: RideOfferRequest;
-    response: RideOffer;
+    response: RideOfferResponse;
   };
   getRideOffer: {
     path: { ride_offer_id: UUID };
@@ -2869,6 +3330,62 @@ export interface Operations {
     body: undefined;
     response: ChecklistTemplatePage;
   };
+  listChecklistTemplateRevisions: {
+    path: Record<string, never>;
+    query: { state?: ChecklistTemplateState; vehicle_class?: string; service_mode?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ChecklistTemplateRevisionPage;
+  };
+  createChecklistTemplate: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: ChecklistTemplateWrite;
+    response: ChecklistTemplateRevision;
+  };
+  getChecklistTemplateRevision: {
+    path: { checklist_revision_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ChecklistTemplateRevision;
+  };
+  updateChecklistTemplateDraft: {
+    path: { checklist_revision_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: ChecklistTemplateWrite;
+    response: ChecklistTemplateRevision;
+  };
+  createChecklistTemplateRevision: {
+    path: { checklist_revision_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: ChecklistTemplateRevision;
+  };
+  publishChecklistTemplateRevision: {
+    path: { checklist_revision_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: ChecklistTemplateRevision;
+  };
+  getChecklistStepExampleImage: {
+    path: { checklist_revision_id: UUID; step_code: string };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ChecklistExampleImage;
+  };
+  putChecklistStepExampleImage: {
+    path: { checklist_revision_id: UUID; step_code: string };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: ChecklistExampleImage;
+    response: ChecklistTemplateRevision;
+  };
   createInspection: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -3009,6 +3526,27 @@ export interface Operations {
     body: CapacityPatch;
     response: CapacityConfiguration;
   };
+  listVehicleServiceAssignments: {
+    path: { vehicle_id: UUID };
+    query: { as_of?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleServiceAssignmentPage;
+  };
+  createVehicleServiceAssignment: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: VehicleServiceAssignmentCreate;
+    response: VehicleServiceAssignment;
+  };
+  endVehicleServiceAssignment: {
+    path: { vehicle_id: UUID; assignment_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: VehicleServiceAssignmentEnd;
+    response: VehicleServiceAssignment;
+  };
   requestDefectEvidenceUpload: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -3088,7 +3626,7 @@ export interface Operations {
   };
   listServiceAreas: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string; service_id?: UUID };
+    query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp };
     headers: { traceparent?: string };
     body: undefined;
     response: GeoServiceAreaPage;
@@ -3105,7 +3643,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoServiceArea;
+    response: GeoServiceArea | GeoServiceAreaPassenger;
   };
   updateServiceArea: {
     path: { area_id: UUID };
@@ -3113,6 +3651,13 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: GeoServiceAreaUpdate;
     response: GeoServiceArea;
+  };
+  searchPlaces: {
+    path: Record<string, never>;
+    query: { q?: string; map_latitude?: number; map_longitude?: number; bias_latitude?: number; bias_longitude?: number; service_id?: UUID; limit?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: PlaceSearchResult;
   };
   listStops: {
     path: Record<string, never>;
@@ -3133,7 +3678,7 @@ export interface Operations {
     query: { revision?: number };
     headers: { traceparent?: string };
     body: undefined;
-    response: GeoStop;
+    response: GeoStop | GeoStopPassenger;
   };
   updateStop: {
     path: { stop_id: UUID };
@@ -3660,6 +4205,83 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
+  listStaffShifts: {
+    path: Record<string, never>;
+    query: { driver_id?: UUID; vehicle_id?: UUID; from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: StaffShiftPage;
+  };
+  createStaffShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: StaffShiftInput;
+    response: StaffShift;
+  };
+  getStaffShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: StaffShift;
+  };
+  updateStaffShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: StaffShiftInput;
+    response: StaffShift;
+  };
+  listTariffRevisions: {
+    path: Record<string, never>;
+    query: { limit?: number; cursor?: string; service_id?: UUID; state?: TariffState };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevisionPage;
+  };
+  createTariffRevision: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TariffRevisionCreate;
+    response: TariffRevision;
+  };
+  getTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  updateTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: TariffRevisionUpdate;
+    response: TariffRevision;
+  };
+  reviewTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  publishTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  getEffectiveTariff: {
+    path: { service_id: UUID };
+    query: { tariff_class?: TariffClass; at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevision;
+  };
   listTimeEvents: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
@@ -3748,6 +4370,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
@@ -3755,11 +4381,14 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   acknowledgeDriverRunRevision: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/run/acknowledgements', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   registerDriverDevice: { method: 'POST', path: '/v1/driver/devices', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:devices'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   revokeDriverDevice: { method: 'DELETE', path: '/v1/driver/devices/{device_id}', pathParams: ['device_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['driver:devices'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listDriverShifts: { method: 'GET', path: '/v1/driver/shifts', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 429, 503] },
+  startDriverShift: { method: 'POST', path: '/v1/driver/shift-starts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   withdrawAbsence: { method: 'POST', path: '/v1/absences/{absence_id}/withdraw', pathParams: ['absence_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['absences:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
-  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
@@ -3796,12 +4425,20 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   liftVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift', pathParams: ['vehicle_id', 'block_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listChecklistTemplates: { method: 'GET', path: '/v1/checklist-templates', pathParams: [], query: ['vehicle_class', 'service_mode', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listChecklistTemplateRevisions: { method: 'GET', path: '/v1/operator/checklist-templates', pathParams: [], query: ['state', 'vehicle_class', 'service_mode', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['checklists:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createChecklistTemplate: { method: 'POST', path: '/v1/operator/checklist-templates', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [201, 400, 401, 403, 422, 429, 503] },
+  getChecklistTemplateRevision: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}', pathParams: ['checklist_revision_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['checklists:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateChecklistTemplateDraft: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/revisions', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
+  publishChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/publish', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getChecklistStepExampleImage: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  putChecklistStepExampleImage: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 415, 422, 429, 503] },
   createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 200] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   triageDefect: { method: 'POST', path: '/v1/defects/{defect_id}/triage', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:triage'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRepairOrders: { method: 'GET', path: '/v1/repair-orders', pathParams: [], query: ['defect_id', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['repair:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -3816,6 +4453,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
+  listVehicleServiceAssignments: { method: 'GET', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: ['as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  endVehicleServiceAssignment: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/service-assignments/{assignment_id}/end', pathParams: ['vehicle_id', 'assignment_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 422, 429, 503] },
   requestDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDefectEvidenceUpload: { method: 'GET', path: '/v1/defect-evidence-uploads/{upload_id}', pathParams: ['upload_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   completeDefectEvidenceUpload: { method: 'POST', path: '/v1/defect-evidence-uploads/{upload_id}/complete', pathParams: ['upload_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
@@ -3827,10 +4467,11 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   amendDefect: { method: 'POST', path: '/v1/defects/{defect_id}/amendments', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listDefectHistory: { method: 'GET', path: '/v1/defects/{defect_id}/history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getDefectAsOf: { method: 'GET', path: '/v1/defects/{defect_id}/as-of', pathParams: ['defect_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateServiceArea: { method: 'PUT', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['geo:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  searchPlaces: { method: 'GET', path: '/v1/places', pathParams: [], query: ['q', 'map_latitude', 'map_longitude', 'bias_latitude', 'bias_longitude', 'service_id', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at', 'near_latitude', 'near_longitude', 'near_radius_m', 'active'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createStop: { method: 'POST', path: '/v1/stops', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getStop: { method: 'GET', path: '/v1/stops/{stop_id}', pathParams: ['stop_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -3909,6 +4550,17 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listStaffShifts: { method: 'GET', path: '/v1/shifts', pathParams: [], query: ['driver_id', 'vehicle_id', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createStaffShift: { method: 'POST', path: '/v1/shifts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getStaffShift: { method: 'GET', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['shifts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateStaffShift: { method: 'PUT', path: '/v1/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['shifts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listTariffRevisions: { method: 'GET', path: '/v1/tariffs', pathParams: [], query: ['limit', 'cursor', 'service_id', 'state'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createTariffRevision: { method: 'POST', path: '/v1/tariffs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tariffs:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getTariffRevision: { method: 'GET', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateTariffRevision: { method: 'PUT', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['tariffs:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  reviewTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/review', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  publishTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/publish', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getEffectiveTariff: { method: 'GET', path: '/v1/services/{service_id}/tariff', pathParams: ['service_id'], query: ['tariff_class', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },

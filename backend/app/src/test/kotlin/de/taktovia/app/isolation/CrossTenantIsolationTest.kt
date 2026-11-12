@@ -102,7 +102,7 @@ class CrossTenantIsolationTest {
         val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
         // WP-M4-03: Schicht in B (Planer von B)
         val roster = UUID.randomUUID().toString()
-        val shift = create("/v1/rosters/shifts", """{"roster_id":"$roster","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"$org","depot_id":"$depot","function":"Fahrdienst","staffing_need":2}""", b.plannerToken).json["id"].asString()
+        val rosterShift = create("/v1/rosters/shifts", """{"roster_id":"$roster","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"$org","depot_id":"$depot","function":"Fahrdienst","staffing_need":2}""", b.plannerToken).json["id"].asString()
         // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
         val timeEvent = UUID.randomUUID().toString()
         create("/v1/time-events", """{"event_id":"$timeEvent","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}""", b.driverToken)
@@ -128,8 +128,7 @@ class CrossTenantIsolationTest {
             "area_id" to area, "stop_id" to stop, "checklist_revision_id" to checklist, "step_code" to "BRAKES",
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent, "shift_id" to shift, "roster_id" to roster,
-            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
@@ -233,8 +232,8 @@ class CrossTenantIsolationTest {
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
             "getAbsence" to Probe("GET", "/v1/absences/{absence_id}", role = "planner"),
             "withdrawAbsence" to Probe("POST", "/v1/absences/{absence_id}/withdraw", null, true, role = "planner"),
-            "getRosterShift" to Probe("GET", "/v1/rosters/shifts/{shift_id}?roster_id={roster_id}", role = "planner"),
-            "updateRosterShift" to Probe("PUT", "/v1/rosters/shifts/{shift_id}", """{"roster_id":"00000000-0000-4000-8000-0000000000c1","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"00000000-0000-4000-8000-0000000000c2","depot_id":"00000000-0000-4000-8000-0000000000c3","function":"Fahrdienst","staffing_need":2}""", true, role = "planner"),
+            "getRosterShift" to Probe("GET", "/v1/rosters/shifts/{roster_shift_id}?roster_id={roster_id}", role = "planner"),
+            "updateRosterShift" to Probe("PUT", "/v1/rosters/shifts/{roster_shift_id}", """{"roster_id":"00000000-0000-4000-8000-0000000000c1","starts_local":"2026-12-01T22:00:00","ends_local":"2026-12-02T06:00:00","timezone":"Europe/Berlin","operator_id":"00000000-0000-4000-8000-0000000000c2","depot_id":"00000000-0000-4000-8000-0000000000c3","function":"Fahrdienst","staffing_need":2}""", true, role = "planner"),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -294,9 +293,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listRosterShifts" -> a.plannerToken; else -> a.adminToken })
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles" -> a.dispatcherToken; "listDrivers", "listStaffShifts", "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listRosterShifts", "listStaffShifts" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

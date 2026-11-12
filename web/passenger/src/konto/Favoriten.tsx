@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '@taktovia/api-client';
-import type { Favorite, FavoriteInput, GeoStop } from '@taktovia/api-client';
+import type { Favorite, FavoriteInput, GeoStopPassenger } from '@taktovia/api-client';
 import { Field } from '@taktovia/design-system';
 import type { ProblemLike } from '@taktovia/design-system';
 
@@ -74,13 +74,13 @@ export function favoritesToInput(list: readonly FavoriteDraft[]): FavoriteInput[
 }
 
 /** Haltestellenliste des Fahrgasts (nur aktive, heute wirksame Haltepunkte, GEO-002). Ein Ausfall lässt die manuelle Ortsangabe unberührt. */
-function useStops(): readonly GeoStop[] {
+function useStops(): readonly GeoStopPassenger[] {
   const api = useApi();
-  const [stops, setStops] = useState<readonly GeoStop[]>([]);
+  const [stops, setStops] = useState<readonly GeoStopPassenger[]>([]);
   useEffect(() => {
     let live = true;
     api.call('listStops', { query: { limit: 100 } }).then(
-      (page) => live && setStops(page.items),
+      (page) => live && setStops(page.items as GeoStopPassenger[]),
       () => undefined,
     );
     return () => {

@@ -80,8 +80,8 @@ class EvidenceHarness(val fx: FleetFixture) {
     val store = de.taktovia.platform.storage.InMemoryObjectStore()
     val inspector = SwitchableInspector()
     val urls = de.taktovia.platform.storage.SignedUrls(ByteArray(32) { (it * 7 + 3).toByte() }, clock)
-    val fleet: de.taktovia.fleetsafety.api.FleetsafetyApi = de.taktovia.fleetsafety.api.FleetsafetyApi.create(fx.ctxTx, de.taktovia.platform.audit.JdbcAuditPort(), de.taktovia.platform.outbox.Outbox(), clock,
-        null, de.taktovia.fleetsafety.api.DefectEvidenceWiring(store, inspector, urls))
+    val fleet: de.taktovia.fleetsafety.api.FleetsafetyApi = de.taktovia.fleetsafety.api.FleetsafetyApi.create(fx.ctxTx, de.taktovia.platform.audit.JdbcAuditPort(), de.taktovia.platform.outbox.Outbox(), clock = clock,
+        driverRelation = null, evidence = de.taktovia.fleetsafety.api.DefectEvidenceWiring(store, inspector, urls))
 
     /** Gültiges JPEG; [seed] macht den Inhalt verschieden. */
     fun jpeg(seed: Int = 1, exif: Boolean = false): ByteArray {

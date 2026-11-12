@@ -66,9 +66,9 @@ def _load_tenant(name, label):
         x("""INSERT INTO vehicle_run(tenant_id,id,vehicle_id,shift_id,revision,state)
              SELECT %s, md5(%s||'run'||g)::uuid, md5(%s||'veh'||g)::uuid, md5(%s||'shift'||g)::uuid, 1, 'ACTIVE' FROM generate_series(1,%s) g""",
           (t, t, t, t, VEHICLES_PER_TENANT))
-        # Seit WP-M2-16 gilt höchstens ein Umlauf je Schicht (vehicle_run_one_per_shift): jeder Reservelauf bekommt eine eigene Reserveschicht.
+        # Seit WP-M2-16 gilt höchstens ein Umlauf je Schicht (vehicle_run_one_per_shift): jeder Reservelauf bekommt eine eigene Reserveschicht; seit WP-M3-07 überlappen Schichten desselben Fahrzeugs nicht, daher liegt jede Reserveschicht an einem eigenen Tag.
         x("""INSERT INTO staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state)
-             SELECT %s, md5(%s||'spareshift'||g)::uuid, md5(%s||'sparedrv'||g)::uuid, md5(%s||'veh'||(1+g%%%s))::uuid, '2026-06-02 04:00+00', '2026-06-02 14:00+00', 'Europe/Berlin', 1, 'PUBLISHED'
+             SELECT %s, md5(%s||'spareshift'||g)::uuid, md5(%s||'sparedrv'||g)::uuid, md5(%s||'veh'||(1+g%%%s))::uuid, '2026-06-02 04:00+00'::timestamptz + g*interval '1 day', '2026-06-02 14:00+00'::timestamptz + g*interval '1 day', 'Europe/Berlin', 1, 'PUBLISHED'
              FROM generate_series(1,%s) g""", (t, t, t, t, VEHICLES_PER_TENANT, SPARE_RUNS_PER_TENANT))
         x("""INSERT INTO vehicle_run(tenant_id,id,vehicle_id,shift_id,revision,state)
              SELECT %s, md5(%s||'spare'||g)::uuid, md5(%s||'veh'||(1+g%%%s))::uuid, md5(%s||'spareshift'||g)::uuid, 1, 'ACTIVE'

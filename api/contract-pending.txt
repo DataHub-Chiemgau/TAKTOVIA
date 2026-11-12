@@ -18,8 +18,6 @@ createRunRevision  # POST /v1/runs/{run_id}/revisions
 createVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks
 createVehicleRelease  # POST /v1/vehicles/{vehicle_id}/release
 getBooking  # GET /v1/bookings/{booking_id}
-getDefect  # GET /v1/defects/{defect_id}
-getDriverRun  # GET /v1/driver/shifts/{shift_id}/run
 getInspection  # GET /v1/inspections/{inspection_id}
 getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
@@ -29,8 +27,6 @@ holdOffer  # POST /v1/federation/offers/{offer_id}/hold
 holdRideOffer  # POST /v1/ride-offers/{ride_offer_id}/hold
 liftVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift
 listBookings  # GET /v1/bookings
-listDefects  # GET /v1/defects
-listChecklistTemplates  # GET /v1/checklist-templates
 listDriverClearances  # GET /v1/driver-clearances
 listOperatorIncidents  # GET /v1/operator/incidents
 listRepairOrders  # GET /v1/repair-orders

@@ -3,6 +3,7 @@ import type { useApi } from '@taktovia/api-client';
 import type {
   Service,
   GeoServiceArea,
+  GeoServiceAreaPassenger,
   VehicleMaster,
   VehicleServiceAssignment,
 } from '@taktovia/api-client';
@@ -52,7 +53,7 @@ export function Dienstzuordnung({
     status: 'loading',
   });
   const [services, setServices] = useState<Service[] | undefined>(undefined);
-  const [areas, setAreas] = useState<GeoServiceArea[]>([]);
+  const [areas, setAreas] = useState<(GeoServiceArea | GeoServiceAreaPassenger)[]>([]);
   const [draft, setDraft] = useState({
     service_id: '',
     service_area_id: '',

@@ -5,6 +5,7 @@ import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.storage.InMemoryObjectStore
 import de.taktovia.platform.storage.TenantObjectStore
 import org.springframework.jdbc.core.JdbcOperations
 import java.time.Clock
@@ -36,7 +37,7 @@ interface FleetsafetyApi {
 
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
             evidence: DefectEvidenceWiring? = null,
         ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence)
     }
