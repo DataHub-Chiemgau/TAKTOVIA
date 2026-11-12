@@ -1,0 +1,9 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+booking;passenger_id;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_BETRIEB;WP-M2-23: Verweis auf den Fahrgast (nie Kontaktdaten), Grundlage der Objektberechtigung eigene Buchung
+booking;journey_id;nein;BUCHUNGSABWICKLUNG;;;;WP-M2-23: Journey-Hülle der Einbetreiberbuchung (OP-3)
+booking;booking_no;nein;BUCHUNGSABWICKLUNG;;;;WP-M2-23: je Mandant eindeutige lesbare Buchungsnummer (OP-42), keine Personendaten
+booking;created_at;nein;BUCHUNGSABWICKLUNG;;;;WP-M2-23: Zeitpunkt der Bestätigung
+booking;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;WP-M2-23: Urheber der Bestätigung (Pseudonym user:<uuid>), nie Name oder Mailadresse
+booking_number_counter;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_number_counter;number_year;nein;BUCHUNGSABWICKLUNG;;;;
+booking_number_counter;last_number;nein;BUCHUNGSABWICKLUNG;;;;

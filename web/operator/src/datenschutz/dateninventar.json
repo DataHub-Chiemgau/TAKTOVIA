@@ -823,6 +823,33 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "booking_no",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-23: je Mandant eindeutige lesbare Buchungsnummer (OP-42), keine Personendaten"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-23: Zeitpunkt der Bestätigung"
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "WP-M2-23: Urheber der Bestätigung (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "federation_ref",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
@@ -848,6 +875,24 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "journey_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M2-23: Journey-Hülle der Einbetreiberbuchung (OP-3)"
+        },
+        {
+          "spalte": "passenger_id",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "WP-M2-23: Verweis auf den Fahrgast (nie Kontaktdaten), Grundlage der Objektberechtigung eigene Buchung"
         },
         {
           "spalte": "promise_snapshot",
@@ -958,6 +1003,41 @@
         },
         {
           "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "booking_number_counter",
+      "aggregat": "Buchungsnummernzähler (WP-M2-23)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "Zähler je Mandant und Jahr, keine Personendaten",
+      "spalten": [
+        {
+          "spalte": "last_number",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "number_year",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
           "rechtsgrundlage": "",

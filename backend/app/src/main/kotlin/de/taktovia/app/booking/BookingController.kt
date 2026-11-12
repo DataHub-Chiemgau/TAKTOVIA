@@ -1,0 +1,85 @@
+package de.taktovia.app.booking
+
+import com.fasterxml.jackson.annotation.JsonValue
+import de.taktovia.app.identity.RequestContexts
+import de.taktovia.bookingdispatch.api.BookingDetail
+import de.taktovia.bookingdispatch.api.Bookings
+import de.taktovia.bookingdispatch.api.ConfirmBooking
+import de.taktovia.platform.api.CursorCodec
+import de.taktovia.platform.api.CursorPosition
+import de.taktovia.platform.api.CursorScope
+import de.taktovia.platform.api.Etag
+import de.taktovia.platform.api.Paging
+import de.taktovia.platform.api.Revisioned
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+import java.net.URI
+import java.time.Instant
+import java.util.UUID
+
+/** Antwort mit Ressourcenrevision (der Antwortfilter setzt daraus den ETag). */
+class BookingResource(@get:JsonValue val data: Map<String, Any?>, override val revision: Long) : Revisioned
+
+/**
+ * `POST /v1/bookings` (Confirm, WP-M2-23), `GET /v1/bookings/{id}`, `GET /v1/bookings` (eigene bzw. Dienstscope-Buchungen, Cursor). Mandant und Akteur stammen aus dem Kontext, nie aus dem Body.
+ * `If-Match` ist die Angebotsrevision (ETag der Hold-Antwort): fehlt er 428, ist er veraltet 412. Der `Idempotency-Key` ist Pflicht (Filter): Wiederholung liefert das gespeicherte Ergebnis.
+ */
+@RestController
+class BookingController(private val bookings: Bookings, private val codec: CursorCodec) {
+
+    @PostMapping("/v1/bookings")
+    @Suppress("UNCHECKED_CAST")
+    fun confirm(@RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): ResponseEntity<BookingResource> {
+        val expected = Etag.parseIfMatch(ifMatch)
+        val max = body["max_gross"] as Map<String, Any?>
+        val r = bookings.confirm(
+            RequestContexts.require(request),
+            ConfirmBooking(UUID.fromString(body["hold_id"] as String), expected, (max["amount_minor"] as Number).toLong(), max["currency"] as String, body["payment_reference"] as String?),
+        )
+        return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/bookings/${r.booking.id}")).body(BookingResource(render(r.booking), r.booking.revision))
+    }
+
+    @GetMapping("/v1/bookings/{booking_id}")
+    fun get(@PathVariable("booking_id") id: UUID, request: HttpServletRequest): BookingResource {
+        val b = bookings.get(RequestContexts.require(request), id)
+        return BookingResource(render(b), b.revision)
+    }
+
+    @GetMapping("/v1/bookings")
+    fun list(@RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> {
+        val ctx = RequestContexts.require(request)
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "bookings")
+        val lim = Paging.limit(limit); val pos = Paging.position(cursor, codec, scope)
+        val rows = bookings.list(ctx, lim, pos?.let { it.createdAt to it.id })
+        return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { render(it) }
+    }
+
+    companion object {
+        fun money(minor: Long, currency: String, exponent: Int) = linkedMapOf("amount_minor" to minor, "currency" to currency, "exponent" to exponent)
+
+        fun render(b: BookingDetail): Map<String, Any?> {
+            val p = b.promise
+            val promise = linkedMapOf<String, Any?>(
+                "pickup_earliest" to p.pickupEarliest.toString(), "pickup_latest" to p.pickupLatest.toString(), "arrival_earliest" to p.arrivalEarliest.toString(), "arrival_latest" to p.arrivalLatest.toString(),
+                "gross" to money(p.grossMinor, p.currency, p.exponent), "cancellation_policy_ref" to p.cancellationPolicyRef,
+            )
+            p.vehicleClass?.let { promise["vehicle_class"] = it }
+            p.resourceVector?.let { promise["resource_vector"] = it.toMap() }
+            val m = linkedMapOf<String, Any?>(
+                "id" to b.id.toString(), "booking_number" to b.bookingNumber, "service_id" to b.serviceId.toString(), "hold_id" to b.holdId.toString(), "state" to b.state,
+                "created_at" to b.createdAt.toString(), "passengers" to b.passengers, "wheelchair_spaces" to b.wheelchairSpaces,
+            )
+            b.assistanceCodes?.let { m["assistance_codes"] = it }
+            m["promise"] = promise; m["revision"] = b.revision
+            return m
+        }
+    }
+}

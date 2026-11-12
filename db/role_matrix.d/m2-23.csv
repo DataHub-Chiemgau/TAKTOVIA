@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+booking_number_counter;SELECT,INSERT,UPDATE;WP-M2-23: Zähler der Buchungsnummer je Mandant und Jahr; steigt nur um 1 (Trigger), kein DELETE

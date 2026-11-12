@@ -199,14 +199,16 @@ paths:
     post:
       summary: Hold in Buchung bestätigen
       operationId: confirmBooking
-      description: 'Konvertiert einen gültigen Hold in derselben Transaktion in eine Buchung. 409: `HOLD_EXPIRED`, `REQUOTE_REQUIRED`,
-        `OPERATION_IN_PROGRESS`, `INVALID_STATE_TRANSITION`.'
+      description: 'Konvertiert einen gültigen Hold in derselben Transaktion in eine Buchung. `If-Match` ist die Angebotsrevision aus dem ETag der Hold-Antwort
+        (fehlt er: 428, veraltet: 412). Wiederholte Bestätigung desselben Holds liefert dieselbe Buchung. 409: `HOLD_EXPIRED`, `REQUOTE_REQUIRED`, `CAPACITY_UNAVAILABLE`,
+        `OPERATION_IN_PROGRESS`, `INVALID_STATE_TRANSITION`. Fremder Hold: 404; ohne Fahrgastkonto: 403.'
       security:
       - oidc:
         - rides:write
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
       requestBody:
         required: true
         content:
@@ -886,6 +888,10 @@ components:
           $ref: common.yaml#/components/schemas/UUID
         hold_id:
           $ref: common.yaml#/components/schemas/UUID
+        booking_number:
+          type: string
+          pattern: ^BK-[0-9]{4}-[0-9]{6,}$
+          description: Je Mandant eindeutige, lesbare Buchungsnummer (M2 OP-42, Vorschlag `BK-<Jahr>-<laufende Nummer>`); erscheint unverändert in Bestätigung, UI-04 und Nachrichten.
         state:
           type: string
           enum:
@@ -897,6 +903,8 @@ components:
           - CANCELED
           - COMPLETED
           - FAILED
+        created_at:
+          $ref: common.yaml#/components/schemas/Timestamp
         passengers:
           type: integer
           format: int64
@@ -918,9 +926,11 @@ components:
           maximum: 9007199254740991
       required:
       - id
+      - booking_number
       - service_id
       - hold_id
       - state
+      - created_at
       - passengers
       - wheelchair_spaces
       - promise
