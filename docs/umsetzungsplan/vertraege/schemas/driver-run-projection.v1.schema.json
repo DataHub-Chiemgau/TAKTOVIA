@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver-run-projection.v1.schema.json",
+  "title": "Fahrerprojektion des Umlaufs (WP-M3-26, LH-6.6-DRV-002; Unterstützung WP-M3-32, LH-6.6-DRV-008)",
+  "description": "Antwort von `GET /v1/driver/shifts/{shift_id}/run` (`DriverRun` in api/driver.yaml). `ETag` = Planrevision. Feldminimierung (Kap. 05 §5.1): je Stopp nur Haltepunkt (Name, Koordinate, Revision), Zeiten, Personenzahl, Ressourcenbedarf und, nur für die eigene angetretene Schicht mit offenem Fenster, die Unterstützungsmerkmale Rollstuhlbedarf und Ein-/Ausstiegshilfe. Es gibt kein Feld für Kontakt-, Zahlungs- oder Diagnosedaten; additionalProperties=false hält das fest. `forecast_at` = null heißt „keine Prognose“; bis zum ETA-Grundmodell als Laufzeitquelle (OP-20) ist die Prognose die Planzeit aus dem Routing, sonst null.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision"],
+  "properties": {
+    "shift_id": { "type": "string", "format": "uuid" },
+    "vehicle_id": { "type": "string", "format": "uuid" },
+    "shift_state": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "shift_valid": { "type": "boolean" },
+    "release_state": { "enum": ["NOT_RELEASED", "RELEASED", "BLOCKED", "RESTRICTED"] },
+    "missing_requirements": { "type": "array", "maxItems": 50, "items": { "type": "object" } },
+    "plan_revision": { "type": ["integer", "null"], "minimum": 1 },
+    "plan_as_of": { "type": "string", "format": "date-time" },
+    "acknowledged_revision": { "type": ["integer", "null"], "minimum": 1 },
+    "stops": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/Stop" } }
+  },
+  "$defs": {
+    "Stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route_stop_id", "sequence", "kind", "planned_at", "forecast_at", "stop_name", "position", "passenger_count", "booking_ids", "change", "support_hints", "stop_revision_id", "boarding_count", "alighting_count", "resource_need"],
+      "properties": {
+        "route_stop_id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer", "minimum": 1, "description": "Position in der Stoppfolge der Planrevision (route_stop.seq + 1); die Liste ist danach sortiert." },
+        "kind": { "enum": ["PICKUP", "DROPOFF", "WAYPOINT", "PICKUP_DROPOFF"] },
+        "planned_at": { "type": "string", "format": "date-time", "description": "Sollzeit der Planrevision." },
+        "forecast_at": { "type": ["string", "null"], "format": "date-time" },
+        "stop_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "position": { "type": "object", "required": ["longitude", "latitude"], "additionalProperties": false, "properties": { "longitude": { "type": "number" }, "latitude": { "type": "number" } } },
+        "passenger_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "booking_ids": { "type": "array", "maxItems": 20, "items": { "type": "string", "format": "uuid" } },
+        "change": { "enum": ["NEW", "REMOVED", "MOVED", "TIME_CHANGED", null] },
+        "support_hints": { "type": "array", "maxItems": 0, "description": "Reserviert; die Unterstützung steht in `assistance`." },
+        "stop_revision_id": { "type": ["string", "null"], "format": "uuid", "description": "Revision des Haltepunkts (Grundlage der Navigation, WP-M3-28)." },
+        "boarding_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "alighting_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "resource_need": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "object", "additionalProperties": false, "required": ["seats", "wheelchair", "equipment"],
+              "properties": { "seats": { "type": "integer", "minimum": 0 }, "wheelchair": { "type": "integer", "minimum": 0 }, "equipment": { "type": "array", "maxItems": 20, "items": { "type": "string" } } } }
+          ]
+        },
+        "assistance": {
+          "type": "object", "additionalProperties": false, "required": ["wheelchair_required", "boarding_assist", "alighting_assist"],
+          "description": "Nur bei eigener, angetretener Schicht, aktuellem Plan und offenem Fenster; die Feldliste ist abschließend (keine Diagnosen).",
+          "properties": { "wheelchair_required": { "type": "boolean" }, "boarding_assist": { "type": "boolean" }, "alighting_assist": { "type": "boolean" } }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "shift_id": "9a8b7c6d-1111-4222-8333-444455556666", "vehicle_id": "9a8b7c6d-1111-4222-8333-444455556667", "shift_state": "STARTED", "shift_valid": true, "release_state": "RELEASED",
+      "missing_requirements": [], "plan_revision": 4, "plan_as_of": "2026-11-01T10:00:00Z", "acknowledged_revision": null,
+      "stops": [
+        { "route_stop_id": "9a8b7c6d-1111-4222-8333-444455556668", "sequence": 1, "kind": "PICKUP", "planned_at": "2026-11-01T10:05:00Z", "forecast_at": "2026-11-01T10:05:00Z", "stop_name": "Marktplatz",
+          "position": { "longitude": 13.74, "latitude": 51.05 }, "passenger_count": 2, "booking_ids": ["5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f"], "change": null, "support_hints": [],
+          "stop_revision_id": "9a8b7c6d-1111-4222-8333-444455556669", "boarding_count": 2, "alighting_count": 0, "resource_need": { "seats": 1, "wheelchair": 1, "equipment": [] },
+          "assistance": { "wheelchair_required": true, "boarding_assist": false, "alighting_assist": false } }
+      ]
+    }
+  ]
+}

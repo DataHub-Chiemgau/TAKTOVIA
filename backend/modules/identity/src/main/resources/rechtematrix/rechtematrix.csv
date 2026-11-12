@@ -243,3 +243,7 @@ decideExpenseDuplicate;expenses:review;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 submitExpense;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 reviewExpense;expenses:review;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 rejectExpense;expenses:approve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+listPlanChanges;rides:updates;-;M2;J;N;N;N;N;N;N;N;N;N
+getPlanChangesSnapshot;rides:updates;-;M2;J;N;N;N;N;N;N;N;N;N
+listDriverPlanChanges;driver:run;-;M2;N;J;N;N;N;N;N;N;N;N
+getDriverPlanChangesSnapshot;driver:run;-;M2;N;J;N;N;N;N;N;N;N;N

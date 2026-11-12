@@ -40,13 +40,33 @@ data class ShiftStartResult(val shift: DriverShiftView, val alreadyStarted: Bool
 /** Freigabestand des Fahrzeugs für diese Schicht, wie ihn der Server aus `resource_release` und `vehicle` ableitet (nur Lesesicht; Entscheidung und Pflege gehören WP-M3-08/-09). */
 enum class RunReleaseState { NOT_RELEASED, RELEASED, BLOCKED }
 
-/** Ein Stopp der Fahrerprojektion; die Quelle liefert WP-M3-26 über [DriverRunSource]. Hier nur die Gestalt, die der Vertrag `DriverRunStop` fordert. */
+/**
+ * Ressourcenbedarf der Einsteiger eines Stopps (Sitze, Rollstuhlplätze, Ausstattung); [equipment] sind Katalogcodes der Fahrzeugausstattung.
+ */
+data class DriverResourceNeed(val seats: Int, val wheelchair: Int, val equipment: List<String>)
+
+/**
+ * Notwendige Unterstützung an einem Stopp (WP-M3-32, LH-6.6-DRV-008): nur die transportrelevanten Merkmale Rollstuhlbedarf und Ein-/Ausstiegshilfe, keine Diagnosen. Die Werte stehen nie
+ * in `toString` (Logs, Crashreports); sichtbar sind sie nur nach der Freigabe in `JdbcDriverShifts` (eigene, angetretene, freigegebene Schicht, aktueller Plan, Fenster offen).
+ */
+class DriverAssistance(val wheelchairRequired: Boolean, val boardingAssist: Boolean, val alightingAssist: Boolean) {
+    override fun toString() = "DriverAssistance(redacted)"
+    override fun equals(other: Any?) = other is DriverAssistance && other.wheelchairRequired == wheelchairRequired && other.boardingAssist == boardingAssist && other.alightingAssist == alightingAssist
+    override fun hashCode() = listOf(wheelchairRequired, boardingAssist, alightingAssist).hashCode()
+}
+
+/**
+ * Ein Stopp der Fahrerprojektion (Vertrag `DriverRunStop`, Schema `driver-run-projection.v1`): nur Haltepunkt, Zeiten, Personenzahl, Ressourcenbedarf und (freigegeben) Unterstützung.
+ * [forecastAt] = `null` heißt „keine Prognose“ (es wird keine Zeit erfunden). [passengerCount] ist die Zahl der Ein- und Aussteiger zusammen.
+ */
 data class DriverRunStopView(
     val routeStopId: UUID, val sequence: Int, val kind: String, val plannedAt: Instant, val forecastAt: Instant?, val stopName: String, val longitude: Double, val latitude: Double,
     val passengerCount: Int, val bookingIds: List<UUID>, val change: String?, val supportHints: List<String>,
+    val stopRevisionId: UUID? = null, val boardingCount: Int = 0, val alightingCount: Int = 0, val resourceNeed: DriverResourceNeed? = null, val assistance: DriverAssistance? = null,
 )
 
-data class DriverRunProjection(val planRevision: Long, val stops: List<DriverRunStopView>)
+/** [runState] ist der Zustand des Umlaufs (`COMPLETED`/`CANCELED` schließen das Sichtbarkeitsfenster der Unterstützungsmerkmale); `null` = unbekannt (Quelle ohne Zustand). */
+data class DriverRunProjection(val planRevision: Long, val stops: List<DriverRunStopView>, val runState: String? = null)
 
 /**
  * Quelle der Stoppliste (Run-Lesesicht über die Modul-API von `booking-dispatch`, WP-M3-26). Wird **nur** gefragt, wenn der Server die Schicht als gültig, angetreten und

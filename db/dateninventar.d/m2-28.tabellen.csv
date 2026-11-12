@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+plan_change;Planänderung eines Umlaufs (WP-M2-28);LK_BETRIEB;Revision und Ursache, keine Personendaten
+plan_change_booking;Planänderung je Buchung (WP-M2-28);LK_BETRIEB;Buchung nur als Referenz mit Zeiten, keine Adressen oder Kontaktdaten

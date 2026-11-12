@@ -1,0 +1,3 @@
+table;owner;quelle
+plan_change;booking-dispatch;WP-M2-28 (LH-6.5-OPT-010: Änderungsstrom der Planrevisionen)
+plan_change_booking;booking-dispatch;WP-M2-28 (LH-6.5-OPT-010: je Buchung betroffene Planänderung)

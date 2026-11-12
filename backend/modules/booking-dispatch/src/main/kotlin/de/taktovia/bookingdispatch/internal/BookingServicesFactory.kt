@@ -29,6 +29,8 @@ internal object BookingServicesFactory {
         return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock)
     }
 
+    fun planChanges(ctxTx: ContextTransactions, clock: Clock): de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)
+
     fun bookingImpactProvider(): ImpactProvider = BookingImpactProvider()
 
     fun create(ctxTx: ContextTransactions, clock: Clock, outbox: Outbox, routingWorkerUrl: String?, routingBudgetMillis: Long, plannedPositions: PlannedPositionSource, insertionWorker: InsertionWorker? = null): BookingdispatchApi {
@@ -47,6 +49,7 @@ internal object BookingServicesFactory {
             override val insertion: InsertionService? = insertionService
             override val audit: ConfirmedRideAudit = JdbcConfirmedRideAudit(ctxTx, runPlans)
             override val tripPlans: de.taktovia.platform.readports.TripPlanReadPort = JdbcTripPlanReadPort(ctxTx)
+            override val planChanges: de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)
         }
     }
 }

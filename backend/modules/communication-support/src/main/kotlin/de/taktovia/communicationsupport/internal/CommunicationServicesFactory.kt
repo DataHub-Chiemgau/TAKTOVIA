@@ -1,6 +1,9 @@
 package de.taktovia.communicationsupport.internal
 
+import de.taktovia.communicationsupport.api.BookingFactsSource
 import de.taktovia.communicationsupport.api.CommunicationsupportApi
+import de.taktovia.communicationsupport.api.DeliveryPurposePolicy
+import de.taktovia.communicationsupport.api.TriggerSettings
 import de.taktovia.communicationsupport.api.DeliveryGateway
 import de.taktovia.communicationsupport.api.DispatchConfig
 import de.taktovia.communicationsupport.api.NotificationDispatcher
@@ -29,6 +32,8 @@ internal object CommunicationServicesFactory {
                 NotificationWorker(tx, templateService, gateway, directory, alerts, outbox, config, clock, metrics)
             override fun eventConsumer(processor: InboxProcessor, triggers: List<NotificationTrigger>): NotificationEventConsumer =
                 InboxNotificationConsumer(processor, notificationService, triggers)
+            override fun transactionalConsumer(processor: InboxProcessor, facts: BookingFactsSource, directory: RecipientDirectory, purposes: DeliveryPurposePolicy, settings: TriggerSettings): NotificationEventConsumer =
+                InboxNotificationConsumer(processor, notificationService, emptyList(), StandardTriggers(facts, directory, settings).all(), purposes)
         }
     }
 }

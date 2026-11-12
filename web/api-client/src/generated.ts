@@ -836,7 +836,7 @@ export interface DriverPositionResult {
 export interface DriverRunStop {
   route_stop_id: UUID;
   sequence: number;
-  kind: 'PICKUP' | 'DROPOFF' | 'WAYPOINT';
+  kind: 'PICKUP' | 'DROPOFF' | 'WAYPOINT' | 'PICKUP_DROPOFF';
   planned_at: string;
   forecast_at: string | null;
   stop_name: string;
@@ -845,6 +845,19 @@ export interface DriverRunStop {
   booking_ids: UUID[];
   change: 'NEW' | 'REMOVED' | 'MOVED' | 'TIME_CHANGED' | null;
   support_hints: string[];
+  stop_revision_id: UUID | null;
+  boarding_count: number;
+  alighting_count: number;
+  resource_need: {
+    seats: number;
+    wheelchair: number;
+    equipment: string[];
+  } | null;
+  assistance?: {
+    wheelchair_required: boolean;
+    boarding_assist: boolean;
+    alighting_assist: boolean;
+  };
 }
 
 export interface DriverRun {
@@ -915,6 +928,37 @@ export interface DriverShiftEnd {
 export interface DriverShiftStartResult {
   shift: DriverShift;
   already_started: boolean;
+}
+
+export interface DriverPlanChange {
+  cursor: number;
+  cause: 'BOOKING_INSERTED' | 'BOOKING_REMOVED' | 'MANUAL_CHANGE' | 'REPLAN';
+  recorded_at: string;
+  shift_id: UUID;
+  run_id: UUID;
+  revision: number;
+  previous_revision: number;
+  booking_ids: UUID[];
+}
+
+export interface DriverPlanChangeFeed {
+  items: DriverPlanChange[];
+  next_cursor: number;
+  has_more: boolean;
+}
+
+export interface DriverRunPlan {
+  shift_id: UUID;
+  run_id: UUID;
+  revision: number;
+  state: string;
+  stop_count: number;
+}
+
+export interface DriverPlanSnapshot {
+  as_of: string;
+  cursor: number;
+  runs: DriverRunPlan[];
 }
 
 export interface AbsenceCreate {
@@ -1119,6 +1163,43 @@ export interface RideBookingPage {
   items: RideBooking[];
   next_cursor: string | null;
   as_of: string;
+}
+
+export interface PlanChangeBooking {
+  booking_id: UUID;
+  kind: 'ADDED' | 'REMOVED' | 'TIME_CHANGED' | 'STOP_CHANGED' | 'TOUCHED';
+  sequence: number;
+  pickup_before: string | null;
+  pickup_after: string | null;
+  dropoff_before: string | null;
+  dropoff_after: string | null;
+}
+
+export interface PassengerPlanChange {
+  cursor: number;
+  cause: 'BOOKING_INSERTED' | 'BOOKING_REMOVED' | 'MANUAL_CHANGE' | 'REPLAN';
+  recorded_at: string;
+  bookings: PlanChangeBooking[];
+}
+
+export interface PassengerPlanChangeFeed {
+  items: PassengerPlanChange[];
+  next_cursor: number;
+  has_more: boolean;
+}
+
+export interface PassengerBookingPlan {
+  booking_id: UUID;
+  booking_revision: number;
+  sequence: number;
+  pickup_at: string | null;
+  dropoff_at: string | null;
+}
+
+export interface PassengerPlanSnapshot {
+  as_of: string;
+  cursor: number;
+  bookings: PassengerBookingPlan[];
 }
 
 export interface AuditEvent {
@@ -3594,6 +3675,20 @@ export interface Operations {
     body: DriverShiftEnd;
     response: DriverShift;
   };
+  listDriverPlanChanges: {
+    path: Record<string, never>;
+    query: { after?: number; limit?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverPlanChangeFeed;
+  };
+  getDriverPlanChangesSnapshot: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverPlanSnapshot;
+  };
   listOwnAbsences: {
     path: Record<string, never>;
     query: { from?: string; to?: string; limit?: number; cursor?: string };
@@ -3674,7 +3769,7 @@ export interface Operations {
   getBooking: {
     path: { booking_id: UUID };
     query: Record<string, never>;
-    headers: { traceparent?: string };
+    headers: { 'If-Match'?: string; traceparent?: string };
     body: undefined;
     response: RideBooking;
   };
@@ -3691,6 +3786,20 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: RideCancelRequest;
     response: RideBooking;
+  };
+  listPlanChanges: {
+    path: Record<string, never>;
+    query: { after?: number; limit?: number };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: PassengerPlanChangeFeed;
+  };
+  getPlanChangesSnapshot: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: PassengerPlanSnapshot;
   };
   listAuditEvents: {
     path: Record<string, never>;
@@ -5006,6 +5115,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listDriverShifts: { method: 'GET', path: '/v1/driver/shifts', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 429, 503] },
   startDriverShift: { method: 'POST', path: '/v1/driver/shift-starts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listDriverPlanChanges: { method: 'GET', path: '/v1/driver/plan-changes', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getDriverPlanChangesSnapshot: { method: 'GET', path: '/v1/driver/plan-changes/snapshot', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listOwnAbsences: { method: 'GET', path: '/v1/absences/own', pathParams: [], query: ['from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
@@ -5017,9 +5128,11 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   listBookings: { method: 'GET', path: '/v1/bookings', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   confirmBooking: { method: 'POST', path: '/v1/bookings', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['If-Match', 'traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 412, 404, 429, 503] },
   listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   cancelBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/cancel', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listPlanChanges: { method: 'GET', path: '/v1/plan-changes', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getPlanChangesSnapshot: { method: 'GET', path: '/v1/plan-changes/snapshot', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref', 'actor_ref', 'action', 'from', 'to', 'purpose'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   updateCompanyProfile: { method: 'PUT', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['company:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

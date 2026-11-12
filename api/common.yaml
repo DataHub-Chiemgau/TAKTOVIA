@@ -67,6 +67,7 @@ components:
             accounts:write: accounts:write
             rides:read: rides:read
             rides:write: rides:write
+            rides:updates: rides:updates
             geo:read: geo:read
             geo:write: geo:write
             tariffs:read: tariffs:read
@@ -152,6 +153,7 @@ components:
             accounts:write: accounts:write
             rides:read: rides:read
             rides:write: rides:write
+            rides:updates: rides:updates
             geo:read: geo:read
             geo:write: geo:write
             tariffs:read: tariffs:read

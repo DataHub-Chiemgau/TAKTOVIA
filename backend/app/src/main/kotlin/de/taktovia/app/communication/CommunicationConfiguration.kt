@@ -2,7 +2,17 @@ package de.taktovia.app.communication
 
 import de.taktovia.adapters.notification.api.NotificationAdapter
 import de.taktovia.adapters.notification.api.SimulatorProvider
+import de.taktovia.bookingdispatch.api.BookingNotificationFactsPort
+import de.taktovia.communicationsupport.api.BookingFacts
+import de.taktovia.communicationsupport.api.BookingFactsSource
 import de.taktovia.communicationsupport.api.CommunicationsupportApi
+import de.taktovia.communicationsupport.api.DeliveryPurposePolicy
+import de.taktovia.communicationsupport.api.NotificationEventConsumer
+import de.taktovia.communicationsupport.api.NotificationPurpose
+import de.taktovia.communicationsupport.api.TriggerSettings
+import de.taktovia.identity.api.ConsentPurpose
+import de.taktovia.platform.audit.SecurityEventPort
+import de.taktovia.platform.outbox.InboxProcessor
 import de.taktovia.communicationsupport.api.ContactLookup
 import de.taktovia.communicationsupport.api.DispatchConfig
 import de.taktovia.communicationsupport.api.NotificationChannel
@@ -39,6 +49,33 @@ import java.util.concurrent.TimeUnit
 class CommunicationConfiguration {
     @Bean fun communicationsupportApi(tx: TenantTransactions, ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox): CommunicationsupportApi =
         CommunicationsupportApi.create(tx, ctxTx, audit, outbox)
+
+    /** Buchungsfakten für die Auslöser (WP-M2-34): Lesesicht von `booking-dispatch`, unter Lesesperre der Buchungszeile. */
+    @Bean fun bookingNotificationFacts(): BookingNotificationFactsPort = BookingNotificationFactsPort.create()
+
+    /**
+     * Ereignisverbraucher mit den Auslösern der fünf Szenarien (WP-M2-34): Bestätigung, relevante ETA-Änderung, Ankunft, Storno, Ausfall. Der Broker-Verbraucher (RabbitMQ, nicht ausgeführt)
+     * ruft [NotificationEventConsumer.consume] mit der Ereignishülle auf. `taktovia.notifications.eta-threshold-minutes` (Vorläuferwert 5, OP 30) ist die Relevanzschwelle der ETA-Änderung,
+     * `taktovia.notifications.channel-preference` (Standard `PUSH,SMS,EMAIL`, OP 28) die Reihenfolge der Kanalwahl. Lazy: ohne Aufrufer entsteht nichts.
+     */
+    @org.springframework.context.annotation.Lazy @Bean fun notificationEventConsumer(
+        api: CommunicationsupportApi, tx: TenantTransactions, security: SecurityEventPort, facts: BookingNotificationFactsPort, directory: RecipientDirectory, passengers: ObjectProvider<PassengerApi>, env: Environment,
+    ): NotificationEventConsumer {
+        val settings = TriggerSettings(
+            etaRelevanceThreshold = Duration.ofMinutes(env.getProperty("taktovia.notifications.eta-threshold-minutes", Long::class.java, 5)),
+            channelPreference = env.getProperty("taktovia.notifications.channel-preference", "PUSH,SMS,EMAIL").split(",").map { NotificationChannel.valueOf(it.trim().uppercase()) },
+        )
+        val purposes = DeliveryPurposePolicy { tenant, recipient, purpose ->
+            when (purpose) {
+                NotificationPurpose.OPERATIONAL -> passengers.getObject().delivery.isDeliveryAllowed(tenant, recipient, ConsentPurpose.OPERATIONAL_SAFETY)
+                NotificationPurpose.MARKETING -> false   // Werbung läuft nie über den Auslöserweg
+            }
+        }
+        val source = BookingFactsSource { jdbc, id ->
+            facts.facts(jdbc, id)?.let { BookingFacts(it.bookingId, it.bookingNumber, it.passengerRef, it.serviceId, it.state, it.meetingPoint, it.pickupEarliest, it.pickupLatest, it.timezone) }
+        }
+        return api.transactionalConsumer(InboxProcessor(tx, security, OwnerSnapshotFetcher(tx)), source, directory, purposes, settings)
+    }
 
     /**
      * Empfängerverzeichnis über das Fahrgastkonto der Identität: verifizierter Kontakt (E-Mail, Telefon für SMS) und Sprache. Für Push gibt es in P1 noch kein Geräteregister

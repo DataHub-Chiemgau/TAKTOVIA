@@ -295,6 +295,8 @@ class CrossTenantIsolationTest {
     private val selfScoped = setOf(
         "getMe", "listOwnRosterShifts", "listOwnAbsences", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
         "getMe", "listDriverShifts", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
+        // WP-M2-28: Änderungsstrom und Snapshot je Empfängerkanal, ohne Pfadparameter und ausschließlich auf den eigenen Datenbestand begrenzt (Isolation: PlanRevisionSyncTest.zwei_mandanten_am_selben_strom_getrennt)
+        "listPlanChanges", "getPlanChangesSnapshot", "listDriverPlanChanges", "getDriverPlanChangesSnapshot",
     )
 
     /**

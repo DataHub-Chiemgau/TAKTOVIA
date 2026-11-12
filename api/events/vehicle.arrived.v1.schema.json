@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.arrived.v1.schema.json",
+  "title": "Fahrzeug am Treffpunkt angekommen (WP-M2-34, Vertrag mit WP-M3-29)",
+  "description": "Payload von `vehicle.arrived`. Aggregat: die Ankunft am Stopp (eigene `aggregate_id`, Revision 1). Quelle: Ankunftsereignis der Driver-App (WP-M3-29); bis dahin ein Testereignis. Verbraucher: `communication-support` (Nachricht „Fahrzeug ist da“ an den Fahrgast jeder Buchung, die an diesem Stopp einsteigt). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Der Name ist ein Arbeitsname (Vorschlag des Vertrags LH-6.12-COM-001) und wird mit M3 abgeglichen.",
+  "type": "object",
+  "required": ["shift_id", "run_id", "route_stop_id", "booking_ids", "arrived_at"],
+  "additionalProperties": false,
+  "properties": {
+    "shift_id": { "type": "string", "format": "uuid" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "route_stop_id": { "type": "string", "format": "uuid" },
+    "booking_ids": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "type": "string", "format": "uuid" } },
+    "arrived_at": { "type": "string", "format": "date-time" }
+  },
+  "examples": [
+    {
+      "shift_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "run_id": "9a8b7c6d-1111-4222-8333-444455556667",
+      "route_stop_id": "9a8b7c6d-1111-4222-8333-444455556668",
+      "booking_ids": ["5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f"],
+      "arrived_at": "2026-11-01T11:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+plan_change;SELECT,INSERT;WP-M2-28: Planrevision je Umlauf (Cursor des Änderungsstroms); unveränderlich (Trigger)
+plan_change_booking;SELECT,INSERT;WP-M2-28: betroffene Buchung je Planänderung; unveränderlich (Trigger)

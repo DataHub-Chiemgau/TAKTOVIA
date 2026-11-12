@@ -71,9 +71,26 @@ internal class JdbcDriverShifts(
         val (s, vg, planRevision) = row
         val (valid, gate) = vg
         // Aufträge nur bei gültiger, angetretener Schicht UND bestehender Einsatzfreigabe; die Quelle wird sonst nicht einmal gefragt.
-        val projection: DriverRunProjection? = if (valid && gate.state == RunReleaseState.RELEASED) source?.projection(ctx, s.id, s.vehicleId) else null
+        val raw: DriverRunProjection? = if (valid && gate.state == RunReleaseState.RELEASED) source?.projection(ctx, s.id, s.vehicleId) else null
+        // WP-M3-32: Unterstützungsmerkmale nur bei eigener, angetretener, freigegebener Schicht (hier gegeben) und offenem Fenster: nicht nach Fahrtabschluss; Planrevision mit Fahrerwechsel
+        // wirkt ab dem Commit, weil der Plan der Schicht (nicht der Buchung) die Stopps liefert. Sonst werden die Merkmale entfernt, nie nur ausgeblendet.
+        val windowOpen = raw != null && raw.runState != "COMPLETED" && raw.runState != "CANCELED"
+        val stops = raw?.stops.orEmpty().map { if (windowOpen || it.assistance == null) it else it.copy(assistance = null) }
+        if (windowOpen) recordAssistanceAccess(ctx, s.id, raw!!.planRevision, stops.filter { it.assistance != null }.map { it.routeStopId })
         val missing = if (!valid) emptyList() else gate.missing
-        return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, projection?.planRevision ?: planRevision, now, projection?.stops.orEmpty(), null)
+        return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, stops, null)
+    }
+
+    /** Abrufprotokoll der Unterstützungsmerkmale (DRV-008): je Abruf, der Merkmale ausliefert, genau ein `audit_event` mit Schicht, Planrevision, Zweck und Stopps, ohne Merkmalswerte. */
+    private fun recordAssistanceAccess(ctx: RequestContext, shiftId: UUID, planRevision: Long, stopIds: List<UUID>) {
+        if (stopIds.isEmpty()) return
+        ctxTx.run(ctx) { j -> auditAssistance(j, ctx, shiftId, planRevision, stopIds) }
+    }
+
+    @AuditRequired
+    private fun auditAssistance(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, planRevision: Long, stopIds: List<UUID>) {
+        audit.record(j, AuditEntry(actor(ctx), AuditActions.DRIVER_ASSISTANCE_VIEWED, ObjectRef("staff_shift", shiftId), ctx.correlationId,
+            mapOf("purpose" to "TRANSPORT_ASSISTANCE", "plan_revision" to planRevision, "stop_count" to stopIds.size, "route_stop_ids" to stopIds.map { it.toString() }), clock.instant()))
     }
 
     @AuditRequired

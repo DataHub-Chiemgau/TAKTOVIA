@@ -10,6 +10,7 @@ import de.taktovia.bookingdispatch.api.RunPlans
 import de.taktovia.bookingdispatch.api.RunState
 import de.taktovia.bookingdispatch.api.RunView
 import de.taktovia.bookingdispatch.api.StopMovement
+import de.taktovia.platform.api.Etag
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
@@ -97,7 +98,9 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
     /** Wie [appendRevision], aber in der Transaktion des Aufrufers; der Zeilenlock des Umlaufs wird (erneut) genommen. */
     internal fun appendIn(j: JdbcOperations, ctx: RequestContext, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan {
         val run = load(j, runId, true)
-        if (run.revision != expectedRevision) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Fahrtenplan wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        if (run.revision != expectedRevision) throw ProblemException(
+            ErrorCode.REVISION_MISMATCH, "Der Fahrtenplan wurde zwischenzeitlich geändert; aktuelle Revision ${run.revision} lesen.", headers = mapOf("ETag" to Etag.format(run.revision)),
+        )
         if (run.state !in RunState.PLAN_CHANGEABLE) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Im Zustand ${run.state} ist keine Planänderung möglich.")
         val capacity = ResourceVector.parse(
             j.queryForObject("SELECT capacity_config::text FROM taktovia.vehicle WHERE id = ?", String::class.java, run.vehicleId)!!, "/vehicle/capacity_config",
@@ -112,6 +115,7 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
             if ((s.legDurationSec == null) != (s.legDistanceM == null)) throw ProblemException.invalid(Violation("/stops/${s.seq}/leg_duration_sec", ViolationCode.REQUIRED))
         }
         val next = run.revision + 1
+        val before = readPlan(j, runId, run.revision)
         // Revision zuerst (Datenbank prüft +1), dann die Stopps der neuen Revision
         j.update("UPDATE taktovia.vehicle_run SET revision = ? WHERE id = ?", next, runId)
         ordered.forEach { s ->
@@ -121,9 +125,29 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
                 UUID.randomUUID(), runId, next, s.seq, s.stopRevisionId, Timestamp.from(s.plannedAt), movementsJson(s.boardings), movementsJson(s.alightings), s.legDurationSec, s.legDistanceM,
             )
         }
+        // Änderungsstrom (WP-M2-28): Planänderung und Änderung je Buchung in derselben Transaktion wie Revision und Ereignis
+        val changes = PlanDiff.changes(before.stops, ordered, affectedBookingIds.toSet())
+        val changeId = UUID.randomUUID()
+        j.update("INSERT INTO taktovia.plan_change(tenant_id, id, run_id, run_revision, previous_revision, cause) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?)", changeId, runId, next, run.revision, cause.name)
+        val numbered = changes.map { c ->
+            // fortlaufende Nummer der Änderungen einer Buchung; der Advisory-Lock hält zwei Umläufe, die dieselbe Buchung berühren, in Reihe
+            j.query("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", { _, _ -> 0 }, "plan_change_booking|${ctx.tenant}|${c.bookingId}")
+            val n = j.queryForObject("SELECT coalesce(max(booking_seq), 0) + 1 FROM taktovia.plan_change_booking WHERE booking_id = ?", Long::class.java, c.bookingId)!!
+            j.update(
+                "INSERT INTO taktovia.plan_change_booking(tenant_id, plan_change_id, booking_id, kind, booking_seq, pickup_before, pickup_after, dropoff_before, dropoff_after) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?)",
+                changeId, c.bookingId, c.kind.name, n, c.pickupBefore?.let(Timestamp::from), c.pickupAfter?.let(Timestamp::from), c.dropoffBefore?.let(Timestamp::from), c.dropoffAfter?.let(Timestamp::from),
+            )
+            c.copy(sequence = n)
+        }
         outbox.append(j, OutboxEvent(runId, next, "dispatch.run_revised", linkedMapOf(
             "run_id" to runId.toString(), "previous_revision" to run.revision, "revision" to next, "cause" to cause.name,
-            "affected_booking_ids" to affectedBookingIds.map { it.toString() },
+            "affected_booking_ids" to numbered.map { it.bookingId.toString() }.take(100),
+            "booking_changes" to numbered.take(100).map { c ->
+                linkedMapOf<String, Any?>("booking_id" to c.bookingId.toString(), "kind" to c.kind.name, "sequence" to c.sequence).also { m ->
+                    c.pickupBefore?.let { m["pickup_before"] = it.toString() }; c.pickupAfter?.let { m["pickup_after"] = it.toString() }
+                    c.dropoffBefore?.let { m["dropoff_before"] = it.toString() }; c.dropoffAfter?.let { m["dropoff_after"] = it.toString() }
+                }
+            },
         ), clock.instant(), correlationId = ctx.correlationId))
         return RunPlan(runId, next, ordered)
     }

@@ -13,7 +13,11 @@ import de.taktovia.stafftime.api.EndShiftCommand
 import de.taktovia.stafftime.api.StafftimeApi
 import de.taktovia.stafftime.api.StartShiftCommand
 import jakarta.servlet.http.HttpServletRequest
+import de.taktovia.platform.api.Etag
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -46,10 +50,19 @@ class DriverShiftController(private val staff: StafftimeApi) {
     fun end(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): Map<String, Any?> =
         json(staff.driverShifts.end(RequestContexts.require(request), EndShiftCommand(uuid(body, "shift_id"), uuid(body, "device_id"))))
 
+    /**
+     * Fahrerprojektion mit starkem ETag = Planrevision und bedingtem Abruf: `If-None-Match` mit dem aktuellen ETag liefert 304 ohne Inhalt, **solange sich nur der Plan-Stand gemerkt
+     * haben könnte**: bei gültiger, freigegebener Schicht mit Stopps. Eine Schicht ohne Aufträge (Leerzustand, Schichtende, Entzug, fehlende Freigabe) antwortet immer 200, damit der
+     * Client nie einen alten Plan behält, wenn der Dienst endete (WP-M3-26, WP-M3-32).
+     */
     @GetMapping("/v1/driver/shifts/{shift_id}/run")
-    fun run(@PathVariable("shift_id") id: UUID, request: HttpServletRequest): DriverRunResource {
+    fun run(@PathVariable("shift_id") id: UUID, @RequestHeader("If-None-Match", required = false) ifNoneMatch: String?, request: HttpServletRequest): ResponseEntity<DriverRunResource> {
         val r = staff.driverShifts.run(RequestContexts.require(request), id)
-        return DriverRunResource(json(r), r.planRevision ?: 0L)
+        val revision = r.planRevision ?: 0L
+        val etag = Etag.format(revision)
+        if (ifNoneMatch != null && ifNoneMatch.trim() == etag && r.shiftValid && r.releaseState == de.taktovia.stafftime.api.RunReleaseState.RELEASED && r.stops.isNotEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build()
+        return ResponseEntity.ok().body(DriverRunResource(json(r), revision))
     }
 
     private fun uuid(body: Map<String, Any?>, key: String): UUID =
@@ -66,9 +79,12 @@ class DriverShiftController(private val staff: StafftimeApi) {
         "stops" to r.stops.map { json(it) }, "acknowledged_revision" to r.acknowledgedRevision,
     )
 
-    private fun json(s: DriverRunStopView): Map<String, Any?> = linkedMapOf(
+    private fun json(s: DriverRunStopView): Map<String, Any?> = linkedMapOf<String, Any?>(
         "route_stop_id" to s.routeStopId.toString(), "sequence" to s.sequence, "kind" to s.kind, "planned_at" to s.plannedAt.toString(), "forecast_at" to s.forecastAt?.toString(), "stop_name" to s.stopName,
         "position" to linkedMapOf("latitude" to s.latitude, "longitude" to s.longitude), "passenger_count" to s.passengerCount, "booking_ids" to s.bookingIds.map { it.toString() }, "change" to s.change,
-        "support_hints" to s.supportHints,
-    )
+        "support_hints" to s.supportHints, "stop_revision_id" to s.stopRevisionId?.toString(), "boarding_count" to s.boardingCount, "alighting_count" to s.alightingCount,
+        "resource_need" to s.resourceNeed?.let { linkedMapOf("seats" to it.seats, "wheelchair" to it.wheelchair, "equipment" to it.equipment) },
+    ).also { m ->
+        s.assistance?.let { m["assistance"] = linkedMapOf("wheelchair_required" to it.wheelchairRequired, "boarding_assist" to it.boardingAssist, "alighting_assist" to it.alightingAssist) }
+    }
 }
