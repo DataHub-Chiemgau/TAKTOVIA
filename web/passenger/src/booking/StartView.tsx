@@ -354,7 +354,7 @@ export function StartView({ now = Date.now }: { now?: () => number } = {}) {
               }
             />
           ) : null}
-          <AnstehendeBuchungen zone={zone} now={now} />
+          <AnstehendeBuchungen zone={zone} />
         </>
       )}
     </ScreenFrame>

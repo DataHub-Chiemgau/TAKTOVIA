@@ -89,9 +89,11 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
         arrival_earliest: '2026-11-10T08:07:00Z',
         arrival_latest: '2026-11-10T08:22:00Z',
       },
+      bereich: 'vergangen',
     });
     const storniert = buchung('00000000-0000-4000-8000-0000000000a3', 'BK-2026-000003', {
       state: 'CANCELED',
+      bereich: 'storniert',
     });
     const offen = buchung('00000000-0000-4000-8000-0000000000a1', 'BK-2026-000001');
     const { client, world } = buchungsWelt({ bookings: [vergangen, storniert, offen] });
@@ -106,7 +108,7 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
     expect(screen.getByRole('radio', { name: 'Jetzt losfahren' })).toBeInTheDocument();
     expect(await screen.findByText('Der Dienst ist in Betrieb.')).toBeInTheDocument();
     // Statuswechsel während der Anzeige: nach dem Aktualisieren ist die Buchung nicht mehr „anstehend“
-    world.bookings[2] = { ...offen, state: 'CANCELED' };
+    world.bookings[2] = { ...offen, state: 'CANCELED', bereich: 'storniert' };
     fireEvent.click(within(liste).getByRole('button', { name: 'Aktualisieren' }));
     await waitFor(() =>
       expect(within(liste).getByText('Sie haben keine anstehenden Buchungen.')).toBeInTheDocument(),

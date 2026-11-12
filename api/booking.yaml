@@ -255,7 +255,7 @@ paths:
     get:
       summary: Eigene Buchungen auflisten
       operationId: listBookings
-      description: 'Eigene Buchungen, aufsteigend nach `(created_at, id)`. `bereich` filtert nach dem serverseitig zugeordneten Bereich (`bevorstehend`, `laufend`, `vergangen`, `storniert`, WP-M2-45); ein anderer Wert ist `422`, ein Cursor einer anderen Sicht (anderer Bereich) `422`.'
+      description: 'Eigene Buchungen, aufsteigend nach `(created_at, id)`. `bereich` filtert nach dem serverseitig zugeordneten Bereich (`bevorstehend`, `laufend`, `vergangen`, `storniert`, WP-M2-45); ein anderer Wert ist `422`, ein Cursor einer anderen Sicht (anderer Bereich, anderer Fahrgast) wird mit `400` abgewiesen.'
       security:
       - oidc:
         - rides:read

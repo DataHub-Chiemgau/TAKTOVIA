@@ -93,6 +93,10 @@ export interface ReiseWelt {
   count: (id: string) => number;
   entry: (change: Omit<PlanChangeBooking, 'booking_id'>, bookingId?: string) => PassengerPlanChange;
   planChange: (pickupAt: string, dropoffAt?: string) => PassengerPlanChange;
+  /** Alle Buchungen der Welt (die geöffnete und die weiteren). */
+  alle: () => RideBooking[];
+  /** Ändert eine Buchung wie ein Statuswechsel auf dem Server; `mitEintrag` legt zusätzlich einen Eintrag im Änderungsstrom an (Plan ohne die Buchung). */
+  setze: (id: string, patch: Partial<RideBooking>, mitEintrag?: boolean) => void;
 }
 
 export function reiseWelt(initial: RideBooking = basisBuchung(), others: RideBooking[] = []) {
@@ -107,6 +111,23 @@ export function reiseWelt(initial: RideBooking = basisBuchung(), others: RideBoo
     before: new Map<string, () => void>(),
     failNext: new Map<string, ApiError>(),
     count: (id: string) => w.calls.filter((c) => c.id === id).length,
+    alle: () => [w.booking, ...w.others],
+    setze(id, patch, mitEintrag = false) {
+      if (w.booking.id === id) w.booking = { ...w.booking, ...patch };
+      else w.others = w.others.map((b) => (b.id === id ? { ...b, ...patch } : b));
+      if (mitEintrag)
+        w.entry(
+          {
+            kind: 'REMOVED',
+            sequence: 99,
+            pickup_before: null,
+            pickup_after: null,
+            dropoff_before: null,
+            dropoff_after: null,
+          },
+          id,
+        );
+    },
     entry(change: Omit<PlanChangeBooking, 'booking_id'>, bookingId = w.booking.id) {
       w.cursor += 1;
       const e: PassengerPlanChange = {
@@ -179,6 +200,26 @@ export function reiseWelt(initial: RideBooking = basisBuchung(), others: RideBoo
               correlation_id: '77777777-7777-4777-8777-777777777777',
             });
           return structuredClone(b);
+        }
+        case 'listBookings': {
+          const bereich = (args.query as { bereich?: string } | undefined)?.bereich;
+          if (
+            bereich !== undefined &&
+            !['bevorstehend', 'laufend', 'vergangen', 'storniert'].includes(bereich)
+          )
+            throw new ApiError(422, {
+              type: 'about:blank',
+              title: 'x',
+              status: 422,
+              code: 'VALIDATION_FAILED',
+              correlation_id: '77777777-7777-4777-8777-777777777777',
+            });
+          if (w.down) throw new ApiError(0);
+          return structuredClone({
+            items: w.alle().filter((b) => bereich === undefined || b.bereich === bereich),
+            next_cursor: null,
+            as_of: '2026-11-21T06:00:00Z',
+          });
         }
         case 'getPlanChangesSnapshot':
           return {

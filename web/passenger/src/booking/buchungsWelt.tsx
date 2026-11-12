@@ -175,7 +175,11 @@ export function buchungsWelt(options: WeltOptions = {}) {
             traffic_product: null,
           });
         case 'listBookings':
-          return reply({ items: w.bookings, next_cursor: null, as_of: '2026-11-20T07:50:00Z' });
+          return reply({
+            items: w.bookings.filter((b) => !query.bereich || b.bereich === query.bereich),
+            next_cursor: null,
+            as_of: '2026-11-20T07:50:00Z',
+          });
         case 'searchPlaces':
           return reply({
             items: [
