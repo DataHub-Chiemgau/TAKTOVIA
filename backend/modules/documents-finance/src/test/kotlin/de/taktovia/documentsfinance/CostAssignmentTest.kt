@@ -1,5 +1,6 @@
 package de.taktovia.documentsfinance
 
+import de.taktovia.documentsfinance.api.ExpenseView
 import de.taktovia.documentsfinance.api.AssignCosts
 import de.taktovia.documentsfinance.api.CostObjectKind
 import de.taktovia.documentsfinance.api.EicarSignatureScanner
