@@ -7,6 +7,7 @@ import de.taktovia.fleetsafety.api.InspectionView
 import de.taktovia.fleetsafety.api.StartInspection
 import de.taktovia.fleetsafety.api.CreateInspectionAmendment
 import de.taktovia.fleetsafety.api.InspectionAmendmentView
+import de.taktovia.fleetsafety.api.JustifyInspectionAnswer
 import de.taktovia.fleetsafety.api.SaveInspectionDraft
 import de.taktovia.fleetsafety.api.SubmitInspection
 import de.taktovia.platform.api.Etag
@@ -55,6 +56,13 @@ class InspectionController(private val fleet: FleetsafetyApi) {
         return resource(fleet.inspections.saveDraft(RequestContexts.require(request), id, expected, SaveInspectionDraft.parse(body)))
     }
 
+    /** Begründete Freigabe eines unplausiblen Startwerts (WP-M3-17, `justifyInspectionAnswer`): Disposition, Werkstatt, Betriebsleitung; `If-Match` ist die Revision des Laufs. */
+    @PostMapping("/v1/inspections/{inspection_id}/answers/{step_code}/justification")
+    fun justify(@PathVariable("inspection_id") id: UUID, @PathVariable("step_code") stepCode: String, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): InspectionResource {
+        val expected = Etag.parseIfMatch(ifMatch)
+        return resource(fleet.inspections.justify(RequestContexts.require(request), id, expected, stepCode, JustifyInspectionAnswer.parse(body)))
+    }
+
     /** Nachtrag zu einer Originalantwort des abgeschlossenen Laufs (WP-M3-15, `createInspectionAmendment`): Pflichtgrund, versioniert, überschreibt nie. */
     @PostMapping("/v1/inspections/{inspection_id}/amendments")
     fun amend(@PathVariable("inspection_id") id: UUID, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<Map<String, Any?>> {
@@ -80,7 +88,11 @@ class InspectionController(private val fleet: FleetsafetyApi) {
         },
         "completed_by" to v.completedBy,
         "amendments" to v.amendments.map { amendment(it) },
-        "answers" to v.answers.map { linkedMapOf("step_code" to it.stepCode, "answer" to it.answer, "number_value" to it.numberValue, "note" to it.note, "answered_at" to it.answeredAt.toString()) },
+        "answers" to v.answers.map { a ->
+            linkedMapOf("step_code" to a.stepCode, "answer" to a.answer, "number_value" to a.numberValue, "text_value" to a.textValue, "note" to a.note, "answered_at" to a.answeredAt.toString(),
+                "plausibility" to a.plausibility?.name, "previous_value" to a.previousValue,
+                "justification" to a.justification?.let { linkedMapOf("reason" to it.reason, "justified_by" to it.justifiedBy, "justified_at" to it.justifiedAt.toString()) })
+        },
         "release" to v.release?.let { linkedMapOf("release_id" to it.releaseId.toString(), "valid_until" to it.validUntil.toString(), "safety_revision" to it.safetyRevision) },
         "started_at" to v.startedAt.toString(), "completed_at" to v.completedAt?.toString(), "received_at" to v.receivedAt?.toString(), "revision" to v.revision,
         "template" to linkedMapOf(

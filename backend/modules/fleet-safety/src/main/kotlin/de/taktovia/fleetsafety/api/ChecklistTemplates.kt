@@ -11,7 +11,11 @@ import java.util.UUID
 
 /** Eingabetypen eines Prüfelements (Schema `checklist-input-types.v1`, WP-M3-10): Status OK/Mangel/Nicht anwendbar, Zahl mit Grenzen, kurzer Text. */
 enum class ChecklistInputKind(val code: String) {
-    OK_DEFECT_NA("OK_DEFECT_NA"), NUMBER("NUMBER"), TEXT_SHORT("TEXT_SHORT");
+    OK_DEFECT_NA("OK_DEFECT_NA"), NUMBER("NUMBER"), TEXT_SHORT("TEXT_SHORT"),
+    /** Schichtstartwerte (WP-M3-17, CHK-008): Kilometerstand (ganze Zahl), Energie/Tank in Prozent 0 bis 100, Fahrzeugidentität (Eingabe) mit Abgleich gegen das zugewiesene Fahrzeug. */
+    ODOMETER_KM("ODOMETER_KM"), ENERGY_PCT("ENERGY_PCT"), VEHICLE_IDENTITY("VEHICLE_IDENTITY");
+    /** Schichtstartwert: Statuswert Mangel ist hier nicht sinnvoll, der Wert selbst wird geprüft. */
+    val isStartValue: Boolean get() = this == ODOMETER_KM || this == ENERGY_PCT || this == VEHICLE_IDENTITY
     companion object { fun parse(code: String?): ChecklistInputKind? = entries.firstOrNull { it.code == code } }
 }
 
@@ -158,7 +162,7 @@ interface ChecklistTemplates {
 data class ChecklistStepRule(val code: String, val kind: ChecklistInputKind, val mandatory: Boolean, val naRequiresReason: Boolean, val numberMin: BigDecimal?, val numberMax: BigDecimal?)
 
 /** Antwort eines Fahrers auf ein Prüfelement (Rohwerte, noch ungeprüft). */
-data class ChecklistAnswer(val stepCode: String, val status: String?, val numberValue: BigDecimal?, val note: String?)
+data class ChecklistAnswer(val stepCode: String, val status: String?, val numberValue: BigDecimal?, val note: String?, val textValue: String? = null)
 
 /**
  * Validierung der Antworten gegen die **feste** Vorlagenrevision (LH-6.21-CHK-003, Originalabnahme): fehlende Pflichtantwort, Wert außerhalb des Eingabetyps, „Nicht anwendbar“
@@ -193,10 +197,42 @@ object ChecklistAnswerValidator {
                     else if (status == ChecklistAnswerStatus.OK && a.note!!.length > ChecklistLimits.MAX_TEXT_ANSWER) out += Violation("$base/note", ViolationCode.TOO_LONG)
                 }
                 ChecklistInputKind.OK_DEFECT_NA -> if (a.numberValue != null) out += Violation("$base/number_value", ViolationCode.INVALID_VALUE)
+                ChecklistInputKind.ODOMETER_KM, ChecklistInputKind.ENERGY_PCT, ChecklistInputKind.VEHICLE_IDENTITY -> startValue(rule.kind, status, a, base, out)
             }
+            if (!rule.kind.isStartValue && a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE)
         }
         if (complete) steps.filter { it.mandatory && it.code !in seen && answers.none { a -> a.stepCode == it.code } }.forEach { out += Violation("/answers/${it.code}", ViolationCode.REQUIRED) }
         return out
+    }
+
+    /** Obergrenze des Kilometerstands (Plausibilitätsgrenze der Eingabe, nicht des Fahrzeugs). */
+    const val MAX_ODOMETER_KM = 5_000_000L
+
+    private fun startValue(kind: ChecklistInputKind, status: String, a: ChecklistAnswer, base: String, out: MutableList<Violation>) {
+        if (status == ChecklistAnswerStatus.DEFECT) { out += Violation("$base/answer", ViolationCode.NOT_IN_ENUM); return }   // ein Startwert ist kein Mangelbefund
+        if (status != ChecklistAnswerStatus.OK) { if (a.numberValue != null) out += Violation("$base/number_value", ViolationCode.INVALID_VALUE); if (a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE); return }
+        when (kind) {
+            ChecklistInputKind.ODOMETER_KM -> {
+                val n = a.numberValue
+                if (n == null) out += Violation("$base/number_value", ViolationCode.REQUIRED)
+                else if (n.stripTrailingZeros().scale() > 0) out += Violation("$base/number_value", ViolationCode.TYPE_MISMATCH)
+                else if (n.signum() < 0) out += Violation("$base/number_value", ViolationCode.BELOW_MINIMUM)
+                else if (n > BigDecimal(MAX_ODOMETER_KM)) out += Violation("$base/number_value", ViolationCode.ABOVE_MAXIMUM)
+                if (a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE)
+            }
+            ChecklistInputKind.ENERGY_PCT -> {
+                val n = a.numberValue
+                if (n == null) out += Violation("$base/number_value", ViolationCode.REQUIRED)
+                else if (n.signum() < 0) out += Violation("$base/number_value", ViolationCode.BELOW_MINIMUM)
+                else if (n > BigDecimal(100)) out += Violation("$base/number_value", ViolationCode.ABOVE_MAXIMUM)
+                if (a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE)
+            }
+            else -> {
+                if (a.textValue.isNullOrBlank()) out += Violation("$base/text_value", ViolationCode.REQUIRED)
+                else if (a.textValue.length > 100) out += Violation("$base/text_value", ViolationCode.TOO_LONG)
+                if (a.numberValue != null) out += Violation("$base/number_value", ViolationCode.INVALID_VALUE)
+            }
+        }
     }
 
     /** Wie [validate], wirft aber 422 mit allen Verstößen. */

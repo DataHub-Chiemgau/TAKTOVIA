@@ -57,7 +57,16 @@ data class StartInspection(val shiftId: UUID, val vehicleId: UUID, val kind: Str
 /** Prüfschritt der festen Vorlagenrevision des Laufs (Sicht der Fahrer-App: „Prüfung n / [InspectionTemplateView.steps].size“). */
 data class InspectionTemplateView(val revisionId: UUID, val templateId: UUID, val version: Int, val vehicleClass: String, val serviceMode: String, val steps: List<ChecklistStepView>)
 
-data class InspectionAnswerView(val stepCode: String, val answer: String, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant)
+/** Plausibilitätsstand eines Schichtstartwerts (Arbeitsnamen laut Detailvertrag CHK-008). */
+enum class Plausibility { PLAUSIBEL, UEBERPRUEFUNG_ERFORDERLICH, BEGRUENDET_FREIGEGEBEN }
+
+/** Begründete Freigabe eines unplausiblen Startwerts: Akteur, Zeit und Begründung stehen im Prüfnachweis. */
+data class AnswerJustification(val reason: String, val justifiedBy: String, val justifiedAt: Instant)
+
+data class InspectionAnswerView(
+    val stepCode: String, val answer: String, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant,
+    val textValue: String? = null, val plausibility: Plausibility? = null, val previousValue: java.math.BigDecimal? = null, val justification: AnswerJustification? = null,
+)
 
 data class InspectionReleaseView(val releaseId: UUID, val validUntil: Instant, val safetyRevision: Long)
 
@@ -74,10 +83,10 @@ data class InspectionView(
 )
 
 /** Antwort im Entwurf oder im Abschluss, wie der Client sie liefert (Rohwerte; die Prüfung gegen die Vorlagenrevision macht der Server). */
-data class AnswerInput(val stepCode: String, val answer: String?, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant)
+data class AnswerInput(val stepCode: String, val answer: String?, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant, val textValue: String? = null)
 
 internal object AnswerParsing {
-    private val FIELDS = setOf("step_code", "answer", "number_value", "note", "evidence_ids", "answered_at")
+    private val FIELDS = setOf("step_code", "answer", "number_value", "text_value", "note", "evidence_ids", "answered_at")
     private val CODE = Regex("^[A-Z][A-Z0-9_]{1,59}$")
 
     /** Liest die Antwortliste; jede Verletzung mit Pointer `/answers/<i>/…` (422). Unbekannte Felder (z. B. Prüfer, Mandant, Ergebnis) werden abgewiesen, nie übernommen. */
@@ -103,11 +112,13 @@ internal object AnswerParsing {
                 else -> { t.add("/number_value", ViolationCode.TYPE_MISMATCH); null }
             }
             val note = when (val n = a["note"]) { null -> null; is String -> n; else -> { t.add("/note", ViolationCode.TYPE_MISMATCH); null } }
+            val text = when (val n = a["text_value"]) { null -> null; is String -> n.trim().takeIf { it.isNotEmpty() } ?: run { t.add("/text_value", ViolationCode.TOO_SHORT); null }; else -> { t.add("/text_value", ViolationCode.TYPE_MISMATCH); null } }
+            if (text != null && text.length > 100) t.add("/text_value", ViolationCode.TOO_LONG)
             // Fotoevidenz an Prüfantworten gehört zu WP-M3-20 (Abweichung mit Foto); bis dahin werden Verweise nicht stillschweigend ignoriert
             if ((a["evidence_ids"] as? List<*>)?.isNotEmpty() == true || (a["evidence_ids"] != null && a["evidence_ids"] !is List<*>)) t.add("/evidence_ids", ViolationCode.INVALID_VALUE)
             val at = t.instant(a, "answered_at", true)
             t.list.forEach { v.add(p + it.pointer, it.code) }
-            if (t.list.isEmpty()) out += AnswerInput(code!!, answer!!, number, note, at!!)
+            if (t.list.isEmpty()) out += AnswerInput(code!!, answer!!, number, note, at!!, text)
         }
         return out
     }
@@ -192,6 +203,13 @@ interface Inspections {
      */
     fun amend(ctx: RequestContext, id: UUID, cmd: CreateInspectionAmendment): InspectionAmendmentView
 
+    /**
+     * Begründete Freigabe eines unplausiblen Startwerts (WP-M3-17): Disposition, Werkstatt und Betriebsleitung (Planungsannahme, OP-15), nicht der Fahrer. Speichert den freigegebenen
+     * Wert im Entwurf mit Plausibilitätsstand `BEGRUENDET_FREIGEGEBEN`, Akteur, Zeit und Begründung. Der Wert muss tatsächlich unplausibel sein (sonst 422); leere Begründung 422;
+     * Lauf nicht offen 409; veraltete Revision 412. Erhöht die Revision des Laufs.
+     */
+    fun justify(ctx: RequestContext, id: UUID, expectedRevision: Long, stepCode: String, cmd: JustifyInspectionAnswer): InspectionView
+
     /** Lesen mit fester Vorlage und gespeicherten Antworten. Fahrer sehen nur Läufe eigener Schichten (sonst 404), Disposition und Werkstatt alle Läufe des Mandanten. */
     fun get(ctx: RequestContext, id: UUID): InspectionView
 }
@@ -229,6 +247,43 @@ data class CreateInspectionAmendment(val stepCode: String, val kind: AmendmentKi
             val reason = v.text(raw, "reason", 500, true)   // Pflichtgrund: leer oder nur Leerraum ist 422
             v.throwIfAny()
             return CreateInspectionAmendment(step!!, AmendmentKind.valueOf(kind!!), answer!!, number, note, reason!!)
+        }
+    }
+}
+
+
+/**
+ * Plausibilitätsregeln der Schichtstartwerte (WP-M3-17, CHK-008): nur die festgelegten Regeln (OP-15): Kilometerstand kleiner als der letzte bestätigte Wert des Fahrzeugs; Fahrzeugidentität
+ * weicht von der Kennung des zugewiesenen Fahrzeugs der Schicht ab (Kennung `vehicle_label` ohne Beachtung von Groß-/Kleinschreibung und Leerraum, oder die Fahrzeug-ID). Energie/Tank hat
+ * nur den harten Bereich 0 bis 100 % (422 durch die Antwortvalidierung). Weitere Schwellen und der Bezug zu `min_battery_soc_pct` sind offen (OP-15).
+ */
+object StartValueRules {
+    fun odometerBelowLast(value: java.math.BigDecimal, lastConfirmedKm: Long?): Boolean = lastConfirmedKm != null && value < java.math.BigDecimal(lastConfirmedKm)
+
+    fun identityMatches(entered: String, vehicleLabel: String?, vehicleId: UUID): Boolean {
+        val e = entered.trim()
+        return (vehicleLabel != null && e.equals(vehicleLabel.trim(), ignoreCase = true)) || e.equals(vehicleId.toString(), ignoreCase = true)
+    }
+}
+
+/** Begründete Freigabe eines unplausiblen Startwerts als eigene Aktion (WP-M3-17): freigegebener Wert und Pflichtbegründung. */
+data class JustifyInspectionAnswer(val numberValue: java.math.BigDecimal?, val textValue: String?, val reason: String) {
+    companion object {
+        fun parse(raw: Map<String, Any?>): JustifyInspectionAnswer {
+            val v = Violations()
+            v.unknown(raw, setOf("number_value", "text_value", "reason"), "")
+            val number = when (val n = raw["number_value"]) {
+                null -> null
+                is Int, is Long, is Short, is Byte -> java.math.BigDecimal((n as Number).toLong())
+                is Double -> if (n.isFinite()) java.math.BigDecimal.valueOf(n) else { v.add("/number_value", ViolationCode.TYPE_MISMATCH); null }
+                is java.math.BigDecimal -> n
+                is java.math.BigInteger -> java.math.BigDecimal(n)
+                else -> { v.add("/number_value", ViolationCode.TYPE_MISMATCH); null }
+            }
+            val text = if (raw["text_value"] == null) null else v.text(raw, "text_value", 100, false)
+            val reason = v.text(raw, "reason", 500, true)   // leere Begründung: 422
+            v.throwIfAny()
+            return JustifyInspectionAnswer(number, text, reason!!)
         }
     }
 }

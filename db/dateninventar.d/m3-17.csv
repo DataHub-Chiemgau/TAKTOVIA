@@ -1,0 +1,8 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+vehicle;last_confirmed_odometer_km;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;text_value;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;plausibility;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;previous_value;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;justification_reason;nein;FLOTTE_SICHERHEIT;;;;
+inspection_answer;justified_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+inspection_answer;justified_at;nein;FLOTTE_SICHERHEIT;;;;

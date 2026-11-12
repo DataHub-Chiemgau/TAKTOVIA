@@ -965,6 +965,79 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InspectionAmendmentCreate'
+  /v1/inspections/{inspection_id}/answers/{step_code}/justification:
+    post:
+      summary: Unplausiblen Startwert begründet freigeben
+      operationId: justifyInspectionAnswer
+      security:
+      - oidc:
+        - inspections:justify
+      description: 'Gibt einen unplausiblen Schichtstartwert (Kilometerstand unter
+        dem letzten bestätigten Wert, abweichende Fahrzeugidentität) mit Begründung
+        frei und speichert die Antwort im Entwurf mit Plausibilitätsstand BEGRUENDET_FREIGEGEBEN,
+        Akteur, Zeit und Begründung (WP-M3-17, CHK-008). Solange ein unplausibler Wert
+        weder korrigiert noch begründet freigegeben ist, werden Speichern und Abschluss
+        mit 422 abgewiesen (`detail` nennt den Vorwert). Berechtigt sind Disposition,
+        Werkstatt und Betriebsleitung, nicht der Fahrer selbst (Planungsannahme, offener
+        Punkt OP-15). Begründung leer: 422; Wert ist plausibel: 422; Lauf nicht offen:
+        409; `If-Match`: Revision des Prüflaufs (412/428), jede Freigabe erhöht sie.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - name: step_code
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Prüfelement (Startwert).
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionAnswerJustification'
   /v1/inspections/{inspection_id}/known-defects:
     get:
       summary: Bekannte Altschäden zum Prüflauf
@@ -3206,6 +3279,14 @@ components:
           oneOf:
           - type: number
           - type: 'null'
+        text_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+          - type: 'null'
+          description: Fahrzeugidentität als Eingabe (Eingabetyp `VEHICLE_IDENTITY`,
+            CHK-008).
         note:
           oneOf:
           - type: string
@@ -3220,6 +3301,44 @@ components:
         answered_at:
           type: string
           format: date-time
+        plausibility:
+          oneOf:
+          - type: string
+            enum:
+            - PLAUSIBEL
+            - UEBERPRUEFUNG_ERFORDERLICH
+            - BEGRUENDET_FREIGEGEBEN
+          - type: 'null'
+          readOnly: true
+          description: Plausibilitätsstand eines Schichtstartwerts (Antwort, CHK-008);
+            setzt allein der Server; im Request ist das Feld unbekannt (422).
+        previous_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+          readOnly: true
+          description: Letzter bestätigter Kilometerstand zum Zeitpunkt der Prüfung
+            (Antwort).
+        justification:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              reason:
+                type: string
+              justified_by:
+                type: string
+              justified_at:
+                type: string
+                format: date-time
+            required:
+            - reason
+            - justified_by
+            - justified_at
+          - type: 'null'
+          readOnly: true
+          description: Begründete Freigabe eines unplausiblen Startwerts mit Akteur,
+            Zeit und Begründung (Antwort, CHK-008).
       required:
       - step_code
       - answer
@@ -3359,6 +3478,29 @@ components:
         aus Fahrzeugklasse und Bedienart. `template_revision_id` ist veraltet und wirkungslos
         (ein Client kann keine andere Vorlage wählen). `odometer_km` und `battery_soc_pct`
         werden erst mit WP-M3-17 gespeichert.
+    InspectionAnswerJustification:
+      type: object
+      additionalProperties: false
+      properties:
+        number_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        text_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason
+      description: Begründete Freigabe eines unplausiblen Startwerts (CHK-008); der
+        freigegebene Wert (`number_value` für Kilometerstand, `text_value` für die
+        Fahrzeugidentität) und die Pflichtbegründung. Akteur und Zeit setzt der Server.
     InspectionAmendmentCreate:
       type: object
       additionalProperties: false
@@ -3626,6 +3768,9 @@ components:
                     - OK_DEFECT_NA
                     - NUMBER
                     - TEXT_SHORT
+                    - ODOMETER_KM
+                    - ENERGY_PCT
+                    - VEHICLE_IDENTITY
                   photo_required_on_defect:
                     type: boolean
                   help_text:
@@ -4578,9 +4723,15 @@ components:
           - OK_DEFECT_NA
           - NUMBER
           - TEXT_SHORT
+          - ODOMETER_KM
+          - ENERGY_PCT
+          - VEHICLE_IDENTITY
           description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar,
             `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens
-            200 Zeichen).
+            200 Zeichen); Schichtstartwerte (CHK-008) `ODOMETER_KM` Kilometerstand
+            (ganze Zahl in `number_value`), `ENERGY_PCT` Energie bzw. Tankstand in
+            Prozent 0 bis 100 (`number_value`), `VEHICLE_IDENTITY` Fahrzeugkennung
+            in `text_value`, Abgleich mit dem zugewiesenen Fahrzeug.
         mandatory:
           type: boolean
         safety_critical:
@@ -4659,6 +4810,9 @@ components:
           - OK_DEFECT_NA
           - NUMBER
           - TEXT_SHORT
+          - ODOMETER_KM
+          - ENERGY_PCT
+          - VEHICLE_IDENTITY
         mandatory:
           type: boolean
         safety_critical:

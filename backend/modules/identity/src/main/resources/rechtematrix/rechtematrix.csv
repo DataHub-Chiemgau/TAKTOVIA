@@ -153,6 +153,7 @@ createInspection;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 saveInspectionDraft;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 submitInspection;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 createInspectionAmendment;inspections:amend;-;M3;N;N;N;N;N;N;J;N;N;J
+justifyInspectionAnswer;inspections:justify;-;M3;N;N;N;N;J;N;J;N;N;J
 listKnownDefects;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J
 acknowledgeKnownDefect;inspections:write;-;M3;N;J;N;N;N;N;N;N;N;J
 listVehicleKnownDefects;defects:read;-;M3;N;J;N;N;J;N;N;N;N;J

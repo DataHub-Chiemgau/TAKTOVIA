@@ -81,6 +81,7 @@ components:
             inspections:read: inspections:read
             inspections:write: inspections:write
             inspections:amend: inspections:amend
+            inspections:justify: inspections:justify
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read
@@ -167,6 +168,7 @@ components:
             inspections:read: inspections:read
             inspections:write: inspections:write
             inspections:amend: inspections:amend
+            inspections:justify: inspections:justify
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read

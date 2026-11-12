@@ -1,6 +1,11 @@
 package de.taktovia.fleetsafety.internal
 
 import de.taktovia.fleetsafety.api.AmendmentKind
+import de.taktovia.fleetsafety.api.AnswerJustification
+import de.taktovia.fleetsafety.api.ChecklistInputKind
+import de.taktovia.fleetsafety.api.JustifyInspectionAnswer
+import de.taktovia.fleetsafety.api.Plausibility
+import de.taktovia.fleetsafety.api.StartValueRules
 import de.taktovia.fleetsafety.api.AnswerInput
 import de.taktovia.fleetsafety.api.CreateInspectionAmendment
 import de.taktovia.fleetsafety.api.InspectionAmendmentView
@@ -166,11 +171,11 @@ internal class JdbcInspections(
         val steps = checklists.steps(j, run.templateRevisionId)
         val stepIds = j.query("SELECT step_code, id FROM taktovia.checklist_step WHERE template_revision_id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, run.templateRevisionId).toMap()
         // Entwurf und Abschlussantworten zusammen: die Abschlussantwort gewinnt, ein gespeicherter Entwurf geht nie still verloren
-        val drafts = j.query("SELECT step_code, answer, number_value, note, answered_at FROM taktovia.inspection_answer WHERE inspection_id = ?",
-            { rs, _ -> AnswerInput(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getString(4), rs.getTimestamp(5).toInstant()) }, id)
+        val drafts = j.query("SELECT step_code, answer, number_value, note, answered_at, text_value FROM taktovia.inspection_answer WHERE inspection_id = ?",
+            { rs, _ -> AnswerInput(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getString(4), rs.getTimestamp(5).toInstant(), rs.getString(6)) }, id)
         val submitted = cmd.answers.map { it.stepCode }.toSet()
         val merged = drafts.filter { it.stepCode !in submitted } + cmd.answers
-        val violations = ChecklistAnswerValidator.validate(steps.map { it.rule() }, merged.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note) }, complete = true).toMutableList()
+        val violations = ChecklistAnswerValidator.validate(steps.map { it.rule() }, merged.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note, it.textValue) }, complete = true).toMutableList()
         // Mangel ohne dokumentierte Beschreibung (CHK-006): Verweis auf den Punkt
         merged.filter { it.answer == ChecklistAnswerStatus.DEFECT && it.note.isNullOrBlank() && violations.none { v -> v.pointer == "/answers/${it.stepCode}/note" } }
             .forEach { violations += Violation("/answers/${it.stepCode}/note", ViolationCode.REQUIRED) }
@@ -182,20 +187,19 @@ internal class JdbcInspections(
         }
         val outcome = InspectionOutcomeRule.evaluate(steps, merged)
         val actor = actor(ctx)
-        for (a in cmd.answers) {
-            j.update(
-                "INSERT INTO taktovia.inspection_answer (tenant_id, id, inspection_id, step_code, step_id, answer, number_value, note, answered_at, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                    "ON CONFLICT (tenant_id, inspection_id, step_code) DO UPDATE SET step_id = EXCLUDED.step_id, answer = EXCLUDED.answer, number_value = EXCLUDED.number_value, note = EXCLUDED.note, " +
-                    "answered_at = EXCLUDED.answered_at, revision = taktovia.inspection_answer.revision + 1",
-                UUID.randomUUID(), id, a.stepCode, stepIds[a.stepCode], a.answer, a.numberValue, a.note?.trim()?.takeIf { it.isNotEmpty() }, Timestamp.from(a.answeredAt), actor.value,
-            )
-        }
+        // Schichtstartwerte (CHK-008) gegen den Stand des Fahrzeugs unter der Fahrzeugsperre: ein unplausibler Wert ohne begründete Freigabe hält den Abschluss auf (422)
+        val evaluated = evaluate(j, run.vehicleId, id, steps, merged)
+        val toWrite = evaluated.filter { e -> e.input.stepCode in submitted || e.plausibility != null }
+        upsert(j, id, toWrite, stepIds, actor.value)
         // Ergebnis, Zeitstempel (Gerät: completed_at, Server: received_at) und Prüfer in einem Update; Abschluss ist ab hier unveränderlich (Wächter)
         val updated = j.update(
             "UPDATE taktovia.inspection_run SET status = 'COMPLETED', outcome = ?, completed_at = ?, received_at = clock_timestamp(), safety_revision = ?, completed_by = ?, revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'",
             outcome.name, Timestamp.from(cmd.clientSubmittedAt), safetyRevision, actor.value, id, expected,
         )
         if (updated != 1) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        // letzter bestätigter Kilometerstand: nur steigend, bedingtes UPDATE unter der Fahrzeugsperre (ein später abgeschlossener Lauf mit kleinerem, begründet freigegebenem Wert senkt ihn nie)
+        evaluated.filter { it.input.answer == ChecklistAnswerStatus.OK && it.input.numberValue != null && steps.firstOrNull { st -> st.code == it.input.stepCode }?.kind == ChecklistInputKind.ODOMETER_KM }
+            .forEach { j.update("UPDATE taktovia.vehicle SET last_confirmed_odometer_km = ? WHERE id = ? AND (last_confirmed_odometer_km IS NULL OR last_confirmed_odometer_km < ?)", it.input.numberValue!!.toLong(), run.vehicleId, it.input.numberValue!!.toLong()) }
         // Einsatzfreigabe im selben Commit, nur bei bestandener Prüfung (ein kritischer Mangel erteilt keine); fehlende Voraussetzungen bleiben als Liste der Antwort sichtbar
         var releaseId: UUID? = null
         if (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED) {
@@ -228,19 +232,110 @@ internal class JdbcInspections(
             if (run.status == "COMPLETED") "Der Prüfnachweis ist abgeschlossen; eine Änderung ist nur als Nachtrag möglich." else "Der Prüflauf ist nicht mehr offen (${run.status}).")
         if (run.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         val steps = checklists.steps(j, run.templateRevisionId)
-        ChecklistAnswerValidator.require(steps.map { it.rule() }, cmd.answers.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note) }, complete = false)
+        ChecklistAnswerValidator.require(steps.map { it.rule() }, cmd.answers.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note, it.textValue) }, complete = false)
         val stepIds = j.query("SELECT step_code, id FROM taktovia.checklist_step WHERE template_revision_id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, run.templateRevisionId).toMap()
         val actor = actor(ctx)
-        for (a in cmd.answers) {
-            j.update(
-                "INSERT INTO taktovia.inspection_answer (tenant_id, id, inspection_id, step_code, step_id, answer, number_value, note, answered_at, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                    "ON CONFLICT (tenant_id, inspection_id, step_code) DO UPDATE SET step_id = EXCLUDED.step_id, answer = EXCLUDED.answer, number_value = EXCLUDED.number_value, note = EXCLUDED.note, " +
-                    "answered_at = EXCLUDED.answered_at, revision = taktovia.inspection_answer.revision + 1",
-                UUID.randomUUID(), id, a.stepCode, stepIds[a.stepCode], a.answer, a.numberValue, a.note?.trim()?.takeIf { it.isNotEmpty() }, Timestamp.from(a.answeredAt), actor.value,
-            )
-        }
+        // Startwerte: ein unplausibler Wert wird nicht still gespeichert (422 mit Vorwert) bis zur Korrektur oder begründeten Freigabe
+        upsert(j, id, evaluate(j, run.vehicleId, id, steps, cmd.answers), stepIds, actor.value)
         if (j.update("UPDATE taktovia.inspection_run SET revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'", id, expected) != 1)
             throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        return load(j, ctx, id)!!
+    }
+
+    // ------------------------------------------------------------------------------------------------ Schichtstartwerte (WP-M3-17)
+
+    private class Evaluated(val input: AnswerInput, val plausibility: Plausibility?, val previous: java.math.BigDecimal?, val justification: AnswerJustification?)
+
+    private class Stored(val number: java.math.BigDecimal?, val text: String?, val plausibility: String?, val justification: AnswerJustification?)
+
+    private fun storedAnswers(j: JdbcOperations, runId: UUID): Map<String, Stored> = j.query(
+        "SELECT step_code, number_value, text_value, plausibility, justification_reason, justified_by, justified_at FROM taktovia.inspection_answer WHERE inspection_id = ?",
+        { rs, _ -> rs.getString(1) to Stored(rs.getBigDecimal(2), rs.getString(3), rs.getString(4), rs.getString(5)?.let { AnswerJustification(it, rs.getString(6), rs.getTimestamp(7).toInstant()) }) }, runId).toMap()
+
+    /**
+     * Bewertet die Startwerte unter den Regeln [StartValueRules]. Unplausibel und nicht begründet freigegeben (Wert gleich dem freigegebenen): 422 `UEBERPRUEFUNG_ERFORDERLICH` mit
+     * Vorwert in `detail` und Verweis auf das Element. Alle anderen Antworten bleiben unverändert (Plausibilität `null`).
+     */
+    private fun evaluate(j: JdbcOperations, vehicleId: UUID, runId: UUID, steps: List<de.taktovia.fleetsafety.api.ChecklistStepView>, answers: List<AnswerInput>): List<Evaluated> {
+        val kinds = steps.associate { it.code to it.kind }
+        if (answers.none { kinds[it.stepCode]?.isStartValue == true }) return answers.map { Evaluated(it, null, null, null) }
+        val facts = j.query("SELECT vehicle_label, last_confirmed_odometer_km FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2)?.let { (it as Number).toLong() } }, vehicleId).firstOrNull() ?: throw ProblemException.notFound()
+        val stored = storedAnswers(j, runId)
+        val violations = mutableListOf<Violation>(); val details = mutableListOf<String>()
+        val out = answers.map { a ->
+            val kind = kinds[a.stepCode]
+            if (kind == null || !kind.isStartValue || a.answer != ChecklistAnswerStatus.OK) return@map Evaluated(a, null, null, null)
+            val st = stored[a.stepCode]
+            val approved = st?.plausibility == Plausibility.BEGRUENDET_FREIGEGEBEN.name && st.justification != null
+            when (kind) {
+                ChecklistInputKind.ODOMETER_KM -> if (StartValueRules.odometerBelowLast(a.numberValue!!, facts.second)) {
+                    if (approved && st!!.number?.compareTo(a.numberValue) == 0) Evaluated(a, Plausibility.BEGRUENDET_FREIGEGEBEN, facts.second?.let { java.math.BigDecimal(it) }, st.justification)
+                    else { violations += Violation("/answers/${a.stepCode}/number_value", ViolationCode.BELOW_MINIMUM); details += "${a.stepCode}: Kilometerstand unter dem letzten bestätigten Wert (Vorwert ${facts.second} km)"; Evaluated(a, Plausibility.UEBERPRUEFUNG_ERFORDERLICH, facts.second?.let { java.math.BigDecimal(it) }, null) }
+                } else Evaluated(a, Plausibility.PLAUSIBEL, facts.second?.let { java.math.BigDecimal(it) }, null)
+                ChecklistInputKind.VEHICLE_IDENTITY -> if (!StartValueRules.identityMatches(a.textValue!!, facts.first, vehicleId)) {
+                    if (approved && st!!.text.equals(a.textValue, ignoreCase = true)) Evaluated(a, Plausibility.BEGRUENDET_FREIGEGEBEN, null, st.justification)
+                    else { violations += Violation("/answers/${a.stepCode}/text_value", ViolationCode.INVALID_VALUE); details += "${a.stepCode}: Fahrzeugidentität weicht vom zugewiesenen Fahrzeug ab"; Evaluated(a, Plausibility.UEBERPRUEFUNG_ERFORDERLICH, null, null) }
+                } else Evaluated(a, Plausibility.PLAUSIBEL, null, null)
+                else -> Evaluated(a, Plausibility.PLAUSIBEL, null, null)   // Energie/Tank: der harte Bereich ist in der Antwortvalidierung
+            }
+        }
+        if (violations.isNotEmpty()) throw ProblemException(ErrorCode.VALIDATION_FAILED, "UEBERPRUEFUNG_ERFORDERLICH: " + details.joinToString("; ") + ". Wert korrigieren oder begründet freigeben lassen.", violations)
+        return out
+    }
+
+    private fun upsert(j: JdbcOperations, runId: UUID, answers: List<Evaluated>, stepIds: Map<String, UUID>, actor: String) {
+        for (e in answers) {
+            val a = e.input
+            j.update(
+                "INSERT INTO taktovia.inspection_answer (tenant_id, id, inspection_id, step_code, step_id, answer, number_value, text_value, note, answered_at, plausibility, previous_value, justification_reason, justified_by, justified_at, created_by) " +
+                    "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                    "ON CONFLICT (tenant_id, inspection_id, step_code) DO UPDATE SET step_id = EXCLUDED.step_id, answer = EXCLUDED.answer, number_value = EXCLUDED.number_value, text_value = EXCLUDED.text_value, note = EXCLUDED.note, " +
+                    "answered_at = EXCLUDED.answered_at, plausibility = EXCLUDED.plausibility, previous_value = EXCLUDED.previous_value, justification_reason = EXCLUDED.justification_reason, " +
+                    "justified_by = EXCLUDED.justified_by, justified_at = EXCLUDED.justified_at, revision = taktovia.inspection_answer.revision + 1",
+                UUID.randomUUID(), runId, a.stepCode, stepIds[a.stepCode], a.answer, a.numberValue, a.textValue, a.note?.trim()?.takeIf { it.isNotEmpty() }, Timestamp.from(a.answeredAt),
+                e.plausibility?.name, e.previous, e.justification?.reason, e.justification?.justifiedBy, e.justification?.justifiedAt?.let(Timestamp::from), actor,
+            )
+        }
+    }
+
+    override fun justify(ctx: RequestContext, id: UUID, expectedRevision: Long, stepCode: String, cmd: JustifyInspectionAnswer): InspectionView {
+        if (InspectionRoles.JUSTIFIERS.none { it in ctx.roles }) throw ProblemException(ErrorCode.FORBIDDEN, "Einen unplausiblen Startwert geben Disposition, Werkstatt und Betriebsleitung begründet frei.")
+        return ctxTx.run(ctx) { j -> doJustify(j, ctx, id, expectedRevision, stepCode, cmd) }
+    }
+
+    @AuditRequired
+    private fun doJustify(j: JdbcOperations, ctx: RequestContext, id: UUID, expected: Long, stepCode: String, cmd: JustifyInspectionAnswer): InspectionView {
+        val run = lockRun(j, ctx, id) ?: throw ProblemException.notFound()
+        if (run.status != "IN_PROGRESS") throw ProblemException(
+            if (run.status == "COMPLETED") ErrorCode.IMMUTABLE_RECORD else ErrorCode.INVALID_STATE_TRANSITION, "Der Prüflauf ist nicht mehr offen (${run.status}); ein Nachtrag ist der Weg nach dem Abschluss.")
+        if (run.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        val step = checklists.steps(j, run.templateRevisionId).firstOrNull { it.code == stepCode } ?: throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
+        val facts = j.query("SELECT vehicle_label, last_confirmed_odometer_km FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2)?.let { (it as Number).toLong() } }, run.vehicleId).first()
+        val previous: java.math.BigDecimal?
+        when (step.kind) {
+            ChecklistInputKind.ODOMETER_KM -> {
+                val n = cmd.numberValue ?: throw ProblemException.invalid(Violation("/number_value", ViolationCode.REQUIRED))
+                if (cmd.textValue != null) throw ProblemException.invalid(Violation("/text_value", ViolationCode.INVALID_VALUE))
+                ChecklistAnswerValidator.require(listOf(step.rule()), listOf(ChecklistAnswer(stepCode, ChecklistAnswerStatus.OK, n, null)), complete = false)
+                if (!StartValueRules.odometerBelowLast(n, facts.second)) throw ProblemException.invalid(Violation("/number_value", ViolationCode.INVALID_VALUE))   // plausibel: keine Freigabe nötig
+                previous = facts.second?.let { java.math.BigDecimal(it) }
+            }
+            ChecklistInputKind.VEHICLE_IDENTITY -> {
+                val t = cmd.textValue ?: throw ProblemException.invalid(Violation("/text_value", ViolationCode.REQUIRED))
+                if (cmd.numberValue != null) throw ProblemException.invalid(Violation("/number_value", ViolationCode.INVALID_VALUE))
+                if (StartValueRules.identityMatches(t, facts.first, run.vehicleId)) throw ProblemException.invalid(Violation("/text_value", ViolationCode.INVALID_VALUE))
+                previous = null
+            }
+            else -> throw ProblemException.invalid(Violation("/step_code", ViolationCode.INVALID_VALUE))   // nur Kilometerstand und Fahrzeugidentität sind begründet freigebbar
+        }
+        val actor = actor(ctx); val now = clock.instant()
+        val stepId = j.query("SELECT id FROM taktovia.checklist_step WHERE template_revision_id = ? AND step_code = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, run.templateRevisionId, stepCode).first()
+        val input = AnswerInput(stepCode, ChecklistAnswerStatus.OK, cmd.numberValue, null, now, cmd.textValue)
+        upsert(j, id, listOf(Evaluated(input, Plausibility.BEGRUENDET_FREIGEGEBEN, previous, AnswerJustification(cmd.reason, actor.value, now))), mapOf(stepCode to stepId), actor.value)
+        if (j.update("UPDATE taktovia.inspection_run SET revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'", id, expected) != 1)
+            throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        audit.record(j, AuditEntry(actor, AuditActions.INSPECTION_ANSWER_JUSTIFIED, ObjectRef("inspection", id), ctx.correlationId, linkedMapOf(
+            "step_code" to stepCode, "kind" to step.kind.code, "previous_value" to previous?.toPlainString(), "value" to cmd.numberValue?.toPlainString())))
         return load(j, ctx, id)!!
     }
 
@@ -307,8 +402,9 @@ internal class JdbcInspections(
         val tpl = j.query("SELECT template_id, version, vehicle_class, service_mode FROM taktovia.checklist_template_revision WHERE id = ?",
             { rs, _ -> InspectionTemplateView(row.revisionId, rs.getObject(1, UUID::class.java), rs.getInt(2), rs.getString(3), rs.getString(4), emptyList()) }, row.revisionId).single()
             .let { it.copy(steps = checklists.steps(j, row.revisionId)) }
-        val answers = j.query("SELECT step_code, answer, number_value, note, answered_at FROM taktovia.inspection_answer WHERE inspection_id = ? ORDER BY answered_at, step_code",
-            { rs, _ -> InspectionAnswerView(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getString(4), rs.getTimestamp(5).toInstant()) }, id)
+        val answers = j.query("SELECT step_code, answer, number_value, note, answered_at, text_value, plausibility, previous_value, justification_reason, justified_by, justified_at FROM taktovia.inspection_answer WHERE inspection_id = ? ORDER BY answered_at, step_code",
+            { rs, _ -> InspectionAnswerView(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getString(4), rs.getTimestamp(5).toInstant(), rs.getString(6), rs.getString(7)?.let { Plausibility.valueOf(it) }, rs.getBigDecimal(8),
+                rs.getString(9)?.let { AnswerJustification(it, rs.getString(10), rs.getTimestamp(11).toInstant()) }) }, id)
         val release = j.query("SELECT id, valid_until, safety_revision FROM taktovia.resource_release WHERE inspection_ref = ? AND revoked_at IS NULL ORDER BY valid_until DESC LIMIT 1",
             { rs, _ -> InspectionReleaseView(rs.getObject(1, UUID::class.java), rs.getTimestamp(2).toInstant(), rs.getLong(3)) }, id).firstOrNull()
         val missing: List<ReleaseBlocker> = when {
@@ -339,6 +435,8 @@ internal object InspectionRoles {
     val STARTERS = setOf("driver", "workshop")
     /** Nachträge zu abgeschlossenen Prüfungen (Planungsannahme zu CHK-014: die berechtigte Rolle ist nicht festgelegt): Werkstatt und Betriebsleitung, nie der Fahrer. */
     val AMENDERS = setOf("workshop", "tenant_admin")
+    /** Begründete Freigabe unplausibler Startwerte (Planungsannahme, OP-15: die Freigaberolle ist nicht festgelegt): Disposition, Werkstatt, Betriebsleitung, nie der Fahrer selbst. */
+    val JUSTIFIERS = setOf("dispatcher", "workshop", "tenant_admin")
     /** Ein Konto, das nur als Fahrer auftritt, sieht nur Läufe eigener Schichten. */
     fun driverOnly(ctx: RequestContext) = "driver" in ctx.roles && ctx.roles.none { it == "dispatcher" || it == "workshop" || it == "tenant_admin" }
 }

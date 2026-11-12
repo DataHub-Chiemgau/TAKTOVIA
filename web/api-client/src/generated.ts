@@ -1545,9 +1545,17 @@ export interface InspectionAnswer {
   step_code: string;
   answer: 'OK' | 'DEFECT' | 'NOT_APPLICABLE' | 'NOT_CHECKABLE';
   number_value?: number | null;
+  text_value?: string | null;
   note?: string | null;
   evidence_ids?: UUID[];
   answered_at: string;
+  plausibility?: 'PLAUSIBEL' | 'UEBERPRUEFUNG_ERFORDERLICH' | 'BEGRUENDET_FREIGEGEBEN' | null;
+  previous_value?: number | null;
+  justification?: {
+    reason: string;
+    justified_by: string;
+    justified_at: string;
+  } | null;
 }
 
 export interface KnownDefect {
@@ -1586,6 +1594,12 @@ export interface InspectionCreate {
   odometer_km?: number | null;
   battery_soc_pct?: number | null;
   client_started_at: string;
+}
+
+export interface InspectionAnswerJustification {
+  number_value?: number | null;
+  text_value?: string | null;
+  reason: string;
 }
 
 export interface InspectionAmendmentCreate {
@@ -1656,7 +1670,7 @@ export interface Inspection {
       title: string;
       mandatory: boolean;
       safety_critical: boolean;
-      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
       photo_required_on_defect?: boolean;
       help_text?: string | null;
       na_requires_reason?: boolean;
@@ -1890,7 +1904,7 @@ export interface ChecklistStepWrite {
   step_code: string;
   title: string;
   help_text?: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
   mandatory: boolean;
   safety_critical?: boolean;
   na_requires_reason?: boolean;
@@ -1912,7 +1926,7 @@ export interface ChecklistStepRead {
   position: number;
   title: string;
   help_text: string | null;
-  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
+  input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY';
   mandatory: boolean;
   safety_critical: boolean;
   na_requires_reason: boolean;
@@ -4012,6 +4026,13 @@ export interface Operations {
     body: InspectionAmendmentCreate;
     response: InspectionAmendment;
   };
+  justifyInspectionAnswer: {
+    path: { inspection_id: UUID; step_code: string };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: InspectionAnswerJustification;
+    response: Inspection;
+  };
   listKnownDefects: {
     path: { inspection_id: UUID };
     query: Record<string, never>;
@@ -5095,6 +5116,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   createInspectionAmendment: { method: 'POST', path: '/v1/inspections/{inspection_id}/amendments', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:amend'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  justifyInspectionAnswer: { method: 'POST', path: '/v1/inspections/{inspection_id}/answers/{step_code}/justification', pathParams: ['inspection_id', 'step_code'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:justify'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listKnownDefects: { method: 'GET', path: '/v1/inspections/{inspection_id}/known-defects', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   acknowledgeKnownDefect: { method: 'POST', path: '/v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge', pathParams: ['inspection_id', 'defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listVehicleKnownDefects: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/known-defects', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
