@@ -288,6 +288,7 @@ paths:
       security:
       - oidc:
         - rides:read
+      description: 'ETag = Buchungsrevision. Ein Client, der seinen Stand per `If-Match` mitsendet, erhält bei veralteter Revision `412 REVISION_MISMATCH`; die Antwort nennt die aktuelle Revision im `ETag`-Header, danach liest er ohne `If-Match` den aktuellen Stand (WP-M2-28, LH-6.5-OPT-010).'
       parameters:
       - name: booking_id
         in: path
@@ -295,6 +296,13 @@ paths:
         schema:
           $ref: common.yaml#/components/schemas/UUID
         description: Buchungs-ID.
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          type: string
+          pattern: ^"[0-9]+"$
+        description: Optional, bekannter Stand des Clients als starker ETag; weicht er ab, 412.
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
         '200':
@@ -314,6 +322,8 @@ paths:
         '401':
           $ref: common.yaml#/components/responses/Problem
         '403':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
           $ref: common.yaml#/components/responses/Problem
         '404':
           $ref: common.yaml#/components/responses/Problem
@@ -420,6 +430,84 @@ paths:
         '422':
           $ref: common.yaml#/components/responses/Problem
         '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/plan-changes:
+    get:
+      summary: Änderungsstrom der Planrevisionen (Fahrgastkanal)
+      operationId: listPlanChanges
+      security:
+      - oidc:
+        - rides:updates
+      description: 'Planänderungen der **eigenen** Buchungen ab `after`, aufsteigend nach Cursor (WP-M2-28, LH-6.5-OPT-010). Je Planänderung höchstens ein Eintrag, der nur die eigenen Buchungen trägt; andere Buchungen desselben Umlaufs erscheinen nie. Jede Buchung hat eine fortlaufende `sequence` (1, 2, 3 ...): der Client übernimmt einen Eintrag nur, wenn `sequence` genau eins über seinem Stand liegt, verwirft gleiche oder ältere (doppelt oder ungeordnet zugestellt) und ruft bei einer Lücke den Snapshot ab (`listPlanChangesSnapshot`). Der Cursor ist monoton, aber nicht lückenlos. Das Protokoll ist ein abfragbarer Strom; SSE oder WebSocket sind ein Transport darüber (Offener Punkt 25). Nur Rolle Fahrgast mit Fahrgastkonto; andere Rollen: 403.'
+      parameters:
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          default: 0
+        description: Cursor des zuletzt verarbeiteten Eintrags (`next_cursor` der vorigen Antwort, anfangs der `cursor` des Snapshots).
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100
+          default: 50
+        description: Höchstzahl der Planänderungen je Antwort, 1 bis 100 (Standard 50).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerPlanChangeFeed'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/plan-changes/snapshot:
+    get:
+      summary: Snapshot des Plans der eigenen Buchungen
+      operationId: getPlanChangesSnapshot
+      security:
+      - oidc:
+        - rides:updates
+      description: 'Aktueller Planstand je eigener Buchung (`sequence`, Abholzeit und Ausstiegszeit, Buchungsrevision) und der Cursor, ab dem der Strom weiterzulesen ist. Schließt die Lücke nach einem Verbindungsabbruch oder einer erkannten Revisionslücke; ein älterer Snapshot setzt den Clientstand nie zurück (Tracker).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerPlanSnapshot'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
           $ref: common.yaml#/components/responses/Problem
         '429':
           $ref: common.yaml#/components/responses/Problem
@@ -1164,3 +1252,156 @@ components:
       - items
       - next_cursor
       - as_of
+    PlanChangeBooking:
+      type: object
+      additionalProperties: false
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - ADDED
+          - REMOVED
+          - TIME_CHANGED
+          - STOP_CHANGED
+          - TOUCHED
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Fortlaufende Nummer der Planänderungen dieser Buchung (Revision je Aggregat für den Fahrgastkanal).
+        pickup_before:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        pickup_after:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        dropoff_before:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        dropoff_after:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - booking_id
+      - kind
+      - sequence
+      - pickup_before
+      - pickup_after
+      - dropoff_before
+      - dropoff_after
+      description: Änderung einer Buchung im Plan; die Zeiten sind die geplanten Ankunftszeiten am Einstiegs- bzw. Ausstiegsstopp (Plan-ETA).
+    PassengerPlanChange:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        cause:
+          type: string
+          enum:
+          - BOOKING_INSERTED
+          - BOOKING_REMOVED
+          - MANUAL_CHANGE
+          - REPLAN
+        recorded_at:
+          type: string
+          format: date-time
+        bookings:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PlanChangeBooking'
+      required:
+      - cursor
+      - cause
+      - recorded_at
+      - bookings
+    PassengerPlanChangeFeed:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PassengerPlanChange'
+        next_cursor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+    PassengerBookingPlan:
+      type: object
+      additionalProperties: false
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        sequence:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Zahl der bisherigen Planänderungen der Buchung (0 = noch keine).
+        pickup_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        dropoff_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - booking_id
+      - booking_revision
+      - sequence
+      - pickup_at
+      - dropoff_at
+    PassengerPlanSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        cursor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        bookings:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PassengerBookingPlan'
+      required:
+      - as_of
+      - cursor
+      - bookings

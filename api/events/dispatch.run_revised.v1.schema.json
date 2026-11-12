@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://taktovia.example/schemas/dispatch.run_revised.v1.schema.json",
-  "title": "Planrevision geändert (WP-M2-16/-17)",
-  "description": "Payload von `dispatch.run_revised`. Aggregat: vehicle_run. Verbraucher: M3 (Fahrtenplan, Fahrerhinweise). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
+  "title": "Planrevision geändert (WP-M2-16/-17/-28)",
+  "description": "Payload von `dispatch.run_revised`. Aggregat: vehicle_run. Verbraucher: M3 (Fahrtenplan, Fahrerhinweise). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md. Seit WP-M2-28 (additiv, Minor): `booking_changes` je betroffener Buchung (Art, fortlaufende `sequence` der Buchung, Plan-Abholzeit und -Ausstiegszeit vorher/nachher); Grundlage der adressierten Verteilung an Fahrgast und Fahrer (`/v1/plan-changes`, `/v1/driver/plan-changes`) und der Nachricht „ETA geändert“ (WP-M2-34).",
   "type": "object",
   "required": [
     "run_id",
@@ -39,6 +39,54 @@
         "type": "string",
         "format": "uuid"
       }
+    },
+    "booking_changes": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "booking_id",
+          "kind",
+          "sequence"
+        ],
+        "properties": {
+          "booking_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "enum": [
+              "ADDED",
+              "REMOVED",
+              "TIME_CHANGED",
+              "STOP_CHANGED",
+              "TOUCHED"
+            ]
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pickup_before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pickup_after": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dropoff_before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dropoff_after": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   },
   "examples": [
@@ -49,6 +97,15 @@
       "cause": "BOOKING_INSERTED",
       "affected_booking_ids": [
         "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f"
+      ],
+      "booking_changes": [
+        {
+          "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+          "kind": "ADDED",
+          "sequence": 1,
+          "pickup_after": "2026-11-01T11:00:00Z",
+          "dropoff_after": "2026-11-01T11:20:00Z"
+        }
       ]
     }
   ]

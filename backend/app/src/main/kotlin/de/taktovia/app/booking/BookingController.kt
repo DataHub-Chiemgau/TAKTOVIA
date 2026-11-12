@@ -14,6 +14,7 @@ import de.taktovia.platform.api.CursorScope
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Paging
 import de.taktovia.platform.api.Revisioned
+import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.problem.ProblemException
 import de.taktovia.platform.problem.Violation
 import de.taktovia.platform.problem.ViolationCode
@@ -54,8 +55,11 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     }
 
     @GetMapping("/v1/bookings/{booking_id}")
-    fun get(@PathVariable("booking_id") id: UUID, request: HttpServletRequest): BookingResource {
+    fun get(@PathVariable("booking_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): BookingResource {
         val b = bookings.get(RequestContexts.require(request), id)
+        // Ein Client, der seinen Stand mitsendet, bekommt bei veralteter Revision 412 mit dem aktuellen ETag (WP-M2-28)
+        if (ifMatch != null && Etag.parseIfMatch(ifMatch) != b.revision)
+            throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung hat die Revision ${b.revision}; ohne If-Match neu lesen.", headers = mapOf("ETag" to Etag.format(b.revision)))
         return BookingResource(render(b), b.revision)
     }
 

@@ -39,6 +39,9 @@ class BookingConfiguration {
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
     @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): Bookings = Bookings.create(ctxTx, outbox, quotes, config = config.effective)
 
+    /** Änderungsstrom der Planrevisionen für Fahrgast und Fahrer (WP-M2-28). */
+    @Bean fun planChanges(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.PlanChanges = de.taktovia.bookingdispatch.api.PlanChanges.create(ctxTx)
+
     @Bean fun bookingImpactProvider(): ImpactProvider = Bookings.impactProvider()
 
     @Bean fun rideOffers(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): RideOffers = RideOffers.create(ctxTx, outbox, quotes, config.effective)

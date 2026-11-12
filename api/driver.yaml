@@ -395,6 +395,84 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DriverShiftEnd'
+  /v1/driver/plan-changes:
+    get:
+      summary: Änderungsstrom der Planrevisionen (Fahrerkanal)
+      operationId: listDriverPlanChanges
+      security:
+      - oidc:
+        - driver:run
+      description: 'Jede Planrevision des Umlaufs der **eigenen** Schicht ab `after`, aufsteigend nach Cursor (WP-M2-28). Die Revisionen eines Umlaufs sind über `previous_revision` lückenlos verkettet: der Client übernimmt nur `revision` = Stand + 1, verwirft gleiche oder ältere und ruft bei einer Lücke den Snapshot (`getDriverPlanChangesSnapshot`) oder `GET /v1/driver/shifts/{shift_id}/run` ab (ETag = Planrevision). Fremde Schichten und andere Mandanten erscheinen nie; Rollen ohne `driver`: 403. Keine Kontakt-, Zahlungs- oder Unterstützungsdaten.'
+      parameters:
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          default: 0
+        description: Cursor des zuletzt verarbeiteten Eintrags (`next_cursor` der vorigen Antwort, anfangs der `cursor` des Snapshots).
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100
+          default: 50
+        description: Höchstzahl der Planänderungen je Antwort, 1 bis 100 (Standard 50).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPlanChangeFeed'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/driver/plan-changes/snapshot:
+    get:
+      summary: Snapshot der Pläne der eigenen Schichten
+      operationId: getDriverPlanChangesSnapshot
+      security:
+      - oidc:
+        - driver:run
+      description: 'Aktuelle Planrevision je eigenem Umlauf (angetretene, geplante oder veröffentlichte Schichten) und der Cursor für den Strom.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPlanSnapshot'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     DriverEvent:
@@ -932,3 +1010,118 @@ components:
       - shift
       - already_started
       description: '`already_started` = die Schicht war schon angetreten (Wiederholung oder zweites Gerät): der Zustand bleibt unverändert.'
+    DriverPlanChange:
+      type: object
+      additionalProperties: false
+      properties:
+        cursor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        cause:
+          type: string
+          enum:
+          - BOOKING_INSERTED
+          - BOOKING_REMOVED
+          - MANUAL_CHANGE
+          - REPLAN
+        recorded_at:
+          type: string
+          format: date-time
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 2
+          maximum: 9007199254740991
+        previous_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        booking_ids:
+          type: array
+          maxItems: 100
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+      required:
+      - cursor
+      - cause
+      - recorded_at
+      - shift_id
+      - run_id
+      - revision
+      - previous_revision
+      - booking_ids
+    DriverPlanChangeFeed:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DriverPlanChange'
+        next_cursor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+    DriverRunPlan:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        state:
+          type: string
+          minLength: 1
+          maxLength: 32
+        stop_count:
+          type: integer
+          minimum: 0
+          maximum: 200
+      required:
+      - shift_id
+      - run_id
+      - revision
+      - state
+      - stop_count
+    DriverPlanSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        cursor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        runs:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/DriverRunPlan'
+      required:
+      - as_of
+      - cursor
+      - runs

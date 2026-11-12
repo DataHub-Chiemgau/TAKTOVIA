@@ -32,6 +32,9 @@ interface BookingdispatchApi {
     /** Leseport Fahrtenplan (Planzeiten, Kilometer) für M4 (WP-M4-02). */
     val tripPlans: de.taktovia.platform.readports.TripPlanReadPort
 
+    /** Änderungsstrom der Planrevisionen und Snapshot je Empfängerkanal (Fahrgast, Fahrer; WP-M2-28). */
+    val planChanges: PlanChanges
+
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
             plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null }, insertionWorker: InsertionWorker? = null,
