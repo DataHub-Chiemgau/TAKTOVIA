@@ -27,14 +27,14 @@ internal class BookingHttpSupport(val world: RideOfferHttpWorld = RideOfferHttpW
     fun operator(services: List<UUID>, role: String = "dispatcher"): String { val subject = UUID.randomUUID(); env.grant(tenant, subject, role, services); return env.token(subject) }
 
     /** Gehaltenes Angebot: Token, Angebots-ID, Hold-ID, ETag der Hold-Antwort und Betrag. */
-    class Held(val account: Account, val offerId: String, val holdId: String, val etag: String, val grossMinor: Long, val run: UUID)
+    class Held(val account: Account, val offerId: String, val holdId: String, val etag: String, val grossMinor: Long, val run: UUID, val issued: OfferHttpSupport.Issued)
 
     fun held(account: Account = newAccount(), days: Long = 3, passengers: Int = 2, seats: Int = 4): Held {
         val issued = offers.issue(account.token, days, passengers); val run = offers.bind(issued, seats)
         val gross = issued.offer["gross"]["amount_minor"].asLong()
         val h = offers.hold(issued.id, account.token, issued.offer["revision"].asString(), gross)
         check(h.status == 201) { "Hold fehlgeschlagen: ${h.status} ${h.text}" }
-        return Held(account, issued.id, h.json["id"].asString(), h.header("ETag")!!.trim('"'), gross, run)
+        return Held(account, issued.id, h.json["id"].asString(), h.header("ETag")!!.trim('"'), gross, run, issued)
     }
 
     fun confirm(h: Held, token: String = h.account.token, ifMatch: String? = h.etag, gross: Long = h.grossMinor, key: String = "confirm-" + UUID.randomUUID(), holdId: String = h.holdId): Resp =
