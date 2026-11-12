@@ -2,7 +2,10 @@ package de.taktovia.app.booking
 
 import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
+import de.taktovia.bookingdispatch.api.BookingArea
 import de.taktovia.bookingdispatch.api.BookingDetail
+import de.taktovia.bookingdispatch.api.BookingTracking
+import de.taktovia.bookingdispatch.api.TrackedStop
 import de.taktovia.bookingdispatch.api.Bookings
 import de.taktovia.bookingdispatch.api.BookingReason
 import de.taktovia.bookingdispatch.api.CancelBooking
@@ -59,19 +62,22 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     @GetMapping("/v1/bookings/{booking_id}")
     fun get(@PathVariable("booking_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, request: HttpServletRequest): BookingResource {
         val ctx = RequestContexts.require(request)
-        val b = bookings.get(ctx, id)
+        val t = bookings.tracking(ctx, id)
+        val b = t.booking
         // Ein Client, der seinen Stand mitsendet, bekommt bei veralteter Revision 412 mit dem aktuellen ETag (WP-M2-28)
         if (ifMatch != null && Etag.parseIfMatch(ifMatch) != b.revision)
             throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung hat die Revision ${b.revision}; ohne If-Match neu lesen.", headers = mapOf("ETag" to Etag.format(b.revision)))
-        return BookingResource(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), b.revision)
+        return BookingResource(withTracking(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), t), b.revision)
     }
 
     @GetMapping("/v1/bookings")
-    fun list(@RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> {
+    fun list(@RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, @RequestParam(required = false) bereich: String?, request: HttpServletRequest): Map<String, Any?> {
         val ctx = RequestContexts.require(request)
-        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "bookings")
+        val area = bereich?.let { BookingArea.parse(it) ?: throw ProblemException.invalid(Violation("/\$query/bereich", ViolationCode.NOT_IN_ENUM)) }
+        // Der Cursor gehört zur Sicht (Bereich): ein Cursor einer anderen Sicht wird abgewiesen (422)
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "bookings" + (area?.let { ":" + it.code } ?: ""))
         val lim = Paging.limit(limit); val pos = Paging.position(cursor, codec, scope)
-        val rows = bookings.list(ctx, lim, pos?.let { it.createdAt to it.id })
+        val rows = bookings.list(ctx, lim, pos?.let { it.createdAt to it.id }, area)
         return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { render(it) }
     }
 
@@ -121,11 +127,30 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         return linkedMapOf("items" to items, "view" to if (v == HistoryView.AUDIT) "audit" else "reduced")
     }
 
+    /** Tracking-Felder von UI-04 (WP-M2-43/-46): Treffpunkt, Plan-ETA getrennt von der Zusage, Fahrzeugidentifikation, Stornoregel, Datenstand. */
+    private fun withTracking(booking: Map<String, Any?>, t: BookingTracking): Map<String, Any?> = LinkedHashMap(booking).also { m ->
+        t.pickupStop?.let { m["pickup_stop"] = stop(it) }; t.dropoffStop?.let { m["dropoff_stop"] = stop(it) }
+        t.eta?.let { e ->
+            m["eta"] = linkedMapOf("pickup_at" to e.pickupAt.toString(), "dropoff_at" to e.dropoffAt?.toString(), "previous_pickup_at" to e.previousPickupAt?.toString(), "plan_sequence" to e.planSequence,
+                "plan_revision" to e.planRevision, "data_as_of" to e.dataAsOf.toString(), "source" to e.source)
+        }
+        t.vehicle?.let { m["vehicle"] = linkedMapOf("label" to it.label, "vehicle_class" to it.vehicleClass) }
+        t.cancellation?.let { c -> m["cancellation"] = linkedMapOf("allowed" to c.allowed, "deadline_at" to c.deadlineAt.toString(), "deadline_min" to c.deadlineMin, "deadline_defaulted" to c.deadlineDefaulted) }
+        m["data_as_of"] = t.dataAsOf.toString()
+    }
+
+    private fun stop(s: TrackedStop): Map<String, Any?> = linkedMapOf(
+        "stop_id" to s.stopId.toString(), "revision_id" to s.revisionId.toString(), "revision" to s.revision, "name" to s.name,
+        "point" to linkedMapOf("latitude" to s.latitude, "longitude" to s.longitude), "accessibility" to JSON.readValue(s.accessibilityJson, Map::class.java),
+    )
+
     /** Zahlungsblock (WP-M2-30): getrennt vom Buchungsstatus gelesen und angefügt; fehlt die Zahlung, fehlt der Block. */
     private fun withPayment(booking: Map<String, Any?>, p: de.taktovia.farepayment.api.PaymentView?, exponent: Int): Map<String, Any?> =
         if (p == null) booking else LinkedHashMap(booking).also { it["payment"] = PaymentController.render(p, exponent) }
 
     companion object {
+        private val JSON = tools.jackson.databind.json.JsonMapper.builder().build()
+
         fun money(minor: Long, currency: String, exponent: Int) = linkedMapOf("amount_minor" to minor, "currency" to currency, "exponent" to exponent)
 
         fun render(b: BookingDetail): Map<String, Any?> {
@@ -142,6 +167,7 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
             )
             b.assistanceCodes?.let { m["assistance_codes"] = it }
             b.cancelReason?.let { m["cancel_reason"] = it.name }; b.cancelCause?.let { m["cancel_cause_class"] = it.name }
+            m["bereich"] = b.area.code
             m["promise"] = promise; m["revision"] = b.revision
             return m
         }

@@ -255,10 +255,22 @@ paths:
     get:
       summary: Eigene Buchungen auflisten
       operationId: listBookings
+      description: 'Eigene Buchungen, aufsteigend nach `(created_at, id)`. `bereich` filtert nach dem serverseitig zugeordneten Bereich (`bevorstehend`, `laufend`, `vergangen`, `storniert`, WP-M2-45); ein anderer Wert ist `422`, ein Cursor einer anderen Sicht (anderer Bereich) `422`.'
       security:
       - oidc:
         - rides:read
       parameters:
+      - name: bereich
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - bevorstehend
+          - laufend
+          - vergangen
+          - storniert
+        description: Bereichsfilter der Buchungsübersicht.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -1080,6 +1092,28 @@ components:
           $ref: '#/components/schemas/RidePayment'
         refund_hint:
           $ref: '#/components/schemas/RideRefundHint'
+        bereich:
+          type: string
+          enum:
+          - bevorstehend
+          - laufend
+          - vergangen
+          - storniert
+          description: 'Bereich der Buchungsübersicht (WP-M2-45, LH-6.3-PAX-008), serverseitig aus `state`, Ausführungszustand und Zeit berechnet (eine einzige Zuordnungsfunktion): jede Buchung liegt in genau einem Bereich. `laufend` setzt Ausführungszustände aus M3 voraus (Offener Punkt 37).'
+        pickup_stop:
+          $ref: '#/components/schemas/RideBookingStop'
+        dropoff_stop:
+          $ref: '#/components/schemas/RideBookingStop'
+        eta:
+          $ref: '#/components/schemas/RideBookingEta'
+        vehicle:
+          $ref: '#/components/schemas/RideVehicleIdentification'
+        cancellation:
+          $ref: '#/components/schemas/RideCancellationOption'
+        walk:
+          $ref: '#/components/schemas/RideWalkRoute'
+        data_as_of:
+          $ref: common.yaml#/components/schemas/Timestamp
         revision:
           type: integer
           format: int64
@@ -1095,7 +1129,221 @@ components:
       - passengers
       - wheelchair_spaces
       - promise
+      - bereich
       - revision
+    RideBookingStop:
+      type: object
+      additionalProperties: false
+      description: 'Treffpunkt der Buchung (WP-M2-43): unveränderliche Haltepunktrevision des Angebots mit Name, Lage und Zugänglichkeitsangaben (Fahrgastsicht ohne interne Felder).'
+      properties:
+        stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision_id:
+          $ref: common.yaml#/components/schemas/UUID
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        point:
+          $ref: common.yaml#/components/schemas/Point
+        accessibility:
+          $ref: geo.yaml#/components/schemas/GeoStopAccessibility
+      required:
+      - stop_id
+      - revision_id
+      - revision
+      - name
+      - point
+      - accessibility
+    RideBookingEta:
+      type: object
+      additionalProperties: false
+      description: 'Aktuelle ETA getrennt von der verbindlichen Zusage `promise` (WP-M2-43): geplante Ankunftszeit am Einstiegsstopp aus der letzten Planrevision (`source=PLAN`; die laufende Prognose-ETA folgt mit M4, WP-M4-62). `previous_pickup_at` ist nur bei einer Zeitänderung gesetzt (alt zu neu). `plan_sequence` zählt die Planänderungen der Buchung (Revisionsreihenfolge des Änderungsstroms).'
+      properties:
+        pickup_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        dropoff_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        previous_pickup_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        plan_sequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        plan_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        data_as_of:
+          $ref: common.yaml#/components/schemas/Timestamp
+        source:
+          type: string
+          enum:
+          - PLAN
+      required:
+      - pickup_at
+      - dropoff_at
+      - previous_pickup_at
+      - plan_sequence
+      - plan_revision
+      - data_as_of
+      - source
+    RideVehicleIdentification:
+      type: object
+      additionalProperties: false
+      description: 'Fahrzeugidentifikation für Fahrgäste, sobald die Buchung einem Fahrzeug im Plan zugewiesen ist (Arbeitsannahme zu Offener Punkt 35): Bezeichnung und Klasse, nie Halter, Fahrer oder Wartungsdaten.'
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 64
+        vehicle_class:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,39}$
+          - type: 'null'
+      required:
+      - label
+      - vehicle_class
+    RideCancellationOption:
+      type: object
+      additionalProperties: false
+      description: 'Stornoregel der Buchung für UI-04 (WP-M2-46): `allowed` ist, ob der Fahrgast jetzt stornieren darf (Zustand, Frist, zulässiger Grund); `deadline_at` der späteste Zeitpunkt (Beginn des zugesagten Abholfensters minus Frist). Die Entscheidung trifft der Server beim Storno erneut (`409 CANCEL_DEADLINE_EXPIRED`).'
+      properties:
+        allowed:
+          type: boolean
+        deadline_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        deadline_min:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 525600
+        deadline_defaulted:
+          type: boolean
+          description: Die Frist ist ein Planungsdefault (kein veröffentlichter Dienstparameter).
+      required:
+      - allowed
+      - deadline_at
+      - deadline_min
+      - deadline_defaulted
+    RideWalkRoute:
+      type: object
+      additionalProperties: false
+      description: 'Fußweg zum Abholhaltepunkt (WP-M2-44, LH-6.3-PAX-007) als Snapshot von Angebot bzw. Buchung: `status=ROUTE` mit Geometrie, Distanz, Gehzeit und nummerierten Wegschritten; `status=FALLBACK` bei Ausfall des Fußwegdienstes (nur Haltepunktname, Luftlinie, gekennzeichnet); `status=NO_WALK`, wenn Start und Haltepunkt zusammenfallen. Kein angebotener Weg überschreitet `stop_walk_max_m`. Karte und Textanleitung tragen denselben Snapshot (`snapshot_id`).'
+      properties:
+        status:
+          type: string
+          enum:
+          - ROUTE
+          - FALLBACK
+          - NO_WALK
+        snapshot_id:
+          $ref: common.yaml#/components/schemas/UUID
+        distance_m:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+        duration_s:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400
+        profile:
+          type: string
+          minLength: 1
+          maxLength: 32
+        map_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        fallback_reason:
+          oneOf:
+          - type: string
+            enum:
+            - ROUTING_UNAVAILABLE
+            - NO_ORIGIN_STOP
+          - type: 'null'
+        geometry:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: common.yaml#/components/schemas/Point
+        steps:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/RideWalkStep'
+        pickup_stop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        computed_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+      required:
+      - status
+      - snapshot_id
+      - distance_m
+      - duration_s
+      - profile
+      - map_version
+      - fallback_reason
+      - geometry
+      - steps
+      - pickup_stop_name
+      - computed_at
+    RideWalkStep:
+      type: object
+      additionalProperties: false
+      description: 'Ein Wegschritt der Textanleitung (WP-M2-44): `instruction` ist der ausformulierte Satz (Formulierungsregeln im Detailvertrag LH-6.3-PAX-007), `maneuver` der strukturierte Typ, Distanz und Dauer gelten für den Abschnitt bis zum nächsten Schritt.'
+      properties:
+        seq:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100
+        maneuver:
+          type: string
+          enum:
+          - START
+          - STRAIGHT
+          - TURN_LEFT
+          - TURN_RIGHT
+          - ARRIVE
+        distance_m:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000
+        duration_s:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400
+        instruction:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - seq
+      - maneuver
+      - distance_m
+      - duration_s
+      - instruction
     RidePayment:
       type: object
       additionalProperties: false

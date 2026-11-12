@@ -15,6 +15,7 @@ function buchung(id: string, n: string, over: Partial<RideBooking> = {}): RideBo
     service_id: SERVICE,
     hold_id: '88888888-8888-4888-8888-888888888880',
     state: 'CONFIRMED',
+    bereich: 'bevorstehend',
     created_at: '2026-11-19T07:51:00Z',
     passengers: 1,
     wheelchair_spaces: 0,

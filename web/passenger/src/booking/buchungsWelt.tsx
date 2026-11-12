@@ -332,6 +332,7 @@ export function buchungsWelt(options: WeltOptions = {}) {
             service_id: SERVICE,
             hold_id: body.hold_id,
             state: 'CONFIRMING',
+            bereich: 'bevorstehend',
             created_at: '2026-11-20T07:51:00Z',
             passengers: 1,
             wheelchair_spaces: 0,

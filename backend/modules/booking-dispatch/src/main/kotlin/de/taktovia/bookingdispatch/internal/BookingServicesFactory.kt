@@ -22,11 +22,11 @@ import java.time.Duration
 
 /** Nur innerhalb des Moduls `booking-dispatch` sichtbar (durch Architekturtest erzwungen). */
 internal object BookingServicesFactory {
-    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null): Bookings {
+    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null, executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE): Bookings {
         val journeys = JourneyShells.create()
         val plans = JdbcRunPlans(ctxTx, outbox, clock)
         val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock), outbox, clock, plans, journeys)
-        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation)
+        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates)
     }
 
     fun planChanges(ctxTx: ContextTransactions, clock: Clock): de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)

@@ -31,6 +31,7 @@ import { Registrierung } from './registrierung/Registrierung';
 import { Hilfe } from './hilfe/Hilfe';
 import { Start } from './booking/Start';
 import { CheckoutScreen } from './booking/CheckoutScreen';
+import { ReiseDetailScreen } from './booking/ReiseScreens';
 import { OfferScreen } from './booking/OfferScreen';
 import { OfflineBanner } from './netz/Offline';
 import { useOnline } from './netz/useOnline';
@@ -248,7 +249,7 @@ export function App() {
             path="/reisen/:bookingId"
             element={
               <RequirePassenger>
-                <Placeholder screen="ui04" />
+                <ReiseDetailScreen />
               </RequirePassenger>
             }
           />

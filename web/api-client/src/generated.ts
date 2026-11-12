@@ -1294,7 +1294,68 @@ export interface RideBooking {
   promise: RidePromise;
   payment?: RidePayment;
   refund_hint?: RideRefundHint;
+  bereich: 'bevorstehend' | 'laufend' | 'vergangen' | 'storniert';
+  pickup_stop?: RideBookingStop;
+  dropoff_stop?: RideBookingStop;
+  eta?: RideBookingEta;
+  vehicle?: RideVehicleIdentification;
+  cancellation?: RideCancellationOption;
+  walk?: RideWalkRoute;
+  data_as_of?: Timestamp;
   revision: number;
+}
+
+export interface RideBookingStop {
+  stop_id: UUID;
+  revision_id: UUID;
+  revision: number;
+  name: string;
+  point: Point;
+  accessibility: GeoStopAccessibility;
+}
+
+export interface RideBookingEta {
+  pickup_at: Timestamp;
+  dropoff_at: Timestamp | null;
+  previous_pickup_at: Timestamp | null;
+  plan_sequence: number;
+  plan_revision: number;
+  data_as_of: Timestamp;
+  source: 'PLAN';
+}
+
+export interface RideVehicleIdentification {
+  label: string;
+  vehicle_class: string | null;
+}
+
+export interface RideCancellationOption {
+  allowed: boolean;
+  deadline_at: Timestamp;
+  deadline_min: number;
+  deadline_defaulted: boolean;
+}
+
+export interface RideWalkRoute {
+  status: 'ROUTE' | 'FALLBACK' | 'NO_WALK';
+  snapshot_id: UUID;
+  distance_m: number;
+  duration_s: number;
+  profile: string;
+  map_version: string | null;
+  fallback_reason: 'ROUTING_UNAVAILABLE' | 'NO_ORIGIN_STOP' | null;
+  geometry: Point[];
+  steps: RideWalkStep[];
+  pickup_stop_name: string;
+  computed_at: Timestamp;
+}
+
+export interface RideWalkStep {
+  seq: number;
+  maneuver: 'START' | 'STRAIGHT' | 'TURN_LEFT' | 'TURN_RIGHT' | 'ARRIVE';
+  distance_m: number;
+  duration_s: number;
+  instruction: string;
 }
 
 export interface RidePayment {
@@ -4087,7 +4148,7 @@ export interface Operations {
   };
   listBookings: {
     path: Record<string, never>;
-    query: { limit?: number; cursor?: string };
+    query: { bereich?: 'bevorstehend' | 'laufend' | 'vergangen' | 'storniert'; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: RideBookingPage;
@@ -5499,7 +5560,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
-  listBookings: { method: 'GET', path: '/v1/bookings', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listBookings: { method: 'GET', path: '/v1/bookings', pathParams: [], query: ['bereich', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   confirmBooking: { method: 'POST', path: '/v1/bookings', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['If-Match', 'traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 412, 404, 429, 503] },
   listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
