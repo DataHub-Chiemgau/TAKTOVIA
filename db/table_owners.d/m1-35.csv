@@ -1,5 +1,5 @@
 table;owner;quelle
-driver;identity;WP-M1-35 (Kap. 04 §4.4 DRV/FLT, Stammteil; Fahrerstamm im Vollausbau mit M3)
-qualification_revision;identity;WP-M1-35 (Kap. 04 §4.4 DRV/FLT, Stammteil)
+driver;staff-time;WP-M1-35 (Kap. 04 §4.4 DRV/FLT, Stammteil; Fahrerstamm im Vollausbau mit M3)
+qualification_revision;staff-time;WP-M1-35 (Kap. 04 §4.4 DRV/FLT, Stammteil)
 driver_release;identity;WP-M1-35 (ResourceAssignment, OP-26)
 driver_release_projection;identity;WP-M1-35 (Projektion unter Empfängerkontext, Kap. 02 §4.2)

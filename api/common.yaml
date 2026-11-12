@@ -54,6 +54,8 @@ components:
             retention:write: retention:write
             fleet:read: fleet:read
             fleet:write: fleet:write
+            drivers:read: drivers:read
+            drivers:write: drivers:write
             me:write: me:write
             accounts:write: accounts:write
             rides:read: rides:read
@@ -115,6 +117,8 @@ components:
             retention:write: retention:write
             fleet:read: fleet:read
             fleet:write: fleet:write
+            drivers:read: drivers:read
+            drivers:write: drivers:write
             me:write: me:write
             accounts:write: accounts:write
             rides:read: rides:read

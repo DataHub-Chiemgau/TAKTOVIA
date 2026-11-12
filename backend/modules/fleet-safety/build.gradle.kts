@@ -1,5 +1,6 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
+    implementation("tools.jackson.core:jackson-databind")   // Kapazitätskonfiguration (WP-M3-04): JSON lesen und schreiben
     implementation("org.slf4j:slf4j-api")
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")

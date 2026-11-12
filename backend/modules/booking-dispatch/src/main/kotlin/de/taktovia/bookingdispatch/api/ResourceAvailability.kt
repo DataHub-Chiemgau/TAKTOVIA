@@ -16,6 +16,8 @@ enum class Unusable {
     UNKNOWN_VEHICLE,
     /** Fahrzeug gehört im Fenster nicht zum Pool des Dienstes (OP-43). */
     NOT_IN_POOL,
+    /** Fahrzeug deaktiviert (`vehicle.active = false`, Fahrzeugstamm WP-M3-03): wird nicht neu disponiert, bleibt in Historie und Nachweisen lesbar. */
+    VEHICLE_INACTIVE,
     /** `active_block = true`: Sperre des Fahrzeugs (Sicherheit). */
     VEHICLE_BLOCKED,
     /** Keine veröffentlichte Schicht, die das ganze Fenster deckt. */

@@ -22,11 +22,12 @@ import java.util.UUID
 internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, private val clock: Clock) : ResourceAvailability {
 
     private class Row(
-        val vehicleId: UUID, val inPool: Boolean, val capacity: String, val activeBlock: Boolean, val safetyRevision: Long,
+        val vehicleId: UUID, val inPool: Boolean, val capacity: String, val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean,
         val shiftId: UUID?, val shiftStart: java.time.Instant?, val shiftEnd: java.time.Instant?, val releaseId: UUID?, val releaseUntil: java.time.Instant?,
     ) {
         fun verdict(): VehicleAvailability = when {
             !inPool -> VehicleAvailability.NotUsable(vehicleId, Unusable.NOT_IN_POOL)
+            !active -> VehicleAvailability.NotUsable(vehicleId, Unusable.VEHICLE_INACTIVE)
             activeBlock -> VehicleAvailability.NotUsable(vehicleId, Unusable.VEHICLE_BLOCKED)
             shiftId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_SHIFT)
             releaseId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_VALID_RELEASE)
@@ -36,7 +37,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
 
     private val mapper = RowMapper { rs, _ ->
         Row(
-            rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"),
+            rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"),
             rs.getObject("shift_id", UUID::class.java), rs.getTimestamp("starts_at")?.toInstant(), rs.getTimestamp("ends_at")?.toInstant(),
             rs.getObject("release_id", UUID::class.java), rs.getTimestamp("valid_until")?.toInstant(),
         )
@@ -49,7 +50,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
     private fun query(j: JdbcOperations, serviceId: UUID, vehicleId: UUID?, w: TimeWindow): List<Row> {
         val from = Timestamp.from(w.from); val to = Timestamp.from(w.to)
         return j.query(
-            "SELECT v.id, (p.id IS NOT NULL) AS in_pool, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, " +
+            "SELECT v.id, (p.id IS NOT NULL) AS in_pool, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, v.active, " +
                 "s.id AS shift_id, s.starts_at, s.ends_at, r.id AS release_id, r.valid_until " +
                 "FROM taktovia.vehicle v " +
                 "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +

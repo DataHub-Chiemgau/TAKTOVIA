@@ -1,0 +1,549 @@
+paths:
+  /v1/drivers:
+    get:
+      summary: Fahrer auflisten
+      operationId: listDrivers
+      security:
+      - oidc:
+        - drivers:read
+      description: 'Fahrer des Mandanten (WP-M3-05), Listenform {items,next_cursor,as_of}. Filter `status`. HR-nahe Felder (`display_name`, `contact_channel`, `contact_value`) liefert der Server nur der Personalplanung; Dispositionssichten sehen sie als null (`hr_fields_visible` false).'
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/DriverStatus'
+        description: Nur Fahrer in diesem Status.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrer anlegen
+      operationId: createDriver
+      security:
+      - oidc:
+        - drivers:write
+      description: 'Legt einen Fahrer an und verknüpft ihn endgültig mit genau einer aktiven Mitgliedschaft der Rolle `driver` des Mandanten. Mitgliedschaft schon einem Fahrer zugeordnet: 409 mit Feldverweis /membership_id; Mitgliedschaft unbekannt, fremd, widerrufen oder mit anderer Rolle: 422 an /membership_id.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Revision des Fahrers).
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverCreate'
+  /v1/drivers/{driver_id}:
+    get:
+      summary: Fahrer lesen
+      operationId: getDriver
+      security:
+      - oidc:
+        - drivers:read
+      description: 'Ein Fahrer des Mandanten mit starkem ETag. Fremder oder unbekannter Fahrer: 404.'
+      parameters:
+      - name: driver_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrer-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Revision des Fahrers).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Fahrerstammdaten ändern
+      operationId: updateDriver
+      security:
+      - oidc:
+        - drivers:write
+      description: 'Ersetzt Stammdaten und Status des Fahrers; die Mitgliedschaft ist nach der Zuordnung nicht änderbar. If-Match: Revision des Fahrers; ohne 428, veraltet 412.'
+      parameters:
+      - name: driver_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrer-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Revision des Fahrers).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverUpdate'
+  /v1/drivers/{driver_id}/qualifications:
+    get:
+      summary: Qualifikationsrevisionen lesen
+      operationId: listDriverQualifications
+      security:
+      - oidc:
+        - drivers:read
+      description: 'Alle Revisionen der Qualifikationen des Fahrers (alte bleiben lesbar) mit den Kennzeichen `effective` (höchste nicht wartende Revision) und `valid_at` (gilt zum Zeitpunkt `at`: freigegeben und im Intervall). `only_valid=true` liefert nur die zum Zeitpunkt geltenden Qualifikationen; nicht freigegebene, entzogene und abgelaufene gelten als nicht vorhanden. `evidence_ref` ist nur für die Personalplanung gefüllt.'
+      parameters:
+      - name: driver_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrer-ID.
+      - name: at
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Zeitpunkt der Gültigkeitsprüfung (RFC 3339 mit Offset), Standard jetzt.
+      - name: only_valid
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Nur die zum Zeitpunkt geltenden Qualifikationen.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Qualifikationsrevision anlegen
+      operationId: createDriverQualification
+      security:
+      - oidc:
+        - drivers:write
+      description: 'Legt eine neue Revision an: `decision` APPROVED gibt frei (Freigeber und Zeitpunkt setzt der Server), REVOKED entzieht, PENDING legt wartend an. Jede wirksame Änderung erhöht die fortlaufende Qualifikationsnummer des Fahrers (`qualification_seq`). If-Match: Revision des Fahrers; ohne 428, veraltet 412 (die ETag-Antwort ist die neue Revision des Fahrers).'
+      parameters:
+      - name: driver_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrer-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Revision des Fahrers).
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QualificationInput'
+components:
+  schemas:
+    DriverStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - INACTIVE
+    ContactChannel:
+      type: string
+      enum:
+      - PHONE
+      - EMAIL
+      - APP
+    QualificationStatus:
+      type: string
+      enum:
+      - PENDING
+      - APPROVED
+      - REVOKED
+    DriverCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        membership_id:
+          $ref: common.yaml#/components/schemas/UUID
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contact_channel:
+          $ref: '#/components/schemas/ContactChannel'
+        contact_value:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - membership_id
+      - display_name
+      - contact_channel
+      - contact_value
+      description: Fahrer anlegen. Der Mandant steht nicht im Body.
+    DriverUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contact_channel:
+          $ref: '#/components/schemas/ContactChannel'
+        contact_value:
+          type: string
+          minLength: 1
+          maxLength: 200
+        active:
+          type: boolean
+          description: false setzt den Fahrer auf INACTIVE (keine neue Freigabe, Historie bleibt).
+      required:
+      - display_name
+      - contact_channel
+      - contact_value
+      - active
+    Driver:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        membership_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        status:
+          $ref: '#/components/schemas/DriverStatus'
+        qualification_seq:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Fortlaufende Qualifikationsnummer des Fahrers (Bezug der Einsatzfreigabe).
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        hr_fields_visible:
+          type: boolean
+        display_name:
+          oneOf:
+          - type: string
+          - type: 'null'
+        contact_channel:
+          oneOf:
+          - $ref: '#/components/schemas/ContactChannel'
+          - type: 'null'
+        contact_value:
+          oneOf:
+          - type: string
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - membership_id
+      - status
+      - qualification_seq
+      - revision
+      - hr_fields_visible
+      - display_name
+      - contact_channel
+      - contact_value
+      - created_at
+      - updated_at
+      description: Fahrer. HR-nahe Felder (Name, Kontakt) sind nur für die Personalplanung gefüllt, sonst null.
+    DriverPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Driver'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    QualificationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        qualification_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        evidence_ref:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        decision:
+          $ref: '#/components/schemas/QualificationStatus'
+      required:
+      - qualification_code
+      - valid_from
+      - decision
+      description: Neue Revision einer Qualifikation (Katalog der Qualifikationsarten offen, Code nach Muster).
+    QualificationRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        qualification_code:
+          type: string
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/QualificationStatus'
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        approved_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        approved_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        driver_seq:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+          - type: 'null'
+        evidence_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        effective:
+          type: boolean
+        valid_at:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        driver_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Neue Revision des Fahrers (nur in der Antwort auf das Anlegen).
+      required:
+      - id
+      - qualification_code
+      - revision
+      - status
+      - valid_from
+      - valid_to
+      - approved_by
+      - approved_at
+      - driver_seq
+      - evidence_ref
+      - effective
+      - valid_at
+      - created_at
+    QualificationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualificationRevision'
+          maxItems: 500
+        next_cursor:
+          oneOf:
+          - type: string
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+        at:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+      - at

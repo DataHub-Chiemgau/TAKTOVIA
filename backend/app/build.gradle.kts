@@ -43,6 +43,7 @@ tasks.processResources {
 }
 
 tasks.withType<Test>().configureEach {
+    maxHeapSize = "2g"   // ArchUnit-Analyse und mehrere Spring-Kontexte in einer Test-JVM
     // Datenbankabhängige Tests dürfen nie aus Cache oder „up-to-date“ als bestanden gelten: Umgebung ist kein Task-Input.
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Test hängt von einer laufenden Datenbank ab") { true }

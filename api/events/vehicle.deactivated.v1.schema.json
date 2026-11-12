@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/vehicle.deactivated.v1.schema.json",
+  "title": "Fahrzeug deaktiviert, Ereignistyp vehicle.deactivated (WP-M3-03, LH-6.8-FLT-001)",
+  "description": "Genau ein Ereignis je Deaktivierung; das Fahrzeug wird danach nicht mehr neu disponiert (Kandidatenfilter), bleibt aber in Historie und Nachweisen lesbar. `active` ist false.",
+  "type": "object",
+  "required": [
+    "vehicle_id",
+    "vehicle_label",
+    "vehicle_type",
+    "operator_organization_id",
+    "seats",
+    "wheelchair",
+    "equipment",
+    "active",
+    "revision"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_label": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "vehicle_type": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,39}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "operator_organization_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "seats": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "wheelchair": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "equipment": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "active": {
+      "type": "boolean",
+      "const": false
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "examples": [
+    {
+      "vehicle_id": "00000000-0000-4000-8000-000000000006",
+      "vehicle_label": "KA-100",
+      "vehicle_type": "PKW_BARRIEREFREI",
+      "operator_organization_id": "00000000-0000-4000-8000-0000000000f2",
+      "seats": 4,
+      "wheelchair": 1,
+      "equipment": [
+        "RAMP"
+      ],
+      "active": false,
+      "revision": 1
+    }
+  ]
+}

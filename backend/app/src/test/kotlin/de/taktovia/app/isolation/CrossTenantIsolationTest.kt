@@ -72,6 +72,10 @@ class CrossTenantIsolationTest {
         env.exec("INSERT INTO taktovia.qualification_revision(tenant_id,id,driver_id,qualification_code,revision,valid_from,evidence_ref) VALUES (?,?,?,'PBEF',1,now()-interval '1 year','akte-1')", b.tenant.value, UUID.randomUUID(), driverRef)
         val release = create("/v1/driver-releases", """{"driver_id":"$driverRef","recipient_tenant_id":"${recipientTenant.value}","service_ids":["${UUID.randomUUID()}"],"valid_from":"2026-01-01T00:00:00Z","valid_to":"2099-01-01T00:00:00Z"}""", b.plannerToken).json["id"].asString()
         val retentionRule = create("/v1/retention-rules", """{"data_category":"LK_PII","retention_days":30,"action":"ANONYMIZE"}""").json["id"].asString()
+        // Fahrzeugstamm in B (WP-M3-03)
+        val vehicleMaster = create("/v1/operator/vehicle-master", """{"vehicle_label":"ISO-B","vehicle_type":"PKW","operator_organization_id":"$org","capacity":{"seats":4,"wheelchair":1},"equipment":[],"active":true}""", b.dispatcherToken).json["id"].asString()
+        // Fahrerstamm in B (WP-M3-05): Fahrer mit Mitgliedschaft der Rolle driver
+        val driverMaster = create("/v1/drivers", """{"membership_id":"${env.grant(b.tenant, UUID.randomUUID(), "driver")}","display_name":"Erika B","contact_channel":"PHONE","contact_value":"+49170000"}""", b.plannerToken).json["id"].asString()
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
         val recipient = UUID.randomUUID()
@@ -81,7 +85,7 @@ class CrossTenantIsolationTest {
                 .send(j, NotificationRequest(UUID.randomUUID(), recipient, NotificationChannel.EMAIL, "booking.confirmed", null, mapOf("booking_reference" to "BK-1"))).notificationId
         }.toString()
         return Ids(mapOf(
-            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "notification_id" to notification,
+            "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
@@ -140,6 +144,14 @@ class CrossTenantIsolationTest {
             "getNotification" to Probe("GET", "/v1/notifications/{notification_id}"),
             "updateRetentionRule" to Probe("PUT", "/v1/retention-rules/{rule_id}", """{"retention_days":10,"action":"DELETE"}""", true),
             "approveRetentionRule" to Probe("POST", "/v1/retention-rules/{rule_id}/approvals", "{}", true),
+            "getDriver" to Probe("GET", "/v1/drivers/{driver_id}", role = "planner"),
+            "updateDriver" to Probe("PUT", "/v1/drivers/{driver_id}", """{"display_name":"Gekapert","contact_channel":"APP","contact_value":"x","active":false}""", true, role = "planner"),
+            "listDriverQualifications" to Probe("GET", "/v1/drivers/{driver_id}/qualifications", role = "planner"),
+            "createDriverQualification" to Probe("POST", "/v1/drivers/{driver_id}/qualifications", """{"qualification_code":"GEKAPERT","valid_from":"2026-01-01T00:00:00Z","decision":"APPROVED"}""", true, role = "planner"),
+            "getVehicleMaster" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}", role = "dispatcher"),
+            "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
+            "getVehicleCapacity" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}/capacity", role = "dispatcher"),
+            "updateVehicleCapacity" to Probe("PATCH", "/v1/operator/vehicle-master/{vehicle_id}/capacity", """{"restrictions":[]}""", true, role = "dispatcher"),
         ).also { check(aOp.isNotEmpty()) }
     }
 
@@ -148,7 +160,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
     private val selfScoped = setOf(
@@ -198,7 +210,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, if (op == "listPassengers") a.ccToken else a.adminToken)
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters" -> a.dispatcherToken; "listDrivers" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

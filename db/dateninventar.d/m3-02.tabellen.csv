@@ -1,0 +1,25 @@
+tabelle;aggregat;loeschklasse;bemerkung
+checklist_template_revision;Checklistenvorlage (Revision) (WP-M3-02);LK_STAMM;
+checklist_step;Prüfschritt der Vorlage (WP-M3-02);LK_STAMM;
+inspection_run;Prüflauf (WP-M3-02);LK_BETRIEB;
+inspection_answer;Prüfantwort (WP-M3-02);LK_BETRIEB;
+inspection_amendment;Prüfergänzung (WP-M3-02);LK_BETRIEB;
+defect_case;Schadenakte (WP-M3-02);LK_BETRIEB;
+known_defect_acknowledgement;Quittierung bekannter Schäden (WP-M3-02);LK_BETRIEB;
+defect_evidence;Schadenevidenz (WP-M3-02);LK_BETRIEB;
+defect_status_history;Statushistorie Schadenakte (WP-M3-02);LK_BETRIEB;
+repair_order;Reparaturauftrag (WP-M3-02);LK_BETRIEB;
+vehicle_release_decision;Wiederfreigabeentscheidung (WP-M3-02);LK_BETRIEB;
+vehicle_block;Fahrzeugsperre (WP-M3-02);LK_BETRIEB;
+alert_policy_revision;Alarmrichtlinie (Revision) (WP-M3-02);LK_STAMM;
+business_alert;Betriebsalarm (WP-M3-02);LK_BETRIEB;
+alert_acknowledgement;Alarmquittierung (WP-M3-02);LK_BETRIEB;
+workflow_rule_revision;Workflow-Regelrevision (WP-M3-02);LK_STAMM;
+incident;Incident (WP-M3-02);LK_BETRIEB;
+incident_link;Incident-Verknüpfung (WP-M3-02);LK_BETRIEB;
+workflow_run_log;Ablaufprotokoll Workflow (WP-M3-02);LK_BETRIEB;
+position_sample;Positionsprobe (WP-M3-02);LK_STANDORT;
+vehicle_status_history;Statushistorie Fahrzeug/Dienst (WP-M3-02);LK_BETRIEB;
+driver_plan_ack;Planbestätigung des Fahrers (WP-M3-02);LK_BETRIEB;
+boarding_code;Boarding-Code (nur Hash) (WP-M3-02);LK_BETRIEB;
+booking_change;Buchungsänderung (WP-M3-02);LK_BETRIEB;

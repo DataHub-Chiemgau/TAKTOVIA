@@ -28,6 +28,8 @@ import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Geodaten } from './geo/Geodaten';
+import { Fahrerstamm } from './flotte/Fahrerstamm';
+import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { PlaceholderScreen, RequireRight } from './Screen';
@@ -181,6 +183,22 @@ export function App() {
                   emptyTitle="Noch keine Inhalte"
                   hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
                 />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte"
+            element={
+              <RequireRight right="fleet">
+                <Fahrzeugstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/fahrer"
+            element={
+              <RequireRight right="drivers">
+                <Fahrerstamm />
               </RequireRight>
             }
           />

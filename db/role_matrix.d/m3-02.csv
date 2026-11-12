@@ -1,0 +1,25 @@
+table;runtime_privileges;note
+checklist_template_revision;SELECT,INSERT,UPDATE;WP-M3-02: Vorlagenrevision; nach Veröffentlichung nur noch Übergang auf RETIRED (Trigger checklist_template_guard), kein DELETE
+checklist_step;SELECT,INSERT,UPDATE;WP-M3-02: Prüfschritt; nur bei Vorlagenrevision im Entwurf änderbar (Trigger checklist_step_guard), kein DELETE
+inspection_run;SELECT,INSERT,UPDATE;WP-M3-02: Prüflauf; abgeschlossen/verfallen/abgebrochen unveränderlich (Trigger inspection_run_guard), kein DELETE
+inspection_answer;SELECT,INSERT,UPDATE;WP-M3-02: Prüfantwort; nur im offenen Lauf änderbar (Trigger inspection_answer_guard), kein DELETE
+inspection_amendment;SELECT,INSERT;WP-M3-02: Ergänzungseintrag zur Prüfung; unveränderlich (Trigger), kein UPDATE/DELETE
+defect_case;SELECT,INSERT,UPDATE;WP-M3-02: Schadenakte, kein DELETE
+known_defect_acknowledgement;SELECT,INSERT;WP-M3-02: Quittierung bekannter Schäden; unveränderlich (Trigger)
+defect_evidence;SELECT,INSERT;WP-M3-02: Schadenevidenz; unveränderlich (Trigger)
+defect_status_history;SELECT,INSERT;WP-M3-02: Statushistorie der Schadenakte; unveränderlich (Trigger)
+repair_order;SELECT,INSERT,UPDATE;WP-M3-02: Reparaturauftrag, kein DELETE
+vehicle_release_decision;SELECT,INSERT;WP-M3-02: Wiederfreigabeentscheidung; unveränderlich (Trigger)
+vehicle_block;SELECT,INSERT,UPDATE;WP-M3-02: Fahrzeugsperre; nur ACTIVE -> LIFTED (Trigger vehicle_block_guard), kein DELETE
+alert_policy_revision;SELECT,INSERT;WP-M3-02: Alarmrichtlinie; Revisionen unveränderlich (Trigger)
+business_alert;SELECT,INSERT,UPDATE;WP-M3-02: Betriebsalarm; Dedupe über partiellen Unique-Index, kein DELETE
+alert_acknowledgement;SELECT,INSERT;WP-M3-02: Alarmquittierung; unveränderlich (Trigger)
+workflow_rule_revision;SELECT,INSERT;WP-M3-02: Workflow-Regelrevision; unveränderlich (Trigger)
+incident;SELECT,INSERT,UPDATE;WP-M3-02: Incident; ein offener Vorgang je Schlüssel, kein DELETE
+incident_link;SELECT,INSERT;WP-M3-02: Incident-Verknüpfung; unveränderlich (Trigger)
+workflow_run_log;SELECT,INSERT;WP-M3-02: Ablaufprotokoll; unveränderlich (Trigger)
+position_sample;SELECT,INSERT;WP-M3-02: Positionsprobe; nie ändern (Trigger), kein UPDATE/DELETE
+vehicle_status_history;SELECT,INSERT;WP-M3-02: Statushistorie Fahrzeug/Dienst; unveränderlich (Trigger)
+driver_plan_ack;SELECT,INSERT;WP-M3-02: bestätigte Planrevision je Fahrer; unveränderlich (Trigger)
+boarding_code;SELECT,INSERT,UPDATE;WP-M3-02: Boarding-Code nur als Hash; UPDATE nur Versuchszähler und Verbrauch (Trigger boarding_code_guard), kein DELETE
+booking_change;SELECT,INSERT;WP-M3-02: Buchungsänderung; unveränderlich (Trigger), Schreibrecht nur booking-dispatch
