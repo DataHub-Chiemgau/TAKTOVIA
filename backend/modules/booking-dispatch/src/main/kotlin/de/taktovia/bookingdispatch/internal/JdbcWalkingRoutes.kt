@@ -18,7 +18,6 @@ import de.taktovia.config.api.EffectiveConfig
 import de.taktovia.config.api.EffectiveRequest
 import de.taktovia.config.api.EffectiveStatus
 import de.taktovia.platform.approval.FourEyes
-import de.taktovia.platform.authz.ServiceScoped
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.problem.ProblemException
@@ -28,7 +27,6 @@ import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.util.UUID
 
-@ServiceScoped
 internal class JdbcWalkingRoutes(
     private val ctxTx: ContextTransactions, private val config: EffectiveConfig?, private val routing: RoutingPort?, private val stopKeys: EtaStopKeys?, private val clock: Clock,
 ) : WalkingRoutes {
