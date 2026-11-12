@@ -14107,6 +14107,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Dienstbezug der Schicht (geplanter Betrieb), WP-M4-17"
+        },
+        {
           "spalte": "shift_function",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",

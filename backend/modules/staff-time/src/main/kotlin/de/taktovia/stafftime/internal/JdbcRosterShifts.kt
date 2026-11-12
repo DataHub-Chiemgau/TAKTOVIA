@@ -83,9 +83,9 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         val id = UUID.randomUUID()
         val v = j.query(
             "INSERT INTO taktovia.staff_shift AS s (tenant_id, id, roster_id, driver_ref, vehicle_id, starts_at, ends_at, timezone, roster_revision, state, operator_id, depot_id, shift_function, " +
-                "required_qualification, staffing_need, break_plan, created_by) VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?,CAST(? AS jsonb),?) RETURNING $COLUMNS",
+                "required_qualification, staffing_need, break_plan, created_by, service_id) VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?,CAST(? AS jsonb),?,?) RETURNING $COLUMNS",
             VIEW, id, rosterId, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, draft.revision, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
-            json.writeValueAsString(c.plan.toMap()), "user:" + ctx.actor.subject,
+            json.writeValueAsString(c.plan.toMap()), "user:" + ctx.actor.subject, i.serviceId,
         ).single()
         bumpDraft(j, draft)
         ShiftChangeLog.record(j, v.id, "CREATED", "user:" + ctx.actor.subject)
@@ -105,9 +105,9 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         checkAgainstRoster(j, draft, i, c)
         val v = j.query(
             "UPDATE taktovia.staff_shift s SET driver_ref = ?, vehicle_id = ?, starts_at = ?, ends_at = ?, timezone = ?, operator_id = ?, depot_id = ?, shift_function = ?, required_qualification = ?, " +
-                "staffing_need = ?, break_plan = CAST(? AS jsonb) WHERE s.id = ? AND s.shift_revision = ? RETURNING $COLUMNS",
+                "staffing_need = ?, break_plan = CAST(? AS jsonb), service_id = ? WHERE s.id = ? AND s.shift_revision = ? RETURNING $COLUMNS",
             VIEW, i.driverRef, i.vehicleId, Timestamp.from(c.start), Timestamp.from(c.end), c.zone.id, i.operatorId, i.depotId, i.function!!.trim(), i.requiredQualification, i.staffingNeed,
-            json.writeValueAsString(c.plan.toMap()), shiftId, expected,
+            json.writeValueAsString(c.plan.toMap()), i.serviceId, shiftId, expected,
         ).firstOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH)
         if (v.revision != cur.revision) {
             bumpDraft(j, draft); ShiftChangeLog.record(j, v.id, "CHANGED", "user:" + ctx.actor.subject); audit.record(j, entry(ctx, v, AuditActions.ROSTER_SHIFT_CHANGED))
@@ -192,7 +192,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
         const val SCOPE_READ = "rosters:read"
         val QUALIFICATION = Regex("^[A-Z][A-Z0-9_]{1,39}$")
         const val COLUMNS = "s.id, s.roster_id, s.operating_day, s.timezone, s.starts_at, s.ends_at, s.break_plan::text AS break_plan, s.operator_id, s.depot_id, s.shift_function, s.required_qualification, " +
-            "s.staffing_need, s.driver_ref, s.vehicle_id, s.state, s.shift_revision, s.created_by, s.created_at"
+            "s.staffing_need, s.driver_ref, s.vehicle_id, s.state, s.shift_revision, s.created_by, s.created_at, s.service_id"
         private val mapper = JsonMapper.builder().build()
         val VIEW = RowMapper { rs, _ ->
             val starts = rs.getTimestamp("starts_at").toInstant(); val ends = rs.getTimestamp("ends_at").toInstant()
@@ -200,7 +200,7 @@ internal class JdbcRosterShifts(private val ctxTx: ContextTransactions, private 
             RosterShiftView(rs.getObject("id", UUID::class.java), rs.getObject("roster_id", UUID::class.java), rs.getDate("operating_day").toLocalDate(), ZoneId.of(rs.getString("timezone")), starts, ends,
                 Duration.between(starts, ends).toMinutes(), BreakPlan(plan), rs.getObject("operator_id", UUID::class.java), rs.getObject("depot_id", UUID::class.java), rs.getString("shift_function"),
                 rs.getString("required_qualification"), rs.getInt("staffing_need"), rs.getObject("driver_ref", UUID::class.java), rs.getObject("vehicle_id", UUID::class.java), rs.getString("state"),
-                rs.getLong("shift_revision"), rs.getString("created_by") ?: "", rs.getTimestamp("created_at").toInstant())
+                rs.getLong("shift_revision"), rs.getString("created_by") ?: "", rs.getTimestamp("created_at").toInstant(), null, rs.getObject("service_id", UUID::class.java))
         }
     }
 }

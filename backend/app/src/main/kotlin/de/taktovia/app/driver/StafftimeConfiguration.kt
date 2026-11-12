@@ -36,4 +36,10 @@ class StafftimeConfiguration {
         runSource.getIfAvailable(),
         de.taktovia.app.staff.ConfigWorkRuleSource { config.getObject().effective },   // Regelparameter der Arbeitszeit-Hinweise (WP-M4-13) aus der wirksamen Konfiguration
     )
+
+    /** ImpactProvider „Schichten“ (WP-M4-17, Zusage an WP-M1-23): wird von `ConfigApi` für die Wirkungsanalyse vor Publikation gesammelt. */
+    @Bean fun shiftImpactProvider(): de.taktovia.config.api.ImpactProvider = StafftimeApi.impactProvider()
+
+    /** Leseport „Schichtbesetzung“ für Disposition und Einsatzfreigabe (WP-M4-17); die Disposition wertet ihn statt der Schicht-Fixture aus (WP-M4-65). */
+    @Bean fun shiftStaffingReadPort(api: StafftimeApi): de.taktovia.platform.readports.ShiftStaffingReadPort = api.shiftStaffing
 }
