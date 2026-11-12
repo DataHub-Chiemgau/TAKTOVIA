@@ -2753,6 +2753,7 @@ export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
   occurred_at: string;
+  time_zone?: string;
   device_recorded_at: string;
   channel: 'APP' | 'WEB';
   shift_id?: UUID | null;
@@ -2763,11 +2764,19 @@ export interface TimeEventBackfillCreate {
   person_ref: string;
   kind: TimeEventKind;
   occurred_at: string;
+  time_zone?: string;
   shift_id?: UUID | null;
   reason: string;
 }
 
 export type TimeEventKind = 'WORK_START' | 'WORK_END' | 'BREAK_START' | 'BREAK_END';
+
+export interface LocalTimePresentation {
+  local: string;
+  offset: string;
+  operating_day: string;
+  ambiguous: boolean;
+}
 
 export interface TimeEvent {
   event_id: UUID;
@@ -2780,6 +2789,8 @@ export interface TimeEvent {
   recorded_by: string;
   shift_id: UUID | null;
   backfill_reason: string | null;
+  time_zone: string;
+  occurred_at_local: LocalTimePresentation;
 }
 
 export interface TimeEventPage {
@@ -2798,6 +2809,10 @@ export interface TimeInterval {
   net_seconds: number | null;
   flags: ('MISSING_END' | 'END_WITHOUT_START' | 'BREAK_NOT_ENDED')[];
   event_ids: UUID[];
+  time_zone: string;
+  start_local: LocalTimePresentation | null;
+  end_local: LocalTimePresentation | null;
+  operating_day: string | null;
 }
 
 export interface TimeIntervalList {

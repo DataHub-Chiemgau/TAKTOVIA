@@ -61,7 +61,7 @@ class IanaZone(unittest.TestCase):
         with admin() as c:
             names = {r[0] for r in c.execute("""SELECT conname FROM pg_constraint con JOIN pg_namespace n ON n.oid=con.connamespace
                                                 WHERE n.nspname='taktovia' AND contype='c' AND conname LIKE '%\\_timezone\\_iana'""")}
-        self.assertEqual(names, {'service_timezone_iana', 'staff_shift_timezone_iana'})
+        self.assertEqual(names, {'service_timezone_iana', 'staff_shift_timezone_iana', 'time_event_timezone_iana'})
 
 
 if __name__ == '__main__':

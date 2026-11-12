@@ -2,6 +2,7 @@ package de.taktovia.stafftime.api
 
 import de.taktovia.platform.context.RequestContext
 import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 enum class TimeEventKind { WORK_START, WORK_END, BREAK_START, BREAK_END }
@@ -12,15 +13,20 @@ enum class TimeEventSource { APP, WEB, BACKFILL }
 /** Selbsterfassung der eigenen Arbeitszeit; die Person ist der Akteur, nie Teil der Eingabe. [channel] ist `APP` oder `WEB`. */
 data class RecordTimeEvent(
     val eventId: UUID, val kind: TimeEventKind, val occurredAt: Instant, val deviceRecordedAt: Instant, val channel: TimeEventSource, val shiftId: UUID?,
+    val timeZone: ZoneId = WorkTime.DEFAULT_ZONE,
 )
 
 /** Nacherfassung durch die Personalrolle für [personRef]; Begründung ist Pflicht. */
-data class BackfillTimeEvent(val eventId: UUID, val personRef: String, val kind: TimeEventKind, val occurredAt: Instant, val shiftId: UUID?, val reason: String)
+data class BackfillTimeEvent(val eventId: UUID, val personRef: String, val kind: TimeEventKind, val occurredAt: Instant, val shiftId: UUID?, val reason: String, val timeZone: ZoneId = WorkTime.DEFAULT_ZONE)
 
 data class TimeEventView(
     val eventId: UUID, val personRef: String, val kind: TimeEventKind, val occurredAt: Instant, val deviceRecordedAt: Instant?, val receivedAt: Instant,
     val source: TimeEventSource, val recordedBy: String, val shiftId: UUID?, val backfillReason: String?,
-)
+    val timeZone: ZoneId = WorkTime.DEFAULT_ZONE,
+) {
+    /** Lokale Darstellung der Ereigniszeit in der Zone des Ereignisses (WP-M4-10). */
+    val occurredLocal: LocalPresentation get() = WorkTime.present(occurredAt, timeZone)
+}
 
 /** [created] ist falsch bei einer Wiederholung mit gleichem Inhalt (das gespeicherte Ereignis, keine zweite Zeile). */
 data class TimeEventResult(val event: TimeEventView, val created: Boolean)
@@ -31,7 +37,7 @@ enum class AnomalyCode { BREAK_OUTSIDE_WORK, BREAK_END_WITHOUT_START, BREAK_ALRE
 data class WorkBreak(val start: Instant, val end: Instant?)
 
 /** Abgeleitetes Arbeitszeitintervall; wird nie gespeichert. [start] oder [end] fehlen, wenn das Ereignis fehlt (gekennzeichnet, nie verworfen oder automatisch ergänzt). */
-data class WorkInterval(val start: Instant?, val end: Instant?, val breaks: List<WorkBreak>, val netSeconds: Long?, val flags: Set<IntervalFlag>, val eventIds: List<UUID>)
+data class WorkInterval(val start: Instant?, val end: Instant?, val breaks: List<WorkBreak>, val netSeconds: Long?, val flags: Set<IntervalFlag>, val eventIds: List<UUID>, val zone: ZoneId = WorkTime.DEFAULT_ZONE)
 
 data class TimeAnomaly(val eventId: UUID, val code: AnomalyCode)
 
@@ -45,7 +51,7 @@ data class DerivedTime(val intervals: List<WorkInterval>, val anomalies: List<Ti
  * - Pause ohne Ende bei Arbeitsende: `BREAK_NOT_ENDED`, die Pause zählt bis zum Arbeitsende; Pause außerhalb der Arbeit oder doppelt begonnen/beendet: Anomalie.
  */
 object TimeIntervals {
-    private class Open(val start: Instant, val ids: MutableList<UUID>) {
+    private class Open(val start: Instant, val ids: MutableList<UUID>, val zone: ZoneId) {
         val breaks = mutableListOf<WorkBreak>()
         var breakStart: Instant? = null
     }
@@ -60,16 +66,16 @@ object TimeIntervals {
             val breaks = o.breaks.toMutableList()
             if (bs != null) { breaks += WorkBreak(bs, null); flags += IntervalFlag.BREAK_NOT_ENDED }
             val net = if (end == null) null else maxOf(0L, end.epochSecond - o.start.epochSecond - breaks.sumOf { b -> ((b.end ?: end).epochSecond - b.start.epochSecond).coerceAtLeast(0L) })
-            intervals += WorkInterval(o.start, end, breaks, net, flags, o.ids)
+            intervals += WorkInterval(o.start, end, breaks, net, flags, o.ids, o.zone)
             open = null
         }
 
         for (e in events.sortedWith(compareBy<TimeEventView>({ it.occurredAt }, { it.receivedAt }, { it.eventId }))) {
             when (e.kind) {
-                TimeEventKind.WORK_START -> { if (open != null) closeOpen(null, mutableSetOf(IntervalFlag.MISSING_END)); open = Open(e.occurredAt, mutableListOf(e.eventId)) }
+                TimeEventKind.WORK_START -> { if (open != null) closeOpen(null, mutableSetOf(IntervalFlag.MISSING_END)); open = Open(e.occurredAt, mutableListOf(e.eventId), e.timeZone) }
                 TimeEventKind.WORK_END -> {
                     val o = open
-                    if (o == null) intervals += WorkInterval(null, e.occurredAt, emptyList(), null, setOf(IntervalFlag.END_WITHOUT_START), listOf(e.eventId))
+                    if (o == null) intervals += WorkInterval(null, e.occurredAt, emptyList(), null, setOf(IntervalFlag.END_WITHOUT_START), listOf(e.eventId), e.timeZone)
                     else { o.ids += e.eventId; closeOpen(e.occurredAt, mutableSetOf()) }
                 }
                 TimeEventKind.BREAK_START -> {
