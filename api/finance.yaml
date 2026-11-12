@@ -100,6 +100,155 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AllocationRequest'
+  /v1/fiscal-periods:
+    get:
+      summary: Fiskalperioden lesen
+      operationId: listFiscalPeriods
+      security:
+      - oidc:
+        - periods:read
+      description: 'Fiskalperioden des Mandanten (WP-M4-36), aufsteigend nach Beginn, Cursor-Seiten; `legal_entity_id` filtert auf einen Rechtsträger. Ein Zeitraum ist halboffen `[starts_on, ends_on)`; `closed_at` gesetzt = abgeschlossen. Scope `periods:read` und Finanzrolle.'
+      parameters:
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriodPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fiskalperiode anlegen
+      operationId: createFiscalPeriod
+      security:
+      - oidc:
+        - periods:manage
+      description: 'Legt eine offene Periode eines Rechtsträgers an (WP-M4-36). Perioden eines Rechtsträgers überlappen sich nie (409 CONFLICT, auch bei parallelem Anlegen genau eine); benachbarte Perioden sind erlaubt. Rechtsträger eines anderen Mandanten: 404. Scope `periods:manage`, Finanzrolle, Mensch.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFiscalPeriodRequest'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriod'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/fiscal-periods/{period_id}/close:
+    post:
+      summary: Fiskalperiode abschließen
+      operationId: closeFiscalPeriod
+      security:
+      - oidc:
+        - periods:close
+      description: 'Schließt die Periode endgültig (WP-M4-36). Eigenes Finanzrecht (Scope `periods:close`, Finanzrolle, Mensch); Akteur und Zeit stehen an der Periode und im Audit. Die Periodenzeile wird gesperrt: bei Konkurrenz mit Posting, Aufteilung oder einem zweiten Abschluss gewinnt genau eine Transaktion; wer danach schreiben will, erhält 409 PERIOD_CLOSED. Ein zweiter Abschluss derselben Periode ist 409 PERIOD_CLOSED. Es gibt keinen Pfad, der eine geschlossene Periode wieder öffnet. Spätere Korrekturen entstehen als Gegenereignis in der nächsten offenen Periode (`createCostEventReversal`). Die Periode hat keine Revision (kein If-Match): der Abschluss ist einmalig.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/period_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriod'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/cost-events/{cost_event_id}/reversals:
+    post:
+      summary: Gegenereignis zu einem Kostenereignis anlegen
+      operationId: createCostEventReversal
+      security:
+      - oidc:
+        - costs:reverse
+      description: 'Korrigiert ein gebuchtes Ist-Kostenereignis als Gegenereignis (WP-M4-36, Leitlinie 5): das Ursprungsereignis und sein Journal bleiben unverändert (auch in einer geschlossenen Periode); das Gegenereignis (`reverses_id`, negative Beträge) bucht in der nächsten offenen Periode ab `accounting_date` (Vorgabe heute, UTC) eine Gegenbuchung mit getauschten Seiten auf denselben Konten und kehrt die gespeicherte Aufteilung des Ursprungs negativ um. `credit_gross_minor` = Bruttobetrag der Korrektur (leer = der noch nicht korrigierte Rest). Ein zweites Gegenereignis zum selben Ursprung und Betrag ist 409 ALREADY_REVERSED (einmalige Wirkung), mehr als der Rest 422, ein Gegenereignis eines Gegenereignisses oder ohne offene Periode 409 CONFLICT. Scope `costs:reverse`, Finanzrolle, Mensch. Das Ursprungsereignis ist unveränderlich und hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/cost_event_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostEventReversalRequest'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEventReversal'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/approve:
     post:
       summary: Belegrevision fachlich freigeben
@@ -1331,6 +1480,182 @@ components:
       - booked_at
       - document_id
       - reverses_id
+    FiscalPeriod:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+          description: Erster Tag nach der Periode (halboffenes Intervall).
+        state:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+        closed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        closed_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        created_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - starts_on
+      - ends_on
+      - state
+      - closed_at
+      - closed_by
+      - created_by
+    FiscalPeriodPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalPeriod'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CreateFiscalPeriodRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+          description: Erster Tag nach der Periode; höchstens 400 Tage nach `starts_on`.
+      required:
+      - legal_entity_id
+      - starts_on
+      - ends_on
+    CostEventReversalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        credit_gross_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Bruttobetrag der Korrektur in kleinster Einheit; null = der noch nicht korrigierte Rest.
+        accounting_date:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+          description: Gewünschtes Buchungsdatum (Vorgabe heute, UTC); liegt es in einer geschlossenen Periode, gilt die nächste offene Periode.
+      required:
+      - reason
+    JournalLine:
+      type: object
+      additionalProperties: false
+      properties:
+        account:
+          type: string
+        side:
+          type: string
+          enum:
+          - D
+          - C
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - account
+      - side
+      - amount_minor
+    Journal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - POSTED
+        accounting_date:
+          type: string
+          format: date
+        period_id:
+          $ref: common.yaml#/components/schemas/UUID
+        posted_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalLine'
+          minItems: 2
+      required:
+      - id
+      - event_id
+      - state
+      - accounting_date
+      - period_id
+      - posted_by
+      - lines
+    CostEventReversal:
+      type: object
+      additionalProperties: false
+      properties:
+        event:
+          $ref: '#/components/schemas/CostEvent'
+        journal:
+          $ref: '#/components/schemas/Journal'
+        allocation:
+          oneOf:
+          - $ref: '#/components/schemas/AllocationResult'
+          - type: 'null'
+          description: Die negierte Aufteilung des Gegenereignisses, wenn der Ursprung aufgeteilt war.
+      required:
+      - event
+      - journal
+      - allocation
     CostEventPage:
       type: object
       additionalProperties: false

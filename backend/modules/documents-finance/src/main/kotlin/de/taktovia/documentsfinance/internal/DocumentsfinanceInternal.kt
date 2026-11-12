@@ -33,6 +33,7 @@ internal object UploadServicesFactory {
             uploads, JdbcExpenses(ctxTx, audit, outbox, guarded, uploads, policy, clock), JdbcIntake(ctxTx, uploads, policy), JdbcDocumentSettings(ctxTx, audit), integrity,
             JdbcExtraction(ctxTx, outbox, guarded, recognizer, extraction, clock), JdbcReceiptReview(ctxTx, integrity, clock, audit, outbox), JdbcCostAssignments(ctxTx, audit, outbox, clock),
             costEvents, JdbcAccountingMappings(ctxTx, audit), JdbcCostAllocations(ctxTx, audit, outbox, clock), JdbcExpenseSplits(ctxTx, audit, clock),
+            JdbcFiscalPeriods(ctxTx, audit, outbox, clock), JdbcCostEventCorrections(ctxTx, audit, outbox, clock),
             JdbcFuelReceipts(ctxTx, audit, outbox, clock), JdbcFinancePolicies(ctxTx, audit), JdbcFuelPlausibility(ctxTx, audit), JdbcDuplicateReview(ctxTx, audit, outbox, clock),
             JdbcExpenseApprovals(ctxTx, audit, outbox, costEvents, clock),
         )

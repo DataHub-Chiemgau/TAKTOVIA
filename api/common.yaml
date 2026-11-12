@@ -26,6 +26,12 @@ components:
             operations:read: operations:read
             costs:allocate: costs:allocate
             costs:read: costs:read
+            costs:reverse: costs:reverse
+            periods:read: periods:read
+            periods:manage: periods:manage
+            periods:close: periods:close
+            ledger:read: ledger:read
+            ledger:export: ledger:export
             expenses:approve: expenses:approve
             expenses:review: expenses:review
             config:publish: config:publish
@@ -111,6 +117,12 @@ components:
             operations:read: operations:read
             costs:allocate: costs:allocate
             costs:read: costs:read
+            costs:reverse: costs:reverse
+            periods:read: periods:read
+            periods:manage: periods:manage
+            periods:close: periods:close
+            ledger:read: ledger:read
+            ledger:export: ledger:export
             expenses:approve: expenses:approve
             expenses:review: expenses:review
             config:publish: config:publish
@@ -271,6 +283,18 @@ components:
         $ref: '#/components/schemas/UUID'
     cost_event_id:
       name: cost_event_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    period_id:
+      name: period_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+    export_id:
+      name: export_id
       in: path
       required: true
       schema:

@@ -69,7 +69,7 @@ class AllocationServiceTest {
         fun centers(n: Int, entity: UUID = w.legalEntity, kind: String = "COST_CENTER"): List<UUID> = (1..n).map { i ->
             val id = UUID.fromString("00000000-0000-4000-8000-%012d".format(i + (UUID.randomUUID().leastSignificantBits and 0xFFFF)))
             bf.fx.exec("INSERT INTO taktovia.cost_object(tenant_id,id,legal_entity_id,kind,business_ref) VALUES (?,?,?,?,?)", w.tenant.value, id, entity, kind, id.toString()); id
-        }.sorted()
+        }.sortedBy { it.toString() }
 
         /** Gebuchtes Kostenereignis eines Belegs mit einem Fahrzeug-Kostenobjekt: brutto = Kostenbasis (keine Steuer); die Aufteilung folgt über die API. */
         fun postedEvent(gross: Long = 10001): UUID {

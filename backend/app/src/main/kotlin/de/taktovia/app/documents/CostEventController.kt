@@ -39,7 +39,12 @@ class CostEventController(private val events: CostEvents, private val codec: Cur
         return Paging.page(rows, lim, { CursorPosition(it.bookedAt, it.id) }, codec, scope, at ?: Instant.now()).toMap(::json)
     }
 
-    private fun json(e: CostEventView): Map<String, Any?> = linkedMapOf(
+    private fun json(e: CostEventView): Map<String, Any?> = CostEventJson.of(e)
+}
+
+/** JSON-Form eines Kostenereignisses (`CostEvent`), gemeinsam für die Liste und das Gegenereignis (WP-M4-36). */
+internal object CostEventJson {
+    fun of(e: CostEventView): Map<String, Any?> = linkedMapOf(
         "id" to e.id.toString(), "legal_entity_id" to e.legalEntityId.toString(), "source_system" to e.sourceSystem, "source_ref" to e.sourceRef, "event_type" to e.eventType, "scenario" to e.scenario,
         "category" to e.category, "currency" to e.currency, "net_minor" to e.netMinor, "tax_minor" to e.taxMinor, "gross_minor" to e.grossMinor, "recoverable_tax_minor" to e.recoverableTaxMinor,
         "cost_basis_minor" to e.costBasisMinor, "tax_rule_revision" to e.taxRuleRevision, "occurred_at" to e.occurredAt.toString(), "booked_at" to e.bookedAt.toString(),

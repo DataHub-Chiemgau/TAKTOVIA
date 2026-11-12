@@ -49,6 +49,18 @@ internal object AllocationJson {
         }
     }
 
+    /** `AllocationResult` (Antwort von `allocateCost` und Teil des Gegenereignisses). */
+    fun result(v: AllocationView): Map<String, Any?> {
+        fun money(minor: Long) = linkedMapOf("amount_minor" to minor, "currency" to v.currency, "exponent" to v.exponent)
+        return linkedMapOf(
+            "allocation_id" to v.id.toString(), "cost_event_id" to v.eventId.toString(), "revision" to v.revision, "state" to v.state, "basis" to money(v.basisMinor),
+            "lines" to v.lines.map { l ->
+                linkedMapOf("cost_center_id" to (if (l.costObjectKind == "COST_CENTER") l.costObjectId.toString() else null), "cost_object_type" to l.costObjectKind, "cost_object_id" to l.costObjectId.toString(),
+                    "amount" to money(l.amountMinor), "percent" to l.percent.toPlainString(), "quantity" to l.quantity?.toPlainString(), "unit" to l.unit)
+            },
+        )
+    }
+
     private val KEYS = setOf("cost_center_id", "cost_object_type", "cost_object_id", "amount", "percent", "quantity", "unit")
 
     private fun uuid(v: Any?, pointer: String): UUID = try { UUID.fromString(v as? String ?: throw ProblemException.invalid(Violation(pointer, if (v == null) ViolationCode.REQUIRED else ViolationCode.TYPE_MISMATCH))) }
@@ -77,14 +89,5 @@ class AllocationController(private val allocations: CostAllocations) {
         return ResponseEntity.status(HttpStatus.CREATED).body(AllocationResource(json(v), v.revision))
     }
 
-    private fun json(v: AllocationView): Map<String, Any?> {
-        fun money(minor: Long) = linkedMapOf("amount_minor" to minor, "currency" to v.currency, "exponent" to v.exponent)
-        return linkedMapOf(
-            "allocation_id" to v.id.toString(), "cost_event_id" to v.eventId.toString(), "revision" to v.revision, "state" to v.state, "basis" to money(v.basisMinor),
-            "lines" to v.lines.map { l ->
-                linkedMapOf("cost_center_id" to (if (l.costObjectKind == "COST_CENTER") l.costObjectId.toString() else null), "cost_object_type" to l.costObjectKind, "cost_object_id" to l.costObjectId.toString(),
-                    "amount" to money(l.amountMinor), "percent" to l.percent.toPlainString(), "quantity" to l.quantity?.toPlainString(), "unit" to l.unit)
-            },
-        )
-    }
+    private fun json(v: AllocationView): Map<String, Any?> = AllocationJson.result(v)
 }

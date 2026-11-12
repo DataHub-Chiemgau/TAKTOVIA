@@ -6818,6 +6818,24 @@
           "bemerkung": ""
         },
         {
+          "spalte": "closed_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject) beim Periodenabschluss"
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject) beim Anlegen der Periode"
+        },
+        {
           "spalte": "ends_on",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
@@ -8091,6 +8109,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "account_role",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-36: Rolle der Zeile (Aufwand, Vorsteuer, Verbindlichkeit) für die Gegenbuchung"
         },
         {
           "spalte": "amount_minor",

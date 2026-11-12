@@ -14,7 +14,7 @@ val ALLOCATION_TARGET_KINDS: Set<String> = setOf("COST_CENTER", "VEHICLE", "PROJ
 
 /**
  * Rechenkern der Aufteilung (WP-M4-35, Kap. 03 §2.1): **Largest Remainder** in exakter Ganzzahlarithmetik (kein Gleitkomma). Je Empfänger wird der Anteil am Betrag **abgerundet**; die übrigen
- * Cent erhalten die Empfänger mit dem größten Dezimalrest, bei Gleichstand der Empfänger mit der kleineren Kennung (stabil, deterministisch). Ein negativer Betrag (Korrektur) wird über seinen
+ * Cent erhalten die Empfänger mit dem größten Dezimalrest, bei Gleichstand der Empfänger mit der kleineren Kennung (Textform der UUID, wie `ORDER BY` in der Datenbank; stabil, deterministisch). Ein negativer Betrag (Korrektur) wird über seinen
  * Absolutbetrag verteilt und danach mit dem Vorzeichen versehen; eine Korrektur über denselben Schlüssel hebt die ursprünglichen Beträge daher exakt auf.
  */
 object AllocationCalculator {
@@ -34,7 +34,7 @@ object AllocationCalculator {
         val floors = ints.map { abs.multiply(it).divide(total) }
         val remainders = ints.map { abs.multiply(it).mod(total) }
         var rest = abs.subtract(floors.fold(BigInteger.ZERO, BigInteger::add)).toInt()   // < Anzahl der Empfänger
-        val order = weights.indices.sortedWith(compareByDescending<Int> { remainders[it] }.thenBy { weights[it].first })
+        val order = weights.indices.sortedWith(compareByDescending<Int> { remainders[it] }.thenBy { weights[it].first.toString() })   // Kennung als Text: dieselbe Reihenfolge wie die Datenbank (unsigned), nicht die vorzeichenbehaftete UUID-Ordnung der JVM
         val extra = IntArray(weights.size)
         for (i in order) { if (rest == 0) break; extra[i] = 1; rest-- }
         val sign = if (basisMinor < 0) -1L else 1L

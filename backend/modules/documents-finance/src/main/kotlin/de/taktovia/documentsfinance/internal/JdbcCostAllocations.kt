@@ -146,6 +146,10 @@ internal object AllocationRows {
         return view(j, id)
     }
 
+    /** Die aktive Umlagerevision des Ereignisses (mit Zeilen) oder `null`. */
+    fun activeOf(j: JdbcOperations, eventId: UUID): AllocationView? =
+        j.query("SELECT allocation_id FROM taktovia.allocation_activation WHERE event_id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, eventId).firstOrNull()?.let { view(j, it) }
+
     fun view(j: JdbcOperations, setId: UUID): AllocationView {
         val set = j.query("SELECT s.id, s.event_id, s.revision, s.state, s.legal_entity_id, s.currency, s.basis_minor, s.algorithm_version, s.driver_snapshot::text, " +
             "EXISTS (SELECT 1 FROM taktovia.allocation_activation a WHERE a.allocation_id = s.id) AS active, c.exponent FROM taktovia.allocation_set s JOIN taktovia.currency c ON c.code = s.currency WHERE s.id = ?",

@@ -87,7 +87,7 @@ internal class JdbcCostEvents(
         val periods = j.query("SELECT id, closed_at FROM taktovia.fiscal_period WHERE legal_entity_id = ? AND starts_on <= ? AND ends_on > ? ORDER BY starts_on FOR UPDATE",
             { rs, _ -> rs.getObject("id", UUID::class.java) to (rs.getTimestamp("closed_at") != null) }, entity, java.sql.Date.valueOf(date), java.sql.Date.valueOf(date))
         if (periods.isEmpty()) throw ProblemException(ErrorCode.CONFLICT, "Für das Belegdatum gibt es keine Buchungsperiode des Rechtsträgers.")
-        val period = periods.firstOrNull { !it.second } ?: throw ProblemException(ErrorCode.CONFLICT, "Die Buchungsperiode ist geschlossen; Korrekturen nur als Gegenereignis in einer offenen Periode.")
+        val period = periods.firstOrNull { !it.second } ?: throw ProblemException(ErrorCode.PERIOD_CLOSED, "Die Buchungsperiode ist geschlossen; Korrekturen nur als Gegenereignis in einer offenen Periode.")
 
         val now = clock.instant()
         val eventId = UUID.randomUUID(); val journalId = UUID.randomUUID()
@@ -99,12 +99,12 @@ internal class JdbcCostEvents(
         if (inserted == 0) return existing(j, documentId)   // paralleler Auslöser desselben Ursprungs hat gebucht
         j.update("INSERT INTO taktovia.journal (tenant_id, id, event_id, legal_entity_id, currency, period_id, accounting_date, state) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, 'DRAFT')",
             journalId, eventId, entity, amounts.currency, period.first, java.sql.Date.valueOf(date))
-        fun line(account: String, side: String, amount: Long) {
-            if (amount > 0) j.update("INSERT INTO taktovia.journal_line (tenant_id, id, journal_id, account_code, side, amount_minor) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?)", UUID.randomUUID(), journalId, account, side, amount)
+        fun line(account: String, side: String, amount: Long, role: String) {
+            if (amount > 0) j.update("INSERT INTO taktovia.journal_line (tenant_id, id, journal_id, account_code, side, amount_minor, account_role) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?)", UUID.randomUUID(), journalId, account, side, amount, role)
         }
-        line(mapping.first, "D", amounts.gross - amounts.recoverable)
-        line(mapping.second, "D", amounts.recoverable)
-        line(mapping.third, "C", amounts.gross)
+        line(mapping.first, "D", amounts.gross - amounts.recoverable, "EXPENSE")
+        line(mapping.second, "D", amounts.recoverable, "INPUT_TAX")
+        line(mapping.third, "C", amounts.gross, "PAYABLE")
         j.update("UPDATE taktovia.journal SET state = 'POSTED', posted_by = ? WHERE id = ? AND state = 'DRAFT'", DocumentRows.actor(ctx).value, journalId)   // Trigger: ausgeglichen, >= 2 Zeilen, offene Periode, Summe = Ereignis
         check(j.update("UPDATE taktovia.expense_document SET state = 'POSTED' WHERE id = ? AND state = 'APPROVED'", documentId) == 1)
         DuplicateRows.onPosted(j, ctx, documentId, eventId)                                      // PRIMARY-Evidenz und bisher verknüpfte Dubletten (WP-M4-32)
@@ -164,15 +164,19 @@ internal class JdbcCostEvents(
         }
     }
 
-    private fun event(j: JdbcOperations, id: UUID): CostEventView = j.query("SELECT $EVENT_COLUMNS FROM taktovia.economic_event e WHERE e.id = ?", EVENT_MAPPER, id).single()
+    private fun event(j: JdbcOperations, id: UUID): CostEventView = eventOf(j, id)
 
-    private fun journal(j: JdbcOperations, id: UUID): JournalView {
-        val lines = j.query("SELECT account_code, side, amount_minor FROM taktovia.journal_line WHERE journal_id = ? ORDER BY account_code, side", { rs, _ -> JournalLineView(rs.getString(1), rs.getString(2), rs.getLong(3)) }, id)
-        return j.query("SELECT id, event_id, state, accounting_date, period_id, posted_by FROM taktovia.journal WHERE id = ?",
-            { rs, _ -> JournalView(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3), rs.getDate(4).toLocalDate(), rs.getObject(5, UUID::class.java), rs.getString(6), lines) }, id).single()
-    }
+    private fun journal(j: JdbcOperations, id: UUID): JournalView = journalOf(j, id)
 
-    private companion object {
+    internal companion object {
+        fun eventOf(j: JdbcOperations, id: UUID): CostEventView = j.query("SELECT $EVENT_COLUMNS FROM taktovia.economic_event e WHERE e.id = ?", EVENT_MAPPER, id).single()
+
+        fun journalOf(j: JdbcOperations, id: UUID): JournalView {
+            val lines = j.query("SELECT account_code, side, amount_minor FROM taktovia.journal_line WHERE journal_id = ? ORDER BY account_code, side", { rs, _ -> JournalLineView(rs.getString(1), rs.getString(2), rs.getLong(3)) }, id)
+            return j.query("SELECT id, event_id, state, accounting_date, period_id, posted_by FROM taktovia.journal WHERE id = ?",
+                { rs, _ -> JournalView(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3), rs.getDate(4).toLocalDate(), rs.getObject(5, UUID::class.java), rs.getString(6), lines) }, id).single()
+        }
+
         const val SCOPE_APPROVE = "expenses:approve"
         const val DOC_COLUMNS = DocumentRows.COLUMNS
         const val OBJ_COLUMNS = CostAssignmentRows.COLUMNS

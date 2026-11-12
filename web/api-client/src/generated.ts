@@ -530,6 +530,57 @@ export interface CostEvent {
   reverses_id: UUID | null;
 }
 
+export interface FiscalPeriod {
+  id: UUID;
+  legal_entity_id: UUID;
+  starts_on: string;
+  ends_on: string;
+  state: 'OPEN' | 'CLOSED';
+  closed_at: string | null;
+  closed_by: string | null;
+  created_by: string | null;
+}
+
+export interface FiscalPeriodPage {
+  items: FiscalPeriod[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CreateFiscalPeriodRequest {
+  legal_entity_id: UUID;
+  starts_on: string;
+  ends_on: string;
+}
+
+export interface CostEventReversalRequest {
+  reason: string;
+  credit_gross_minor?: number | null;
+  accounting_date?: string | null;
+}
+
+export interface JournalLine {
+  account: string;
+  side: 'D' | 'C';
+  amount_minor: number;
+}
+
+export interface Journal {
+  id: UUID;
+  event_id: UUID;
+  state: 'POSTED';
+  accounting_date: string;
+  period_id: UUID;
+  posted_by: string | null;
+  lines: JournalLine[];
+}
+
+export interface CostEventReversal {
+  event: CostEvent;
+  journal: Journal;
+  allocation: AllocationResult | null;
+}
+
 export interface CostEventPage {
   items: CostEvent[];
   next_cursor: string | null;
@@ -3395,6 +3446,34 @@ export interface Operations {
     body: AllocationRequest;
     response: AllocationResult;
   };
+  listFiscalPeriods: {
+    path: Record<string, never>;
+    query: { legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: FiscalPeriodPage;
+  };
+  createFiscalPeriod: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CreateFiscalPeriodRequest;
+    response: FiscalPeriod;
+  };
+  closeFiscalPeriod: {
+    path: { period_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: undefined;
+    response: FiscalPeriod;
+  };
+  createCostEventReversal: {
+    path: { cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CostEventReversalRequest;
+    response: CostEventReversal;
+  };
   approveExpense: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -5011,6 +5090,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listFiscalPeriods: { method: 'GET', path: '/v1/fiscal-periods', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['periods:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['periods:manage'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  closeFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods/{period_id}/close', pathParams: ['period_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['periods:close'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
+  createCostEventReversal: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/reversals', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:reverse'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
