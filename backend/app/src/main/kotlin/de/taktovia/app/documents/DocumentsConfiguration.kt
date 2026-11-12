@@ -86,6 +86,7 @@ class DocumentsConfiguration {
     fun extractionPolicy(env: Environment) = ExtractionPolicy(
         lease = Duration.ofSeconds(env.getProperty("taktovia.documents.extraction-lease-seconds", Long::class.java, 60L)),
         recognitionTimeout = Duration.ofSeconds(env.getProperty("taktovia.documents.ocr-timeout-seconds", Long::class.java, 30L)),
+        lowConfidenceThreshold = env.getProperty("taktovia.documents.low-confidence-threshold", Double::class.java, 0.80),
     )
 
     @Bean
@@ -98,6 +99,7 @@ class DocumentsConfiguration {
     @Bean fun expenses(s: DocumentServices): Expenses = s.expenses
     @Bean fun receiptIntake(s: DocumentServices): ReceiptIntake = s.intake
     @Bean fun documentSettings(s: DocumentServices): DocumentSettings = s.settings
+    @Bean fun receiptReview(s: DocumentServices): de.taktovia.documentsfinance.api.ReceiptReview = s.review
     @Bean fun integrityChecks(s: DocumentServices): IntegrityChecks = s.integrity
     @Bean fun receiptExtraction(s: DocumentServices): ReceiptExtraction = s.extraction
 

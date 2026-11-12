@@ -68,7 +68,7 @@ class ExtractionRunTest {
         val done = bf.svc.extraction.process(fin, run.id)
         assertEquals(RunStatus.COMPLETED, done.status); assertEquals(1, done.attempt); assertEquals(6, done.fieldCount, "Händler, Datum, Nummer, Betrag, Währung, ein Steuersatz")
         val detail = bf.svc.extraction.latest(fin, d.documentId)!!
-        assertEquals(6, detail.proposals.size, "fünf Einzelfelder und ein Steuerfeld"); assertTrue(detail.proposals.all { it.status.name == "PROPOSED" && it.origin.name == "OCR" })
+        assertEquals(7, detail.proposals.size, "fünf Einzelfelder, ein Steuerfeld und der (leere) Nettobetrag"); assertTrue(detail.proposals.all { it.status.name == "PROPOSED" && it.origin.name == "OCR" })
         assertEquals("378", detail.proposals.single { it.kind == ExtractedFieldKind.AMOUNT }.normalizedValue)
         assertEquals(detail.proposals.map { it.id }, detail.current.map { it.id }, "ohne Entscheidung ist der Vorschlag der aktuelle Stand")
         // unbestätigt: nichts davon ist Belegstand; Beleg, Hash und Original unverändert
@@ -80,7 +80,7 @@ class ExtractionRunTest {
         val schema = registry.getSchema(Files.readString(repo.resolve("api/events/document.extraction_completed.v1.schema.json")))
         assertEquals(emptyList<Any>(), schema.validate(payload, InputFormat.JSON).toList().map { it.message }, payload)
         // ein weiterer Aufruf von execute ändert nichts (kein Doppellauf)
-        assertEquals(RunStatus.COMPLETED, bf.svc.extraction.process(fin, run.id).status); assertEquals(6, fieldRows(run.id).toInt())
+        assertEquals(RunStatus.COMPLETED, bf.svc.extraction.process(fin, run.id).status); assertEquals(7, fieldRows(run.id).toInt())
     }
 
     @Test
@@ -129,7 +129,7 @@ class ExtractionRunTest {
             assertTrue(states.all { it == RunStatus.RUNNING || it == RunStatus.COMPLETED })
             assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.extraction_run WHERE document_id=?", d.documentId))
             assertEquals("COMPLETED", bf.fx.strings("SELECT status FROM taktovia.extraction_run WHERE id=?", runId).single()); assertEquals(1, bf.fx.count("SELECT attempt FROM taktovia.extraction_run WHERE id=?", runId))
-            assertEquals(6, fieldRows(runId).toInt(), "ein Satz Felder, nicht mehrere")
+            assertEquals(7, fieldRows(runId).toInt(), "ein Satz Felder, nicht mehrere")
             assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='document.extraction_completed'", w.tenant.value))
         } finally { rec.behavior = { b -> RecognitionResult(rec.script[Samples.sha256(b)] ?: emptyList()) } }
     }
@@ -149,7 +149,7 @@ class ExtractionRunTest {
         assertEquals(run.id, bf.svc.extraction.request(fin, d.documentId).id)
         val retried = bf.svc.extraction.process(fin, run.id)
         assertEquals(RunStatus.COMPLETED, retried.status); assertEquals(2, retried.attempt); assertNull(retried.failure)
-        assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.extraction_run WHERE document_id=?", d.documentId)); assertEquals(6, fieldRows(run.id).toInt())
+        assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.extraction_run WHERE document_id=?", d.documentId)); assertEquals(7, fieldRows(run.id).toInt())
         // Zeitüberschreitung der Engine selbst (Ausnahme) und endgültiger Fehler
         val (d2, _) = doc(w, *receipt); val r2 = bf.svc.extraction.request(fin, d2.documentId)
         rec.behavior = { throw RecognitionTimeoutException() }
@@ -176,7 +176,7 @@ class ExtractionRunTest {
         } finally { rec.behavior = { b -> RecognitionResult(rec.script[Samples.sha256(b)] ?: emptyList()) } }
         val amount = bf.svc.extraction.latest(fin, d.documentId)!!.proposals.single { it.kind == ExtractedFieldKind.AMOUNT }
         assertEquals("200", amount.normalizedValue, "nur das Ergebnis des aktuellen Versuchs gilt")
-        assertEquals(6, fieldRows(run.id).toInt()); assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='document.extraction_completed'", w.tenant.value))
+        assertEquals(7, fieldRows(run.id).toInt()); assertEquals(1, bf.fx.count("SELECT count(*) FROM taktovia.outbox WHERE tenant_id=? AND event_type='document.extraction_completed'", w.tenant.value))
     }
 
     @Test
@@ -198,7 +198,7 @@ class ExtractionRunTest {
         val r = bf.svc.extraction.request(fin, blank.documentId); val done = bf.svc.extraction.process(fin, r.id)
         assertEquals(RunStatus.COMPLETED, done.status); assertEquals(0, done.fieldCount)
         val detail = bf.svc.extraction.latest(fin, blank.documentId)!!
-        assertEquals(6, detail.proposals.size); assertTrue(detail.proposals.all { it.normalizedValue == null && it.confidence == null && it.source == null && it.rawValue == null })
+        assertEquals(7, detail.proposals.size); assertTrue(detail.proposals.all { it.normalizedValue == null && it.confidence == null && it.source == null && it.rawValue == null })
         val (img, _) = doc(w, *receipt); val r2 = bf.svc.extraction.request(fin, img.documentId)
         rec.behavior = { throw UnsupportedContentException() }
         try {

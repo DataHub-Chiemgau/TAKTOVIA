@@ -85,6 +85,7 @@ class ReceiptController(private val uploads: Uploads, private val extraction: Re
         "id" to f.id.toString(), "field" to f.kind.name, "occurrence" to f.occurrence, "origin" to f.origin.name, "status" to f.status.name, "raw_value" to f.rawValue, "normalized_value" to f.normalizedValue,
         "display_value" to f.displayValue, "qualifier" to f.qualifier, "confidence" to f.confidence, "source" to f.source?.let { linkedMapOf("page" to it.page, "x" to it.x, "y" to it.y, "width" to it.width, "height" to it.height) },
         "suspicious" to f.suspicious, "corrects_field_id" to f.correctsFieldId?.toString(), "decided_by" to f.decidedBy, "decided_at" to f.decidedAt?.toString(),
+        "flag_reason" to f.flagReason?.name,
     )
 
     private fun toHex(b64: String): String = Base64.getUrlDecoder().decode(b64).joinToString("") { "%02x".format(it) }

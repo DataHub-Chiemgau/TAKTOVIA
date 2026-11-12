@@ -18,7 +18,7 @@ data class CaseRef(val kind: CaseKind, val id: UUID)
 enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
 
 /** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
-enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION }
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH }
 
 /** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
 object ExpenseFields {
@@ -28,7 +28,11 @@ object ExpenseFields {
     const val MERCHANT = "merchant"
     const val DOCUMENT_NUMBER = "document_number"
     const val VAT_AMOUNTS = "vat_amounts"
-    val ALL = setOf(AMOUNT_MINOR, CURRENCY, DOCUMENT_DATE, MERCHANT, DOCUMENT_NUMBER, VAT_AMOUNTS)
+    /** Nettobetrag (WP-M4-28): Grundlage der Summenprüfung Netto + Steuer = Brutto. */
+    const val NET_AMOUNT_MINOR = "net_amount_minor"
+    val ALL = setOf(AMOUNT_MINOR, CURRENCY, DOCUMENT_DATE, MERCHANT, DOCUMENT_NUMBER, VAT_AMOUNTS, NET_AMOUNT_MINOR)
+    /** Steuerlich notwendige Pflichtfelder: nie aus `receipt_mandatory_fields` entfernbar (WP-M4-28). */
+    val PROTECTED_MANDATORY = setOf(AMOUNT_MINOR, CURRENCY, DOCUMENT_DATE, MERCHANT)
 }
 
 /** Ein Feld einer Revision: Alt- und Neuwert; `confirmed` = ausdrückliche Bestätigung eines OCR-Vorschlags ohne Wertänderung; `ocrProposal` = der OCR-Vorschlag, den die Entscheidung betrifft. */
@@ -39,7 +43,16 @@ data class RevisionView(
 )
 
 /** Beleg mit aktuellem Feldstand (WP-M4-22/-23): das Dokument (Original, Zustand, Kanal), die bestätigten oder erfassten Felder und die Freigabehindernisse. */
-data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>)
+data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>, val review: ReviewState = ReviewState.NONE)
+
+/**
+ * Stand der Bestätigungspflicht (WP-M4-28, DOC-003): `unconfirmedFields` = Pflichtfelder ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung (Feldnamen aus
+ * [ExpenseFields]); `sumMismatch` = bestätigte Werte mit Netto + Steuer ≠ Brutto. Nur ein Beleg ohne beides ist freigabefähig.
+ */
+data class ReviewState(val unconfirmedFields: List<String>, val sumMismatch: Boolean) {
+    val ready: Boolean get() = unconfirmedFields.isEmpty() && !sumMismatch
+    companion object { val NONE = ReviewState(emptyList(), false) }
+}
 
 /** Bearbeitete Ansicht (z. B. zugeschnittenes Foto) als eigenes Objekt; sie ersetzt nie das Original. */
 class EditedView(val mime: String, val bytes: ByteArray)
@@ -111,10 +124,14 @@ interface ReceiptIntake {
 
 data class DocumentSettingsView(
     val receiptOcrEnabled: Boolean, val invoiceEmailInbound: String?, val inboundLegalEntityId: UUID?, val verifiedSenderDomains: Set<String>, val revision: Long,
+    /** `receipt_mandatory_fields` (WP-M4-28): Felder, die vor der Freigabe bestätigt oder korrigiert sein müssen; mindestens [ExpenseFields.PROTECTED_MANDATORY]. */
+    val receiptMandatoryFields: Set<String> = ExpenseFields.PROTECTED_MANDATORY,
 )
 
 data class UpdateDocumentSettings(
     val receiptOcrEnabled: Boolean, val invoiceEmailInbound: String?, val inboundLegalEntityId: UUID?, val verifiedSenderDomains: Set<String>,
+    /** `null` = unverändert lassen. Muss die geschützten Felder enthalten (sonst 422). */
+    val receiptMandatoryFields: Set<String>? = null,
 )
 
 /** Mandanteneinstellungen der Belege (`receipt_ocr_enabled`, `invoice_email_inbound`). Ohne gespeicherte Einstellung: OCR an, kein E-Mail-Eingang. Ändern darf die Finanzrolle. */
@@ -161,9 +178,33 @@ interface IntegrityChecks {
     fun requirePostable(jdbc: org.springframework.jdbc.core.JdbcOperations, documentId: UUID)
 }
 
+// ---- Bestätigungspflicht (WP-M4-28) ----
+
 /**
- * Bündel der Belegbausteine (WP-M4-21 bis -27); die Ports (Objektspeicher, Prüfer, OCR) liefert die Anwendung.
+ * Voraussetzung der Freigabe: OCR-Ergebnisse sind unbestätigte Vorschläge (DOC-003). Freigabefähig ist ein Beleg erst, wenn alle Pflichtfelder (`receipt_mandatory_fields`) menschlich bestätigt oder
+ * korrigiert sind, kein markierter Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt und die bestätigten Werte der Summenregel Netto + Steuer = Brutto genügen. Die Freigabeschritte
+ * selbst (Rollentrennung, Vier-Augen, Buchung) folgen mit WP-M4-34 und rufen diese Prüfung in ihrer Transaktion.
+ */
+interface ReceiptReview {
+    fun state(ctx: RequestContext, id: UUID): ReviewState
+
+    /**
+     * Prüft in eigener Transaktion unter Zeilensperre: Revision (`expectedRevision`, veraltet 412), Zustand `STORED`, Integrität (409) und Bestätigungspflicht (422 `UNCONFIRMED_FIELDS` mit den
+     * offenen Feldern als Verletzungen); davor wird der Originalhash geprüft ([IntegrityChecks.clearForApproval]). Es wird nichts gebucht und nichts verändert.
+     */
+    fun requireApprovable(ctx: RequestContext, id: UUID, expectedRevision: Long): ApprovalClearance
+
+    /**
+     * Wie oben, aber in der **laufenden Transaktion** der Freigabe (`jdbc` im Mandantenkontext): die Belegzeile wird `FOR UPDATE` gesperrt, daher kann zwischen Prüfung und Zustandswechsel keine
+     * Feldkorrektur dazwischentreten; eine Korrektur auf der alten Revision scheitert mit 412 bzw. nach dem Zustandswechsel mit 409 `IMMUTABLE_RECORD`.
+     */
+    fun requireApprovable(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, id: UUID, expectedRevision: Long)
+}
+
+/**
+ * Bündel der Belegbausteine (WP-M4-21 bis -28); die Ports (Objektspeicher, Prüfer, OCR) liefert die Anwendung.
  */
 class DocumentServices(
     val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
+    val review: ReceiptReview,
 )

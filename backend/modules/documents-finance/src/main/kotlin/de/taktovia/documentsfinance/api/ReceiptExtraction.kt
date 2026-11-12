@@ -34,11 +34,13 @@ interface ReceiptRecognizer {
 
 enum class ExtractedFieldKind(val expenseField: String) {
     DOCUMENT_DATE(ExpenseFields.DOCUMENT_DATE), AMOUNT(ExpenseFields.AMOUNT_MINOR), CURRENCY(ExpenseFields.CURRENCY), MERCHANT(ExpenseFields.MERCHANT),
-    DOCUMENT_NUMBER(ExpenseFields.DOCUMENT_NUMBER), VAT_AMOUNT(ExpenseFields.VAT_AMOUNTS),
+    DOCUMENT_NUMBER(ExpenseFields.DOCUMENT_NUMBER), VAT_AMOUNT(ExpenseFields.VAT_AMOUNTS), NET_AMOUNT(ExpenseFields.NET_AMOUNT_MINOR),
 }
 
 enum class FieldOrigin { OCR, HUMAN }
 enum class FieldStatus { PROPOSED, CONFIRMED, CORRECTED }
+/** Markierung eines OCR-Vorschlags (WP-M4-28): niedrige Konfidenz oder Summenabweichung (Netto + Steuer ≠ Brutto). */
+enum class FlagReason { LOW_CONFIDENCE, SUM_MISMATCH }
 enum class RunStatus { QUEUED, RUNNING, COMPLETED, FAILED }
 enum class RunFailure { TIMEOUT, ENGINE_ERROR, UNSUPPORTED_CONTENT, ORIGINAL_UNAVAILABLE }
 
@@ -51,6 +53,8 @@ data class SourceLocation(val page: Int, val x: Double, val y: Double, val width
 data class ExtractedFieldView(
     val id: UUID, val kind: ExtractedFieldKind, val occurrence: Int, val origin: FieldOrigin, val status: FieldStatus, val rawValue: String?, val normalizedValue: String?, val displayValue: String?,
     val qualifier: String?, val confidence: Double?, val source: SourceLocation?, val suspicious: Boolean, val correctsFieldId: UUID?, val decidedBy: String?, val decidedAt: Instant?,
+    /** Nur am OCR-Vorschlag: warum er einer menschlichen Bestätigung bedarf (WP-M4-28). */
+    val flagReason: FlagReason? = null,
 )
 
 data class ExtractionRunView(
@@ -61,9 +65,12 @@ data class ExtractionRunView(
 /** `proposals` = die unveränderten OCR-Vorschläge, `current` = je Feld (und Vorkommen) der jüngste Stand (Vorschlag, Bestätigung oder Korrektur). */
 data class ExtractionDetail(val run: ExtractionRunView, val proposals: List<ExtractedFieldView>, val current: List<ExtractedFieldView>)
 
-/** Lease und Zeitgrenze der Extraktion (Planungsdefaults, nicht freigegeben). */
-data class ExtractionPolicy(val lease: Duration = Duration.ofSeconds(60), val recognitionTimeout: Duration = Duration.ofSeconds(30)) {
-    init { require(!lease.isNegative && !lease.isZero && !recognitionTimeout.isNegative && !recognitionTimeout.isZero) }
+/**
+ * Lease, Zeitgrenze und Markierungsschwelle der Extraktion (Planungsdefaults, nicht freigegeben). `lowConfidenceThreshold`: ein Vorschlag mit Konfidenz darunter wird mit `LOW_CONFIDENCE`
+ * markiert; die Schwelle „wesentliche Unsicherheit“ ist kein Katalogparameter (WP-M4 Offener Punkt 11), 0,80 ist eine Testschwelle, die die Fachanalyse bestätigen muss.
+ */
+data class ExtractionPolicy(val lease: Duration = Duration.ofSeconds(60), val recognitionTimeout: Duration = Duration.ofSeconds(30), val lowConfidenceThreshold: Double = 0.80) {
+    init { require(!lease.isNegative && !lease.isZero && !recognitionTimeout.isNegative && !recognitionTimeout.isZero && lowConfidenceThreshold in 0.0..1.0) }
 }
 
 /**

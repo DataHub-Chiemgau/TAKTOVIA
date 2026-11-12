@@ -58,8 +58,8 @@ class ExpenseController(private val expenses: Expenses) {
         return ExpenseResource(linkedMapOf(
             "document_id" to d.documentId.toString(), "legal_entity_id" to d.legalEntityId?.toString(), "state" to d.workflowState, "source_channel" to d.channel.name, "document_kind" to d.kind.name,
             "case_ref" to d.caseRef?.let { linkedMapOf("kind" to it.kind.name, "id" to it.id.toString()) }, "mime" to d.mime, "size_bytes" to d.sizeBytes, "sha256" to toB64(d.sha256),
-            "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to d.approvable,
-            "blockers" to e.blockers.map { it.name }, "fields" to e.fields, "revision" to d.revision,
+            "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.blockers.isEmpty(),
+            "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 

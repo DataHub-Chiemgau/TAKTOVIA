@@ -1,0 +1,3 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+extracted_field;flag_reason;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-28: Markierung des OCR-Vorschlags (LOW_CONFIDENCE, SUM_MISMATCH)
+document_settings;receipt_mandatory_fields;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-28: Pflichtfelder je Mandant (Feldnamen)

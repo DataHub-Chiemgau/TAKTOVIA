@@ -28,7 +28,7 @@
 - **Negativ:** Freigabe mit unbestätigtem Betrag wird abgewiesen (kein Kostenereignis, keine `journal`-Zeile); Summenabweichung (Netto + Steuer ≠ Brutto) markiert und blockiert; OCR liest 89,00 statt 39,00, Korrektur auf 39,00 möglich, `suggested_value` 89,00 bleibt abrufbar (E2E-066); Änderung ohne `If-Match` (428); Bestätigen/Korrigieren durch Benutzer ohne Belegprüfungsrecht (403); Beleg eines anderen Mandanten (404).
 - **Konkurrierend (Geld):** Feldkorrektur parallel zur Freigabe: die Freigabe auf der alten Dokumentrevision scheitert mit 412, es wird kein unbestätigter Wert gebucht.
 - **Referenztests:** E2E-064, E2E-066, PH-AT-012.
-- Testfälle: E2E-064; E2E-066; PH-AT-012; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/OcrConfirmationTest.kt::freigabe_mit_unbestaetigtem_betrag_wird_abgewiesen; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/OcrConfirmationTest.kt::korrektur_parallel_zur_freigabe_ergibt_412; geplant:db/tests/test_extracted_field.py::test_ocr_vorschlag_bleibt_unveraendert
+- Testfälle: E2E-064; E2E-066; PH-AT-012; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OcrConfirmationTest.kt::freigabe_mit_unbestaetigtem_betrag_wird_abgewiesen; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/OcrConfirmationTest.kt::korrektur_parallel_zur_freigabe_ergibt_412; db/tests/test_extracted_field.py::test_ocr_vorschlag_bleibt_unveraendert
 
 ## Reviews
 

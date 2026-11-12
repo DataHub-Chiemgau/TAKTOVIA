@@ -58,7 +58,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED';
 
@@ -338,9 +338,10 @@ export interface ExpenseFieldValues {
   merchant?: string;
   document_number?: string;
   vat_amounts?: ExpenseVatAmount[];
+  net_amount_minor?: number;
 }
 
-export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts';
+export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts' | 'net_amount_minor';
 
 export interface ExpenseCorrection {
   reason: string;
@@ -368,7 +369,9 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH')[];
+  unconfirmed_fields: ExpenseFieldName[];
+  sum_mismatch: boolean;
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -2276,7 +2279,7 @@ export interface ReceiptDocument {
 
 export interface ExtractedField {
   id: UUID;
-  field: 'DOCUMENT_DATE' | 'AMOUNT' | 'CURRENCY' | 'MERCHANT' | 'DOCUMENT_NUMBER' | 'VAT_AMOUNT';
+  field: 'DOCUMENT_DATE' | 'AMOUNT' | 'CURRENCY' | 'MERCHANT' | 'DOCUMENT_NUMBER' | 'VAT_AMOUNT' | 'NET_AMOUNT';
   occurrence: number;
   origin: 'OCR' | 'HUMAN';
   status: 'PROPOSED' | 'CONFIRMED' | 'CORRECTED';
@@ -2296,6 +2299,7 @@ export interface ExtractedField {
   corrects_field_id: UUID | null;
   decided_by: string | null;
   decided_at: string | null;
+  flag_reason: 'LOW_CONFIDENCE' | 'SUM_MISMATCH' | null;
 }
 
 export interface ExtractionRun {

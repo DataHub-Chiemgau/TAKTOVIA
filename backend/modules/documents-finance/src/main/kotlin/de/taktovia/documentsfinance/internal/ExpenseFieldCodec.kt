@@ -21,7 +21,7 @@ internal object ExpenseFieldCodec {
         fun bad(code: ViolationCode = ViolationCode.INVALID_VALUE): Nothing = throw ProblemException.invalid(Violation(pointer, code))
         if (value == null) bad(ViolationCode.REQUIRED)
         return when (key) {
-            ExpenseFields.AMOUNT_MINOR -> minor(value, pointer)
+            ExpenseFields.AMOUNT_MINOR, ExpenseFields.NET_AMOUNT_MINOR -> minor(value, pointer)
             ExpenseFields.CURRENCY -> (value as? String)?.takeIf { Regex("[A-Z]{3}").matches(it) } ?: bad(ViolationCode.PATTERN_MISMATCH)
             ExpenseFields.DOCUMENT_DATE -> try { LocalDate.parse(value as? String ?: bad(ViolationCode.TYPE_MISMATCH)).toString() } catch (e: DateTimeParseException) { bad(ViolationCode.INVALID_FORMAT) }
             ExpenseFields.MERCHANT -> text(value, 200, pointer)

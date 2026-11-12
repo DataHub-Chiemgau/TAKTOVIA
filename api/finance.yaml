@@ -99,7 +99,7 @@ paths:
         '428':
           $ref: common.yaml#/components/responses/Problem
       description: Vieraugenregel nach Betrag/Policy; Ersteller darf erforderliche Zweitfreigabe nicht selbst erfüllen. POSTED
-        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED.
+        erst nach atomarem Journal+Outbox-Commit. Dublettenkandidat blockiert mit 409 DUPLICATE_REVIEW_REQUIRED. Solange ein Pflichtfeld nicht bestätigt oder korrigiert ist, ein markierter OCR-Vorschlag (niedrige Konfidenz, Summenabweichung) unentschieden bleibt oder Netto + Steuer ≠ Brutto gilt, weist die Freigabe mit 422 `UNCONFIRMED_FIELDS` ab (`violations[].pointer` = `/fields/<feld>`); die Prüfung läuft in der Freigabetransaktion auf der gesperrten Belegzeile, eine parallele Feldkorrektur auf der alten Revision ergibt 412.
       requestBody:
         required: true
         content:
@@ -313,6 +313,12 @@ components:
           maxItems: 6
           items:
             $ref: '#/components/schemas/ExpenseVatAmount'
+        net_amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Nettobetrag in kleinster Einheit; Netto + Mehrwertsteuer muss dem Brutto entsprechen, sonst ist der Beleg nicht freigabefähig (`SUM_MISMATCH`).
     ExpenseFieldName:
       type: string
       enum:
@@ -322,6 +328,7 @@ components:
       - merchant
       - document_number
       - vat_amounts
+      - net_amount_minor
     ExpenseCorrection:
       type: object
       additionalProperties: false
@@ -417,7 +424,7 @@ components:
           - VIOLATED
         approvable:
           type: boolean
-          description: Aus dem Dokument folgende Freigabefähigkeit (keine Blocker); weitere Voraussetzungen kommen mit späteren Paketen.
+          description: Freigabefähigkeit (keine Blocker); weitere Voraussetzungen (Kostenzuordnung, Dublette, Rollentrennung) kommen mit späteren Paketen.
         blockers:
           type: array
           items:
@@ -426,6 +433,16 @@ components:
             - NOT_STORED
             - UNVERIFIED_SENDER
             - INTEGRITY_VIOLATION
+            - UNCONFIRMED_FIELDS
+            - SUM_MISMATCH
+        unconfirmed_fields:
+          type: array
+          description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
+          items:
+            $ref: '#/components/schemas/ExpenseFieldName'
+        sum_mismatch:
+          type: boolean
+          description: Die bestätigten Werte erfüllen Netto + Steuer = Brutto nicht.
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:
@@ -449,6 +466,8 @@ components:
       - integrity
       - approvable
       - blockers
+      - unconfirmed_fields
+      - sum_mismatch
       - fields
       - revision
     ExpenseFieldChange:

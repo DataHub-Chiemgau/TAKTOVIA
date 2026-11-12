@@ -440,6 +440,7 @@ components:
           - MERCHANT
           - DOCUMENT_NUMBER
           - VAT_AMOUNT
+          - NET_AMOUNT
         occurrence:
           type: integer
           minimum: 0
@@ -527,6 +528,14 @@ components:
           - type: string
             format: date-time
           - type: 'null'
+        flag_reason:
+          oneOf:
+          - type: string
+            enum:
+            - LOW_CONFIDENCE
+            - SUM_MISMATCH
+          - type: 'null'
+          description: Nur am OCR-Vorschlag. Niedrige Konfidenz oder Summenabweichung (Netto + Steuer ≠ Brutto); ein markierter Vorschlag bedarf einer menschlichen Bestätigung oder Korrektur vor der Freigabe.
       required:
       - id
       - field
@@ -543,6 +552,7 @@ components:
       - corrects_field_id
       - decided_by
       - decided_at
+      - flag_reason
     ExtractionRun:
       type: object
       additionalProperties: false

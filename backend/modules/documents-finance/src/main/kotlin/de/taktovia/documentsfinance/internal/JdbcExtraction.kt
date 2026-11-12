@@ -7,6 +7,7 @@ import de.taktovia.documentsfinance.api.ExtractionPolicy
 import de.taktovia.documentsfinance.api.ExtractionRunView
 import de.taktovia.documentsfinance.api.FieldOrigin
 import de.taktovia.documentsfinance.api.FieldStatus
+import de.taktovia.documentsfinance.api.FlagReason
 import de.taktovia.documentsfinance.api.ReceiptExtraction
 import de.taktovia.documentsfinance.api.ReceiptRecognizer
 import de.taktovia.documentsfinance.api.RecognitionResult
@@ -88,14 +89,14 @@ internal class JdbcExtraction(
                         "failure" to outcome.failure.name, "attempt" to view.attempt), clock.instant(), correlationId = ctx.correlationId))
                 }
                 is Outcome.Done -> {
-                    val fields = ReceiptFieldParser.parse(outcome.result)
+                    val fields = ReceiptFieldParser.parse(outcome.result, policy.lowConfidenceThreshold)
                     val n = j.update("UPDATE taktovia.extraction_run SET status = 'COMPLETED', field_count = ?, finished_at = clock_timestamp(), lease_until = NULL WHERE id = ? AND status = 'RUNNING' AND attempt = ?",
                         fields.count { it.normalized != null }, runId, view.attempt)
                     if (n == 1) {
                         for (f in fields) {
-                            j.update("INSERT INTO taktovia.extracted_field (tenant_id, id, document_id, run_id, field_kind, occurrence, origin, status, raw_value, normalized_value, display_value, qualifier, confidence, source_ref, suspicious) " +
-                                "VALUES (taktovia.current_tenant(),?,?,?,?,?,'OCR','PROPOSED',?,?,?,?,?,?::jsonb,?)", UUID.randomUUID(), doc.view.documentId, runId, f.kind.name, f.occurrence, f.raw, f.normalized,
-                                (f.raw ?: f.normalized)?.let { Neutralizer.display(it) }, f.qualifier, f.confidence?.toBigDecimal(), f.source?.let { sourceJson(it) }, f.suspicious)
+                            j.update("INSERT INTO taktovia.extracted_field (tenant_id, id, document_id, run_id, field_kind, occurrence, origin, status, raw_value, normalized_value, display_value, qualifier, confidence, source_ref, suspicious, flag_reason) " +
+                                "VALUES (taktovia.current_tenant(),?,?,?,?,?,'OCR','PROPOSED',?,?,?,?,?,?::jsonb,?,?)", UUID.randomUUID(), doc.view.documentId, runId, f.kind.name, f.occurrence, f.raw, f.normalized,
+                                (f.raw ?: f.normalized)?.let { Neutralizer.display(it) }, f.qualifier, f.confidence?.toBigDecimal(), f.source?.let { sourceJson(it) }, f.suspicious, f.flag?.name)
                         }
                         outbox.append(j, OutboxEvent(runId, view.attempt.toLong(), "document.extraction_completed", linkedMapOf("document_id" to doc.view.documentId.toString(), "run_id" to runId.toString(),
                             "fields_found" to fields.count { it.normalized != null }, "attempt" to view.attempt), clock.instant(), correlationId = ctx.correlationId))
@@ -145,13 +146,13 @@ internal class JdbcExtraction(
             ExtractionRunView(rs.getObject("id", UUID::class.java), rs.getObject("document_id", UUID::class.java), status, rs.getString("engine"), rs.getString("ocr_version"), rs.getInt("attempt"),
                 rs.getString("failure_code")?.let { RunFailure.valueOf(it) }, rs.getObject("field_count") as Int?, rs.getTimestamp("requested_at").toInstant(), rs.getTimestamp("finished_at")?.toInstant())
         }
-        const val FIELD_COLUMNS = "f.id, f.field_kind, f.occurrence, f.origin, f.status, f.raw_value, f.normalized_value, f.display_value, f.qualifier, f.confidence, f.source_ref::text AS source_ref, f.suspicious, f.corrects_field_id, f.decided_by, f.decided_at"
+        const val FIELD_COLUMNS = "f.id, f.field_kind, f.occurrence, f.origin, f.status, f.raw_value, f.normalized_value, f.display_value, f.qualifier, f.confidence, f.source_ref::text AS source_ref, f.suspicious, f.corrects_field_id, f.decided_by, f.decided_at, f.flag_reason"
         val FIELD = RowMapper { rs, _ ->
             val src = rs.getString("source_ref")?.let { ExpenseFieldCodec.parseTree(it) }
             ExtractedFieldView(rs.getObject("id", UUID::class.java), ExtractedFieldKind.valueOf(rs.getString("field_kind")), rs.getInt("occurrence"), FieldOrigin.valueOf(rs.getString("origin")),
                 FieldStatus.valueOf(rs.getString("status")), rs.getString("raw_value"), rs.getString("normalized_value"), rs.getString("display_value"), rs.getString("qualifier"),
                 rs.getBigDecimal("confidence")?.toDouble(), src?.let { SourceLocation((it["page"] as Number).toInt(), (it["x"] as Number).toDouble(), (it["y"] as Number).toDouble(), (it["width"] as Number).toDouble(), (it["height"] as Number).toDouble()) },
-                rs.getBoolean("suspicious"), rs.getObject("corrects_field_id", UUID::class.java), rs.getString("decided_by"), rs.getTimestamp("decided_at")?.toInstant())
+                rs.getBoolean("suspicious"), rs.getObject("corrects_field_id", UUID::class.java), rs.getString("decided_by"), rs.getTimestamp("decided_at")?.toInstant(), rs.getString("flag_reason")?.let { FlagReason.valueOf(it) })
         }
     }
 }
