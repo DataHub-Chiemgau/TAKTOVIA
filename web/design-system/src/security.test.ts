@@ -29,6 +29,13 @@ describe('Eingabehärtung im Web-Rahmen (SEC-009)', () => {
     );
   });
 
+  it('die Kartenquelle erweitert nur img-src um genau ihre Herkunft (WP-M2-40)', () => {
+    expect(contentSecurityPolicy()).toContain("img-src 'self' data:;");
+    const csp = contentSecurityPolicy(undefined, undefined, 'https://tiles.example.test');
+    expect(csp).toContain("img-src 'self' data: https://tiles.example.test;");
+    expect(csp).toContain("default-src 'self'");
+  });
+
   it('withCsp fügt die Policy genau einmal ein', () => {
     const html = '<!doctype html><html><head><title>x</title></head><body></body></html>';
     const once = withCsp(html);

@@ -27,6 +27,7 @@ internal object ServicegeoServicesFactory {
         override val availability: ServiceAvailabilities = JdbcServiceAvailabilities(ctxTx)
         override val areas: ServiceAreas = JdbcServiceAreas(ctxTx, audit, outbox, clock, authorizer)
         override val stops: Stops = JdbcStops(ctxTx, audit, outbox, clock)
+        override val passenger: de.taktovia.servicegeo.api.PassengerGeo = JdbcPassengerGeo(ctxTx, clock)
         override val relations: RelationRules = JdbcRelationRules(ctxTx, audit, outbox, clock, authorizer)
     }
 }

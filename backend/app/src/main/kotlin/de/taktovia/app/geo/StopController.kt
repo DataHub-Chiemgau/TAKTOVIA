@@ -5,6 +5,7 @@ import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
 import de.taktovia.platform.api.Etag
+import de.taktovia.platform.api.Page
 import de.taktovia.platform.api.Paging
 import de.taktovia.platform.problem.ProblemException
 import de.taktovia.platform.problem.Violation
@@ -13,6 +14,7 @@ import de.taktovia.servicegeo.api.CreateStop
 import de.taktovia.servicegeo.api.GeoPoint
 import de.taktovia.servicegeo.api.ReviseStop
 import de.taktovia.servicegeo.api.ServicegeoApi
+import de.taktovia.servicegeo.api.PassengerStopView
 import de.taktovia.servicegeo.api.StopFilter
 import de.taktovia.servicegeo.api.StopView
 import jakarta.servlet.http.HttpServletRequest
@@ -51,7 +53,13 @@ class StopController(private val geo: ServicegeoApi, private val codec: CursorCo
         }
         val rad = radius?.let { it.toIntOrNull()?.takeIf { v -> v in 1..100_000 } ?: throw invalid("near_radius_m") } ?: 1000
         val act = active?.let { when (it) { "true" -> true; "false" -> false; else -> throw invalid("active") } }
-        val filter = StopFilter(service, GeoWeb.queryInstant(at, "at"), near, if (near != null) rad else null, act)
+        val atInstant = GeoWeb.queryInstant(at, "at")
+        // Fahrgäste und alle Rollen ohne Stammdatenrecht: enge Lesesicht (WP-M2-40), ohne interne Felder, nach Entfernung bzw. Name sortiert, ohne Folgeseiten
+        if (!ctx.hasScope("geo:write")) {
+            val rows = geo.passenger.stops(ctx, service, atInstant, near, if (near != null) rad else null, Paging.limit(limit))
+            return Page(rows, null, Instant.now()).toMap(::passengerJson)
+        }
+        val filter = StopFilter(service, atInstant, near, if (near != null) rad else null, act)
         val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "stops/" + listOf(service, at, near, act, rad).joinToString("|"))
         val lim = Paging.limit(limit)
         val rows = geo.stops.list(ctx, filter, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
@@ -69,7 +77,13 @@ class StopController(private val geo: ServicegeoApi, private val codec: CursorCo
     @GetMapping("/v1/stops/{stop_id}")
     fun get(@PathVariable("stop_id") id: UUID, @RequestParam(required = false) revision: String?, request: HttpServletRequest): GeoResource {
         val rev = revision?.let { it.toLongOrNull()?.takeIf { v -> v >= 1 } ?: throw invalid("revision") }
-        val v = geo.stops.get(RequestContexts.require(request), id, rev)
+        val ctx = RequestContexts.require(request)
+        if (!ctx.hasScope("geo:write")) {
+            if (rev != null) throw ProblemException.notFound()   // ältere Revisionen sind Pflegesicht
+            val v = geo.passenger.stop(ctx, id, null)
+            return GeoResource(passengerJson(v), v.revision)
+        }
+        val v = geo.stops.get(ctx, id, rev)
         return GeoResource(json(v), v.revision)
     }
 
@@ -82,6 +96,9 @@ class StopController(private val geo: ServicegeoApi, private val codec: CursorCo
     }
 
     private fun invalid(name: String) = ProblemException.invalid(Violation("/\$query/$name", ViolationCode.INVALID_FORMAT))
+
+    private fun passengerJson(v: PassengerStopView): Map<String, Any?> = linkedMapOf("stop_id" to v.stopId.toString(), "revision" to v.revision, "name" to v.name,
+        "point" to linkedMapOf("latitude" to v.point.latitude, "longitude" to v.point.longitude), "accessibility" to v.accessibility, "distance_m" to v.distanceMeters)
 
     private fun json(v: StopView): Map<String, Any?> = linkedMapOf("id" to v.revisionId.toString(), "stop_id" to v.stopId.toString(), "revision" to v.revision, "name" to v.name,
         "point" to linkedMapOf("latitude" to v.point.latitude, "longitude" to v.point.longitude), "accessibility" to v.accessibility, "traffic_products" to v.trafficProducts,

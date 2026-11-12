@@ -29,6 +29,8 @@ interface ServicegeoApi {
     val areas: ServiceAreas
     /** Haltepunktrevisionen mit Aktivstatus und zulässigen Verkehrsprodukten (WP-M2-05). */
     val stops: Stops
+    /** Lesesicht für Fahrgäste auf Bediengebiet und Haltepunkte (WP-M2-40). */
+    val passenger: PassengerGeo
     /** Start-/Zielzulässigkeit nach Zonen und erlaubten Zielpunkten (WP-M2-06). */
     val relations: RelationRules
 
