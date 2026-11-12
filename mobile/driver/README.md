@@ -18,6 +18,8 @@ Flutter-Fahrer-App mit verschlüsselter lokaler Outbox (Offlinebetrieb, Kap. 01 
 
 Die Lizenzen sind nicht einzeln geprüft (Flutter BSD-3-Clause laut Plan, `sqlite3` MIT laut pub.dev-Tags); Eintrag in `docs/umsetzungsplan/versionen.md` durch die Zuständigen. Begründung der Wahl: [docs/entscheidung-verschluesselte-sqlite.md](docs/entscheidung-verschluesselte-sqlite.md).
 
+- **WP-M4-14/-20 (nicht ausgeführt):** `lib/zeit/next_duty.dart` (Eigensicht `GET /v1/rosters/own-shifts`, „Nächster Dienst“) mit `test/zeit/next_duty_test.dart`; reine Dart-Logik, ohne Widgetanbindung, weder analysiert noch getestet. Die Anzeige UI-13 ist als Web-Ansicht gebaut und getestet (`web/operator/src/zeit`).
+
 ## Was fehlt (Blocker)
 
 - **Flutter/Dart nicht ausgeführt.** Das Flutter-SDK wurde heruntergeladen und geprüft, der Start (`flutter --version`) wurde von der Berechtigungsprüfung der Sitzung abgelehnt (Ausführung heruntergeladenen Codes). Es liegen daher **kein** `flutter analyze`, **kein** `flutter test`, **kein** `pubspec.lock`, **kein** Build-Ergebnis vor. Die Dart-Dateien sind ungeprüft und können Syntax- oder Typfehler enthalten.

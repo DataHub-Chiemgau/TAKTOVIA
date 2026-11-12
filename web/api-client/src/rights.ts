@@ -9,6 +9,7 @@ export type Right =
   | 'callcenter'
   | 'finance'
   | 'staff'
+  | 'time.own'
   | 'fleet'
   | 'fleet.write'
   | 'drivers'
@@ -35,6 +36,8 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'costs:allocate': ['finance'],
   'expenses:approve': ['finance'],
   'rosters:publish': ['staff'],
+  // UI-13 Eigene Zeit/Abwesenheit (WP-M4-20): jede Person mit Zeitrecht sieht ausschließlich ihre eigenen Daten; der Server bindet die Person an den Akteur.
+  'time-events:read': ['time.own'],
   'driver-releases:write': ['staff'],
   'fleet:read': ['fleet'],
   'fleet:write': ['fleet', 'fleet.write'],

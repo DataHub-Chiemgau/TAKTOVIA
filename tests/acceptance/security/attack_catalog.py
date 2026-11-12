@@ -56,7 +56,9 @@ def fill_path(doc, path, op, replace=None):
     """Pfadvariablen mit gültigen Werten füllen; `replace` = (Variablenname, Wert) ersetzt eine."""
     for p in param_names(doc, op):
         if p['in'] == 'path':
-            value = replace[1] if replace and replace[0] == p['name'] else samples.UUID_EXAMPLE
+            # Ganzzahlige Pfadvariable (z. B. Planrevision, WP-M4-15): gültiger Wert 1, sonst die Beispiel-UUID
+            default = '1' if samples.resolve(doc, p.get('schema', {})).get('type') == 'integer' else samples.UUID_EXAMPLE
+            value = replace[1] if replace and replace[0] == p['name'] else default
             path = path.replace('{' + p['name'] + '}', value)
     return path
 
