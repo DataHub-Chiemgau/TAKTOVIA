@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/expense.revision_created.v1.schema.json",
+  "title": "Belegrevision angelegt (WP-M4-23)",
+  "description": "Payload von `expense.revision_created`. Aggregat: expense_document / neue Revision. Nennt nur die geänderten Feldnamen, nie Werte (diese stehen in `document_revision`).",
+  "type": "object",
+  "required": ["document_id", "revision", "fields", "edited_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 2},
+    "fields": {"type": "array", "items": {"enum": ["amount_minor", "currency", "document_date", "merchant", "document_number", "vat_amounts"]}, "uniqueItems": true},
+    "edited_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "revision": 2, "fields": ["amount_minor"], "edited_at": "2026-12-01T06:10:00Z"}
+  ]
+}
