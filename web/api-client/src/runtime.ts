@@ -55,6 +55,11 @@ export interface ApiClient {
    * Fehlt die Methode (Testdoubles), zeigt die Oberfläche den Zustand „Original nicht ladbar“.
    */
   callBlob?<K extends OperationId>(id: K, args: CallArgs<K>): Promise<{ blob: Blob; mime: string }>;
+  /**
+   * Öffnet einen Ereignisstrom (`text/event-stream`, z. B. den Live-Kanal, WP-M3-35) mit demselben Zugriffstoken und denselben Fehlern wie [call]. Das Token geht im Header mit
+   * (nie in der Adresse); deshalb liest der Client den Strom über `fetch`, nicht über `EventSource`. Fehlt die Methode (Testdoubles), gilt der Kanal als nicht verfügbar.
+   */
+  openStream?<K extends OperationId>(id: K, args: CallArgs<K>): Promise<Response>;
 }
 
 function parseProblem(text: string): Problem | undefined {
@@ -155,6 +160,21 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       if (!response.ok) return fail(response);
       const blob = await response.blob();
       return { blob, mime: response.headers.get('content-type') ?? blob.type };
+    },
+    async openStream(id, args) {
+      const { url, init } = prepare(
+        id,
+        args as CallArgs<OperationId>,
+        'text/event-stream, application/problem+json',
+      );
+      let response: Response;
+      try {
+        response = await doFetch(url, init);
+      } catch {
+        throw new ApiError(0);
+      }
+      if (!response.ok) return fail(response);
+      return response;
     },
   };
 }

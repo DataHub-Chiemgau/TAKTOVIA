@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+business_alert;service_id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;source_event_id;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;recipient_role;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;escalation_level;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;escalate_at;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;escalated_at;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;resolved_at;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;reason_code;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;ref_type;nein;FLOTTE_SICHERHEIT;;;;
+business_alert;ref_id;nein;FLOTTE_SICHERHEIT;;;;
+alert_acknowledgement;cause_code;nein;FLOTTE_SICHERHEIT;;;;

@@ -51,11 +51,14 @@ interface StafftimeApi {
     /** Positionserfassung und Standortalter (WP-M3-34). */
     val positions: Positions
 
+    /** Planbestätigung des Fahrers und Hinweis bei ausbleibender Bestätigung (WP-M3-27). */
+    val planAcks: DriverPlanAcks
+
     companion object {
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
-            workRules: WorkRuleSource = WorkRuleSource.DEFAULT, effects: DriverEventEffects = DriverEventEffects.NONE,
-        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules, effects)
+            workRules: WorkRuleSource = WorkRuleSource.DEFAULT, effects: DriverEventEffects = DriverEventEffects.NONE, planAckSink: PlanAckOverdueSink = PlanAckOverdueSink.NONE,
+        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules, effects, planAckSink)
     }
 }
 

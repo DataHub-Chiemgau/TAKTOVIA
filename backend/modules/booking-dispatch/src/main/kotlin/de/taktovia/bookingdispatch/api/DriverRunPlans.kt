@@ -39,6 +39,13 @@ interface DriverRunPlans {
     /** Aktueller Plan des Umlaufs der Schicht; `null`, wenn es (noch) keinen Umlauf gibt. Ein Umlauf ohne Stopps hat eine leere Stoppliste. Konsistent: Revision und Stopps stammen aus einer Planrevision. */
     fun currentPlan(ctx: RequestContext, shiftId: UUID, vehicleId: UUID): DriverPlanView?
 
+    /**
+     * Plan einer **früheren oder aktuellen Revision** des Umlaufs der Schicht (WP-M3-27: Vergleichsbasis der Änderungsanzeige und Überwachung unbestätigter Revisionen): die Stopps sind je
+     * Revision unveränderlich (`route_stop`), die Revision ist also jederzeit lesbar. Ohne Personenkontext, nur für den serverseitigen Vergleich in der Modul-Anwendung, nie für die Auslieferung;
+     * `null`, wenn es keinen Umlauf oder die Revision nicht gibt.
+     */
+    fun planAt(tenant: de.taktovia.platform.tenant.TenantId, shiftId: UUID, vehicleId: UUID, revision: Long): DriverPlanView?
+
     companion object {
         fun create(ctxTx: de.taktovia.platform.context.ContextTransactions): DriverRunPlans = de.taktovia.bookingdispatch.internal.JdbcDriverRunPlans(ctxTx)
     }

@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+live_event;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+live_event;seq;nein;TECHNISCHER_BETRIEB;;;;
+live_event;tx;nein;TECHNISCHER_BETRIEB;;;;
+live_event;event_id;nein;TECHNISCHER_BETRIEB;;;;
+live_event;event_type;nein;TECHNISCHER_BETRIEB;;;;
+live_event;topic;nein;TECHNISCHER_BETRIEB;;;;
+live_event;aggregate_id;nein;TECHNISCHER_BETRIEB;;;;
+live_event;aggregate_revision;nein;TECHNISCHER_BETRIEB;;;;
+live_event;service_id;nein;TECHNISCHER_BETRIEB;;;;
+live_event;shift_id;nein;TECHNISCHER_BETRIEB;;;;
+live_event;status;nein;TECHNISCHER_BETRIEB;;;;
+live_event;occurred_at;nein;TECHNISCHER_BETRIEB;;;;
+live_event;created_at;nein;TECHNISCHER_BETRIEB;;;;

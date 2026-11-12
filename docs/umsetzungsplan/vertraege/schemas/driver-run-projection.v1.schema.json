@@ -5,7 +5,7 @@
   "description": "Antwort von `GET /v1/driver/shifts/{shift_id}/run` (`DriverRun` in api/driver.yaml). `ETag` = Planrevision. Feldminimierung (Kap. 05 §5.1): je Stopp nur Haltepunkt (Name, Koordinate, Revision), Zeiten, Personenzahl, Ressourcenbedarf und, nur für die eigene angetretene Schicht mit offenem Fenster, die Unterstützungsmerkmale Rollstuhlbedarf und Ein-/Ausstiegshilfe. Es gibt kein Feld für Kontakt-, Zahlungs- oder Diagnosedaten; additionalProperties=false hält das fest. `forecast_at` = null heißt „keine Prognose“; bis zum ETA-Grundmodell als Laufzeitquelle (OP-20) ist die Prognose die Planzeit aus dem Routing, sonst null.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision"],
+  "required": ["shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision", "revision_state", "acknowledgement_required", "base_revision", "removed_stops"],
   "properties": {
     "shift_id": { "type": "string", "format": "uuid" },
     "vehicle_id": { "type": "string", "format": "uuid" },
@@ -16,6 +16,10 @@
     "plan_revision": { "type": ["integer", "null"], "minimum": 1 },
     "plan_as_of": { "type": "string", "format": "date-time" },
     "acknowledged_revision": { "type": ["integer", "null"], "minimum": 1 },
+    "revision_state": { "enum": ["CURRENT", "NEW_UNCONFIRMED", "AUTO_ADOPTED", "CONFIRMED"] },
+    "acknowledgement_required": { "type": "boolean" },
+    "base_revision": { "type": ["integer", "null"], "minimum": 1 },
+    "removed_stops": { "type": "array", "maxItems": 200, "items": { "type": "object", "additionalProperties": false, "required": ["stop_name", "kind", "planned_at", "booking_ids"], "properties": { "stop_name": { "type": "string" }, "kind": { "type": "string" }, "planned_at": { "type": "string", "format": "date-time" }, "booking_ids": { "type": "array", "items": { "type": "string", "format": "uuid" } } } } },
     "stops": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/Stop" } }
   },
   "$defs": {
@@ -34,6 +38,7 @@
         "passenger_count": { "type": "integer", "minimum": 0, "maximum": 100 },
         "booking_ids": { "type": "array", "maxItems": 20, "items": { "type": "string", "format": "uuid" } },
         "change": { "enum": ["NEW", "REMOVED", "MOVED", "TIME_CHANGED", null] },
+        "previous_planned_at": { "type": ["string", "null"], "format": "date-time" },
         "support_hints": { "type": "array", "maxItems": 0, "description": "Reserviert; die Unterstützung steht in `assistance`." },
         "stop_revision_id": { "type": ["string", "null"], "format": "uuid", "description": "Revision des Haltepunkts (Grundlage der Navigation, WP-M3-28)." },
         "boarding_count": { "type": "integer", "minimum": 0, "maximum": 100 },
@@ -56,7 +61,7 @@
   "examples": [
     {
       "shift_id": "9a8b7c6d-1111-4222-8333-444455556666", "vehicle_id": "9a8b7c6d-1111-4222-8333-444455556667", "shift_state": "STARTED", "shift_valid": true, "release_state": "RELEASED",
-      "missing_requirements": [], "plan_revision": 4, "plan_as_of": "2026-11-01T10:00:00Z", "acknowledged_revision": null,
+      "missing_requirements": [], "plan_revision": 4, "plan_as_of": "2026-11-01T10:00:00Z", "acknowledged_revision": null, "revision_state": "CURRENT", "acknowledgement_required": false, "base_revision": 1, "removed_stops": [],
       "stops": [
         { "route_stop_id": "9a8b7c6d-1111-4222-8333-444455556668", "sequence": 1, "kind": "PICKUP", "planned_at": "2026-11-01T10:05:00Z", "forecast_at": "2026-11-01T10:05:00Z", "stop_name": "Marktplatz",
           "position": { "longitude": 13.74, "latitude": 51.05 }, "passenger_count": 2, "booking_ids": ["5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f"], "change": null, "support_hints": [],

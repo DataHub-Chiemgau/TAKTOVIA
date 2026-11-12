@@ -15,7 +15,7 @@ import java.time.Duration
 
 /**
  * Verdrahtung des Moduls `staff-time` (WP-M3-24, WP-M3-25). `taktovia.stafftime.shift-start-tolerance-minutes` (Planungsdefault 30, 0 bis 720) ist der früheste Dienstantritt vor
- * Schichtbeginn (kein Katalogparameter). `taktovia.stafftime.position-stale-after-seconds` (Planungsdefault 30, OP-04) ist die Schwelle des Standortalters, `…position-future-tolerance-seconds` (5) die Toleranz für Messzeiten in der Zukunft. Die Stoppliste des Fahrers liefert eine optionale [DriverRunSource]-Bean (Run-Lesesicht von `booking-dispatch`, WP-M3-26); ohne sie bleibt sie leer.
+ * Schichtbeginn (kein Katalogparameter). `taktovia.stafftime.position-stale-after-seconds` (Planungsdefault 30, OP-04) ist die Schwelle des Standortalters, `…position-future-tolerance-seconds` (5) die Toleranz für Messzeiten in der Zukunft. `…plan-ack-time-shift-minutes` (5) und `…plan-ack-overdue-minutes` (5) sind die Planungsdefaults der Planbestätigung (WP-M3-27). Die Stoppliste des Fahrers liefert eine optionale [DriverRunSource]-Bean (Run-Lesesicht von `booking-dispatch`, WP-M3-26); ohne sie bleibt sie leer.
  */
 @Configuration
 class StafftimeConfiguration {
@@ -26,6 +26,9 @@ class StafftimeConfiguration {
         @Value("\${taktovia.stafftime.position-future-tolerance-seconds:5}") positionFutureToleranceSeconds: Long,
         @Value("\${taktovia.environment:production}") environment: String,
         @Value("\${taktovia.stafftime.boarding-code-pepper:}") boardingCodePepper: String,
+        @Value("\${taktovia.stafftime.plan-ack-time-shift-minutes:5}") planAckTimeShiftMinutes: Long,
+        @Value("\${taktovia.stafftime.plan-ack-overdue-minutes:5}") planAckOverdueMinutes: Long,
+        planAckSink: ObjectProvider<de.taktovia.stafftime.api.PlanAckOverdueSink>,
     ): StafftimeApi = StafftimeApi.create(
         ctxTx, audit, outbox, Clock.systemUTC(),
         StafftimeSettings(
@@ -35,10 +38,12 @@ class StafftimeConfiguration {
             positionRequiresRetentionRule = environment.trim() == "production",
             // Pfeffer des Boarding-Code-Hashs (WP-M3-30): aus der Umgebung (`TAKTOVIA_STAFFTIME_BOARDING_CODE_PEPPER`), nie im Repository; ohne Wert gilt nur das Salz (nur Entwicklung und Test)
             boardingCodePepper = boardingCodePepper,
+            planAckTimeShift = Duration.ofMinutes(planAckTimeShiftMinutes), planAckOverdue = Duration.ofMinutes(planAckOverdueMinutes),
         ),
         runSource.getIfAvailable(),
         de.taktovia.app.staff.ConfigWorkRuleSource { config.getObject().effective },   // Regelparameter der Arbeitszeit-Hinweise (WP-M4-13) aus der wirksamen Konfiguration
         effects,   // Wirkung der Fahrerereignisse auf Buchung und Fahrt (WP-M3-29)
+        planAckSink.getIfAvailable { de.taktovia.stafftime.api.PlanAckOverdueSink.NONE },   // Hinweis an die Leitstelle bei ausbleibender Bestätigung (WP-M3-27, Alarmdienst WP-M3-52)
     )
 }
 

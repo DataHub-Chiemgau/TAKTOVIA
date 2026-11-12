@@ -2,14 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://taktovia.example/schemas/alert.raised.v1.schema.json",
   "title": "Betriebsalarm ausgelöst (WP-M3-52)",
-  "description": "Payload von `alert.raised`. Aggregat: business_alert / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "description": "Payload von `alert.raised`. Aggregat: business_alert / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md. Seit WP-M3-52 mit Dienst, Empfängerrolle, Eskalationsstufe und Revision der Alarmrichtlinie (Nutzlast fest, alle Felder Pflicht).",
   "type": "object",
   "required": [
     "alert_id",
     "alert_kind",
     "priority",
     "vehicle_id",
-    "dedupe_key"
+    "dedupe_key",
+    "service_id",
+    "recipient_role",
+    "escalation_level",
+    "policy_revision_no"
   ],
   "additionalProperties": false,
   "properties": {
@@ -41,16 +45,44 @@
     },
     "dedupe_key": {
       "type": "string",
-      "maxLength": 128
+      "maxLength": 200
+    },
+    "service_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recipient_role": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "escalation_level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "policy_revision_no": {
+      "type": "integer",
+      "minimum": 1
     }
   },
   "examples": [
     {
       "alert_id": "11111111-2222-4333-8444-555555555555",
-      "alert_kind": "DEFECT_SAFETY_CRITICAL",
+      "alert_kind": "VEHICLE_BLOCK_CRITICAL",
       "priority": "CRITICAL",
       "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
-      "dedupe_key": "DEFECT_SAFETY_CRITICAL:66666666-7777-4888-8999-aaaaaaaaaaaa"
+      "dedupe_key": "VEHICLE_BLOCK_CRITICAL|99999999-7777-4888-8999-aaaaaaaaaaaa|dispatcher",
+      "service_id": null,
+      "recipient_role": "dispatcher",
+      "escalation_level": 1,
+      "policy_revision_no": 1
     }
   ]
 }

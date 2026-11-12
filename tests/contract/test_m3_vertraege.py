@@ -52,6 +52,7 @@ VALID = {
     'DriverPositionBatch': {'shift_id': U1, 'vehicle_id': U2, 'device_id': U3,
                             'samples': [{'position': {'latitude': 52.5, 'longitude': 13.4}, 'accuracy_meters': 8.0, 'measured_at': T0}]},
     'DriverRunAck': {'plan_revision': 4, 'acknowledged_at': T0},
+    'AlertAcknowledge': {'cause': 'HANDLED', 'note': 'Werkstatt informiert'},
     'DriverDeviceRegister': {'device_id': U1, 'platform': 'ANDROID', 'app_version': '1.0.0'},
     # WP-M3-25: Dienstantritt und -ende; WP-M3-10: Checklistenvorlagen
     'DriverShiftStart': {'shift_id': U1, 'vehicle_id': U2, 'device_id': U3},
@@ -87,6 +88,7 @@ BROKEN = {
     'DriverEvent': ('event_type', 'TELEPORT'),
     'DriverPositionBatch': ('samples', []),
     'DriverRunAck': ('plan_revision', 0),
+    'AlertAcknowledge': ('cause', 'EGAL'),
     'DriverDeviceRegister': ('platform', 'WINDOWS'),
     'DriverShiftStart': ('shift_id', 'keine-uuid'),
     'DriverShiftEnd': ('device_id', 'keine-uuid'),

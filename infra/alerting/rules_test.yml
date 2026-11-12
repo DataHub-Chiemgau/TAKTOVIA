@@ -1,0 +1,82 @@
+# promtool-Testfälle der Alarmregeln (WP-M5-04). In der CI mit `promtool test rules infra/alerting/rules_test.yml` auszuführen.
+# STATUS: NICHT AUSGEFÜHRT (promtool ist in der Entwicklungsumgebung nicht installiert, kein Docker). Dieselben Szenarien laufen gegen die Nachbildung in tests/acceptance/alerting.
+rule_files:
+  - ../observability/alert-rules.d/kritische-szenarien.yml
+evaluation_interval: 15s
+tests:
+  - interval: 15s
+    input_series:
+      - series: 'pg_up{job="postgres"}'
+        values: '0x12'
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: DatenbankNichtErreichbar
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: DatenbankNichtErreichbar
+        exp_alerts:
+          - exp_labels: { severity: critical, component: postgres, scenario: DATENBANK_NICHT_ERREICHBAR, empfaenger: betrieb-bereitschaft, job: postgres }
+            exp_annotations:
+              summary: "Datenbank nicht erreichbar"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#datenbank_nicht_erreichbar"
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_outbox_depth{tenant_id="00000000-0000-4000-8000-0000000000a1"}'
+        values: '1000x40'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: OutboxStau
+        exp_alerts: []
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_outbox_depth{tenant_id="00000000-0000-4000-8000-0000000000a1"}'
+        values: '1500x40'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: OutboxStau
+        exp_alerts:
+          - exp_labels: { severity: critical, component: outbox-relay, scenario: OUTBOX_STAU, empfaenger: betrieb-bereitschaft }
+            exp_annotations:
+              summary: "Stau in der Outbox: Ereignisse werden nicht rechtzeitig veröffentlicht"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#outbox_stau"
+  - interval: 15s
+    input_series:
+      - series: 'redis_up{job="redis"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: RedisAusfall
+        exp_alerts:
+          - exp_labels: { severity: warning, component: redis, scenario: REDIS_AUSFALL, empfaenger: betrieb-plattform, job: redis }
+            exp_annotations:
+              summary: "Redis nicht erreichbar (Cache und Rate-Limit gestört, Kapazität unberührt)"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#redis_ausfall"
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_http_server_request_seconds_count{route_class="booking",status_class="5xx"}'
+        values: '0+1x60'
+      - series: 'taktovia_http_server_request_seconds_count{route_class="booking",status_class="2xx"}'
+        values: '0+0.4x60'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KernbuchungAusfall
+        exp_alerts:
+          - exp_labels: { severity: critical, component: fachkern, scenario: KERNBUCHUNG_AUSFALL, empfaenger: betrieb-bereitschaft }
+            exp_annotations:
+              summary: "Kernbuchung: mehr als die Hälfte der Buchungsanfragen schlägt fehl"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#kernbuchung_ausfall"
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_payment_intent_indeterminate{tenant_id="00000000-0000-4000-8000-0000000000a1"}'
+        values: '3x80'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ZahlungUnbestimmt
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: ZahlungUnbestimmt
+        exp_alerts:
+          - exp_labels: { severity: critical, component: fachkern, scenario: PSP_UNBESTIMMT, empfaenger: betrieb-bereitschaft }
+            exp_annotations:
+              summary: "Zahlungen seit über 15 Minuten unbestimmt (PSP nicht erreichbar oder Abgleich hängt)"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#psp_unbestimmt"

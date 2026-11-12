@@ -118,6 +118,14 @@ class RunListController {
         'plan_as_of': run.planAsOf.toIso8601String(),
         'shift_valid': run.shiftValid,
         'release_state': run.releaseState,
+        // Aenderungsanzeige (WP-M3-27): bleibt mit dem Plan lokal erhalten, damit offline kein veralteter Plan ohne Kennzeichnung erscheint
+        'revision_state': run.revisionState,
+        'acknowledgement_required': run.acknowledgementRequired,
+        'acknowledged_revision': run.acknowledgedRevision,
+        'base_revision': run.baseRevision,
+        'removed_stops': run.removedStops
+            .map((RemovedStop r) => <String, Object?>{'stop_name': r.stopName, 'kind': r.kind, 'planned_at': r.plannedAt.toIso8601String(), 'booking_ids': <Object?>[]})
+            .toList(),
         'stops': run.stops
             .map((RunStop s) => <String, Object?>{
                   'route_stop_id': s.routeStopId,
@@ -129,6 +137,8 @@ class RunListController {
                   'position': <String, Object?>{'latitude': s.latitude, 'longitude': s.longitude},
                   'passenger_count': s.passengerCount,
                   'stop_revision_id': s.stopRevisionId,
+                  'change': s.change,
+                  'previous_planned_at': s.previousPlannedAt?.toIso8601String(),
                   if (s.assistance != null)
                     'assistance': <String, Object?>{
                       'wheelchair_required': s.assistance!.wheelchairRequired,

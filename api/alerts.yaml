@@ -1,0 +1,329 @@
+paths:
+  /v1/operator/alerts:
+    get:
+      summary: Arbeitsliste Offene Störungen (Alarme)
+      operationId: listOperatorAlerts
+      security:
+      - oidc:
+        - operator:read
+      description: 'Arbeitsliste der Leitstelle (UI-07, WP-M3-52): Alarme des eigenen Mandanten und der berechtigten Dienste (Alarme ohne Dienstbezug gelten mandantenweit), älteste zuerst. Standardmäßig offene Alarme; mit `state` auch quittierte und gelöste (ein quittierter Alarm bleibt nachvollziehbar). Ein Alarm enthält nur Codes und Kennungen, nie Fahrgastdaten oder Diagnosen. `escalation_level` und `escalated_at` machen die Eskalation sichtbar; kritische Alarme sind von Beginn an eskaliert. Neue und geänderte Alarme meldet der Live-Kanal (`alert.*`).'
+      parameters:
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+          default: OPEN
+        description: Zustandsfilter (Standard OPEN).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/alerts/{alert_id}:
+    get:
+      summary: Alarm lesen
+      operationId: getOperatorAlert
+      security:
+      - oidc:
+        - operator:read
+      description: 'Mit ETag (Alarmrevision, Grundlage von `If-Match` der Quittierung). Fremder Dienst oder Mandant: 404.'
+      parameters:
+      - name: alert_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Alarm-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/alerts/{alert_id}/acknowledgements:
+    post:
+      summary: Alarm quittieren
+      operationId: acknowledgeOperatorAlert
+      security:
+      - oidc:
+        - operator:write
+      description: 'Quittiert einen offenen Alarm mit Akteur, Zeit und Ursache (WP-M3-52). `If-Match` = Alarmrevision: bei zwei gleichzeitigen Quittierungen wirkt genau eine, die andere erhält 412; ein bereits quittierter oder gelöster Alarm ist 409 INVALID_STATE_TRANSITION; fremder Dienst oder Mandant 404, fehlende Rolle 403.'
+      parameters:
+      - name: alert_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Alarm-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertAcknowledge'
+components:
+  schemas:
+    Alert:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          maxLength: 60
+          description: Alarmart (Code), z. B. VEHICLE_BLOCK_CRITICAL, TECHNICAL_EVENT, OVERDUE, VEHICLE_OUTAGE, PLAN_ACK_OVERDUE; technische Alarme tragen das Präfix TECH_.
+        priority:
+          type: string
+          enum:
+          - CRITICAL
+          - HIGH
+          - NORMAL
+        state:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        recipient_role:
+          type: string
+          maxLength: 40
+        policy_revision_no:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Revision der Alarmrichtlinie, nach der der Alarm entstand.
+        escalation_level:
+          type: integer
+          minimum: 0
+          maximum: 3
+        escalated_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        escalate_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Zeitpunkt der nächsten Eskalation (nur offene, noch nicht höchstmäßig eskalierte Alarme).
+        reason_code:
+          oneOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+        ref_type:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+        ref_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Alarmrevision (zugleich ETag); Grundlage von `If-Match` der Quittierung.
+        acknowledgement:
+          oneOf:
+          - $ref: '#/components/schemas/AlertAcknowledgement'
+          - type: 'null'
+      required:
+      - id
+      - kind
+      - priority
+      - state
+      - vehicle_id
+      - service_id
+      - recipient_role
+      - policy_revision_no
+      - escalation_level
+      - escalated_at
+      - escalate_at
+      - reason_code
+      - ref_type
+      - ref_id
+      - created_at
+      - updated_at
+      - resolved_at
+      - revision
+      - acknowledgement
+      description: Fachalarm der Arbeitsliste. Nur Codes, Kennungen und Zeiten; keine Fahrgast-PII, keine Diagnosen.
+    AlertAcknowledgement:
+      type: object
+      additionalProperties: false
+      properties:
+        acknowledged_by:
+          type: string
+          maxLength: 200
+          description: Pseudonymer Akteur (`user:<kennung>`), nie Name oder Mailadresse.
+        acknowledged_at:
+          type: string
+          format: date-time
+        cause:
+          oneOf:
+          - type: string
+            enum:
+            - REPAIRED
+            - HANDLED
+            - NOT_RELEVANT
+            - FALSE_ALARM
+            - ESCALATED_ELSEWHERE
+            - OTHER
+          - type: 'null'
+        note:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+      required:
+      - acknowledged_by
+      - acknowledged_at
+      - cause
+      - note
+    AlertAcknowledge:
+      type: object
+      additionalProperties: false
+      properties:
+        cause:
+          type: string
+          enum:
+          - REPAIRED
+          - HANDLED
+          - NOT_RELEVANT
+          - FALSE_ALARM
+          - ESCALATED_ELSEWHERE
+          - OTHER
+        note:
+          type: string
+          maxLength: 500
+          description: Kurzer Vermerk ohne Personendaten.
+      required:
+      - cause
+      description: Quittierung eines Alarms mit Ursache.
+    AlertPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Alert'
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of

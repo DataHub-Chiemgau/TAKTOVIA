@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/alert.acknowledged.v1.schema.json",
+  "title": "Betriebsalarm quittiert (WP-M3-52)",
+  "description": "Payload von `alert.acknowledged`. Aggregat: business_alert. Nur Kennungen und Codes (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "alert_id",
+    "state",
+    "service_id",
+    "cause"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "alert_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "enum": [
+        "ACKNOWLEDGED"
+      ]
+    },
+    "service_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cause": {
+      "enum": [
+        "REPAIRED",
+        "HANDLED",
+        "NOT_RELEVANT",
+        "FALSE_ALARM",
+        "ESCALATED_ELSEWHERE",
+        "OTHER"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "alert_id": "11111111-2222-4333-8444-555555555555",
+      "state": "ACKNOWLEDGED",
+      "service_id": null,
+      "cause": "HANDLED"
+    }
+  ]
+}

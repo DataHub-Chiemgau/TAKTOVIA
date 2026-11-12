@@ -27,7 +27,10 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `driver.run_acknowledged` | `staff-time` | Bestätigung / 1 | Fahrer bestätigt Planrevision | Leitstelle (ausbleibende Bestätigung) | – |
 | `vehicle.service_status_changed` | `staff-time` | `vehicle_service_status` / n | Dienststatuswechsel | `booking-dispatch` (nicht neu disponieren), Leitstelle | `fahrzeug_dienststatus` |
 | `incident.opened` | `fleet-safety` | `incident` / 1 | Workflowregel (Fahrzeugausfall) | Leitstelle, `booking-dispatch` (Ersatzsuche) | `incident` |
-| `alert.raised` | `fleet-safety` | `business_alert` / 1 | Alarmregel | Leitstelle, Betreiberkanal | – |
+| `alert.raised` | `fleet-safety` | `business_alert` / 1 | Alarmregel (WP-M3-52), technische Betriebsalarme (WP-M5-04) | Leitstelle, Betreiberkanal | – |
+| `alert.acknowledged` | `fleet-safety` | `business_alert` / n | Quittierung (WP-M3-52) | Leitstelle (Live-Kanal) | `alarm` |
+| `alert.escalated` | `fleet-safety` | `business_alert` / n | Eskalation nach `alert_escalation_delay_min` (WP-M3-52) | Leitstelle (Live-Kanal) | `alarm` |
+| `alert.resolved` | `fleet-safety` | `business_alert` / n | Behebung eines technischen Alarms (WP-M5-04) | Leitstelle (Live-Kanal) | `alarm` |
 | `dispatch.run_revised` (M2) | `booking-dispatch` | `vehicle_run` / n | Planrevision | `staff-time` (Fahrerprojektion, Hinweis), Leitstelle | `fahrtenplan` |
 | `booking.confirmed`, `booking.cancelled` (M2) | `booking-dispatch` | `booking` / n | Buchung, Storno | `staff-time` (Stoppliste) | `buchung-lokal` |
 

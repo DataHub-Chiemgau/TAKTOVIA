@@ -1,0 +1,208 @@
+# Szenariokatalog „kritische Fehlerszenarien“ (WP-M5-04, LH-6.19-NFR-008). Je Szenario: Schwelle, Schweregrad, Empfänger, Eskalationsstufe, Runbook-Verweis, Dedupe- und Stummschaltregel.
+#
+# STATUS: Vorschlag dieses Plans. Der Katalog aus WP-M5-01 liegt in diesem Repository nicht vor; die Szenarien folgen der Aufzählung in WP-M5-04. Die Szenarien sind im Pflichtenheft nicht
+# aufgezählt, Empfänger und die Übernahme technischer Alarme in `business_alert` sind offen (OP-07). Schwellen sind Planungsannahmen, vor Pilotbetrieb gegen Referenzlast zu kalibrieren
+# (WP-M5-16). D-05 (Supportzeiten) blockiert die Produktivschaltung der Rufbereitschaft, nicht den Bau.
+#
+# Empfängerrollen (kein Personenbezug, die Zuordnung zu Personen liegt in der Betriebsorganisation):
+#   betrieb-bereitschaft  Rufbereitschaft Betrieb/Plattform (Ruf)         betrieb-plattform  Betrieb/Plattform werktags (Ticket)         betriebsleitung  Eskalationsstufe 1
+# Es gibt genau EINEN Zustellkanal je Umgebung (`alertmanager.yml`, Empfänger `betreiber`); die Empfängerrolle steht als Label `empfaenger` im Alarm und bestimmt dort die Weiterleitung.
+version: 1
+status: vorschlag
+komponenten: [fachkern, gateway, routing-worker, dokumenten-worker, outbox-relay, postgres, rabbitmq, redis, alarmkette]
+eskalation:
+  stufe_1_nach_min: 15        # unquittiert bis Stufe 1 (Betriebsleitung); kritische Alarme wiederholen stündlich, Warnungen alle 4 h
+dedupe:
+  gruppierung: [alertname, component]
+  regel: "Ein anhaltender Fehler erzeugt genau einen offenen Alarm: gleicher alertname und component = eine Gruppe, Wiederholung nur nach repeat_interval (kritisch 1 h, Warnung 4 h); nach Behebung folgt send_resolved."
+stummschaltung:
+  regel: "Stummschaltung nur als befristete Silence mit Pflichtkommentar durch eine Betriebsrolle (infra/alerting/alertops.py); sie unterdrückt den Ruf, der Alarm bleibt in Alertmanager und Protokoll sichtbar. Höchstdauer 8 h."
+  hoechstdauer_h: 8
+szenarien:
+  - id: KERNBUCHUNG_AUSFALL
+    titel: Ausfall der Kernbuchung
+    komponente: fachkern
+    regeln: [KernbuchungAusfall, FachkernNichtErreichbar]
+    signal: "Fehleranteil 5xx der Endpunktklasse booking, bzw. Scrape des Fachkerns nicht erreichbar"
+    schwelle: "Fehleranteil booking > 50 % über 5 min (mindestens 0,1 Anfragen/s) oder Fachkern 2 min nicht erreichbar"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 15
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#kernbuchung_ausfall"
+    lieferung: aktiv
+  - id: DATENBANK_NICHT_ERREICHBAR
+    titel: Datenbank nicht erreichbar
+    komponente: postgres
+    regeln: [DatenbankNichtErreichbar]
+    signal: "postgres_exporter: pg_up"
+    schwelle: "pg_up = 0 über 1 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 15
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#datenbank_nicht_erreichbar"
+    lieferung: aktiv
+  - id: DATENBANK_REPLIKATIONSVERZUG
+    titel: Replikationsverzug der Datenbank
+    komponente: postgres
+    regeln: [DatenbankReplikationsverzug]
+    signal: "postgres_exporter: pg_replication_lag_seconds (Standby gegenüber Primär)"
+    schwelle: "Verzug > 30 s über 5 min"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#datenbank_replikationsverzug"
+    lieferung: aktiv
+  - id: OUTBOX_STAU
+    titel: Stau in der Outbox
+    komponente: outbox-relay
+    regeln: [OutboxStau]
+    signal: "taktovia_outbox_depth, taktovia_outbox_oldest_age_seconds"
+    schwelle: "Tiefe > 1000 oder ältester unveröffentlichter Eintrag > 300 s, jeweils über 5 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 30
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#outbox_stau"
+    lieferung: aktiv
+  - id: MESSAGING_NICHT_ERREICHBAR
+    titel: Messaging nicht erreichbar
+    komponente: rabbitmq
+    regeln: [MessagingNichtErreichbar]
+    signal: "Scrape von RabbitMQ (up)"
+    schwelle: "nicht erreichbar über 2 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 15
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#messaging_nicht_erreichbar"
+    lieferung: aktiv
+  - id: ROUTING_WORKER_AUSFALL
+    titel: Routing-Worker ohne Antwort
+    komponente: routing-worker
+    regeln: [RoutingWorkerNichtErreichbar]
+    signal: "Scrape des Routing-Workers (up)"
+    schwelle: "nicht erreichbar über 2 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 30
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#routing_worker_ausfall"
+    lieferung: aktiv
+  - id: SOLVER_TIMEOUTS
+    titel: Solver-Timeouts über Schwelle
+    komponente: routing-worker
+    regeln: [SolverTimeoutsHoch]
+    signal: "taktovia_routing_timeouts_total gegen taktovia_routing_requests_total"
+    schwelle: "Timeoutanteil > 20 % über 10 min (mindestens 0,05 Anfragen/s)"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#solver_timeouts"
+    lieferung: aktiv
+  - id: PSP_UNBESTIMMT
+    titel: PSP nicht erreichbar bzw. Zahlung länger als Schwelle unbestimmt
+    komponente: fachkern
+    regeln: [ZahlungUnbestimmt]
+    signal: "taktovia_payment_intent_indeterminate (CAPTURE_UNKNOWN, RECONCILING)"
+    schwelle: "mindestens eine unbestimmte payment_intent über 15 min (Näherung: die Metrik zählt, sie trägt kein Alter; eine direkte PSP-Probe liefern die synthetischen Proben, WP-M5-05)"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 30
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#psp_unbestimmt"
+    lieferung: aktiv
+  - id: OPERATION_LEASE_UEBERFAELLIG
+    titel: Überfällige operation-Leases
+    komponente: fachkern
+    regeln: [OperationLeaseUeberfaellig]
+    signal: "taktovia_operation_lease_overdue"
+    schwelle: "mindestens eine überfällige Lease über 5 min"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#operation_lease_ueberfaellig"
+    lieferung: aktiv
+  - id: REDIS_AUSFALL
+    titel: Redis-Ausfall
+    komponente: redis
+    regeln: [RedisAusfall]
+    signal: "redis_exporter: redis_up (Redis ist nur Cache und Rate-Limit, Leitlinie 4)"
+    schwelle: "redis_up = 0 über 2 min"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#redis_ausfall"
+    lieferung: aktiv
+  - id: ZERTIFIKAT_LAEUFT_AB
+    titel: Ablaufende Zertifikate
+    komponente: gateway
+    regeln: [ZertifikatLaeuftAb, ZertifikatLaeuftBaldAb]
+    signal: "blackbox_exporter: probe_ssl_earliest_cert_expiry (Gateway-Endpunkt)"
+    schwelle: "Rest < 14 Tage (Warnung), < 3 Tage (kritisch)"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 240
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#zertifikat_laeuft_ab"
+    lieferung: aktiv
+  - id: FEHLERRATE_ENDPUNKTKLASSE
+    titel: Fehlerratenanstieg je Endpunktklasse
+    komponente: fachkern
+    regeln: [FehlerrateEndpunktklasse]
+    signal: "taktovia_http_server_request_seconds_count je route_class und status_class"
+    schwelle: "Fehleranteil 5xx > 5 % über 10 min je Klasse (mindestens 0,1 Anfragen/s)"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#fehlerrate_endpunktklasse"
+    lieferung: aktiv
+  - id: GATEWAY_NICHT_ERREICHBAR
+    titel: Gateway nicht erreichbar
+    komponente: gateway
+    regeln: [GatewayNichtErreichbar]
+    signal: "blackbox_exporter: probe_success (Gateway-Endpunkt)"
+    schwelle: "Probe fehlgeschlagen über 2 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 15
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#gateway_nicht_erreichbar"
+    lieferung: aktiv
+  - id: DOKUMENTEN_WORKER_AUSFALL
+    titel: Dokumenten-Worker ausgefallen oder Aufgaben scheitern
+    komponente: dokumenten-worker
+    regeln: [DokumentenWorkerNichtErreichbar, DokumentenAufgabenScheitern]
+    signal: "Scrape (up), taktovia_documents_tasks_total{outcome}"
+    schwelle: "nicht erreichbar über 5 min, bzw. Fehleranteil der Aufgaben > 30 % über 15 min"
+    schweregrad: warning
+    empfaenger: betrieb-plattform
+    eskalation_nach_min: 120
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#dokumenten_worker_ausfall"
+    lieferung: aktiv
+  - id: ALARMKETTE_AUSGEFALLEN
+    titel: Alarmierungskette selbst ausgefallen
+    komponente: alarmkette
+    regeln: [Watchdog, AlertmanagerZustellungFehlgeschlagen, PrometheusRegelauswertungFehlgeschlagen]
+    signal: "Watchdog (immer feuernd) als Herzschlag an die unabhängige Totmannprüfung; Fehlerzähler von Alertmanager und Prometheus"
+    schwelle: "kein Herzschlag der Totmannprüfung binnen 5 min bzw. Zustellfehler > 0 über 5 min"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 15
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#alarmkette_ausgefallen"
+    lieferung: aktiv
+  - id: BACKUP_FEHLGESCHLAGEN
+    titel: Fehlgeschlagenes Backup
+    komponente: postgres
+    regeln: []
+    signal: "Metriken aus WP-M5-14 (noch nicht vorhanden)"
+    schwelle: "wird mit WP-M5-14 festgelegt"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#backup_fehlgeschlagen"
+    lieferung: WP-M5-14
+  - id: ARCHIVIERUNGS_REPLIKATIONSVERZUG
+    titel: Archivierungs-/Replikationsverzug (WAL)
+    komponente: postgres
+    regeln: []
+    signal: "Metriken aus WP-M5-14 (noch nicht vorhanden)"
+    schwelle: "wird mit WP-M5-14 festgelegt"
+    schweregrad: critical
+    empfaenger: betrieb-bereitschaft
+    eskalation_nach_min: 60
+    runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
+    lieferung: WP-M5-14

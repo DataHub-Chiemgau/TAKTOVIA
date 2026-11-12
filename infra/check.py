@@ -271,10 +271,12 @@ def check_gateway(root, errs, notes):
 def check_alerting(root, errs, notes):
     """WP-M1-47: genau ein Empfaengerkanal, Adresse nur als eingehaengte Secret-Datei, Regeln auf Metriken des Backends."""
     am = yaml.safe_load((root / "alerting" / "alertmanager.yml").read_text(encoding="utf-8"))
-    recv = am.get("receivers", [])
+    allrecv = am.get("receivers", [])
+    # WP-M5-04: neben dem einen Alarmkanal darf es den Herzschlag-Empfaenger `totmann` der unabhaengigen Totmannpruefung geben; er ist kein Alarmkanal
+    recv = [r for r in allrecv if r["name"] != "totmann"]
     if len(recv) != 1 or am["route"]["receiver"] != recv[0]["name"]:
         errs.append("alerting: nicht genau ein Empfaengerkanal")
-    for r in recv:
+    for r in allrecv:
         for w in r.get("webhook_configs", []):
             if "url" in w or "url_file" not in w:
                 errs.append("alerting: Empfaengeradresse nicht als url_file (Secret-Datei)")
@@ -285,6 +287,13 @@ def check_alerting(root, errs, notes):
     if "operator-alert-rules.yml" not in (root / "observability" / "prometheus.yml").read_text(encoding="utf-8"):
         errs.append("alerting: prometheus.yml bindet operator-alert-rules.yml nicht ein")
     notes.append("alerting: Alertmanager-/Regelkonfiguration statisch geprueft (nicht gestartet)")
+
+
+def check_alarmkatalog(root, errs, notes):
+    """WP-M5-04: Szenariokatalog, Alarmregeln, Routing, Runbook-Verweise und Metriken (infra/check_alerting.py)."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_alerting
+    check_alerting.check(root, root.parent, errs, notes)
 
 
 def check_env_separation(root, errs, notes):
@@ -298,7 +307,7 @@ def check_env_separation(root, errs, notes):
 
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_env_separation):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_alarmkatalog, check_env_separation):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz

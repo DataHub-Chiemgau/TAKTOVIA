@@ -1,0 +1,161 @@
+# Alarmregeln als Code für die kritischen Fehlerszenarien (WP-M5-04, LH-6.19-NFR-008). Katalog: infra/alerting/katalog.yaml (Schwelle, Schweregrad, Empfänger, Runbook).
+# STATUS: statisch geprüft (infra/check_alerting.py) und gegen die Nachbildung der Alarmkette ausgelöst (tests/acceptance/alerting); Prometheus und Alertmanager selbst wurden NICHT ausgeführt (kein Docker).
+# Ausdrücke bleiben in der Teilmenge von PromQL, die infra/alerting/promql_mini.py auswertet (Selektoren, rate/increase, sum/max [by], Arithmetik, Vergleich, and/or, time(), vector()).
+# Alarmtexte (summary) sind feste Texte ohne Etikettenwerte: weder Fahrgast- noch Personaldaten (Kap. 01 §1.1); Etiketten tragen nur technische Namen.
+groups:
+  - name: kritische-szenarien
+    interval: 15s
+    rules:
+      - alert: KernbuchungAusfall
+        expr: >
+          sum(rate(taktovia_http_server_request_seconds_count{route_class="booking",status_class="5xx"}[5m]))
+          / sum(rate(taktovia_http_server_request_seconds_count{route_class="booking"}[5m])) > 0.5
+          and sum(rate(taktovia_http_server_request_seconds_count{route_class="booking"}[5m])) > 0.1
+        for: 2m
+        labels: { severity: critical, component: fachkern, scenario: KERNBUCHUNG_AUSFALL, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Kernbuchung: mehr als die Hälfte der Buchungsanfragen schlägt fehl"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#kernbuchung_ausfall"
+      - alert: FachkernNichtErreichbar
+        expr: up{job="backend-app"} == 0
+        for: 2m
+        labels: { severity: critical, component: fachkern, scenario: KERNBUCHUNG_AUSFALL, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Fachkern nicht erreichbar"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#kernbuchung_ausfall"
+      - alert: DatenbankNichtErreichbar
+        expr: pg_up == 0
+        for: 1m
+        labels: { severity: critical, component: postgres, scenario: DATENBANK_NICHT_ERREICHBAR, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Datenbank nicht erreichbar"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#datenbank_nicht_erreichbar"
+      - alert: DatenbankReplikationsverzug
+        expr: pg_replication_lag_seconds > 30
+        for: 5m
+        labels: { severity: warning, component: postgres, scenario: DATENBANK_REPLIKATIONSVERZUG, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Replikationsverzug der Datenbank über 30 Sekunden"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#datenbank_replikationsverzug"
+      - alert: OutboxStau
+        expr: max(taktovia_outbox_depth) > 1000 or max(taktovia_outbox_oldest_age_seconds) > 300
+        for: 5m
+        labels: { severity: critical, component: outbox-relay, scenario: OUTBOX_STAU, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Stau in der Outbox: Ereignisse werden nicht rechtzeitig veröffentlicht"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#outbox_stau"
+      - alert: MessagingNichtErreichbar
+        expr: up{job="rabbitmq"} == 0
+        for: 2m
+        labels: { severity: critical, component: rabbitmq, scenario: MESSAGING_NICHT_ERREICHBAR, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Messaging (RabbitMQ) nicht erreichbar"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#messaging_nicht_erreichbar"
+      - alert: RoutingWorkerNichtErreichbar
+        expr: up{job="routing-worker"} == 0
+        for: 2m
+        labels: { severity: critical, component: routing-worker, scenario: ROUTING_WORKER_AUSFALL, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Routing-Worker antwortet nicht"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#routing_worker_ausfall"
+      - alert: SolverTimeoutsHoch
+        expr: >
+          sum(rate(taktovia_routing_timeouts_total[10m])) / sum(rate(taktovia_routing_requests_total[10m])) > 0.2
+          and sum(rate(taktovia_routing_requests_total[10m])) > 0.05
+        for: 5m
+        labels: { severity: warning, component: routing-worker, scenario: SOLVER_TIMEOUTS, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Solver-Timeouts über der Schwelle"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#solver_timeouts"
+      - alert: ZahlungUnbestimmt
+        expr: max(taktovia_payment_intent_indeterminate) > 0
+        for: 15m
+        labels: { severity: critical, component: fachkern, scenario: PSP_UNBESTIMMT, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Zahlungen seit über 15 Minuten unbestimmt (PSP nicht erreichbar oder Abgleich hängt)"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#psp_unbestimmt"
+      - alert: OperationLeaseUeberfaellig
+        expr: max(taktovia_operation_lease_overdue) > 0
+        for: 5m
+        labels: { severity: warning, component: fachkern, scenario: OPERATION_LEASE_UEBERFAELLIG, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Überfällige operation-Leases: Worker übernehmen nicht"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#operation_lease_ueberfaellig"
+      - alert: RedisAusfall
+        expr: redis_up == 0
+        for: 2m
+        labels: { severity: warning, component: redis, scenario: REDIS_AUSFALL, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Redis nicht erreichbar (Cache und Rate-Limit gestört, Kapazität unberührt)"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#redis_ausfall"
+      - alert: ZertifikatLaeuftAb
+        expr: probe_ssl_earliest_cert_expiry{job="gateway-probe"} - time() < 14 * 86400
+        for: 10m
+        labels: { severity: warning, component: gateway, scenario: ZERTIFIKAT_LAEUFT_AB, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Zertifikat des Gateways läuft in weniger als 14 Tagen ab"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#zertifikat_laeuft_ab"
+      - alert: ZertifikatLaeuftBaldAb
+        expr: probe_ssl_earliest_cert_expiry{job="gateway-probe"} - time() < 3 * 86400
+        for: 10m
+        labels: { severity: critical, component: gateway, scenario: ZERTIFIKAT_LAEUFT_AB, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Zertifikat des Gateways läuft in weniger als 3 Tagen ab"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#zertifikat_laeuft_ab"
+      - alert: FehlerrateEndpunktklasse
+        expr: >
+          sum by (route_class) (rate(taktovia_http_server_request_seconds_count{status_class="5xx"}[10m]))
+          / sum by (route_class) (rate(taktovia_http_server_request_seconds_count[10m])) > 0.05
+          and sum by (route_class) (rate(taktovia_http_server_request_seconds_count[10m])) > 0.1
+        for: 5m
+        labels: { severity: warning, component: fachkern, scenario: FEHLERRATE_ENDPUNKTKLASSE, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Fehlerrate einer Endpunktklasse über 5 Prozent"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#fehlerrate_endpunktklasse"
+      - alert: GatewayNichtErreichbar
+        expr: probe_success{job="gateway-probe"} == 0
+        for: 2m
+        labels: { severity: critical, component: gateway, scenario: GATEWAY_NICHT_ERREICHBAR, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Gateway nicht erreichbar"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#gateway_nicht_erreichbar"
+      - alert: DokumentenWorkerNichtErreichbar
+        expr: up{job="documents-worker"} == 0
+        for: 5m
+        labels: { severity: warning, component: dokumenten-worker, scenario: DOKUMENTEN_WORKER_AUSFALL, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Dokumenten-Worker nicht erreichbar"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#dokumenten_worker_ausfall"
+      - alert: DokumentenAufgabenScheitern
+        expr: >
+          sum(rate(taktovia_documents_tasks_total{result="error"}[15m])) / sum(rate(taktovia_documents_tasks_total[15m])) > 0.3
+          and sum(rate(taktovia_documents_tasks_total[15m])) > 0.02
+        for: 5m
+        labels: { severity: warning, component: dokumenten-worker, scenario: DOKUMENTEN_WORKER_AUSFALL, empfaenger: betrieb-plattform }
+        annotations:
+          summary: "Mehr als 30 Prozent der Dokumentenaufgaben scheitern"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#dokumenten_worker_ausfall"
+  - name: alarmkette
+    interval: 15s
+    rules:
+      # Herzschlag: feuert immer; Alertmanager sendet ihn minütlich an die UNABHÄNGIGE Totmannprüfung (infra/alerting/deadman.py). Bleibt er aus, ist die Kette gebrochen.
+      - alert: Watchdog
+        expr: vector(1)
+        labels: { severity: none, component: alarmkette, scenario: ALARMKETTE_AUSGEFALLEN, empfaenger: totmann }
+        annotations:
+          summary: "Herzschlag der Alarmierungskette"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#alarmkette_ausgefallen"
+      - alert: AlertmanagerZustellungFehlgeschlagen
+        expr: rate(alertmanager_notifications_failed_total[5m]) > 0
+        for: 5m
+        labels: { severity: critical, component: alarmkette, scenario: ALARMKETTE_AUSGEFALLEN, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Alertmanager kann Alarme nicht zustellen"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#alarmkette_ausgefallen"
+      - alert: PrometheusRegelauswertungFehlgeschlagen
+        expr: increase(prometheus_rule_evaluation_failures_total[5m]) > 0
+        for: 5m
+        labels: { severity: critical, component: alarmkette, scenario: ALARMKETTE_AUSGEFALLEN, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Prometheus kann Alarmregeln nicht auswerten"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#alarmkette_ausgefallen"
