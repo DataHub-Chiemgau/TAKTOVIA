@@ -25,6 +25,8 @@ dependencies {
     implementation(project(":adapters:notification"))
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")   // Traces und Metriken per OTLP (WP-M5-03)
+    implementation("io.micrometer:micrometer-registry-prometheus")                 // Scrape-Endpunkt /actuator/prometheus (WP-M5-03)
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(libs.json.schema.validator)

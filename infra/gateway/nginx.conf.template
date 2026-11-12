@@ -3,6 +3,13 @@
 # Zertifikat und Schlüssel werden aus der Secret-Verwaltung der Umgebung eingehängt (Pfad per Umgebungsvariable), nie im Image.
 # Planungsdefault OP-31: TLS 1.2 und 1.3; Cipher-Vorgabe: nur AEAD-Suiten mit Forward Secrecy für 1.2.
 
+# Zugriffslog (WP-M5-03/-06, NFR-015): ohne Query-String, Kopfzeilen (Authorization, Cookie), Referer und User-Agent; nur Pfad (`$uri`), Status, Dauer
+# und die Korrelation (W3C traceparent / Request-ID). Das Standardformat `combined` ist verboten (enthält `$request` mit Query und Referer).
+log_format taktovia_masked escape=json '{"ts":"$time_iso8601","component":"gateway","request_id":"$request_id","traceparent":"$http_traceparent",'
+    '"http_method":"$request_method","path":"$uri","http_status":$status,"bytes":$body_bytes_sent,"duration_ms":"$request_time","upstream_ms":"$upstream_response_time"}';
+access_log /dev/stdout taktovia_masked;
+error_log /dev/stderr warn;
+
 # Klartext-Port: keine Nutzdaten, Verbindung wird ohne Antwort geschlossen (444); kein Redirect, damit kein Klartext-Request bedient wird.
 server {
     listen 80 default_server;
@@ -26,7 +33,7 @@ server {
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options "nosniff" always;
 
-    location /v1/ { proxy_pass https://backend; proxy_set_header X-Forwarded-Proto https; }
+    location /v1/ { proxy_pass https://backend; proxy_set_header X-Forwarded-Proto https; proxy_set_header traceparent $http_traceparent; proxy_set_header X-Request-Id $request_id; }
     location /admin/ { proxy_pass https://web_admin; proxy_set_header X-Forwarded-Proto https; }
     location / { proxy_pass https://web; proxy_set_header X-Forwarded-Proto https; }
 }

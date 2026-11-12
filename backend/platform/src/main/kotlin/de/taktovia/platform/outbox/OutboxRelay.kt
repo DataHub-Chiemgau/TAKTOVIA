@@ -68,6 +68,7 @@ class OutboxRelay(
     private val clock: Clock = Clock.systemUTC(),
     private val config: RelayConfig = RelayConfig(),
     private val jitter: () -> Double = { Math.random() },
+    private val metrics: de.taktovia.platform.telemetry.PlatformMetrics? = null,   // WP-M5-03: Zustellverzögerung Commit bis Veröffentlichung
 ) {
     private class Claimed(val e: EventEnvelope, val attempts: Int)
 
@@ -129,6 +130,9 @@ class OutboxRelay(
         }
         tx.run(tenant) { j -> j.update("UPDATE taktovia.outbox SET published_at=?, claimed_until=NULL, last_error=NULL WHERE tenant_id=taktovia.current_tenant() AND event_id=? AND published_at IS NULL",
             Timestamp.from(clock.instant()), e.eventId) }
+        val publishedAt = clock.instant()
+        metrics?.outboxPublishDelay(e.recordedAt, publishedAt)
+        metrics?.outboxResult("published")
         return RelayStats(published = 1)
     }
 

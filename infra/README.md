@@ -52,3 +52,6 @@ Je Umgebung (`development`, `staging`, `performance`, `production`) eigenes Kont
 
 ## Verschlüsselte Backups und Restore-Test (WP-M1-39)
 [backup/README.md](backup/README.md): AES-256-GCM-Backups mit eigenem Schlüssel, schreibgeschützter Backupspeicher mit getrennter Berechtigungsdomäne, konsistentes Backup unter Schreiblast, Restore in eine isolierte Datenbank mit Prüfsummen-, Struktur- und Isolationsprüfung, Lösch-/Sperrjournal. Ausgeführt gegen die lokale PostgreSQL (`tests/performance/test_restore_drehbuch.py`); **nicht ausgeführt:** WAL/PITR gegen einen Cluster, S3 Object Lock/IAM, der geplante Betrieb (`backup/systemd/`), RPO/RTO-Messung (WP-M5-14/-15).
+
+## Telemetrie-Ausbau (WP-M5-03)
+Scrape-Ziele je Komponente (`observability/prometheus.yml`), Collector-Pipelines für Traces, Metriken und Logs mit Maskierung (`observability/otel-collector-config.yaml`), Dashboards (`observability/dashboards/`), Tempo/Loki/Grafana/Exporter als Overlay `compose/docker-compose.telemetry.yml`, Zugriffslog des Gateways ohne Query und Kopfzeilen. `python3 infra/check_telemetry.py` prüft das statisch (Selbsttest `test_check_telemetry.py`); **nicht ausgeführt:** die Dienste selbst (kein Docker). Beschreibung: [docs/betrieb/telemetrie.md](../docs/betrieb/telemetrie.md).

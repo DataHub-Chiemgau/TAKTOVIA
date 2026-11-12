@@ -33,3 +33,8 @@ Datenbankzugriff** (kein Treiber, keine Verbindungskonfiguration); `tests/test_s
 prüft das.
 
 **Offen für M4:** Auswahl OCR-Engine, Malware-Scanner und KoSIT-Validator-Version (siehe [versionen.md](../../docs/umsetzungsplan/versionen.md)).
+
+## Telemetrie und Maskierung (WP-M5-03, WP-M5-06)
+
+`src/taktovia_documents/diagnose.py` ist eine Kopie der Datei im Routing-Worker (Test `tests/acceptance/diagnose/test_log_stichprobe.py::WorkerKopien` hält beide gleich).
+`Consumer(telemetry=Telemetry("taktovia-documents", otlp_endpoint))` misst Aufgaben (`taktovia_documents_*`), erzeugt einen Span je Aufgabe aus `Task.traceparent`; `health.TELEMETRY` schaltet `GET /metrics` frei. Tests: `tests/test_telemetry.py`.

@@ -36,10 +36,37 @@ logging:
     org.apache.coyote: INFO
     org.apache.tomcat.util.http: INFO
 management:
+  server:
+    # Verwaltungsport (WP-M5-03): Prometheus-Ansicht nur dort, getrennt vom Mandanten-API-Port und nur im Betriebsnetz erreichbar. Leer: kein eigener Port;
+    # dann liegt /actuator/prometheus hinter der API-Authentifizierung (401 ohne Token), nie öffentlich.
+    port: ${TAKTOVIA_MANAGEMENT_PORT:}
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus
+  # Traces per OTLP an den Collector (infra/observability); Logs verlassen den Prozess nur über stdout (maskiert, WP-M5-06), nie per OTLP-Logexport,
+  # da dieser an der Maskierung der Logausgabe vorbeiführen würde.
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  tracing:
+    sampling:
+      probability: ${TAKTOVIA_TRACE_SAMPLING:1.0}
+    export:
+      enabled: ${TAKTOVIA_TRACING_EXPORT:true}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${TAKTOVIA_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    resource-attributes:
+      service.name: taktovia-core
+      service.namespace: taktovia
   endpoint:
     health:
       probes:
