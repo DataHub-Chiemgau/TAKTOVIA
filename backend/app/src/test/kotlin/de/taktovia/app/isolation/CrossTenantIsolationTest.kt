@@ -180,7 +180,7 @@ class CrossTenantIsolationTest {
         "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
     private val selfScoped = setOf(
-        "getMe", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
+        "getMe", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
     )
 
     /**

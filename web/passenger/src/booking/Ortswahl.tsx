@@ -71,12 +71,15 @@ export function Ortswahl({
   label,
   serviceId,
   bias,
+  focusToken,
   value,
   onChange,
 }: {
   label: string;
   serviceId?: string | undefined;
   bias?: { latitude: number; longitude: number } | null | undefined;
+  /** Ändert sich der Wert, erhält das Eingabefeld den Fokus (z. B. „Start von Hand wählen“). */
+  focusToken?: number | undefined;
   value: PlaceChoice | null;
   onChange: (choice: PlaceChoice | null) => void;
 }) {
@@ -94,6 +97,10 @@ export function Ortswahl({
   const [mapLat, setMapLat] = useState('');
   const [mapLon, setMapLon] = useState('');
   const sequence = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (focusToken) inputRef.current?.focus();
+  }, [focusToken]);
 
   // Favoriten des Fahrgasts für die leere Eingabe; ein Fehler (z. B. Konto ohne Fahrgastprofil) lässt sie einfach weg.
   useEffect(() => {
@@ -251,6 +258,7 @@ export function Ortswahl({
         <>
           <label htmlFor={`${uid}-input`}>{label}</label>
           <input
+            ref={inputRef}
             id={`${uid}-input`}
             role="combobox"
             type="text"

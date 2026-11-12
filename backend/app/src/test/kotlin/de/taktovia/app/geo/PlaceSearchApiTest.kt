@@ -86,6 +86,10 @@ class PlaceSearchApiTest {
         assertEquals(emptyList<String>(), labels(w, w.planner, "Geheimes"), "Betreiber ohne Fahrgastkonto")
         assertEquals(listOf("Geheimes Ziel C"), labels(other, c.token, "Geheimes"))
         assertEquals(emptyList<String>(), labels(w, a.token, "Ziel C"), "Favorit eines anderen Mandanten")
+        // Haltestellen eines anderen Mandanten werden nie vorgeschlagen (RLS)
+        assertEquals(201, other.post("/v1/stops", stopBody("Fremdhalt Zwei", 51.05, 13.74)).status)
+        assertEquals(emptyList<String>(), labels(w, a.token, "Fremdhalt"))
+        assertEquals(listOf("Fremdhalt Zwei"), labels(other, c.token, "Fremdhalt"))
     }
 
     @Test
@@ -125,6 +129,18 @@ class PlaceSearchApiTest {
         assertEquals(429, limited.status, limited.text); assertNotNull(limited.header("Retry-After")); assertEquals("RATE_LIMITED", limited.json["code"].asString())
         assertEquals(200, w.get("/v1/places?q=Haupt", q.token).status, "andere Akteure sind nicht betroffen")
         assertEquals(200, w.get("/v1/stops", p.token).status, "andere Operationen desselben Akteurs bleiben nutzbar")
+    }
+
+    @Test
+    fun suchkoordinate_wird_nicht_persistiert_audit_outbox_travel_attempt_unveraendert() {
+        val w = GeoWorld(); val p = passenger(w)
+        fun rows() = listOf("audit_event", "outbox", "travel_attempt").map { w.count("SELECT count(*) FROM taktovia.$it WHERE tenant_id = ?::uuid", w.tenant.toString()) }
+        val before = rows()
+        repeat(3) { assertEquals(200, w.get("/v1/places?q=Haupt&bias_latitude=51.0123&bias_longitude=13.7654", p.token).status) }
+        assertEquals(200, w.get("/v1/places?map_latitude=51.0123&map_longitude=13.7654", p.token).status)
+        assertEquals(before, rows(), "die Ortssuche schreibt weder Audit noch Outbox noch Fahrtversuche")
+        // keine Tabelle des Mandanten enthält die Suchkoordinate (Favoriten sind ausdrücklich gespeicherte, bestätigte Orte)
+        assertEquals(0, w.count("SELECT count(*) FROM taktovia.passenger_preference WHERE tenant_id = ?::uuid AND point IS NOT NULL", w.tenant.toString()))
     }
 
     @Test

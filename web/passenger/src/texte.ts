@@ -63,6 +63,29 @@ export const texte = {
   'ort.karteUngueltig':
     'Breite (-90 bis 90) und Länge (-180 bis 180) müssen gültige Zahlen sein, nicht beide 0.',
   'ort.nachsteHaltestelle': 'Nächste Haltestelle',
+  'standort.button': 'Meinen Standort verwenden',
+  'standort.dialog.titel': 'Standort verwenden?',
+  'standort.dialog.text':
+    'Ihr Gerätestandort wird nur für diese eine Suche verwendet, nicht gespeichert und nur zur Adresssuche an unseren Geocoding-Dienst übermittelt. Sie können Start und Ziel jederzeit von Hand wählen.',
+  'standort.dialog.ja': 'Standort abfragen',
+  'standort.dialog.nein': 'Abbrechen',
+  'standort.laeuft': 'Standort wird ermittelt …',
+  'standort.vorschlag': 'Ihr Standort ist als Start verfügbar.',
+  'standort.uebernehmen': 'Als Start übernehmen',
+  'standort.verwerfen': 'Verwerfen',
+  'standort.abgelehnt': 'Die Standortfreigabe wurde abgelehnt. Wählen Sie Start und Ziel von Hand.',
+  'standort.blockiert':
+    'Der Standort ist in Ihrem Browser für diese Seite blockiert. Sie können das in den Browsereinstellungen ändern oder Start und Ziel von Hand wählen.',
+  'standort.nichtVerfuegbar':
+    'Der Standort ist gerade nicht verfügbar. Wählen Sie Start und Ziel von Hand.',
+  'standort.zeit':
+    'Die Standortabfrage hat zu lange gedauert. Versuchen Sie es erneut oder wählen Sie Start und Ziel von Hand.',
+  'standort.ungenau':
+    'Der Standort ist zu ungenau für einen Startvorschlag. Wählen Sie den Start von Hand oder versuchen Sie es erneut.',
+  'standort.keineUnterstuetzung':
+    'Dieses Gerät unterstützt keine Standortabfrage. Wählen Sie Start und Ziel von Hand.',
+  'standort.manuell': 'Start von Hand wählen',
+  'standort.meinStandort': 'Mein Standort',
   'sw.updated': 'Die App wurde aktualisiert.',
 } as const;
 
