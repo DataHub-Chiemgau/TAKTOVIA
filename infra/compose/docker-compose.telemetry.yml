@@ -1,0 +1,49 @@
+# Telemetrie-Ausbau (WP-M5-03): Exporter, Tempo (Traces), Loki (Logs), Grafana (Dashboards). Ergänzt `docker-compose.yml` (Profil observability):
+#   docker compose -f docker-compose.yml -f docker-compose.telemetry.yml --profile observability --profile telemetry up
+# STATUS: NICHT GESTARTET (kein Docker in der Entwicklungsumgebung); Syntax und Verweise prüft infra/check_telemetry.py.
+# Aufbewahrung (Arbeitsannahme, OP-08 offen): Metriken 15 Tage, Traces 7 Tage, Logs 14 Tage (D-11 entscheidet über Personenbezug der Logaufbewahrung).
+# Zugang: nur Betriebsidentitäten (Grafana ohne anonymen Zugang, Anmeldung über den Betriebs-Realm, nie über Mandantenrollen); Mandanten werden
+# über die Dashboard-Variable `tenant_id` ausgewertet, ein Mandant hat keinen Zugang zu dieser Plattform.
+services:
+  postgres-exporter:
+    image: ${POSTGRES_EXPORTER_IMAGE:-quay.io/prometheuscommunity/postgres-exporter:v0.15.0}
+    profiles: [telemetry]
+    environment:
+      # Nur lesender Monitoring-Zugang; Zugangsdaten aus der Secret-Verwaltung (hier ausschließlich Verweis, kein Wert).
+      DATA_SOURCE_URI_FILE: /run/secrets/taktovia_monitoring_dsn
+    secrets: [taktovia_monitoring_dsn]
+    expose: ["9187"]
+  redis-exporter:
+    image: ${REDIS_EXPORTER_IMAGE:-oliver006/redis_exporter:v1.62.0}
+    profiles: [telemetry]
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    expose: ["9121"]
+  tempo:
+    image: ${TEMPO_IMAGE:-grafana/tempo:2.5.0}
+    profiles: [telemetry]
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes: [../observability/tempo.yaml:/etc/tempo/tempo.yaml:ro]
+    expose: ["4317", "3200"]
+  loki:
+    image: ${LOKI_IMAGE:-grafana/loki:3.1.0}
+    profiles: [telemetry]
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes: [../observability/loki.yaml:/etc/loki/loki.yaml:ro]
+    expose: ["3100"]
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:11.1.0}
+    profiles: [telemetry]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "${GRAFANA_DISABLE_LOGIN_FORM:-false}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:${GRAFANA_PORT:-13000}:3000"]
+secrets:
+  taktovia_monitoring_dsn:
+    file: ${TAKTOVIA_MONITORING_DSN_FILE:-./secrets/monitoring-dsn.txt}

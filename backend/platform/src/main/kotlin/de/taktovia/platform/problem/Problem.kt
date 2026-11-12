@@ -118,10 +118,10 @@ data class Problem(
     /** Feldreihenfolge und -namen wie im Schema; `detail` höchstens 2000 Zeichen, `message` höchstens 256. */
     fun toMap(): Map<String, Any?> = buildMap {
         put("type", code.type); put("title", code.title); put("status", code.status); put("code", code.name)
-        detail?.let { put("detail", it.take(2000)) }
+        detail?.let { put("detail", de.taktovia.platform.logging.Maskierung.problemDetail(it)) }   // NFR-015: nie Klartext-Kontakt-/Zahlungsdaten
         put("correlation_id", correlationId.toString())
         if (violations.isNotEmpty()) put("violations", violations.map {
-            mapOf("pointer" to it.pointer.take(256), "code" to it.code.name, "message" to it.message.take(256))
+            mapOf("pointer" to it.pointer.take(256), "code" to it.code.name, "message" to de.taktovia.platform.logging.Maskierung.maskText(it.message).take(256))
         })
     }
 }

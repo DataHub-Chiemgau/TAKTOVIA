@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info:
+  title: Prüfvertrag Diagnose und Telemetrie (WP-M5-03, WP-M5-06)
+  version: 0.0.0
+paths:
+  /v1/probe/diagnose/validierung:
+    get:
+      summary: Fehlerpfad mit Kontaktdaten im detail
+      operationId: probeDiagnoseValidierung
+      security:
+      - oidc:
+        - probe:read
+      responses:
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/diagnose/ausnahme:
+    get:
+      summary: Unerwartete Ausnahme mit Objektinhalt
+      operationId: probeDiagnoseAusnahme
+      security:
+      - oidc:
+        - probe:read
+      responses:
+        '500':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/probe/telemetrie/trace:
+    get:
+      summary: Trace-ID des aktuellen Spans
+      operationId: probeTelemetrieTrace
+      security:
+      - oidc:
+        - probe:read
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  trace_id:
+                    type: [string, 'null']

@@ -1,0 +1,345 @@
+{
+ "uid": "taktovia-kern",
+ "title": "Fachkern",
+ "schemaVersion": 39,
+ "version": 1,
+ "editable": false,
+ "tags": [
+  "taktovia",
+  "betrieb"
+ ],
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "refresh": "30s",
+ "templating": {
+  "list": [
+   {
+    "name": "tenant_id",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "prometheus"
+    },
+    "query": "label_values(taktovia_outbox_depth, tenant_id)",
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {}
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "HTTP-Latenz p95 je Endpunktklasse",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, route_class) (rate(taktovia_http_server_request_seconds_bucket[5m])))",
+     "legendFormat": "{{route_class}}"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Fehlerrate (5xx) je Endpunktklasse",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (route_class) (rate(taktovia_http_server_request_seconds_count{status_class=\"5xx\"}[5m])) / sum by (route_class) (rate(taktovia_http_server_request_seconds_count[5m]))",
+     "legendFormat": "{{route_class}}"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "type": "timeseries",
+   "title": "Datenbankpool (aktiv / wartend)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "hikaricp_connections_active",
+     "legendFormat": "aktiv"
+    },
+    {
+     "refId": "B",
+     "expr": "hikaricp_connections_pending",
+     "legendFormat": "wartend"
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "type": "timeseries",
+   "title": "Sperrwartezeit Hold/Confirm p95",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(taktovia_db_lock_wait_seconds_bucket[5m])))",
+     "legendFormat": "{{operation}}"
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "type": "timeseries",
+   "title": "Outbox: Tiefe und ältester Eintrag",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(taktovia_outbox_depth{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Tiefe"
+    },
+    {
+     "refId": "B",
+     "expr": "max(taktovia_outbox_oldest_age_seconds{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Alter (s)"
+    },
+    {
+     "refId": "C",
+     "expr": "sum(taktovia_outbox_dead_lettered{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Dead-Letter"
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Verzögerung Commit bis Relay-Veröffentlichung p95",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(taktovia_outbox_publish_delay_seconds_bucket[5m])))",
+     "legendFormat": "p95"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "Inbox: Verzug und Lücken-Snapshots",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "max(taktovia_inbox_lag_seconds{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Verzug (s)"
+    },
+    {
+     "refId": "B",
+     "expr": "sum(taktovia_inbox_gap_snapshots{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Lücken"
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "type": "timeseries",
+   "title": "Operationen: offen, Lease überfällig, Frist überfällig",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(taktovia_operation_open{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "offen"
+    },
+    {
+     "refId": "B",
+     "expr": "sum(taktovia_operation_lease_overdue{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Lease überfällig"
+    },
+    {
+     "refId": "C",
+     "expr": "sum(taktovia_operation_deadline_overdue{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "Frist überfällig"
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "payment_intent in unbestimmtem Zustand",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (tenant_id) (taktovia_payment_intent_indeterminate{tenant_id=~\"$tenant_id\"})",
+     "legendFormat": "{{tenant_id}}"
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "type": "timeseries",
+   "title": "Telemetrie: verworfene Reihen",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "taktovia_telemetry_dropped_total",
+     "legendFormat": "verworfen"
+    }
+   ]
+  }
+ ]
+}

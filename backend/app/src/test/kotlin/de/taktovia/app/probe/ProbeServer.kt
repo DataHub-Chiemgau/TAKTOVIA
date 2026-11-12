@@ -26,6 +26,7 @@ class Resp(val status: Int, val headers: Map<String, List<String>>, val text: St
 class ProbeServer private constructor(val ctx: ConfigurableApplicationContext) {
     private val http = HttpClient.newHttpClient()
     val port: Int = ctx.environment.getProperty("local.server.port")!!.toInt()
+    val managementPort: Int? get() = ctx.environment.getProperty("local.management.port")?.toIntOrNull()
     val registry: OpenApiRegistry get() = ctx.getBean(OpenApiRegistry::class.java)
 
     fun send(method: String, path: String, body: String? = null, headers: Map<String, String> = emptyMap(), contentType: String? = "application/json"): Resp {
@@ -57,9 +58,9 @@ class ProbeServer private constructor(val ctx: ConfigurableApplicationContext) {
             ProbeDb.ensure()
             if (probe) PlatformBlocksDb.ensure()
             return servers.getOrPut((if (probe) "probe|" else "prod|") + props.joinToString("|")) {
-                val base = listOf("server.port=0", "taktovia.api.cursor-secret=test-cursor-secret-test-cursor-secret-1234") +
-                    if (probe) listOf("taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml,classpath:probe/platform-blocks-api.yaml") else emptyList()
-                val ctx = SpringApplicationBuilder(TaktoviaApplication::class.java).run(*(base + props).map { "--$it" }.toTypedArray())
+                val base = listOf("server.port=0", "taktovia.api.cursor-secret=test-cursor-secret-test-cursor-secret-1234", "management.tracing.export.enabled=false") +
+                    if (probe) listOf("taktovia.probe.enabled=true", "taktovia.api.extra-specs=classpath:probe/probe-api.yaml,classpath:probe/platform-blocks-api.yaml,classpath:probe/diagnose-probe-api.yaml") else emptyList()
+                val ctx = SpringApplicationBuilder(TaktoviaApplication::class.java).run(*(base.filter { b -> props.none { it.substringBefore('=') == b.substringBefore('=') } } + props).map { "--$it" }.toTypedArray())
                 Runtime.getRuntime().addShutdownHook(Thread { ctx.close() })
                 ProbeServer(ctx)
             }

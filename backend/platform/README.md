@@ -27,3 +27,10 @@ Verträge: `docs/umsetzungsplan/vertraege/{audit-katalog,betriebsalarmkanal,even
 | `carddata` | `CardData` (Luhn + Netzwerkpräfix, Maskierung), `CardDataFilter` (Query, Header, Body; `requireNoCardData` für Ereignis-Payloads, aufgerufen von `Outbox.append`), `CardDataIncidents` (asynchrone Meldung als Log und Sicherheitsereignis). Nachweis: `docs/umsetzungsplan/vertraege/psp-trennung.md` |
 
 - **Isolation außerhalb der Datenbank (WP-M1-11):** `cache.CacheKey`/`TenantCache` (Mandant, Dienst, Ressourcen-ID, Policyrevision im Schlüssel; In-Memory und Redis), `storage.ObjectKey`/`TenantObjectStore`/`SignedUrls` (Mandantenpräfix, signierte URLs höchstens 60 s nach Objekt-/Zweckprüfung; S3/MinIO-Adapter nicht gebaut), `outbox.EnvelopeAddressing` (Eigentümer und Empfänger Pflicht), `isolation.TenantListing` (erzwungener Tenantfilter). Architekturregeln: `IsolationRules` in `backend/app` (Tests). Vertrag: `docs/umsetzungsplan/vertraege/LH-6.1-SYS-001.md`.
+
+## Telemetrie und Maskierung (WP-M5-03, WP-M5-06)
+
+| Paket | Inhalt |
+|---|---|
+| `logging` | `Maskierung` (zentrale Regeln für Logausgabe, Trace-Attribute, `problem+json`-`detail`, Alarmtexte, Ausnahmebeschreibung), `Positivliste` (protokollierbare Felder je Modul), `LogZeile`/`LogKontext` (strukturierte maskierte Zeile mit Mandanten- und Korrelationsbezug). Regeln: `docs/betrieb/maskierung.md` |
+| `telemetry` | `MetricConvention`/`LabelPolicyFilter` (Namens- und Labelkonvention, verwirft Reihen mit Personen-, Kontakt-, Such- oder Zahlungsbezug), `PlatformMetrics` (HTTP-Latenz je Endpunktklasse, Sperrwartezeit, Relay-Verzögerung), `QueueMetrics` (Outbox, Inbox, Operationen, `payment_intent` je Mandant), `SafeTelemetry` (Telemetrie stört nie das Geschäft). Konvention und Betrieb: `docs/betrieb/telemetrie.md` |
