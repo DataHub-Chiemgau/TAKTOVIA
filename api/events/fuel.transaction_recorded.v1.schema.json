@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fuel.transaction_recorded.v1.schema.json",
+  "title": "Tankvorgang erfasst (WP-M4-30)",
+  "description": "Payload von `fuel.transaction_recorded`. Aggregat: expense_document / neue Revision. Wird bei jeder Erfassung oder Änderung der Tankwerte eines Belegs der Art FUEL_RECEIPT ausgelöst; `complete` = alle Pflichtwerte vorhanden. Konsum durch das Kilometerstandsregister (WP-M4-41) erst bei `complete` und nach der Freigabe. Menge und Preis sind Dezimalstrings.",
+  "type": "object",
+  "required": ["document_id", "revision", "vehicle_id", "fuel_type", "unit", "quantity", "unit_price", "odometer_km", "fueled_at", "complete", "recorded_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 2},
+    "vehicle_id": {"type": ["string", "null"], "format": "uuid"},
+    "fuel_type": {"enum": ["PETROL", "DIESEL", "LPG", "ELECTRIC", null]},
+    "unit": {"enum": ["LITER", "KWH", null]},
+    "quantity": {"type": ["string", "null"], "pattern": "^[0-9]{1,12}(\\.[0-9]{1,8})?$"},
+    "unit_price": {"type": ["string", "null"], "pattern": "^[0-9]{1,12}(\\.[0-9]{1,8})?$"},
+    "odometer_km": {"type": ["integer", "null"], "minimum": 0, "maximum": 10000000},
+    "fueled_at": {"type": ["string", "null"], "format": "date-time"},
+    "complete": {"type": "boolean"},
+    "recorded_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "revision": 3, "vehicle_id": "66666666-7777-4888-8999-000000000000", "fuel_type": "DIESEL", "unit": "LITER", "quantity": "42.5", "unit_price": "1.679",
+     "odometer_km": 120500, "fueled_at": "2026-06-15T08:00:00Z", "complete": true, "recorded_at": "2026-06-15T08:05:00Z"}
+  ]
+}

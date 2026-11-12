@@ -3,6 +3,10 @@ package de.taktovia.app.documents
 import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.documentsfinance.api.AssignCosts
+import de.taktovia.documentsfinance.api.CaptureFuel
+import de.taktovia.documentsfinance.api.FuelReceipts
+import de.taktovia.documentsfinance.api.FuelType
+import de.taktovia.documentsfinance.api.FuelView
 import de.taktovia.documentsfinance.api.CorrectExpense
 import de.taktovia.documentsfinance.api.CostAssignments
 import de.taktovia.documentsfinance.api.CostObjectView
@@ -33,6 +37,8 @@ internal object CostObjectJson {
         "legal_entity_id" to o.legalEntityId.toString(), "vehicle_id" to o.vehicleId?.toString(), "active" to o.active)
 }
 
+private val DECIMAL = Regex("[0-9]{1,12}(\\.[0-9]{1,8})?")
+
 class ExpenseResource(@get:JsonValue val data: Map<String, Any?>, override val revision: Long) : Revisioned
 
 /**
@@ -40,7 +46,7 @@ class ExpenseResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts) {
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -51,6 +57,12 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         val revision = Etag.parseIfMatch(ifMatch)
         val ctx = RequestContexts.require(request)
         val assignment = body["cost_assignment"] as Map<String, Any?>?
+        val fuelBody = body["fuel"] as Map<String, Any?>?
+        if (fuelBody != null) {
+            // Tankwerte (WP-M4-30): eigene Revision, nicht mit Feldkorrektur oder Zuordnung kombinierbar
+            if (assignment != null || !((body["fields"] as Map<*, *>?).isNullOrEmpty() && (body["confirm"] as List<*>?).isNullOrEmpty())) throw ProblemException.invalid(Violation("/fuel", ViolationCode.INVALID_VALUE))
+            return resource(fuel.capture(ctx, id, revision, captureOf(fuelBody)))
+        }
         if (assignment != null) {
             // Kostenzuordnung (WP-M4-29): nicht mit Feldkorrekturen kombinierbar (eine Revision je Änderung)
             if (!((body["fields"] as Map<*, *>?).isNullOrEmpty() && (body["confirm"] as List<*>?).isNullOrEmpty())) throw ProblemException.invalid(Violation("/cost_assignment", ViolationCode.INVALID_VALUE))
@@ -60,6 +72,28 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         val cmd = CorrectExpense(reason, (body["fields"] as Map<String, Any?>?) ?: emptyMap(), ((body["confirm"] as List<String>?) ?: emptyList()).toSet())
         return resource(expenses.correct(ctx, id, revision, cmd))
     }
+
+    /** Dezimalwerte kommen nur als Strings (nie JSON-Zahlen, nie Gleitkomma); Zeitpunkte mit UTC-Offset. */
+    private fun captureOf(m: Map<String, Any?>): CaptureFuel {
+        fun decimal(key: String): java.math.BigDecimal? = m[key]?.let { v ->
+            val pointer = "/fuel/$key"
+            if (v !is String) throw ProblemException.invalid(Violation(pointer, ViolationCode.TYPE_MISMATCH))
+            if (!DECIMAL.matches(v)) throw ProblemException.invalid(Violation(pointer, ViolationCode.INVALID_FORMAT))
+            java.math.BigDecimal(v)
+        }
+        return CaptureFuel(
+            vehicleId = m["vehicle_id"]?.let { v -> try { UUID.fromString(v as String) } catch (e: RuntimeException) { throw ProblemException.invalid(Violation("/fuel/vehicle_id", ViolationCode.INVALID_FORMAT)) } },
+            fuelType = m["fuel_type"]?.let { v -> FuelType.entries.firstOrNull { it.name == v } ?: throw ProblemException.invalid(Violation("/fuel/fuel_type", ViolationCode.NOT_IN_ENUM)) },
+            quantity = decimal("quantity"), unitPrice = decimal("unit_price"),
+            odometerKm = m["odometer_km"]?.let { v -> if (v is Int) v.toLong() else if (v is Long) v else throw ProblemException.invalid(Violation("/fuel/odometer_km", ViolationCode.TYPE_MISMATCH)) },
+            fueledAt = m["fueled_at"]?.let { v -> try { java.time.OffsetDateTime.parse(v as String).toInstant() } catch (e: RuntimeException) { throw ProblemException.invalid(Violation("/fuel/fueled_at", ViolationCode.OFFSET_REQUIRED)) } },
+            cardId = m["card_id"]?.let { v -> v as? String ?: throw ProblemException.invalid(Violation("/fuel/card_id", ViolationCode.TYPE_MISMATCH)) },
+        )
+    }
+
+    private fun fuelJson(f: FuelView): Map<String, Any?> = linkedMapOf("vehicle_id" to f.vehicleId?.toString(), "fuel_type" to f.fuelType?.name, "quantity" to f.quantity?.toPlainString(), "unit" to f.unit?.name,
+        "unit_price" to f.unitPrice?.toPlainString(), "gross_minor" to f.grossMinor, "currency" to f.currency, "odometer_km" to f.odometerKm, "fueled_at" to f.fueledAt?.toString(), "card_id" to f.cardId,
+        "missing" to f.missing, "complete" to f.complete)
 
     private fun uuids(v: Any?, pointer: String): Set<UUID> = ((v as List<*>?) ?: emptyList<Any>()).map {
         try { UUID.fromString(it as String) } catch (e: RuntimeException) { throw ProblemException.invalid(Violation(pointer, ViolationCode.INVALID_FORMAT)) }
@@ -83,7 +117,7 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "document_id" to d.documentId.toString(), "legal_entity_id" to d.legalEntityId?.toString(), "state" to d.workflowState, "source_channel" to d.channel.name, "document_kind" to d.kind.name,
             "case_ref" to d.caseRef?.let { linkedMapOf("kind" to it.kind.name, "id" to it.id.toString()) }, "mime" to d.mime, "size_bytes" to d.sizeBytes, "sha256" to toB64(d.sha256),
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
-            "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fields" to e.fields, "revision" to d.revision,
+            "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson), "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 

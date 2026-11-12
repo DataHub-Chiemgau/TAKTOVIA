@@ -80,10 +80,7 @@ internal class JdbcExpenses(
         return EditedViewContent(found.first, ContentSniffer.detect(bytes) ?: "application/octet-stream", bytes, DocumentRows.sha256(bytes))
     }
 
-    private fun view(j: JdbcOperations, r: DocRow): ExpenseView {
-        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields); val objects = CostAssignmentRows.assigned(j, r.view.documentId)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects), review, objects)
-    }
+    private fun view(j: JdbcOperations, r: DocRow): ExpenseView = ExpenseViews.build(j, r)
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {
         require(ctx, SCOPE_WRITE)

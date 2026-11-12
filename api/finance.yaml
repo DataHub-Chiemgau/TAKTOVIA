@@ -413,10 +413,12 @@ components:
     ExpenseCorrection:
       type: object
       additionalProperties: false
-      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht) oder `cost_assignment` (nicht kombinierbar). Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment` oder `fuel` (Tankwerte, WP-M4-30); die drei Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
       properties:
         cost_assignment:
           $ref: '#/components/schemas/ExpenseCostAssignment'
+        fuel:
+          $ref: '#/components/schemas/FuelCapture'
         reason:
           type: string
           minLength: 1
@@ -429,6 +431,127 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/ExpenseFieldName'
+    FuelCapture:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Tankwerte eines Belegs der Art FUEL_RECEIPT. Gesetzt wird, was angegeben ist; die übrigen Werte bleiben. Menge und Preis sind Dezimalstrings (nie JSON-Zahlen, nie Gleitkomma), positiv, höchstens 8 Nachkommastellen. Der Bruttobetrag ist das Belegfeld `amount_minor`. Die Einheit folgt der Kraftstoffart (ELECTRIC = kWh, sonst Liter).
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        fuel_type:
+          type: string
+          enum:
+          - PETROL
+          - DIESEL
+          - LPG
+          - ELECTRIC
+        quantity:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+        unit_price:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+        odometer_km:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000
+        fueled_at:
+          type: string
+          format: date-time
+        card_id:
+          type: string
+          pattern: ^[A-Za-z0-9._-]{1,64}$
+    FuelData:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        fuel_type:
+          oneOf:
+          - type: string
+            enum:
+            - PETROL
+            - DIESEL
+            - LPG
+            - ELECTRIC
+          - type: 'null'
+        quantity:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+            enum:
+            - LITER
+            - KWH
+          - type: 'null'
+        unit_price:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          - type: 'null'
+        gross_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Spiegel des Belegfelds `amount_minor`.
+        currency:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        odometer_km:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 10000000
+          - type: 'null'
+        fueled_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        card_id:
+          oneOf:
+          - type: string
+          - type: 'null'
+        missing:
+          type: array
+          description: Fehlende Pflichtwerte einzeln (Kraftstoffart, Menge, Preis je Einheit, Kilometerstand, Fahrzeug); solange `fuel_receipt_required` gilt, ist der Beleg dann nicht freigabefähig.
+          items:
+            type: string
+            enum:
+            - vehicle_id
+            - fuel_type
+            - quantity
+            - unit_price
+            - odometer_km
+        complete:
+          type: boolean
+      required:
+      - vehicle_id
+      - fuel_type
+      - quantity
+      - unit
+      - unit_price
+      - gross_minor
+      - currency
+      - odometer_km
+      - fueled_at
+      - card_id
+      - missing
+      - complete
     ExpenseCostAssignment:
       type: object
       additionalProperties: false
@@ -687,6 +810,7 @@ components:
             - SUM_MISMATCH
             - COST_ASSIGNMENT_MISSING
             - COST_OBJECT_INACTIVE
+            - FUEL_FIELDS_MISSING
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -701,6 +825,11 @@ components:
           items:
             $ref: '#/components/schemas/CostObject'
           description: Zugeordnete Kostenobjekte (WP-M4-29).
+        fuel:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/FuelData'
+          description: Tankwerte (WP-M4-30), nur bei Belegen der Art FUEL_RECEIPT; `missing` nennt die fehlenden Pflichtwerte einzeln.
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

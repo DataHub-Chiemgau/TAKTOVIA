@@ -18,7 +18,7 @@ data class CaseRef(val kind: CaseKind, val id: UUID)
 enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
 
 /** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
-enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE }
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE, FUEL_FIELDS_MISSING }
 
 /** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
 object ExpenseFields {
@@ -43,7 +43,9 @@ data class RevisionView(
 )
 
 /** Beleg mit aktuellem Feldstand (WP-M4-22/-23): das Dokument (Original, Zustand, Kanal), die bestätigten oder erfassten Felder und die Freigabehindernisse. */
-data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>, val review: ReviewState = ReviewState.NONE, val costObjects: List<CostObjectView> = emptyList()) {
+data class ExpenseView(val document: StoredDocumentView, val fields: Map<String, Any?>, val blockers: List<ReleaseBlocker>, val review: ReviewState = ReviewState.NONE, val costObjects: List<CostObjectView> = emptyList(),
+    /** Tankwerte (nur Belege der Art `FUEL_RECEIPT`, WP-M4-30). */
+    val fuel: FuelView? = null) {
     /** Freigabefähig, wenn kein Hindernis besteht (Dokument, Bestätigungspflicht und Kostenzuordnung). */
     val approvable: Boolean get() = blockers.isEmpty()
 }
@@ -220,4 +222,5 @@ class DocumentServices(
     val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
     val review: ReceiptReview,
     val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
+    val fuel: FuelReceipts, val policies: FinancePolicies,
 )

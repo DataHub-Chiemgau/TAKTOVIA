@@ -58,7 +58,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
 
@@ -345,9 +345,35 @@ export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | '
 
 export interface ExpenseCorrection {
   cost_assignment?: ExpenseCostAssignment;
+  fuel?: FuelCapture;
   reason?: string;
   fields?: ExpenseFieldValues;
   confirm?: ExpenseFieldName[];
+}
+
+export interface FuelCapture {
+  vehicle_id?: UUID;
+  fuel_type?: 'PETROL' | 'DIESEL' | 'LPG' | 'ELECTRIC';
+  quantity?: string;
+  unit_price?: string;
+  odometer_km?: number;
+  fueled_at?: string;
+  card_id?: string;
+}
+
+export interface FuelData {
+  vehicle_id: UUID | null;
+  fuel_type: 'PETROL' | 'DIESEL' | 'LPG' | 'ELECTRIC' | null;
+  quantity: string | null;
+  unit: 'LITER' | 'KWH' | null;
+  unit_price: string | null;
+  gross_minor: number | null;
+  currency: string | null;
+  odometer_km: number | null;
+  fueled_at: string | null;
+  card_id: string | null;
+  missing: ('vehicle_id' | 'fuel_type' | 'quantity' | 'unit_price' | 'odometer_km')[];
+  complete: boolean;
 }
 
 export interface ExpenseCostAssignment {
@@ -418,10 +444,11 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING')[];
   unconfirmed_fields: ExpenseFieldName[];
   sum_mismatch: boolean;
   cost_objects: CostObject[];
+  fuel?: null | FuelData;
   fields: ExpenseFieldValues;
   revision: number;
 }

@@ -5610,6 +5610,59 @@
       ]
     },
     {
+      "tabelle": "finance_policy",
+      "aggregat": "Fachparameter Belege/Finanzen (WP-M4-30)",
+      "loeschklasse": "LK_STAMM",
+      "bemerkung": "",
+      "spalten": [
+        {
+          "spalte": "fuel_receipt_required",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        }
+      ]
+    },
+    {
       "tabelle": "fiscal_period",
       "aggregat": "Buchungsperiode",
       "loeschklasse": "LK_BELEG",
@@ -5662,6 +5715,158 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "fuel_transaction",
+      "aggregat": "Tankvorgang (WP-M4-30)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "an den Beleg gebunden",
+      "spalten": [
+        {
+          "spalte": "card_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "currency",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "document_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "document_revision",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "fuel_type",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "fueled_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "gross_minor",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "odometer_km",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "quantity",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "unit",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "unit_price",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_id",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
           "rechtsgrundlage": "",

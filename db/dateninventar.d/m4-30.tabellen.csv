@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+fuel_transaction;Tankvorgang (WP-M4-30);LK_BELEG;an den Beleg gebunden
+finance_policy;Fachparameter Belege/Finanzen (WP-M4-30);LK_STAMM;

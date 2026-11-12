@@ -1,5 +1,6 @@
 package de.taktovia.documentsfinance
 
+import de.taktovia.documentsfinance.api.DocumentKind
 import de.taktovia.documentsfinance.api.DocumentServices
 import de.taktovia.documentsfinance.api.DocumentUploads
 import de.taktovia.documentsfinance.api.EicarSignatureScanner
@@ -40,9 +41,9 @@ class BelegFixture(val store: TenantObjectStore, recognizer: ReceiptRecognizer? 
     fun serviceCtx(tenant: TenantId) = RequestContext(Actor(ActorType.SERVICE, "https://idp.test/realms/m4", "svc-mail-intake", null, true), tenant, emptySet(), setOf("receipts:write", "receipts:read"), emptySet(), UUID.randomUUID())
 
     /** Ticket, Upload in die Quarantäne und Abschluss: ein Beleg im Zustand STORED (oder QUARANTINE_REJECTED bei Schadsoftware). */
-    fun upload(w: UploadFixture.World, ctx: RequestContext, bytes: ByteArray = Samples.jpeg(), channel: SourceChannel = SourceChannel.DISPATCH_WEB): StoredDocumentView {
+    fun upload(w: UploadFixture.World, ctx: RequestContext, bytes: ByteArray = Samples.jpeg(), channel: SourceChannel = SourceChannel.DISPATCH_WEB, kind: DocumentKind = DocumentKind.RECEIPT): StoredDocumentView {
         val mime = when { bytes[0] == 0xFF.toByte() -> "image/jpeg"; bytes[0] == 0x89.toByte() -> "image/png"; else -> "application/pdf" }
-        val t = svc.uploads.requestTicket(ctx, RequestUploadTicket(w.legalEntity, UploadPurpose.RECEIPT, mime, bytes.size.toLong(), Samples.sha256(bytes), channel))
+        val t = svc.uploads.requestTicket(ctx, RequestUploadTicket(w.legalEntity, UploadPurpose.RECEIPT, mime, bytes.size.toLong(), Samples.sha256(bytes), channel, kind))
         store.put(ObjectKey(w.tenant, t.uploadKey), bytes, mime)
         return svc.uploads.complete(ctx, t.ticketId, t.revision)
     }

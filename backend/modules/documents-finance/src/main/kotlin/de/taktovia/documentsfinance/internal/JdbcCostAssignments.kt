@@ -160,12 +160,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
         return o.copy(active = false)
     }
 
-    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView {
-        val r = DocumentRows.visible(j, ctx, id)
-        val objects = CostAssignmentRows.assigned(j, id)
-        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects), review, objects)
-    }
+    private fun view(j: JdbcOperations, ctx: RequestContext, id: UUID): ExpenseView = ExpenseViews.build(j, DocumentRows.visible(j, ctx, id))
 
     private companion object {
         const val MAX_OBJECTS = 20

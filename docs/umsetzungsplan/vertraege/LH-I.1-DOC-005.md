@@ -28,7 +28,7 @@
 - **Negativ:** fehlende Liter, fehlender Kilometerstand, fehlendes Fahrzeug werden einzeln angezeigt und blockieren die Freigabe; negatives oder nulles Volumen abgewiesen; fremdes Fahrzeug (anderer Mandant) abgewiesen; Gleitkommaeingabe in JSON-Zahl abgelehnt bzw. Dezimalstring erzwungen.
 - **Konkurrierend (Geld):** zwei parallele Freigaben desselben Tankbelegs erzeugen genau ein Kostenereignis.
 - **Referenztests:** E2E-064, PH-AT-012.
-- Testfälle: E2E-064; PH-AT-012; geplant:db/tests/test_fuel_transaction.py::test_negative_menge_und_fremdes_fahrzeug_abgewiesen; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/FuelReceiptTest.kt::fehlende_pflichtwerte_werden_einzeln_angezeigt; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/FuelReceiptTest.kt::parallele_freigabe_ergibt_ein_kostenereignis
+- Testfälle: E2E-064; PH-AT-012; db/tests/test_fuel_transaction.py::Tankvorgang::test_negative_menge_und_fremdes_fahrzeug_abgewiesen; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelReceiptTest.kt::fehlende_pflichtwerte_werden_einzeln_angezeigt; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelReceiptTest.kt::parallele_posting_ausloeser_desselben_tankbelegs_ergeben_ein_kostenereignis; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/FuelReceiptTest.kt::vollstaendiger_tankbeleg_ist_nach_der_freigabe_als_kostenereignis_auswertbar; backend/app/src/test/kotlin/de/taktovia/app/documents/FuelReceiptApiTest.kt::gleitkomma_negative_werte_und_unbekannte_felder_werden_abgewiesen
 
 ## Reviews
 
