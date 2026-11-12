@@ -1,0 +1,7 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+rejection_reason;code;nein;NACHFRAGEANALYSE;;;;
+rejection_reason;priority;nein;NACHFRAGEANALYSE;;;;
+rejection_reason;counts_as_rejection;nein;NACHFRAGEANALYSE;;;;
+rejection_reason;metric;nein;NACHFRAGEANALYSE;;;;
+rejection_reason;label;nein;NACHFRAGEANALYSE;;;;
+rejection_reason;next_action;nein;NACHFRAGEANALYSE;;;;

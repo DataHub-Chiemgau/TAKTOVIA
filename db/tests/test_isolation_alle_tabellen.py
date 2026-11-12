@@ -9,7 +9,7 @@ from helpers import admin, runtime, seed_tenant, set_tenant, tx, uid
 A, B = uid(), uid()
 # Katalogtabellen ohne Mandantenbezug (global, nicht personenbezogen, Runtime nur lesend)
 GLOBAL = {'tenant', 'currency', 'state_transition_rule', 'role_catalog', 'rights_matrix_rollout', 'policy_schema', 'policy_schema_version',
-          'config_vehicle_override_release', 'platform_operator_account'}
+          'config_vehicle_override_release', 'platform_operator_account', 'rejection_reason'}
 
 
 def tenant_tables(c):

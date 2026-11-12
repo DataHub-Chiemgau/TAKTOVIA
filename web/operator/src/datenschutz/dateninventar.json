@@ -7826,6 +7826,68 @@
       ]
     },
     {
+      "tabelle": "rejection_reason",
+      "aggregat": "Katalog der Ablehnungsgründe (WP-M2-13)",
+      "loeschklasse": "LK_KATALOG",
+      "bemerkung": "globaler Katalog, nur per Migration",
+      "spalten": [
+        {
+          "spalte": "code",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "counts_as_rejection",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "label",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "metric",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "next_action",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "priority",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "relation_rule",
       "aggregat": "Version der erlaubten Zielpunkte eines Dienstes (WP-M2-06)",
       "loeschklasse": "LK_STAMM",

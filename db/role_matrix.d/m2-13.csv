@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+rejection_reason;SELECT;WP-M2-13: Katalog der Ablehnungsgründe, global, nur per Migration gepflegt
