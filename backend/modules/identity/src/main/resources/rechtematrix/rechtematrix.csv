@@ -119,6 +119,13 @@ updateServiceArea;geo:write;-;M2;N;N;N;N;N;J;J;N;N;N
 createStop;geo:write;-;M2;N;N;N;N;N;J;J;N;N;N
 updateStop;geo:write;-;M2;N;N;N;N;N;J;J;N;N;N
 putServiceRelationRule;geo:write;-;M2;N;N;N;N;N;J;J;N;N;N
+listTariffRevisions;tariffs:read;-;M2;N;N;N;J;J;J;J;J;N;N
+getTariffRevision;tariffs:read;-;M2;N;N;N;J;J;J;J;J;N;N
+getEffectiveTariff;tariffs:read;-;M2;N;N;N;J;J;J;J;J;N;N
+createTariffRevision;tariffs:write;-;M2;N;N;N;N;N;J;J;N;N;N
+updateTariffRevision;tariffs:write;-;M2;N;N;N;N;N;J;J;N;N;N
+reviewTariffRevision;tariffs:publish;-;M2;N;N;N;N;N;J;J;N;N;N
+publishTariffRevision;tariffs:publish;-;M2;N;N;N;N;N;J;J;N;N;N
 listNotifications;notifications:read;-;M2;N;N;J;J;J;N;J;N;N;N
 getNotification;notifications:read;-;M2;N;N;J;J;J;N;J;N;N;N
 receiveProviderEvent;-;-;M2;N;N;N;N;N;N;N;N;N;N

@@ -159,6 +159,10 @@ object AuditActions {
     const val GEO_STOP_CHANGED = "geo.stop.changed"
     /** Mengenversion der erlaubten Zielpunkte eines Dienstes veröffentlicht (WP-M2-06); Objekt `service:<uuid>`, Details nennen Anzahl, Wirksamkeit und Grund. */
     const val GEO_RELATION_RULE_PUBLISHED = "geo.relation_rule.published"
+    /** Tarifrevision angelegt, bearbeitet oder geprüft (WP-M2-07); Objekt `tariff_revision:<uuid>`, Details nennen Dienst, Tarifklasse, Wirksamkeit, Zustand und Revisionsnummer, nie Preise im Klartext der Regeln. */
+    const val TARIFF_REVISION_CHANGED = "tariff.revision.changed"
+    /** Tarifrevision veröffentlicht (WP-M2-07, Vier-Augen); Details nennen Ersteller, Prüfer und Veröffentlichenden. */
+    const val TARIFF_REVISION_PUBLISHED = "tariff.revision.published"
     /** Abwesenheit (WP-M4-06) erfasst bzw. zurückgenommen; Objekt `absence:<id>`, `details`: `revision`, `state` (nie Person oder Art, HR-Daten). */
     const val ABSENCE_CREATED = "staff.absence.created"
     const val ABSENCE_WITHDRAWN = "staff.absence.withdrawn"
@@ -177,7 +181,7 @@ object AuditActions {
         SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_CONTAINMENT_EXECUTED, AUDIT_READ,
         PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
         SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED,
-        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED)
+        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED)
 }
 
 /**

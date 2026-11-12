@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/tariff.revision_published.v1.schema.json",
+  "title": "Tarifrevision veröffentlicht (WP-M2-07)",
+  "description": "Payload von `tariff.revision_published`. Aggregat: Tarifrevision (Revision = Ressourcenrevision der veröffentlichten Zeile). Wirksam ab `valid_from` (links geschlossen, rechts offen). Keine Preise und Sätze im Payload; Empfänger lesen sie über die Revision.",
+  "type": "object",
+  "required": ["revision_id", "service_id", "tariff_class", "revision_no", "valid_from", "valid_to", "currency", "rule_type", "rule_count"],
+  "additionalProperties": false,
+  "properties": {
+    "revision_id": {"type": "string", "format": "uuid"},
+    "service_id": {"type": "string", "format": "uuid"},
+    "tariff_class": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,39}$"},
+    "revision_no": {"type": "integer", "minimum": 1},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "rule_type": {"enum": ["FESTPREIS", "ZONENPREIS", "GRUNDPREIS_STRECKE"]},
+    "rule_count": {"type": "integer", "minimum": 1, "maximum": 500}
+  }
+}

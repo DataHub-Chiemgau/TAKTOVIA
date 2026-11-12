@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+fare_component;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;quote_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;segment_no;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;component_no;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;code;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;amount_minor;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;currency;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;rule_id;nein;BUCHUNGSABWICKLUNG;;;;
+fare_component;created_at;nein;BUCHUNGSABWICKLUNG;;;;

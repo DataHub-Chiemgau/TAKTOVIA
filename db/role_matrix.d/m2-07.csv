@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+tariff_revision;SELECT,INSERT;WP-M2-07: Tarifrevision; UPDATE nur auf Gültigkeit, Grund und Lebenslauf (Spaltenrecht, Trigger tariff_revision_guard), veröffentlicht vollständig unveränderlich, kein DELETE
+tariff_rule;SELECT,INSERT,UPDATE,DELETE;WP-M2-07: Preisregel; Änderung nur im Entwurf der Revision (Trigger tariff_rule_guard)

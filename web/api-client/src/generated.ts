@@ -2078,6 +2078,83 @@ export interface AccountRecovery {
   started_at: string;
 }
 
+export type TariffClass = string;
+
+export type TariffState = 'ENTWURF' | 'GEPRUEFT' | 'VEROEFFENTLICHT';
+
+export type TariffRuleType = 'FESTPREIS' | 'ZONENPREIS' | 'GRUNDPREIS_STRECKE';
+
+export interface TariffRuleInput {
+  rule_type: TariffRuleType;
+  person_mode?: 'PER_PERSON' | 'PER_BOOKING';
+  amount_minor: number;
+  zone_from?: UUID;
+  zone_to?: UUID;
+  rate_per_km?: string;
+  booking_fee_minor?: number;
+  tax_rate?: string;
+  tax_mode?: 'GROSS' | 'NET';
+  tax_rule_revision: string;
+}
+
+export interface TariffRule {
+  id: UUID;
+  rule_no: number;
+  rule_type: TariffRuleType;
+  person_mode: 'PER_PERSON' | 'PER_BOOKING';
+  amount_minor: number;
+  zone_from: UUID | null;
+  zone_to: UUID | null;
+  rate_per_km: string | null;
+  booking_fee_minor: number;
+  tax_rate: string;
+  tax_mode: 'GROSS' | 'NET';
+  tax_rule_revision: string;
+}
+
+export interface TariffRevisionCreate {
+  service_id: UUID;
+  tariff_class: TariffClass;
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  currency: string;
+  reason: string;
+  rules: TariffRuleInput[];
+}
+
+export interface TariffRevisionUpdate {
+  valid_from: Timestamp;
+  valid_to?: Timestamp | null;
+  reason: string;
+  rules: TariffRuleInput[];
+}
+
+export interface TariffRevision {
+  id: UUID;
+  service_id: UUID;
+  tariff_class: TariffClass;
+  revision_no: number;
+  state: TariffState;
+  valid_from: Timestamp;
+  valid_to: Timestamp | null;
+  currency: string;
+  reason: string;
+  revision: number;
+  created_by: string;
+  created_at: Timestamp;
+  reviewed_by: string | null;
+  reviewed_at: Timestamp | null;
+  published_by: string | null;
+  published_at: Timestamp | null;
+  rules: TariffRule[];
+}
+
+export interface TariffRevisionPage {
+  items: TariffRevision[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
@@ -3282,6 +3359,55 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
+  listTariffRevisions: {
+    path: Record<string, never>;
+    query: { limit?: number; cursor?: string; service_id?: UUID; state?: TariffState };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevisionPage;
+  };
+  createTariffRevision: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TariffRevisionCreate;
+    response: TariffRevision;
+  };
+  getTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  updateTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: TariffRevisionUpdate;
+    response: TariffRevision;
+  };
+  reviewTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  publishTariffRevision: {
+    path: { tariff_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: undefined;
+    response: TariffRevision;
+  };
+  getEffectiveTariff: {
+    path: { service_id: UUID };
+    query: { tariff_class?: TariffClass; at?: Timestamp };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TariffRevision;
+  };
   listTimeEvents: {
     path: Record<string, never>;
     query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
@@ -3514,6 +3640,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listTariffRevisions: { method: 'GET', path: '/v1/tariffs', pathParams: [], query: ['limit', 'cursor', 'service_id', 'state'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createTariffRevision: { method: 'POST', path: '/v1/tariffs', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['tariffs:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getTariffRevision: { method: 'GET', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  updateTariffRevision: { method: 'PUT', path: '/v1/tariffs/{tariff_id}', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['tariffs:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  reviewTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/review', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  publishTariffRevision: { method: 'POST', path: '/v1/tariffs/{tariff_id}/publish', pathParams: ['tariff_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['tariffs:publish'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getEffectiveTariff: { method: 'GET', path: '/v1/services/{service_id}/tariff', pathParams: ['service_id'], query: ['tariff_class', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['tariffs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },

@@ -1,0 +1,690 @@
+paths:
+  /v1/tariffs:
+    get:
+      summary: Tarifrevisionen auflisten
+      operationId: listTariffRevisions
+      security:
+      - oidc:
+        - tariffs:read
+      description: Revisionen des Mandanten, stabil sortiert nach Anlagezeitpunkt; Filter auf Dienst und Zustand. Jede Revision enthält ihre Preisregeln.
+      parameters:
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Filter auf einen Dienst.
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TariffState'
+        description: Filter auf den Zustand.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevisionPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Tarifrevision anlegen (Entwurf)
+      operationId: createTariffRevision
+      security:
+      - oidc:
+        - tariffs:write
+      description: 'Legt einen Entwurf mit Preisregeln an (PAY-003). Ohne Dienst, Tarifklasse oder Gültigkeitsbeginn: 422 mit Feldverweis. Unbekannter
+        oder fremder Dienst: 404. Die Revisionsnummer vergibt der Server je Dienst und Tarifklasse. Ein Entwurf wirkt nie auf Preise; erst die
+        Veröffentlichung.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffRevisionCreate'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/tariffs/{tariff_id}:
+    get:
+      summary: Tarifrevision lesen
+      operationId: getTariffRevision
+      security:
+      - oidc:
+        - tariffs:read
+      parameters:
+      - name: tariff_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      description: 'ETag = Ressourcenrevision (zählt jede Änderung). Fremder oder unbekannter Schlüssel: 404.'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Entwurf ändern
+      operationId: updateTariffRevision
+      security:
+      - oidc:
+        - tariffs:write
+      parameters:
+      - name: tariff_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      description: Ersetzt Gültigkeit, Grund und Regeln eines Entwurfs (If-Match = zuletzt gelesene Ressourcenrevision; veraltet 412, fehlend
+        428). Dienst, Tarifklasse und Währung sind unveränderlich. Eine geprüfte oder veröffentlichte Revision ist unveränderlich (409 IMMUTABLE_RECORD);
+        Korrektur nur als neue Revision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffRevisionUpdate'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/tariffs/{tariff_id}/review:
+    post:
+      summary: Tarifrevision prüfen
+      operationId: reviewTariffRevision
+      security:
+      - oidc:
+        - tariffs:publish
+      parameters:
+      - name: tariff_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      description: '`ENTWURF -> GEPRUEFT` durch eine zweite Person: Ersteller und Dienstkonten werden mit 403 abgewiesen (Vier-Augen, zusätzlich
+        als CHECK in der Datenbank). Veraltete Revision 412, fehlendes If-Match 428, Revision nicht im Entwurf 409.'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/tariffs/{tariff_id}/publish:
+    post:
+      summary: Tarifrevision veröffentlichen
+      operationId: publishTariffRevision
+      security:
+      - oidc:
+        - tariffs:publish
+      parameters:
+      - name: tariff_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      description: '`GEPRUEFT -> VEROEFFENTLICHT` durch eine zweite Person (nicht der Ersteller). Überlappt der Gültigkeitszeitraum mit einer
+        veröffentlichten Revision desselben Dienstes und derselben Tarifklasse: 409; bei zwei parallelen Veröffentlichungen gewinnt genau eine.
+        Danach ist die Revision unveränderlich; Ereignis `tariff.revision_published`.'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/services/{service_id}/tariff:
+    get:
+      summary: Wirksame Tarifrevision eines Dienstes lesen
+      operationId: getEffectiveTariff
+      security:
+      - oidc:
+        - tariffs:read
+      description: 'Die zum Preisstichtag `at` (Vorgabe: jetzt; Planungsannahme PA-05: Fahrtzeitpunkt) wirksame veröffentlichte Revision. Abgelaufene
+        (`at >= valid_to`) und noch nicht gültige Revisionen werden nie geliefert; ohne wirksame Revision 404 mit der Begründung „kein Tarif“.
+        Fremder oder unbekannter Dienst: 404.'
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - name: tariff_class
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TariffClass'
+        description: Tarifklasse; Vorgabe `STANDARD` (Planungsannahme PA-05).
+      - name: at
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Preisstichtag.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffRevision'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    TariffClass:
+      type: string
+      pattern: ^[A-Z][A-Z0-9_]{0,39}$
+      maxLength: 40
+      description: Tarifklasse. In Phase 1 genau `STANDARD` (Planungsannahme PA-05); weitere Klassen sind eine Wertemengenfrage (OP-12).
+      examples:
+      - STANDARD
+    TariffState:
+      type: string
+      enum:
+      - ENTWURF
+      - GEPRUEFT
+      - VEROEFFENTLICHT
+      description: 'Lebenslauf der Revision: Entwurf, geprüft (zweite Person), veröffentlicht (unveränderlich).'
+    TariffRuleType:
+      type: string
+      enum:
+      - FESTPREIS
+      - ZONENPREIS
+      - GRUNDPREIS_STRECKE
+      description: Festpreis (je Person bzw. Buchung), Zonenpreis (je gerichtetem Zonenpaar), Grundpreis plus Streckenanteil (Tarifengine WP-M2-08).
+        Je Revision genau ein Regeltyp.
+    TariffRuleInput:
+      type: object
+      additionalProperties: false
+      properties:
+        rule_type:
+          $ref: '#/components/schemas/TariffRuleType'
+        person_mode:
+          type: string
+          enum:
+          - PER_PERSON
+          - PER_BOOKING
+          default: PER_PERSON
+          description: Preis je Person (Standard) oder je Buchung.
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Festpreis, Zonenpreis bzw. Grundpreis in der kleinsten Einheit der Währung (ganze Zahl, nie Gleitkomma).
+        zone_from:
+          $ref: common.yaml#/components/schemas/UUID
+          description: 'Nur Zonenpreis: Startzone (Gebietsschlüssel).'
+        zone_to:
+          $ref: common.yaml#/components/schemas/UUID
+          description: 'Nur Zonenpreis: Zielzone (Gebietsschlüssel).'
+        rate_per_km:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          maxLength: 21
+          description: 'Nur Grundpreis/Strecke: Streckenanteil je Kilometer in der kleinsten Einheit als Dezimalzahl mit höchstens acht Nachkommastellen
+            (Text, nie Gleitkomma).'
+        booking_fee_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          default: 0
+          description: Gebühr je Buchung (Komponente SURCHARGE) in der kleinsten Einheit.
+        tax_rate:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          maxLength: 21
+          default: '0'
+          description: Steuersatz als Dezimalzahl von 0 bis unter 1 (`0.07`), höchstens acht Nachkommastellen. Testannahme bis zur Freigabe des
+            Pilottarifs (D-05).
+        tax_mode:
+          type: string
+          enum:
+          - GROSS
+          - NET
+          default: GROSS
+          description: '`GROSS`: Beträge enthalten die Steuer; `NET`: die Steuer kommt obendrauf.'
+        tax_rule_revision:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Revision der Steuerregel, auf der der Satz beruht.
+      required:
+      - rule_type
+      - amount_minor
+      - tax_rule_revision
+      description: 'Preisregel. Formen: FESTPREIS ohne Zonen und Streckensatz; ZONENPREIS mit `zone_from` und `zone_to`; GRUNDPREIS_STRECKE mit
+        `rate_per_km`. Verstöße: 422 mit Feldverweis `/rules/<n>/…`.'
+    TariffRule:
+      type: object
+      additionalProperties: false
+      description: Preisregel einer Revision.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        rule_no:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        rule_type:
+          $ref: '#/components/schemas/TariffRuleType'
+        person_mode:
+          type: string
+          enum:
+          - PER_PERSON
+          - PER_BOOKING
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Festpreis, Zonenpreis bzw. Grundpreis in der kleinsten Einheit der Währung (ganze Zahl, nie Gleitkomma).
+        zone_from:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        zone_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        rate_per_km:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+            maxLength: 21
+          - type: 'null'
+        booking_fee_minor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        tax_rate:
+          type: string
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,8})?$
+          maxLength: 21
+        tax_mode:
+          type: string
+          enum:
+          - GROSS
+          - NET
+        tax_rule_revision:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Revision der Steuerregel, auf der der Satz beruht.
+      required:
+      - id
+      - rule_no
+      - rule_type
+      - person_mode
+      - amount_minor
+      - zone_from
+      - zone_to
+      - rate_per_km
+      - booking_fee_minor
+      - tax_rate
+      - tax_mode
+      - tax_rule_revision
+    TariffRevisionCreate:
+      type: object
+      additionalProperties: false
+      description: Neuer Entwurf. Dienst, Tarifklasse, Gültigkeitsbeginn, Währung, Grund und mindestens eine Regel sind Pflicht (422 mit Feldverweis,
+        wenn sie fehlen).
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        tariff_class:
+          $ref: '#/components/schemas/TariffClass'
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Währung aus dem Katalog (`currency`).
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        rules:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/TariffRuleInput'
+      required:
+      - service_id
+      - tariff_class
+      - valid_from
+      - currency
+      - reason
+      - rules
+      examples:
+      - service_id: 00000000-0000-4000-8000-000000000005
+        tariff_class: STANDARD
+        valid_from: '2026-12-01T00:00:00+01:00'
+        valid_to: null
+        currency: EUR
+        reason: Tarif Winterfahrplan
+        rules:
+        - rule_type: FESTPREIS
+          amount_minor: 450
+          tax_rate: '0.07'
+          tax_rule_revision: DE-2026-1
+    TariffRevisionUpdate:
+      type: object
+      additionalProperties: false
+      description: Ersetzt den Inhalt eines Entwurfs; Dienst, Tarifklasse und Währung bleiben.
+      properties:
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        rules:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/TariffRuleInput'
+      required:
+      - valid_from
+      - reason
+      - rules
+    TariffRevision:
+      type: object
+      additionalProperties: false
+      description: Eine Tarifrevision eines Dienstes und einer Tarifklasse. Gültig `valid_from <= t < valid_to` (links geschlossen, rechts offen;
+        `valid_to` leer = offen). `revision` ist die Ressourcenrevision für ETag/If-Match, `revision_no` die fachliche Nummer je Dienst und Tarifklasse.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        tariff_class:
+          $ref: '#/components/schemas/TariffClass'
+        revision_no:
+          type: integer
+          minimum: 1
+        state:
+          $ref: '#/components/schemas/TariffState'
+        valid_from:
+          $ref: common.yaml#/components/schemas/Timestamp
+        valid_to:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        created_by:
+          type: string
+          pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+          maxLength: 130
+        created_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        reviewed_by:
+          oneOf:
+          - type: string
+            pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+            maxLength: 130
+          - type: 'null'
+        reviewed_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        published_by:
+          oneOf:
+          - type: string
+            pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+            maxLength: 130
+          - type: 'null'
+        published_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffRule'
+          maxItems: 500
+      required:
+      - id
+      - service_id
+      - tariff_class
+      - revision_no
+      - state
+      - valid_from
+      - valid_to
+      - currency
+      - reason
+      - revision
+      - created_by
+      - created_at
+      - reviewed_by
+      - reviewed_at
+      - published_by
+      - published_at
+      - rules
+    TariffRevisionPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffRevision'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
