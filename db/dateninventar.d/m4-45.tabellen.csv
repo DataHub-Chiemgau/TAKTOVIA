@@ -1,0 +1,8 @@
+tabelle;aggregat;loeschklasse;bemerkung
+analytics_event_inbox;Analytics-Ereigniseingang (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+fact_attempt;Faktenbasis Versuch (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+fact_offer;Faktenbasis Angebot (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+fact_booking;Faktenbasis Buchung (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+fact_stop_event;Faktenbasis Stopp-/Fahrerereignis (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+fact_vehicle_state;Faktenbasis Fahrzeugzustand (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen
+dataset_watermark;Datenstand der Faktenquellen (WP-M4-45);LK_BETRIEB;keine Fahrgast-Klartextdaten, Aufbewahrung D-11 offen

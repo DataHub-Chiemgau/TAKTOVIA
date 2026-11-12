@@ -20,11 +20,12 @@ import java.time.Duration
 @Configuration
 class StafftimeConfiguration {
     @Bean fun stafftimeApi(
-        ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, runSource: ObjectProvider<DriverRunSource>, config: ObjectProvider<de.taktovia.config.api.ConfigApi>,
+        ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, runSource: ObjectProvider<DriverRunSource>, effects: de.taktovia.stafftime.api.DriverEventEffects, config: ObjectProvider<de.taktovia.config.api.ConfigApi>,
         @Value("\${taktovia.stafftime.shift-start-tolerance-minutes:30}") startToleranceMinutes: Long,
         @Value("\${taktovia.stafftime.position-stale-after-seconds:30}") positionStaleAfterSeconds: Long,
         @Value("\${taktovia.stafftime.position-future-tolerance-seconds:5}") positionFutureToleranceSeconds: Long,
         @Value("\${taktovia.environment:production}") environment: String,
+        @Value("\${taktovia.stafftime.boarding-code-pepper:}") boardingCodePepper: String,
     ): StafftimeApi = StafftimeApi.create(
         ctxTx, audit, outbox, Clock.systemUTC(),
         StafftimeSettings(
@@ -32,8 +33,17 @@ class StafftimeConfiguration {
             positionFutureTolerance = Duration.ofSeconds(positionFutureToleranceSeconds),
             // In Produktion nur mit freigegebener Aufbewahrungsregel für Standortdaten (WP-M3-34 Kriterium 5, D-10, D-11); andere Umgebungen erfassen ohne Regel.
             positionRequiresRetentionRule = environment.trim() == "production",
+            // Pfeffer des Boarding-Code-Hashs (WP-M3-30): aus der Umgebung (`TAKTOVIA_STAFFTIME_BOARDING_CODE_PEPPER`), nie im Repository; ohne Wert gilt nur das Salz (nur Entwicklung und Test)
+            boardingCodePepper = boardingCodePepper,
         ),
         runSource.getIfAvailable(),
         de.taktovia.app.staff.ConfigWorkRuleSource { config.getObject().effective },   // Regelparameter der Arbeitszeit-Hinweise (WP-M4-13) aus der wirksamen Konfiguration
+        effects,   // Wirkung der Fahrerereignisse auf Buchung und Fahrt (WP-M3-29)
     )
+}
+
+/** Verbraucher des Ereignisses `booking.confirmed` für den Boarding-Code (WP-M3-30). Ohne Übergabeweg an den Fahrgast (OP-18) bleibt es beim Hash; die Anbindung an die Warteschlange folgt mit dem Übergabeweg. */
+@Configuration
+class BoardingCodeConfiguration {
+    @Bean fun boardingCodeEventHandler(staff: StafftimeApi): de.taktovia.platform.outbox.InboxHandler = staff.boardingCodes.eventConsumer(null)
 }

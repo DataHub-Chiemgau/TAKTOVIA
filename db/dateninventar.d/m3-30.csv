@@ -1,0 +1,4 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+boarding_code;locked_at;nein;PERSONALEINSATZ;;;;
+boarding_code;used_event_id;nein;PERSONALEINSATZ;;;;
+driver_event;code_result;nein;BUCHUNGSABWICKLUNG;;;;

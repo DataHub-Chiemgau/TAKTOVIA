@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/driver.review_opened.v1.schema.json",
+  "title": "Klärfall eröffnet (WP-M3-29)",
+  "description": "Payload von `driver.review_opened`. Aggregat: driver_event / 1. Ein Fahrerereignis war nicht wirksam (REVIEW_REQUIRED) und liegt der Leitstelle zur Klärung vor. Nur Kennungen, Codes, Zähler und Zeitpunkte: keine Namen, Kontakt- oder Zahlungsdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "shift_id",
+    "event_type",
+    "reason_code",
+    "booking_id",
+    "route_stop_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_type": {
+      "enum": [
+        "CHECK_IN",
+        "CHECK_OUT",
+        "NO_SHOW",
+        "ARRIVAL"
+      ]
+    },
+    "reason_code": {
+      "enum": [
+        "STALE_PLAN",
+        "OUTSIDE_STOP",
+        "CLOCK_SKEW",
+        "INVALID_ORDER",
+        "RELEASE_REQUIRED",
+        "SHIFT_ENDED",
+        "BOOKING_CANCELED",
+        "CODE_INVALID",
+        "CODE_ALREADY_USED",
+        "CODE_LOCKED"
+      ]
+    },
+    "booking_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "route_stop_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "event_id": "11111111-2222-4333-8444-555555555555",
+      "shift_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "event_type": "CHECK_IN",
+      "reason_code": "STALE_PLAN",
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "route_stop_id": "9a8b7c6d-1111-4222-8333-444455556666"
+    }
+  ]
+}

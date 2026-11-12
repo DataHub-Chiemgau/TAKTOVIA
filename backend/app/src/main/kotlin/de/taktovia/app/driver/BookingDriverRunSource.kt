@@ -8,6 +8,7 @@ import de.taktovia.stafftime.api.DriverResourceNeed
 import de.taktovia.stafftime.api.DriverRunProjection
 import de.taktovia.stafftime.api.DriverRunSource
 import de.taktovia.stafftime.api.DriverRunStopView
+import de.taktovia.stafftime.api.ExpectedPassenger
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -27,6 +28,7 @@ class BookingDriverRunSource {
                     s.plannedAt, s.forecastAt, s.stopName, s.longitude, s.latitude, s.boardingPersons + s.alightingPersons, (s.boardingBookingIds + s.alightingBookingIds).distinct(), null, emptyList(),
                     s.stopRevisionId, s.boardingPersons, s.alightingPersons, s.boardingNeed?.let { n -> DriverResourceNeed(n.seats, n.wheelchair, n.equipment.map { it.name }.sorted()) },
                     s.assistance?.let { a -> DriverAssistance(a.wheelchairRequired, a.boardingAssist, a.alightingAssist) },
+                    s.boardingRefs.map { ExpectedPassenger(it.bookingId, it.bookingRef, it.persons) },
                 )
             }, plan.runState.name)
         }

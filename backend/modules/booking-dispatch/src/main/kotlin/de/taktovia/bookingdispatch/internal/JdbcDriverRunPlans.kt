@@ -7,6 +7,7 @@ import de.taktovia.bookingdispatch.api.DriverStopKind
 import de.taktovia.bookingdispatch.api.ResourceVector
 import de.taktovia.bookingdispatch.api.RunState
 import de.taktovia.bookingdispatch.api.StopAssistance
+import de.taktovia.bookingdispatch.api.StopBookingRef
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.problem.ErrorCode
@@ -46,6 +47,8 @@ internal class JdbcDriverRunPlans(private val ctxTx: ContextTransactions) : Driv
                 rs.getString(8), rs.getDouble(9), rs.getDouble(10)) }, runId, revision)
         val bookingIds = raw.flatMap { r -> (r.boardings + r.alightings).map { it.bookingId } }.distinct()
         val trips = if (bookingIds.isEmpty()) emptyMap() else tripsOf(j, bookingIds)
+        val numbers = HashMap<UUID, String?>()
+        if (bookingIds.isNotEmpty()) j.query("SELECT id, booking_no FROM taktovia.booking WHERE id = ANY(CAST(? AS uuid[]))", { rs, _ -> numbers[rs.getObject(1, UUID::class.java)] = rs.getString(2) }, bookingIds.joinToString(",", "{", "}"))   // nur UUIDs
         return raw.mapIndexed { i, r ->
             val kind = when { r.boardings.isNotEmpty() && r.alightings.isNotEmpty() -> DriverStopKind.PICKUP_DROPOFF; r.alightings.isNotEmpty() -> DriverStopKind.DROPOFF; else -> DriverStopKind.PICKUP }
             // Prognose bis zum ETA-Grundmodell (OP-20): Planzeit aus dem Routing, wenn die Fahrzeit zu diesem Stopp aus dem Routing stammt (erster Stopp: Abfahrtszeit); sonst „keine Prognose“
@@ -56,7 +59,8 @@ internal class JdbcDriverRunPlans(private val ctxTx: ContextTransactions) : Driv
                 wheelchairRequired = (boardingTrips + alightingTrips).any { it.wheelchair }, boardingAssist = boardingTrips.any { it.help }, alightingAssist = alightingTrips.any { it.help },
             ).takeIf { it.any }
             DriverPlanStop(r.id, r.seq, r.stopRevisionId, kind, r.plannedAt, if (routed) r.plannedAt else null, r.name, r.lon, r.lat, r.boardings.map { it.bookingId }, r.alightings.map { it.bookingId },
-                r.boardings.sumOf { it.vector.seats + it.vector.wheelchair }, r.alightings.sumOf { it.vector.seats + it.vector.wheelchair }, need, assistance)
+                r.boardings.sumOf { it.vector.seats + it.vector.wheelchair }, r.alightings.sumOf { it.vector.seats + it.vector.wheelchair }, need, assistance,
+                r.boardings.map { StopBookingRef(it.bookingId, numbers[it.bookingId], it.vector.seats + it.vector.wheelchair) })
         }
     }
 

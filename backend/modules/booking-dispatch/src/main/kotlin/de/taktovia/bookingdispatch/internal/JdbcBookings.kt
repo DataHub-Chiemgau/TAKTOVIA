@@ -264,6 +264,9 @@ internal class JdbcBookings(
         if (cur.second != cmd.ifMatch) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (cur.first != BookingState.CONFIRMED.name && cur.first != BookingState.CONFIRMING.name)
             throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Eine Buchung im Zustand ${cur.first} kann nicht storniert werden.")
+        // Die Fahrt hat begonnen (WP-M3-29): ein eingestiegener Fahrgast wird nicht mehr storniert; die Ausführung ist Sache der Fahrerereignisse
+        if ((transitions.legExecutionState(j, bookingId) ?: "PLANNED") != "PLANNED")
+            throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Die Fahrt dieser Buchung hat bereits begonnen und kann nicht mehr storniert werden.")
         // Frist (nur Fahrgäste): Mindestabstand zum Beginn des zugesagten Abholfensters, Auswertung mit Serverzeit; die Fristgrenze selbst gilt noch als innerhalb
         if (passenger) {
             val pickup = OffsetDateTime.parse(json.readTree(pre.snapshot)["pickup_earliest"].asString()).toInstant()

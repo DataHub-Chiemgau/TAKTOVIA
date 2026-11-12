@@ -28,5 +28,14 @@ interface JourneyShells {
     /** Spiegelt den Zustand der Buchung auf Journey und Segment (die Hülle hat in P1 keinen eigenen Ablauf). */
     fun mirrorState(j: JdbcOperations, journeyId: UUID, state: String)
 
+    /**
+     * Ausführungszustand des Segments der Journey (`journey_leg.execution_state`, WP-M3-29): `PLANNED`, `BOARDED`, `ALIGHTED`, `NO_SHOW`; `null`, wenn es kein Segment gibt. Mit
+     * [forUpdate] unter Zeilensperre gelesen.
+     */
+    fun executionState(j: JdbcOperations, journeyId: UUID, forUpdate: Boolean = false): String?
+
+    /** Setzt den Ausführungszustand; zulässig sind nur `PLANNED -> BOARDED | NO_SHOW` und `BOARDED -> ALIGHTED` (Datenbankwächter, sonst SQLSTATE 23514). */
+    fun setExecutionState(j: JdbcOperations, journeyId: UUID, to: String)
+
     companion object { fun create(): JourneyShells = JdbcJourneyShells() }
 }

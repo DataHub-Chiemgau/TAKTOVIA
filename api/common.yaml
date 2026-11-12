@@ -794,6 +794,10 @@ components:
       - ROSTER_DOUBLE_BOOKING
       - ROSTER_QUALIFICATION_MISSING
       - ROSTER_ABSENCE_OVERLAP
+      - NO_SHOW_GRACE_NOT_ELAPSED
+      - BOARDING_CODE_INVALID
+      - BOARDING_CODE_USED
+      - BOARDING_CODE_LOCKED
     Money:
       type: object
       additionalProperties: false

@@ -36,7 +36,7 @@ paths:
         überschreiben keine neuere sicherheitsrelevante Freigabe. REVIEW_REQUIRED ist keine ausgeführte Beförderungsbuchung. Das Ereignis ist
         an das registrierte Gerät der Sitzung gebunden (`device_id`); eine gesperrte oder beendete Sitzung ergibt 401/403, der Client behält das
         Ereignis dann in der Outbox. Die Serverempfangszeit (`received_at`) setzt der Server; die Gerätezeit ersetzt sie nie. `tenant_id` im Body
-        gibt kein Recht (fremder Wert: 404 mit Sicherheitsereignis, eigener Wert: 422 als unbekanntes Feld).'
+        gibt kein Recht (fremder Wert: 404 mit Sicherheitsereignis, eigener Wert: 422 als unbekanntes Feld). Wirkung (WP-M3-29): ARRIVAL startet die Wartefrist am Stopp; CHECK_IN setzt das Fahrtsegment auf BOARDED, CHECK_OUT auf ALIGHTED und die Buchung auf COMPLETED, NO_SHOW (Pflicht: `no_show_reason`) das Segment auf NO_SHOW und die Buchung auf CANCELED (Grund NO_SHOW, keine Gebühr). NO_SHOW vor Ablauf von `no_show_grace_min`, gerechnet ab der plausibilisierten Ankunftszeit, ist 422 `NO_SHOW_GRACE_NOT_ELAPSED` ohne Speicherung. 404: Schicht, Fahrzeug, Stopp oder Buchung gehören nicht zur eigenen Schicht. 409: Schicht nicht angetreten. REVIEW_REQUIRED (Klärfall, nie eine Statuswirkung): STALE_PLAN, OUTSIDE_STOP (falscher Stopp), CLOCK_SKEW (Uhrabweichung), INVALID_ORDER (z. B. Ausstieg ohne Einstieg), RELEASE_REQUIRED (Fahrzeug ohne Einsatzfreigabe; der Ausstieg ist davon ausgenommen), SHIFT_ENDED (Ereignis nach Schichtende), BOOKING_CANCELED (Widerspruch zu einem Storno).'
       requestBody:
         required: true
         content:
@@ -129,6 +129,41 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '304':
           description: Nicht verändert (If-None-Match stimmt mit dem ETag überein).
+  /v1/driver/shifts/{shift_id}/passengers:
+    get:
+      summary: Erwartete Fahrgäste am aktuellen und nächsten Stopp lesen
+      operationId: listExpectedPassengers
+      security:
+      - oidc:
+        - driver:run
+      description: 'Fahrgastliste des Check-ins (WP-M3-30, DRV-006): die noch nicht eingestiegenen Fahrgäste des aktuellen (zuletzt per Ankunft gemeldeten, sonst ersten) und des nächsten Stopps der eigenen Schicht. Nur Buchungskürzel (Buchungsnummer) und Personenzahl; keine Namen, Kontakt-, Zahlungs- oder Codedaten, keine Fahrgäste fremder Schichten. Fremde, unbekannte oder Schicht eines anderen Mandanten: 404. Eine Schicht ohne Aufträge (nicht angetreten, nicht freigegeben, entzogen) liefert eine leere Liste.'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectedPassengers'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/driver/shifts/{shift_id}/run/acknowledgements:
     post:
       summary: Planrevision bestätigen
@@ -539,6 +574,11 @@ components:
           - NOT_PRESENT
           - REFUSED_TO_BOARD
           - OTHER
+        boarding_code:
+          type: string
+          pattern: ^[0-9]{6}$
+          writeOnly: true
+          description: 'Nur bei CHECK_IN (WP-M3-30, DRV-006): der vom Fahrgast vorgezeigte Boarding-Code (6 Ziffern, Planungsannahme OP-18). Optional: ohne Code gilt der Check-in ohne Codeprüfung (Regelprozess offen, OP-18). Der Server speichert und protokolliert den Code nie im Klartext; er steht weder in Antworten noch in Ereignissen. Online: falscher, verwendeter oder gesperrter Code ist 422 (`BOARDING_CODE_INVALID`, `BOARDING_CODE_USED`, `BOARDING_CODE_LOCKED`) ohne Check-in; offline erfasst (`offline_recorded`) wird derselbe Fall ein Klärfall (REVIEW_REQUIRED, `CODE_INVALID`, `CODE_ALREADY_USED`, `CODE_LOCKED`). Nach 5 Fehlversuchen je Buchung ist die Codeeingabe gesperrt.'
       required:
       - event_id
       - shift_id
@@ -580,6 +620,10 @@ components:
             - INVALID_ORDER
             - RELEASE_REQUIRED
             - SHIFT_ENDED
+            - BOOKING_CANCELED
+            - CODE_INVALID
+            - CODE_ALREADY_USED
+            - CODE_LOCKED
           - type: 'null'
         original_state:
           oneOf:
@@ -687,6 +731,62 @@ components:
       - accepted
       - rejected
       - received_at
+    ExpectedPassengers:
+      type: object
+      additionalProperties: false
+      properties:
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        plan_revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        current_route_stop_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        passengers:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ExpectedPassenger'
+      required:
+      - shift_id
+      - plan_revision
+      - current_route_stop_id
+      - passengers
+      description: Erwartete Fahrgäste des aktuellen und des nächsten Stopps (WP-M3-30).
+    ExpectedPassenger:
+      type: object
+      additionalProperties: false
+      properties:
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        next_stop:
+          type: boolean
+          description: Wahr für den nächsten, falsch für den aktuellen Stopp.
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_ref:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: Buchungskürzel (Buchungsnummer); der Fahrgast nennt es beim Einsteigen.
+        persons:
+          type: integer
+          minimum: 1
+          maximum: 99
+      required:
+      - route_stop_id
+      - next_stop
+      - booking_id
+      - booking_ref
+      - persons
+      description: Erwarteter Fahrgast; nur Kürzel und Personenzahl (Minimierung, Kap. 05 §5.1).
     DriverRunStop:
       type: object
       additionalProperties: false

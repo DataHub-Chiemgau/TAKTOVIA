@@ -47,6 +47,10 @@ internal class BookingTransitions(outbox: Outbox, private val clock: Clock, priv
         return t
     }
 
+    /** Ausführungszustand des Fahrtsegments der Buchung (`PLANNED`, `BOARDED`, `ALIGHTED`, `NO_SHOW`); `null`, wenn es kein Segment gibt. */
+    fun legExecutionState(j: JdbcOperations, bookingId: UUID): String? =
+        j.query("SELECT journey_id FROM taktovia.booking WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, bookingId).firstOrNull()?.let { journeys.executionState(j, it) }
+
     /** Erster Eintrag der Historie (Anlage der Buchung, Revision 1, ohne Vorzustand). */
     fun recordCreated(j: JdbcOperations, ctx: RequestContext, bookingId: UUID, state: BookingState) = record(j, Caller.of(ctx), bookingId, null, state.name, BookingReason.HOLD_CONFIRMED, 1)
 

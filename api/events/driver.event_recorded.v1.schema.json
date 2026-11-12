@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://taktovia.example/schemas/driver.event_recorded.v1.schema.json",
   "title": "Fahrerereignis verarbeitet (WP-M3-29)",
-  "description": "Payload von `driver.event_recorded`. Aggregat: driver_event / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "description": "Payload von `driver.event_recorded`. Aggregat: driver_event / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md. Erweitert in WP-M3-29 um Felder (feste Nutzlast, fehlende Werte sind null) (booking_id, reason_code, effective_at, offline_recorded, No-Show-Angaben); Kennungen und Codes, keine Fahrgastdaten.",
   "type": "object",
   "required": [
     "event_id",
@@ -11,7 +11,14 @@
     "event_type",
     "outcome",
     "route_stop_id",
-    "received_at"
+    "received_at",
+    "booking_id",
+    "reason_code",
+    "effective_at",
+    "offline_recorded",
+    "no_show_reason",
+    "no_show_wait_seconds",
+    "no_show_grace_min"
   ],
   "additionalProperties": false,
   "properties": {
@@ -59,6 +66,82 @@
     "received_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "booking_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason_code": {
+      "oneOf": [
+        {
+          "enum": [
+            "STALE_PLAN",
+            "OUTSIDE_STOP",
+            "CLOCK_SKEW",
+            "INVALID_ORDER",
+            "RELEASE_REQUIRED",
+            "SHIFT_ENDED",
+            "BOOKING_CANCELED",
+            "CODE_INVALID",
+            "CODE_ALREADY_USED",
+            "CODE_LOCKED"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Plausibilisierte Ereigniszeit (online: Serverempfangszeit, offline: Ereigniszeit, höchstens die Empfangszeit)."
+    },
+    "offline_recorded": {
+      "type": "boolean"
+    },
+    "no_show_reason": {
+      "oneOf": [
+        {
+          "enum": [
+            "NOT_PRESENT",
+            "REFUSED_TO_BOARD",
+            "OTHER"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "no_show_wait_seconds": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "no_show_grace_min": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "examples": [
@@ -69,7 +152,14 @@
       "event_type": "CHECK_IN",
       "outcome": "APPLIED",
       "route_stop_id": "11111111-2222-4333-8444-555555555555",
-      "received_at": "2026-11-12T08:15:00Z"
+      "received_at": "2026-11-12T08:15:00Z",
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "reason_code": null,
+      "effective_at": "2026-11-12T08:15:00Z",
+      "offline_recorded": false,
+      "no_show_reason": null,
+      "no_show_wait_seconds": null,
+      "no_show_grace_min": null
     }
   ]
 }

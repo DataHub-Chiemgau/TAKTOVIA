@@ -1,0 +1,8 @@
+table;runtime_privileges;note
+analytics_event_inbox;SELECT,INSERT;WP-M4-45: Eingang der Ereignisse, nur anhängen (Trigger)
+fact_attempt;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt
+fact_offer;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt
+fact_booking;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt
+fact_stop_event;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt
+fact_vehicle_state;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt
+dataset_watermark;SELECT,INSERT,UPDATE,DELETE;WP-M4-45: abgeleitete Fakten bzw. Datenstand, beim Wiederaufbau ersetzt

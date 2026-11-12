@@ -38,7 +38,18 @@ object RequestFingerprint {
 
     private fun canonicalBody(body: ByteArray?): String {
         if (body == null || body.isEmpty()) return "b:-"
-        return try { "j:" + EventEnvelope.canonical(mapper.readTree(body)) } catch (_: Exception) { "raw:" + sha256(body) }
+        return try { "j:" + EventEnvelope.canonical(redact(mapper.readTree(body))) } catch (_: Exception) { "raw:" + sha256(body) }
+    }
+
+    /**
+     * Felder, deren Wert ein kurzes Geheimnis ist (Boarding-Code, WP-M3-30): ein SHA-256 über den Body wäre sonst für jeden mit Lesezugriff auf das Register mit einer Ausprobierschleife
+     * (10^6 Möglichkeiten) umkehrbar. Der Fingerprint trägt nur, dass das Feld vorhanden war; ein anderer Wert unter demselben Key gilt als dieselbe Anfrage (das Ereignis dedupliziert über seine `event_id`).
+     */
+    val SECRET_FIELDS = setOf("boarding_code")
+
+    private fun redact(n: tools.jackson.databind.JsonNode): tools.jackson.databind.JsonNode {
+        if (!n.isObject || SECRET_FIELDS.none { n.has(it) }) return n
+        return (n.deepCopy() as tools.jackson.databind.node.ObjectNode).also { o -> SECRET_FIELDS.forEach { if (o.has(it)) o.put(it, "***") } }
     }
 
     private fun sha256(b: ByteArray) = MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }
