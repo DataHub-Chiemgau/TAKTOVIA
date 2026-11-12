@@ -41,6 +41,9 @@ sealed interface ExecutionResult {
 interface BookingExecution {
     fun apply(j: JdbcOperations, r: ExecutionRequest): ExecutionResult
 
+    /** Steht die Buchung im aktuellen Plan des Umlaufs dieser Schicht und dieses Fahrzeugs? Reine Leseprüfung ohne Wirkung (Voraussetzung der Codeprüfung: fremde Buchungen dürfen keine Fehlversuche erzeugen). */
+    fun inRun(j: JdbcOperations, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean
+
     /** Dienst der Buchung (für die Auflösung des Dienstparameters `no_show_grace_min`), `null` wenn die Buchung nicht existiert. */
     fun serviceOf(j: JdbcOperations, bookingId: UUID): UUID?
 

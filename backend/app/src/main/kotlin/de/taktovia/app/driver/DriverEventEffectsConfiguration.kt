@@ -45,6 +45,8 @@ class AppDriverEventEffects(private val execution: BookingExecution, private val
         }
     }
 
+    override fun bookingInShiftRun(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean = execution.inRun(j, shiftId, vehicleId, bookingId)
+
     override fun noShowGraceMinutes(j: JdbcOperations, ctx: RequestContext, bookingId: UUID, at: Instant): Int? {
         val service = execution.serviceOf(j, bookingId) ?: return null
         val view = config().resolveInTransaction(j, ctx, EffectiveRequest(parameters = setOf(PARAM), serviceId = service, at = at))

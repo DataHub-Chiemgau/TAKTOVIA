@@ -68,6 +68,12 @@ internal class JdbcBookingExecution(outbox: Outbox, clock: Clock, private val jo
         }
     }
 
+    override fun inRun(j: JdbcOperations, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean {
+        val run = j.query("SELECT id, revision FROM taktovia.vehicle_run WHERE shift_id = ? AND vehicle_id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getLong(2) }, shiftId, vehicleId).firstOrNull() ?: return false
+        return j.queryForObject("SELECT count(*) FROM taktovia.route_stop WHERE run_id = ? AND run_revision = ? AND (boardings @> CAST(? AS jsonb) OR alightings @> CAST(? AS jsonb))",
+            Long::class.javaObjectType, run.first, run.second, ref(bookingId), ref(bookingId))!! > 0
+    }
+
     override fun serviceOf(j: JdbcOperations, bookingId: UUID): UUID? =
         j.query("SELECT service_id FROM taktovia.booking WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, bookingId).firstOrNull()
 

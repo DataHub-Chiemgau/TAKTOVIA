@@ -45,6 +45,7 @@ import java.util.UUID
 internal class JdbcDriverEvents(
     private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock,
     private val settings: StafftimeSettings = StafftimeSettings(), private val effects: DriverEventEffects = DriverEventEffects.NONE,
+    private val codes: JdbcBoardingCodes? = null,
 ) : DriverEvents {
 
     override fun record(ctx: RequestContext, cmd: DriverEventCommand): DriverEventResult {
@@ -53,12 +54,18 @@ internal class JdbcDriverEvents(
         if (cmd.type.needsBooking && (cmd.bookingId == null || cmd.routeStopId == null)) throw ProblemException.invalid(Violation("/booking_id", ViolationCode.REQUIRED))
         if (cmd.type == DriverEventType.ARRIVAL && cmd.routeStopId == null) throw ProblemException.invalid(Violation("/route_stop_id", ViolationCode.REQUIRED))
         if (cmd.type == DriverEventType.NO_SHOW && cmd.noShowReason == null) throw ProblemException.invalid(Violation("/no_show_reason", ViolationCode.REQUIRED))
-        return ctxTx.run(ctx) { j -> doRecord(j, ctx, session, cmd.deviceId ?: boundDevice(j, ctx, session), cmd) }
+        // Eine Abweisung wegen des Codes wird erst NACH dem Commit geworfen: der Fehlversuchszähler und die Sperre müssen bestehen bleiben, auch wenn der Aufruf 422 liefert.
+        val out = ctxTx.run(ctx) { j -> doRecord(j, ctx, session, cmd.deviceId ?: boundDevice(j, ctx, session), cmd) }
+        return when (out) { is Reply -> out.result; is Reject -> throw out.problem }
     }
+
+    private sealed interface Outcome
+    private class Reply(val result: DriverEventResult) : Outcome
+    private class Reject(val problem: ProblemException) : Outcome
 
     private class ShiftRow(val state: String, val startedAt: Instant?, val endedAt: Instant?)
 
-    private fun doRecord(j: JdbcOperations, ctx: RequestContext, session: String, deviceId: UUID, cmd: DriverEventCommand): DriverEventResult {
+    private fun doRecord(j: JdbcOperations, ctx: RequestContext, session: String, deviceId: UUID, cmd: DriverEventCommand): Outcome {
         // 1. Gerät: muss dem Akteur gehören (fremd: 404), nicht beendet und an die aktuelle Sitzung gebunden sein (sonst 403: Gerät neu registrieren)
         val dev = j.query("SELECT issuer, subject, idp_session_id, revoked_at FROM taktovia.driver_device WHERE id = ?", { rs, _ ->
             arrayOf<Any?>(rs.getString("issuer"), rs.getString("subject"), rs.getString("idp_session_id"), rs.getTimestamp("revoked_at"))
@@ -69,7 +76,7 @@ internal class JdbcDriverEvents(
         // 2. dieselbe event_id nie parallel verarbeiten: wer die Sperre erhält, sieht ein bereits committetes Ergebnis des Vorgängers
         j.query("SELECT pg_advisory_xact_lock(hashtextextended(taktovia.current_tenant()::text || ':driver_event:' || ?, 0))", { _, _ -> 0 }, cmd.eventId.toString())
         val hash = sha256(cmd.contentFingerprint())
-        existing(j, cmd.eventId, hash, ctx)?.let { return it }
+        existing(j, cmd.eventId, hash, ctx)?.let { return Reply(it) }
 
         // 3. Schicht und Fahrzeug müssen zum Akteur gehören (fremd, fremder Mandant, fremder Fahrer: 404)
         val shift = j.query("SELECT s.state, s.started_at, s.ended_at FROM taktovia.staff_shift s WHERE s.id = ? AND s.vehicle_id = ? AND $OWN_SHIFT", { rs, _ ->
@@ -83,6 +90,8 @@ internal class JdbcDriverEvents(
         var outcome = DriverEventOutcome.APPLIED
         var reason: String? = null
         var noShow: NoShowFacts? = null
+        var codeResult: String? = null
+        var consumeCode: UUID? = null
 
         if (cmd.type.stopRelated) {
             val tol = settings.clockSkewTolerance
@@ -106,28 +115,42 @@ internal class JdbcDriverEvents(
                     noShow = NoShowFacts(cmd.noShowReason!!.name, waited.seconds.toInt(), grace.toInt())
                 }
             }
+            // Boarding-Code (WP-M3-30): nur beim Check-in mit Code; geprüft wird vor der Wirkung, entwertet erst, wenn der Check-in wirkt
+            if (reason == null && cmd.type == DriverEventType.CHECK_IN && cmd.boardingCode != null && codes != null) {
+                if (!effects.bookingInShiftRun(j, ctx, cmd.shiftId, cmd.vehicleId, cmd.bookingId!!)) throw ProblemException.notFound()   // fremde Buchung: kein Fehlversuch, keine Auskunft
+                when (val c = codes.verify(j, cmd.bookingId!!, cmd.boardingCode, now)) {
+                    is JdbcBoardingCodes.Check.Valid -> { codeResult = "VALID"; consumeCode = c.codeId }
+                    else -> {
+                        val (result, why, violation) = when (c) { JdbcBoardingCodes.Check.Used -> Triple("USED", "CODE_ALREADY_USED", ViolationCode.BOARDING_CODE_USED)
+                            JdbcBoardingCodes.Check.Locked -> Triple("LOCKED", "CODE_LOCKED", ViolationCode.BOARDING_CODE_LOCKED); else -> Triple("INVALID", "CODE_INVALID", ViolationCode.BOARDING_CODE_INVALID) }
+                        // online: abweisen (422, kein Check-in, nichts gespeichert außer Zähler und Sperre); offline erfasst: Klärfall, der Fahrer kann nicht mehr nachbessern
+                        if (!cmd.offlineRecorded) return Reject(ProblemException.invalid(Violation("/boarding_code", violation)))
+                        reason = why; codeResult = result
+                    }
+                }
+            }
             if (reason == null) {
                 val kind = when (cmd.type) { DriverEventType.ARRIVAL -> EffectKind.ARRIVAL; DriverEventType.CHECK_IN -> EffectKind.BOARDED; DriverEventType.CHECK_OUT -> EffectKind.ALIGHTED; else -> EffectKind.NO_SHOW }
                 when (val e = effects.apply(j, ctx, EffectRequest(cmd.shiftId, cmd.vehicleId, cmd.routeStopId!!, cmd.bookingId, kind, effective, cmd.eventId))) {
                     is EffectResult.NotFound -> throw ProblemException.notFound()
                     is EffectResult.Review -> reason = e.reasonCode
-                    is EffectResult.Applied -> {}
+                    is EffectResult.Applied -> consumeCode?.let { codes!!.consume(j, it, cmd.eventId, now) }   // der Check-in wirkt: der Code ist verbraucht
                 }
             }
-            if (reason != null) { outcome = DriverEventOutcome.REVIEW_REQUIRED; noShow = null }
+            if (reason != null) { outcome = DriverEventOutcome.REVIEW_REQUIRED; noShow = null; if (consumeCode != null) codeResult = "VALID" }
         }
 
         // 4. einfügen: atomar; ein paralleler Gewinner macht dieses Ereignis zum Duplikat
         val received = j.query(
             "INSERT INTO taktovia.driver_event (tenant_id, event_id, device_id, shift_id, vehicle_id, event_type, booking_id, route_stop_id, payload_sha256, outcome, reason_code, plan_revision, " +
-                "device_recorded_at, occurred_at, received_at, effective_at, offline_recorded, no_show_reason, no_show_wait_seconds, no_show_grace_min) " +
-                "VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (tenant_id, event_id) DO NOTHING RETURNING received_at",
+                "device_recorded_at, occurred_at, received_at, effective_at, offline_recorded, no_show_reason, no_show_wait_seconds, no_show_grace_min, code_result) " +
+                "VALUES (taktovia.current_tenant(),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (tenant_id, event_id) DO NOTHING RETURNING received_at",
             { rs, _ -> rs.getTimestamp(1) }, cmd.eventId, deviceId, cmd.shiftId, cmd.vehicleId, cmd.type.name, cmd.bookingId, cmd.routeStopId, hash, outcome.name, reason, cmd.planRevision,
-            Timestamp.from(cmd.deviceRecordedAt), Timestamp.from(cmd.occurredAt), Timestamp.from(now), Timestamp.from(effective), cmd.offlineRecorded, noShow?.reason, noShow?.waitSeconds, noShow?.graceMin,
-        ).firstOrNull() ?: return existing(j, cmd.eventId, hash, ctx) ?: throw ProblemException(ErrorCode.CONFLICT)
+            Timestamp.from(cmd.deviceRecordedAt), Timestamp.from(cmd.occurredAt), Timestamp.from(now), Timestamp.from(effective), cmd.offlineRecorded, noShow?.reason, noShow?.waitSeconds, noShow?.graceMin, codeResult,
+        ).firstOrNull() ?: return Reply(existing(j, cmd.eventId, hash, ctx) ?: throw ProblemException(ErrorCode.CONFLICT))
         val receivedAt = received.toInstant()
         publish(j, ctx, cmd, outcome, reason, noShow, receivedAt, effective)
-        return DriverEventResult(cmd.eventId, outcome, receivedAt, current, reason, null)
+        return Reply(DriverEventResult(cmd.eventId, outcome, receivedAt, current, reason, null))
     }
 
     private class NoShowFacts(val reason: String, val waitSeconds: Int, val graceMin: Int)

@@ -16,37 +16,19 @@ import java.util.concurrent.TimeUnit
  * Eigene Welt [DriverRunHttpWorld] (wave11-c1), keine Duplikate dieser Fixture.
  */
 class DriverEventEffectsHttpTest {
-    private val w = DriverRunHttpWorld()
+    private val sup = DriverRideSupport()
+    private val w = sup.w
     private val env = w.env
 
-    private class Ride(val d: DriverRunHttpWorld.Driver, val booking: DriverRunHttpWorld.Booking, val rev: Long, val pickup: UUID, val dropoff: UUID)
-
-    /** Die Buchung wartet nach der Bestätigung auf die Zahlung (`CONFIRMING`); die Zahlungskopplung (echter Weg, OP-5) bestätigt sie. */
-    private fun confirmed(b: DriverRunHttpWorld.Booking) {
-        check(env.server.ctx.getBean(de.taktovia.bookingdispatch.api.Bookings::class.java).confirmAfterPayment(w.tenant, b.id) == de.taktovia.bookingdispatch.api.CouplingOutcome.APPLIED)
-    }
-
-    private fun revision(r: Ride) = env.string("SELECT revision::text FROM taktovia.booking WHERE id = ?", r.booking.id).single()
-
-    private fun ride(): Ride {
-        val d = w.driver(); val b = w.booking(); confirmed(b); val rev = w.plan(d.run, listOf(b))
-        fun stop(seq: Int) = UUID.fromString(env.string("SELECT id::text FROM taktovia.route_stop WHERE run_id = ? AND run_revision = ? AND seq = ?", d.run, rev, seq).single())
-        return Ride(d, b, rev, stop(0), stop(1))
-    }
-
-    private fun vehicleOf(d: DriverRunHttpWorld.Driver) = env.string("SELECT vehicle_id::text FROM taktovia.staff_shift WHERE id = ?", d.shift).single()
-
-    private fun event(r: Ride, type: String, stop: UUID, id: UUID = UUID.randomUUID(), rev: Long = r.rev, offline: Boolean = false, occurred: Instant = Instant.now(), booking: UUID? = r.booking.id, extra: String = "", token: String = r.d.token): Resp {
-        val b = if (booking != null && type != "ARRIVAL") ""","booking_id":"$booking"""" else ""
-        val body = """{"event_id":"$id","shift_id":"${r.d.shift}","vehicle_id":"${vehicleOf(r.d)}","plan_revision":$rev,"event_type":"$type","route_stop_id":"$stop","occurred_at":"$occurred","device_recorded_at":"$occurred",
-            "offline_recorded":$offline$b$extra}"""
-        return env.post("/v1/driver/events", body, token, extra = mapOf("Idempotency-Key" to "ev-" + UUID.randomUUID()))
-    }
-
-    private fun bookingState(r: Ride) = env.string("SELECT state FROM taktovia.booking WHERE id = ?", r.booking.id).single()
-    private fun legState(r: Ride) = env.string("SELECT l.execution_state FROM taktovia.journey_leg l JOIN taktovia.booking b ON b.tenant_id = l.tenant_id AND b.journey_id = l.journey_id WHERE b.id = ?", r.booking.id).single()
-    private fun history(r: Ride) = env.string("SELECT to_state || ':' || reason_code FROM taktovia.booking_status_history WHERE booking_id = ? ORDER BY booking_revision", r.booking.id)
-    private fun journal(r: Ride, type: String) = env.string("SELECT outcome || ':' || coalesce(reason_code,'-') FROM taktovia.driver_event WHERE shift_id = ? AND event_type = ? ORDER BY received_at", r.d.shift, type)
+    private fun ride() = sup.ride()
+    private fun revision(r: DriverRideSupport.Ride) = sup.revision(r)
+    private fun vehicleOf(d: DriverRunHttpWorld.Driver) = sup.vehicleOf(d)
+    private fun event(r: DriverRideSupport.Ride, type: String, stop: UUID, id: UUID = UUID.randomUUID(), rev: Long = r.rev, offline: Boolean = false, occurred: Instant = Instant.now(), booking: UUID? = r.booking.id, extra: String = "", token: String = r.d.token): Resp =
+        sup.event(r, type, stop, id, rev, offline, occurred, booking, extra, token)
+    private fun bookingState(r: DriverRideSupport.Ride) = sup.bookingState(r)
+    private fun legState(r: DriverRideSupport.Ride) = sup.legState(r)
+    private fun history(r: DriverRideSupport.Ride) = sup.history(r)
+    private fun journal(r: DriverRideSupport.Ride, type: String) = sup.journal(r, type)
 
     @Test
     fun vollstaendige_fahrt_ankunft_einstieg_ausstieg_konsistente_status() {

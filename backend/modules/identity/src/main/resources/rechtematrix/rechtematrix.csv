@@ -138,6 +138,7 @@ revokeDriverRelease;driver-releases:write;HR;M1;N;N;N;N;N;N;N;N;J;N
 getDriverReleaseProjection;driver-releases:read;HR;M1;N;N;N;N;J;J;N;N;J;N
 getDriverRun;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
 acknowledgeDriverRunRevision;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
+listExpectedPassengers;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
 registerDriverDevice;driver:devices;-;M3;N;J;N;N;N;N;N;N;N;N
 revokeDriverDevice;driver:devices;-;M3;N;J;N;N;N;N;N;N;N;N
 recordDriverPosition;driver:positions;-;M3;N;J;N;N;N;N;N;N;N;N

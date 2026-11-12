@@ -22,6 +22,7 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `driver.passenger_alighted` | `staff-time` | `driver_event` / 1 | Ausstieg wirksam (WP-M3-29) | Analytics (Fakten), Leitstelle | `fahrerereignis` |
 | `driver.no_show_recorded` | `staff-time` | `driver_event` / 1 | No-Show festgestellt mit Grund, Wartezeit und Regelstand, ohne Gebühr (WP-M3-29) | Tarif/Zahlung (M2/M7), Analytics | `fahrerereignis` |
 | `driver.review_opened` | `staff-time` | `driver_event` / 1 | Klärfall: Fahrerereignis nicht wirksam (WP-M3-29) | Leitstelle | `fahrerereignis` |
+| `driver.boarding_code_locked` | `staff-time` | `booking` / 1 | Codeeingabe nach 5 Fehlversuchen gesperrt (WP-M3-30), Hinweis an die Leitstelle | Leitstelle | – |
 | `driver.run_acknowledged` | `staff-time` | Bestätigung / 1 | Fahrer bestätigt Planrevision | Leitstelle (ausbleibende Bestätigung) | – |
 | `vehicle.service_status_changed` | `staff-time` | `vehicle_service_status` / n | Dienststatuswechsel | `booking-dispatch` (nicht neu disponieren), Leitstelle | `fahrzeug_dienststatus` |
 | `incident.opened` | `fleet-safety` | `incident` / 1 | Workflowregel (Fahrzeugausfall) | Leitstelle, `booking-dispatch` (Ersatzsuche) | `incident` |

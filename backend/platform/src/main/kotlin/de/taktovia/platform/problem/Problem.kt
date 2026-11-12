@@ -102,6 +102,10 @@ enum class ViolationCode(val message: String) {
     ROSTER_ABSENCE_OVERLAP("Person ist im Schichtzeitraum nicht verfügbar"),
     // Fahrerereignisse (DRV-005)
     NO_SHOW_GRACE_NOT_ELAPSED("Die Wartefrist des Nicht-Erscheinens ist noch nicht abgelaufen"),
+    // Boarding-Code (DRV-006)
+    BOARDING_CODE_INVALID("Der Boarding-Code ist ungültig"),
+    BOARDING_CODE_USED("Der Boarding-Code wurde bereits verwendet"),
+    BOARDING_CODE_LOCKED("Die Codeeingabe für diese Buchung ist gesperrt"),
 }
 
 /** Eine Feldverletzung: `pointer` ist ein JSON-Pointer (RFC 6901); Nicht-Body-Orte tragen `/$query/…` bzw. `/$header/…`. */

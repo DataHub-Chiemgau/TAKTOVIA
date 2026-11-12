@@ -19,6 +19,10 @@ data class StafftimeSettings(
     val clockSkewTolerance: Duration = Duration.ofMinutes(2),
     /** Wartefrist des Nicht-Erscheinens, wenn die Konfiguration keinen Wert nennt (Planungsannahme 10 Minuten, `no_show_grace_min` ist 1 bis 120). */
     val noShowGraceDefault: Duration = Duration.ofMinutes(10),
+    /** Boarding-Code (WP-M3-30, Planungsannahmen OP-18, kein Katalogparameter): Gültigkeit ab Ausstellung, Fehlversuche je Buchung bis zur Sperre und optionaler serverseitiger Pfeffer des Hashs (aus der Umgebung, nie im Repository). */
+    val boardingCodeValidity: Duration = Duration.ofHours(24),
+    val boardingCodeMaxAttempts: Int = 5,
+    val boardingCodePepper: String = "",
 ) {
     init {
         require(!shiftStartTolerance.isNegative && shiftStartTolerance <= Duration.ofHours(12)) { "Antrittstoleranz außerhalb 0..12 h" }
@@ -26,6 +30,8 @@ data class StafftimeSettings(
         require(!positionFutureTolerance.isNegative && positionFutureTolerance <= Duration.ofMinutes(5)) { "Zukunftstoleranz außerhalb 0..5 min" }
         require(!clockSkewTolerance.isNegative && clockSkewTolerance <= Duration.ofMinutes(30)) { "Uhrabweichung außerhalb 0..30 min" }
         require(noShowGraceDefault.toMinutes() in 1..120) { "Wartefrist außerhalb 1..120 min" }
+        require(boardingCodeValidity.toMinutes() in 1..(7 * 24 * 60)) { "Gültigkeit des Boarding-Codes außerhalb 1 min..7 Tage" }
+        require(boardingCodeMaxAttempts in 1..100) { "Fehlversuchsgrenze außerhalb 1..100" }
     }
 }
 
@@ -65,10 +71,14 @@ class DriverAssistance(val wheelchairRequired: Boolean, val boardingAssist: Bool
  * Ein Stopp der Fahrerprojektion (Vertrag `DriverRunStop`, Schema `driver-run-projection.v1`): nur Haltepunkt, Zeiten, Personenzahl, Ressourcenbedarf und (freigegeben) Unterstützung.
  * [forecastAt] = `null` heißt „keine Prognose“ (es wird keine Zeit erfunden). [passengerCount] ist die Zahl der Ein- und Aussteiger zusammen.
  */
+/** Erwarteter Fahrgast an einem Stopp (Fahrgastliste, WP-M3-30): Buchungskürzel (Buchungsnummer) und Personenzahl; keine Kontakt-, Zahlungs- oder Codedaten. */
+data class ExpectedPassenger(val bookingId: UUID, val bookingRef: String?, val persons: Int)
+
 data class DriverRunStopView(
     val routeStopId: UUID, val sequence: Int, val kind: String, val plannedAt: Instant, val forecastAt: Instant?, val stopName: String, val longitude: Double, val latitude: Double,
     val passengerCount: Int, val bookingIds: List<UUID>, val change: String?, val supportHints: List<String>,
     val stopRevisionId: UUID? = null, val boardingCount: Int = 0, val alightingCount: Int = 0, val resourceNeed: DriverResourceNeed? = null, val assistance: DriverAssistance? = null,
+    val boardingPassengers: List<ExpectedPassenger> = emptyList(),
 )
 
 /** [runState] ist der Zustand des Umlaufs (`COMPLETED`/`CANCELED` schließen das Sichtbarkeitsfenster der Unterstützungsmerkmale); `null` = unbekannt (Quelle ohne Zustand). */
@@ -109,4 +119,16 @@ interface DriverShifts {
     fun end(ctx: RequestContext, cmd: EndShiftCommand): DriverShiftView
 
     fun run(ctx: RequestContext, shiftId: UUID): DriverRunView
+
+    /**
+     * Fahrgastliste (WP-M3-30, LH-6.6-DRV-006): die noch erwarteten Fahrgäste des aktuellen und des nächsten Stopps der eigenen Schicht. Aktuell ist der zuletzt per Ankunft gemeldete
+     * Stopp (ohne Ankunft der erste); bereits eingestiegene oder als No-Show erfasste Buchungen fehlen. Nur Buchungskürzel und Personenzahl. Fremde Schicht: 404; Schicht ohne Aufträge
+     * (nicht angetreten, nicht freigegeben): leere Liste.
+     */
+    fun expectedPassengers(ctx: RequestContext, shiftId: UUID): ExpectedPassengersView
 }
+
+/** [currentStopId] ist der aktuelle Stopp (`null`, wenn die Schicht keine Stopps hat); [entries] sind nach Stopp-Reihenfolge sortiert, [next] kennzeichnet den nächsten Stopp. */
+data class ExpectedPassengersView(val shiftId: UUID, val planRevision: Long?, val currentStopId: UUID?, val entries: List<ExpectedPassengerAtStop>)
+
+data class ExpectedPassengerAtStop(val routeStopId: UUID, val next: Boolean, val passenger: ExpectedPassenger)

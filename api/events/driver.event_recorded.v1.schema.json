@@ -88,7 +88,10 @@
             "INVALID_ORDER",
             "RELEASE_REQUIRED",
             "SHIFT_ENDED",
-            "BOOKING_CANCELED"
+            "BOOKING_CANCELED",
+            "CODE_INVALID",
+            "CODE_ALREADY_USED",
+            "CODE_LOCKED"
           ]
         },
         {

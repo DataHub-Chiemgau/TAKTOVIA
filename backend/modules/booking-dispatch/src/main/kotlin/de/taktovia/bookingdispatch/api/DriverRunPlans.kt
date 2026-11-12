@@ -24,10 +24,13 @@ class StopAssistance(val wheelchairRequired: Boolean, val boardingAssist: Boolea
  * Ein Stopp der Fahrerprojektion. [seq] ist die 0-basierte Position der Planrevision. [forecastAt] ist die Prognosezeit: bis zum ETA-Grundmodell als Laufzeitquelle (OP-20) die Planzeit
  * aus dem Routing, und `null` („keine Prognose“), wenn die Fahrzeit zum Stopp nicht aus dem Routing stammt; es wird nie eine Zeit erfunden.
  */
+/** Einsteigende Buchung eines Stopps für die Fahrgastliste (WP-M3-30): Buchungsnummer als Kürzel und Personenzahl, nie Name, Kontakt oder Zahlung. */
+data class StopBookingRef(val bookingId: UUID, val bookingRef: String?, val persons: Int)
+
 data class DriverPlanStop(
     val routeStopId: UUID, val seq: Int, val stopRevisionId: UUID, val kind: DriverStopKind, val plannedAt: Instant, val forecastAt: Instant?, val stopName: String,
     val longitude: Double, val latitude: Double, val boardingBookingIds: List<UUID>, val alightingBookingIds: List<UUID>, val boardingPersons: Int, val alightingPersons: Int,
-    val boardingNeed: ResourceVector?, val assistance: StopAssistance?,
+    val boardingNeed: ResourceVector?, val assistance: StopAssistance?, val boardingRefs: List<StopBookingRef> = emptyList(),
 )
 
 data class DriverPlanView(val runId: UUID, val shiftId: UUID, val vehicleId: UUID, val planRevision: Long, val runState: RunState, val stops: List<DriverPlanStop>)

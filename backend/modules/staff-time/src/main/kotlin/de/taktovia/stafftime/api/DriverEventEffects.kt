@@ -28,6 +28,9 @@ sealed interface EffectResult {
 interface DriverEventEffects {
     fun apply(j: JdbcOperations, ctx: RequestContext, r: EffectRequest): EffectResult
 
+    /** Steht die Buchung im aktuellen Plan der Schicht? Reine Leseprüfung (Voraussetzung der Codeprüfung WP-M3-30: Codes fremder Buchungen erzeugen keine Fehlversuche). */
+    fun bookingInShiftRun(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean
+
     /**
      * Wirksame Wartefrist `no_show_grace_min` in Minuten für die Buchung zum Zeitpunkt [at] (Dienstparameter), `null` = kein freigegebener Wert; dann gilt die Planungsannahme
      * [StafftimeSettings.noShowGraceDefault].
@@ -37,6 +40,7 @@ interface DriverEventEffects {
     companion object {
         val NONE = object : DriverEventEffects {
             override fun apply(j: JdbcOperations, ctx: RequestContext, r: EffectRequest): EffectResult = EffectResult.Applied(null, null)
+            override fun bookingInShiftRun(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean = true
             override fun noShowGraceMinutes(j: JdbcOperations, ctx: RequestContext, bookingId: UUID, at: Instant): Int? = null
         }
     }

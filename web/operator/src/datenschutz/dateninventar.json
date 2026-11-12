@@ -930,6 +930,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "locked_at",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "revision",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
@@ -949,6 +958,15 @@
         },
         {
           "spalte": "used_at",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "used_event_id",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
@@ -4230,6 +4248,15 @@
       "spalten": [
         {
           "spalte": "booking_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "code_result",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
           "rechtsgrundlage": "",

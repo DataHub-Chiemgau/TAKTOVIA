@@ -65,6 +65,16 @@ class DriverShiftController(private val staff: StafftimeApi) {
         return ResponseEntity.ok().body(DriverRunResource(json(r), revision))
     }
 
+    /** Fahrgastliste des Check-ins (WP-M3-30): nur Buchungskürzel und Personenzahl, nie Kontakt-, Zahlungs- oder Codedaten. */
+    @GetMapping("/v1/driver/shifts/{shift_id}/passengers")
+    fun passengers(@PathVariable("shift_id") id: UUID, request: HttpServletRequest): Map<String, Any?> {
+        val v = staff.driverShifts.expectedPassengers(RequestContexts.require(request), id)
+        return linkedMapOf(
+            "shift_id" to v.shiftId.toString(), "plan_revision" to v.planRevision, "current_route_stop_id" to v.currentStopId?.toString(),
+            "passengers" to v.entries.map { linkedMapOf("route_stop_id" to it.routeStopId.toString(), "next_stop" to it.next, "booking_id" to it.passenger.bookingId.toString(), "booking_ref" to it.passenger.bookingRef, "persons" to it.passenger.persons) },
+        )
+    }
+
     private fun uuid(body: Map<String, Any?>, key: String): UUID =
         (body[key] as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: throw ProblemException.invalid(Violation("/$key", ViolationCode.INVALID_FORMAT))
 

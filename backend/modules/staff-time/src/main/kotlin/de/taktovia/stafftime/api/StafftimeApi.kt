@@ -13,6 +13,8 @@ import java.util.UUID
 interface StafftimeApi {
     val driverDevices: DriverDevices
     val driverEvents: DriverEvents
+    /** Boarding-Code je Buchung: Ausstellung und Verbraucher des Bestätigungsereignisses (WP-M3-30); die Prüfung läuft im Ereigniseingang. */
+    val boardingCodes: BoardingCodes
     /** Abwesenheit als Verfügbarkeitsrestriktion (WP-M4-06). */
     val absences: Absences
     /** Ist-Arbeitszeit als Zeitereignisse (WP-M4-08). */
@@ -97,12 +99,14 @@ enum class NoShowReason { NOT_PRESENT, REFUSED_TO_BOARD, OTHER }
 data class DriverEventCommand(
     val eventId: UUID, val deviceId: UUID?, val shiftId: UUID, val vehicleId: UUID, val planRevision: Long, val type: DriverEventType,
     val bookingId: UUID?, val routeStopId: UUID?, val occurredAt: Instant, val deviceRecordedAt: Instant, val offlineRecorded: Boolean,
+    /** Nur `CHECK_IN` (WP-M3-30): der vorgezeigte Boarding-Code; `null` = Check-in ohne Codeprüfung. Der Klartext fließt nie in den Fingerabdruck, die Ablage oder ein Protokoll. */
+    val boardingCode: BoardingCodeValue? = null,
     /** Nur `NO_SHOW` (WP-M3-29): Grund (Pflicht) und die vom Gerät gemessene Wartezeit (nur Hinweis; die Wartefrist rechnet der Server aus der plausibilisierten Ankunftszeit). */
     val noShowReason: NoShowReason? = null, val noShowWaitSeconds: Int? = null,
 ) {
     /** Inhalt, über den „gleiche event_id, anderer Inhalt“ erkannt wird (feste Feldreihenfolge). */
     fun contentFingerprint(): String =
-        listOf(eventId, deviceId, shiftId, vehicleId, planRevision, type, bookingId, routeStopId, occurredAt, deviceRecordedAt, offlineRecorded, noShowReason, noShowWaitSeconds).joinToString("|")
+        listOf(eventId, deviceId, shiftId, vehicleId, planRevision, type, bookingId, routeStopId, occurredAt, deviceRecordedAt, offlineRecorded, noShowReason, noShowWaitSeconds, boardingCode != null).joinToString("|")
 }
 
 data class DriverEventResult(

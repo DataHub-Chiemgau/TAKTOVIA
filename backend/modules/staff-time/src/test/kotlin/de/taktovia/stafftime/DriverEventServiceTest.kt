@@ -56,6 +56,8 @@ class DriverEventServiceTest {
         @Volatile var result: EffectResult = EffectResult.Applied("CONFIRMED", "PLANNED")
         @Volatile var grace: Int? = null
         override fun apply(j: JdbcOperations, ctx: RequestContext, r: EffectRequest): EffectResult { calls += r; return result }
+        @Volatile var inRun = true
+        override fun bookingInShiftRun(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, vehicleId: UUID, bookingId: UUID): Boolean = inRun
         override fun noShowGraceMinutes(j: JdbcOperations, ctx: RequestContext, bookingId: UUID, at: Instant): Int? = grace
     }
 
@@ -77,7 +79,7 @@ class DriverEventServiceTest {
 
         fun ev(type: DriverEventType, id: UUID = UUID.randomUUID(), rev: Long = 1, offline: Boolean = false, occurred: Instant = clock.now, deviceAt: Instant = occurred, stopId: UUID? = stop,
                bookingId: UUID? = booking, noShow: NoShowReason? = null) =
-            DriverEventCommand(id, device, shift, vehicle, rev, type, if (type == DriverEventType.ARRIVAL) null else bookingId, stopId, occurred, deviceAt, offline, noShow)
+            DriverEventCommand(id, device, shift, vehicle, rev, type, if (type == DriverEventType.ARRIVAL) null else bookingId, stopId, occurred, deviceAt, offline, noShowReason = noShow)
 
         fun noShow(id: UUID = UUID.randomUUID(), reason: NoShowReason? = NoShowReason.NOT_PRESENT) = ev(DriverEventType.NO_SHOW, id, noShow = reason)
         fun record(c: DriverEventCommand): DriverEventResult = api.driverEvents.record(ctx, c)

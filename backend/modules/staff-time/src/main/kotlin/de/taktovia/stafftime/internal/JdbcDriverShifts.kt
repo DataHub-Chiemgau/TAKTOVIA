@@ -19,6 +19,8 @@ import de.taktovia.stafftime.api.DriverRunView
 import de.taktovia.stafftime.api.DriverShiftView
 import de.taktovia.stafftime.api.DriverShifts
 import de.taktovia.stafftime.api.EndShiftCommand
+import de.taktovia.stafftime.api.ExpectedPassengerAtStop
+import de.taktovia.stafftime.api.ExpectedPassengersView
 import de.taktovia.stafftime.api.RunReleaseState
 import de.taktovia.stafftime.api.ShiftStartResult
 import de.taktovia.stafftime.api.StafftimeSettings
@@ -58,7 +60,24 @@ internal class JdbcDriverShifts(
         return ctxTx.run(ctx) { j -> doEnd(j, ctx, cmd) }
     }
 
-    override fun run(ctx: RequestContext, shiftId: UUID): DriverRunView {
+    override fun run(ctx: RequestContext, shiftId: UUID): DriverRunView = runView(ctx, shiftId, recordAudit = true)
+
+    override fun expectedPassengers(ctx: RequestContext, shiftId: UUID): ExpectedPassengersView {
+        val run = runView(ctx, shiftId, recordAudit = false)    // dieselben Tore wie der Run: eigene, angetretene, freigegebene Schicht, sonst keine Aufträge
+        if (run.stops.isEmpty()) return ExpectedPassengersView(shiftId, run.planRevision, null, emptyList())
+        val journal = ctxTx.run(ctx, readOnly = true) { j ->
+            val arrived = j.query("SELECT DISTINCT route_stop_id FROM taktovia.driver_event WHERE shift_id = ? AND event_type = 'ARRIVAL' AND outcome = 'APPLIED' AND route_stop_id IS NOT NULL", { rs, _ -> rs.getObject(1, UUID::class.java) }, shiftId).toSet()
+            val done = j.query("SELECT DISTINCT booking_id FROM taktovia.driver_event WHERE shift_id = ? AND event_type IN ('CHECK_IN', 'NO_SHOW') AND outcome = 'APPLIED' AND booking_id IS NOT NULL", { rs, _ -> rs.getObject(1, UUID::class.java) }, shiftId).toSet()
+            arrived to done
+        }
+        val current = run.stops.indexOfLast { it.routeStopId in journal.first }.coerceAtLeast(0)
+        val entries = listOf(current to false, current + 1 to true).filter { it.first < run.stops.size }.flatMap { (i, next) ->
+            run.stops[i].boardingPassengers.filter { it.bookingId !in journal.second }.map { ExpectedPassengerAtStop(run.stops[i].routeStopId, next, it) }
+        }
+        return ExpectedPassengersView(shiftId, run.planRevision, run.stops[current].routeStopId, entries)
+    }
+
+    private fun runView(ctx: RequestContext, shiftId: UUID, recordAudit: Boolean): DriverRunView {
         guard(ctx)
         val now = clock.instant()
         val row = ctxTx.run(ctx, readOnly = true) { j ->
@@ -76,7 +95,7 @@ internal class JdbcDriverShifts(
         // wirkt ab dem Commit, weil der Plan der Schicht (nicht der Buchung) die Stopps liefert. Sonst werden die Merkmale entfernt, nie nur ausgeblendet.
         val windowOpen = raw != null && raw.runState != "COMPLETED" && raw.runState != "CANCELED"
         val stops = raw?.stops.orEmpty().map { if (windowOpen || it.assistance == null) it else it.copy(assistance = null) }
-        if (windowOpen) recordAssistanceAccess(ctx, s.id, raw!!.planRevision, stops.filter { it.assistance != null }.map { it.routeStopId })
+        if (windowOpen && recordAudit) recordAssistanceAccess(ctx, s.id, raw!!.planRevision, stops.filter { it.assistance != null }.map { it.routeStopId })
         val missing = if (!valid) emptyList() else gate.missing
         return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, stops, null)
     }

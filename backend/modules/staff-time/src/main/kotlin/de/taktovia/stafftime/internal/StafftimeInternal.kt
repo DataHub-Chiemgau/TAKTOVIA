@@ -22,7 +22,8 @@ internal object StafftimeServicesFactory {
     fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource,
         effects: de.taktovia.stafftime.api.DriverEventEffects = de.taktovia.stafftime.api.DriverEventEffects.NONE): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
-        val events = JdbcDriverEvents(ctxTx, outbox, clock, settings, effects)
+        val codes = JdbcBoardingCodes(ctxTx, outbox, clock, settings)
+        val events = JdbcDriverEvents(ctxTx, outbox, clock, settings, effects, codes)
         val drivers = JdbcDrivers(ctxTx, audit)
         val shiftsImpl = JdbcShifts(ctxTx, audit)
         val driverShiftsImpl = JdbcDriverShifts(ctxTx, audit, clock, settings, runSource)
@@ -33,6 +34,7 @@ internal object StafftimeServicesFactory {
         return object : StafftimeApi {
             override val driverDevices: DriverDevices = devices
             override val driverEvents: DriverEvents = events
+            override val boardingCodes: de.taktovia.stafftime.api.BoardingCodes = codes
             override val drivers: Drivers = drivers
             override val shifts: Shifts = shiftsImpl
             override val driverShifts: DriverShifts = driverShiftsImpl
