@@ -57,3 +57,7 @@ innerhalb der 1 s lokalen Kandidatensuche); die Queue bleibt für spätere Hinte
 Haltepunkten (`stop_revision`) ist offen. Bis dahin gilt: Der Worker hat **keinen Datenbankzugriff** (weder Treiber noch Konfiguration); Zustand
 (Fahrzeugpläne, Planrevision) wird ihm vom Kern übergeben, Kapazität sichert ausschließlich der Hold in PostgreSQL
 (Kap. 01 §1.4 Nr. 5).
+
+## Einfügeheuristik (WP-M2-17 bis -19)
+
+`src/taktovia_routing/insertion.py`: Einfügen einer Buchung in bestehende Umläufe (alle Positionspaare je Kandidatenfahrzeug, Zeitpropagation mit Bedienzeiten, harte Grenzen für Wartezeit, Umweg und Verspätung, Schutz zugesagter Fenster, Pooling-Schalter, hartes Zeitbudget, unabhängiger Prüfer `validate_variant`). Schnittstelle `POST /v1/insert` (Beispiel `contract/insert-request.json`), Festlegungen in [m2-detailvertraege.md §10](../../docs/umsetzungsplan/vertraege/m2-detailvertraege.md). Tests: `tests/test_insertion_heuristic.py`, `tests/test_insertion_limits.py`; Laufzeitmessung `tests/performance/test_insertion_budget.py` (Referenzszenario, hardwareabhängig).
