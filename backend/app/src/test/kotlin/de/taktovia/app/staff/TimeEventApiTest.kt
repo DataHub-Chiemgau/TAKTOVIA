@@ -101,7 +101,7 @@ class TimeEventApiTest {
         }
         assertEquals(405, env.server.send("DELETE", "/v1/time-events", null, env.headers(w.driverToken, extra = idem())).status)
         val withPerson = """{"event_id":"${UUID.randomUUID()}","person_ref":"${w.other}","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}"""
-        assertEquals(422, env.post("/v1/time-events", withPerson, w.driverToken, extra = idem()).status, "die Person folgt aus dem Akteur, nie aus dem Body")
+        assertEquals(403, env.post("/v1/time-events", withPerson, w.driverToken, extra = idem()).status, "die Person folgt aus dem Akteur; eine fremde Personen-ID im Body wird abgewiesen (WP-M4-11)")
         val bf = """{"event_id":"${UUID.randomUUID()}","person_ref":"p","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","reason":"x"}"""
         assertEquals(422, env.post("/v1/time-events/backfills", bf, w.hrToken, extra = idem()).status, "Begründung zu kurz")
         assertEquals(422, env.post("/v1/time-events", body("WORK_START", "2026-12-01T06:00:00Z", channel = "BACKFILL"), w.driverToken, extra = idem()).status, "Nacherfassung ist kein Kanal der Selbsterfassung")

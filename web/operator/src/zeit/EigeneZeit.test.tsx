@@ -71,6 +71,8 @@ const event = (
   shift_id: null,
   backfill_reason: null,
   time_zone: 'Europe/Berlin',
+  origin: 'ONLINE',
+  conflict_flag: null,
   occurred_at_local: {
     local: at,
     offset: '+01:00',

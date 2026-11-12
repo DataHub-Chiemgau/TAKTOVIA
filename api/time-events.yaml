@@ -68,7 +68,7 @@ paths:
       security:
       - oidc:
         - time-events:write
-      description: 'Erfasst ein Ereignis der eigenen Ist-Arbeitszeit (Person = angemeldeter Akteur, nie aus dem Body). Die `event_id` ist die stabile Ereignis-ID und dedupliziert dauerhaft: eine Wiederholung mit demselben Inhalt liefert 200 mit dem gespeicherten Ereignis und erzeugt keine zweite Zeile, dieselbe ID mit anderem Inhalt ist 409. `occurred_at` ist die Ereigniszeit, `device_recorded_at` die Gerätezeit; die Serverempfangszeit (`received_at`) setzt der Server. Die Schicht (`shift_id`) ist optional und muss dem Akteur gehören (sonst 404). Ereignisse sind unveränderlich; ein Ende ohne Beginn wird nicht verworfen, sondern in der Intervallableitung gekennzeichnet.'
+      description: 'Erfasst ein Ereignis der eigenen Ist-Arbeitszeit (Person = angemeldeter Akteur, nie aus dem Body). Die `event_id` ist die stabile Ereignis-ID und dedupliziert dauerhaft: eine Wiederholung mit demselben Inhalt liefert 200 mit dem gespeicherten Ereignis und erzeugt keine zweite Zeile, dieselbe ID mit anderem Inhalt ist 409. `occurred_at` ist die Ereigniszeit, `device_recorded_at` die Gerätezeit; die Serverempfangszeit (`received_at`) setzt der Server. Die Schicht (`shift_id`) ist optional und muss dem Akteur gehören (sonst 404). Ereignisse sind unveränderlich; ein Ende ohne Beginn wird nicht verworfen, sondern in der Intervallableitung gekennzeichnet. Stempeln hängt weder an Fahrzeugfreigabe noch an Check- oder Fahrtzustand (WP-M4-11). Die Person ist der Akteur; ein `person_ref` einer anderen Person im Body wird mit 403 abgewiesen. Doppeltes Einstempeln (Arbeitszeit läuft bereits) ist online ein 409 `INVALID_STATE_TRANSITION`. Offline erfasste Stempel (`origin` `OFFLINE`, WP-M4-12) werden genau einmal übernommen: Antwort mit `result` `APPLIED` (201), `DUPLICATE` (200, Wiederholung des Sync-Laufs) oder `REVIEW_REQUIRED` (201, übernommen und über `conflict_flag` als möglicher Konflikt markiert, nie still korrigiert oder verworfen).'
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent
       - $ref: common.yaml#/components/parameters/IdempotencyKey
@@ -299,6 +299,13 @@ components:
           - APP
           - WEB
           description: Erfassungskanal der Selbsterfassung. Nacherfassung ist ein eigener Endpunkt.
+        origin:
+          $ref: '#/components/schemas/TimeEventOrigin'
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Optional, vom Client behauptete Person. Weicht sie vom angemeldeten Akteur ab, wird der Stempel mit 403 abgewiesen; Stempeln ist nur für die eigene Person möglich.
         shift_id:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
@@ -310,6 +317,26 @@ components:
       - occurred_at
       - device_recorded_at
       - channel
+    TimeEventOrigin:
+      type: string
+      enum:
+      - ONLINE
+      - OFFLINE
+      default: ONLINE
+      description: 'Herkunft des Stempels. `OFFLINE` = in der lokalen Queue der Fahrer-App erfasst und nach Wiederverbindung übertragen (nur Kanal `APP`); `event_id` ist dann die `device_event_id` der Queue. Ein bereits bekannter Stempel (Wiederholung des Sync-Laufs) wird dauerhaft dedupliziert, auch nach Ablauf des 72-h-Response-Caches.'
+    TimeEventConflict:
+      type: string
+      enum:
+      - CLOCK_SKEW
+      - INVALID_ORDER
+      description: 'Möglicher Konflikt: `CLOCK_SKEW` = Gerätezeit unplausibel (Zukunft über Toleranz, offline zu alt oder Gerätezeit und Ereigniszeit weichen ab), `INVALID_ORDER` = Stempel passt nicht in die Ereignisfolge (nur offline; online ist doppeltes Einstempeln ein 409 `INVALID_STATE_TRANSITION`). Der Stempel bleibt unverändert; Klärung erst über den Korrekturantrag (M7).'
+    TimeEventResultCode:
+      type: string
+      enum:
+      - APPLIED
+      - DUPLICATE
+      - REVIEW_REQUIRED
+      description: Ergebnis der Annahme (analog `/v1/driver/events`). `DUPLICATE` = bekannte Ereignis-ID, keine zweite Zeile (Status 200). `REVIEW_REQUIRED` = übernommen, aber als möglicher Konflikt markiert (Status 201).
     TimeEventBackfillCreate:
       type: object
       additionalProperties: false
@@ -426,9 +453,20 @@ components:
           maxLength: 64
         occurred_at_local:
           $ref: '#/components/schemas/LocalTimePresentation'
+        origin:
+          $ref: '#/components/schemas/TimeEventOrigin'
+        conflict_flag:
+          oneOf:
+          - $ref: '#/components/schemas/TimeEventConflict'
+          - type: 'null'
+          description: Möglicher Konflikt des Stempels, sonst `null`.
+        result:
+          $ref: '#/components/schemas/TimeEventResultCode'
       required:
       - time_zone
       - occurred_at_local
+      - origin
+      - conflict_flag
       - event_id
       - person_ref
       - kind

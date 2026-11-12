@@ -14731,6 +14731,15 @@
           "bemerkung": "Begründung der Nacherfassung (kurzer Text, keine Gesundheitsangaben)"
         },
         {
+          "spalte": "conflict_flag",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "möglicher Konflikt (Gerätezeit unplausibel, widersprüchliche Reihenfolge)"
+        },
+        {
           "spalte": "device_recorded_at",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -14765,6 +14774,15 @@
           "schutzklasse": "PERSONAL_HR",
           "loeschklasse": "LK_BETRIEB",
           "bemerkung": "Ereigniszeit der Arbeitszeit"
+        },
+        {
+          "spalte": "origin",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "ONLINE oder OFFLINE (lokale Queue der Fahrer-App)"
         },
         {
           "spalte": "payload_sha256",
