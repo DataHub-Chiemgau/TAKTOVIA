@@ -53,7 +53,10 @@ internal class DriverRunHttpWorld(val s: BookingHttpSupport = BookingHttpSupport
         init {
             env.grant(tenant, subject, "driver"); token = env.token(subject)
             env.exec("UPDATE taktovia.staff_shift SET driver_ref = ?::uuid, starts_at = now() - interval '5 minutes', ends_at = now() + interval '4 hours' WHERE id = ?", subject.toString(), shift)
-            env.exec("UPDATE taktovia.resource_release SET valid_until = now() + interval '6 hours' WHERE shift_id = ?", shift)
+            // Der Freigabewächter (WP-M3-08) erlaubt nur den Widerruf als Änderung; die Testfreigabe wird deshalb ersetzt, nicht aktualisiert
+            env.exec("""WITH old AS (DELETE FROM taktovia.resource_release WHERE shift_id = ? RETURNING *)
+                INSERT INTO taktovia.resource_release(tenant_id,id,vehicle_id,shift_id,safety_revision,inspection_ref,qualification_revision,valid_until)
+                SELECT tenant_id,id,vehicle_id,shift_id,safety_revision,inspection_ref,qualification_revision,now() + interval '6 hours' FROM old""", shift)
             // Dienstantritt über die echte Schnittstelle (Gerät registrieren, Schicht antreten)
             val device = UUID.randomUUID()
             check(env.post("/v1/driver/devices", """{"device_id":"$device","platform":"ANDROID","app_version":"1.0.0"}""", token, extra = mapOf("Idempotency-Key" to "d-" + UUID.randomUUID())).status == 201)

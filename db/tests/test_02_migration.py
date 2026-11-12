@@ -50,9 +50,10 @@ class Migration(unittest.TestCase):
                     self.assertFalse(rls)  # bewusst global
                 else:
                     self.assertTrue(rls and force, name)
-            pol = dict(c.execute("SELECT tablename, policyname FROM pg_policies WHERE schemaname='taktovia'").fetchall())
-            self.assertEqual(sum(1 for k, v in pol.items() if v == 'tenant_isolation' and k in EXPECTED), 36)
-            self.assertEqual(pol['tenant'], 'own_tenant')
+            # Mehrere Policies je Tabelle sind zulässig (z. B. draft_visibility): je Tabelle zählt, ob tenant_isolation vorhanden ist, nicht welche Policy zuletzt gelesen wird
+            pairs = c.execute("SELECT tablename, policyname FROM pg_policies WHERE schemaname='taktovia'").fetchall()
+            self.assertEqual(len({k for k, v in pairs if v == 'tenant_isolation' and k in EXPECTED}), 36)
+            self.assertEqual({v for k, v in pairs if k == 'tenant'}, {'own_tenant'})
 
     def test_funktionen_trigger_indizes_geometrie(self):
         with admin() as c:
