@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/eta_model_quantile.v1.schema.json",
+  "title": "eta_model_quantile",
+  "description": "Quantil der Sicherheitsreserve für die Disposition",
+  "type": "string",
+  "enum": [
+    "p50",
+    "p75",
+    "p85",
+    "p90"
+  ],
+  "default": "p85",
+  "x-unit": "ENUM",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.2-eta_model_quantile",
+  "x-catalog-range": "p50/p75/p85/p90; Standardwert im Pflichtenheft nicht beziffert (Planungsdefault p85, Freigabe vor Produktivschaltung, OP-34)"
+}

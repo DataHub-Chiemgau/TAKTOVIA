@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/eta_personalization_enabled.v1.schema.json",
+  "title": "eta_personalization_enabled",
+  "description": "Fahrerindividuelle ETA (in P1 fest aus)",
+  "type": "boolean",
+  "const": false,
+  "x-unit": "BOOLEAN",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "SAFETY_INVARIANT",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.2-eta_personalization_enabled",
+  "x-catalog-range": "Nur nach genehmigter Risiko-/Mitbestimmungsprüfung; in P1 fest false (WP-M4-61, D-10)"
+}

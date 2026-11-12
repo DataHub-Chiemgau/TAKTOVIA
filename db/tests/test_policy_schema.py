@@ -140,8 +140,11 @@ class Systemgrenzen(unittest.TestCase):
             rows = c.execute("""SELECT parameter, value_type, min_value, max_value, const_value FROM taktovia.policy_schema
                                 WHERE schema_version = '1' AND parameter = ANY(%s) AND value_type = 'integer'""", (START,)).fetchall()
         self.assertGreaterEqual(len(rows), 14)
+        with admin() as c:   # Systemgrenzen oberhalb des Schema-Minimums (policy_system_floor, WP-M4-62: stop_dwell_sec)
+            floors = dict(c.execute("SELECT parameter, minimum FROM taktovia.policy_system_floor()").fetchall())
         rev = 100
         for name, _, mn, mx, _ in rows:
+            mn = max(mn, floors.get(name, mn))
             for v in (int(mn), int(mx)):
                 rev += 1
                 with tx(A) as c:

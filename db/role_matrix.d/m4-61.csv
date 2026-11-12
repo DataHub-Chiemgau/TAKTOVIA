@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+eta_model_revision;SELECT;WP-M4-61/-62: Modellrevision des ETA-Grundmodells, Anlage und Freigabe nur durch den Betrieb (Migrator), freigegebene Zeile unveraenderlich (Trigger)

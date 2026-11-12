@@ -53,6 +53,9 @@ internal class ParameterValidator(private val catalog: LoadedCatalog, private va
             }
             out.putIfAbsent(v.pointer, v)
         }
+        // Systemgrenze oberhalb des Schema-Minimums (`policy_system_floor()`): gilt zusätzlich, wie in config_value_violations.
+        val floor = p.systemFloor
+        if (out.isEmpty() && floor != null && node.isNumber && node.decimalValue() < floor) out[pointer] = Violation(pointer, ViolationCode.BELOW_MINIMUM)
         if (out.isEmpty() && p.definition.schema["format"] == "iana-timezone" && !(node.isString && node.asString() in ZoneId.getAvailableZoneIds()))
             out[pointer] = Violation(pointer, ViolationCode.ZONE_UNKNOWN)
         return out.values.toList()

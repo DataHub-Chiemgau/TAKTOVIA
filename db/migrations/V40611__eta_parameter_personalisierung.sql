@@ -1,0 +1,11 @@
+-- WP-M4-61: Konfigurationsparameter des ETA-Grundmodells im Parameterkatalog (Version '1', nur INSERT wie V20200).
+-- eta_personalization_enabled: fester Wert false (Sicherheitsinvariante): jeder Schreibversuch mit true wird beim Validieren und per Datenbankpruefung abgewiesen
+--   (SAFETY_INVARIANT_VIOLATED); die Entscheidung "abweisen statt ignorieren" ist hier festgelegt (WP-M4-01 offen). Die Prognose ignoriert den Parameter ausserdem vollstaendig.
+-- eta_fallback_policy: Enum-Werte sind im Pflichtenheft nicht festgelegt (Planungsannahme): PLAN_TIME (Planzeit der Planrevision bleibt) und REFERENCE_FORECAST
+--   (fahrerneutrale Referenzprognose ab dem Plananker, ohne Livepositionsbezug). Beide sind fahrerneutral.
+-- Gemeinsame Quelle: vertraege/schemas/<name>.v1.schema.json (Test test_spalten_folgen_den_schemadateien).
+SET search_path = taktovia, public;
+
+INSERT INTO policy_schema(schema_version, parameter, json_schema) VALUES
+  ('1', 'eta_personalization_enabled', '{"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://taktovia.example/schemas/eta_personalization_enabled.v1.schema.json", "title": "eta_personalization_enabled", "description": "Fahrerindividuelle ETA (in P1 fest aus)", "type": "boolean", "const": false, "x-unit": "BOOLEAN", "x-levels": ["TENANT"], "x-security-class": "SAFETY_INVARIANT", "x-limit-source": "KATALOG", "x-catalog": "LH-J.2-eta_personalization_enabled", "x-catalog-range": "Nur nach genehmigter Risiko-/Mitbestimmungsprüfung; in P1 fest false (WP-M4-61, D-10)"}'::jsonb),
+  ('1', 'eta_fallback_policy', '{"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://taktovia.example/schemas/eta_fallback_policy.v1.schema.json", "title": "eta_fallback_policy", "description": "Ausfallmodell der ETA bei fehlender oder veralteter Grundlage", "type": "string", "enum": ["PLAN_TIME", "REFERENCE_FORECAST"], "default": "PLAN_TIME", "x-unit": "ENUM", "x-levels": ["TENANT"], "x-security-class": "STANDARD", "x-limit-source": "PLANUNGSANNAHME", "x-catalog": "LH-J.2-eta_fallback_policy", "x-catalog-range": "Sichere fahrerneutrale Referenz verpflichtend; Werte im Pflichtenheft nicht festgelegt (Planungsannahme WP-M4-61)"}'::jsonb);
