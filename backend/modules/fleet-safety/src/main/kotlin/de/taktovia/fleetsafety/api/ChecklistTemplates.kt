@@ -19,6 +19,53 @@ enum class ChecklistInputKind(val code: String) {
     companion object { fun parse(code: String?): ChecklistInputKind? = entries.firstOrNull { it.code == code } }
 }
 
+/**
+ * Vorlagentyp (WP-M3-11): `GENERAL` ohne Pflichtpunkte; `VEHICLE_TECHNICAL` = technische Fahrzeugprüfung (LH-6.21-CHK-005) mit acht, `PASSENGER_COMPARTMENT` = Prüfung vor Fahrgastaufnahme
+ * (LH-6.21-CHK-006) mit sechs Pflichtpunkten. Eine Revision dieser Typen lässt sich nur freigeben, wenn alle Pflichtpunkte als Pflichtschritte vorhanden sind.
+ */
+enum class ChecklistTemplateType { GENERAL, VEHICLE_TECHNICAL, PASSENGER_COMPARTMENT }
+
+/** Ein Pflichtpunkt mit stabilem Schlüssel (Großschreibung laut Schlüsselformat), Titel und Hilfetext der Standardvorlage. */
+data class MandatoryPoint(val key: String, val title: String, val help: String)
+
+/**
+ * Pflichtpunkte je Vorlagentyp laut Lastenheft (CHK-005: Beleuchtung, Reifen-Sichtprüfung, Scheiben, Spiegel, Türen, Sicherheitsgurte, sichtbare Leckagen, Warnanzeigen; CHK-006:
+ * Sauberkeit, Fahrgastraum, Sitzplätze, Einstiegsbereich, Rückhaltesysteme, Sicherheitsausrüstung). Planungsannahme zur Einstufung „sicherheitskritisch“: der Standardsatz stuft keinen
+ * Punkt als kritisch ein, bis die Fachseite entschieden hat (offen vor Produktivschaltung); die Standardvorlage ist Ausgangspunkt und kann um betreiberspezifische Punkte erweitert werden.
+ */
+object MandatoryChecklistPoints {
+    val VEHICLE_TECHNICAL: List<MandatoryPoint> = listOf(
+        MandatoryPoint("BELEUCHTUNG", "Beleuchtung", "Abblend-, Fern-, Brems-, Blink- und Warnblinklicht funktionsfähig"),
+        MandatoryPoint("REIFEN_SICHTPRUEFUNG", "Reifen (Sichtprüfung)", "Profil, Beschädigungen und Fremdkörper sichtbar prüfen"),
+        MandatoryPoint("SCHEIBEN", "Scheiben", "Windschutz- und Seitenscheiben ohne sichtbehindernde Schäden, Scheibenwischer intakt"),
+        MandatoryPoint("SPIEGEL", "Spiegel", "Innen- und Außenspiegel vorhanden, unbeschädigt und eingestellt"),
+        MandatoryPoint("TUEREN", "Türen", "Türen öffnen, schließen und verriegeln einwandfrei"),
+        MandatoryPoint("SICHERHEITSGURTE", "Sicherheitsgurte", "Gurte der Fahrerposition und der Fahrgastplätze vorhanden und funktionsfähig"),
+        MandatoryPoint("SICHTBARE_LECKAGEN", "Sichtbare Leckagen", "Unter dem Fahrzeug und im Motorraum keine sichtbaren Flüssigkeitsverluste"),
+        MandatoryPoint("WARNANZEIGEN", "Warnanzeigen", "Keine Warnanzeige im Kombiinstrument aktiv"),
+    )
+    val PASSENGER_COMPARTMENT: List<MandatoryPoint> = listOf(
+        MandatoryPoint("SAUBERKEIT", "Sauberkeit", "Innenraum sauber und frei von Gefahrenstoffen"),
+        MandatoryPoint("FAHRGASTRAUM", "Fahrgastraum", "Fahrgastraum zugänglich, ohne scharfe Kanten oder lose Teile"),
+        MandatoryPoint("SITZPLAETZE", "Sitzplätze", "Sitzplätze benutzbar und befestigt"),
+        MandatoryPoint("EINSTIEGSBEREICH", "Einstiegsbereich", "Einstiegsbereich frei, rutschfest und beleuchtet"),
+        MandatoryPoint("RUECKHALTESYSTEME", "Rückhaltesysteme", "Vorhandene Rückhaltesysteme (Gurte, Kindersitze, Rollstuhlverankerung) funktionsfähig"),
+        MandatoryPoint("SICHERHEITSAUSRUESTUNG", "Sicherheitsausrüstung", "Verbandkasten, Warndreieck, Warnweste und Feuerlöscher vorhanden und nicht abgelaufen"),
+    )
+
+    fun required(type: ChecklistTemplateType): List<MandatoryPoint> = when (type) {
+        ChecklistTemplateType.VEHICLE_TECHNICAL -> VEHICLE_TECHNICAL
+        ChecklistTemplateType.PASSENGER_COMPARTMENT -> PASSENGER_COMPARTMENT
+        ChecklistTemplateType.GENERAL -> emptyList()
+    }
+
+    /** Fehlende Pflichtschlüssel einer Vorlage (Reihenfolge der Pflichtliste): ein Schlüssel fehlt auch, wenn der Schritt nur als nicht verpflichtend angelegt ist. */
+    fun missing(type: ChecklistTemplateType, steps: List<ChecklistStepView>): List<String> {
+        val present = steps.filter { it.mandatory }.map { it.code }.toSet()
+        return required(type).map { it.key }.filter { it !in present }
+    }
+}
+
 /** Zustand einer Vorlagenrevision: Entwurf, freigegeben (wirksam), abgelöst. */
 enum class ChecklistTemplateState { DRAFT, PUBLISHED, RETIRED }
 
@@ -37,9 +84,9 @@ data class ChecklistStepInput(
 )
 
 /** Eingabe einer Vorlage (Entwurf): Name, Fahrzeugklasse, Bedienart und mindestens ein Prüfelement. Die Reihenfolge der Liste ist die Anzeigereihenfolge. */
-data class ChecklistTemplateInput(val name: String, val vehicleClass: String, val serviceMode: String, val steps: List<ChecklistStepInput>) {
+data class ChecklistTemplateInput(val name: String, val vehicleClass: String, val serviceMode: String, val steps: List<ChecklistStepInput>, val templateType: ChecklistTemplateType = ChecklistTemplateType.GENERAL) {
     companion object {
-        private val FIELDS = setOf("name", "vehicle_class", "service_mode", "steps")
+        private val FIELDS = setOf("name", "vehicle_class", "service_mode", "steps", "template_type")
         private val STEP_FIELDS = setOf("step_code", "title", "help_text", "input_kind", "mandatory", "safety_critical", "na_requires_reason", "photo_required_on_defect", "number_min", "number_max", "number_unit")
         private val CLASS = Regex("^[A-Z][A-Z0-9_]{1,39}$")
         private val CODE = Regex("^[A-Z][A-Z0-9_]{1,59}$")
@@ -64,8 +111,13 @@ data class ChecklistTemplateInput(val name: String, val vehicleClass: String, va
                 val seen = HashSet<String>()
                 rawSteps.take(ChecklistLimits.MAX_STEPS).forEachIndexed { i, s -> step(s, "/steps/$i", v, seen)?.let(steps::add) }
             }
+            val type = when (val t = raw["template_type"]) {
+                null -> ChecklistTemplateType.GENERAL
+                is String -> ChecklistTemplateType.entries.firstOrNull { it.name == t } ?: run { v.add("/template_type", ViolationCode.NOT_IN_ENUM); null }
+                else -> { v.add("/template_type", ViolationCode.TYPE_MISMATCH); null }
+            }
             v.throwIfAny()
-            return ChecklistTemplateInput(name!!, cls!!, mode!!, steps)
+            return ChecklistTemplateInput(name!!, cls!!, mode!!, steps, type!!)
         }
 
         private fun step(raw: Any?, p: String, v: Violations, seen: MutableSet<String>): ChecklistStepInput? {
@@ -132,6 +184,7 @@ data class ChecklistStepView(
 data class ChecklistTemplateView(
     val id: UUID, val templateId: UUID, val version: Int, val name: String?, val vehicleClass: String, val serviceMode: String, val state: ChecklistTemplateState,
     val steps: List<ChecklistStepView>, val createdBy: String, val approvedBy: String?, val publishedAt: Instant?, val revision: Long, val createdAt: Instant,
+    val templateType: ChecklistTemplateType = ChecklistTemplateType.GENERAL,
 )
 
 /** Beispielbild eines Prüfelements, aus dem Objektspeicher des eigenen Mandanten geliefert. */
@@ -154,6 +207,13 @@ interface ChecklistTemplates {
     fun publish(ctx: RequestContext, revisionId: UUID, expectedRevision: Long): ChecklistTemplateView
     fun putExampleImage(ctx: RequestContext, revisionId: UUID, stepCode: String, expectedRevision: Long, bytes: ByteArray, contentType: String): ChecklistTemplateView
     fun exampleImage(ctx: RequestContext, revisionId: UUID, stepCode: String): ChecklistImage
+    /**
+     * Legt den Entwurf der Standardvorlage eines Pflichttyps an (WP-M3-11, „Seed der Standardvorlagen“): alle Pflichtpunkte als Pflichtschritte mit Titel und Hilfetext, ohne Kennzeichen
+     * sicherheitskritisch (Planungsannahme). Ersteller ist das System (`system:standard-seed`); die Freigabe erfolgt wie bei jeder Vorlage durch einen Menschen (Vier-Augen). Rechte wie
+     * `create`; Typ `GENERAL` hat keinen Standard (422).
+     */
+    fun createStandard(ctx: RequestContext, type: ChecklistTemplateType, vehicleClass: String, serviceMode: String): ChecklistTemplateView
+
     /** Prüfelemente einer Revision innerhalb der laufenden Mandantentransaktion (für Prüflauf und Abschluss, WP-M3-13/-14); unbekannte Revision: 404. */
     fun steps(jdbc: JdbcOperations, revisionId: UUID): List<ChecklistStepView>
 }

@@ -29,7 +29,7 @@
 - **Konkurrierend:** zwei gleichzeitige Freigaben derselben Vorlage: genau eine wirksame Revision (Verhalten aus WP-M3-10).
 - **Referenztests:** keine Katalog-ID im WP genannt
 
-Testfälle: geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/MandatoryTemplateTest.kt::fahrzeugvorlage_enthaelt_acht_pflichtpunkte_und_erfasst_mangel_je_punkt; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/MandatoryTemplateTest.kt::freigabe_ohne_pflichtpunkt_wird_je_schluessel_abgewiesen; geplant:db/tests/test_inspection_template.py::test_freigegebene_revision_ist_unveraenderlich
+Testfälle: backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/MandatoryTemplateTest.kt::fahrzeugvorlage_enthaelt_acht_pflichtpunkte_und_erfasst_mangel_je_punkt; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/MandatoryTemplateTest.kt::freigabe_ohne_pflichtpunkt_wird_je_schluessel_abgewiesen; backend/app/src/test/kotlin/de/taktovia/app/fleet/MandatoryTemplateApiTest.kt::unvollstaendige_pflichtvorlage_422_vollstaendige_wird_freigegeben; db/tests/test_inspection_template.py::test_freigegebene_revision_ist_unveraenderlich; db/tests/test_inspection_template.py::test_unvollstaendige_pflichtvorlage_nicht_veroeffentlichbar_je_fehlendem_schluessel
 
 ## Reviews
 

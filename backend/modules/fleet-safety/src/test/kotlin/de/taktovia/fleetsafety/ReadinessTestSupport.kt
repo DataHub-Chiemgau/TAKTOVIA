@@ -91,4 +91,23 @@ class ReadinessWorld(val fx: FleetFixture) {
         fx.exec("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,created_by,created_at) VALUES (?,?,?,?,?,now(),'BODY','user:t', now() - interval '1 day')",
             tenant.value, id, "DC-" + id.toString().take(8), vehicle, UUID.randomUUID())
     }
+
+    // ------------------------------------------------------------------ Pflichtvorlagen (WP-M3-11)
+
+    /** Standardvorlage eines Pflichttyps: Entwurf aus dem System, freigegeben durch einen Menschen (Vier-Augen). */
+    fun standard(type: de.taktovia.fleetsafety.api.ChecklistTemplateType, vehicleClass: String = "PKW", serviceMode: String = "STANDARD") =
+        fx.fleet.checklistTemplates.createStandard(ctx("fleet_safety"), type, vehicleClass, serviceMode).let { fx.fleet.checklistTemplates.publish(ctx("tenant_admin"), it.id, it.revision) }
+
+    /** Gestarteter Lauf der Art [kind] für Fahrer, Fahrzeug und Schicht (ohne die allgemeine Vorlage anzulegen). */
+    class Boarding(val driver: UUID, val vehicle: UUID, val shift: UUID, val ctx: RequestContext)
+
+    fun boarding(vehicleClass: String = "PKW"): Boarding {
+        val driver = driver(true, UUID.randomUUID()); val vehicle = iw.vehicle(vehicleClass); val shift = iw.shift(driver, vehicle)
+        return Boarding(driver, vehicle, shift, iw.ctx(driver, "driver"))
+    }
+
+    fun start(b: Boarding, kind: String) = iw.start(b.ctx, b.shift, b.vehicle, kind).inspection
+
+    fun submit(b: Boarding, inspection: UUID, answers: List<de.taktovia.fleetsafety.api.AnswerInput>) =
+        fx.fleet.inspections.submit(b.ctx, inspection, fx.fleet.inspections.get(b.ctx, inspection).revision, de.taktovia.fleetsafety.api.SubmitInspection(answers, Instant.now().minusSeconds(5), null))
 }

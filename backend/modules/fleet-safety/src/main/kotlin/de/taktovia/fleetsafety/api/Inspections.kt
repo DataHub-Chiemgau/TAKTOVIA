@@ -13,7 +13,7 @@ import java.util.UUID
  * (Großbuchstaben, Ziffern, Unterstrich) geprüft, nicht als feste Aufzählung.
  */
 object InspectionCatalog {
-    val KINDS: Set<String> = linkedSetOf("PRE_SHIFT", "FOLLOW_UP", "VEHICLE_CHANGE")
+    val KINDS: Set<String> = linkedSetOf("PRE_SHIFT", "FOLLOW_UP", "VEHICLE_CHANGE", "PRE_BOARDING")
     /** Toleranz der Gerätezeit gegenüber der Serverzeit („Start nicht in der Zukunft“). */
     const val FUTURE_TOLERANCE_SECONDS = 60L
     /** Stabile Kennwörter am Anfang von `detail` des 409, wenn keine eindeutig passende Vorlage besteht (Vertrag `createInspection`). */

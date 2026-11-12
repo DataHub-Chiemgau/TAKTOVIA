@@ -3,6 +3,8 @@ package de.taktovia.fleetsafety.internal
 import de.taktovia.fleetsafety.api.ChecklistImage
 import de.taktovia.fleetsafety.api.ChecklistInputKind
 import de.taktovia.fleetsafety.api.ChecklistStepInput
+import de.taktovia.fleetsafety.api.ChecklistTemplateType
+import de.taktovia.fleetsafety.api.MandatoryChecklistPoints
 import de.taktovia.fleetsafety.api.ChecklistStepView
 import de.taktovia.fleetsafety.api.ChecklistTemplateInput
 import de.taktovia.fleetsafety.api.ChecklistTemplateState
@@ -46,6 +48,16 @@ internal class JdbcChecklistTemplates(
 
     override fun create(ctx: RequestContext, input: ChecklistTemplateInput): ChecklistTemplateView =
         ctxTx.run(ctx) { j -> doCreate(j, FourEyes.refOf(ctx), ctx.correlationId, input) }
+
+    override fun createStandard(ctx: RequestContext, type: ChecklistTemplateType, vehicleClass: String, serviceMode: String): ChecklistTemplateView {
+        val points = MandatoryChecklistPoints.required(type)
+        if (points.isEmpty()) throw ProblemException.invalid(Violation("/template_type", ViolationCode.NOT_IN_ENUM))
+        val steps = points.map { ChecklistStepInput(it.key, it.title, it.help, ChecklistInputKind.OK_DEFECT_NA, mandatory = true, safetyCritical = false, naRequiresReason = false, photoRequiredOnDefect = false, numberMin = null, numberMax = null, numberUnit = null) }
+        val name = if (type == ChecklistTemplateType.VEHICLE_TECHNICAL) "Technische Fahrzeugprüfung" else "Prüfung vor Fahrgastaufnahme"
+        val input = ChecklistTemplateInput.parse(linkedMapOf("name" to name, "vehicle_class" to vehicleClass, "service_mode" to serviceMode, "template_type" to type.name,
+            "steps" to steps.map { linkedMapOf("step_code" to it.code, "title" to it.title, "help_text" to it.helpText, "input_kind" to it.kind.code, "mandatory" to true, "safety_critical" to false) }))
+        return ctxTx.run(ctx) { j -> doCreate(j, ActorRef("system:standard-seed"), ctx.correlationId, input) }
+    }
 
     override fun get(ctx: RequestContext, revisionId: UUID): ChecklistTemplateView = ctxTx.run(ctx, readOnly = true) { j -> load(j, revisionId, lock = false) ?: notFound() }
 
@@ -125,8 +137,8 @@ internal class JdbcChecklistTemplates(
     private fun doCreate(j: JdbcOperations, actor: ActorRef, correlationId: UUID, input: ChecklistTemplateInput): ChecklistTemplateView {
         val id = UUID.randomUUID()
         j.update(
-            "INSERT INTO taktovia.checklist_template_revision (tenant_id, id, template_id, version, vehicle_class, service_mode, name, created_by) VALUES (taktovia.current_tenant(), ?, ?, 1, ?, ?, ?, ?)",
-            id, UUID.randomUUID(), input.vehicleClass, input.serviceMode, input.name, actor.value,
+            "INSERT INTO taktovia.checklist_template_revision (tenant_id, id, template_id, version, vehicle_class, service_mode, name, template_type, created_by) VALUES (taktovia.current_tenant(), ?, ?, 1, ?, ?, ?, ?, ?)",
+            id, UUID.randomUUID(), input.vehicleClass, input.serviceMode, input.name, input.templateType.name, actor.value,
         )
         insertSteps(j, id, input.steps, emptyMap(), actor)
         val view = load(j, id, lock = false)!!
@@ -141,8 +153,8 @@ internal class JdbcChecklistTemplates(
         if (before.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Vorlage wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         val images = before.steps.filter { it.exampleImageName != null }.associate { it.code to it.exampleImageName!! }
         j.update("DELETE FROM taktovia.checklist_step WHERE template_revision_id = ?", id)
-        j.update("UPDATE taktovia.checklist_template_revision SET name = ?, vehicle_class = ?, service_mode = ?, revision = revision + 1 WHERE id = ? AND revision = ?",
-            input.name, input.vehicleClass, input.serviceMode, id, expected)
+        j.update("UPDATE taktovia.checklist_template_revision SET name = ?, vehicle_class = ?, service_mode = ?, template_type = ?, revision = revision + 1 WHERE id = ? AND revision = ?",
+            input.name, input.vehicleClass, input.serviceMode, input.templateType.name, id, expected)
         insertSteps(j, id, input.steps, images, actor)
         val view = load(j, id, lock = false)!!
         audit.record(j, AuditEntry(actor, AuditActions.CHECKLIST_TEMPLATE_CHANGED, ObjectRef("checklist_template", id), correlationId, auditDetails(view) + mapOf("previous_revision" to expected)))
@@ -156,8 +168,8 @@ internal class JdbcChecklistTemplates(
         if (src.state == ChecklistTemplateState.DRAFT) throw ProblemException(ErrorCode.CONFLICT, "Ein Entwurf ist schon die offene Revision.")
         val next = j.queryForObject("SELECT max(version) + 1 FROM taktovia.checklist_template_revision WHERE template_id = ?", Int::class.java, src.templateId)!!
         j.update(
-            "INSERT INTO taktovia.checklist_template_revision (tenant_id, id, template_id, version, vehicle_class, service_mode, name, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?)",
-            newId, src.templateId, next, src.vehicleClass, src.serviceMode, src.name, actor.value,
+            "INSERT INTO taktovia.checklist_template_revision (tenant_id, id, template_id, version, vehicle_class, service_mode, name, template_type, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?)",
+            newId, src.templateId, next, src.vehicleClass, src.serviceMode, src.name, src.templateType.name, actor.value,
         )
         insertSteps(j, newId, src.steps.map { it.toInput() }, images, actor)
         val view = load(j, newId, lock = false)!!
@@ -172,6 +184,9 @@ internal class JdbcChecklistTemplates(
         val reviewer = FourEyes.requireDistinctReviewer(ctx, before.createdBy)
         if (before.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Vorlage wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (before.steps.isEmpty()) throw ProblemException.invalid(Violation("/steps", ViolationCode.TOO_FEW_ITEMS))
+        // Pflichtpunkte vollständig (CHK-005, CHK-006): fehlt einer, ist die Revision nicht freigebbar; 422 mit Liste der fehlenden Schlüssel
+        val missing = MandatoryChecklistPoints.missing(before.templateType, before.steps)
+        if (missing.isNotEmpty()) throw ProblemException(ErrorCode.VALIDATION_FAILED, "MANDATORY_POINTS_MISSING: " + missing.joinToString(", "), missing.map { Violation("/steps/$it", ViolationCode.REQUIRED) })
         val retired = j.update("UPDATE taktovia.checklist_template_revision SET state = 'RETIRED', revision = revision + 1 WHERE template_id = ? AND state = 'PUBLISHED'", before.templateId)
         j.update("UPDATE taktovia.checklist_template_revision SET state = 'PUBLISHED', published_at = clock_timestamp(), approved_by = ?, revision = revision + 1 WHERE id = ? AND revision = ?", reviewer.value, id, expected)
         val view = load(j, id, lock = false)!!
@@ -253,13 +268,13 @@ internal class JdbcChecklistTemplates(
     private companion object {
         const val MAX_IMAGE_BYTES = 512 * 1024
         val IMAGE_TYPES = linkedMapOf("image/png" to "png", "image/jpeg" to "jpg", "image/webp" to "webp")
-        const val COLS = "r.id, r.template_id, r.version, r.name, r.vehicle_class, r.service_mode, r.state, r.created_by, r.approved_by, r.published_at, r.revision, r.created_at"
+        const val COLS = "r.id, r.template_id, r.version, r.name, r.vehicle_class, r.service_mode, r.state, r.created_by, r.approved_by, r.published_at, r.revision, r.created_at, r.template_type"
         const val REVISION_ROW = "SELECT $COLS FROM taktovia.checklist_template_revision r WHERE r.id = ?"
         const val REVISION_LOCK = "$REVISION_ROW FOR UPDATE"
         val HEAD = RowMapper { rs, _ ->
             ChecklistTemplateView(rs.getObject("id", UUID::class.java), rs.getObject("template_id", UUID::class.java), rs.getInt("version"), rs.getString("name"), rs.getString("vehicle_class"),
                 rs.getString("service_mode"), ChecklistTemplateState.valueOf(rs.getString("state")), emptyList(), rs.getString("created_by"), rs.getString("approved_by"),
-                rs.getTimestamp("published_at")?.toInstant(), rs.getLong("revision"), rs.getTimestamp("created_at").toInstant())
+                rs.getTimestamp("published_at")?.toInstant(), rs.getLong("revision"), rs.getTimestamp("created_at").toInstant(), ChecklistTemplateType.valueOf(rs.getString("template_type")))
         }
         val STEP = RowMapper { rs, _ ->
             ChecklistStepView(rs.getString("step_code"), rs.getInt("position"), rs.getString("title"), rs.getString("help_text"), ChecklistInputKind.parse(rs.getString("answer_kind"))!!,

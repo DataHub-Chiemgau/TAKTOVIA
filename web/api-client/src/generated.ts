@@ -1590,7 +1590,7 @@ export interface InspectionCreate {
   shift_id: UUID;
   vehicle_id: UUID;
   template_revision_id?: UUID;
-  kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE';
+  kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE' | 'PRE_BOARDING';
   odometer_km?: number | null;
   battery_soc_pct?: number | null;
   client_started_at: string;
@@ -1642,7 +1642,7 @@ export interface Inspection {
   vehicle_id: UUID;
   driver_ref: UUID;
   template_revision_id: UUID;
-  kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE';
+  kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE' | 'PRE_BOARDING';
   status: 'IN_PROGRESS' | 'COMPLETED' | 'EXPIRED' | 'CANCELED';
   outcome: 'PASSED' | 'PASSED_RESTRICTED' | 'BLOCKED' | 'CLARIFICATION_REQUIRED' | null;
   missing_requirements: MissingRequirement[];
@@ -1918,6 +1918,7 @@ export interface ChecklistTemplateWrite {
   name: string;
   vehicle_class: string;
   service_mode: string;
+  template_type?: 'GENERAL' | 'VEHICLE_TECHNICAL' | 'PASSENGER_COMPARTMENT';
   steps: ChecklistStepWrite[];
 }
 
@@ -1944,6 +1945,7 @@ export interface ChecklistTemplateRevision {
   name: string | null;
   vehicle_class: string;
   service_mode: string;
+  template_type?: 'GENERAL' | 'VEHICLE_TECHNICAL' | 'PASSENGER_COMPARTMENT';
   state: ChecklistTemplateState;
   steps: ChecklistStepRead[];
   created_by: string;

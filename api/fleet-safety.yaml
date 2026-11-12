@@ -502,7 +502,7 @@ paths:
         ist nie der Ersteller (403) und immer ein Mensch. Die bisher wirksame Revision
         der Vorlage wird abgelöst; es gibt je Vorlage genau eine wirksame Revision.
         Bei gleichzeitigen Freigaben derselben Revision gewinnt genau eine, die andere
-        erhält 409. Ohne Prüfelement 422. If-Match: Revision der Vorlagenrevision;
+        erhält 409. Ohne Prüfelement 422; bei Typ VEHICLE_TECHNICAL oder PASSENGER_COMPARTMENT fehlt einer der Pflichtpunkte als Pflichtschritt: 422 mit `detail` MANDATORY_POINTS_MISSING und je fehlendem Schlüssel einer Verletzung unter /steps/<Schlüssel> (CHK-005, CHK-006). If-Match: Revision der Vorlagenrevision;
         ohne 428, veraltet 412.'
       parameters:
       - name: checklist_revision_id
@@ -3454,6 +3454,7 @@ components:
           - PRE_SHIFT
           - FOLLOW_UP
           - VEHICLE_CHANGE
+          - PRE_BOARDING
         odometer_km:
           oneOf:
           - type: integer
@@ -3651,6 +3652,7 @@ components:
           - PRE_SHIFT
           - FOLLOW_UP
           - VEHICLE_CHANGE
+          - PRE_BOARDING
         status:
           type: string
           enum:
@@ -4776,6 +4778,18 @@ components:
         service_mode:
           type: string
           pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        template_type:
+          type: string
+          enum:
+          - GENERAL
+          - VEHICLE_TECHNICAL
+          - PASSENGER_COMPARTMENT
+          description: Vorlagentyp (WP-M3-11); Vorgabe `GENERAL`. `VEHICLE_TECHNICAL`
+            verlangt bei der Freigabe die acht Pflichtpunkte BELEUCHTUNG, REIFEN_SICHTPRUEFUNG,
+            SCHEIBEN, SPIEGEL, TUEREN, SICHERHEITSGURTE, SICHTBARE_LECKAGEN, WARNANZEIGEN
+            (CHK-005), `PASSENGER_COMPARTMENT` die sechs Pflichtpunkte SAUBERKEIT,
+            FAHRGASTRAUM, SITZPLAETZE, EINSTIEGSBEREICH, RUECKHALTESYSTEME, SICHERHEITSAUSRUESTUNG
+            (CHK-006), jeweils als Pflichtschritte.
         steps:
           type: array
           minItems: 1
@@ -4870,6 +4884,12 @@ components:
           type: string
         service_mode:
           type: string
+        template_type:
+          type: string
+          enum:
+          - GENERAL
+          - VEHICLE_TECHNICAL
+          - PASSENGER_COMPARTMENT
         state:
           $ref: '#/components/schemas/ChecklistTemplateState'
         steps:

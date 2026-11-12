@@ -94,7 +94,7 @@ internal class JdbcInspections(
 
         // Vorlagenwahl allein durch den Server: Fahrzeugklasse und Bedienart des Fahrzeugs -> genau eine freigegebene Revision (kein Clientwert fließt ein)
         val pair = j.query("SELECT vehicle_type, operation_kind FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getString(2) }, shift.vehicleId).firstOrNull() ?: throw ProblemException.notFound()
-        val candidates: List<UUID> = pair.first?.let { cls -> selectPublished(j, cls, pair.second) } ?: emptyList()
+        val candidates: List<UUID> = pair.first?.let { cls -> selectPublished(j, cls, pair.second, cmd.kind) } ?: emptyList()
         if (candidates.size != 1) {
             val reason = if (candidates.isEmpty()) REASON_NONE else REASON_AMBIGUOUS
             notify(j, ctx, shift, pair, reason, candidates.size, now)
@@ -129,10 +129,12 @@ internal class JdbcInspections(
      * Freigegebene Revisionen für das Paar unter Lesesperre. Wartet eine gleichzeitige Freigabe (Ablösung der alten, Veröffentlichung der neuen Revision in einer Transaktion), liefert die
      * erste Abfrage nach deren Ende leer, weil ihr Stichtag vor der neuen Revision lag; deshalb wird bei leerem Ergebnis mit neuem Stichtag wiederholt (höchstens [SELECT_ATTEMPTS] Versuche).
      */
-    private fun selectPublished(j: JdbcOperations, vehicleClass: String, serviceMode: String?): List<UUID> {
+    private fun selectPublished(j: JdbcOperations, vehicleClass: String, serviceMode: String?, kind: String): List<UUID> {
+        // Die Art bestimmt den Vorlagentyp: die Prüfung vor Fahrgastaufnahme nutzt die Vorlage des Fahrgastraums, alle anderen Arten die allgemeine oder die technische Vorlage (WP-M3-11)
+        val boarding = kind == "PRE_BOARDING"
         repeat(SELECT_ATTEMPTS) {
-            val found = j.query("SELECT r.id FROM taktovia.checklist_template_revision r WHERE r.state = 'PUBLISHED' AND r.vehicle_class = ? AND r.service_mode = ? ORDER BY r.id FOR SHARE OF r",
-                { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleClass, serviceMode)
+            val found = j.query("SELECT r.id FROM taktovia.checklist_template_revision r WHERE r.state = 'PUBLISHED' AND r.vehicle_class = ? AND r.service_mode = ? AND (r.template_type = 'PASSENGER_COMPARTMENT') = ? ORDER BY r.id FOR SHARE OF r",
+                { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleClass, serviceMode, boarding)
             if (found.isNotEmpty()) return found
         }
         return emptyList()
@@ -202,7 +204,7 @@ internal class JdbcInspections(
             .forEach { j.update("UPDATE taktovia.vehicle SET last_confirmed_odometer_km = ? WHERE id = ? AND (last_confirmed_odometer_km IS NULL OR last_confirmed_odometer_km < ?)", it.input.numberValue!!.toLong(), run.vehicleId, it.input.numberValue!!.toLong()) }
         // Einsatzfreigabe im selben Commit, nur bei bestandener Prüfung (ein kritischer Mangel erteilt keine); fehlende Voraussetzungen bleiben als Liste der Antwort sichtbar
         var releaseId: UUID? = null
-        if (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED) {
+        if (run.kind != "PRE_BOARDING" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
             val r = readiness.issueReleaseIn(j, actor, ctx.correlationId, IssueRelease(run.vehicleId, run.shiftId, id))
             if (r is ReleaseOutcome.Issued) releaseId = r.release.id
         }
@@ -408,7 +410,7 @@ internal class JdbcInspections(
         val release = j.query("SELECT id, valid_until, safety_revision FROM taktovia.resource_release WHERE inspection_ref = ? AND revoked_at IS NULL ORDER BY valid_until DESC LIMIT 1",
             { rs, _ -> InspectionReleaseView(rs.getObject(1, UUID::class.java), rs.getTimestamp(2).toInstant(), rs.getLong(3)) }, id).firstOrNull()
         val missing: List<ReleaseBlocker> = when {
-            release != null -> emptyList()
+            release != null || row.kind == "PRE_BOARDING" -> emptyList()   // die Prüfung vor Fahrgastaufnahme erteilt keine Einsatzfreigabe
             row.status == "IN_PROGRESS" -> listOf(ReleaseBlocker.INSPECTION_OPEN)
             else -> readiness.missing(j, row.vehicleId, row.shiftId, row.id).ifEmpty { listOf(ReleaseBlocker.NO_INSPECTION) }
         }
