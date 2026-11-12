@@ -28,6 +28,7 @@ import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { EigeneZeit } from './zeit/EigeneZeit';
+import { Dienstplan } from './dienstplan/Dienstplan';
 import { Geodaten } from './geo/Geodaten';
 import { Tarife } from './tarife/Tarife';
 import { Checklistenvorlagen } from './flotte/Checklistenvorlagen';
@@ -236,6 +237,14 @@ export function App() {
             element={
               <RequireRight right="time.own">
                 <EigeneZeit />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/personal/dienstplan"
+            element={
+              <RequireRight right="roster">
+                <Dienstplan />
               </RequireRight>
             }
           />

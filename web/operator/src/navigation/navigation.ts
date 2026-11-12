@@ -13,6 +13,7 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
   { id: 'finanzen', label: 'Finanzen', href: '/finanzen', requires: 'finance' },
   { id: 'personal', label: 'Personal', href: '/personal', requires: 'staff' },
   { id: 'ui13', label: 'Eigene Zeit und Abwesenheit', href: '/zeit', requires: 'time.own' },
+  { id: 'ui12', label: 'Dienstplan', href: '/personal/dienstplan', requires: 'roster' },
   { id: 'ui11', label: 'Flotte und Werkstatt', href: '/flotte', requires: 'fleet' },
   {
     id: 'ui11-fahrer',

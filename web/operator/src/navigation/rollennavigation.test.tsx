@@ -97,6 +97,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         [
           'Start',
           'Eigene Zeit und Abwesenheit',
+          'Dienstplan',
           'Flotte und Werkstatt',
           'Fahrer und Qualifikationen',
           'Schichtzuweisung',
@@ -120,6 +121,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Start',
           'Personal',
           'Eigene Zeit und Abwesenheit',
+          'Dienstplan',
           'Flotte und Werkstatt',
           'Fahrer und Qualifikationen',
           'Schichtzuweisung',

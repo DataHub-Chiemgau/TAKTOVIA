@@ -1,0 +1,104 @@
+/* UI-12 Dienstplan (WP-M4-18/-19): nur Layout; Status trägt immer Text und Symbol (StatusBadge), Farbe ist Verstärkung. */
+.dp-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    align-items: end;
+    margin-block-end: 1rem;
+}
+
+.dp-toolbar label {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.dp-tabelle .dp-name {
+    position: sticky;
+    inset-inline-start: 0;
+    background: var(--tk-surface, Canvas);
+    text-align: start;
+    min-inline-size: 9rem;
+}
+
+.dp-woche {
+    text-align: start;
+    border-block-end: 2px solid currentcolor;
+}
+
+.dp-woche[data-state='DRAFT'] {
+    border-block-end-style: dashed;
+}
+
+.dp-zelle {
+    vertical-align: top;
+    min-inline-size: 12rem;
+}
+
+.dp-raster[data-ansicht='monat'] .dp-zelle {
+    min-inline-size: 5rem;
+    font-size: 0.85em;
+}
+
+.dp-zelle[data-ueber] {
+    outline: 2px dashed currentcolor;
+    outline-offset: -2px;
+}
+
+.dp-zelle[data-abwesend] {
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent 0 6px,
+        rgb(128 128 128 / 15%) 6px 8px
+    );
+}
+
+.dp-liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.dp-schicht {
+    border: 1px solid currentcolor;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.4rem;
+}
+
+.dp-schicht[draggable='true'] {
+    cursor: grab;
+}
+
+.dp-schicht[data-offen='true'] {
+    border-style: dashed;
+}
+
+.dp-schicht[data-konflikt='true'] {
+    border-width: 3px;
+}
+
+.dp-aktionen button {
+    min-block-size: 2.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.dp-aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-block-start: 0.25rem;
+}
+
+.dp-neu {
+    min-inline-size: 2.75rem;
+    min-block-size: 2.75rem;
+}
+
+.dp-dialog-feld {
+    display: grid;
+    gap: 0.25rem;
+    margin-block-end: 0.75rem;
+}
