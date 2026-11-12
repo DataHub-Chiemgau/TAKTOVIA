@@ -291,7 +291,7 @@ def release(conn, tenant, hold_ids, st):
 
 
 def cancel_booking(conn, tenant, hold_ids, st):
-    """Storno einer bestätigten Buchung: Buchung CANCELLED, Hold RELEASED, Kapazität wird frei."""
+    """Storno einer bestätigten Buchung: Buchung CANCEL_PENDING -> CANCELED, Hold RELEASED, Kapazität wird frei."""
     box = {}
 
     def body(cur):
@@ -304,7 +304,8 @@ def cancel_booking(conn, tenant, hold_ids, st):
         box["lock_ms"] = (time.perf_counter() - _t) * 1000
         n = 0
         for r in rows:
-            if cur.execute("UPDATE taktovia.booking SET state = 'CANCELLED', revision = revision + 1 WHERE tenant_id = %s AND hold_id = %s AND state = 'CONFIRMED'", (tenant, r[0])).rowcount:
+            if cur.execute("UPDATE taktovia.booking SET state = 'CANCEL_PENDING', revision = revision + 1 WHERE tenant_id = %s AND hold_id = %s AND state = 'CONFIRMED'", (tenant, r[0])).rowcount:
+                cur.execute("UPDATE taktovia.booking SET state = 'CANCELED', revision = revision + 1 WHERE tenant_id = %s AND hold_id = %s AND state = 'CANCEL_PENDING'", (tenant, r[0]))
                 cur.execute("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE tenant_id = %s AND id = %s", (tenant, r[0]))
                 _outbox(cur, tenant, uuid.uuid5(NS, f"booking|{r[0]}"), 2, "BookingCancelled")
                 n += 1

@@ -60,6 +60,7 @@ VALID = {
                                'steps': [{'step_code': 'BRAKES', 'title': 'Bremsen prüfen', 'input_kind': 'OK_DEFECT_NA', 'mandatory': True, 'safety_critical': True,
                                           'na_requires_reason': False, 'photo_required_on_defect': False}]},
     'ChecklistExampleImage': {'content_type': 'image/png', 'data_base64': 'iVBORw0KGgoBAgM='},
+    'KnownDefectAcknowledge': {},
     # WP-M3-03/-04: Fahrzeugstamm und Kapazitätskonfiguration
     'VehicleMasterWrite': {'vehicle_label': 'KA-100', 'vehicle_type': 'PKW', 'operator_organization_id': U1, 'capacity': {'seats': 4, 'wheelchair': 1}, 'equipment': ['RAMP'], 'active': True},
     'CapacityPatch': {'combinations': [{'code': 'STANDARD', 'wheelchair_places': 0}], 'active_combination': 'STANDARD'},
@@ -89,6 +90,7 @@ BROKEN = {
     'DriverShiftEnd': ('device_id', 'keine-uuid'),
     'ChecklistTemplateWrite': ('vehicle_class', 'klein'),
     'ChecklistExampleImage': ('content_type', 'text/html'),
+    'KnownDefectAcknowledge': ('schuld', 'Fahrer'),
     'VehicleMasterWrite': ('capacity', {'seats': -1, 'wheelchair': 1}),
     'CapacityPatch': ('active_combination', 'klein'),
     'VehicleServiceAssignmentCreate': ('valid_from', 'gestern'),
