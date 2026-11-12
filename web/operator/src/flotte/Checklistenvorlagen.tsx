@@ -21,6 +21,7 @@ const KIND_LABELS: Readonly<Record<ChecklistStepWrite['input_kind'], string>> = 
   ODOMETER_KM: 'Kilometerstand (Schichtstart)',
   ENERGY_PCT: 'Energie / Tank in % (Schichtstart)',
   VEHICLE_IDENTITY: 'Fahrzeugidentität (Schichtstart)',
+  READINESS_YES_NO: 'Einsatzbereitschaft (Ja / Nein)',
 };
 
 type StepDraft = {

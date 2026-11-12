@@ -3200,6 +3200,10 @@ components:
                 - OK_DEFECT_NA
                 - NUMBER
                 - TEXT_SHORT
+                - ODOMETER_KM
+                - ENERGY_PCT
+                - VEHICLE_IDENTITY
+                - READINESS_YES_NO
               photo_required_on_defect:
                 type: boolean
               help_text:
@@ -3275,6 +3279,11 @@ components:
           - DEFECT
           - NOT_APPLICABLE
           - NOT_CHECKABLE
+          - JA
+          - NEIN
+          description: '`JA` und `NEIN` sind ausschließlich der Selbstauskunft „Einsatzbereitschaft“
+            (Eingabetyp `READINESS_YES_NO`, CHK-010) vorbehalten; dort sind `note`, `number_value`
+            und `text_value` abgewiesen (422), es wird nur Ja/Nein gespeichert, kein Grund.'
         number_value:
           oneOf:
           - type: number
@@ -3773,6 +3782,7 @@ components:
                     - ODOMETER_KM
                     - ENERGY_PCT
                     - VEHICLE_IDENTITY
+                    - READINESS_YES_NO
                   photo_required_on_defect:
                     type: boolean
                   help_text:
@@ -4728,6 +4738,7 @@ components:
           - ODOMETER_KM
           - ENERGY_PCT
           - VEHICLE_IDENTITY
+          - READINESS_YES_NO
           description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar,
             `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens
             200 Zeichen); Schichtstartwerte (CHK-008) `ODOMETER_KM` Kilometerstand
@@ -4827,6 +4838,7 @@ components:
           - ODOMETER_KM
           - ENERGY_PCT
           - VEHICLE_IDENTITY
+          - READINESS_YES_NO
         mandatory:
           type: boolean
         safety_critical:

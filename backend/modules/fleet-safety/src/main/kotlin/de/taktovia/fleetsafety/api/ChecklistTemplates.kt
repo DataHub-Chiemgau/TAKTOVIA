@@ -13,7 +13,9 @@ import java.util.UUID
 enum class ChecklistInputKind(val code: String) {
     OK_DEFECT_NA("OK_DEFECT_NA"), NUMBER("NUMBER"), TEXT_SHORT("TEXT_SHORT"),
     /** Schichtstartwerte (WP-M3-17, CHK-008): Kilometerstand (ganze Zahl), Energie/Tank in Prozent 0 bis 100, Fahrzeugidentität (Eingabe) mit Abgleich gegen das zugewiesene Fahrzeug. */
-    ODOMETER_KM("ODOMETER_KM"), ENERGY_PCT("ENERGY_PCT"), VEHICLE_IDENTITY("VEHICLE_IDENTITY");
+    ODOMETER_KM("ODOMETER_KM"), ENERGY_PCT("ENERGY_PCT"), VEHICLE_IDENTITY("VEHICLE_IDENTITY"),
+    /** Selbstauskunft „Einsatzbereitschaft“ (WP-M3-19, CHK-010): ausschließlich `JA` oder `NEIN`, ohne Notiz, Zahl oder Text; ohne Gesundheitsangaben. */
+    READINESS_YES_NO("READINESS_YES_NO");
     /** Schichtstartwert: Statuswert Mangel ist hier nicht sinnvoll, der Wert selbst wird geprüft. */
     val isStartValue: Boolean get() = this == ODOMETER_KM || this == ENERGY_PCT || this == VEHICLE_IDENTITY
     companion object { fun parse(code: String?): ChecklistInputKind? = entries.firstOrNull { it.code == code } }
@@ -73,6 +75,9 @@ enum class ChecklistTemplateState { DRAFT, PUBLISHED, RETIRED }
 object ChecklistAnswerStatus {
     const val OK = "OK"; const val DEFECT = "DEFECT"; const val NOT_APPLICABLE = "NOT_APPLICABLE"
     val ALLOWED = setOf(OK, DEFECT, NOT_APPLICABLE)
+    /** Antwortwerte der Selbstauskunft „Einsatzbereitschaft“ (nur für [ChecklistInputKind.READINESS_YES_NO], WP-M3-19). */
+    const val JA = "JA"; const val NEIN = "NEIN"
+    val READINESS = setOf(JA, NEIN)
 }
 
 object ChecklistLimits { const val MAX_STEPS = 60; const val MAX_TITLE = 200; const val MAX_HELP = 1000; const val MAX_TEXT_ANSWER = 200; const val MAX_NAME = 120 }
@@ -241,6 +246,7 @@ object ChecklistAnswerValidator {
             if (!seen.add(a.stepCode)) { out += Violation(base, ViolationCode.NOT_UNIQUE); continue }
             val status = a.status
             if (status == null) { out += Violation("$base/answer", ViolationCode.REQUIRED); continue }
+            if (rule.kind == ChecklistInputKind.READINESS_YES_NO) { readiness(a, base, out); continue }
             if (status !in ChecklistAnswerStatus.ALLOWED) { out += Violation("$base/answer", ViolationCode.NOT_IN_ENUM); continue }
             if (status == ChecklistAnswerStatus.NOT_APPLICABLE && rule.naRequiresReason && a.note.isNullOrBlank()) out += Violation("$base/note", ViolationCode.REQUIRED)
             if (a.note != null && a.note.length > 500) out += Violation("$base/note", ViolationCode.TOO_LONG)
@@ -258,11 +264,23 @@ object ChecklistAnswerValidator {
                 }
                 ChecklistInputKind.OK_DEFECT_NA -> if (a.numberValue != null) out += Violation("$base/number_value", ViolationCode.INVALID_VALUE)
                 ChecklistInputKind.ODOMETER_KM, ChecklistInputKind.ENERGY_PCT, ChecklistInputKind.VEHICLE_IDENTITY -> startValue(rule.kind, status, a, base, out)
+                ChecklistInputKind.READINESS_YES_NO -> {}   // oben behandelt
             }
             if (!rule.kind.isStartValue && a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE)
         }
         if (complete) steps.filter { it.mandatory && it.code !in seen && answers.none { a -> a.stepCode == it.code } }.forEach { out += Violation("/answers/${it.code}", ViolationCode.REQUIRED) }
         return out
+    }
+
+    /**
+     * Selbstauskunft „Einsatzbereitschaft“ (CHK-010): nur `JA` oder `NEIN`; Notiz, Zahl und Text sind abgewiesen (422 mit Feldverweis, ohne den Wert zu wiederholen), damit weder Datenbank
+     * noch Protokolle Freitext zur Selbstauskunft erhalten.
+     */
+    private fun readiness(a: ChecklistAnswer, base: String, out: MutableList<Violation>) {
+        if (a.status !in ChecklistAnswerStatus.READINESS) out += Violation("$base/answer", ViolationCode.NOT_IN_ENUM)
+        if (a.note != null) out += Violation("$base/note", ViolationCode.INVALID_VALUE)
+        if (a.numberValue != null) out += Violation("$base/number_value", ViolationCode.INVALID_VALUE)
+        if (a.textValue != null) out += Violation("$base/text_value", ViolationCode.INVALID_VALUE)
     }
 
     /** Obergrenze des Kilometerstands (Plausibilitätsgrenze der Eingabe, nicht des Fahrzeugs). */
