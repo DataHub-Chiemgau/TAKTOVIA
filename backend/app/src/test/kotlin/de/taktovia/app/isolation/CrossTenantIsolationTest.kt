@@ -113,6 +113,14 @@ class CrossTenantIsolationTest {
         env.server.ctx.getBean(de.taktovia.platform.storage.TenantObjectStore::class.java).put(de.taktovia.platform.storage.ObjectKey(b.tenant, ticketJson["upload_key"].asString()), jpeg, "image/jpeg")
         val receipt = env.post("/v1/expenses/receipts/${ticketJson["ticket_id"].asString()}/complete", "", b.financeToken, extra = idem() + ("If-Match" to "\"1\"")).also { check(it.status == 201) { it.text } }.json["document_id"].asString()
         val recipient = UUID.randomUUID()
+        // Angebot in B (WP-M2-21/-22): Versuch, Preisstand und Angebot per SQL (der Fremdzugriff aus A prüft nur, dass nichts sichtbar oder änderbar ist)
+        val offerAttempt = UUID.randomUUID(); val offerQuote = UUID.randomUUID(); val rideOffer = UUID.randomUUID()
+        env.exec("INSERT INTO taktovia.travel_attempt(tenant_id,id,created_at,channel) VALUES (?,?,now(),'WEB')", b.tenant.value, offerAttempt)
+        env.exec("INSERT INTO taktovia.fare_quote(tenant_id,id,attempt_id,currency,pay_at_platform_minor,external_known_minor,external_unknown_leg_ids,expires_at,tariff_revision_id,config_revision_id,snapshot,content_hash) " +
+            "SELECT s.tenant_id,?,?,'EUR',900,0,'{}',now()+interval '5 minutes',CAST(? AS uuid),s.config_revision_id,CAST('{}' AS jsonb),? FROM taktovia.service s WHERE s.id = CAST(? AS uuid)", offerQuote, offerAttempt, tariff, "e".repeat(64), service)
+        env.exec("INSERT INTO taktovia.ride_offer(tenant_id,id,attempt_id,quote_id,service_id,actor_ref,booking_kind,time_kind,pickup_earliest,pickup_latest,arrival_earliest,arrival_latest,arrival_grace_min,direct_seconds,expires_at,created_at,cancellation_policy_ref,demand) " +
+            "VALUES (?,?,?,?,CAST(? AS uuid),?,'ADVANCE','DEPARTURE',now()+interval '1 day',now()+interval '1 day 15 minutes',now()+interval '1 day 10 minutes',now()+interval '1 day 25 minutes',5,600,now()+interval '5 minutes',now(),'std-24h',CAST('{\"seats\":2}' AS jsonb))",
+            b.tenant.value, rideOffer, offerAttempt, offerQuote, service, "user:${b.passenger}")
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
             env.server.ctx.getBean(CommunicationsupportApi::class.java).notifications
@@ -120,7 +128,7 @@ class CrossTenantIsolationTest {
         }.toString()
         return Ids(mapOf(
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
-            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff,
+            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(),
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
             "tenant_id" to b.tenant.toString(), "object_name" to "defect-evidence-$uploadId", "driver_id" to driverMaster, "notification_id" to notification,
@@ -177,6 +185,10 @@ class CrossTenantIsolationTest {
             "reviewTariffRevision" to Probe("POST", "/v1/tariffs/{tariff_id}/review", null, true),
             "publishTariffRevision" to Probe("POST", "/v1/tariffs/{tariff_id}/publish", null, true),
             "getEffectiveTariff" to Probe("GET", "/v1/services/{service_id}/tariff?at=2026-06-01T00:00:00Z"),
+            // Angebot, Hold und Freigabe (WP-M2-21/-22)
+            "getRideOffer" to Probe("GET", "/v1/ride-offers/{ride_offer_id}", role = "passenger"),
+            "holdRideOffer" to Probe("POST", "/v1/ride-offers/{ride_offer_id}/hold", """{"max_gross":{"amount_minor":900,"currency":"EUR","exponent":2}}""", true, role = "passenger"),
+            "releaseHold" to Probe("POST", "/v1/ride-offers/{ride_offer_id}/hold/release", null, true, role = "passenger"),
             "getStop" to Probe("GET", "/v1/stops/{stop_id}"),
             "updateStop" to Probe("PUT", "/v1/stops/{stop_id}", """{"name":"Gekapert","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":false,"valid_from":"2027-01-01T00:00:00Z"}""", true),
             "updateService" to Probe("PUT", "/v1/services/{service_id}", """{"name":"Gekapert","timezone":"Europe/Berlin"}""", true),
@@ -262,7 +274,7 @@ class CrossTenantIsolationTest {
         return listOf(r.status, j["type"]?.asString(), j["code"]?.asString(), j["title"]?.asString(), j["detail"]?.asString()).joinToString("|")
     }
 
-    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
+    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.role == "passenger" -> a.passengerToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
         env.server.send(p.method, path, p.body, env.headers(token, extra = (if (p.method != "GET") idem() else emptyMap()) + (if (p.ifMatch) mapOf("If-Match" to "\"1\"") else emptyMap()) + (if (p.purpose) mapOf("X-Access-Purpose" to "BOOKING_ASSISTANCE") else emptyMap())))
 
     private fun snapshot(b: Side): String = listOf("/v1/regions", "/v1/depots", "/v1/legal-entities", "/v1/organizations", "/v1/services", "/v1/cost-centers", "/v1/config/revisions", "/v1/memberships", "/v1/webhook-subscriptions")

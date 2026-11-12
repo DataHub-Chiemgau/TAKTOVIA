@@ -697,6 +697,21 @@ export interface RideOfferProposal {
   arrival_window: RideWindow;
   arrival_grace_min: number;
   direct_seconds: number;
+  id: UUID;
+  expires_at: Timestamp;
+  gross: Money;
+  fare_components: FareComponent[];
+  tariff_revision?: number;
+  cancellation_policy_ref?: string;
+  pickup_stop?: RideOfferStop;
+  dropoff_stop?: RideOfferStop;
+  run_revision?: number;
+  revision: number;
+}
+
+export interface RideOfferStop {
+  stop_id: UUID;
+  revision_id: UUID;
 }
 
 export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
@@ -726,6 +741,9 @@ export interface RideOffer {
   gross: Money;
   tariff_revision?: number;
   cancellation_policy_ref?: string;
+  fare_components: FareComponent[];
+  pickup_stop: RideOfferStop;
+  dropoff_stop: RideOfferStop;
   demand: RideResourceVector;
   hold: RideHold | null;
   revision: number;

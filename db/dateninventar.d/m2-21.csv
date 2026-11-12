@@ -1,0 +1,32 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+ride_offer;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;attempt_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;quote_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;state;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;booking_kind;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;time_kind;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;arrival_grace_min;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;direct_seconds;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;expires_at;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;cancellation_policy_ref;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;demand;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;pickup_stop_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;pickup_stop_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;dropoff_stop_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;dropoff_stop_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;run_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;plan_revision;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;interval_from;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;interval_to;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;hold_id;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;revision;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;updated_at;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;actor_ref;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;KONTAKT_UNTERSTUETZUNG;LK_BETRIEB;Besitzer des Angebots (Pseudonym user:<uuid>), nie Name oder Mailadresse
+ride_offer;pickup_earliest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zeitfenster der Fahrt (Personenbezug über actor_ref)
+ride_offer;pickup_latest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zeitfenster der Fahrt (Personenbezug über actor_ref)
+ride_offer;arrival_earliest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zeitfenster der Fahrt (Personenbezug über actor_ref)
+ride_offer;arrival_latest;ja;BUCHUNGSABWICKLUNG;ART6_1_B_VERTRAG;STANDORT_ETA;LK_BETRIEB;Zeitfenster der Fahrt (Personenbezug über actor_ref)
+ride_offer;hold_scope;ja;TECHNISCHER_BETRIEB;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_TECHNISCH;"Hash aus Akteur und Idempotency-Key des Holds (Wiederholungserkennung), nicht rückrechenbar"

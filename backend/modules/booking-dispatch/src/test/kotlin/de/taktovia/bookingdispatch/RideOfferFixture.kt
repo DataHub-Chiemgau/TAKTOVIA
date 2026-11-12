@@ -100,6 +100,25 @@ class RideOfferFixture : AutoCloseable {
         c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeQuery().use { it.next(); it.getInt(1) } }
     }
 
+    /** Payloads der Ereignisse eines Aggregats aus der Outbox (Administratorrechte, nur Gegenprobe). */
+    fun eventPayloads(type: String, aggregate: UUID): List<String> = admin.connection.use { c ->
+        c.prepareStatement("SELECT payload::text FROM taktovia.outbox WHERE event_type = ? AND aggregate_id = ?").use { ps ->
+            ps.setString(1, type); ps.setObject(2, aggregate); ps.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
+        }
+    }
+
+    /** Belegung je Abschnitt 0 bis [segments] eines Umlaufs als (Sitze, Rollstuhlplätze): gültige gehaltene und bestätigte Holds (Gegenprobe mit Administratorrechten, unabhängig vom Code unter Test). */
+    fun occupancy(runId: UUID, segments: Int): List<Pair<Int, Int>> = admin.connection.use { c ->
+        c.prepareStatement(
+            "SELECT s.seg, coalesce(sum((h.capacity_vector->>'seats')::int),0), coalesce(sum((h.capacity_vector->>'wheelchair')::int),0) FROM generate_series(0, ?) s(seg) " +
+                "LEFT JOIN taktovia.capacity_hold h ON h.run_id = ? AND h.interval_from <= s.seg AND h.interval_to > s.seg AND (h.state = 'CONSUMED' OR (h.state = 'HELD' AND h.expires_at > clock_timestamp())) GROUP BY s.seg ORDER BY s.seg",
+        ).use { ps -> ps.setInt(1, segments); ps.setObject(2, runId); ps.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getInt(2) to rs.getInt(3)) } } }
+    }
+
+    fun stringOf(sql: String, vararg args: Any?): String = admin.connection.use { c ->
+        c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeQuery().use { it.next(); it.getString(1) } }
+    }
+
     fun adminUpdate(sql: String, vararg args: Any?): Int = admin.connection.use { c ->
         c.prepareStatement(sql).use { ps -> args.forEachIndexed { i, a -> ps.setObject(i + 1, a) }; ps.executeUpdate() }
     }

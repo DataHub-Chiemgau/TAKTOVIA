@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+ride_offer;SELECT,INSERT;WP-M2-21: Angebot, Inhalt unveränderlich (Trigger ride_offer_guard); UPDATE nur auf state, hold_id, hold_scope, revision, updated_at (Spaltenrecht), kein DELETE

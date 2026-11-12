@@ -17,6 +17,15 @@ internal class RideOfferHttpWorld {
         check(w.post("/v1/service-areas", """{"service_id":"$service","area":${square(13.70, 51.00, 0.10)},"valid_from":"2026-01-01T00:00:00+01:00","valid_to":null}""").status == 201)
         check(w.post("/v1/stops", stop("Markt", 51.05, 13.74)).status == 201)
         check(w.post("/v1/stops", stop("Bahnhof", 51.08, 13.78)).status == 201)
+        publishTariff()
+    }
+
+    /** Preisstand der Angebote (WP-M2-09): Festpreis 450 je Person, 7 % Steuer enthalten; angelegt, geprüft und veröffentlicht von zwei Personen (Vier-Augen). */
+    private fun publishTariff() {
+        val body = """{"service_id":"$service","tariff_class":"STANDARD","valid_from":"2026-01-01T00:00:00+01:00","valid_to":null,"currency":"EUR","reason":"Testtarif","rules":[{"rule_type":"FESTPREIS","amount_minor":450,"tax_rate":"0.07","tax_rule_revision":"DE-2026-1"}]}"""
+        val id = w.post("/v1/tariffs", body).also { check(it.status == 201) { it.text } }.json["id"].asString()
+        check(w.post("/v1/tariffs/$id/review", "{}", w.planner, "1").status == 200)
+        check(w.post("/v1/tariffs/$id/publish", "{}", w.planner, "2").status == 200)
     }
 
     fun request(body: String, token: String = w.passenger, key: String = "ride-" + UUID.randomUUID()) =

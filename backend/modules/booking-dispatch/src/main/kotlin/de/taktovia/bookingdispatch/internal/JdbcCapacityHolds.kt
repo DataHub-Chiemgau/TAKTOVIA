@@ -41,7 +41,13 @@ internal class JdbcCapacityHolds(
 
     private class RunRow(val revision: Long, val state: String, val vehicleId: UUID)
 
-    override fun place(ctx: RequestContext, cmd: PlaceHold): HoldOutcome = ctxTx.run(ctx) { j ->
+    override fun place(ctx: RequestContext, cmd: PlaceHold): HoldOutcome = ctxTx.run(ctx) { j -> placeIn(j, ctx, cmd) }
+
+    /**
+     * Hold in der Transaktion des Aufrufers (Angebots-Hold, WP-M2-22): derselbe Ablauf unter dem Zeilenlock des Umlaufs. Der Aufrufer sperrt eigene Zeilen (Angebot) erst **nach**
+     * dem Umlauf (Reihenfolge Umlauf, dann Angebot/Hold, wie Freigabe, Ablauf und Bestätigung), sonst drohen Deadlocks.
+     */
+    internal fun placeIn(j: JdbcOperations, ctx: RequestContext, cmd: PlaceHold): HoldOutcome = kotlin.run {
         require(cmd.intervalTo > cmd.intervalFrom) { "Abschnittsintervall leer" }
         // 1. Lauf sperren (stabile Reihenfolge: ein Lauf je Befehl; mehrere Läufe müssten aufsteigend nach ID gesperrt werden)
         val run = j.query("SELECT revision, state, vehicle_id FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> RunRow(rs.getLong(1), rs.getString(2), rs.getObject(3, UUID::class.java)) }, cmd.runId)
@@ -210,6 +216,61 @@ internal class JdbcCapacityHolds(
     ).firstOrNull()?.let { (t, rev) ->
         val trips = j.query("SELECT seq, place_kind FROM taktovia.passenger_trip WHERE booking_id = ? ORDER BY seq", { rs, _ -> rs.getInt(1) to rs.getString(2) }, t.first)
         BookingView(t.first, holdId, t.second, rev, t.third, trips)
+    }
+
+    // ---- Freigabe und Ablauf (WP-M2-22) --------------------------------------------------------------------------------------------
+
+    private class LockedHold(val view: HoldView, val expired: Boolean)
+
+    /** Sperrt den Umlauf des Holds (zuerst, stabile Reihenfolge) und danach die Hold-Zeile; `null` = unbekannter Hold (RLS: auch der eines fremden Mandanten). */
+    private fun lockRunThenHold(j: JdbcOperations, holdId: UUID): LockedHold? {
+        val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).firstOrNull() ?: return null
+        j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
+        return j.query(
+            "SELECT id, run_id, run_revision, interval_from, interval_to, capacity_vector::text, expires_at, state, expires_at <= clock_timestamp() FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE",
+            { rs, _ -> LockedHold(HoldView(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getLong(3), rs.getInt(4), rs.getInt(5), ResourceVector.parse(rs.getString(6)), rs.getTimestamp(7).toInstant(), rs.getString(8)), rs.getBoolean(9)) },
+            holdId,
+        ).firstOrNull()
+    }
+
+    /**
+     * Gibt einen eigenen Hold frei (Abbruch des Checkouts, Kompensation): `HELD` wird `RELEASED` und gibt die Kapazität frei, ein bereits freigegebener oder abgelaufener Hold
+     * bleibt unverändert (idempotent, kein zweites Ereignis), ein `CONSUMED` Hold wird nie verändert (409 `INVALID_STATE_TRANSITION`). Ein am Zeitpunkt `now >= expires_at` noch
+     * `HELD` stehender Hold wird als abgelaufen behandelt, nie als freigegeben. Alle Übergänge laufen unter dem Lock des Umlaufs: Freigabe, Confirm und Ablauf serialisieren, genau ein Ausgang gewinnt.
+     */
+    internal fun releaseIn(j: JdbcOperations, ctx: RequestContext, holdId: UUID, reason: String): HoldView {
+        val h = lockRunThenHold(j, holdId) ?: throw ProblemException.notFound()
+        return when (h.view.state) {
+            "HELD" -> if (h.expired) expireLocked(j, h.view, ctx.correlationId) else {
+                j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'HELD'", holdId)
+                outbox.append(j, OutboxEvent(holdId, 2, "booking.hold_released", linkedMapOf(
+                    "hold_id" to holdId.toString(), "run_id" to h.view.runId.toString(), "run_revision" to h.view.runRevision, "interval_from" to h.view.intervalFrom, "interval_to" to h.view.intervalTo,
+                    "capacity_vector" to h.view.vector.toMap(), "reason" to reason,
+                ), clock.instant(), correlationId = ctx.correlationId))
+                h.view.copy(state = "RELEASED")
+            }
+            "CONSUMED" -> throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Der Hold wurde bereits in eine Buchung umgewandelt und kann nicht freigegeben werden.")
+            else -> h.view
+        }
+    }
+
+    /** Lässt einen abgelaufenen Hold verfallen (Expiry-Job, idempotent): `true`, wenn dieser Aufruf ihn verfallen ließ; ein Hold, der nicht mehr `HELD` oder noch gültig ist, bleibt unberührt. */
+    internal fun expireIn(j: JdbcOperations, holdId: UUID, correlationId: UUID?): Boolean {
+        val h = lockRunThenHold(j, holdId) ?: return false
+        if (h.view.state != "HELD" || !h.expired) return false
+        expireLocked(j, h.view, correlationId)
+        return true
+    }
+
+    private fun expireLocked(j: JdbcOperations, v: HoldView, correlationId: UUID?): HoldView {
+        j.update("UPDATE taktovia.capacity_hold SET state = 'EXPIRED' WHERE id = ? AND state = 'HELD'", v.id)
+        // ein Angebot mit diesem Hold ist ebenfalls verfallen (Zeile des Angebots nach dem Umlauf sperren: gleiche Reihenfolge wie beim Hold)
+        j.update("UPDATE taktovia.ride_offer SET state = 'EXPIRED', revision = revision + 1, updated_at = clock_timestamp() WHERE hold_id = ? AND state = 'HELD'", v.id)
+        outbox.append(j, OutboxEvent(v.id, 2, "booking.hold_expired", linkedMapOf(
+            "hold_id" to v.id.toString(), "run_id" to v.runId.toString(), "run_revision" to v.runRevision, "interval_from" to v.intervalFrom, "interval_to" to v.intervalTo,
+            "capacity_vector" to v.vector.toMap(), "expired_at" to v.expiresAt.toString(),
+        ), clock.instant(), correlationId = correlationId))
+        return v.copy(state = "EXPIRED")
     }
 
     companion object { const val RUN_ACTIVE = "ACTIVE" }

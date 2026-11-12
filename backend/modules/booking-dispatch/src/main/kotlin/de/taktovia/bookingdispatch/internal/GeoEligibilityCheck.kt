@@ -50,7 +50,9 @@ internal class GeoEligibilityCheck(private val geo: ServicegeoApi) : Eligibility
         val dropoff = stopFor(ctx, s, request.destination, request.arrival.latestAt, request)
         causes += pickup.causes; causes += dropoff.causes
 
-        return EligibilityResult(causes.distinct(), pickup.stop?.stopId, coarse(ctx, s, request.origin.point(), at, ZoneRole.ORIGIN), coarse(ctx, s, request.destination.point(), at, ZoneRole.DESTINATION))
+        val originArea = geo.areas.covering(ctx, s, request.origin.point(), at, ZoneRole.ORIGIN)
+        val destinationArea = geo.areas.covering(ctx, s, request.destination.point(), at, ZoneRole.DESTINATION)
+        return EligibilityResult(causes.distinct(), pickup.stop?.stopId, coarse(originArea), coarse(destinationArea), pickup.stop, dropoff.stop, originArea?.id, destinationArea?.id)
     }
 
     private class StopChoice(val stop: StopView?, val causes: List<RejectionCode>)
@@ -69,8 +71,7 @@ internal class GeoEligibilityCheck(private val geo: ServicegeoApi) : Eligibility
     private fun wheelchairSuitable(s: StopView) = s.accessibility["wheelchair_boarding"] == "YES"
 
     /** Gröbste Ortsangabe für `travel_attempt` (OP-13, Arbeitsannahme): Kennung des wirksamen Bediengebiets oder `outside`, nie Koordinate oder Adresse. */
-    private fun coarse(ctx: RequestContext, serviceId: UUID, p: GeoPoint, at: Instant, role: ZoneRole): String =
-        geo.areas.covering(ctx, serviceId, p, at, role)?.let { "area:${it.id}" } ?: "outside"
+    private fun coarse(area: de.taktovia.servicegeo.api.ServiceAreaView?): String = area?.let { "area:${it.id}" } ?: "outside"
 
     private fun meters(a: GeoPoint, b: GeoPoint): Double {
         val r = 6_371_000.0

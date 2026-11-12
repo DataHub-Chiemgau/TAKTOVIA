@@ -9576,6 +9576,293 @@
       ]
     },
     {
+      "tabelle": "ride_offer",
+      "aggregat": "Angebot mit Ablauf, Preisbindung und Planrevision (WP-M2-21)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "verspricht keine Kapazität, Inhalt unveränderlich, Personenbezug nur über das Pseudonym actor_ref",
+      "spalten": [
+        {
+          "spalte": "actor_ref",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "KONTAKT_UNTERSTUETZUNG",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Besitzer des Angebots (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "arrival_earliest",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "STANDORT_ETA",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitfenster der Fahrt (Personenbezug über actor_ref)"
+        },
+        {
+          "spalte": "arrival_grace_min",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "arrival_latest",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "STANDORT_ETA",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitfenster der Fahrt (Personenbezug über actor_ref)"
+        },
+        {
+          "spalte": "attempt_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "booking_kind",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "cancellation_policy_ref",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "demand",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "direct_seconds",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "dropoff_stop_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "dropoff_stop_revision_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "expires_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "hold_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "hold_scope",
+          "personenbezogen": "ja",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_TECHNISCH",
+          "bemerkung": "Hash aus Akteur und Idempotency-Key des Holds (Wiederholungserkennung), nicht rückrechenbar"
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "interval_from",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "interval_to",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "pickup_earliest",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "STANDORT_ETA",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitfenster der Fahrt (Personenbezug über actor_ref)"
+        },
+        {
+          "spalte": "pickup_latest",
+          "personenbezogen": "ja",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "ART6_1_B_VERTRAG",
+          "schutzklasse": "STANDORT_ETA",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "Zeitfenster der Fahrt (Personenbezug über actor_ref)"
+        },
+        {
+          "spalte": "pickup_stop_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "pickup_stop_revision_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "plan_revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "quote_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "run_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "state",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "time_kind",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "rights_matrix_rollout",
       "aggregat": "Ausrollprotokoll der Rechtematrix (WP-M1-07)",
       "loeschklasse": "LK_TECHNISCH",
