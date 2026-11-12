@@ -59,7 +59,7 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
                 "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +
                 "AND p.valid_from <= ? AND (p.valid_to IS NULL OR p.valid_to > ?) " +
                 "LEFT JOIN LATERAL (SELECT sh.id, sh.starts_at, sh.ends_at FROM taktovia.staff_shift sh WHERE sh.tenant_id = v.tenant_id AND sh.vehicle_id = v.id " +
-                "AND sh.state = '$SHIFT_USABLE' AND sh.starts_at <= ? AND sh.ends_at >= ? ORDER BY sh.starts_at, sh.id LIMIT 1) s ON true " +
+                "AND sh.state IN ($SHIFT_USABLE) AND sh.starts_at <= ? AND sh.ends_at >= ? ORDER BY sh.starts_at, sh.id LIMIT 1) s ON true " +
                 "LEFT JOIN LATERAL (SELECT rr.id, rr.valid_until FROM taktovia.resource_release rr WHERE rr.tenant_id = v.tenant_id AND rr.vehicle_id = v.id " +
                 "AND rr.shift_id = s.id AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision " +
                 "ORDER BY rr.valid_until DESC, rr.id LIMIT 1) r ON true " +
@@ -103,6 +103,6 @@ internal class JdbcResourceAvailability(private val ctxTx: ContextTransactions, 
             "CROSS JOIN LATERAL jsonb_array_elements(CAST(? AS jsonb)) AS pt(value) " +
             "WHERE a0.tenant_id = p.tenant_id AND a0.id = p.service_area_id AND g.valid_from <= ? AND (g.valid_to IS NULL OR g.valid_to > ?))"
         /** Zustand einer einsetzbaren Schicht: Annahme dieses Plans (M4 legt die Werte fest, `staff_shift.state` ist freier Text). */
-        const val SHIFT_USABLE = "PUBLISHED"
+        const val SHIFT_USABLE = "'PUBLISHED', 'STARTED'"
     }
 }

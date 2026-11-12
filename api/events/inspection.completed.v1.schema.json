@@ -31,7 +31,8 @@
       "enum": [
         "PRE_SHIFT",
         "FOLLOW_UP",
-        "VEHICLE_CHANGE"
+        "VEHICLE_CHANGE",
+        "PRE_BOARDING"
       ]
     },
     "outcome": {

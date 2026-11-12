@@ -109,7 +109,7 @@ class ChecklistTemplateController(private val fleet: FleetsafetyApi, private val
 
     private fun json(v: ChecklistTemplateView): Map<String, Any?> = linkedMapOf(
         "id" to v.id.toString(), "template_id" to v.templateId.toString(), "version" to v.version, "name" to v.name, "vehicle_class" to v.vehicleClass, "service_mode" to v.serviceMode,
-        "state" to v.state.name, "steps" to v.steps.map { step(it) }, "created_by" to v.createdBy, "approved_by" to v.approvedBy, "published_at" to v.publishedAt?.toString(),
+        "template_type" to v.templateType.name, "state" to v.state.name, "steps" to v.steps.map { step(it) }, "created_by" to v.createdBy, "approved_by" to v.approvedBy, "published_at" to v.publishedAt?.toString(),
         "revision" to v.revision, "created_at" to v.createdAt.toString(),
     )
 

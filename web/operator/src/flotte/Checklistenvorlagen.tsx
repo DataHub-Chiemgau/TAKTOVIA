@@ -18,6 +18,9 @@ const KIND_LABELS: Readonly<Record<ChecklistStepWrite['input_kind'], string>> = 
   OK_DEFECT_NA: 'OK / Mangel / Nicht anwendbar',
   NUMBER: 'Zahl',
   TEXT_SHORT: 'Kurztext',
+  ODOMETER_KM: 'Kilometerstand (Schichtstart)',
+  ENERGY_PCT: 'Energie / Tank in % (Schichtstart)',
+  VEHICLE_IDENTITY: 'Fahrzeugidentität (Schichtstart)',
 };
 
 type StepDraft = {

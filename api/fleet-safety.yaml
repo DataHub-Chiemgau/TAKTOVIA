@@ -502,7 +502,7 @@ paths:
         ist nie der Ersteller (403) und immer ein Mensch. Die bisher wirksame Revision
         der Vorlage wird abgelöst; es gibt je Vorlage genau eine wirksame Revision.
         Bei gleichzeitigen Freigaben derselben Revision gewinnt genau eine, die andere
-        erhält 409. Ohne Prüfelement 422. If-Match: Revision der Vorlagenrevision;
+        erhält 409. Ohne Prüfelement 422; bei Typ VEHICLE_TECHNICAL oder PASSENGER_COMPARTMENT fehlt einer der Pflichtpunkte als Pflichtschritt: 422 mit `detail` MANDATORY_POINTS_MISSING und je fehlendem Schlüssel einer Verletzung unter /steps/<Schlüssel> (CHK-005, CHK-006). If-Match: Revision der Vorlagenrevision;
         ohne 428, veraltet 412.'
       parameters:
       - name: checklist_revision_id
@@ -788,9 +788,12 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Speichert den Entwurf der Antworten (CHK-006); nur im Zustand
-        IN_PROGRESS, danach 409 IMMUTABLE_RECORD. If-Match: Revision des Prüflaufs;
-        veraltet: 412.'
+      description: 'Speichert den Entwurf der Antworten (WP-M3-15, CHK-014): die angegebenen
+        Antworten werden je Schritt angelegt oder ersetzt, nicht angegebene bleiben;
+        Vollständigkeit verlangt erst der Abschluss. Nur im Zustand IN_PROGRESS, danach
+        409 IMMUTABLE_RECORD (Änderung nur als Nachtrag). If-Match: Revision des Prüflaufs;
+        veraltet: 412, fehlt: 428. Jede Speicherung erhöht die Revision, ein paralleler
+        Abschluss mit altem Stand erhält 412 und verliert keine Antwort.'
       parameters:
       - name: inspection_id
         in: path
@@ -847,10 +850,17 @@ paths:
       security:
       - oidc:
         - inspections:write
-      description: 'Schließt den Lauf ab; Pflichtschritte fehlen: 422 VALIDATION_FAILED;
-        abgelaufen: 409 INVALID_STATE_TRANSITION. Die Antwort enthält Ergebnis und
-        Freigabe, die allein der Server entscheidet (CHK-001, CHK-013). Wiederholung
-        mit demselben Idempotency-Key liefert dieselbe Antwort.'
+      description: 'Schließt den Lauf ab (WP-M3-14, CHK-013). Pflichtschritte fehlen,
+        ein Wert liegt außerhalb des Eingabetyps oder ein Mangel hat keine Beschreibung:
+        422 VALIDATION_FAILED mit Verweis auf das Element; Lauf nicht mehr offen: 409
+        IMMUTABLE_RECORD (abgeschlossen) bzw. INVALID_STATE_TRANSITION; nicht quittierte
+        Altschäden: 409 CONFLICT mit `detail` KNOWN_DEFECTS_UNACKNOWLEDGED; `If-Match`
+        ist die Revision des Laufs (428 fehlt, 412 veraltet). Prüfer-ID, Serverzeit,
+        Ergebnis und Einsatzfreigabe setzt allein der Server; mitgesendete Felder dazu
+        sind unbekannte Felder (422). Die Antwort enthält Ergebnis und Freigabe bzw.
+        die fehlenden Voraussetzungen (CHK-001, CHK-013). Wiederholung mit demselben
+        Idempotency-Key liefert dieselbe Antwort, anderer Inhalt unter demselben Schlüssel
+        409 IDEMPOTENCY_CONFLICT.'
       parameters:
       - name: inspection_id
         in: path
@@ -900,6 +910,134 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InspectionSubmit'
+  /v1/inspections/{inspection_id}/amendments:
+    post:
+      summary: Nachtrag zu einer abgeschlossenen Prüfung erfassen
+      operationId: createInspectionAmendment
+      security:
+      - oidc:
+        - inspections:amend
+      description: 'Legt einen versionierten Korrektur- oder Ergänzungseintrag zu einer
+        Originalantwort eines **abgeschlossenen** Prüflaufs an (WP-M3-15, CHK-014).
+        Die Originalantwort bleibt unverändert lesbar; der Nachtrag trägt Autor, Zeit,
+        Pflichtgrund, Version je Originalantwort (fortlaufend, 1, 2, …) und den Bezug
+        auf die Originalantwort. Ein Nachtrag ändert weder Ergebnis noch Sperre noch
+        Einsatzfreigabe (Planungsannahme; nur eine neue Prüfung bzw. die Wiederfreigabe
+        nach Reparatur). Grund fehlt oder leer: 422; Lauf nicht abgeschlossen: 409
+        INVALID_STATE_TRANSITION; fremder Lauf oder fremder Mandant: 404; Rolle ohne
+        Berechtigung (Fahrer): 403. Berechtigt sind Werkstatt und Betriebsleitung
+        (Planungsannahme, die Rolle ist offen).'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionAmendment'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionAmendmentCreate'
+  /v1/inspections/{inspection_id}/answers/{step_code}/justification:
+    post:
+      summary: Unplausiblen Startwert begründet freigeben
+      operationId: justifyInspectionAnswer
+      security:
+      - oidc:
+        - inspections:justify
+      description: 'Gibt einen unplausiblen Schichtstartwert (Kilometerstand unter
+        dem letzten bestätigten Wert, abweichende Fahrzeugidentität) mit Begründung
+        frei und speichert die Antwort im Entwurf mit Plausibilitätsstand BEGRUENDET_FREIGEGEBEN,
+        Akteur, Zeit und Begründung (WP-M3-17, CHK-008). Solange ein unplausibler Wert
+        weder korrigiert noch begründet freigegeben ist, werden Speichern und Abschluss
+        mit 422 abgewiesen (`detail` nennt den Vorwert). Berechtigt sind Disposition,
+        Werkstatt und Betriebsleitung, nicht der Fahrer selbst (Planungsannahme, offener
+        Punkt OP-15). Begründung leer: 422; Wert ist plausibel: 422; Lauf nicht offen:
+        409; `If-Match`: Revision des Prüflaufs (412/428), jede Freigabe erhöht sie.'
+      parameters:
+      - name: inspection_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Prüflauf-ID.
+      - name: step_code
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: Prüfelement (Startwert).
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionAnswerJustification'
   /v1/inspections/{inspection_id}/known-defects:
     get:
       summary: Bekannte Altschäden zum Prüflauf
@@ -3141,6 +3279,14 @@ components:
           oneOf:
           - type: number
           - type: 'null'
+        text_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+          - type: 'null'
+          description: Fahrzeugidentität als Eingabe (Eingabetyp `VEHICLE_IDENTITY`,
+            CHK-008).
         note:
           oneOf:
           - type: string
@@ -3155,6 +3301,44 @@ components:
         answered_at:
           type: string
           format: date-time
+        plausibility:
+          oneOf:
+          - type: string
+            enum:
+            - PLAUSIBEL
+            - UEBERPRUEFUNG_ERFORDERLICH
+            - BEGRUENDET_FREIGEGEBEN
+          - type: 'null'
+          readOnly: true
+          description: Plausibilitätsstand eines Schichtstartwerts (Antwort, CHK-008);
+            setzt allein der Server; im Request ist das Feld unbekannt (422).
+        previous_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+          readOnly: true
+          description: Letzter bestätigter Kilometerstand zum Zeitpunkt der Prüfung
+            (Antwort).
+        justification:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              reason:
+                type: string
+              justified_by:
+                type: string
+              justified_at:
+                type: string
+                format: date-time
+            required:
+            - reason
+            - justified_by
+            - justified_at
+          - type: 'null'
+          readOnly: true
+          description: Begründete Freigabe eines unplausiblen Startwerts mit Akteur,
+            Zeit und Begründung (Antwort, CHK-008).
       required:
       - step_code
       - answer
@@ -3270,6 +3454,7 @@ components:
           - PRE_SHIFT
           - FOLLOW_UP
           - VEHICLE_CHANGE
+          - PRE_BOARDING
         odometer_km:
           oneOf:
           - type: integer
@@ -3294,6 +3479,126 @@ components:
         aus Fahrzeugklasse und Bedienart. `template_revision_id` ist veraltet und wirkungslos
         (ein Client kann keine andere Vorlage wählen). `odometer_km` und `battery_soc_pct`
         werden erst mit WP-M3-17 gespeichert.
+    InspectionAnswerJustification:
+      type: object
+      additionalProperties: false
+      properties:
+        number_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        text_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason
+      description: Begründete Freigabe eines unplausiblen Startwerts (CHK-008); der
+        freigegebene Wert (`number_value` für Kilometerstand, `text_value` für die
+        Fahrzeugidentität) und die Pflichtbegründung. Akteur und Zeit setzt der Server.
+    InspectionAmendmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        step_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          type: string
+          enum:
+          - CORRECTION
+          - SUPPLEMENT
+        new_answer:
+          type: string
+          enum:
+          - OK
+          - DEFECT
+          - NOT_APPLICABLE
+          - NOT_CHECKABLE
+        new_number_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        new_note:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - step_code
+      - kind
+      - new_answer
+      - reason
+      description: Nachtrag zu einer Originalantwort (WP-M3-15); `reason` ist Pflicht.
+        Autor, Zeit und Version setzt der Server.
+    InspectionAmendment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        inspection_id:
+          $ref: common.yaml#/components/schemas/UUID
+        step_code:
+          type: string
+        answer_id:
+          $ref: common.yaml#/components/schemas/UUID
+        version:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - CORRECTION
+          - SUPPLEMENT
+        new_answer:
+          type: string
+          enum:
+          - OK
+          - DEFECT
+          - NOT_APPLICABLE
+          - NOT_CHECKABLE
+        new_number_value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        new_note:
+          oneOf:
+          - type: string
+          - type: 'null'
+        reason:
+          type: string
+        amended_by:
+          type: string
+          pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - inspection_id
+      - step_code
+      - answer_id
+      - version
+      - kind
+      - new_answer
+      - reason
+      - amended_by
+      - created_at
+      description: Versionierter Nachtrag (CHK-014); die Originalantwort steht unverändert
+        in `Inspection.answers`.
     InspectionDraft:
       type: object
       additionalProperties: false
@@ -3347,6 +3652,7 @@ components:
           - PRE_SHIFT
           - FOLLOW_UP
           - VEHICLE_CHANGE
+          - PRE_BOARDING
         status:
           type: string
           enum:
@@ -3368,6 +3674,20 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/MissingRequirement'
+        completed_by:
+          oneOf:
+          - type: string
+            pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+          - type: 'null'
+          description: Prüfer-ID aus der Sitzung beim Abschluss; setzt allein der Server
+            (CHK-013).
+        amendments:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/InspectionAmendment'
+          description: Nachträge (CHK-014) je Antwort nach Version; die Originalantworten
+            bleiben unverändert.
         answers:
           type: array
           maxItems: 200
@@ -3450,6 +3770,9 @@ components:
                     - OK_DEFECT_NA
                     - NUMBER
                     - TEXT_SHORT
+                    - ODOMETER_KM
+                    - ENERGY_PCT
+                    - VEHICLE_IDENTITY
                   photo_required_on_defect:
                     type: boolean
                   help_text:
@@ -4402,9 +4725,15 @@ components:
           - OK_DEFECT_NA
           - NUMBER
           - TEXT_SHORT
+          - ODOMETER_KM
+          - ENERGY_PCT
+          - VEHICLE_IDENTITY
           description: Eingabetyp; `OK_DEFECT_NA` Status OK/Mangel/Nicht anwendbar,
             `NUMBER` Zahl mit optionalen Grenzen, `TEXT_SHORT` kurzer Text (höchstens
-            200 Zeichen).
+            200 Zeichen); Schichtstartwerte (CHK-008) `ODOMETER_KM` Kilometerstand
+            (ganze Zahl in `number_value`), `ENERGY_PCT` Energie bzw. Tankstand in
+            Prozent 0 bis 100 (`number_value`), `VEHICLE_IDENTITY` Fahrzeugkennung
+            in `text_value`, Abgleich mit dem zugewiesenen Fahrzeug.
         mandatory:
           type: boolean
         safety_critical:
@@ -4449,6 +4778,18 @@ components:
         service_mode:
           type: string
           pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        template_type:
+          type: string
+          enum:
+          - GENERAL
+          - VEHICLE_TECHNICAL
+          - PASSENGER_COMPARTMENT
+          description: Vorlagentyp (WP-M3-11); Vorgabe `GENERAL`. `VEHICLE_TECHNICAL`
+            verlangt bei der Freigabe die acht Pflichtpunkte BELEUCHTUNG, REIFEN_SICHTPRUEFUNG,
+            SCHEIBEN, SPIEGEL, TUEREN, SICHERHEITSGURTE, SICHTBARE_LECKAGEN, WARNANZEIGEN
+            (CHK-005), `PASSENGER_COMPARTMENT` die sechs Pflichtpunkte SAUBERKEIT,
+            FAHRGASTRAUM, SITZPLAETZE, EINSTIEGSBEREICH, RUECKHALTESYSTEME, SICHERHEITSAUSRUESTUNG
+            (CHK-006), jeweils als Pflichtschritte.
         steps:
           type: array
           minItems: 1
@@ -4483,6 +4824,9 @@ components:
           - OK_DEFECT_NA
           - NUMBER
           - TEXT_SHORT
+          - ODOMETER_KM
+          - ENERGY_PCT
+          - VEHICLE_IDENTITY
         mandatory:
           type: boolean
         safety_critical:
@@ -4540,6 +4884,12 @@ components:
           type: string
         service_mode:
           type: string
+        template_type:
+          type: string
+          enum:
+          - GENERAL
+          - VEHICLE_TECHNICAL
+          - PASSENGER_COMPARTMENT
         state:
           $ref: '#/components/schemas/ChecklistTemplateState'
         steps:

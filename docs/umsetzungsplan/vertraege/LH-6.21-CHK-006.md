@@ -29,7 +29,7 @@
 - **Konkurrierend:** zwei gleichzeitige Abschlüsse desselben Prüflaufs: genau ein Ergebnis (Verhalten aus WP-M3-14).
 - **Referenztests:** keine Katalog-ID im WP genannt
 
-Testfälle: geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/PassengerCompartmentCheckTest.kt::abschluss_mit_einzelstatus_und_dokumentiertem_mangel; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/PassengerCompartmentCheckTest.kt::abschluss_ohne_einzelstatus_oder_ohne_mangeldokumentation_wird_abgewiesen; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/PassengerCompartmentCheckTest.kt::freigabe_ohne_einen_der_sechs_pflichtpunkte_wird_abgewiesen
+Testfälle: backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/PassengerCompartmentCheckTest.kt::abschluss_mit_einzelstatus_und_dokumentiertem_mangel; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/PassengerCompartmentCheckTest.kt::abschluss_ohne_einzelstatus_oder_ohne_mangeldokumentation_wird_abgewiesen; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/PassengerCompartmentCheckTest.kt::freigabe_ohne_einen_der_sechs_pflichtpunkte_wird_abgewiesen; db/tests/test_inspection_template.py::test_typ_ist_geschlossene_menge_und_pruefart_vor_fahrgastaufnahme_zulaessig
 
 ## Reviews
 

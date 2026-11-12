@@ -41,11 +41,14 @@ interface FleetsafetyApi {
     /** Bekannte Altschäden anzeigen und quittieren (WP-M3-21). */
     val knownDefects: KnownDefects
 
+    /** Sperr- und Freigabekern: Sperren, Einsatzfreigabe, synchrone Dispositionsprüfung (WP-M3-08). */
+    val readiness: Readiness
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
-            evidence: DefectEvidenceWiring? = null,
-        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence)
+            evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(),
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy)
     }
 }
 

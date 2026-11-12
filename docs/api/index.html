@@ -1043,6 +1043,28 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="createInspectionAmendment"><h3><span class="m">POST</span> <code>/v1/inspections/{inspection_id}/amendments</code></h3><p>Nachtrag zu einer abgeschlossenen Prüfung erfassen</p><dl><dt>operationId</dt><dd><code>createInspectionAmendment</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:amend</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="justifyInspectionAnswer"><h3><span class="m">POST</span> <code>/v1/inspections/{inspection_id}/answers/{step_code}/justification</code></h3><p>Unplausiblen Startwert begründet freigeben</p><dl><dt>operationId</dt><dd><code>justifyInspectionAnswer</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:justify</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>412: <code>REVISION_MISMATCH</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code></li>
+<li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listKnownDefects"><h3><span class="m">GET</span> <code>/v1/inspections/{inspection_id}/known-defects</code></h3><p>Bekannte Altschäden zum Prüflauf</p><dl><dt>operationId</dt><dd><code>listKnownDefects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
