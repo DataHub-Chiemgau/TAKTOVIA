@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+expense_hint;SELECT,INSERT;WP-M4-31: Plausibilitaetshinweis je Regel und Belegrevision, append-only
+expense_hint_ack;SELECT,INSERT;WP-M4-31: Quittierung eines Hinweises, append-only
+fuel_vehicle_policy;SELECT,INSERT,UPDATE;WP-M4-31: Schwellen je Fahrzeug

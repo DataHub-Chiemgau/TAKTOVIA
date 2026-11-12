@@ -351,6 +351,33 @@ export interface ExpenseCorrection {
   confirm?: ExpenseFieldName[];
 }
 
+export interface HintAcknowledgementRequest {
+  reason: string;
+}
+
+export interface ExpenseHint {
+  id: UUID;
+  rule: 'FUEL_VOLUME' | 'FUEL_PRICE' | 'FUEL_ODOMETER_GAP' | 'FUEL_CARD_MISMATCH';
+  document_revision: number;
+  threshold: string;
+  actual_value: string;
+  basis: Record<string, unknown>;
+  raised_at: string;
+  acknowledgement: null | ExpenseHintAcknowledgement;
+}
+
+export interface ExpenseHintAcknowledgement {
+  acknowledged_by: string;
+  reason: string;
+  acknowledged_at: string;
+}
+
+export interface ExpensePlausibilityNote {
+  rule: 'FUEL_VOLUME' | 'FUEL_PRICE' | 'FUEL_ODOMETER_GAP' | 'FUEL_CARD_MISMATCH';
+  code: 'PARAMETER_MISSING' | 'NO_COMPARISON_BASIS';
+  text: string;
+}
+
 export interface FuelCapture {
   vehicle_id?: UUID;
   fuel_type?: 'PETROL' | 'DIESEL' | 'LPG' | 'ELECTRIC';
@@ -444,11 +471,13 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED')[];
   unconfirmed_fields: ExpenseFieldName[];
   sum_mismatch: boolean;
   cost_objects: CostObject[];
   fuel?: null | FuelData;
+  hints?: ExpenseHint[];
+  plausibility_notes?: ExpensePlausibilityNote[];
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -3170,6 +3199,13 @@ export interface Operations {
     body: undefined;
     response: ExpenseRevisionList;
   };
+  acknowledgeExpenseHint: {
+    path: { expense_id: UUID; hint_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: HintAcknowledgementRequest;
+    response: Expense;
+  };
   getExpenseOriginal: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -4658,6 +4694,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  acknowledgeExpenseHint: { method: 'POST', path: '/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement', pathParams: ['expense_id', 'hint_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:review'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'view', 'open', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

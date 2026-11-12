@@ -304,6 +304,64 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement:
+    post:
+      summary: Plausibilitätshinweis quittieren
+      operationId: acknowledgeExpenseHint
+      security:
+      - oidc:
+        - expenses:review
+      description: 'Quittiert einen offenen Plausibilitätshinweis (Tankvolumen, Literpreis, Kilometerabstand, Tankkarten-ID) der aktuellen Belegrevision mit Begründung (3 bis 1000 Zeichen, sonst 422). Die Quittierung ist ein eigener, unveränderlicher Eintrag mit Akteur und Zeit (Audit `finance.hint.acknowledged`); der Hinweis und die erfassten Werte des Belegs bleiben unverändert. `If-Match` trägt die Belegrevision (veraltet 412, fehlend 428); ein Hinweis einer früheren Revision ist 409 (er wird in der aktuellen Revision neu geprüft), ein bereits freigegebener oder gebuchter Beleg 409 `IMMUTABLE_RECORD`. Recht: Scope `expenses:review` und Finanzrolle (dasselbe Recht wie die Sachprüfung, Planungsannahme bis zur Rollenfestlegung in WP-M4-34); ohne Recht 403. Parallele Quittierungen desselben Hinweises ergeben genau einen Eintrag; die Wiederholung liefert den unveränderten Stand. Fremde Mandanten und unbekannte Hinweise: 404. Ein nicht quittierter Hinweis blockiert die Freigabe (422 `HINT_NOT_ACKNOWLEDGED`).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - name: hint_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Hinweis-ID (`hints[].id` des Belegs).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HintAcknowledgementRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/original:
     get:
       summary: Belegoriginal abrufen
@@ -431,6 +489,96 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/ExpenseFieldName'
+    HintAcknowledgementRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - reason
+    ExpenseHint:
+      type: object
+      additionalProperties: false
+      description: 'Plausibilitätshinweis (WP-M4-31): Regel, Schwelle, Istwert und Berechnungsbasis. Er ändert keinen erfassten Wert; `acknowledgement` = null heißt offen.'
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        rule:
+          type: string
+          enum:
+          - FUEL_VOLUME
+          - FUEL_PRICE
+          - FUEL_ODOMETER_GAP
+          - FUEL_CARD_MISMATCH
+        document_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        threshold:
+          type: string
+        actual_value:
+          type: string
+        basis:
+          type: object
+          description: Berechnungsbasis (Vergleichswert, Schwelle, Quelle; je Regel weitere Angaben wie Abweichung in Prozent oder Stichprobengröße).
+        raised_at:
+          type: string
+          format: date-time
+        acknowledgement:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseHintAcknowledgement'
+      required:
+      - id
+      - rule
+      - document_revision
+      - threshold
+      - actual_value
+      - basis
+      - raised_at
+      - acknowledgement
+    ExpenseHintAcknowledgement:
+      type: object
+      additionalProperties: false
+      properties:
+        acknowledged_by:
+          type: string
+        reason:
+          type: string
+        acknowledged_at:
+          type: string
+          format: date-time
+      required:
+      - acknowledged_by
+      - reason
+      - acknowledged_at
+    ExpensePlausibilityNote:
+      type: object
+      additionalProperties: false
+      description: Vermerk zu einer nicht prüfbaren Regel. `PARAMETER_MISSING` = der Parameter ist nicht konfiguriert (die Regel gilt nie stillschweigend als bestanden), `NO_COMPARISON_BASIS` = kein Vergleichswert (z. B. kein Vorgänger-Kilometerstand).
+      properties:
+        rule:
+          type: string
+          enum:
+          - FUEL_VOLUME
+          - FUEL_PRICE
+          - FUEL_ODOMETER_GAP
+          - FUEL_CARD_MISMATCH
+        code:
+          type: string
+          enum:
+          - PARAMETER_MISSING
+          - NO_COMPARISON_BASIS
+        text:
+          type: string
+      required:
+      - rule
+      - code
+      - text
     FuelCapture:
       type: object
       additionalProperties: false
@@ -811,6 +959,7 @@ components:
             - COST_ASSIGNMENT_MISSING
             - COST_OBJECT_INACTIVE
             - FUEL_FIELDS_MISSING
+            - HINT_UNACKNOWLEDGED
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -830,6 +979,17 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/FuelData'
           description: Tankwerte (WP-M4-30), nur bei Belegen der Art FUEL_RECEIPT; `missing` nennt die fehlenden Pflichtwerte einzeln.
+        hints:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/ExpenseHint'
+          description: Plausibilitätshinweise der aktuellen Belegrevision (WP-M4-31), offen und quittiert.
+        plausibility_notes:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/ExpensePlausibilityNote'
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

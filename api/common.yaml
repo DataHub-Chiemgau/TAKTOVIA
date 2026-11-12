@@ -27,6 +27,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             expenses:approve: expenses:approve
+            expenses:review: expenses:review
             config:publish: config:publish
             rosters:publish: rosters:publish
             rosters:write: rosters:write
@@ -110,6 +111,7 @@ components:
             costs:allocate: costs:allocate
             costs:read: costs:read
             expenses:approve: expenses:approve
+            expenses:review: expenses:review
             config:publish: config:publish
             rosters:publish: rosters:publish
             rosters:write: rosters:write

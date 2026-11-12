@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.documentsfinance.api.AssignCosts
 import de.taktovia.documentsfinance.api.CaptureFuel
+import de.taktovia.documentsfinance.api.FuelPlausibility
 import de.taktovia.documentsfinance.api.FuelReceipts
+import de.taktovia.documentsfinance.api.HintView
 import de.taktovia.documentsfinance.api.FuelType
 import de.taktovia.documentsfinance.api.FuelView
 import de.taktovia.documentsfinance.api.CorrectExpense
@@ -25,6 +27,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
@@ -46,7 +49,7 @@ class ExpenseResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility) {
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -95,9 +98,21 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         "unit_price" to f.unitPrice?.toPlainString(), "gross_minor" to f.grossMinor, "currency" to f.currency, "odometer_km" to f.odometerKm, "fueled_at" to f.fueledAt?.toString(), "card_id" to f.cardId,
         "missing" to f.missing, "complete" to f.complete)
 
+    private fun hintJson(h: HintView): Map<String, Any?> = linkedMapOf("id" to h.id.toString(), "rule" to h.rule.name, "document_revision" to h.documentRevision, "threshold" to h.threshold,
+        "actual_value" to h.actualValue, "basis" to h.basis, "raised_at" to h.raisedAt.toString(),
+        "acknowledgement" to h.acknowledgement?.let { linkedMapOf("acknowledged_by" to it.by, "reason" to it.reason, "acknowledged_at" to it.at.toString()) })
+
     private fun uuids(v: Any?, pointer: String): Set<UUID> = ((v as List<*>?) ?: emptyList<Any>()).map {
         try { UUID.fromString(it as String) } catch (e: RuntimeException) { throw ProblemException.invalid(Violation(pointer, ViolationCode.INVALID_FORMAT)) }
     }.toSet()
+
+    /** Quittierung eines Plausibilitätshinweises (WP-M4-31); `If-Match` trägt die Belegrevision. */
+    @PostMapping("/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement")
+    fun acknowledgeHint(@PathVariable("expense_id") id: UUID, @PathVariable("hint_id") hintId: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ExpenseResource {
+        val revision = Etag.parseIfMatch(ifMatch)
+        val reason = body["reason"] as? String ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.REQUIRED))
+        return resource(plausibility.acknowledge(RequestContexts.require(request), id, hintId, revision, reason))
+    }
 
     @GetMapping("/v1/expenses/{expense_id}/revisions")
     fun revisions(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): Map<String, Any?> =
@@ -117,7 +132,8 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "document_id" to d.documentId.toString(), "legal_entity_id" to d.legalEntityId?.toString(), "state" to d.workflowState, "source_channel" to d.channel.name, "document_kind" to d.kind.name,
             "case_ref" to d.caseRef?.let { linkedMapOf("kind" to it.kind.name, "id" to it.id.toString()) }, "mime" to d.mime, "size_bytes" to d.sizeBytes, "sha256" to toB64(d.sha256),
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
-            "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson), "fields" to e.fields, "revision" to d.revision,
+            "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson),
+            "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) }, "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 

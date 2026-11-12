@@ -106,6 +106,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
             mapOf("revision" to revision, "cost_object_count" to objects.size)))
         outbox.append(j, OutboxEvent(documentId, revision, "expense.cost_assigned", linkedMapOf("document_id" to documentId.toString(), "revision" to revision, "cost_object_count" to objects.size,
             "kinds" to objects.map { it.kind.name }.toSortedSet().toList(), "assigned_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
+        PlausibilityHook.afterRevision(j, audit, ctx, documentId, revision)
         return view(j, ctx, documentId)
     }
 

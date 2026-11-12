@@ -55,16 +55,36 @@ interface FuelReceipts {
     fun get(ctx: RequestContext, documentId: UUID): FuelView?
 }
 
+/** Zuordnung einer Tankkarten-ID zu einem Fahrzeug mit Gültigkeitsfenster (`fuel_card_mapping`); je Karte überlappen sich Fenster nie (eindeutig pro Gültigkeitsfenster). `validTo` = `null`: unbefristet. */
+data class FuelCardMapping(val cardId: String, val vehicleId: UUID, val validFrom: java.time.LocalDate, val validTo: java.time.LocalDate? = null)
+
+/**
+ * Schwellen und Vergleichsbasen der Tankplausibilität (WP-M4-31). `null`/leer = nicht konfiguriert: die jeweilige Regel ist dann nicht prüfbar und wird als Vermerk ausgewiesen, nie als bestanden gewertet.
+ * `priceReference` = Vergleichspreis je Kraftstoffart (Planungsannahme: konfigurierte Vergleichsbasis, solange es keine historischen Preisvergleichsdaten gibt, Offener Punkt 16).
+ */
+data class FuelParameters(
+    val maxLiters: java.math.BigDecimal? = null, val priceAlertPct: java.math.BigDecimal? = null, val useAlertPct: java.math.BigDecimal? = null,
+    val priceReference: Map<FuelType, java.math.BigDecimal> = emptyMap(), val cardMapping: List<FuelCardMapping> = emptyList(),
+)
+
 /** Fachparameter des Moduls je Mandant (Planungsstand, D-06). Ohne gespeicherte Werte gelten die Vorgaben. */
 data class FinancePolicyView(
     /** `fuel_receipt_required`: true (Vorgabe) = Tankbeleg erst mit vollständigen Tankwerten freigabefähig; false = unvollständige Tankwerte blockieren nicht (Offener Punkt 39, Annahme). */
     val fuelReceiptRequired: Boolean = true, val revision: Long = 0,
+    val fuel: FuelParameters = FuelParameters(),
 )
 
-data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null)
+/** `fuel` ersetzt den gesamten Satz der Tankparameter (nicht Angegebenes wird nicht konfiguriert); `null` lässt ihn unverändert. */
+data class UpdateFinancePolicy(val fuelReceiptRequired: Boolean? = null, val fuel: FuelParameters? = null)
+
+/** Schwellen je Fahrzeug (`fuel_max_liters`: an die Tankgröße gebunden; `fuel_use_alert_pct`: je Fahrzeugtyp); `null` = der Wert des Mandanten gilt. */
+data class FuelVehiclePolicy(val vehicleId: UUID, val maxLiters: java.math.BigDecimal?, val useAlertPct: java.math.BigDecimal?, val revision: Long)
 
 /** Fachparameter des Moduls (nur Finanzrolle, Scope `receipts:write`; Audit `finance.policy.changed`). Nicht über HTTP erreichbar (Pflege durch die Verwaltung). */
 interface FinancePolicies {
     fun get(ctx: RequestContext): FinancePolicyView
     fun update(ctx: RequestContext, cmd: UpdateFinancePolicy): FinancePolicyView
+
+    /** Setzt die Schwellen eines Fahrzeugs (fremde und unbekannte Fahrzeuge: 404). */
+    fun putVehicle(ctx: RequestContext, vehicleId: UUID, maxLiters: java.math.BigDecimal?, useAlertPct: java.math.BigDecimal?): FuelVehiclePolicy
 }

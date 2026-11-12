@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+fuel_vehicle_policy;Tankschwellen je Fahrzeug (WP-M4-31);LK_STAMM;
+expense_hint;Plausibilitätshinweis (WP-M4-31);LK_BELEG;an den Beleg gebunden
+expense_hint_ack;Quittierung (WP-M4-31);LK_BELEG;an den Beleg gebunden

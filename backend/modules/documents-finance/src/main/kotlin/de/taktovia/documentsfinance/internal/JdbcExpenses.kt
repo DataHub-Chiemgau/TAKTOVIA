@@ -134,6 +134,7 @@ internal class JdbcExpenses(
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_EXPENSE_REVISED, ObjectRef("expense", id), ctx.correlationId, mapOf("revision" to newRevision, "fields" to changes.keys.toList())))
         outbox.append(j, OutboxEvent(id, newRevision, "expense.revision_created", linkedMapOf("document_id" to id.toString(), "revision" to newRevision, "fields" to changes.keys.toList(),
             "edited_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
+        PlausibilityHook.afterRevision(j, audit, ctx, id, newRevision)
         return view(j, DocumentRows.visible(j, ctx, id))
     }
 

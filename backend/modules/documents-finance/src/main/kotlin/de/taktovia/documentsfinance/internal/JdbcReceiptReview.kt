@@ -58,7 +58,7 @@ internal object ReviewRules {
     )
 }
 
-internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock) : ReceiptReview {
+internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private val integrity: IntegrityChecks, private val clock: Clock, private val audit: de.taktovia.platform.audit.AuditPort) : ReceiptReview {
 
     override fun state(ctx: RequestContext, id: UUID): ReviewState {
         require(ctx, SCOPE_READ)
@@ -68,6 +68,7 @@ internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private
     override fun requireApprovable(ctx: RequestContext, id: UUID, expectedRevision: Long): ApprovalClearance {
         require(ctx, SCOPE_WRITE)
         val clearance = integrity.clearForApproval(ctx, id, expectedRevision)   // Hash jetzt prüfen; veraltete Revision 412, nicht STORED 409
+        ctxTx.run(ctx) { j -> val r = DocumentRows.visible(j, ctx, id, lock = true); PlausibilityRows.check(j, audit, ctx, r.view.kind, id, r.view.revision) }   // Hinweise zuerst festschreiben (eigene Transaktion), damit sie quittierbar bleiben
         ctxTx.run(ctx) { j -> requireApprovable(j, ctx, id, expectedRevision) }
         return ApprovalClearance(id, expectedRevision, maxOf(clearance.checkedAt, clock.instant()))
     }
@@ -81,5 +82,11 @@ internal class JdbcReceiptReview(private val ctxTx: ContextTransactions, private
         if (row.view.senderVerified == false) throw ProblemException(ErrorCode.CONFLICT, "Der Absender ist nicht verifiziert.")
         val s = ReviewRules.state(jdbc, id, ExpenseFieldCodec.parseStored(row.fieldsJson))
         if (!s.ready) throw ReviewRules.problem(s)
+        if (row.view.kind == de.taktovia.documentsfinance.api.DocumentKind.FUEL_RECEIPT) {
+            // Tankwerte vollständig (solange `fuel_receipt_required` gilt) und Plausibilitätshinweise quittiert (WP-M4-30, -31)
+            val fuel = FuelRows.forDocument(jdbc, row.view.kind, id)
+            if (JdbcFinancePolicies.load(jdbc).fuelReceiptRequired && fuel != null && !fuel.complete) throw FuelRows.missingProblem(fuel)
+            PlausibilityRows.requireAcknowledged(jdbc, audit, ctx, row.view.kind, id, row.view.revision)
+        }
     }
 }

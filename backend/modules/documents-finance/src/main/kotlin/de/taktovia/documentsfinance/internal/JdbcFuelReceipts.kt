@@ -77,7 +77,9 @@ internal object ExpenseViews {
         val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields); val objects = CostAssignmentRows.assigned(j, r.view.documentId)
         val fuel = FuelRows.forDocument(j, r.view.kind, r.view.documentId)
         val fuelBlockers = FuelRows.blockers(r.view.kind, fuel, JdbcFinancePolicies.load(j).fuelReceiptRequired)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers, review, objects, fuel)
+        val plausibility = PlausibilityRows.report(j, r.view.kind, r.view.documentId, r.view.revision, fuel)
+        val hintBlockers = if (plausibility.openHints.isNotEmpty()) listOf(de.taktovia.documentsfinance.api.ReleaseBlocker.HINT_UNACKNOWLEDGED) else emptyList()
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers, review, objects, fuel, plausibility)
     }
 }
 
@@ -142,7 +144,7 @@ internal class JdbcFuelReceipts(private val ctxTx: ContextTransactions, private 
         outbox.append(j, OutboxEvent(id, revision, "fuel.transaction_recorded", linkedMapOf("document_id" to id.toString(), "revision" to revision, "vehicle_id" to recorded.vehicleId?.toString(),
             "fuel_type" to recorded.fuelType?.name, "unit" to recorded.unit?.name, "quantity" to recorded.quantity?.toPlainString(), "unit_price" to recorded.unitPrice?.toPlainString(), "odometer_km" to recorded.odometerKm,
             "fueled_at" to recorded.fueledAt?.toString(), "complete" to recorded.complete, "recorded_at" to clock.instant().toString()), clock.instant(), correlationId = ctx.correlationId))
-        PlausibilityHook.afterFuelChange(j, ctx, id, revision)
+        PlausibilityHook.afterRevision(j, audit, ctx, id, revision)
         return ExpenseViews.build(j, DocumentRows.visible(j, ctx, id))
     }
 
@@ -167,7 +169,10 @@ internal class JdbcFuelReceipts(private val ctxTx: ContextTransactions, private 
     }
 }
 
-/** Einhängepunkt für den Prüflauf der Tankplausibilität (WP-M4-31) nach jeder Änderung der Tankwerte, in derselben Transaktion. */
+/** Prüflauf der Tankplausibilität (WP-M4-31) nach jeder neuen Revision eines Tankbelegs, in derselben Transaktion (Beleg gesperrt); Belege anderer Art bleiben unberührt. */
 internal object PlausibilityHook {
-    fun afterFuelChange(@Suppress("UNUSED_PARAMETER") j: JdbcOperations, @Suppress("UNUSED_PARAMETER") ctx: RequestContext, @Suppress("UNUSED_PARAMETER") documentId: UUID, @Suppress("UNUSED_PARAMETER") revision: Long) {}
+    fun afterRevision(j: JdbcOperations, audit: AuditPort, ctx: RequestContext, documentId: UUID, revision: Long) {
+        val kind = j.query("SELECT document_kind FROM taktovia.expense_document WHERE id = ?", { rs, _ -> DocumentKind.valueOf(rs.getString(1)) }, documentId).firstOrNull() ?: return
+        PlausibilityRows.check(j, audit, ctx, kind, documentId, revision)
+    }
 }
