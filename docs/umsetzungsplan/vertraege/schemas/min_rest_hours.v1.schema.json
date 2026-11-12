@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/min_rest_hours.v1.schema.json",
+  "title": "min_rest_hours",
+  "description": "Ruhezeituntergrenze zwischen zwei Arbeitsintervallen",
+  "type": "integer",
+  "minimum": 11,
+  "maximum": 24,
+  "default": 11,
+  "x-unit": "HOURS",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.4-min_rest_hours",
+  "x-catalog-range": "Rechtlich erforderliche Mindestdauer: Untergrenze 11 Stunden (Planungsannahme, Regelmatrix OP 3)"
+}

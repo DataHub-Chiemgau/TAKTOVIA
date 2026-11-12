@@ -531,6 +531,80 @@ components:
       - effective_from
       - reason
       - impact_report_id
+    RuleHint:
+      type: object
+      additionalProperties: false
+      description: Warnhinweis zu Ruhezeit, Tagesarbeitszeit oder Pflichtpause (WP-M4-13, LH-6.24-TIM-006). Berechnet, nie gespeichert; ändert weder Plan- noch Ist-Daten und ist keine Rechtsentscheidung. Sollwert = Grenzwert der Regel, Istwert = gemessener Wert, beide in `unit`.
+      properties:
+        rule:
+          type: string
+          enum:
+          - REST_PERIOD_SHORT
+          - DAILY_WORK_EXCEEDED
+          - BREAK_MISSING
+        basis:
+          type: string
+          enum:
+          - PLAN
+          - ACTUAL
+          description: '`PLAN` aus Schichten, `ACTUAL` aus Ist-Zeitereignissen.'
+        person_ref:
+          type: string
+          maxLength: 200
+        expected:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Sollwert (Grenzwert der Regel).
+        actual:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Istwert (gemessen).
+        unit:
+          type: string
+          enum:
+          - MINUTES
+        day:
+          type: string
+          format: date
+          maxLength: 10
+        from:
+          type: string
+          format: date-time
+          maxLength: 40
+        to:
+          type: string
+          format: date-time
+          maxLength: 40
+        shift_ids:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/UUID'
+        event_ids:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UUID'
+        message:
+          type: string
+          maxLength: 500
+      required:
+      - rule
+      - basis
+      - person_ref
+      - expected
+      - actual
+      - unit
+      - day
+      - from
+      - to
+      - shift_ids
+      - event_ids
+      - message
     PublishedRevision:
       type: object
       additionalProperties: false

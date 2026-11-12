@@ -102,7 +102,7 @@ class TimeEventController(private val staff: StafftimeApi, private val codec: Cu
             linkedMapOf(
                 "day" to d.day.toString(),
                 "planned" to d.planned.map { linkedMapOf("shift_id" to it.shiftId.toString(), "starts_at" to it.startsAt.toString(), "ends_at" to it.endsAt.toString(), "timezone" to it.timezone.id, "planned_seconds" to it.plannedSeconds, "state" to it.state) },
-                "planned_seconds" to d.plannedSeconds, "actual" to d.actual.map { json(it) }, "actual_net_seconds" to d.actualNetSeconds, "flags" to d.flags.map { it.name },
+                "planned_seconds" to d.plannedSeconds, "actual" to d.actual.map { json(it) }, "actual_net_seconds" to d.actualNetSeconds, "flags" to d.flags.map { it.name }, "hints" to d.hints.map(RosterJson::hint),
             )
         })
     }

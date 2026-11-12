@@ -46,7 +46,8 @@ interface StafftimeApi {
     companion object {
         fun create(
             ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), settings: StafftimeSettings = StafftimeSettings(), runSource: DriverRunSource? = null,
-        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource)
+            workRules: WorkRuleSource = WorkRuleSource.DEFAULT,
+        ): StafftimeApi = StafftimeServicesFactory.create(ctxTx, audit, outbox, clock, settings, runSource, workRules)
     }
 }
 

@@ -32,7 +32,7 @@ import java.util.UUID
  * für Entwurfszeilen ([RosterDraftAccess]); die verbindliche Sicht liest ohne ihn. Änderungen am Entwurf sperren die Entwurfszeile des Dienstplans (Reihenfolge Dienstplan, dann Schicht:
  * keine Verklemmung mit der Veröffentlichung) und schreiben nie ein Outbox-Ereignis.
  */
-internal class JdbcRosters(private val ctxTx: ContextTransactions, private val audit: AuditPort, private val conflicts: RosterConflictChecker) : Rosters {
+internal class JdbcRosters(private val ctxTx: ContextTransactions, private val audit: AuditPort, private val conflicts: RosterConflictChecker, private val hints: RosterHints) : Rosters {
 
     override fun create(ctx: RequestContext, cmd: CreateRoster): RosterView {
         RosterAuthz.require(ctx, RosterAuthz.WRITE)
@@ -47,7 +47,7 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         return ctxTx.run(ctx, readOnly = true) { j ->
             if (view == RosterViewKind.PLANNER) RosterDraftAccess.enable(j)
             DepotGuard.requireForRoster(j, ctx, rosterId, forWrite = false)
-            load(j, rosterId, view, canSee = canSee(j, ctx)) ?: throw ProblemException.notFound()
+            load(j, rosterId, view, canSee = canSee(j, ctx), ctx = ctx) ?: throw ProblemException.notFound()
         }
     }
 
@@ -99,7 +99,7 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         audit.record(j, AuditEntry(ActorRef("user:" + ctx.actor.subject), AuditActions.ROSTER_CREATED, ObjectRef("roster", rosterId), ctx.correlationId,
             mapOf("depot_id" to cmd.depotId.toString(), "week_start" to cmd.weekStart.toString(), "revision" to 1)))
         RosterAudit.crossDepot(audit, j, ctx, access, rosterId, cmd.depotId, "roster.create")
-        return load(j, rosterId, RosterViewKind.PLANNER)!!
+        return load(j, rosterId, RosterViewKind.PLANNER, ctx = ctx)!!
     }
 
     @AuditRequired
@@ -124,7 +124,7 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         )
         audit.record(j, AuditEntry(ActorRef("user:" + ctx.actor.subject), AuditActions.ROSTER_DRAFT_OPENED, ObjectRef("roster", rosterId), ctx.correlationId, mapOf("revision" to next, "based_on" to rev)))
         RosterAudit.crossDepot(audit, j, ctx, access, rosterId, depotOfRoster, "draft.open")
-        return load(j, rosterId, RosterViewKind.PLANNER)!!
+        return load(j, rosterId, RosterViewKind.PLANNER, ctx = ctx)!!
     }
 
     private fun mapCreate(e: DataIntegrityViolationException): ProblemException {
@@ -137,7 +137,7 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
     }
 
     /** Lädt den Dienstplan; `null`, wenn er in der Sicht nicht sichtbar ist (nichts oder nur Entwurfszeilen ohne Schalter). */
-    private fun load(j: JdbcOperations, rosterId: UUID, view: RosterViewKind, withConflicts: Boolean = view == RosterViewKind.PLANNER, canSee: (UUID?) -> Boolean = { true }): RosterView? {
+    private fun load(j: JdbcOperations, rosterId: UUID, view: RosterViewKind, withConflicts: Boolean = view == RosterViewKind.PLANNER, canSee: (UUID?) -> Boolean = { true }, ctx: RequestContext? = null): RosterView? {
         val heads = j.query(HEAD, HEAD_MAPPER, rosterId).filter { view == RosterViewKind.PLANNER || it.state == RosterState.PUBLISHED }
         val draft = heads.firstOrNull { it.state == RosterState.DRAFT }
         val published = heads.firstOrNull { it.state == RosterState.PUBLISHED }
@@ -145,7 +145,8 @@ internal class JdbcRosters(private val ctxTx: ContextTransactions, private val a
         val any = draft ?: published!!
         val etag = if (view == RosterViewKind.PLANNER) (draft?.etag ?: published!!.etag) else published!!.etag
         val found = if (withConflicts) (draft?.let { conflicts.check(j, rosterId, it.revision, canSee) } ?: emptyList()) else null
-        return RosterView(rosterId, any.depotId, any.weekStart, draft?.let { side(j, it) }, published?.let { side(j, it) }, found, etag)
+        val found2 = if (withConflicts && ctx != null) (draft ?: published)?.let { hints.compute(j, ctx, rosterId, it.revision, canSee) } else null
+        return RosterView(rosterId, any.depotId, any.weekStart, draft?.let { side(j, it) }, published?.let { side(j, it) }, found, etag, found2)
     }
 
     /** Depots, deren Schichten in Meldungen mit Kennung erscheinen dürfen (Depotscope der Person; `null` = alle). */

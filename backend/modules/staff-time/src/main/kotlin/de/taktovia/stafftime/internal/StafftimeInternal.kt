@@ -14,11 +14,12 @@ import de.taktovia.stafftime.api.Shifts
 import de.taktovia.stafftime.api.StafftimeSettings
 import de.taktovia.stafftime.api.StafftimeApi
 import de.taktovia.stafftime.api.TimeEvents
+import de.taktovia.stafftime.api.WorkRuleSource
 import java.time.Clock
 
 /** Nur innerhalb des Moduls `staff-time` sichtbar (durch Architekturtest erzwungen). */
 internal object StafftimeServicesFactory {
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?): StafftimeApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock, settings: StafftimeSettings, runSource: DriverRunSource?, workRules: WorkRuleSource): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
         val events = JdbcDriverEvents(ctxTx, outbox, clock)
         val drivers = JdbcDrivers(ctxTx, audit)
@@ -38,9 +39,9 @@ internal object StafftimeServicesFactory {
             override val absences: Absences = absence
             override val timeEvents: TimeEvents = timeEv
             override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit, conflictChecker)
-            override val rosters: de.taktovia.stafftime.api.Rosters = JdbcRosters(ctxTx, audit, conflictChecker)
+            override val rosters: de.taktovia.stafftime.api.Rosters = JdbcRosters(ctxTx, audit, conflictChecker, RosterHints(workRules))
             override val rosterDepotAccess: de.taktovia.stafftime.api.RosterDepotAccess = JdbcRosterDepotAccess(ctxTx, audit)
-            override val timeTargetActual: de.taktovia.stafftime.api.TimeTargetActual = JdbcTargetActual(ctxTx)
+            override val timeTargetActual: de.taktovia.stafftime.api.TimeTargetActual = JdbcTargetActual(ctxTx, workRules)
             override val driverReadPort: de.taktovia.platform.readports.DriverReadPort = JdbcDriverReadPort(ctxTx)
         }
     }

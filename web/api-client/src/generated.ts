@@ -50,6 +50,21 @@ export interface PublishRequest {
   impact_report_id: UUID;
 }
 
+export interface RuleHint {
+  rule: 'REST_PERIOD_SHORT' | 'DAILY_WORK_EXCEEDED' | 'BREAK_MISSING';
+  basis: 'PLAN' | 'ACTUAL';
+  person_ref: string;
+  expected: number;
+  actual: number;
+  unit: 'MINUTES';
+  day: string;
+  from: string;
+  to: string;
+  shift_ids: UUID[];
+  event_ids: UUID[];
+  message: string;
+}
+
 export interface PublishedRevision {
   resource_id: UUID;
   revision: number;
@@ -577,6 +592,7 @@ export interface Roster {
   draft: RosterSide | null;
   published: RosterSide | null;
   conflicts: RosterConflict[] | null;
+  hints?: RuleHint[] | null;
   revision: number;
 }
 
@@ -3007,6 +3023,7 @@ export interface TimeTargetActualDay {
   actual: TimeInterval[];
   actual_net_seconds: number | null;
   flags: ('NO_ACTUAL_BOOKING' | 'ACTUAL_WITHOUT_PLAN' | 'ACTUAL_INCOMPLETE')[];
+  hints?: RuleHint[];
 }
 
 export interface WebhookSubscription {

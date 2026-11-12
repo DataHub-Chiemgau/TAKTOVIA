@@ -1,0 +1,19 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+roster_shift_change;tenant_id;nein;PERSONALEINSATZ;;;;
+roster_shift_change;id;nein;PERSONALEINSATZ;;;;
+roster_shift_change;roster_id;nein;PERSONALEINSATZ;;;;
+roster_shift_change;roster_revision;nein;PERSONALEINSATZ;;;;
+roster_shift_change;lineage_id;nein;PERSONALEINSATZ;;;;
+roster_shift_change;shift_id;nein;PERSONALEINSATZ;;;;
+roster_shift_change;change_kind;nein;PERSONALEINSATZ;;;;
+roster_shift_change;shift_revision;nein;PERSONALEINSATZ;;;;
+roster_shift_change;occurred_at;nein;PERSONALEINSATZ;;;;
+roster_shift_change;actor;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Autor der Änderung (Subject)
+roster_shift_change;snapshot;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Schichtstand mit geplanter Person
+roster_revision;effective_from;nein;PERSONALEINSATZ;;;;
+roster_revision;publish_reason;nein;PERSONALEINSATZ;;;;
+roster_revision;impact_report_id;nein;PERSONALEINSATZ;;;;
+roster_revision;publish_audit_event_id;nein;PERSONALEINSATZ;;;;
+roster_revision;publish_idempotency_key;nein;PERSONALEINSATZ;;;;
+roster_revision;publish_fingerprint;nein;PERSONALEINSATZ;;;;
+staff_shift;lineage_id;nein;PERSONALEINSATZ;;;;

@@ -80,7 +80,7 @@ class RosterController(private val staff: StafftimeApi, private val codec: Curso
 
     private fun json(v: RosterView): Map<String, Any?> = linkedMapOf(
         "id" to v.rosterId.toString(), "depot_id" to v.depotId.toString(), "week_start" to v.weekStart.toString(), "draft" to v.draft?.let(::side), "published" to v.published?.let(::side),
-        "conflicts" to v.conflicts?.map(::conflict), "revision" to v.etag,
+        "conflicts" to v.conflicts?.map(::conflict), "hints" to v.hints?.map(RosterJson::hint), "revision" to v.etag,
     )
 
     private fun side(s: RosterSide): Map<String, Any?> = linkedMapOf(
@@ -94,6 +94,12 @@ class RosterController(private val staff: StafftimeApi, private val codec: Curso
 
 /** JSON-Form der Konfliktmeldung (`RosterConflict` im Vertrag `api/rosters.yaml`). */
 internal object RosterJson {
+    /** JSON-Form des Regelhinweises (`RuleHint` in `api/common.yaml`, WP-M4-13). */
+    fun hint(h: de.taktovia.stafftime.api.RuleHint): Map<String, Any?> = linkedMapOf(
+        "rule" to h.rule.name, "basis" to h.basis.name, "person_ref" to h.personRef, "expected" to h.expected, "actual" to h.actual, "unit" to h.unit, "day" to h.day.toString(),
+        "from" to h.from.toString(), "to" to h.to.toString(), "shift_ids" to h.shiftIds.map { it.toString() }, "event_ids" to h.eventIds.map { it.toString() }, "message" to h.message,
+    )
+
     fun conflict(c: RosterConflict): Map<String, Any?> = linkedMapOf(
         "code" to "ROSTER_" + c.kind.name, "person_ref" to c.personRef.toString(), "shift_ids" to c.shiftIds.map { it.toString() }, "cause" to c.cause, "missing_qualification" to c.missingQualification,
     )

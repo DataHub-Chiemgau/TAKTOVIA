@@ -843,6 +843,14 @@ components:
               $ref: '#/components/schemas/RosterConflict'
           - type: 'null'
           description: Konflikte des Entwurfs; `null` in Listen und in der verbindlichen Sicht.
+        hints:
+          oneOf:
+          - type: array
+            maxItems: 1000
+            items:
+              $ref: common.yaml#/components/schemas/RuleHint
+          - type: 'null'
+          description: Regelhinweise (Ruhezeit, Tagesarbeitszeit, Pflichtpause; WP-M4-13) der Arbeitsrevision, nur für Planer mit Depotrecht; Warnungen, keine Sperre der Veröffentlichung. `null` in Listen und in der verbindlichen Sicht.
         revision:
           type: integer
           format: int64
