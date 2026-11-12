@@ -20,9 +20,13 @@ interface FleetsafetyApi {
     /** Kapazitäts- und Stellplatzkonfiguration (WP-M3-04). */
     val vehicleCapacities: VehicleCapacities
 
+    /** Schadenakte: Meldung, Pflichtdaten, Fallnummer (WP-M3-43). */
+    val defects: Defects
+
     companion object {
-        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): FleetsafetyApi =
-            FleetServicesFactory.create(ctxTx, audit, outbox, clock)
+        /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
+        fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null): FleetsafetyApi =
+            FleetServicesFactory.create(ctxTx, audit, outbox, clock, driverRelation)
     }
 }
 

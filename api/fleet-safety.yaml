@@ -440,7 +440,8 @@ paths:
       security:
       - oidc:
         - defects:read
-      description: Filter `vehicle_id`, `status`, `severity`; Fahrer sehen nur eigene Meldungen (DMG-011).
+      description: Filter `vehicle_id`, `status`, `severity` und Zeitraum `reported_from`/`reported_to` (auffindbar über Fahrzeug und Datum, DMG-002); Fahrer sehen nur
+        eigene Meldungen (DMG-011).
       parameters:
       - name: vehicle_id
         in: query
@@ -467,6 +468,20 @@ paths:
         schema:
           $ref: '#/components/schemas/DefectSeverity'
         description: Nur Akten dieser Klasse.
+      - name: reported_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Nur Akten mit Meldezeitpunkt ab diesem Zeitpunkt (einschließlich).
+      - name: reported_to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Nur Akten mit Meldezeitpunkt vor diesem Zeitpunkt.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -497,8 +512,8 @@ paths:
       security:
       - oidc:
         - defects:write
-      description: 'Legt die Akte mit Fallnummer im Status NEW an; wiederholte Meldung mit demselben Idempotency-Key oder derselben `device_event_id`
-        liefert dieselbe Akte. Fremdes Fahrzeug: 404.'
+      description: 'Legt die Akte mit Fallnummer im Status NEW an (201); wiederholte Meldung mit demselben Idempotency-Key liefert dieselbe Antwort, mit derselben
+        `device_event_id` dieselbe Akte (200). Fremdes Fahrzeug, Fahrer ohne Bezug zum Fahrzeug: 404. Fehlende Pflichtdaten, Ereigniszeit in der Zukunft: 422.'
       parameters:
       - $ref: common.yaml#/components/parameters/IdempotencyKey
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -519,6 +534,18 @@ paths:
               schema:
                 type: string
               description: URL der angelegten Ressource.
+        '200':
+          description: Wiederholung mit derselben `device_event_id`; dieselbe Akte, keine zweite.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
         '400':
           $ref: common.yaml#/components/responses/Problem
         '401':
@@ -1750,6 +1777,65 @@ components:
       - revision
       description: Prüflauf. `release` ist nur gesetzt, wenn der Server die Einsatzfreigabe erteilt hat; `received_at` ist die Serverzeit des
         Abschlusses, nie die Gerätezeit.
+    DefectCategory:
+      type: string
+      enum:
+      - BODY
+      - GLASS
+      - TIRES_WHEELS
+      - LIGHTS
+      - BRAKES
+      - DRIVETRAIN
+      - STEERING_SUSPENSION
+      - ELECTRICAL_HV
+      - INTERIOR
+      - ACCESSIBILITY_EQUIPMENT
+      - SAFETY_EQUIPMENT
+      - CLEANLINESS
+      - OTHER
+      description: Kategorie der Schadenakte (Detailvertrag m3-schadenakte.md, Planungsannahme).
+    DefectKind:
+      type: string
+      enum:
+      - SCRATCH
+      - DENT
+      - CRACK_BREAK
+      - MALFUNCTION
+      - MISSING_PART
+      - LEAK
+      - WEAR
+      - CONTAMINATION
+      - OTHER
+      description: Art des Schadens (DMG-004).
+    DefectArea:
+      type: string
+      enum:
+      - FRONT
+      - REAR
+      - LEFT_SIDE
+      - RIGHT_SIDE
+      - ROOF
+      - UNDERBODY
+      - WHEELS_TIRES
+      - INTERIOR_PASSENGER
+      - INTERIOR_DRIVER
+      - LUGGAGE
+      - WHEELCHAIR_AREA
+      - ENGINE_BATTERY
+      - OTHER
+      description: Fahrzeugbereich (DMG-004).
+    DefectEffect:
+      type: string
+      enum:
+      - NONE_VISIBLE
+      - COSMETIC_ONLY
+      - FUNCTION_LIMITED
+      - NOT_ROADWORTHY
+      - FLUID_LEAK
+      - WARNING_LIGHT
+      - NOISE_VIBRATION
+      - OTHER
+      description: Beobachtete Auswirkung (DMG-004).
     DefectSeverity:
       type: string
       enum:
@@ -1778,9 +1864,13 @@ components:
           minLength: 1
           maxLength: 200
         category_code:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: '#/components/schemas/DefectCategory'
+        kind:
+          $ref: '#/components/schemas/DefectKind'
+        vehicle_area:
+          $ref: '#/components/schemas/DefectArea'
+        observed_effect:
+          $ref: '#/components/schemas/DefectEffect'
         description:
           type: string
           minLength: 1
@@ -1800,17 +1890,25 @@ components:
           maxItems: 10
           items:
             $ref: common.yaml#/components/schemas/UUID
+          description: Ids vorab hochgeladener Fotos (Uploadtickets, `/v1/defect-evidence-uploads`); sie werden mit der Meldung an die Akte gebunden.
         device_event_id:
           $ref: common.yaml#/components/schemas/UUID
         severity_hint:
           $ref: '#/components/schemas/DefectSeverity'
+        capture_mode:
+          type: string
+          enum:
+          - STANDARD
+          - GUIDED
+          description: '`GUIDED` = geführte mobile Erfassung (DMG-004): `kind`, `vehicle_area`, `observed_effect` und mindestens ein Eintrag in `evidence_ids`
+            sind Pflicht (422 mit Feldverweis).'
       required:
       - vehicle_id
       - occurred_at
       - category_code
       - description
-      description: Schaden melden (DMG-001 bis DMG-004). Keine Unfall- oder Gesundheitsangaben in diesem Schema (DMG-011, OP-23); `severity_hint`
-        ist ein Vorschlag, die Klassifikation setzt die Triage.
+      description: Schaden melden (DMG-001 bis DMG-004). Mandant, Meldender, Meldezeitpunkt, Fallnummer und Status setzt der Server; sie sind keine Felder
+        dieser Anfrage. Keine Unfall- oder Gesundheitsangaben in diesem Schema (DMG-011, OP-23); `severity_hint` ist ein Vorschlag, die Klassifikation setzt die Triage.
     DefectTriage:
       type: object
       additionalProperties: false
@@ -1859,9 +1957,54 @@ components:
           type: string
           format: date-time
         category_code:
-          type: string
-          minLength: 1
-          maxLength: 64
+          $ref: '#/components/schemas/DefectCategory'
+        location_kind:
+          oneOf:
+          - type: string
+            enum:
+            - COORDINATE
+            - ADDRESS_TEXT
+            - FREE_TEXT
+            - DEPOT
+          - type: 'null'
+        location_value:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+          - type: 'null'
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/DefectKind'
+          - type: 'null'
+        vehicle_area:
+          oneOf:
+          - $ref: '#/components/schemas/DefectArea'
+          - type: 'null'
+        observed_effect:
+          oneOf:
+          - $ref: '#/components/schemas/DefectEffect'
+          - type: 'null'
+        source_inspection_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        source_step_code:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        evidence_pending:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Anzahl Fotos in Medienprüfung (nicht sichtbar, nicht abrufbar); `evidence_ids` nennt nur freigegebene Fotos.
+        content_version:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          description: Version des Meldungsinhalts (steigt mit jedem Nachtrag, WP-M3-48).
         severity:
           oneOf:
           - $ref: '#/components/schemas/DefectSeverity'

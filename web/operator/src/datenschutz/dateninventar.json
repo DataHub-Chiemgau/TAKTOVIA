@@ -2160,6 +2160,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "content_version",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Version des Meldungsinhalts (Nachträge, WP-M3-48)"
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2187,6 +2196,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "device_event_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Geräteereignis-ID zur Dublettenerkennung, WP-M3-43"
+        },
+        {
           "spalte": "dismissed_reason",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2205,6 +2223,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "kind",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Art des Schadens (Katalog), WP-M3-44"
+        },
+        {
           "spalte": "location_kind",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2221,6 +2248,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "observed_effect",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "beobachtete Auswirkung (Katalog), WP-M3-44"
         },
         {
           "spalte": "occurred_at",
@@ -2313,7 +2349,51 @@
           "bemerkung": ""
         },
         {
+          "spalte": "vehicle_area",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Fahrzeugbereich (Katalog), WP-M3-44"
+        },
+        {
           "spalte": "vehicle_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "defect_case_counter",
+      "aggregat": "Fallnummernzähler der Schadenakte (WP-M3-43)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "Zähler je Mandant und Jahr, keine Personendaten",
+      "spalten": [
+        {
+          "spalte": "case_year",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "last_number",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
           "rechtsgrundlage": "",

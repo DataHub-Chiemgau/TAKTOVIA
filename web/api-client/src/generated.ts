@@ -1019,6 +1019,14 @@ export interface Inspection {
   revision: number;
 }
 
+export type DefectCategory = 'BODY' | 'GLASS' | 'TIRES_WHEELS' | 'LIGHTS' | 'BRAKES' | 'DRIVETRAIN' | 'STEERING_SUSPENSION' | 'ELECTRICAL_HV' | 'INTERIOR' | 'ACCESSIBILITY_EQUIPMENT' | 'SAFETY_EQUIPMENT' | 'CLEANLINESS' | 'OTHER';
+
+export type DefectKind = 'SCRATCH' | 'DENT' | 'CRACK_BREAK' | 'MALFUNCTION' | 'MISSING_PART' | 'LEAK' | 'WEAR' | 'CONTAMINATION' | 'OTHER';
+
+export type DefectArea = 'FRONT' | 'REAR' | 'LEFT_SIDE' | 'RIGHT_SIDE' | 'ROOF' | 'UNDERBODY' | 'WHEELS_TIRES' | 'INTERIOR_PASSENGER' | 'INTERIOR_DRIVER' | 'LUGGAGE' | 'WHEELCHAIR_AREA' | 'ENGINE_BATTERY' | 'OTHER';
+
+export type DefectEffect = 'NONE_VISIBLE' | 'COSMETIC_ONLY' | 'FUNCTION_LIMITED' | 'NOT_ROADWORTHY' | 'FLUID_LEAK' | 'WARNING_LIGHT' | 'NOISE_VIBRATION' | 'OTHER';
+
 export type DefectSeverity = 'SAFETY_CRITICAL' | 'OPERATIONALLY_RELEVANT' | 'COSMETIC' | 'OTHER';
 
 export interface DefectCreate {
@@ -1026,13 +1034,17 @@ export interface DefectCreate {
   occurred_at: string;
   location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT';
   location_value?: string;
-  category_code: string;
+  category_code: DefectCategory;
+  kind?: DefectKind;
+  vehicle_area?: DefectArea;
+  observed_effect?: DefectEffect;
   description: string;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
   evidence_ids?: UUID[];
   device_event_id?: UUID;
   severity_hint?: DefectSeverity;
+  capture_mode?: 'STANDARD' | 'GUIDED';
 }
 
 export interface DefectTriage {
@@ -1049,7 +1061,16 @@ export interface Defect {
   reported_by: UUID;
   reported_at: string;
   occurred_at: string;
-  category_code: string;
+  category_code: DefectCategory;
+  location_kind?: 'COORDINATE' | 'ADDRESS_TEXT' | 'FREE_TEXT' | 'DEPOT' | null;
+  location_value?: string | null;
+  kind?: DefectKind | null;
+  vehicle_area?: DefectArea | null;
+  observed_effect?: DefectEffect | null;
+  source_inspection_id?: UUID | null;
+  source_step_code?: string | null;
+  evidence_pending?: number;
+  content_version?: number;
   severity: DefectSeverity | null;
   status: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED';
   assignee_ref: UUID | null;
@@ -2612,7 +2633,7 @@ export interface Operations {
   };
   listDefects: {
     path: Record<string, never>;
-    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; limit?: number; cursor?: string };
+    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; reported_from?: string; reported_to?: string; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: DefectPage;
@@ -3418,8 +3439,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   triageDefect: { method: 'POST', path: '/v1/defects/{defect_id}/triage', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:triage'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRepairOrders: { method: 'GET', path: '/v1/repair-orders', pathParams: [], query: ['defect_id', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['repair:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
