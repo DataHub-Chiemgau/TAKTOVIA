@@ -1,0 +1,13 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+eta_model_revision;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;id;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;version;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;parameters;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;road_data_version;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;state;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;approved_at;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;approved_by;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;created_by;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;buffer_pct_by_quantile;nein;BUCHUNGSABWICKLUNG;;;;
+eta_model_revision;min_buffer_sec;nein;BUCHUNGSABWICKLUNG;;;;

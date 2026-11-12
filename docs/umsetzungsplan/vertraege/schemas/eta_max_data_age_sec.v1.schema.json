@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/eta_max_data_age_sec.v1.schema.json",
+  "title": "eta_max_data_age_sec",
+  "description": "GPS-Datenhöchstalter der laufenden ETA",
+  "type": "integer",
+  "minimum": 10,
+  "maximum": 3600,
+  "default": 120,
+  "x-unit": "SECONDS",
+  "x-levels": [
+    "TENANT",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.2-eta_max_data_age_sec",
+  "x-catalog-range": "Bei Überschreitung Fallback laut eta_fallback_policy; Planungsdefault 120 s (WP-M4-62)"
+}

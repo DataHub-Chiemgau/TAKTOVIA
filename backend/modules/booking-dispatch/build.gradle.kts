@@ -9,6 +9,7 @@ dependencies {
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
     testImplementation(libs.json.schema.validator)
+    testImplementation(libs.archunit.junit5)   // EtaArchitectureTest (WP-M4-61): Grundmodell ohne Fahrerbezug
 }
 
 tasks.withType<Test>().configureEach {

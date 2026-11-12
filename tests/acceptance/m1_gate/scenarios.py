@@ -470,7 +470,7 @@ def e2e_097(ctx):
     attempt.n = 0
     with atdb.tx(ctx.db_name, a) as c:
         inv = c.execute("SELECT parameter, const_value FROM taktovia.policy_schema WHERE schema_version='1' AND security_class='SAFETY_INVARIANT' ORDER BY parameter").fetchall()
-    ctx.check("Katalog enthält die Sicherheitsinvariante (Pflichtkontrolle vor Einsatz)", [("vehicle_readiness_require_checks", True)], [(p, v) for p, v in inv])
+    ctx.check("Katalog enthält die Sicherheitsinvariante (Pflichtkontrolle vor Einsatz)", [("eta_personalization_enabled", False), ("vehicle_readiness_require_checks", True)], [(p, v) for p, v in inv])   # eta_personalization_enabled: feste Invariante false (WP-M4-61)
     res_negative = attempt({"max_wait_min": -5})
     ctx.check("negative Wartezeit wird vom Schema abgewiesen (Datenbank, zusätzlich zur Anwendungsprüfung)", True, res_negative != "ANGELEGT", ok=res_negative != "ANGELEGT")
     res_safety = attempt({"vehicle_readiness_require_checks": False})

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/eta_fallback_policy.v1.schema.json",
+  "title": "eta_fallback_policy",
+  "description": "Ausfallmodell der ETA bei fehlender oder veralteter Grundlage",
+  "type": "string",
+  "enum": [
+    "PLAN_TIME",
+    "REFERENCE_FORECAST"
+  ],
+  "default": "PLAN_TIME",
+  "x-unit": "ENUM",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.2-eta_fallback_policy",
+  "x-catalog-range": "Sichere fahrerneutrale Referenz verpflichtend; Werte im Pflichtenheft nicht festgelegt (Planungsannahme WP-M4-61)"
+}

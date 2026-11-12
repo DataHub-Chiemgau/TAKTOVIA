@@ -57,6 +57,19 @@ class ParameterRegistryTest {
 
     // ---- CFG-002 ----------------------------------------------------------------------------------------------------------------------------
 
+    /** WP-M4-62: Systemgrenze `policy_system_floor()` (stop_dwell_sec nicht unter die sichere Haltestellenabfertigung) gilt zusätzlich zum Schema-Minimum in der Anwendung wie in der Datenbank. */
+    @Test
+    fun systemgrenze_oberhalb_des_schemaminimums_wird_in_der_anwendung_geprueft() {
+        val floor = fx.adminCount("SELECT minimum::int FROM taktovia.policy_system_floor() WHERE parameter = 'stop_dwell_sec'")
+        assertEquals(10, floor)
+        val below = validate(mapOf("stop_dwell_sec" to floor - 1)) as ValidationOutcome.Invalid
+        assertEquals(listOf(Violation("/stop_dwell_sec", ViolationCode.BELOW_MINIMUM)), below.violations)
+        assertTrue(validate(mapOf("stop_dwell_sec" to floor)) is ValidationOutcome.Valid)
+        // eta_personalization_enabled: feste Sicherheitsinvariante false
+        assertEquals(listOf(Violation("/eta_personalization_enabled", ViolationCode.SAFETY_INVARIANT_VIOLATED)), (validate(mapOf("eta_personalization_enabled" to true)) as ValidationOutcome.Invalid).violations)
+        assertTrue(validate(mapOf("eta_personalization_enabled" to false)) is ValidationOutcome.Valid)
+    }
+
     @Test
     fun parameternamen_stimmen_mit_katalog_ueberein() {
         val catalog = fx.config.parameters.catalog(fx.context(fx.tenant()))
