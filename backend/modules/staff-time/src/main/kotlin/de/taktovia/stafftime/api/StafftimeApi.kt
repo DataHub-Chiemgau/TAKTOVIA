@@ -14,6 +14,9 @@ interface StafftimeApi {
     val driverDevices: DriverDevices
     val driverEvents: DriverEvents
 
+    /** Fahrerstamm und Qualifikationsrevisionen (WP-M3-05). */
+    val drivers: Drivers
+
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): StafftimeApi =
             StafftimeServicesFactory.create(ctxTx, audit, outbox, clock)

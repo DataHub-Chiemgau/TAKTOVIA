@@ -690,6 +690,78 @@ export interface DriverReleaseProjection {
   };
 }
 
+export type DriverStatus = 'ACTIVE' | 'INACTIVE';
+
+export type ContactChannel = 'PHONE' | 'EMAIL' | 'APP';
+
+export type QualificationStatus = 'PENDING' | 'APPROVED' | 'REVOKED';
+
+export interface DriverCreate {
+  membership_id: UUID;
+  display_name: string;
+  contact_channel: ContactChannel;
+  contact_value: string;
+}
+
+export interface DriverUpdate {
+  display_name: string;
+  contact_channel: ContactChannel;
+  contact_value: string;
+  active: boolean;
+}
+
+export interface Driver {
+  id: UUID;
+  membership_id: UUID | null;
+  status: DriverStatus;
+  qualification_seq: number;
+  revision: number;
+  hr_fields_visible: boolean;
+  display_name: string | null;
+  contact_channel: ContactChannel | null;
+  contact_value: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DriverPage {
+  items: Driver[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface QualificationInput {
+  qualification_code: string;
+  valid_from: string;
+  valid_to?: string | null;
+  evidence_ref?: string | null;
+  decision: QualificationStatus;
+}
+
+export interface QualificationRevision {
+  id: UUID;
+  qualification_code: string;
+  revision: number;
+  status: QualificationStatus;
+  valid_from: string;
+  valid_to: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  driver_seq: number | null;
+  evidence_ref: string | null;
+  effective: boolean;
+  valid_at: boolean;
+  created_at: string;
+  driver_revision?: number;
+}
+
+export interface QualificationPage {
+  items: QualificationRevision[];
+  next_cursor: string | null;
+  as_of: string;
+  at: string;
+}
+
 export interface VehicleRoleAssignment {
   id: UUID;
   vehicle_id: UUID;
@@ -974,6 +1046,93 @@ export interface IncidentPage {
 export interface IncidentTransition {
   event: 'START_REPLACEMENT_SEARCH' | 'RESOLVE' | 'CLOSE_WITHOUT_REPLACEMENT';
   comment?: string | null;
+}
+
+export type VehicleEquipment = 'RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING';
+
+export interface VehicleCapacityBasic {
+  seats: number;
+  wheelchair: number;
+}
+
+export interface VehicleMasterWrite {
+  vehicle_label: string;
+  vehicle_type: string;
+  operator_organization_id: UUID;
+  capacity: VehicleCapacityBasic;
+  equipment: VehicleEquipment[];
+  active: boolean;
+}
+
+export interface VehicleMaster {
+  id: UUID;
+  vehicle_label: string | null;
+  vehicle_type: string | null;
+  operator_organization_id: UUID | null;
+  capacity: VehicleCapacityBasic;
+  equipment: VehicleEquipment[];
+  active: boolean;
+  dispatch_blocked: boolean;
+  dispatchable: boolean;
+  safety_revision: number;
+  has_capacity_layout: boolean;
+  revision: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VehicleMasterPage {
+  items: VehicleMaster[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CapacitySpaces {
+  seat_places: number;
+  wheelchair_spaces: number;
+  seats_replaced_per_wheelchair: number;
+}
+
+export interface CapacityCombination {
+  code: string;
+  wheelchair_places: number;
+}
+
+export interface CapacityRestriction {
+  code: 'MAX_TOTAL_PERSONS' | 'MAX_WHEELCHAIR_SPACES';
+  value: number;
+}
+
+export interface CapacityLayout {
+  schema_version: '1.0';
+  spaces: CapacitySpaces;
+  equipment: VehicleEquipment[];
+  combinations: CapacityCombination[];
+  active_combination: string;
+  restrictions: CapacityRestriction[];
+}
+
+export interface CapacityPatch {
+  spaces?: CapacitySpaces;
+  equipment?: VehicleEquipment[];
+  combinations?: CapacityCombination[];
+  active_combination?: string;
+  restrictions?: CapacityRestriction[];
+}
+
+export interface ConfiguredResourceVector {
+  code: string;
+  seats: number;
+  wheelchair: number;
+  equipment: VehicleEquipment[];
+}
+
+export interface CapacityConfiguration {
+  vehicle_id: UUID;
+  layout: CapacityLayout | null;
+  effective: ConfiguredResourceVector;
+  vectors: ConfiguredResourceVector[];
+  revision: number;
 }
 
 export interface GeoMultiPolygon {
@@ -1964,6 +2123,48 @@ export interface Operations {
     body: undefined;
     response: DriverReleaseProjection;
   };
+  listDrivers: {
+    path: Record<string, never>;
+    query: { status?: DriverStatus; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverPage;
+  };
+  createDriver: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverCreate;
+    response: Driver;
+  };
+  getDriver: {
+    path: { driver_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Driver;
+  };
+  updateDriver: {
+    path: { driver_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: DriverUpdate;
+    response: Driver;
+  };
+  listDriverQualifications: {
+    path: { driver_id: UUID };
+    query: { at?: string; only_valid?: boolean };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: QualificationPage;
+  };
+  createDriverQualification: {
+    path: { driver_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: QualificationInput;
+    response: QualificationRevision;
+  };
   listVehicleRoles: {
     path: Record<string, never>;
     query: { vehicle_id?: UUID; as_of?: string; limit?: number; cursor?: string };
@@ -2117,6 +2318,48 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: IncidentTransition;
     response: Incident;
+  };
+  listVehicleMasters: {
+    path: Record<string, never>;
+    query: { active?: boolean; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleMasterPage;
+  };
+  createVehicleMaster: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: VehicleMasterWrite;
+    response: VehicleMaster;
+  };
+  getVehicleMaster: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: VehicleMaster;
+  };
+  updateVehicleMaster: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: VehicleMasterWrite;
+    response: VehicleMaster;
+  };
+  getVehicleCapacity: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CapacityConfiguration;
+  };
+  updateVehicleCapacity: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: CapacityPatch;
+    response: CapacityConfiguration;
   };
   listServiceAreas: {
     path: Record<string, never>;
@@ -2661,6 +2904,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   revokeDriverRelease: { method: 'DELETE', path: '/v1/driver-releases/{release_id}', pathParams: ['release_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['driver-releases:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getDriverReleaseProjection: { method: 'GET', path: '/v1/driver-releases/{release_id}/projection', pathParams: ['release_id'], query: ['service_id'], headers: ['traceparent'], hasBody: false, scopes: ['driver-releases:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listDrivers: { method: 'GET', path: '/v1/drivers', pathParams: [], query: ['status', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['drivers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createDriver: { method: 'POST', path: '/v1/drivers', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['drivers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getDriver: { method: 'GET', path: '/v1/drivers/{driver_id}', pathParams: ['driver_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['drivers:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateDriver: { method: 'PUT', path: '/v1/drivers/{driver_id}', pathParams: ['driver_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['drivers:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
+  listDriverQualifications: { method: 'GET', path: '/v1/drivers/{driver_id}/qualifications', pathParams: ['driver_id'], query: ['at', 'only_valid'], headers: ['traceparent'], hasBody: false, scopes: ['drivers:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createDriverQualification: { method: 'POST', path: '/v1/drivers/{driver_id}/qualifications', pathParams: ['driver_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['drivers:write'], statuses: [201, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
   listVehicleRoles: { method: 'GET', path: '/v1/vehicle-roles', pathParams: [], query: ['vehicle_id', 'as_of', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverClearances: { method: 'GET', path: '/v1/driver-clearances', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -2683,6 +2932,12 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorIncidents: { method: 'GET', path: '/v1/operator/incidents', pathParams: [], query: ['status', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getOperatorIncident: { method: 'GET', path: '/v1/operator/incidents/{incident_id}', pathParams: ['incident_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listVehicleMasters: { method: 'GET', path: '/v1/operator/vehicle-master', pathParams: [], query: ['active', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createVehicleMaster: { method: 'POST', path: '/v1/operator/vehicle-master', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  getVehicleMaster: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateVehicleMaster: { method: 'PUT', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getVehicleCapacity: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateVehicleCapacity: { method: 'PATCH', path: '/v1/operator/vehicle-master/{vehicle_id}/capacity', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [200, 400, 401, 403, 404, 412, 422, 428, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listStops: { method: 'GET', path: '/v1/stops', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

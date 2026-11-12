@@ -949,6 +949,282 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IncidentTransition'
+  /v1/operator/vehicle-master:
+    get:
+      summary: Fahrzeugstamm auflisten
+      operationId: listVehicleMasters
+      security:
+      - oidc:
+        - fleet:read
+      description: 'Stammdaten der Fahrzeuge des Mandanten (WP-M3-03, LH-6.8-FLT-001), Listenform {items,next_cursor,as_of}. Filter `active`. Deaktivierte Fahrzeuge bleiben lesbar. Die Leitstellenansicht mit Betriebszustand und Standortalter ist `listOperatorVehicles`.'
+      parameters:
+      - name: active
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Nur aktive bzw. nur deaktivierte Fahrzeuge.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleMasterPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fahrzeug anlegen
+      operationId: createVehicleMaster
+      security:
+      - oidc:
+        - fleet:write
+      description: 'Legt ein Fahrzeug mit Kennung, Betreiber, Typ, Kapazität, Ausstattung und Aktivstatus an. Negative, fehlende oder nicht ganzzahlige Kapazität: 422 mit Feldverweis, nichts wird gespeichert. Doppelte Kennung im Mandanten: 409 mit Feldverweis /vehicle_label. Betreiber aus einem fremden Mandanten: 422 an /operator_organization_id. Ein neues Fahrzeug ist bis zur Einsatzfreigabe nicht disponierbar (`dispatch_blocked`, OP-01). Der Mandant folgt aus der Sitzung, nie aus dem Body.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '201':
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleMaster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stammdaten-Revision).
+            Location:
+              schema:
+                type: string
+              description: URL der angelegten Ressource.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleMasterWrite'
+  /v1/operator/vehicle-master/{vehicle_id}:
+    get:
+      summary: Fahrzeugstamm lesen
+      operationId: getVehicleMaster
+      security:
+      - oidc:
+        - fleet:read
+      description: 'Ein Fahrzeug des Mandanten mit starkem ETag. Fremdes oder unbekanntes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleMaster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stammdaten-Revision).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    put:
+      summary: Fahrzeugstamm ändern oder deaktivieren
+      operationId: updateVehicleMaster
+      security:
+      - oidc:
+        - fleet:write
+      description: 'Ersetzt die Stammdaten (alle Pflichtfelder). `active: false` deaktiviert das Fahrzeug (kein neues Disponieren, Historie bleibt lesbar). If-Match: Stammdaten-Revision (`VehicleMaster.revision`); ohne 428, veraltet 412, bei gleichzeitiger Änderung gewinnt genau eine. Besteht eine Kapazitätskonfiguration, müssen Kapazität und Ausstattung dem wirksamen Stand entsprechen, sonst 409 (Pflege über `/capacity`).'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleMaster'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stammdaten-Revision).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleMasterWrite'
+  /v1/operator/vehicle-master/{vehicle_id}/capacity:
+    get:
+      summary: Kapazitätskonfiguration lesen
+      operationId: getVehicleCapacity
+      security:
+      - oidc:
+        - fleet:read
+      description: 'Kapazitätskonfiguration des Fahrzeugs (WP-M3-04): Stellplätze, Kombinationen (Umrüstzustände), Restriktionen und der verfügbare Ressourcenvektor je Konfiguration. Ohne Konfiguration ist `layout` null und der einzige Vektor die Grundkapazität. Fremdes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityConfiguration'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stammdaten-Revision).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    patch:
+      summary: Kapazitätskonfiguration in Teilen ändern
+      operationId: updateVehicleCapacity
+      security:
+      - oidc:
+        - fleet:write
+      description: 'Ändert die Teile `spaces`, `equipment`, `combinations` (mit `active_combination`) und `restrictions` unabhängig voneinander; nicht genannte Teile bleiben unverändert. Gibt es noch keine Konfiguration, sind `spaces`, `combinations` und `active_combination` Pflicht. Widersprüchliche Kombination (mehr belegte Fläche als vorhanden), unbekannte Dimension oder ungültiger Wert: 422 mit Feldverweis. If-Match: Stammdaten-Revision; ohne 428, veraltet 412. Wirkt nicht rückwirkend auf bestehende Holds und Buchungen.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityConfiguration'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision (Stammdaten-Revision).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapacityPatch'
 components:
   schemas:
     VehicleOperationalState:
@@ -1934,3 +2210,325 @@ components:
       required:
       - event
       description: Übergang des Incident-Automaten (incident.md). Das Ziel ergibt sich aus dem Ereignis, der Client setzt keinen Zustand.
+    VehicleEquipment:
+      type: string
+      enum:
+      - RAMP
+      - LIFT
+      - CHILD_SEAT
+      - BOOSTER_SEAT
+      - LUGGAGE_SPACE
+      - ASSISTANCE_DOG_SPACE
+      - STRETCHER_FIXING
+      description: Ausstattungsmerkmale wie im Ressourcenvektor `resource-vector.v1`; Platzhalterkatalog bis zur Festlegung durch den Auftraggeber (OP-14).
+    VehicleCapacityBasic:
+      type: object
+      additionalProperties: false
+      properties:
+        seats:
+          type: integer
+          minimum: 0
+          maximum: 99
+        wheelchair:
+          type: integer
+          minimum: 0
+          maximum: 20
+      required:
+      - seats
+      - wheelchair
+      description: Grundkapazität des Fahrzeugs getrennt nach Sitzplätzen und Rollstuhlplätzen; keine Dimension ersetzt die andere.
+    VehicleMasterWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_label:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Kennung, je Mandant eindeutig.
+        vehicle_type:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+          description: Fahrzeugtyp als Code (Platzhalter bis zum Wertekatalog, OP-14).
+        operator_organization_id:
+          $ref: common.yaml#/components/schemas/UUID
+        capacity:
+          $ref: '#/components/schemas/VehicleCapacityBasic'
+        equipment:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/VehicleEquipment'
+        active:
+          type: boolean
+      required:
+      - vehicle_label
+      - vehicle_type
+      - operator_organization_id
+      - capacity
+      - equipment
+      - active
+      description: Pflichtangaben des Fahrzeugstamms (FLT-001). Der Mandant steht nicht im Body.
+    VehicleMaster:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_label:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        vehicle_type:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,39}$
+          - type: 'null'
+        operator_organization_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        capacity:
+          $ref: '#/components/schemas/VehicleCapacityBasic'
+        equipment:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/VehicleEquipment'
+        active:
+          type: boolean
+        dispatch_blocked:
+          type: boolean
+          description: Sperre bzw. fehlende Einsatzfreigabe (`vehicle.active_block`); ein neues Fahrzeug ist gesperrt (OP-01).
+        dispatchable:
+          type: boolean
+          description: Aktiv und nicht gesperrt.
+        safety_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        has_capacity_layout:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - vehicle_label
+      - vehicle_type
+      - operator_organization_id
+      - capacity
+      - equipment
+      - active
+      - dispatch_blocked
+      - dispatchable
+      - safety_revision
+      - has_capacity_layout
+      - revision
+      - created_at
+      - updated_at
+      description: Fahrzeugstamm (WP-M3-03). `vehicle_label`, `vehicle_type` und `operator_organization_id` sind nur bei Altbestand ohne diese Angaben null.
+    VehicleMasterPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleMaster'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CapacitySpaces:
+      type: object
+      additionalProperties: false
+      properties:
+        seat_places:
+          type: integer
+          minimum: 0
+          maximum: 99
+        wheelchair_spaces:
+          type: integer
+          minimum: 0
+          maximum: 20
+        seats_replaced_per_wheelchair:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: n, wie viele Sitzplätze ein belegter Rollstuhlplatz ersetzt (Konfigurationsdatum des Fahrzeugs).
+      required:
+      - seat_places
+      - wheelchair_spaces
+      - seats_replaced_per_wheelchair
+    CapacityCombination:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,29}$
+        wheelchair_places:
+          type: integer
+          minimum: 0
+          maximum: 20
+      required:
+      - code
+      - wheelchair_places
+    CapacityRestriction:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - MAX_TOTAL_PERSONS
+          - MAX_WHEELCHAIR_SPACES
+        value:
+          type: integer
+          minimum: 0
+          maximum: 119
+      required:
+      - code
+      - value
+    CapacityLayout:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          type: string
+          enum:
+          - '1.0'
+        spaces:
+          $ref: '#/components/schemas/CapacitySpaces'
+        equipment:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/VehicleEquipment'
+        combinations:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CapacityCombination'
+        active_combination:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,29}$
+        restrictions:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/CapacityRestriction'
+      required:
+      - schema_version
+      - spaces
+      - equipment
+      - combinations
+      - active_combination
+      - restrictions
+      description: Kapazitätskonfiguration (Schema `capacity_config.v1`); Stellplätze, Ausstattung, Kombinationen und Restriktionen sind getrennte Teile.
+    CapacityPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        spaces:
+          $ref: '#/components/schemas/CapacitySpaces'
+        equipment:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/VehicleEquipment'
+        combinations:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CapacityCombination'
+        active_combination:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,29}$
+        restrictions:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/CapacityRestriction'
+      description: Änderung einzelner Teile; nicht genannte Teile bleiben unverändert.
+    ConfiguredResourceVector:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 30
+        seats:
+          type: integer
+          minimum: 0
+        wheelchair:
+          type: integer
+          minimum: 0
+        equipment:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/VehicleEquipment'
+      required:
+      - code
+      - seats
+      - wheelchair
+      - equipment
+      description: Verfügbarer Ressourcenvektor einer Konfiguration (Form von `resource-vector.v1`); `booking-dispatch` liest ihn als Angebot des Fahrzeugs.
+    CapacityConfiguration:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        layout:
+          oneOf:
+          - $ref: '#/components/schemas/CapacityLayout'
+          - type: 'null'
+        effective:
+          $ref: '#/components/schemas/ConfiguredResourceVector'
+        vectors:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ConfiguredResourceVector'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - vehicle_id
+      - layout
+      - effective
+      - vectors
+      - revision

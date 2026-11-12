@@ -2508,6 +2508,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "display_name",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -2524,6 +2533,24 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "membership_id",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Zuordnung zur Mitgliedschaft des Mandanten (Pseudonym-ID), genau eine"
+        },
+        {
+          "spalte": "qualification_seq",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "fortlaufende Nummer der Qualifikationsänderungen des Fahrers"
         },
         {
           "spalte": "revision",
@@ -2545,6 +2572,15 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
@@ -7144,6 +7180,33 @@
       "bemerkung": "append-only",
       "spalten": [
         {
+          "spalte": "approval_status",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Freigabestatus der Revision (PENDING, APPROVED, REVOKED)"
+        },
+        {
+          "spalte": "approved_at",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "approved_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
@@ -7153,7 +7216,25 @@
           "bemerkung": ""
         },
         {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
           "spalte": "driver_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "driver_seq",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
@@ -8690,6 +8771,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "capacity_layout",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Kapazitätskonfiguration (Stellplätze, Kombinationen, Restriktionen), WP-M3-04"
         },
         {
           "spalte": "capacity_schema_version",

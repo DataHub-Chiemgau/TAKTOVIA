@@ -5,7 +5,17 @@ import type { Me } from './generated';
  * (serverseitig geprüfte Sitzung); die Anzeige ist keine Rechtequelle, der Server prüft jede Anfrage erneut (Kap. 06 §6.1).
  */
 export type Right =
-  'passenger.app' | 'callcenter' | 'finance' | 'staff' | 'admin.ui17' | 'admin.ui18' | 'admin.ui20';
+  | 'passenger.app'
+  | 'callcenter'
+  | 'finance'
+  | 'staff'
+  | 'fleet'
+  | 'fleet.write'
+  | 'drivers'
+  | 'drivers.write'
+  | 'admin.ui17'
+  | 'admin.ui18'
+  | 'admin.ui20';
 
 /**
  * Navigationsrechte aus den **Funktionsscopes** der Sitzung (`/v1/me` -> `scopes`, vom Server aus Rollen und Rechtematrix abgeleitet,
@@ -18,6 +28,10 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'expenses:approve': ['finance'],
   'rosters:publish': ['staff'],
   'driver-releases:write': ['staff'],
+  'fleet:read': ['fleet'],
+  'fleet:write': ['fleet', 'fleet.write'],
+  'drivers:read': ['drivers'],
+  'drivers:write': ['drivers', 'drivers.write'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],
@@ -32,12 +46,13 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
   PASSENGER: ['passenger.app'],
   CALLCENTER: ['callcenter'],
   SUPPORT: ['callcenter', 'admin.ui20'],
-  DISPATCHER: ['callcenter'],
-  PLANNER: ['admin.ui17'],
+  DISPATCHER: ['callcenter', 'fleet', 'fleet.write', 'drivers'],
+  WORKSHOP: ['fleet', 'fleet.write'],
+  PLANNER: ['admin.ui17', 'fleet', 'drivers'],
   ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
   TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
   FINANCE: ['finance'],
-  STAFF_PLANNING: ['staff'],
+  STAFF_PLANNING: ['staff', 'drivers', 'drivers.write'],
 };
 
 export function rightsOf(me: Pick<Me, 'roles'> & { scopes?: string[] | undefined }): Set<Right> {

@@ -103,8 +103,9 @@ internal class JdbcDriverReleases(
             "INSERT INTO taktovia.driver_release_projection (tenant_id, id, owner_tenant_id, service_ids, valid_from, valid_to, qualifications, contact_channel, contact_value) " +
                 "SELECT r.recipient_tenant_id, r.id, r.tenant_id, r.service_ids, r.valid_from, r.valid_to, " +
                 "COALESCE((SELECT jsonb_agg(jsonb_build_object('code', q.qualification_code, 'valid_from', q.valid_from, 'valid_to', q.valid_to) ORDER BY q.qualification_code) " +
-                "FROM (SELECT DISTINCT ON (x.qualification_code) x.qualification_code, x.valid_from, x.valid_to FROM taktovia.qualification_revision x " +
-                "WHERE x.driver_id = r.driver_id ORDER BY x.qualification_code, x.revision DESC) q WHERE q.valid_to IS NULL OR q.valid_to > r.valid_from), '[]'::jsonb), " +
+                "FROM (SELECT DISTINCT ON (x.qualification_code) x.qualification_code, x.valid_from, x.valid_to, x.approval_status FROM taktovia.qualification_revision x " +
+                "WHERE x.driver_id = r.driver_id AND x.approval_status <> 'PENDING' ORDER BY x.qualification_code, x.revision DESC) q " +
+                "WHERE q.approval_status = 'APPROVED' AND (q.valid_to IS NULL OR q.valid_to > r.valid_from)), '[]'::jsonb), " +
                 "d.contact_channel, d.contact_value FROM taktovia.driver_release r JOIN taktovia.driver d ON d.tenant_id = r.tenant_id AND d.id = r.driver_id WHERE r.id = ?",
             id,
         )

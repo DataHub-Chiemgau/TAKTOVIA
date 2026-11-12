@@ -5,6 +5,7 @@ import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.outbox.Outbox
 import de.taktovia.stafftime.api.DriverDevices
 import de.taktovia.stafftime.api.DriverEvents
+import de.taktovia.stafftime.api.Drivers
 import de.taktovia.stafftime.api.StafftimeApi
 import java.time.Clock
 
@@ -13,6 +14,11 @@ internal object StafftimeServicesFactory {
     fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
         val events = JdbcDriverEvents(ctxTx, outbox, clock)
-        return object : StafftimeApi { override val driverDevices: DriverDevices = devices; override val driverEvents: DriverEvents = events }
+        val drivers = JdbcDrivers(ctxTx, audit)
+        return object : StafftimeApi {
+            override val driverDevices: DriverDevices = devices
+            override val driverEvents: DriverEvents = events
+            override val drivers: Drivers = drivers
+        }
     }
 }

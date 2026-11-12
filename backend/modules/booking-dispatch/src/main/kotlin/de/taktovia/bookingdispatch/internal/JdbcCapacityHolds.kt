@@ -46,6 +46,9 @@ internal class JdbcCapacityHolds(
         findByReference(j, cmd.reference)?.let { return@run HoldOutcome.Placed(it, replayed = true) }
         if (run.state != RUN_ACTIVE) return@run HoldOutcome.Rejected(RejectionReason.RUN_NOT_ACTIVE, null)
         if (run.revision != cmd.expectedRunRevision) return@run HoldOutcome.Rejected(RejectionReason.REVISION_CONFLICT, null)
+        // 2b. Fahrzeugzeile gemeinsam sperren (Sperrreihenfolge laut m3-detailvertraege.md §5: Lauf, dann Fahrzeug): eine laufende Änderung der Fahrzeugkonfiguration oder -sperre
+        //     (WP-M3-04, WP-M3-08) schließt sich vorher ab, die Prüfung sieht danach einen konsistenten Stand; bestehende Holds ändert die Konfiguration nie.
+        j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ? FOR SHARE", { _, _ -> 1 }, run.vehicleId)
         // 3. Einsatzfähigkeit unter dem Lock erneut prüfen (Sperre, Freigabe, Schicht)
         val usable = resources.check(j, run.vehicleId, cmd.serviceId, cmd.window)
         if (usable !is VehicleAvailability.Usable) return@run HoldOutcome.Rejected(RejectionReason.RESOURCE_UNUSABLE, null)

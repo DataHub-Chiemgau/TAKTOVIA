@@ -51,6 +51,9 @@ VALID = {
                             'samples': [{'position': {'latitude': 52.5, 'longitude': 13.4}, 'accuracy_meters': 8.0, 'measured_at': T0}]},
     'DriverRunAck': {'plan_revision': 4, 'acknowledged_at': T0},
     'DriverDeviceRegister': {'device_id': U1, 'platform': 'ANDROID', 'app_version': '1.0.0'},
+    # WP-M3-03/-04: Fahrzeugstamm und Kapazitätskonfiguration
+    'VehicleMasterWrite': {'vehicle_label': 'KA-100', 'vehicle_type': 'PKW', 'operator_organization_id': U1, 'capacity': {'seats': 4, 'wheelchair': 1}, 'equipment': ['RAMP'], 'active': True},
+    'CapacityPatch': {'combinations': [{'code': 'STANDARD', 'wheelchair_places': 0}], 'active_combination': 'STANDARD'},
 }
 # Je Schema: Mutation, die ein Pflichtfeld entfernt, bzw. einen unzulässigen Wert setzt
 BROKEN = {
@@ -69,6 +72,8 @@ BROKEN = {
     'DriverPositionBatch': ('samples', []),
     'DriverRunAck': ('plan_revision', 0),
     'DriverDeviceRegister': ('platform', 'WINDOWS'),
+    'VehicleMasterWrite': ('capacity', {'seats': -1, 'wheelchair': 1}),
+    'CapacityPatch': ('active_combination', 'klein'),
 }
 
 
@@ -256,11 +261,21 @@ class VertragsabdeckungM3(unittest.TestCase):
 @unittest.skipUnless(os.environ.get('TAKTOVIA_DB_NAME') and os.environ.get('TAKTOVIA_DB_ADMIN_USER'), 'keine Datenbank konfiguriert')
 class DdlEntwurfM3(unittest.TestCase):
     def test_ddl_entwurf_ist_ausfuehrbar_und_rls_ist_aktiv(self):
-        """Führt den Entwurf gegen den Stand nach M2 aus und macht alles rückgängig (nichts bleibt bestehen)."""
+        """Führt den Entwurf gegen den Stand nach M2 aus und macht alles rückgängig (nichts bleibt bestehen). Ist der Entwurf bereits migriert (WP-M3-02, V3020), prüft der Test
+        stattdessen, dass jede Tabelle des Entwurfs im migrierten Schema existiert und RLS erzwungen ist (der Entwurf ist dann nicht mehr ausführbar: die Tabellen bestehen)."""
         sys.path.insert(0, str(ROOT / 'db'))
         import db as dbtool
         sql = (VERTRAEGE / 'm3-ddl-entwurf.sql').read_text()
         with dbtool.admin(os.environ['TAKTOVIA_DB_NAME']) as c:
+            migriert = c.execute("SELECT to_regclass('taktovia.vehicle_block')").fetchone()[0] is not None
+            if migriert:
+                tabellen = re.findall(r'^CREATE TABLE (\w+) \(', sql, flags=re.M)
+                self.assertGreaterEqual(len(tabellen), 18)
+                rows = dict((r[0], (r[1], r[2])) for r in c.execute("SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                                                                    "WHERE n.nspname = 'taktovia' AND c.relname = ANY(%s)", (tabellen,)).fetchall())
+                self.assertEqual(set(rows), set(tabellen), 'jede Tabelle des Entwurfs ist migriert')
+                self.assertTrue(all(v == (True, True) for v in rows.values()), rows)
+                return
             c.autocommit = False
             try:
                 c.execute(sql)
@@ -272,7 +287,6 @@ class DdlEntwurfM3(unittest.TestCase):
                 c.rollback()
             existiert = c.execute("SELECT to_regclass('taktovia.vehicle_block')").fetchone()[0]
             self.assertIsNone(existiert, 'der Entwurf darf nichts hinterlassen')
-
 
 if __name__ == '__main__':
     unittest.main()

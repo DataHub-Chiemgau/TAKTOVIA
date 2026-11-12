@@ -92,7 +92,10 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
     const cases: [string, string[]][] = [
       ['passenger', ['Start']],
       ['driver', ['Start']],
-      ['planner', ['Start', 'Gebiete, Stops, Tarife']],
+      [
+        'planner',
+        ['Start', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen', 'Gebiete, Stops, Tarife'],
+      ],
       [
         'tenant_admin',
         [
@@ -103,7 +106,11 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         ],
       ],
       ['finance', ['Start', 'Finanzen']],
-      ['staff_planning', ['Start', 'Personal']],
+      [
+        'staff_planning',
+        ['Start', 'Personal', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen'],
+      ],
+      ['workshop', ['Start', 'Flotte und Werkstatt']],
     ];
     for (const [role, expected] of cases) {
       const view = renderFor(role);

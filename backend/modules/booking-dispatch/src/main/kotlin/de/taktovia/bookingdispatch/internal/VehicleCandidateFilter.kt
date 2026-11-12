@@ -66,7 +66,7 @@ internal class VehicleCandidateFilter(
     }
 
     private fun Unusable.toExclusion() = when (this) {
-        Unusable.VEHICLE_BLOCKED -> ExclusionReason.VEHICLE_BLOCKED
+        Unusable.VEHICLE_BLOCKED, Unusable.VEHICLE_INACTIVE -> ExclusionReason.VEHICLE_BLOCKED
         Unusable.NO_SHIFT -> ExclusionReason.NO_SHIFT
         Unusable.NO_VALID_RELEASE -> ExclusionReason.NO_VALID_RELEASE
         // vom Leseport für Poolmitglieder nicht geliefert; konservativ als nicht einsetzbar

@@ -12,6 +12,13 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
   { id: 'callcenter', label: 'Callcenter', href: '/callcenter', requires: 'callcenter' },
   { id: 'finanzen', label: 'Finanzen', href: '/finanzen', requires: 'finance' },
   { id: 'personal', label: 'Personal', href: '/personal', requires: 'staff' },
+  { id: 'ui11', label: 'Flotte und Werkstatt', href: '/flotte', requires: 'fleet' },
+  {
+    id: 'ui11-fahrer',
+    label: 'Fahrer und Qualifikationen',
+    href: '/flotte/fahrer',
+    requires: 'drivers',
+  },
   { id: 'ui17', label: 'Gebiete, Stops, Tarife', href: '/admin/gebiete', requires: 'admin.ui17' },
   {
     id: 'ui18',

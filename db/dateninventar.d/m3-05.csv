@@ -1,0 +1,10 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+driver;membership_id;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_STAMM;Zuordnung zur Mitgliedschaft des Mandanten (Pseudonym-ID), genau eine
+driver;qualification_seq;nein;PERSONALEINSATZ;;;;fortlaufende Nummer der Qualifikationsänderungen des Fahrers
+driver;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+driver;updated_at;nein;PERSONALEINSATZ;;;;
+qualification_revision;approval_status;nein;PERSONALEINSATZ;;;;Freigabestatus der Revision (PENDING, APPROVED, REVOKED)
+qualification_revision;approved_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+qualification_revision;approved_at;nein;PERSONALEINSATZ;;;;
+qualification_revision;driver_seq;nein;PERSONALEINSATZ;;;;
+qualification_revision;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
