@@ -1,5 +1,13 @@
 package de.taktovia.bookingdispatch.internal
 
+import de.taktovia.bookingdispatch.api.BookingAreas
+import de.taktovia.bookingdispatch.api.BookingArea
+import de.taktovia.bookingdispatch.api.BookingEta
+import de.taktovia.bookingdispatch.api.BookingTracking
+import de.taktovia.bookingdispatch.api.CancellationOption
+import de.taktovia.bookingdispatch.api.ExecutionState
+import de.taktovia.bookingdispatch.api.TrackedStop
+import de.taktovia.bookingdispatch.api.VehicleIdentification
 import de.taktovia.bookingdispatch.api.BookingDemand
 import de.taktovia.bookingdispatch.api.BookingDetail
 import de.taktovia.bookingdispatch.api.BookingHistoryEntry
@@ -59,6 +67,7 @@ internal class JdbcBookings(
     private val ctxTx: ContextTransactions, private val quotes: FareQuotes, private val holds: JdbcCapacityHolds, private val transitions: BookingTransitions, private val plans: JdbcRunPlans,
     private val outbox: Outbox, private val config: EffectiveConfig?, private val clock: Clock,
     private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer, private val cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
+    private val executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
 ) : Bookings {
     private val json = JsonMapper.builder().build()
 
@@ -145,7 +154,7 @@ internal class JdbcBookings(
         return view(j, ctx, r)
     }
 
-    private fun view(j: JdbcOperations, ctx: RequestContext, r: Row): BookingDetail {
+    private fun view(j: JdbcOperations, ctx: RequestContext, r: Row, execution: ExecutionState? = executionStates.of(j, listOf(r.id))[r.id]): BookingDetail {
         val node = json.readTree(r.snapshot)
         fun at(f: String) = OffsetDateTime.parse(node[f].asString()).toInstant()
         val vector = node["resource_vector"]?.let { ResourceVector.parse(it.toString()) }
@@ -155,24 +164,68 @@ internal class JdbcBookings(
             (j.query("SELECT array_to_string(assistance_codes, ',') FROM taktovia.passenger_trip WHERE booking_id = ? ORDER BY seq LIMIT 1", { rs, _ -> rs.getString(1) }, r.id).firstOrNull() ?: "")
                 .split(',').filter { it.isNotBlank() } else null
         return BookingDetail(r.id, r.bookingNo, r.serviceId, r.holdId, r.state, r.revision, r.createdAt, (vector?.let { it.seats + it.wheelchair } ?: 0), vector?.wheelchair ?: 0, codes, promise,
-            r.cancelReason?.let { BookingReason.parse(it) }, r.cancelCause?.let { CauseClass.valueOf(it) })
+            r.cancelReason?.let { BookingReason.parse(it) }, r.cancelCause?.let { CauseClass.valueOf(it) }, BookingAreas.of(r.state, promise.arrivalLatest, clock.instant(), execution))
     }
 
     override fun get(ctx: RequestContext, bookingId: UUID): BookingDetail = ctxTx.run(ctx, readOnly = true) { j -> detail(j, ctx, bookingId, passengerOf(j, ctx)) }
 
-    override fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?): List<BookingDetail> = ctxTx.run(ctx, readOnly = true) { j ->
-        val cursor = if (after == null) "" else " AND (created_at, id) > (?, ?)"
-        val cursorArgs = if (after == null) emptyList() else listOf(Timestamp.from(after.first), after.second)
-        val rows = if (isPassengerView(ctx)) {
-            val own = passengerOf(j, ctx) ?: return@run emptyList()
-            j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND passenger_id = ?$cursor ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(own) + cursorArgs + (limit + 1)).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
-        } else {
-            val services = authorizer.effectiveServices(ctx)?.toList().orEmpty()
-            if (services.isEmpty()) return@run emptyList()
-            val ids = services.joinToString(",", "{", "}")   // nur UUIDs aus dem Scope des Kontexts
-            j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND service_id = ANY(CAST(? AS uuid[]))$cursor ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(ids) + cursorArgs + (limit + 1)).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
+    override fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, area: BookingArea?): List<BookingDetail> = ctxTx.run(ctx, readOnly = true) { j ->
+        val passenger = isPassengerView(ctx)
+        val own = if (passenger) (passengerOf(j, ctx) ?: return@run emptyList()) else null
+        val ids = if (passenger) "" else (authorizer.effectiveServices(ctx)?.toList().orEmpty().takeIf { it.isNotEmpty() } ?: return@run emptyList()).joinToString(",", "{", "}")   // nur UUIDs aus dem Scope des Kontexts
+        fun page(cursor: Pair<Instant, UUID>?, size: Int): List<Row> {
+            val cur = if (cursor == null) "" else " AND (created_at, id) > (?, ?)"
+            val curArgs = if (cursor == null) emptyList() else listOf(Timestamp.from(cursor.first), cursor.second)
+            return if (passenger)
+                j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND passenger_id = ?$cur ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(own!!) + curArgs + size).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
+            else
+                j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND service_id = ANY(CAST(? AS uuid[]))$cur ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(ids) + curArgs + size).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
         }
-        rows.map { view(j, ctx, it) }
+        fun views(rows: List<Row>): List<BookingDetail> { val exec = executionStates.of(j, rows.map { it.id }); return rows.map { view(j, ctx, it, exec[it.id]) } }
+        if (area == null) return@run views(page(after, limit + 1))
+        // Filter nach Bereich: die Zuordnung ist die eine Funktion BookingAreas.of, die Seite wird in Stapeln gefüllt (Sortierschlüssel und Cursor bleiben (created_at, id))
+        val out = mutableListOf<BookingDetail>(); var cursor = after
+        while (out.size < limit + 1) {
+            val rows = page(cursor, SCAN_BATCH)
+            if (rows.isEmpty()) break
+            out += views(rows).filter { it.area == area }
+            cursor = rows.last().createdAt to rows.last().id
+            if (rows.size < SCAN_BATCH) break
+        }
+        out.take(limit + 1)
+    }
+
+    override fun tracking(ctx: RequestContext, bookingId: UUID): BookingTracking = ctxTx.run(ctx, readOnly = true) { j ->
+        val r = row(j, bookingId) ?: throw ProblemException.notFound()
+        authorize(j, ctx, r, if (isPassengerView(ctx)) passengerOf(j, ctx) else null)
+        val booking = view(j, ctx, r)
+        class OfferStops(val offerId: UUID, val pickup: UUID?, val dropoff: UUID?)
+        val offer = j.query("SELECT id, pickup_stop_revision_id, dropoff_stop_revision_id FROM taktovia.ride_offer WHERE hold_id = ?",
+            { rs, _ -> OfferStops(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java)) }, r.holdId).firstOrNull()
+        fun stop(revisionId: UUID?): TrackedStop? = revisionId?.let { id ->
+            j.query("SELECT id, stop_id, revision, name, ST_X(point), ST_Y(point), accessibility::text FROM taktovia.stop_revision WHERE id = ?",
+                { rs, _ -> TrackedStop(rs.getObject(2, UUID::class.java), rs.getObject(1, UUID::class.java), rs.getLong(3), rs.getString(4), rs.getDouble(5), rs.getDouble(6), rs.getString(7)) }, id).firstOrNull()
+        }
+        // Plan-ETA: letzte Planänderung der Buchung; entfernt (Storno, Umplanung ohne die Buchung) heißt: keine ETA
+        val eta = j.query(
+            "SELECT pcb.booking_seq, pcb.kind, pcb.pickup_before, pcb.pickup_after, pcb.dropoff_after, pc.recorded_at, pc.run_revision FROM taktovia.plan_change_booking pcb " +
+                "JOIN taktovia.plan_change pc ON pc.tenant_id = pcb.tenant_id AND pc.id = pcb.plan_change_id WHERE pcb.booking_id = ? ORDER BY pcb.booking_seq DESC LIMIT 1",
+            { rs, _ ->
+                if (rs.getString(2) == "REMOVED" || rs.getTimestamp(4) == null) null
+                else BookingEta(rs.getTimestamp(4).toInstant(), rs.getTimestamp(5)?.toInstant(), if (rs.getString(2) == "TIME_CHANGED") rs.getTimestamp(3)?.toInstant() else null, rs.getLong(1), rs.getLong(7), rs.getTimestamp(6).toInstant())
+            }, bookingId,
+        ).firstOrNull()
+        // Fahrzeugidentifikation erst, wenn die Buchung im Plan steht (zugewiesen); nur Bezeichnung und Klasse
+        val vehicle = if (eta == null) null else j.query(
+            "SELECT v.vehicle_label, v.vehicle_type FROM taktovia.capacity_hold h JOIN taktovia.vehicle_run vr ON vr.tenant_id = h.tenant_id AND vr.id = h.run_id " +
+                "JOIN taktovia.vehicle v ON v.tenant_id = vr.tenant_id AND v.id = vr.vehicle_id WHERE h.id = ?",
+            { rs, _ -> rs.getString(1)?.let { VehicleIdentification(it, rs.getString(2)) } }, r.holdId,
+        ).firstOrNull()
+        val policy = policy(j, ctx, r.serviceId)
+        val deadline = booking.promise.pickupEarliest.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))
+        val cancellable = r.state == BookingState.CONFIRMED.name || r.state == BookingState.CONFIRMING.name
+        val option = CancellationOption(cancellable && !clock.instant().isAfter(deadline) && BookingReason.PASSENGER_REQUEST in policy.reasons, deadline, policy.deadlineMin, "cancellation_deadline_min" in policy.defaulted)
+        BookingTracking(booking, stop(offer?.pickup), stop(offer?.dropoff), eta, vehicle, option, offer?.offerId, clock.instant())
     }
 
     // ---- Storno (WP-M2-26) -------------------------------------------------------------------------------------------------------------
@@ -324,6 +377,7 @@ internal class JdbcBookings(
     }
 
     private companion object {
+        const val SCAN_BATCH = 200
         const val OFFER_COLS = "actor_ref, service_id, quote_id, revision, pickup_earliest, pickup_latest, arrival_earliest, arrival_latest, cancellation_policy_ref, demand::text, pickup_stop_revision_id, dropoff_stop_revision_id"
         val OFFER = RowMapper { rs, _ ->
             OfferRow(rs.getString(1), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getLong(4), rs.getTimestamp(5).toInstant(), rs.getTimestamp(6).toInstant(),

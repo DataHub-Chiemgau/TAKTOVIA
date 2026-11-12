@@ -5,13 +5,6 @@ import { Link } from 'react-router-dom';
 import { fenster } from './Zeitanzeige';
 import { tx } from '../texte';
 
-/** Zustände einer Buchung, die noch bevorsteht (nicht storniert, nicht abgeschlossen, nicht fehlgeschlagen). */
-const ANSTEHEND: ReadonlySet<RideBooking['state']> = new Set([
-  'CONFIRMING',
-  'CONFIRMED',
-  'RECONCILING',
-]);
-
 const STATUS_TEXT: Partial<Record<RideBooking['state'], string>> = {
   CONFIRMING: 'Wird bestätigt',
   CONFIRMED: 'Bestätigt',
@@ -19,22 +12,12 @@ const STATUS_TEXT: Partial<Record<RideBooking['state'], string>> = {
 };
 
 /**
- * „Anstehend“ im Sinne von UI-01: die Zusage liegt noch nicht vollständig in der Vergangenheit (spätestes Ankunftsfenster) und der Zustand ist nicht beendet.
- * Der Filter läuft in der Oberfläche, weil `GET /v1/bookings` die eigenen Buchungen ohne Zustandsfilter liefert; die Seiten werden bis zu [MAX_PAGES] gelesen.
+ * „Anstehend“ im Sinne von UI-01 ist der Bereich `bevorstehend` der Buchungsübersicht (WP-M2-45): die Einteilung trifft der Server (Filter `bereich`), die Oberfläche teilt nie selbst ein.
+ * Die Seiten werden bis zu [MAX_PAGES] gelesen.
  */
-export function istAnstehend(b: RideBooking, nowMs: number): boolean {
-  return ANSTEHEND.has(b.state) && Date.parse(b.promise.arrival_latest) >= nowMs;
-}
-
 const MAX_PAGES = 5;
 
-export function AnstehendeBuchungen({
-  zone,
-  now = Date.now,
-}: {
-  zone: string;
-  now?: () => number;
-}) {
+export function AnstehendeBuchungen({ zone }: { zone: string }) {
   const api = useApi();
   const [state, setState] = useState<
     { kind: 'loading' } | { kind: 'ready'; items: RideBooking[] } | { kind: 'error' }
@@ -44,19 +27,16 @@ export function AnstehendeBuchungen({
     let cursor: string | undefined;
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const r = await api.call('listBookings', {
-        query: { limit: 100, ...(cursor ? { cursor } : {}) },
+        query: { bereich: 'bevorstehend', limit: 100, ...(cursor ? { cursor } : {}) },
       });
       all.push(...r.items);
       if (!r.next_cursor) break;
       cursor = r.next_cursor;
     }
-    const t = now();
-    return all
-      .filter((b) => istAnstehend(b, t))
-      .sort(
-        (a, b) => Date.parse(a.promise.pickup_earliest) - Date.parse(b.promise.pickup_earliest),
-      );
-  }, [api, now]);
+    return all.sort(
+      (a, b) => Date.parse(a.promise.pickup_earliest) - Date.parse(b.promise.pickup_earliest),
+    );
+  }, [api]);
   const reload = useCallback(() => {
     load().then(
       (items) => setState({ kind: 'ready', items }),

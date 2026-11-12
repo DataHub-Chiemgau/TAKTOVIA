@@ -30,11 +30,11 @@ import { PrivacySettings } from './privacy/PrivacySettings';
 import { Registrierung } from './registrierung/Registrierung';
 import { Hilfe } from './hilfe/Hilfe';
 import { Start } from './booking/Start';
+import { CheckoutScreen } from './booking/CheckoutScreen';
+import { ReiseDetailScreen, ReiseUebersichtScreen } from './booking/ReiseScreens';
 import { OfferScreen } from './booking/OfferScreen';
 import { OfflineBanner } from './netz/Offline';
-import { useOnline } from './netz/useOnline';
 import { tx } from './texte';
-import type { TextKey } from './texte';
 
 const ZONE = 'Europe/Berlin';
 
@@ -65,36 +65,6 @@ function useScreenContext(status: ScreenContext['status']): ScreenContext | null
     dataAsOf: zeit.toRfc3339(session.loadedAt, ZONE),
     zone: ZONE,
   };
-}
-
-/** Platzhalter eines Fachbildschirms (UI-01 bis UI-04) im Seitenrahmen; offline ohne jede Buchungsmöglichkeit. */
-function Placeholder({ screen }: { screen: 'ui01' | 'ui02' | 'ui03' | 'ui04' }) {
-  const online = useOnline();
-  const context = useScreenContext(
-    online
-      ? { tone: 'info', label: tx('shell.status.shell') }
-      : { tone: 'warning', label: 'Offline' },
-  );
-  if (!context) return null;
-  const title = tx(`${screen}.title` as TextKey);
-  return (
-    <ScreenFrame title={title} context={context}>
-      {online ? (
-        <ResourceView
-          state={{ status: 'ready', data: [] as string[] }}
-          isEmpty={(d) => d.length === 0}
-          empty={{
-            title: tx(`${screen}.empty.title` as TextKey),
-            hint: tx(`${screen}.empty.hint` as TextKey),
-          }}
-        >
-          {() => null}
-        </ResourceView>
-      ) : (
-        <StateView kind="offline" title={tx('offline.title')} hint={tx('offline.hint')} />
-      )}
-    </ScreenFrame>
-  );
 }
 
 /** Konto ohne aktive Mitgliedschaft: verständlicher Zustand ohne Datenzugriff (WP-M1-44 AK 1). */
@@ -231,7 +201,7 @@ export function App() {
             path="/checkout/:offerId"
             element={
               <RequirePassenger>
-                <Placeholder screen="ui03" />
+                <CheckoutScreen />
               </RequirePassenger>
             }
           />
@@ -239,7 +209,7 @@ export function App() {
             path="/reisen"
             element={
               <RequirePassenger>
-                <Placeholder screen="ui04" />
+                <ReiseUebersichtScreen />
               </RequirePassenger>
             }
           />
@@ -247,7 +217,7 @@ export function App() {
             path="/reisen/:bookingId"
             element={
               <RequirePassenger>
-                <Placeholder screen="ui04" />
+                <ReiseDetailScreen />
               </RequirePassenger>
             }
           />

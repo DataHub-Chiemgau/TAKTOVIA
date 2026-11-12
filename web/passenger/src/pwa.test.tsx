@@ -117,7 +117,7 @@ describe('Passenger-PWA Grundgerüst (WP-M2-35)', () => {
       ['/angebote', 'Angebote'],
       ['/checkout/o-1', 'Buchung abschließen'],
       ['/reisen', 'Meine Reisen'],
-      ['/reisen/b-1', 'Meine Reisen'],
+      ['/reisen/b-1', 'Reise'],
       ['/konto', 'Konto'],
       ['/hilfe', 'Hilfe'],
     ] as const) {

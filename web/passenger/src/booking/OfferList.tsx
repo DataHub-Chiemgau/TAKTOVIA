@@ -1,26 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError, useApi } from '@taktovia/api-client';
-import type { GeoStopPassenger, RideBooking, RideOffer, RidePlace } from '@taktovia/api-client';
-import { BusyButton, ErrorState } from '@taktovia/design-system';
+import type { RideOffer, RidePlace } from '@taktovia/api-client';
+import { ErrorState } from '@taktovia/design-system';
 import { Link } from 'react-router-dom';
+import { leseAngebot } from './angebotLesen';
+import type { Shown } from './angebotLesen';
 import { formatMoney } from './geld';
 import { fussweg } from './fussweg';
 import { fenster, ortszeit } from './Zeitanzeige';
-import { useCommands } from '../api/useCommands';
+import type { RideWalkRoute } from '@taktovia/api-client';
 import { tx } from '../texte';
-
-/** Angebot mit den Haltepunkten, die zur Anzeige gelesen wurden (Name, Lage, Barrierefreiheit). */
-interface Shown {
-  offer: RideOffer;
-  pickup: GeoStopPassenger | null;
-  dropoff: GeoStopPassenger | null;
-}
-
-type Notice =
-  | { kind: 'changed'; priceChanged: boolean }
-  | { kind: 'expired' }
-  | { kind: 'capacity' }
-  | { kind: 'unclear' };
 
 export interface OfferListProps {
   offerIds: readonly string[];
@@ -34,18 +23,13 @@ export interface OfferListProps {
   onNewSearch: () => void;
 }
 
-/** Identität des angezeigten Standes: alles, was der Fahrgast sieht und was bei Hold/Bestätigung gelten muss. */
-export function standKey(o: RideOffer): string {
-  return JSON.stringify([
-    o.revision,
-    o.gross,
-    o.fare_components,
-    o.pickup_window,
-    o.arrival_window,
-    o.pickup_stop,
-    o.dropoff_stop,
-    o.expires_at,
-  ]);
+/** Fußweg des Angebots (WP-M2-44): Serverwert (Weg oder gekennzeichneter Rückfall) statt der Näherung der Oberfläche. */
+function walkAngabe(w: RideWalkRoute): { meter: number; minuten: number; hinweis: string | null } {
+  return {
+    meter: w.distance_m,
+    minuten: Math.max(1, Math.ceil(w.duration_s / 60)),
+    hinweis: w.status === 'FALLBACK' ? tx('fuss.rueckfall') + ', ' + tx('angebot.fussnote') : null,
+  };
 }
 
 /** Abgeleitete Fahrtdauer (Näherung): früheste Ankunft minus früheste Abholung. */
@@ -63,16 +47,9 @@ function yesNo(v: string | undefined): string {
       : tx('angebot.unbestaetigt');
 }
 
-const STATUS_TEXT: Partial<Record<RideBooking['state'], string>> = {
-  CONFIRMING: tx('angebot.statusConfirming'),
-  CONFIRMED: tx('angebot.statusConfirmed'),
-};
-
 /**
- * UI-02 Angebotsliste und Angebotsdetails (WP-M2-41, LH-6.3-PAX-005) mit dem Bestätigungsschritt der Standardfahrt (Hauptschritt 4; der volle Checkout UI-03
- * folgt mit WP-M2-42). Gezeigt wird genau der Stand, der bei Hold und Bestätigung gilt: Die Oberfläche hält Angebots-ID und Revision (ETag) und übergibt beide unverändert.
- * Preise sind Serverwerte und werden nie gerechnet oder gerundet. Hat sich das Angebot geändert (`REQUOTE_REQUIRED`, `412`) oder ist es abgelaufen, wird nie still bestätigt:
- * die Oberfläche zeigt den neuen Stand und verlangt die erneute Auswahl.
+ * UI-02 Angebotsliste und Angebotsdetails (WP-M2-41, LH-6.3-PAX-005). Gezeigt wird genau der Stand des Angebots (Serverwerte, nie gerechnet); die Auswahl führt zum
+ * Checkout UI-03 (`/checkout/:offerId`, WP-M2-42), der Hold, Bestätigung und Zahlung führt und den Stand erneut prüft.
  */
 export function OfferList({
   offerIds,
@@ -84,44 +61,27 @@ export function OfferList({
   onNewSearch,
 }: OfferListProps) {
   const api = useApi();
-  const commands = useCommands();
   const [shown, setShown] = useState<Shown[] | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ id: string; notice: Notice } | null>(null);
-  const [booked, setBooked] = useState<{ booking: RideBooking; shown: Shown } | null>(null);
   const [tick, setTick] = useState(0);
-  const [bookError, setBookError] = useState<ApiError | null>(null);
-  const progress = useRef<Map<string, { holdId: string; revision: number }>>(new Map());
   const ids = offerIds.join(',');
-
-  const readOne = useCallback(
-    async (id: string): Promise<Shown> => {
-      const offer = await api.call('getRideOffer', { path: { ride_offer_id: id } });
-      const stop = (s: { stop_id: string }) =>
-        api.call('getStop', { path: { stop_id: s.stop_id } }).then(
-          (r) => ('stop_id' in r && 'accessibility' in r ? (r as GeoStopPassenger) : null),
-          () => null,
-        );
-      const [pickup, dropoff] = await Promise.all([
-        stop(offer.pickup_stop),
-        stop(offer.dropoff_stop),
-      ]);
-      return { offer, pickup, dropoff };
-    },
-    [api],
-  );
 
   useEffect(() => {
     let alive = true;
-    Promise.all(ids.split(',').filter(Boolean).map(readOne)).then(
+    Promise.all(
+      ids
+        .split(',')
+        .filter(Boolean)
+        .map((id) => leseAngebot(api, id)),
+    ).then(
       (list) => alive && setShown(list),
       (e: unknown) => alive && setLoadError(e instanceof ApiError ? e : new ApiError(0)),
     );
     return () => {
       alive = false;
     };
-  }, [ids, readOne]);
+  }, [ids, api]);
 
   // Ablauf während der Anzeige: sekündlich prüfen (kein Preis- oder Zeitwert wird dabei verändert)
   useEffect(() => {
@@ -132,103 +92,6 @@ export function OfferList({
 
   const abgelaufen = (o: RideOffer) =>
     o.state === 'EXPIRED' || (o.hold === null && now() >= Date.parse(o.expires_at));
-
-  /** Liest den aktuellen Stand neu und ersetzt die Anzeige; die Auswahl wird zurückgenommen (erneute Auswahl nötig). */
-  const refresh = async (id: string, n: Notice) => {
-    try {
-      const fresh = await readOne(id);
-      setShown((cur) => (cur ?? []).map((s) => (s.offer.id === id ? fresh : s)));
-    } catch {
-      // alter Stand bleibt sichtbar, die Meldung weist trotzdem auf die Änderung hin
-    }
-    setSelected(null);
-    setNotice({ id, notice: n });
-  };
-
-  const buchen = async (current: Shown) => {
-    const { offer } = current;
-    const id = offer.id;
-    setBookError(null);
-    setNotice(null);
-    try {
-      let step = progress.current.get(id);
-      if (!step) {
-        const hold = await commands.run(`hold:${id}:${offer.revision}`, 'holdRideOffer', {
-          path: { ride_offer_id: id },
-          revision: offer.revision,
-          body: { max_gross: offer.gross },
-        });
-        // ETag nach dem Hold = Angebotsrevision; der Stand muss unverändert sein, sonst wird nicht bestätigt
-        const reread = await readOne(id);
-        const after = reread.offer;
-        const same =
-          after.hold?.id === hold.id &&
-          JSON.stringify([
-            after.gross,
-            after.fare_components,
-            after.pickup_window,
-            after.arrival_window,
-            after.pickup_stop,
-            after.dropoff_stop,
-          ]) ===
-            JSON.stringify([
-              offer.gross,
-              offer.fare_components,
-              offer.pickup_window,
-              offer.arrival_window,
-              offer.pickup_stop,
-              offer.dropoff_stop,
-            ]);
-        if (!same) {
-          await commands
-            .run(`release:${hold.id}`, 'releaseHold', {
-              path: { ride_offer_id: id },
-              revision: after.revision,
-            })
-            .catch(() => undefined);
-          await refresh(id, {
-            kind: 'changed',
-            priceChanged: after.gross.amount_minor !== offer.gross.amount_minor,
-          });
-          return;
-        }
-        step = { holdId: hold.id, revision: after.revision };
-        progress.current.set(id, step);
-      }
-      const booking = await commands.run(`confirm:${step.holdId}`, 'confirmBooking', {
-        revision: step.revision,
-        body: { hold_id: step.holdId, max_gross: offer.gross },
-      });
-      progress.current.delete(id);
-      setBooked({ booking, shown: current });
-    } catch (e) {
-      const err = e instanceof ApiError ? e : new ApiError(0);
-      const code = err.problem?.code;
-      if (err.status === 409 && (code === 'OFFER_EXPIRED' || code === 'HOLD_EXPIRED')) {
-        progress.current.delete(id);
-        await refresh(id, { kind: 'expired' });
-      } else if (err.status === 409 && code === 'REQUOTE_REQUIRED') {
-        progress.current.delete(id);
-        await refresh(id, { kind: 'changed', priceChanged: true });
-      } else if (err.status === 412 || (err.status === 409 && code === 'REVISION_MISMATCH')) {
-        progress.current.delete(id);
-        await refresh(id, { kind: 'changed', priceChanged: false });
-      } else if (err.status === 409 && code === 'CAPACITY_UNAVAILABLE') {
-        progress.current.delete(id);
-        setSelected(null);
-        setNotice({ id, notice: { kind: 'capacity' } });
-      } else if (
-        err.status === 0 ||
-        err.status >= 500 ||
-        (err.status === 409 && code === 'OPERATION_IN_PROGRESS')
-      ) {
-        // Ausgang unbekannt: weder Erfolg noch Ablehnung behaupten; „Stand prüfen“ wiederholt mit demselben Schlüssel
-        setNotice({ id, notice: { kind: 'unclear' } });
-      } else {
-        setBookError(err);
-      }
-    }
-  };
 
   if (loadError)
     return (
@@ -243,45 +106,6 @@ export function OfferList({
     );
   if (shown === null) return <p aria-busy="true">{tx('angebot.laedt')}</p>;
 
-  if (booked) {
-    const { booking, shown: s } = booked;
-    const p = booking.promise;
-    return (
-      <section
-        aria-labelledby="bestaetigt-h"
-        data-testid="buchung-bestaetigt"
-        data-booking-id={booking.id}
-      >
-        <h2 id="bestaetigt-h">{tx('angebot.bestaetigtTitel')}</h2>
-        <p role="status">
-          {tx('angebot.buchungsnummer')}:{' '}
-          <strong data-testid="buchungsnummer">{booking.booking_number}</strong>
-        </p>
-        <dl>
-          <dt>{tx('angebot.status')}</dt>
-          <dd data-testid="buchung-status">{STATUS_TEXT[booking.state] ?? booking.state}</dd>
-          <dt>{tx('angebot.abholpunkt')}</dt>
-          <dd>{s.pickup?.name ?? ''}</dd>
-          <dt>{tx('angebot.zielpunkt')}</dt>
-          <dd>{s.dropoff?.name ?? ''}</dd>
-          <dt>{tx('angebot.abholfenster')}</dt>
-          <dd data-testid="buchung-abholfenster">
-            {fenster({ earliest_at: p.pickup_earliest, latest_at: p.pickup_latest }, zone)}
-          </dd>
-          <dt>{tx('angebot.ankunftsfenster')}</dt>
-          <dd data-testid="buchung-ankunftsfenster">
-            {fenster({ earliest_at: p.arrival_earliest, latest_at: p.arrival_latest }, zone)}
-          </dd>
-          <dt>{tx('angebot.preis')}</dt>
-          <dd data-testid="buchung-preis">{formatMoney(p.gross)}</dd>
-        </dl>
-        <p>
-          <Link to="/reisen">{tx('angebot.zuReisen')}</Link>
-        </p>
-      </section>
-    );
-  }
-
   if (shown.length === 0)
     return (
       <p>
@@ -294,24 +118,17 @@ export function OfferList({
 
   return (
     <div>
-      {bookError ? (
-        <ErrorState
-          error={bookError}
-          action={
-            <button type="button" onClick={onNewSearch}>
-              {tx('angebot.neueSuche')}
-            </button>
-          }
-        />
-      ) : null}
       <ul className="tk-angebote" data-testid="angebotsliste">
         {shown.map((s) => {
           const o = s.offer;
           const expired = abgelaufen(o);
           const isSel = selected === o.id && !expired;
-          const n = notice?.id === o.id ? notice.notice : null;
           const dauer = dauerMinuten(o, directSeconds?.[o.id]);
-          const walkIn = origin && s.pickup ? fussweg(origin.point, s.pickup.point) : null;
+          const walkIn = o.walk
+            ? walkAngabe(o.walk)
+            : origin && s.pickup
+              ? { ...fussweg(origin.point, s.pickup.point), hinweis: tx('angebot.fussnote') }
+              : null;
           const walkOut =
             destination && s.dropoff ? fussweg(s.dropoff.point, destination.point) : null;
           const unbestaetigt = [s.pickup, s.dropoff].some(
@@ -334,24 +151,6 @@ export function OfferList({
                   {s.pickup?.name ?? tx('angebot.abholpunkt')} →{' '}
                   {s.dropoff?.name ?? tx('angebot.zielpunkt')}
                 </h2>
-                {n?.kind === 'changed' ? (
-                  <p role="alert" data-testid="hinweis-geaendert">
-                    {tx('angebot.geaendert')}{' '}
-                    {n.priceChanged ? (
-                      <>
-                        {tx('angebot.geaendertPreis')} <strong>{formatMoney(o.gross)}</strong>
-                      </>
-                    ) : null}
-                  </p>
-                ) : null}
-                {n?.kind === 'capacity' ? (
-                  <p role="alert">{tx('angebot.nichtMehrVerfuegbar')}</p>
-                ) : null}
-                {n?.kind === 'unclear' ? (
-                  <p role="status" data-testid="hinweis-unklar">
-                    {tx('angebot.unklar')}
-                  </p>
-                ) : null}
                 {expired ? (
                   <p role="alert" data-testid="hinweis-abgelaufen">
                     <strong>{tx('angebot.abgelaufenTitel')}.</strong> {tx('angebot.abgelaufen')}{' '}
@@ -366,7 +165,7 @@ export function OfferList({
                   <dt>{tx('angebot.fussweg')} (Start)</dt>
                   <dd data-testid="fussweg-start">
                     {walkIn
-                      ? `${walkIn.meter} m, ca. ${walkIn.minuten} min (${tx('angebot.fussnote')})`
+                      ? `${walkIn.meter} m, ca. ${walkIn.minuten} min${walkIn.hinweis ? ` (${walkIn.hinweis})` : ''}`
                       : tx('angebot.fussUnbekannt')}
                   </dd>
                   <dt>{tx('angebot.zielpunkt')}</dt>
@@ -427,25 +226,25 @@ export function OfferList({
                       ) : null}
                     </ul>
                     <p>{tx('angebot.vorhaltung')}</p>
-                    <BusyButton onAction={() => buchen(s)}>
-                      {`${tx('angebot.buchen')} – ${formatMoney(o.gross)}`}
-                    </BusyButton>
+                    <Link
+                      to={`/checkout/${o.id}`}
+                      data-testid="zum-checkout"
+                      aria-label={`${tx('angebot.zumCheckout')}: ${s.pickup?.name ?? ''} → ${s.dropoff?.name ?? ''}, ${formatMoney(o.gross)}`}
+                    >
+                      {tx('angebot.zumCheckout')}
+                    </Link>
                   </section>
                 ) : null}
-                {!expired && !isSel && n?.kind !== 'unclear' ? (
+                {!expired && !isSel ? (
                   <button
                     type="button"
                     aria-label={`${tx('angebot.auswaehlen')}: ${s.pickup?.name ?? ''} → ${s.dropoff?.name ?? ''}, ${formatMoney(o.gross)}`}
                     onClick={() => {
                       setSelected(o.id);
-                      setNotice(null);
                     }}
                   >
                     {tx('angebot.auswaehlen')}
                   </button>
-                ) : null}
-                {n?.kind === 'unclear' ? (
-                  <BusyButton onAction={() => buchen(s)}>{tx('angebot.pruefen')}</BusyButton>
                 ) : null}
               </article>
             </li>

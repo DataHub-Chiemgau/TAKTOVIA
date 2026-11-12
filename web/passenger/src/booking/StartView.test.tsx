@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { afterEach, describe, expect, it } from 'vitest';
 import type { RideBooking } from '@taktovia/api-client';
 import { formatViolations, runAxe } from '@taktovia/design-system/testing';
-import { NOW, SERVICE, buchungsWelt, renderBuchung } from './buchungsWelt';
+import { NOW, OFFER_ID, SERVICE, buchungsWelt, renderBuchung } from './buchungsWelt';
 import { waehleOrte } from './buchungsAblauf';
 import { HAUPTSCHRITTE, MAX_HAUPTSCHRITTE } from './schritte';
 
@@ -15,6 +15,7 @@ function buchung(id: string, n: string, over: Partial<RideBooking> = {}): RideBo
     service_id: SERVICE,
     hold_id: '88888888-8888-4888-8888-888888888880',
     state: 'CONFIRMED',
+    bereich: 'bevorstehend',
     created_at: '2026-11-19T07:51:00Z',
     passengers: 1,
     wheelchair_spaces: 0,
@@ -59,15 +60,19 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
     const auswahl = await screen.findByRole('button', { name: /Angebot auswählen/ });
     schritt();
     fireEvent.click(auswahl);
-    // Schritt 4: Buchung bestätigen
-    fireEvent.click(await screen.findByRole('button', { name: /Verbindlich buchen/ }));
+    // Schritt 4: Buchung bestätigen (Checkout: Zahlungsmittel, Zustimmung, verbindlich buchen)
+    fireEvent.click(await screen.findByRole('link', { name: /Weiter zur Buchung/ }));
+    fireEvent.click(await screen.findByRole('radio', { name: /gelingt/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Beförderungs- und Stornobedingungen/ }));
+    schritt();
+    fireEvent.click(screen.getByTestId('zahlungspflichtig-buchen'));
     const nummer = await screen.findByTestId('buchungsnummer');
     expect(nummer).toHaveTextContent('BK-2026-000001');
     // Zählung: genau die dokumentierten Hauptschritte, höchstens fünf, ohne Umweg über andere Bereiche
-    expect(gesehen).toEqual(['orte', 'zeit', 'angebot']);
+    expect(gesehen).toEqual(['orte', 'zeit', 'angebot', 'buchen']);
     expect(HAUPTSCHRITTE.map((s) => s.id)).toEqual(['orte', 'zeit', 'angebot', 'buchen']);
     expect(HAUPTSCHRITTE.length).toBeLessThanOrEqual(MAX_HAUPTSCHRITTE);
-    expect(new Set(paths)).toEqual(new Set(['/', '/angebote']));
+    expect(new Set(paths)).toEqual(new Set(['/', '/angebote', `/checkout/${OFFER_ID}`]));
     // genau ein Versuch, ein Hold, eine Buchung
     expect(world.count('createRideOffer')).toBe(1);
     expect(world.count('holdRideOffer')).toBe(1);
@@ -84,9 +89,11 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
         arrival_earliest: '2026-11-10T08:07:00Z',
         arrival_latest: '2026-11-10T08:22:00Z',
       },
+      bereich: 'vergangen',
     });
     const storniert = buchung('00000000-0000-4000-8000-0000000000a3', 'BK-2026-000003', {
       state: 'CANCELED',
+      bereich: 'storniert',
     });
     const offen = buchung('00000000-0000-4000-8000-0000000000a1', 'BK-2026-000001');
     const { client, world } = buchungsWelt({ bookings: [vergangen, storniert, offen] });
@@ -101,7 +108,7 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
     expect(screen.getByRole('radio', { name: 'Jetzt losfahren' })).toBeInTheDocument();
     expect(await screen.findByText('Der Dienst ist in Betrieb.')).toBeInTheDocument();
     // Statuswechsel während der Anzeige: nach dem Aktualisieren ist die Buchung nicht mehr „anstehend“
-    world.bookings[2] = { ...offen, state: 'CANCELED' };
+    world.bookings[2] = { ...offen, state: 'CANCELED', bereich: 'storniert' };
     fireEvent.click(within(liste).getByRole('button', { name: 'Aktualisieren' }));
     await waitFor(() =>
       expect(within(liste).getByText('Sie haben keine anstehenden Buchungen.')).toBeInTheDocument(),

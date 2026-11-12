@@ -7,6 +7,7 @@ import {
   useAuth,
 } from '@taktovia/api-client';
 import type { AuthConfig } from '@taktovia/api-client';
+import { LiveRegionProvider } from '@taktovia/design-system';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -32,7 +33,9 @@ function Authenticated() {
   return (
     <SessionProvider client={client}>
       <DraftProvider>
-        <App />
+        <LiveRegionProvider>
+          <App />
+        </LiveRegionProvider>
       </DraftProvider>
     </SessionProvider>
   );

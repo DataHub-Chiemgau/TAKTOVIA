@@ -23,9 +23,12 @@ class BookingHttpApiTest {
         assertEquals("/v1/bookings/$id", r.header("Location")); assertEquals("\"1\"", r.header("ETag"))
         assertTrue(Regex("BK-[0-9]{4}-[0-9]{6}").matches(b["booking_number"].asString())); assertEquals("CONFIRMING", b["state"].asString()); assertEquals(h.holdId, b["hold_id"].asString())
         assertEquals(h.grossMinor, b["promise"]["gross"]["amount_minor"].asLong()); assertEquals(2, b["promise"]["resource_vector"]["seats"].asInt()); assertEquals(2, b["passengers"].asInt())
-        // GET: genau diese Buchung, gleiche Nummer, ETag = Revision
+        // GET: genau diese Buchung, gleiche Nummer, ETag = Revision; die Detailsicht (WP-M2-43/-44/-46) ergänzt nur Treffpunkt, Fußweg, Stornoregel und Datenstand
         val g = s.get(id, h.account.token)
-        assertEquals(200, g.status, g.text); assertEquals(b, g.json); assertEquals("\"1\"", g.header("ETag"))
+        assertEquals(200, g.status, g.text); assertEquals("\"1\"", g.header("ETag"))
+        val ergaenzt = setOf("pickup_stop", "dropoff_stop", "cancellation", "data_as_of", "walk")
+        assertTrue(g.json.propertyNames().containsAll(ergaenzt))
+        assertEquals(b, (g.json.deepCopy() as tools.jackson.databind.node.ObjectNode).also { it.remove(ergaenzt) })
         // Wiederholung mit anderem Schlüssel findet dieselbe Buchung (fachlich), gleicher Schlüssel liefert das gespeicherte Ergebnis
         val again = s.confirm(h, key = "other-" + UUID.randomUUID())
         assertEquals(201, again.status); assertEquals(id, again.json["id"].asString())

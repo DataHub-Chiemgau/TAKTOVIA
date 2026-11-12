@@ -6,9 +6,11 @@ import type {
   Money,
   RideBooking,
   RideOffer,
+  RidePayment,
   RideRejectionCode,
 } from '@taktovia/api-client';
 import { sampleMe } from '@taktovia/api-client/testing';
+import { CheckoutScreen } from './CheckoutScreen';
 import { OfferScreen } from './OfferScreen';
 import { StartView } from './StartView';
 
@@ -29,7 +31,12 @@ export interface WeltOptions {
   bookings?: RideBooking[];
   /** Latenz der Angebotssuche in ms (für Abbruchtests); die Antwort kommt erst danach. */
   searchDelayMs?: number;
+  /** Zahl der Statusabfragen (`getBooking`) nach dem Zahlungsstart, bis der PSP-Status vorliegt (Standard 1). */
+  settleAfterPolls?: number;
 }
+
+/** Zahlungsmittelverweise des PSP-Simulators und was sie in der Welt bewirken. */
+export type PspVerweis = 'pm_ok' | 'pm_sca' | 'pm_decline' | 'pm_unknown' | 'pm_expired';
 
 /**
  * Ersatz des Servers für die Buchungsansichten (kein Ersatz für die Komponenten): hält Angebote, Holds und Buchungen im Speicher, prüft `If-Match` (412),
@@ -47,6 +54,35 @@ export function buchungsWelt(options: WeltOptions = {}) {
     /** Haken, der vor der Verarbeitung der Operation läuft (z. B. paralleler Eingriff am Angebot). */
     before: new Map<string, () => void>(),
     count: (id: string) => w.calls.filter((c) => c.id === id).length,
+    /** Zahlungen je Buchung: gewählter PSP-Verweis, Statusabfragen seit dem Start und ob die SCA-Rückkehr eingegangen ist. */
+    pay: new Map<string, { method: PspVerweis; polls: number; returned: boolean }>(),
+  };
+  /** Der Server entscheidet über den Ausgang der Zahlung: je Statusabfrage schreitet der PSP-Status voran (verifizierter Status, nicht Browser-Rückkehr). */
+  const advance = (b: RideBooking) => {
+    const p = w.pay.get(b.id);
+    if (!p || !b.payment) return;
+    p.polls += 1;
+    if (p.polls < (options.settleAfterPolls ?? 1)) return;
+    const aktuell: RidePayment = b.payment;
+    const setPay = (status: RidePayment['status'], failure?: string) => {
+      b.payment = { ...aktuell, status, ...(failure ? { failure_code: failure } : {}) };
+      b.revision += 1;
+    };
+    if (b.payment.status !== 'CREATED' && b.payment.status !== 'REQUIRES_ACTION') return;
+    if (p.method === 'pm_ok' || (p.method === 'pm_sca' && p.returned)) {
+      setPay('AUTHORIZED');
+      b.state = 'CONFIRMED';
+    } else if (p.method === 'pm_sca') setPay('REQUIRES_ACTION');
+    else if (p.method === 'pm_decline') {
+      setPay('AUTHORIZATION_FAILED', 'DECLINED');
+      b.state = 'CANCELED';
+      b.cancel_reason = 'PAYMENT_FAILED';
+    } else if (p.method === 'pm_unknown') setPay('UNKNOWN', 'AUTHORIZE_OUTCOME_UNKNOWN');
+    else if (p.method === 'pm_expired') {
+      setPay('VOIDED', 'AUTHORIZATION_EXPIRED');
+      b.state = 'CANCELED';
+      b.cancel_reason = 'PAYMENT_FAILED';
+    }
   };
   const makeOffer = (): RideOffer => ({
     id: OFFER_ID,
@@ -139,7 +175,11 @@ export function buchungsWelt(options: WeltOptions = {}) {
             traffic_product: null,
           });
         case 'listBookings':
-          return reply({ items: w.bookings, next_cursor: null, as_of: '2026-11-20T07:50:00Z' });
+          return reply({
+            items: w.bookings.filter((b) => !query.bereich || b.bereich === query.bereich),
+            next_cursor: null,
+            as_of: '2026-11-20T07:50:00Z',
+          });
         case 'searchPlaces':
           return reply({
             items: [
@@ -224,10 +264,69 @@ export function buchungsWelt(options: WeltOptions = {}) {
           }
           return reply({});
         }
+        case 'getBooking': {
+          const b = w.bookings.find(
+            (x) => x.id === (args.path as { booking_id: string }).booking_id,
+          );
+          if (!b) throw problem(404, 'NOT_FOUND');
+          advance(b);
+          return reply(b);
+        }
+        case 'startBookingPayment': {
+          const b = w.bookings.find(
+            (x) => x.id === (args.path as { booking_id: string }).booking_id,
+          );
+          if (!b) throw problem(404, 'NOT_FOUND');
+          const body = args.body as { payment_method_ref: PspVerweis; amount: Money };
+          if (body.amount.amount_minor !== b.promise.gross.amount_minor)
+            throw problem(409, 'REQUOTE_REQUIRED');
+          if (!w.pay.has(b.id)) {
+            w.pay.set(b.id, { method: body.payment_method_ref, polls: 0, returned: false });
+            b.payment = {
+              id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+              status: 'CREATED',
+              authorized: { ...b.promise.gross, amount_minor: 0 },
+              captured: { ...b.promise.gross, amount_minor: 0 },
+              refunded: { ...b.promise.gross, amount_minor: 0 },
+              revision: 1,
+            };
+          }
+          return reply({
+            operation_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+            kind: 'AUTHORIZE_PAYMENT',
+            status: 'RUNNING',
+            journey_id: null,
+            created_at: '2026-11-20T07:51:00Z',
+            updated_at: '2026-11-20T07:51:00Z',
+            result_code: null,
+            retry_after_seconds: 1,
+          });
+        }
+        case 'returnBookingPayment': {
+          const p = w.pay.get((args.path as { booking_id: string }).booking_id);
+          if (p) p.returned = true;
+          return reply({
+            operation_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+            kind: 'RECONCILE_PAYMENT',
+            status: 'RUNNING',
+            journey_id: null,
+            created_at: '2026-11-20T07:51:00Z',
+            updated_at: '2026-11-20T07:51:00Z',
+            result_code: null,
+            retry_after_seconds: 1,
+          });
+        }
         case 'confirmBooking': {
           const o = w.offer;
           const body = args.body as { hold_id: string; max_gross: Money };
           if (!o || o.hold?.id !== body.hold_id) throw new ApiError(404);
+          // Wiederholte Bestätigung desselben Holds liefert dieselbe Buchung (wie der Server); die Antwort trägt keinen Zahlungsblock
+          const vorhanden = w.bookings.find((x) => x.hold_id === body.hold_id);
+          if (vorhanden) {
+            const { payment: _payment, ...ohne } = vorhanden;
+            void _payment;
+            return reply(ohne);
+          }
           if (String(args.revision) !== String(o.revision)) throw problem(412, 'REVISION_MISMATCH');
           if (body.max_gross.amount_minor !== o.gross.amount_minor)
             throw problem(409, 'REQUOTE_REQUIRED');
@@ -237,6 +336,7 @@ export function buchungsWelt(options: WeltOptions = {}) {
             service_id: SERVICE,
             hold_id: body.hold_id,
             state: 'CONFIRMING',
+            bereich: 'bevorstehend',
             created_at: '2026-11-20T07:51:00Z',
             passengers: 1,
             wheelchair_spaces: 0,
@@ -277,7 +377,9 @@ export function renderBuchung(client: ApiClient, now: () => number, paths: strin
         <Routes>
           <Route path="/" element={<StartView now={now} />} />
           <Route path="/angebote" element={<OfferScreen now={now} />} />
+          <Route path="/checkout/:offerId" element={<CheckoutScreen now={now} pollMs={5} />} />
           <Route path="/reisen" element={<p>Meine Reisen</p>} />
+          <Route path="/reisen/:bookingId" element={<p>Reise</p>} />
         </Routes>
       </SessionProvider>
     </MemoryRouter>,

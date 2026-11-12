@@ -27,6 +27,8 @@ data class BookingDetail(
     val passengers: Int, val wheelchairSpaces: Int, val assistanceCodes: List<String>?, val promise: BookingPromise,
     /** Stornogrund und Verursacherklasse (WP-M2-27): einmal gesetzt, danach unveränderlich; `null`, solange nicht storniert. */
     val cancelReason: BookingReason? = null, val cancelCause: CauseClass? = null,
+    /** Bereich der Buchungsübersicht (WP-M2-45), serverseitig aus Zustand, Ausführungszustand und Zeit berechnet. */
+    val area: BookingArea = BookingArea.UPCOMING,
 )
 
 /**
@@ -92,7 +94,13 @@ interface Bookings {
     fun paymentContext(ctx: RequestContext, bookingId: UUID): BookingPaymentContext
 
     /** Eigene Buchungen (Fahrgast) bzw. Buchungen der Dienste des Scopes (Betrieb), aufsteigend nach `(created_at, id)`; [limit] + 1 Zeilen ab [after] (Seitenbildung beim Aufrufer). */
-    fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?): List<BookingDetail>
+    fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, area: BookingArea? = null): List<BookingDetail>
+
+    /**
+     * Lesesicht für UI-04 mit Haltepunkten, Plan-ETA aus der letzten Planänderung der Buchung, Fahrzeugidentifikation und Stornoregel (WP-M2-43). Dieselbe Objektberechtigung wie [get]:
+     * fremde Buchung, fremder Dienst oder Mandant `404`; nie Personal- oder Fahrzeugakten.
+     */
+    fun tracking(ctx: RequestContext, bookingId: UUID): BookingTracking
 
     /**
      * Zustandsübergang einer Buchung durch Betrieb oder System (Zahlungsautomat, Abgleich, Fahrtabschluss), einziger Weg neben Confirm und Storno (WP-M2-25): Automat `booking`, Revision (CAS,
@@ -126,8 +134,9 @@ interface Bookings {
     fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry>
 
     companion object {
-        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation)
+        fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null,
+            executionStates: ExecutionStateSource = ExecutionStateSource.NONE): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, executionStates)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()
