@@ -31,6 +31,15 @@ class RideOfferHttpApiTest {
     }
 
     @Test
+    fun zulaessigkeit_gebiet_und_rollstuhl_ueber_http() {
+        val outside = world.request(world.body(world.later(3)).replace("13.7401", "14.9"))
+        assertEquals(200, outside.status, outside.text); assertEquals("OUTSIDE_AREA", outside.json["rejection"]["code"].asString()); assertEquals(0, outside.json["offers"].size())
+        // Die Welt hat nur Haltepunkte mit wheelchair_boarding YES: Rollstuhlanfrage ist zulaessig
+        val chair = world.request(world.body(world.later(3), extra = ",\"wheelchair_spaces\":1"))
+        assertEquals(200, chair.status, chair.text); assertEquals(1, chair.json["offers"].size())
+    }
+
+    @Test
     fun formal_fehlerhaft_ist_422_und_idempotenz_wirkt() {
         assertEquals(422, world.request(world.body(world.later(3), passengers = 0)).status)
         val dst = world.request(world.body("2027-03-28T02:30:00+01:00"))

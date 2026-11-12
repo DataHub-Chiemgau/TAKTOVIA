@@ -50,10 +50,11 @@ class RideOfferFixture : AutoCloseable {
     val now: Instant = Instant.parse("2026-11-02T07:00:00Z")
     val clock: Clock = Clock.fixed(now, ZoneOffset.UTC)
 
-    class World(val tenant: TenantId, val operator: UUID, val serviceId: UUID, val admin: RequestContext, val stopA: UUID, val stopB: UUID)
+    class World(val tenant: TenantId, val operator: UUID, val serviceId: UUID, val admin: RequestContext, val stopA: UUID, val stopB: UUID, val areaKey: UUID)
 
     /** Mandant mit Dienst, Gebiet und zwei buchbaren Haltepunkten; [params] sind die veröffentlichten Mandantenparameter (`min_booking_lead_min`, …). */
-    fun world(params: Map<String, Any?> = mapOf("min_booking_lead_min" to 30, "max_booking_horizon_days" to 14, "pickup_window_min" to 15, "arrival_grace_min" to 5, "stop_walk_max_m" to 400), from: String = "06:00", to: String = "22:00"): World {
+    fun world(params: Map<String, Any?> = mapOf("min_booking_lead_min" to 30, "max_booking_horizon_days" to 14, "pickup_window_min" to 15, "arrival_grace_min" to 5, "stop_walk_max_m" to 400), from: String = "06:00", to: String = "22:00",
+              areaTo: Instant? = null, wheelchair: String = "YES"): World {
         val t = UUID.randomUUID(); val le = UUID.randomUUID(); val op = UUID.randomUUID()
         adminUpdate("INSERT INTO taktovia.tenant(id,name,status) VALUES (?,?,'ACTIVE')", t, "t-$t")
         val tenant = TenantId(t)
@@ -65,12 +66,12 @@ class RideOfferFixture : AutoCloseable {
         val service = geo.structure.createService(adminCtx, CreateService(op, "Rufbus", "Europe/Berlin")).id
         val allDays = listOf(mapOf("weekdays" to listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"), "from" to from, "to" to to))
         geo.serviceRevisions.publish(adminCtx, service, 0, PublishServiceRevision("AREA_ON_DEMAND", allDays, emptyList<Any>(), T0, null, "Testaufbau"))
-        geo.areas.create(adminCtx, CreateServiceArea(service, square(13.60, 50.95, 0.30), T0, null, ZoneRole.BOTH))
-        val acc = mapOf("schema_version" to "1.0", "step_free" to "YES", "wheelchair_boarding" to "YES")
+        val area = geo.areas.create(adminCtx, CreateServiceArea(service, square(13.60, 50.95, 0.30), T0, areaTo, ZoneRole.BOTH))
+        val acc = mapOf("schema_version" to "1.0", "step_free" to "YES", "wheelchair_boarding" to wheelchair)
         val a = geo.stops.create(adminCtx, CreateStop(null, "Markt", mapOf("latitude" to 51.05, "longitude" to 13.74), acc, listOf("AREA_ON_DEMAND"), true, T0, null)).stopId
         val b = geo.stops.create(adminCtx, CreateStop(null, "Bahnhof", mapOf("latitude" to 51.10, "longitude" to 13.80), acc, listOf("AREA_ON_DEMAND"), true, T0, null)).stopId
         publishTenantParameters(adminCtx, params)
-        return World(tenant, op, service, adminCtx, a, b)
+        return World(tenant, op, service, adminCtx, a, b, area.id)
     }
 
     private fun publishTenantParameters(ctx: RequestContext, values: Map<String, Any?>) {

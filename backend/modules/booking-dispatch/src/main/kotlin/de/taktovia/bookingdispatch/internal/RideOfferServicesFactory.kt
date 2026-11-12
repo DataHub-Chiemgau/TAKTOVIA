@@ -12,5 +12,5 @@ import java.time.Clock
 /** Nur innerhalb des Moduls `booking-dispatch` sichtbar (durch Architekturtest erzwungen). */
 internal object RideOfferServicesFactory {
     fun create(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: EffectiveConfig, clock: Clock, travelTime: DirectTravelTime, gate: CandidateGate): RideOfferRequests =
-        JdbcRideOfferRequests(ctxTx, outbox, geo, config, clock, travelTime, gate, EligibilityCheck { _, _ -> EligibilityResult(emptyList()) })
+        JdbcRideOfferRequests(ctxTx, outbox, geo, config, clock, travelTime, gate, GeoEligibilityCheck(geo))
 }
