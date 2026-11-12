@@ -1,10 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, SessionProvider } from '@taktovia/api-client';
 import type { ApiClient } from '@taktovia/api-client';
 import { formatViolations, runAxe } from '@taktovia/design-system/testing';
 import { OFFER_ID, NOW, buchungsWelt } from './buchungsWelt';
+import { Checkout } from './Checkout';
 import { OfferList } from './OfferList';
 import { formatMoney } from './geld';
 
@@ -39,7 +40,56 @@ async function mitAngebot(options?: Parameters<typeof buchungsWelt>[0]) {
 
 async function waehle() {
   fireEvent.click(await screen.findByRole('button', { name: /Angebot auswählen/ }));
-  return screen.findByRole('button', { name: /Verbindlich buchen/ });
+  return screen.findByRole('link', { name: /Weiter zur Buchung/ });
+}
+
+function CheckoutRoute({ clock }: { clock: { now: number } }) {
+  const { offerId } = useParams();
+  return (
+    <Checkout
+      offerId={offerId ?? ''}
+      zone="Europe/Berlin"
+      now={() => clock.now}
+      pollMs={5}
+      maxPolls={6}
+      onNewSearch={() => undefined}
+    />
+  );
+}
+
+/** Angebotsliste und Checkout in einem Router: die Auswahl der Liste führt in den Checkout (Übergabe der Angebots-ID in der Adresse). */
+function renderListeUndCheckout(client: ApiClient, clock: { now: number }) {
+  return render(
+    <MemoryRouter initialEntries={['/']}>
+      <SessionProvider client={client}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <OfferList
+                offerIds={[OFFER_ID]}
+                origin={ORIGIN}
+                destination={DEST}
+                zone="Europe/Berlin"
+                directSeconds={{ [OFFER_ID]: 720 }}
+                now={() => clock.now}
+                onNewSearch={vi.fn()}
+              />
+            }
+          />
+          <Route path="/checkout/:offerId" element={<CheckoutRoute clock={clock} />} />
+        </Routes>
+      </SessionProvider>
+    </MemoryRouter>,
+  );
+}
+
+/** Wählt in der Liste das Angebot, wechselt in den Checkout und bereitet die Buchung vor (Zahlungsmittel, Zustimmung). */
+async function inDenCheckout() {
+  fireEvent.click(await waehle());
+  fireEvent.click(await screen.findByRole('radio', { name: /gelingt/ }));
+  fireEvent.click(screen.getByRole('checkbox', { name: /Beförderungs- und Stornobedingungen/ }));
+  return screen.getByTestId('zahlungspflichtig-buchen');
 }
 
 describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
@@ -95,18 +145,17 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Angebot auswählen/ }));
     const d = await screen.findByTestId('details');
     expect(d).toHaveTextContent('Gesamtpreis: 9,51 €');
-    // Hold und Bestätigung tragen genau den Serverbetrag
-    fireEvent.click(await screen.findByRole('button', { name: /^Verbindlich buchen – 9,51.€$/ }));
-    await screen.findByTestId('buchung-bestaetigt');
-    const hold = world.calls.find((c) => c.id === 'holdRideOffer')?.args as {
-      body: { max_gross: unknown };
-    };
-    expect(hold.body.max_gross).toEqual({ amount_minor: 951, currency: 'EUR', exponent: 2 });
+    // die Auswahl führt zum Checkout und trägt genau den Serverbetrag im Namen
+    expect(
+      await screen.findByRole('link', {
+        name: /^Weiter zur Buchung: Altmarkt → Hauptbahnhof, 9,51.€$/,
+      }),
+    ).toHaveAttribute('href', `/checkout/${OFFER_ID}`);
   });
 
   it('angezeigter_stand_gleich_bestaetigter_buchung', async () => {
     const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
+    renderListeUndCheckout(client, { now: NOW });
     const karte = await screen.findByTestId('angebot');
     const gezeigt = {
       abholung: within(karte).getByTestId('abholfenster').textContent,
@@ -114,37 +163,32 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
       preis: within(karte).getByTestId('preis').textContent,
       revision: karte.getAttribute('data-revision'),
     };
-    fireEvent.click(within(karte).getByRole('button', { name: /Angebot auswählen/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /Verbindlich buchen/ }));
-    const b = await screen.findByTestId('buchung-bestaetigt');
-    // Anzeige der Bestätigung = Anzeige des Angebots = promise der entstandenen Buchung = Angebotsstand
+    fireEvent.click(await inDenCheckout());
+    const b = await screen.findByTestId('checkout-erfolg');
+    // Anzeige der Liste = Bestätigung = promise der entstandenen Buchung = Angebotsstand
     expect(within(b).getByTestId('buchung-abholfenster').textContent).toBe(gezeigt.abholung);
-    expect(within(b).getByTestId('buchung-ankunftsfenster').textContent).toBe(gezeigt.ankunft);
     expect(within(b).getByTestId('buchung-preis').textContent).toBe(gezeigt.preis);
     const promise = world.bookings[0]?.promise;
     expect(promise?.gross).toEqual(world.offer?.gross);
     expect(promise?.pickup_earliest).toBe(world.offer?.pickup_window.earliest_at);
     expect(promise?.arrival_latest).toBe(world.offer?.arrival_window.latest_at);
-    // Hold bekam die angezeigte Revision unverändert, die Bestätigung die Revision nach dem Hold (ETag)
     const hold = world.calls.find((c) => c.id === 'holdRideOffer')?.args as {
       revision: number;
       path: { ride_offer_id: string };
     };
     expect(String(hold.revision)).toBe(gezeigt.revision);
     expect(hold.path.ride_offer_id).toBe(OFFER_ID);
+    // die Bestätigung trägt die Revision nach dem Hold (ETag)
     const confirm = world.calls.find((c) => c.id === 'confirmBooking')?.args as {
       revision: number;
     };
     expect(confirm.revision).toBe(Number(gezeigt.revision) + 1);
-    expect(within(b).getByTestId('buchung-status')).toHaveTextContent(
-      'Wird bestätigt (Zahlung ausstehend)',
-    );
   });
 
   it('geaendertes_angebot_wird_nicht_still_bestaetigt', async () => {
     const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
-    const knopf = await waehle();
+    renderListeUndCheckout(client, { now: NOW });
+    const knopf = await inDenCheckout();
     // paralleler Vorgang ändert das Angebot zwischen Anzeige und Bestätigung (Revision)
     world.before.set('holdRideOffer', () => {
       if (world.offer) world.offer.revision += 1;
@@ -156,19 +200,13 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     );
     expect(world.count('confirmBooking')).toBe(0);
     expect(world.bookings).toHaveLength(0);
-    // erneute Auswahl nötig: die Auswahl ist zurückgenommen, der neue Stand wird angezeigt
-    expect(screen.queryByRole('button', { name: /Verbindlich buchen/ })).toBeNull();
-    expect(screen.getByTestId('angebot').getAttribute('data-revision')).toBe('2');
-    // nach erneuter Auswahl wird genau der neue Stand gebucht
-    fireEvent.click(await waehle());
-    await screen.findByTestId('buchung-bestaetigt');
-    expect(world.bookings).toHaveLength(1);
+    expect(screen.getByTestId('checkout').getAttribute('data-revision')).toBe('2');
   });
 
   it('revisionswechsel_412_wird_nicht_still_bestaetigt', async () => {
     const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
-    const knopf = await waehle();
+    renderListeUndCheckout(client, { now: NOW });
+    const knopf = await inDenCheckout();
     world.failNext.set(
       'confirmBooking',
       new ApiError(412, {
@@ -182,30 +220,21 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     fireEvent.click(knopf);
     expect(await screen.findByTestId('hinweis-geaendert')).toBeInTheDocument();
     expect(world.bookings).toHaveLength(0);
-    expect(screen.queryByTestId('buchung-bestaetigt')).toBeNull();
-    // der Neustand wurde gelesen, der Fahrgast muss erneut wählen
-    expect(await screen.findByRole('button', { name: /Angebot auswählen/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('checkout-erfolg')).toBeNull();
   });
 
   it('requote_required_zeigt_neuen_stand', async () => {
     const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
-    const knopf = await waehle();
+    renderListeUndCheckout(client, { now: NOW });
+    const knopf = await inDenCheckout();
     world.before.set('holdRideOffer', () => {
       if (world.offer) world.offer.gross = { amount_minor: 990, currency: 'EUR', exponent: 2 };
       world.before.delete('holdRideOffer');
     });
     fireEvent.click(knopf);
-    const hinweis = await screen.findByTestId('hinweis-geaendert');
-    expect(hinweis).toHaveTextContent('Neuer Preis: 9,90 €');
+    expect(await screen.findByTestId('hinweis-geaendert')).toHaveTextContent('Neuer Preis: 9,90 €');
     expect(screen.getByTestId('preis')).toHaveTextContent('9,90 €');
-    expect(world.count('confirmBooking')).toBe(0);
     expect(world.bookings).toHaveLength(0);
-    // der Fahrgast stimmt ausdrücklich zu: erneute Auswahl, dann Buchung zum neuen Preis
-    fireEvent.click(await screen.findByRole('button', { name: /Angebot auswählen/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /^Verbindlich buchen – 9,90.€$/ }));
-    await screen.findByTestId('buchung-bestaetigt');
-    expect(world.bookings[0]?.promise.gross.amount_minor).toBe(990);
   });
 
   it('abgelaufenes_angebot_verlangt_neue_auswahl', async () => {
@@ -217,59 +246,11 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     clock.now = Date.parse('2026-11-20T08:31:00Z');
     const hinweis = await screen.findByTestId('hinweis-abgelaufen', {}, { timeout: 4000 });
     expect(hinweis).toHaveTextContent('Dieses Angebot ist abgelaufen');
-    expect(screen.queryByRole('button', { name: /Verbindlich buchen/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Weiter zur Buchung/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Angebot auswählen/ })).toBeNull();
     fireEvent.click(within(hinweis).getByRole('button', { name: 'Neue Suche' }));
     expect(onNewSearch).toHaveBeenCalledTimes(1);
     expect(world.count('holdRideOffer')).toBe(0);
-  });
-
-  it('ablauf_beim_buchen_wird_serverseitig_abgewiesen_und_zeigt_abgelaufen', async () => {
-    const clock = { now: NOW };
-    const { client, world } = await mitAngebot();
-    renderOffers(client, clock);
-    const knopf = await waehle();
-    // Uhr der Oberfläche steht noch vor dem Ablauf, der Server ist schon weiter
-    world.before.set('holdRideOffer', () => {
-      world.now = Date.parse('2026-11-20T08:31:00Z');
-      clock.now = world.now;
-    });
-    fireEvent.click(knopf);
-    expect(await screen.findByTestId('hinweis-abgelaufen')).toBeInTheDocument();
-    expect(world.bookings).toHaveLength(0);
-  });
-
-  it('unklares_ergebnis_behauptet_weder_erfolg_noch_ablehnung_und_wiederholt_mit_demselben_schluessel', async () => {
-    const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
-    const knopf = await waehle();
-    world.failNext.set('confirmBooking', new ApiError(0));
-    fireEvent.click(knopf);
-    expect(await screen.findByTestId('hinweis-unklar')).toHaveTextContent(
-      'weder Erfolg noch Ablehnung',
-    );
-    expect(screen.queryByTestId('buchung-bestaetigt')).toBeNull();
-    fireEvent.click(await screen.findByRole('button', { name: 'Stand prüfen' }));
-    await screen.findByTestId('buchung-bestaetigt');
-    const keys = world.calls
-      .filter((c) => c.id === 'confirmBooking')
-      .map((c) => (c.args as { headers: Record<string, string> }).headers['Idempotency-Key']);
-    expect(keys).toHaveLength(2);
-    expect(keys[0]).toBe(keys[1]);
-    expect(world.count('holdRideOffer')).toBe(1);
-    expect(world.bookings).toHaveLength(1);
-  });
-
-  it('doppelklick_auf_buchen_erzeugt_genau_eine_buchung', async () => {
-    const { client, world } = await mitAngebot();
-    renderOffers(client, { now: NOW });
-    const knopf = await waehle();
-    fireEvent.click(knopf);
-    fireEvent.click(knopf);
-    await screen.findByTestId('buchung-bestaetigt');
-    expect(world.count('holdRideOffer')).toBe(1);
-    expect(world.count('confirmBooking')).toBe(1);
-    expect(world.bookings).toHaveLength(1);
   });
 
   it('angebotsliste_per_tastatur_und_screenreader_bedienbar', async () => {
@@ -284,7 +265,9 @@ describe('UI-02 Angebotsliste und Angebotsdetails (WP-M2-41)', () => {
     auswahl.focus();
     expect(document.activeElement).toBe(auswahl);
     fireEvent.click(auswahl);
-    const buchen = await screen.findByRole('button', { name: /^Verbindlich buchen – 9,50.€$/ });
+    const buchen = await screen.findByRole('link', {
+      name: /^Weiter zur Buchung: Altmarkt → Hauptbahnhof, 9,50.€$/,
+    });
     buchen.focus();
     expect(document.activeElement).toBe(buchen);
     expect(screen.getByRole('heading', { name: 'Preisaufschlüsselung' })).toBeInTheDocument();

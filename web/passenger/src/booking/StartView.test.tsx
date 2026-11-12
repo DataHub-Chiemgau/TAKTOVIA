@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { afterEach, describe, expect, it } from 'vitest';
 import type { RideBooking } from '@taktovia/api-client';
 import { formatViolations, runAxe } from '@taktovia/design-system/testing';
-import { NOW, SERVICE, buchungsWelt, renderBuchung } from './buchungsWelt';
+import { NOW, OFFER_ID, SERVICE, buchungsWelt, renderBuchung } from './buchungsWelt';
 import { waehleOrte } from './buchungsAblauf';
 import { HAUPTSCHRITTE, MAX_HAUPTSCHRITTE } from './schritte';
 
@@ -59,15 +59,19 @@ describe('UI-01 Startansicht und Buchung in fünf Schritten (WP-M2-37)', () => {
     const auswahl = await screen.findByRole('button', { name: /Angebot auswählen/ });
     schritt();
     fireEvent.click(auswahl);
-    // Schritt 4: Buchung bestätigen
-    fireEvent.click(await screen.findByRole('button', { name: /Verbindlich buchen/ }));
+    // Schritt 4: Buchung bestätigen (Checkout: Zahlungsmittel, Zustimmung, verbindlich buchen)
+    fireEvent.click(await screen.findByRole('link', { name: /Weiter zur Buchung/ }));
+    fireEvent.click(await screen.findByRole('radio', { name: /gelingt/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Beförderungs- und Stornobedingungen/ }));
+    schritt();
+    fireEvent.click(screen.getByTestId('zahlungspflichtig-buchen'));
     const nummer = await screen.findByTestId('buchungsnummer');
     expect(nummer).toHaveTextContent('BK-2026-000001');
     // Zählung: genau die dokumentierten Hauptschritte, höchstens fünf, ohne Umweg über andere Bereiche
-    expect(gesehen).toEqual(['orte', 'zeit', 'angebot']);
+    expect(gesehen).toEqual(['orte', 'zeit', 'angebot', 'buchen']);
     expect(HAUPTSCHRITTE.map((s) => s.id)).toEqual(['orte', 'zeit', 'angebot', 'buchen']);
     expect(HAUPTSCHRITTE.length).toBeLessThanOrEqual(MAX_HAUPTSCHRITTE);
-    expect(new Set(paths)).toEqual(new Set(['/', '/angebote']));
+    expect(new Set(paths)).toEqual(new Set(['/', '/angebote', `/checkout/${OFFER_ID}`]));
     // genau ein Versuch, ein Hold, eine Buchung
     expect(world.count('createRideOffer')).toBe(1);
     expect(world.count('holdRideOffer')).toBe(1);

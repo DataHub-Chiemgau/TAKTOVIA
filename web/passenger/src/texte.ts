@@ -167,6 +167,50 @@ export const texte = {
   'angebot.statusConfirmed': 'Bestätigt',
   'angebot.zuReisen': 'Zu meinen Reisen',
   'angebot.vorhaltung': 'Das Angebot ist unverbindlich, bis Sie verbindlich buchen.',
+  // UI-03 Checkout (WP-M2-42)
+  'angebot.zumCheckout': 'Weiter zur Buchung',
+  'checkout.pruefen': 'Ihre Reise prüfen',
+  'checkout.zusammenfassung': 'Zusammenfassung',
+  'checkout.zahlung': 'Zahlung',
+  'checkout.pspHinweis':
+    'Testmodus (Zahlungssimulator): Es wird nichts belastet. Zahlungsdaten geben Sie nie in dieser Anwendung ein, die Eingabe erfolgt in der Komponente des Zahlungsdienstleisters.',
+  'checkout.zustimmung': 'Ich akzeptiere die Beförderungs- und Stornobedingungen.',
+  'checkout.preisZustimmung': 'Ich stimme dem geänderten Preis ausdrücklich zu:',
+  'checkout.buchen': 'Zahlungspflichtig buchen',
+  'checkout.voraussetzung':
+    'Zum Buchen wählen Sie ein Zahlungsmittel und akzeptieren die Bedingungen.',
+  'checkout.reserviert': 'Plätze werden reserviert …',
+  'checkout.restfrist': 'Reservierung gültig noch',
+  'checkout.holdAblaufWaehrend':
+    'Die Reservierungsfrist ist abgelaufen. Wir prüfen Zahlung und Reservierung; ein Erfolg wird nur gezeigt, wenn die Buchung bestätigt ist. Sie können ein neues Angebot suchen.',
+  'checkout.zahlungsstatus': 'Zahlungsstatus',
+  'checkout.zahl.keine': 'Keine Zahlung begonnen',
+  'checkout.zahl.created': 'Zahlung wird vorbereitet',
+  'checkout.zahl.sca': 'Zusätzliche Bestätigung bei Ihrer Bank erforderlich',
+  'checkout.zahl.authorized': 'Betrag reserviert (noch nicht eingezogen)',
+  'checkout.zahl.failed': 'Zahlung abgelehnt',
+  'checkout.zahl.capturePending': 'Einzug läuft',
+  'checkout.zahl.captured': 'Bezahlt',
+  'checkout.zahl.voidPending': 'Reservierung des Betrags wird aufgehoben',
+  'checkout.zahl.voided': 'Reservierung des Betrags aufgehoben',
+  'checkout.zahl.unknown': 'Zahlungsstand wird geprüft',
+  'checkout.erfolg.ansage': 'Buchung bestätigt.',
+  'checkout.zurReise': 'Zur Reise',
+  'checkout.kontakt': 'Bei Fragen erreichen Sie den Betreiber über die',
+  'checkout.abgelehnt.titel': 'Zahlung abgelehnt',
+  'checkout.abgelehnt.text':
+    'Die Zahlung wurde abgelehnt. Es wurde keine Buchung bestätigt und nichts berechnet. Sie können mit einem neuen Angebot und einem anderen Zahlungsmittel erneut buchen.',
+  'checkout.holdverlust.titel': 'Reservierung abgelaufen',
+  'checkout.holdverlust.text':
+    'Die Reservierung ist nicht mehr gültig, die Buchung wurde nicht bestätigt. Ein bereits reservierter Betrag wird aufgehoben. Bitte suchen Sie ein neues Angebot.',
+  'checkout.kapazitaet.titel': 'Platz nicht mehr verfügbar',
+  'checkout.unklar.titel': 'Bestätigung wird geprüft',
+  'checkout.unklar.text':
+    'Das Ergebnis Ihrer Buchung wird geprüft. Es wird weder Erfolg noch Ablehnung behauptet; bitte lösen Sie keine zweite Buchung aus.',
+  'checkout.sca.titel': 'Zusätzliche Bestätigung erforderlich',
+  'checkout.sca.text':
+    'Bitte schließen Sie die Bestätigung bei Ihrer Bank ab und kehren Sie dann hierher zurück. Erst die bestätigte Zahlung schließt die Buchung ab.',
+  'checkout.sca.zurueck': 'Ich bin von der Bestätigung zurückgekehrt',
   'sw.updated': 'Die App wurde aktualisiert.',
   // Textbausteine der standardisierten Ablehnungsgründe mit nächster Handlung (WP-M2-13, Kap. 06 §6.2); Schlüssel = Code aus `RideRejectionCode` in camelCase
   'rej.next': 'Nächste Handlung:',
