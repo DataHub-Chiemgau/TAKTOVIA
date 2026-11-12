@@ -206,6 +206,69 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/time-events/target-actual:
+    get:
+      summary: Soll/Ist je Tag lesen
+      operationId: listTimeTargetActual
+      security:
+      - oidc:
+        - time-events:read
+      description: 'Reine Leseprojektion je Person und Tag: Soll aus den geplanten Schichten (`staff_shift`), Ist aus den Zeitereignissen (`time_event`); beides bleibt getrennt gespeichert, die Sicht schreibt nichts und ersetzt nie einen Istwert durch einen Planwert. Ein Tag mit Soll ohne Ist-Buchung trägt das Kennzeichen `NO_ACTUAL_BOOKING` (`actual_net_seconds` null); Ist ohne Soll `ACTUAL_WITHOUT_PLAN`; offene oder beginnlose Intervalle `ACTUAL_INCOMPLETE`. Vorbereitungszeit vor der Fahrzeugprüfung zählt als erfasste Arbeitszeit, sobald sie gestempelt ist. Das Soll folgt dem Betriebstag der Schicht, das Ist dem lokalen Tag des Intervallbeginns in `timezone`. Entwürfe sind kein Soll. Fremde Personen wie bei `listTimeEvents`. Höchstens 31 Tage je Abruf.'
+      parameters:
+      - name: person_ref
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description: Person; ohne Angabe die eigene.
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          maxLength: 10
+        description: Erster Tag (lokales Datum, einschließlich).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          maxLength: 10
+        description: Letzter Tag (lokales Datum, einschließlich), höchstens 31 Tage ab `from`.
+      - name: timezone
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description: IANA-Zone für die Tageszuordnung; Vorgabe `Europe/Berlin` (bis zum Parameter `reporting_timezone`, WP-M4-10).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeTargetActualList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     TimeEventCreate:
@@ -465,3 +528,101 @@ components:
       - to
       - intervals
       - anomalies
+    TimeTargetActualList:
+      type: object
+      additionalProperties: false
+      properties:
+        person_ref:
+          type: string
+          maxLength: 200
+        timezone:
+          type: string
+          maxLength: 64
+        days:
+          type: array
+          maxItems: 31
+          items:
+            $ref: '#/components/schemas/TimeTargetActualDay'
+      required:
+      - person_ref
+      - timezone
+      - days
+    TimeTargetActualDay:
+      type: object
+      additionalProperties: false
+      properties:
+        day:
+          type: string
+          format: date
+          maxLength: 10
+        planned:
+          type: array
+          maxItems: 50
+          description: 'Soll, geplante Schichten des Betriebstags (ohne Entwürfe).'
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              shift_id:
+                $ref: common.yaml#/components/schemas/UUID
+              starts_at:
+                type: string
+                format: date-time
+                maxLength: 40
+              ends_at:
+                type: string
+                format: date-time
+                maxLength: 40
+              timezone:
+                type: string
+                maxLength: 64
+              planned_seconds:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 9007199254740991
+              state:
+                type: string
+                maxLength: 40
+            required:
+            - shift_id
+            - starts_at
+            - ends_at
+            - timezone
+            - planned_seconds
+            - state
+        planned_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        actual:
+          type: array
+          maxItems: 100
+          description: 'Ist, aus Zeitereignissen abgeleitete Intervalle (nie gespeichert).'
+          items:
+            $ref: '#/components/schemas/TimeInterval'
+        actual_net_seconds:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Summe der Nettodauern; null ohne vollständige Ist-Buchung (nie mit dem Soll gefüllt).
+        flags:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            enum:
+            - NO_ACTUAL_BOOKING
+            - ACTUAL_WITHOUT_PLAN
+            - ACTUAL_INCOMPLETE
+      required:
+      - day
+      - planned
+      - planned_seconds
+      - actual
+      - actual_net_seconds
+      - flags

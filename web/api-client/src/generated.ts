@@ -2811,6 +2811,28 @@ export interface TimeIntervalList {
   })[];
 }
 
+export interface TimeTargetActualList {
+  person_ref: string;
+  timezone: string;
+  days: TimeTargetActualDay[];
+}
+
+export interface TimeTargetActualDay {
+  day: string;
+  planned: ({
+    shift_id: UUID;
+    starts_at: string;
+    ends_at: string;
+    timezone: string;
+    planned_seconds: number;
+    state: string;
+  })[];
+  planned_seconds: number;
+  actual: TimeInterval[];
+  actual_net_seconds: number | null;
+  flags: ('NO_ACTUAL_BOOKING' | 'ACTUAL_WITHOUT_PLAN' | 'ACTUAL_INCOMPLETE')[];
+}
+
 export interface WebhookSubscription {
   id: UUID;
   url: string;
@@ -4310,6 +4332,13 @@ export interface Operations {
     body: undefined;
     response: TimeIntervalList;
   };
+  listTimeTargetActual: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from: string; to: string; timezone?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TimeTargetActualList;
+  };
   listWebhookSubscriptions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -4565,6 +4594,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listTimeIntervals: { method: 'GET', path: '/v1/time-events/intervals', pathParams: [], query: ['person_ref', 'from', 'to'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listTimeTargetActual: { method: 'GET', path: '/v1/time-events/target-actual', pathParams: [], query: ['person_ref', 'from', 'to', 'timezone'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getWebhookSubscription: { method: 'GET', path: '/v1/webhook-subscriptions/{subscription_id}', pathParams: ['subscription_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

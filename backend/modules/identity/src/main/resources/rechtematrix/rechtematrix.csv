@@ -191,6 +191,7 @@ getAbsence;absences:detail;HR;M4;N;N;N;N;N;N;N;N;J;N
 recordTimeEvent;time-events:write;HR;M4;N;J;J;J;J;J;N;J;J;J
 listTimeEvents;time-events:read;HR;M4;N;J;J;J;J;J;N;J;J;J
 listTimeIntervals;time-events:read;HR;M4;N;J;J;J;J;J;N;J;J;J
+listTimeTargetActual;time-events:read;HR;M4;N;J;J;J;J;J;N;J;J;J
 createTimeEventBackfill;time-events:manage;HR;M4;N;N;N;N;N;N;N;N;J;N
 requestReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 completeReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
