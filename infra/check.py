@@ -296,9 +296,16 @@ def check_env_separation(root, errs, notes):
     notes.append("umgebungstrennung: Matrix, Terraform-Parameter, Realms und Compose statisch geprueft (reale Netze/Konten NICHT)")
 
 
+def check_umgebungen(root, errs, notes):
+    """WP-M5-02: Größenprotokoll, Referenzbestand und Aufbauskript der Staging- und Performance-Umgebung."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_umgebungen as cu
+    cu.check(root, errs, notes)
+
+
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_env_separation):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_env_separation, check_umgebungen):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz

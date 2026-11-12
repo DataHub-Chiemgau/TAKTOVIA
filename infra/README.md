@@ -55,3 +55,7 @@ Je Umgebung (`development`, `staging`, `performance`, `production`) eigenes Kont
 
 ## Telemetrie-Ausbau (WP-M5-03)
 Scrape-Ziele je Komponente (`observability/prometheus.yml`), Collector-Pipelines für Traces, Metriken und Logs mit Maskierung (`observability/otel-collector-config.yaml`), Dashboards (`observability/dashboards/`), Tempo/Loki/Grafana/Exporter als Overlay `compose/docker-compose.telemetry.yml`, Zugriffslog des Gateways ohne Query und Kopfzeilen. `python3 infra/check_telemetry.py` prüft das statisch (Selbsttest `test_check_telemetry.py`); **nicht ausgeführt:** die Dienste selbst (kein Docker). Beschreibung: [docs/betrieb/telemetrie.md](../docs/betrieb/telemetrie.md).
+
+## Staging und Performance mit Referenzdatenbestand (WP-M5-02)
+[umgebungen/groessen.json](umgebungen/groessen.json) (Zielgrößen je Umgebung, vorläufig D-05), [umgebungen/aufbau.sh](umgebungen/aufbau.sh) (Aufbau aus dem Repository: Rollen, Migration, Migrationsstand, Mandanten, synthetischer Generator unter der Runtime-Rolle, Protokoll), [umgebungen/umgebungsprotokoll-referenzlauf.json](umgebungen/umgebungsprotokoll-referenzlauf.json) (lokaler Referenzlauf mit Zeilenzahlen je Tabelle, Seed, Hardware). `python3 infra/check.py` prüft Größenprotokoll und Aufbauskript statisch; der Generator liegt in `tests/performance/datagen/`. **Nicht ausgeführt:** Aufbau in einer gehosteten Umgebung, `terraform plan/validate`, PSP-Sandbox, Identitätsimport. Vertrag: [m4-cluster-wave12-c7.md](../docs/umsetzungsplan/vertraege/m4-cluster-wave12-c7.md).
+

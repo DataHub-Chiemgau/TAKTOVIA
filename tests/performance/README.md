@@ -35,3 +35,8 @@ nötig ist; das Profilformat und das Berichtsformat bleiben davon unberührt. Da
 Spitzen-Requests/s und Anzahl aktiver Mandanten sind im Profil als `open_parameters` mit Wert `null` und Status „OFFEN (D-05)“ ausgewiesen.
 Ein Profil im Modus `measurement` wird ohne diese Werte abgewiesen; ein Beispielprofil läuft, der Bericht ist dann `valid_for_acceptance: false`.
 Das Restore-Drehbuch ist nur eine Vorlage; seine Durchführung gehört zu M5.
+
+## Referenzdatenbestand (WP-M5-02)
+
+`datagen/generator.py`, `datagen/fill.py`: deterministischer synthetischer Bestand je Mandant (250 Fahrzeuge, Fahrer, Dienstplan, Schichten, Freigaben, Umläufe, Fahrgäste, 30.000 Buchungen/Tag über mehrere Betriebstage, Positionen), befüllt unter der Runtime-Rolle; `python tests/performance/datagen/fill.py --scale reference --provision` (Zugang wie `db/db.py`), Protokoll mit Zeilenzahlen je Tabelle. Tests: `test_datagen.py`, `test_umgebungsaufbau.py` (kleine Skala, Datenbank erforderlich).
+
