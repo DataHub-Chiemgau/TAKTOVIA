@@ -57,6 +57,14 @@ data class CreateTariffRevision(
 /** Ersetzt den Inhalt eines Entwurfs (Dienst, Tarifklasse und Währung sind unveränderlich). */
 data class UpdateTariffRevision(val validFrom: Instant?, val validTo: Instant?, val reason: String?, val rules: List<TariffRuleInput>?)
 
+/** Ergebnis der Bepreisung zum Preisstichtag (WP-M2-08): Preis der wirksamen Revision, „kein Tarif“ oder Ablehnung durch die Engine. */
+sealed interface PriceResult {
+    data class Priced(val revisionId: UUID, val revisionNo: Int, val breakdown: FareBreakdown) : PriceResult
+    /** Keine veröffentlichte Revision ist zum Preisstichtag wirksam (abgelaufen, noch nicht gültig, anderer Dienst oder andere Klasse); nie ein Preis einer abgelaufenen Regel. */
+    data class NoTariff(val reason: String) : PriceResult
+    data class Rejected(val reason: FareRejection, val detail: String) : PriceResult
+}
+
 /**
  * Tarifrevisionen mit Preisregeln und Gültigkeit (WP-M2-07, LH-6.10-PAY-003; Detailvertrag `LH-6.10-PAY-003.md`).
  *  * Pflichtangaben je Revision: Dienst, Tarifklasse, Gültigkeitszeitraum; ohne sie 422 mit Feldverweis, keine Freigabe.
@@ -83,6 +91,11 @@ interface Tariffs {
      * eine parallele Veröffentlichung liefert daher vollständig die alte oder die neue Revision, nie eine Mischung.
      */
     fun effective(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant): TariffRevisionView?
+    /**
+     * Preis zum Preisstichtag [at]: wählt die wirksame Revision ([effective]) und rechnet mit der [FareEngine] (WP-M2-08). Ohne wirksame Revision [PriceResult.NoTariff]
+     * („Kein Tarif“), nie der Preis einer abgelaufenen Regel. Ein Preis nennt die Revision, auf der er beruht (Preisbindung, `fare_quote.tariff_revision_id`).
+     */
+    fun price(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant, request: FareRequest): PriceResult
 
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox = Outbox(), clock: Clock = Clock.systemUTC(), authorizer: ObjectAuthorizer = ServiceScopeAuthorizer): Tariffs =

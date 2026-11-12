@@ -1,6 +1,10 @@
 package de.taktovia.farepayment.internal
 
 import de.taktovia.farepayment.api.CreateTariffRevision
+import de.taktovia.farepayment.api.FareEngine
+import de.taktovia.farepayment.api.FareRequest
+import de.taktovia.farepayment.api.FareResult
+import de.taktovia.farepayment.api.PriceResult
 import de.taktovia.farepayment.api.TARIFF_REVISION_PUBLISHED_EVENT
 import de.taktovia.farepayment.api.TariffRevisionView
 import de.taktovia.farepayment.api.TariffRuleView
@@ -168,6 +172,14 @@ internal class JdbcTariffs(
         val head = j.query("SELECT $COLS FROM taktovia.tariff_revision r WHERE r.service_id = ? AND r.tariff_class = ? AND r.state = 'VEROEFFENTLICHT' " +
             "AND r.valid_from <= ? AND (r.valid_to IS NULL OR ? < r.valid_to) ORDER BY r.valid_from DESC LIMIT 1", HEAD, serviceId, tariffClass, Timestamp.from(at), Timestamp.from(at)).singleOrNull()
         head?.let { withRules(j, listOf(it)).single() }
+    }
+
+    override fun price(ctx: RequestContext, serviceId: UUID, tariffClass: String, at: Instant, request: FareRequest): PriceResult {
+        val revision = effective(ctx, serviceId, tariffClass, at) ?: return PriceResult.NoTariff("Kein Tarif zum Preisstichtag wirksam.")
+        return when (val r = FareEngine.price(revision, request)) {
+            is FareResult.Priced -> PriceResult.Priced(revision.id, revision.revisionNo, r.breakdown)
+            is FareResult.Rejected -> PriceResult.Rejected(r.reason, r.detail)
+        }
     }
 
     // ---- intern ------------------------------------------------------------------------------------------------------------------------
