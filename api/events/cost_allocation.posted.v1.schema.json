@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/cost_allocation.posted.v1.schema.json",
+  "title": "Kostenaufteilung gebucht (WP-M4-35)",
+  "description": "Payload von `cost_allocation.posted`. Aggregat: economic_event (Revision = Umlagerevision). Entsteht in derselben Transaktion wie die gebuchte Umlagerevision (Outbox). Enthält Kennungen und die Kostenbasis in kleinster Einheit, keine Kostenobjekte, Namen oder Begründungen.",
+  "type": "object",
+  "required": ["allocation_id", "event_id", "revision", "legal_entity_id", "currency", "basis_minor", "line_count", "posted_at"],
+  "additionalProperties": false,
+  "properties": {
+    "allocation_id": {"type": "string", "format": "uuid"},
+    "event_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "basis_minor": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+    "line_count": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "posted_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"allocation_id": "11111111-2222-4333-8444-555555555555", "event_id": "66666666-7777-4888-8999-000000000000", "revision": 1, "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "currency": "EUR", "basis_minor": 10001, "line_count": 3, "posted_at": "2026-12-01T06:10:00Z"}
+  ]
+}

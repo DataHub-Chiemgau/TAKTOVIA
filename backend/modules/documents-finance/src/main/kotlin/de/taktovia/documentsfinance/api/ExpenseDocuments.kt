@@ -18,7 +18,7 @@ data class CaseRef(val kind: CaseKind, val id: UUID)
 enum class IntegrityState { UNCHECKED, VERIFIED, VIOLATED }
 
 /** Gründe, aus denen ein Beleg (noch) nicht freigabefähig ist. Spätere Pakete ergänzen weitere (Pflichtfelder, Kostenzuordnung, Dublette). */
-enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE, FUEL_FIELDS_MISSING, HINT_UNACKNOWLEDGED, DUPLICATE_REVIEW_OPEN, DUPLICATE_EVIDENCE }
+enum class ReleaseBlocker { NOT_STORED, UNVERIFIED_SENDER, INTEGRITY_VIOLATION, UNCONFIRMED_FIELDS, SUM_MISMATCH, COST_ASSIGNMENT_MISSING, COST_OBJECT_INACTIVE, FUEL_FIELDS_MISSING, HINT_UNACKNOWLEDGED, DUPLICATE_REVIEW_OPEN, DUPLICATE_EVIDENCE, SPLIT_INCOMPLETE }
 
 /** Belegfelder, die eine neue Revision erzeugen können (WP-M4-23). Typ und Normalisierung: [ExpenseFields]. */
 object ExpenseFields {
@@ -51,7 +51,9 @@ data class ExpenseView(val document: StoredDocumentView, val fields: Map<String,
     /** Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32). */
     val duplicates: List<DuplicateCandidateView> = emptyList(),
     /** Freigabeschritte (WP-M4-34) und Exportstatus. */
-    val approvalSteps: List<ApprovalStepView> = emptyList(), val exportState: ExportState = ExportState.NOT_EXPORTED) {
+    val approvalSteps: List<ApprovalStepView> = emptyList(), val exportState: ExportState = ExportState.NOT_EXPORTED,
+    /** Aufteilungsplan vor dem Posting (WP-M4-35) und der Grund, falls er unvollständig ist (nur bei mehreren zugeordneten Kostenobjekten). */
+    val split: SplitView? = null, val splitProblem: String? = null) {
     /** Freigabefähig, wenn kein Hindernis besteht (Dokument, Bestätigungspflicht und Kostenzuordnung). */
     val approvable: Boolean get() = blockers.isEmpty()
 }
@@ -228,6 +230,7 @@ class DocumentServices(
     val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
     val review: ReceiptReview,
     val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
+    val allocations: CostAllocations, val splits: ExpenseSplits,
     val fuel: FuelReceipts, val policies: FinancePolicies, val plausibility: FuelPlausibility,
     val duplicates: DuplicateReview, val approvals: ExpenseApprovals,
 )

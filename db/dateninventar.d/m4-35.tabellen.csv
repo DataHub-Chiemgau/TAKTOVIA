@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+allocation_activation;Aktive Umlagerevision (WP-M4-35);LK_BELEG;
+expense_split;Aufteilungsplan des Belegs (WP-M4-35);LK_BELEG;an den Beleg gebunden
+expense_split_line;Aufteilungsplan, Zeile (WP-M4-35);LK_BELEG;an den Beleg gebunden

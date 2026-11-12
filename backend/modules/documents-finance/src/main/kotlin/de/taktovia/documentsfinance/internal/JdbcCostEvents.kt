@@ -108,6 +108,12 @@ internal class JdbcCostEvents(
         j.update("UPDATE taktovia.journal SET state = 'POSTED', posted_by = ? WHERE id = ? AND state = 'DRAFT'", DocumentRows.actor(ctx).value, journalId)   // Trigger: ausgeglichen, >= 2 Zeilen, offene Periode, Summe = Ereignis
         check(j.update("UPDATE taktovia.expense_document SET state = 'POSTED' WHERE id = ? AND state = 'APPROVED'", documentId) == 1)
         DuplicateRows.onPosted(j, ctx, documentId, eventId)                                      // PRIMARY-Evidenz und bisher verknüpfte Dubletten (WP-M4-32)
+        if (objects.size > 1) {                                                                   // Beleg-Split (WP-M4-35): der geprüfte Plan wird atomar die erste Umlagerevision des Ereignisses
+            val split = SplitRows.load(j, documentId) ?: throw ProblemException(ErrorCode.SPLIT_INCOMPLETE, "Der Beleg ist mehreren Kostenobjekten zugeordnet; die Aufteilung fehlt.")
+            val ref = EventRef(eventId, entity, amounts.currency, amounts.costBasis, AllocationRows.exponentOf(j, amounts.currency))
+            val resolved = AllocationPlans.resolve(ref, split.mode, SplitRows.inputs(split), objects.associate { it.id to it.kind.name })
+            AllocationRows.persist(j, audit, outbox, clock, ctx, ref, split.mode, split.policyRevision, split.reason, resolved)
+        }
         audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_COST_EVENT_POSTED, ObjectRef("cost_event", eventId), ctx.correlationId, mapOf("event_type" to "EXPENSE_COST", "currency" to amounts.currency, "reused" to false)))
         outbox.append(j, OutboxEvent(eventId, 1, "cost_event.posted", linkedMapOf("event_id" to eventId.toString(), "document_id" to documentId.toString(), "legal_entity_id" to entity.toString(), "event_type" to "EXPENSE_COST",
             "category" to cmd.category, "currency" to amounts.currency, "gross_minor" to amounts.gross, "cost_basis_minor" to amounts.gross - amounts.recoverable, "booked_at" to now.toString()), now, correlationId = ctx.correlationId))
@@ -121,23 +127,7 @@ internal class JdbcCostEvents(
         return PostingResult(e, journal(j, jid), reused = true)
     }
 
-    private class Amounts(val gross: Long, val tax: Long, val net: Long, val recoverable: Long, val currency: String, val date: LocalDate)
-
-    /** Beträge aus dem Feldstand des Belegs: brutto, Mehrwertsteuer je Satz summiert, netto = brutto - Steuer; alles in kleinster Einheit und im sicheren Integerbereich. */
-    private fun amounts(fields: Map<String, Any?>, tax: TaxTreatment): Amounts {
-        val violations = listOfNotNull(
-            if (fields[ExpenseFields.AMOUNT_MINOR] == null) Violation("/fields/amount_minor", ViolationCode.REQUIRED) else null,
-            if (fields[ExpenseFields.CURRENCY] == null) Violation("/fields/currency", ViolationCode.REQUIRED) else null,
-            if (fields[ExpenseFields.DOCUMENT_DATE] == null) Violation("/fields/document_date", ViolationCode.REQUIRED) else null,
-        )
-        if (violations.isNotEmpty()) throw ProblemException.invalid(*violations.toTypedArray())
-        val gross = (fields[ExpenseFields.AMOUNT_MINOR] as Number).toLong()
-        if (gross > MAX_SAFE) throw ProblemException.invalid(Violation("/fields/amount_minor", ViolationCode.MONEY_OUT_OF_RANGE))
-        if (gross <= 0) throw ProblemException.invalid(Violation("/fields/amount_minor", ViolationCode.BELOW_MINIMUM))
-        @Suppress("UNCHECKED_CAST") val vat = (fields[ExpenseFields.VAT_AMOUNTS] as List<Map<String, Any>>?).orEmpty().sumOf { (it["amount_minor"] as Number).toLong() }
-        if (vat > gross) throw ProblemException.invalid(Violation("/fields/vat_amounts", ViolationCode.ABOVE_MAXIMUM))
-        return Amounts(gross, vat, gross - vat, if (tax == TaxTreatment.FULLY_DEDUCTIBLE) vat else 0, fields[ExpenseFields.CURRENCY] as String, LocalDate.parse(fields[ExpenseFields.DOCUMENT_DATE] as String))
-    }
+    private fun amounts(fields: Map<String, Any?>, tax: TaxTreatment): ExpenseAmounts.Amounts = ExpenseAmounts.of(fields, tax)
 
     // ---- Lesen (Ist-Bericht, Projektion) ----
 

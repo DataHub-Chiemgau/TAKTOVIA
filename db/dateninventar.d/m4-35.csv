@@ -1,0 +1,21 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+allocation_activation;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+allocation_activation;event_id;nein;BUCHHALTUNG_BELEGE;;;;
+allocation_activation;allocation_id;nein;BUCHHALTUNG_BELEGE;;;;
+allocation_activation;revision;nein;BUCHHALTUNG_BELEGE;;;;
+allocation_activation;activated_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+allocation_activation;activated_at;nein;TECHNISCHER_BETRIEB;;;;
+expense_split;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split;mode;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split;policy_revision;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split;reason;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split;set_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+expense_split;set_at;nein;TECHNISCHER_BETRIEB;;;;
+expense_split_line;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;cost_object_id;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;percent;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;amount_minor;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;quantity;nein;BUCHHALTUNG_BELEGE;;;;
+expense_split_line;unit;nein;BUCHHALTUNG_BELEGE;;;;

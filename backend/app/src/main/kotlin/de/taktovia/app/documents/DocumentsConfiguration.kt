@@ -108,6 +108,8 @@ class DocumentsConfiguration {
     @Bean fun costAssignments(s: DocumentServices): CostAssignments = s.costs
     @Bean fun costEvents(s: DocumentServices): CostEvents = s.costEvents
     @Bean fun accountingMappings(s: DocumentServices): AccountingMappings = s.accounting
+    @Bean fun costAllocations(s: DocumentServices): de.taktovia.documentsfinance.api.CostAllocations = s.allocations
+    @Bean fun expenseSplits(s: DocumentServices): de.taktovia.documentsfinance.api.ExpenseSplits = s.splits
     @Bean fun fuelReceipts(s: DocumentServices): de.taktovia.documentsfinance.api.FuelReceipts = s.fuel
     @Bean fun fuelPlausibility(s: DocumentServices): de.taktovia.documentsfinance.api.FuelPlausibility = s.plausibility
     @Bean fun duplicateReview(s: DocumentServices): de.taktovia.documentsfinance.api.DuplicateReview = s.duplicates

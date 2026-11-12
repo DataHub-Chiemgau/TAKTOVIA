@@ -15,7 +15,8 @@ object ContainerProblems {
     /** Codes, die nur durch Fachlogik entstehen und nicht allein aus dem Status folgen. */
     private val SPECIFIC = setOf(ErrorCode.INVALID_CURSOR, ErrorCode.COOPERATION_NOT_ALLOWED, ErrorCode.IDEMPOTENCY_CONFLICT, ErrorCode.OPERATION_IN_PROGRESS, ErrorCode.OFFER_EXPIRED,
         ErrorCode.HOLD_EXPIRED, ErrorCode.REQUOTE_REQUIRED, ErrorCode.CAPACITY_UNAVAILABLE, ErrorCode.IMMUTABLE_RECORD, ErrorCode.PROVIDER_UNAVAILABLE, ErrorCode.UNCONFIRMED_FIELDS,
-        ErrorCode.FUEL_FIELDS_MISSING, ErrorCode.HINT_NOT_ACKNOWLEDGED, ErrorCode.COST_ASSIGNMENT_REQUIRED, ErrorCode.SPLIT_INCOMPLETE, ErrorCode.DUPLICATE_REVIEW_REQUIRED, ErrorCode.DUPLICATE_EVIDENCE_LINKED)
+        ErrorCode.FUEL_FIELDS_MISSING, ErrorCode.HINT_NOT_ACKNOWLEDGED, ErrorCode.COST_ASSIGNMENT_REQUIRED, ErrorCode.SPLIT_INCOMPLETE, ErrorCode.DUPLICATE_REVIEW_REQUIRED, ErrorCode.DUPLICATE_EVIDENCE_LINKED,
+        ErrorCode.PERIOD_CLOSED, ErrorCode.ALREADY_ALLOCATED, ErrorCode.ALREADY_REVERSED, ErrorCode.ALLOCATION_SUM_MISMATCH)
 
     fun codeFor(status: Int): ErrorCode = ErrorCode.entries.firstOrNull { it.status == status && it !in SPECIFIC }
         ?: when (status) { in 400..499 -> ErrorCode.BAD_REQUEST; 503 -> ErrorCode.SERVICE_UNAVAILABLE; else -> ErrorCode.INTERNAL_ERROR }

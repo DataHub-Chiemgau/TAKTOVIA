@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+allocation_activation;SELECT,INSERT,UPDATE;WP-M4-35: genau eine aktive Umlagerevision je Ereignis, kein DELETE
+expense_split;SELECT,INSERT,UPDATE,DELETE;WP-M4-35: Aufteilungsplan des Belegs, Austausch nur im Entwurf (Trigger)
+expense_split_line;SELECT,INSERT,DELETE;WP-M4-35: Zeilen des Aufteilungsplans

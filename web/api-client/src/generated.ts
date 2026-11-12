@@ -73,7 +73,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'PERIOD_CLOSED' | 'ALREADY_ALLOCATED' | 'ALREADY_REVERSED' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'ALLOCATION_SUM_MISMATCH' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
 
@@ -361,6 +361,7 @@ export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | '
 export interface ExpenseCorrection {
   cost_assignment?: ExpenseCostAssignment;
   fuel?: FuelCapture;
+  split?: ExpenseSplit;
   reason?: string;
   fields?: ExpenseFieldValues;
   confirm?: ExpenseFieldName[];
@@ -464,6 +465,29 @@ export interface FuelData {
   complete: boolean;
 }
 
+export interface ExpenseSplit {
+  allocation_policy_revision: string;
+  reason: string;
+  lines: AllocationRequestLine[];
+}
+
+export interface ExpenseSplitLine {
+  cost_object_id: UUID;
+  percent: DecimalPercent | null;
+  amount_minor: number | null;
+  quantity: DecimalQuantity | null;
+  unit: string | null;
+}
+
+export interface ExpenseSplitView {
+  mode: 'AMOUNT' | 'PERCENT' | 'WEIGHT';
+  allocation_policy_revision: string;
+  reason: string;
+  lines: ExpenseSplitLine[];
+  set_by: string;
+  set_at: string;
+}
+
 export interface ExpenseCostAssignment {
   cost_object_ids?: UUID[];
   vehicle_ids?: UUID[];
@@ -532,7 +556,7 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED' | 'DUPLICATE_REVIEW_OPEN' | 'DUPLICATE_EVIDENCE')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED' | 'DUPLICATE_REVIEW_OPEN' | 'DUPLICATE_EVIDENCE' | 'SPLIT_INCOMPLETE')[];
   unconfirmed_fields: ExpenseFieldName[];
   sum_mismatch: boolean;
   cost_objects: CostObject[];
@@ -540,6 +564,8 @@ export interface Expense {
   hints?: ExpenseHint[];
   plausibility_notes?: ExpensePlausibilityNote[];
   duplicates?: ExpenseDuplicate[];
+  split?: null | ExpenseSplitView;
+  split_problem?: string | null;
   approval_steps?: ExpenseApprovalStep[];
   export_state?: 'NOT_EXPORTED' | 'EXPORTED';
   fields: ExpenseFieldValues;
@@ -568,8 +594,11 @@ export interface ExpenseRevisionList {
 
 export type DecimalQuantity = string;
 
+export type DecimalPercent = string;
+
 export interface CostAllocationLine {
-  cost_center_id: UUID;
+  percent?: DecimalPercent;
+  cost_center_id: UUID | null;
   cost_object_type: 'VEHICLE' | 'SERVICE' | 'RUN' | 'LEG' | 'PROJECT' | 'COST_CENTER' | 'UNALLOCATED';
   cost_object_id: UUID;
   amount: SignedMoney;
@@ -577,10 +606,20 @@ export interface CostAllocationLine {
   unit: 'KM' | 'MIN' | 'KWH' | 'L' | 'ITEM' | null;
 }
 
+export interface AllocationRequestLine {
+  cost_center_id?: UUID | null;
+  cost_object_type: 'VEHICLE' | 'COST_CENTER' | 'PROJECT';
+  cost_object_id: UUID;
+  amount?: SignedMoney | null;
+  percent?: DecimalPercent | null;
+  quantity?: DecimalQuantity | null;
+  unit?: 'KM' | 'MIN' | 'KWH' | 'L' | 'ITEM' | null;
+}
+
 export interface AllocationRequest {
   allocation_policy_revision: string;
   reason: string;
-  lines: CostAllocationLine[];
+  lines: AllocationRequestLine[];
 }
 
 export interface AllocationResult {

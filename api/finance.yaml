@@ -86,9 +86,14 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '428':
           $ref: common.yaml#/components/responses/Problem
-      description: Atomare vollständige Allokationsrevision innerhalb eigener Rechtseinheit. Exakte Summe und freigegebene
-        offene Periode prüfen; 409 PERIOD_CLOSED oder ALREADY_ALLOCATED. Keine neue Quellkostenwirkung; Korrekturen erfolgen
-        über gesonderte Gegenbuchung.
+      description: 'Atomare vollständige Allokationsrevision (WP-M4-35) eines gebuchten Ist-Kostenereignisses innerhalb des eigenen Rechtsträgers
+        auf Kostenstellen, Fahrzeuge oder Projekte. `If-Match` = aktive Aufteilungsrevision (`"0"` = noch nicht aufgeteilt); eine neue Revision ersetzt die aktive
+        atomar und genau eine Fassung ist aktiv (veraltet 412, fehlend 428). Exakte Summe: Summe der Teilbeträge = Kostenbasis des Ereignisses, sonst
+        422 ALLOCATION_SUM_MISMATCH (auch um einen Cent; Prozent ungleich 100 ebenso). Geschlossene Periode: 409 PERIOD_CLOSED. 409 ALREADY_ALLOCATED, wenn
+        das Ereignis schon aufgeteilt ist, der Aufruf aber `"0"` als Revision nennt. Kostenobjekt eines anderen Rechtsträgers, inaktives, doppeltes oder
+        nicht zulässiges (nur COST_CENTER, VEHICLE, PROJECT): 422; Ereignis oder Kostenobjekt eines anderen Mandanten: 404. Scope `costs:allocate` und
+        Finanzrolle. Keine neue Quellkostenwirkung (weder Journal noch Verbindlichkeit); Korrekturen erfolgen als neue Revision bzw. als Gegenereignis (WP-M4-36).
+        Revision, Akteur, Regelrevision und Begründung stehen im Audit.'
       requestBody:
         required: true
         content:
@@ -679,12 +684,14 @@ components:
     ExpenseCorrection:
       type: object
       additionalProperties: false
-      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment` oder `fuel` (Tankwerte, WP-M4-30); die drei Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment`, `fuel` (Tankwerte, WP-M4-30) oder `split` (Aufteilungsplan, WP-M4-35); diese Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
       properties:
         cost_assignment:
           $ref: '#/components/schemas/ExpenseCostAssignment'
         fuel:
           $ref: '#/components/schemas/FuelCapture'
+        split:
+          $ref: '#/components/schemas/ExpenseSplit'
         reason:
           type: string
           minLength: 1
@@ -1092,6 +1099,91 @@ components:
       - card_id
       - missing
       - complete
+    ExpenseSplit:
+      type: object
+      additionalProperties: false
+      description: 'Aufteilungsplan eines Belegs mit mehreren zugeordneten Kostenobjekten (WP-M4-35, Offener Punkt 18): ersetzt den bisherigen Plan, nur im Belegzustand STORED, `If-Match` Pflicht. Die Zeilen müssen zu den zugeordneten Kostenobjekten gehören; Freigabe und Posting verlangen einen vollständigen, centgenauen Plan (422 SPLIT_INCOMPLETE). Beim Posting wird er atomar die erste Umlagerevision des Kostenereignisses. Eine geänderte Kostenzuordnung verwirft den Plan.'
+      properties:
+        allocation_policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/AllocationRequestLine'
+      required:
+      - allocation_policy_revision
+      - reason
+      - lines
+    ExpenseSplitLine:
+      type: object
+      additionalProperties: false
+      properties:
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        percent:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalPercent'
+          - type: 'null'
+        amount_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+          - type: 'null'
+        quantity:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalQuantity'
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+          - type: 'null'
+      required:
+      - cost_object_id
+      - percent
+      - amount_minor
+      - quantity
+      - unit
+    ExpenseSplitView:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          enum:
+          - AMOUNT
+          - PERCENT
+          - WEIGHT
+        allocation_policy_revision:
+          type: string
+        reason:
+          type: string
+        lines:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ExpenseSplitLine'
+        set_by:
+          type: string
+        set_at:
+          type: string
+          format: date-time
+      required:
+      - mode
+      - allocation_policy_revision
+      - reason
+      - lines
+      - set_by
+      - set_at
     ExpenseCostAssignment:
       type: object
       additionalProperties: false
@@ -1354,6 +1446,7 @@ components:
             - HINT_UNACKNOWLEDGED
             - DUPLICATE_REVIEW_OPEN
             - DUPLICATE_EVIDENCE
+            - SPLIT_INCOMPLETE
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -1390,6 +1483,16 @@ components:
           items:
             $ref: '#/components/schemas/ExpenseDuplicate'
           description: Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32).
+        split:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseSplitView'
+          description: Aufteilungsplan des Belegs (WP-M4-35), null solange keiner gesetzt ist.
+        split_problem:
+          oneOf:
+          - type: string
+          - type: 'null'
+          description: Grund, warum die Aufteilung unvollständig ist (Lücke, Differenz zur Kostenbasis); null, wenn keine Aufteilung nötig oder sie vollständig ist.
         approval_steps:
           type: array
           maxItems: 200
@@ -1491,12 +1594,21 @@ components:
       type: string
       pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$
       description: Exakte Dezimalzeichenfolge, maximal sechs Nachkommastellen; nicht als Binary Float verarbeiten.
+    DecimalPercent:
+      type: string
+      pattern: ^(100(\.0{1,8})?|[0-9]{1,2}(\.[0-9]{1,8})?)$
+      description: Prozentwert von 0 bis 100 als exakte Dezimalzeichenfolge, höchstens acht Nachkommastellen; nicht als Binary Float verarbeiten.
     CostAllocationLine:
       type: object
       additionalProperties: false
+      description: Ergebniszeile einer Aufteilung; `percent` ist der Anteil an der Kostenbasis (acht Nachkommastellen, nur Anzeige, die Beträge sind maßgeblich). `cost_center_id` ist die Kennung des Kostenobjekts, wenn es eine Kostenstelle ist, sonst null.
       properties:
+        percent:
+          $ref: '#/components/schemas/DecimalPercent'
         cost_center_id:
-          $ref: common.yaml#/components/schemas/UUID
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
         cost_object_type:
           type: string
           enum:
@@ -1532,6 +1644,48 @@ components:
       - amount
       - quantity
       - unit
+    AllocationRequestLine:
+      type: object
+      additionalProperties: false
+      description: 'Eine Zeile der Aufteilung (WP-M4-35). Genau eine Vorgabeart je Aufteilung: `amount` (Betrag, Summe = Kostenbasis), `percent` (Summe 100) oder nur `quantity` (Schlüsselmenge, Beträge nach Largest Remainder: abrunden je Empfänger, Restcent nach größtem Dezimalrest, Gleichstand nach kleinerer Kostenobjekt-ID). Eine Mischung von Betrags- und Prozentzeilen ist 422. `quantity` und `unit` dürfen `amount` bzw. `percent` als Schlüsselangabe ergänzen. `cost_center_id` ist optional (informativ, muss ggf. zum Kostenobjekt passen).'
+      properties:
+        cost_center_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        cost_object_type:
+          type: string
+          enum:
+          - VEHICLE
+          - COST_CENTER
+          - PROJECT
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        amount:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/SignedMoney
+          - type: 'null'
+        percent:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalPercent'
+          - type: 'null'
+        quantity:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalQuantity'
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+            enum:
+            - KM
+            - MIN
+            - KWH
+            - L
+            - ITEM
+          - type: 'null'
+      required:
+      - cost_object_type
+      - cost_object_id
     AllocationRequest:
       type: object
       additionalProperties: false
@@ -1547,21 +1701,22 @@ components:
         lines:
           type: array
           items:
-            $ref: '#/components/schemas/CostAllocationLine'
+            $ref: '#/components/schemas/AllocationRequestLine'
           minItems: 1
           maxItems: 1000
       required:
       - allocation_policy_revision
       - reason
       - lines
-      description: Summe amount = allokierbare Kostenbasis des Quellereignisses; gleiche Währung/Exponent. Keine Fremdmandanten-Kostenstelle.
-        Umlage über Rechtsträgergrenzen erzeugt separaten vertraglichen Intercompany-Vorgang.
+      description: Summe amount = allokierbare Kostenbasis des Quellereignisses (centgenau; sonst 422 ALLOCATION_SUM_MISMATCH); gleiche Währung/Exponent.
+        Alternativ Prozentzeilen (Summe 100) oder Schlüsselmengen (Largest Remainder). Keine Fremdmandanten-Kostenstelle. Umlage über Rechtsträgergrenzen erzeugt
+        separaten vertraglichen Intercompany-Vorgang.
       examples:
       - allocation_policy_revision: vehicle-km-v1
         reason: Tageskosten nach belegten Fahrzeugkilometern
         lines:
         - cost_center_id: 00000000-0000-4000-8000-000000000080
-          cost_object_type: SERVICE
+          cost_object_type: COST_CENTER
           cost_object_id: 00000000-0000-4000-8000-000000000081
           amount:
             amount_minor: 6000
@@ -1570,7 +1725,7 @@ components:
           quantity: '60.000000'
           unit: KM
         - cost_center_id: 00000000-0000-4000-8000-000000000082
-          cost_object_type: SERVICE
+          cost_object_type: COST_CENTER
           cost_object_id: 00000000-0000-4000-8000-000000000083
           amount:
             amount_minor: 4000

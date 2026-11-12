@@ -7,6 +7,9 @@ import de.taktovia.documentsfinance.api.ApprovalOutcome
 import de.taktovia.documentsfinance.api.ApprovalStepView
 import de.taktovia.documentsfinance.api.AssignCosts
 import de.taktovia.documentsfinance.api.ExpenseApprovals
+import de.taktovia.documentsfinance.api.ExpenseSplits
+import de.taktovia.documentsfinance.api.SetSplit
+import de.taktovia.documentsfinance.api.SplitView
 import de.taktovia.documentsfinance.api.CaptureFuel
 import de.taktovia.documentsfinance.api.DuplicateCandidateView
 import de.taktovia.documentsfinance.api.DuplicateDecision
@@ -59,7 +62,7 @@ class ApprovalResource(@get:JsonValue val data: Map<String, Any?>, override val 
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview, private val approvals: ExpenseApprovals) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview, private val approvals: ExpenseApprovals, private val splits: ExpenseSplits) {
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -71,6 +74,14 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         val ctx = RequestContexts.require(request)
         val assignment = body["cost_assignment"] as Map<String, Any?>?
         val fuelBody = body["fuel"] as Map<String, Any?>?
+        val splitBody = body["split"] as Map<String, Any?>?
+        if (splitBody != null) {
+            // Aufteilungsplan (WP-M4-35): eigene Revision, nicht mit Feldkorrektur, Zuordnung oder Tankwerten kombinierbar
+            if (assignment != null || fuelBody != null || !((body["fields"] as Map<*, *>?).isNullOrEmpty() && (body["confirm"] as List<*>?).isNullOrEmpty())) throw ProblemException.invalid(Violation("/split", ViolationCode.INVALID_VALUE))
+            val policy = splitBody["allocation_policy_revision"] as? String ?: throw ProblemException.invalid(Violation("/split/allocation_policy_revision", ViolationCode.REQUIRED))
+            val splitReason = splitBody["reason"] as? String ?: throw ProblemException.invalid(Violation("/split/reason", ViolationCode.REQUIRED))
+            return resource(splits.set(ctx, id, revision, SetSplit(policy, splitReason, AllocationJson.lines(splitBody["lines"], "/split/lines"))))
+        }
         if (fuelBody != null) {
             // Tankwerte (WP-M4-30): eigene Revision, nicht mit Feldkorrektur oder Zuordnung kombinierbar
             if (assignment != null || !((body["fields"] as Map<*, *>?).isNullOrEmpty() && (body["confirm"] as List<*>?).isNullOrEmpty())) throw ProblemException.invalid(Violation("/fuel", ViolationCode.INVALID_VALUE))
@@ -116,6 +127,10 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
     private fun hintJson(h: HintView): Map<String, Any?> = linkedMapOf("id" to h.id.toString(), "rule" to h.rule.name, "document_revision" to h.documentRevision, "threshold" to h.threshold,
         "actual_value" to h.actualValue, "basis" to h.basis, "raised_at" to h.raisedAt.toString(),
         "acknowledgement" to h.acknowledgement?.let { linkedMapOf("acknowledged_by" to it.by, "reason" to it.reason, "acknowledged_at" to it.at.toString()) })
+
+    private fun splitJson(v: SplitView): Map<String, Any?> = linkedMapOf("mode" to v.mode.name, "allocation_policy_revision" to v.policyRevision, "reason" to v.reason,
+        "lines" to v.lines.map { linkedMapOf("cost_object_id" to it.costObjectId.toString(), "percent" to it.percent?.toPlainString(), "amount_minor" to it.amountMinor, "quantity" to it.quantity?.toPlainString(), "unit" to it.unit) },
+        "set_by" to v.setBy, "set_at" to v.setAt.toString())
 
     private fun uuids(v: Any?, pointer: String): Set<UUID> = ((v as List<*>?) ?: emptyList<Any>()).map {
         try { UUID.fromString(it as String) } catch (e: RuntimeException) { throw ProblemException.invalid(Violation(pointer, ViolationCode.INVALID_FORMAT)) }
@@ -196,7 +211,7 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
             "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson),
             "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) },
-            "duplicates" to e.duplicates.map(::duplicateJson), "approval_steps" to e.approvalSteps.map(::stepJson), "export_state" to e.exportState.name, "fields" to e.fields, "revision" to d.revision,
+            "duplicates" to e.duplicates.map(::duplicateJson), "split" to e.split?.let(::splitJson), "split_problem" to e.splitProblem, "approval_steps" to e.approvalSteps.map(::stepJson), "export_state" to e.exportState.name, "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 
