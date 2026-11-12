@@ -18,7 +18,7 @@ workflow_rule_revision;SELECT,INSERT;WP-M3-02: Workflow-Regelrevision; unveränd
 incident;SELECT,INSERT,UPDATE;WP-M3-02: Incident; ein offener Vorgang je Schlüssel, kein DELETE
 incident_link;SELECT,INSERT;WP-M3-02: Incident-Verknüpfung; unveränderlich (Trigger)
 workflow_run_log;SELECT,INSERT;WP-M3-02: Ablaufprotokoll; unveränderlich (Trigger)
-position_sample;SELECT,INSERT;WP-M3-02: Positionsprobe; nie ändern (Trigger), kein UPDATE/DELETE
+position_sample;SELECT,INSERT,DELETE;WP-M3-02: Positionsprobe; nie ändern (Trigger), kein UPDATE; DELETE nur für den Löschlauf der Aufbewahrungsfrist (LK_STANDORT, WP-M3-34)
 vehicle_status_history;SELECT,INSERT;WP-M3-02: Statushistorie Fahrzeug/Dienst; unveränderlich (Trigger)
 driver_plan_ack;SELECT,INSERT;WP-M3-02: bestätigte Planrevision je Fahrer; unveränderlich (Trigger)
 boarding_code;SELECT,INSERT,UPDATE;WP-M3-02: Boarding-Code nur als Hash; UPDATE nur Versuchszähler und Verbrauch (Trigger boarding_code_guard), kein DELETE
