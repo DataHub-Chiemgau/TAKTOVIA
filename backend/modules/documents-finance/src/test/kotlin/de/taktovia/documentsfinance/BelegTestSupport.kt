@@ -30,9 +30,10 @@ import java.util.UUID
  * Testhilfe der Belegpakete WP-M4-22 bis -27 (eigene Klasse, keine Duplikate der Upload-Fixtures): echte Datenbank unter der Runtime-Rolle, alle Belegbausteine über
  * [DocumentUploads.services], ein Objektspeicher und eine skriptbare OCR-Engine.
  */
-class BelegFixture(val store: TenantObjectStore, recognizer: ReceiptRecognizer? = null, scanner: MalwareScanner = EicarSignatureScanner(), extraction: ExtractionPolicy = ExtractionPolicy()) : AutoCloseable {
+class BelegFixture(val store: TenantObjectStore, recognizer: ReceiptRecognizer? = null, scanner: MalwareScanner = EicarSignatureScanner(), extraction: ExtractionPolicy = ExtractionPolicy(),
+    ledger: de.taktovia.documentsfinance.api.LedgerExportConfig = de.taktovia.documentsfinance.api.LedgerExportConfig()) : AutoCloseable {
     val fx = UploadFixture(store)
-    val svc: DocumentServices = DocumentUploads.services(fx.ctxTx, JdbcAuditPort(), fx.security, Outbox(), store, scanner, UploadPolicy(maxBytes = 64 * 1024), recognizer = recognizer, extraction = extraction)
+    val svc: DocumentServices = DocumentUploads.services(fx.ctxTx, JdbcAuditPort(), fx.security, Outbox(), store, scanner, UploadPolicy(maxBytes = 64 * 1024), recognizer = recognizer, extraction = extraction, ledger = ledger)
 
     fun financeCtx(w: UploadFixture.World, subject: UUID = UUID.randomUUID()) = fx.ctx(w.tenant, subject, roles = setOf("finance"))
     fun driverCtx(w: UploadFixture.World, subject: UUID = UUID.randomUUID()) = fx.ctx(w.tenant, subject, roles = setOf("driver"))

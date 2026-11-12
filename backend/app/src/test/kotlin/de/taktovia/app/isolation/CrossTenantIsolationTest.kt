@@ -125,6 +125,10 @@ class CrossTenantIsolationTest {
         env.exec("INSERT INTO taktovia.journal(tenant_id,id,event_id,legal_entity_id,currency,period_id,accounting_date,state) VALUES (?,CAST(? AS uuid),CAST(? AS uuid),CAST(? AS uuid),'EUR',CAST(? AS uuid),DATE '2040-03-01','DRAFT')", b.tenant.value, costJournal, costEvent, le, fiscalPeriod)
         env.exec("INSERT INTO taktovia.journal_line(tenant_id,id,journal_id,account_code,side,amount_minor) VALUES (?,gen_random_uuid(),CAST(? AS uuid),'6600','D',10000),(?,gen_random_uuid(),CAST(? AS uuid),'1600','C',10000)", b.tenant.value, costJournal, b.tenant.value, costJournal)
         env.exec("UPDATE taktovia.journal SET state='POSTED', posted_by='user:test' WHERE id = CAST(? AS uuid)", costJournal)
+        val ledgerOperation = UUID.randomUUID().toString(); val ledgerExport = UUID.randomUUID().toString()
+        env.exec("INSERT INTO taktovia.operation(tenant_id,id,journey_id,kind,status,deadline_at) VALUES (?,CAST(? AS uuid),NULL,'LEDGER_EXPORT','QUEUED',now() + interval '1 day')", b.tenant.value, ledgerOperation)
+        env.exec("INSERT INTO taktovia.ledger_export(tenant_id,id,legal_entity_id,target_system,period_from,period_to,operation_id,requested_by) VALUES (?,CAST(? AS uuid),CAST(? AS uuid),'NEUTRAL',DATE '2040-01-01',DATE '2041-01-01',CAST(? AS uuid),'user:test')",
+            b.tenant.value, ledgerExport, le, ledgerOperation)
         val recipient = UUID.randomUUID()
         // Angebot in B (WP-M2-21/-22): Versuch, Preisstand und Angebot per SQL (der Fremdzugriff aus A prüft nur, dass nichts sichtbar oder änderbar ist)
         val offerAttempt = UUID.randomUUID(); val offerQuote = UUID.randomUUID(); val rideOffer = UUID.randomUUID()
@@ -155,7 +159,7 @@ class CrossTenantIsolationTest {
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
-            "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent,
+            "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
         ), subject = b.passenger.toString())
     }
 
@@ -275,6 +279,12 @@ class CrossTenantIsolationTest {
             "allocateCost" to Probe("POST", "/v1/cost-events/{cost_event_id}/allocations", """{"allocation_policy_revision":"fremd","reason":"Fremdversuch","lines":[{"cost_object_type":"COST_CENTER","cost_object_id":"${UUID.randomUUID()}","amount":{"amount_minor":10000,"currency":"EUR","exponent":2}}]}""", true, role = "finance"),
             "closeFiscalPeriod" to Probe("POST", "/v1/fiscal-periods/{period_id}/close", null, false, role = "finance"),
             "createCostEventReversal" to Probe("POST", "/v1/cost-events/{cost_event_id}/reversals", """{"reason":"Fremdversuch"}""", false, role = "finance"),
+            // ERP-Export (WP-M4-37)
+            "getLedgerExport" to Probe("GET", "/v1/ledger/exports/{export_id}", role = "finance"),
+            "listLedgerExportLines" to Probe("GET", "/v1/ledger/exports/{export_id}/lines", role = "finance"),
+            "getLedgerExportDownload" to Probe("GET", "/v1/ledger/exports/{export_id}/download", role = "finance"),
+            "readLedgerExportContent" to Probe("GET", "/v1/ledger/exports/{export_id}/content?exp=4102444800&sig=${"0".repeat(64)}", role = "finance"),
+            "confirmLedgerExport" to Probe("POST", "/v1/ledger/exports/{export_id}/confirmation", """{"entries":[{"journal_id":"${UUID.randomUUID()}","import_ref":"ERP-1"}]}""", false, role = "finance"),
             "acknowledgeExpenseHint" to Probe("POST", "/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement", """{"reason":"Fremdversuch"}""", true, role = "finance"),
             "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),
@@ -302,7 +312,7 @@ class CrossTenantIsolationTest {
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listTimeTargetActual" to "/v1/time-events/target-actual?from=2026-12-01&to=2026-12-02", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "listDefects" to "/v1/defects", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
-        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listBookings" to "/v1/bookings",
+        "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "listBookings" to "/v1/bookings",
     )
     private val selfScoped = setOf(
         "getMe", "listOwnRosterShifts", "listOwnAbsences", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
@@ -352,7 +362,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "listFiscalPeriods" -> a.financeToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "listFiscalPeriods", "listLedgerExports" -> a.financeToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

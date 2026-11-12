@@ -1,11 +1,15 @@
 package de.taktovia.documentsfinance
 
+import de.taktovia.documentsfinance.api.ApprovalDecision
 import de.taktovia.documentsfinance.api.AssignCosts
 import de.taktovia.documentsfinance.api.CorrectExpense
 import de.taktovia.documentsfinance.api.CreateFiscalPeriod
 import de.taktovia.documentsfinance.api.DocumentKind
 import de.taktovia.documentsfinance.api.ExpenseFields
 import de.taktovia.documentsfinance.api.FiscalPeriodView
+import de.taktovia.documentsfinance.api.LedgerBatch
+import de.taktovia.documentsfinance.api.LedgerExportFormat
+import de.taktovia.documentsfinance.api.RenderedLedgerBatch
 import de.taktovia.documentsfinance.api.PostExpense
 import de.taktovia.documentsfinance.api.PostingResult
 import de.taktovia.documentsfinance.api.PutAccountingMapping
@@ -60,7 +64,36 @@ class LedgerWorld(val bf: BelegFixture) {
 
     fun postedEvent(gross: Long = 10000, vat: Long = 0, date: LocalDate = LocalDate.of(2026, 9, 15)): PostingResult = post(approvedDocument(gross, vat, date))
 
+    /** Beleg über den echten Freigabeweg (Erfassung, Sachprüfung, Budgetfreigabe; über der Schwelle wartet er auf die zweite Person); liefert die Beleg-ID und das Ergebnis der letzten Freigabe. */
+    fun approvedByWorkflow(gross: Long = 10000, date: LocalDate = LocalDate.of(2026, 9, 15)): Pair<UUID, de.taktovia.documentsfinance.api.ApprovalOutcome> {
+        val d = bf.upload(w, capturer, bytes = bf.uniqueJpeg(), kind = DocumentKind.RECEIPT)
+        val fields = mapOf(ExpenseFields.AMOUNT_MINOR to gross, ExpenseFields.CURRENCY to "EUR", ExpenseFields.DOCUMENT_DATE to date.toString(), ExpenseFields.MERCHANT to "Händler ${UUID.randomUUID()}")
+        var rev = bf.svc.expenses.correct(fin, d.documentId, d.revision, CorrectExpense("erfasst", fields)).document.revision
+        rev = bf.svc.costs.assign(fin, d.documentId, rev, AssignCosts(vehicleIds = setOf(vehicle))).document.revision
+        bf.svc.approvals.submit(capturer, d.documentId, rev)
+        bf.svc.approvals.review(reviewer, d.documentId, rev, ApprovalDecision.APPROVED, "Sachlich geprüft")
+        return d.documentId to bf.svc.approvals.approve(approver, d.documentId, rev, "Freigegeben")
+    }
+
+    val reviewer = person(setOf("finance"), setOf("receipts:read", "receipts:write", "expenses:review"))
+    val approver = person(setOf("finance"), setOf("receipts:read", "receipts:write", "expenses:approve", "costs:read"))
+    val secondApprover = person(setOf("finance"), setOf("receipts:read", "receipts:write", "expenses:approve", "costs:read"))
+
     fun events() = bf.fx.count("SELECT count(*) FROM taktovia.economic_event WHERE tenant_id=?", w.tenant.value)
     fun journals() = bf.fx.count("SELECT count(*) FROM taktovia.journal WHERE tenant_id=?", w.tenant.value)
     fun audit(action: String) = bf.fx.count("SELECT count(*) FROM taktovia.audit_event WHERE tenant_id=? AND action=?", w.tenant.value, action)
+}
+
+
+/** Neutrales Prüfformat des Moduls (eigene Testklasse, nicht der Adapter): eine Zeile je Journalzeile, deterministisch sortiert. */
+class LedgerTestFormat : LedgerExportFormat {
+    override val name = "test-lines"
+    override val version = "1"
+    override fun render(batch: LedgerBatch): RenderedLedgerBatch {
+        val text = buildString {
+            append("batch=").append(batch.batchRef).append(';').append("entity=").append(batch.legalEntityId).append('\n')
+            batch.journals.sortedBy { it.journalId.toString() }.forEach { j -> j.lines.sortedWith(compareBy({ it.account }, { it.side }, { it.amountMinor })).forEach { l -> append(j.journalId).append('|').append(j.accountingDate).append('|').append(l.account).append('|').append(l.side).append('|').append(l.amountMinor).append('\n') } }
+        }
+        return RenderedLedgerBatch("text/plain", "txt", text.toByteArray(Charsets.UTF_8))
+    }
 }

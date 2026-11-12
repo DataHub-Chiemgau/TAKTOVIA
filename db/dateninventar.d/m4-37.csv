@@ -1,0 +1,30 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+ledger_export;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;target_system;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;period_from;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;period_to;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;state;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;operation_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;batch_ref;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;format_name;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;format_version;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;media_type;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;content;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;content_sha256;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;content_size;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;journal_count;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;result_code;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export;requested_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+ledger_export;created_at;nein;TECHNISCHER_BETRIEB;;;;
+ledger_export;provided_at;nein;TECHNISCHER_BETRIEB;;;;
+ledger_export;confirmed_at;nein;TECHNISCHER_BETRIEB;;;;
+ledger_export;confirmed_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+ledger_export_line;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export_line;journal_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export_line;export_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export_line;document_id;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export_line;import_ref;nein;BUCHHALTUNG_BELEGE;;;;
+ledger_export_line;confirmed_at;nein;TECHNISCHER_BETRIEB;;;;
+expense_document;export_confirmed_at;nein;TECHNISCHER_BETRIEB;;;;

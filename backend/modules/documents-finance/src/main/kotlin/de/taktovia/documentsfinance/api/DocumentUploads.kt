@@ -163,6 +163,6 @@ object DocumentUploads {
     fun services(
         ctxTx: ContextTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox, store: TenantObjectStore, scanner: MalwareScanner,
         policy: UploadPolicy = UploadPolicy(), signer: UploadTargetSigner? = null, clock: Clock = Clock.systemUTC(),
-        recognizer: ReceiptRecognizer? = null, extraction: ExtractionPolicy = ExtractionPolicy(),
-    ): DocumentServices = UploadServicesFactory.services(ctxTx, audit, security, outbox, store, scanner, policy, signer, clock, recognizer, extraction)
+        recognizer: ReceiptRecognizer? = null, extraction: ExtractionPolicy = ExtractionPolicy(), ledger: LedgerExportConfig = LedgerExportConfig(),
+    ): DocumentServices = UploadServicesFactory.services(ctxTx, audit, security, outbox, store, scanner, policy, signer, clock, recognizer, extraction, ledger)
 }

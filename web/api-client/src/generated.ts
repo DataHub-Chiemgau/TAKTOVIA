@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'LEDGER_EXPORT';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -581,6 +581,68 @@ export interface CostEventReversal {
   allocation: AllocationResult | null;
 }
 
+export interface CreateLedgerExportRequest {
+  legal_entity_id: UUID;
+  period_from: string;
+  period_to: string;
+  target_system?: 'NEUTRAL';
+}
+
+export interface LedgerExport {
+  id: UUID;
+  legal_entity_id: UUID;
+  target_system: string;
+  period_from: string;
+  period_to: string;
+  state: 'REQUESTED' | 'PROVIDED' | 'CONFIRMED' | 'EMPTY' | 'FAILED';
+  operation_id: UUID;
+  batch_ref: string | null;
+  content_sha256: string | null;
+  content_size: number | null;
+  journal_count: number | null;
+  format: string | null;
+  format_version: string | null;
+  media_type: string | null;
+  result_code: string | null;
+  requested_by: string;
+  created_at: string;
+  provided_at: string | null;
+  confirmed_at: string | null;
+}
+
+export interface LedgerExportPage {
+  items: LedgerExport[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface LedgerExportLine {
+  journal_id: UUID;
+  document_id: UUID;
+  import_ref: string | null;
+  confirmed_at: string | null;
+}
+
+export interface LedgerExportLinePage {
+  items: LedgerExportLine[];
+  next_cursor: null;
+  as_of: string;
+}
+
+export interface LedgerExportDownloadLink {
+  url: string;
+  expires_at: string;
+}
+
+export interface ConfirmLedgerExportRequest {
+  entries: LedgerImportConfirmation[];
+}
+
+export interface LedgerImportConfirmation {
+  journal_id: UUID;
+  import_ref: string;
+}
+
 export interface CostEventPage {
   items: CostEvent[];
   next_cursor: string | null;
@@ -618,7 +680,7 @@ export interface Expense {
   split?: null | ExpenseSplitView;
   split_problem?: string | null;
   approval_steps?: ExpenseApprovalStep[];
-  export_state?: 'NOT_EXPORTED' | 'EXPORTED';
+  export_state?: 'NOT_EXPORTED' | 'EXPORTED' | 'CONFIRMED';
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -3474,6 +3536,55 @@ export interface Operations {
     body: CostEventReversalRequest;
     response: CostEventReversal;
   };
+  listLedgerExports: {
+    path: Record<string, never>;
+    query: { legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportPage;
+  };
+  createLedgerExport: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CreateLedgerExportRequest;
+    response: LedgerExport;
+  };
+  getLedgerExport: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExport;
+  };
+  listLedgerExportLines: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportLinePage;
+  };
+  getLedgerExportDownload: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportDownloadLink;
+  };
+  readLedgerExportContent: {
+    path: { export_id: UUID };
+    query: { exp: number; sig: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Record<string, unknown>;
+  };
+  confirmLedgerExport: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ConfirmLedgerExportRequest;
+    response: LedgerExport;
+  };
   approveExpense: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -5094,6 +5205,13 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['periods:manage'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   closeFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods/{period_id}/close', pathParams: ['period_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['periods:close'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   createCostEventReversal: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/reversals', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:reverse'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listLedgerExports: { method: 'GET', path: '/v1/ledger/exports', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createLedgerExport: { method: 'POST', path: '/v1/ledger/exports', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['ledger:export'], statuses: [200, 202, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getLedgerExport: { method: 'GET', path: '/v1/ledger/exports/{export_id}', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listLedgerExportLines: { method: 'GET', path: '/v1/ledger/exports/{export_id}/lines', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getLedgerExportDownload: { method: 'GET', path: '/v1/ledger/exports/{export_id}/download', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
+  readLedgerExportContent: { method: 'GET', path: '/v1/ledger/exports/{export_id}/content', pathParams: ['export_id'], query: ['exp', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  confirmLedgerExport: { method: 'POST', path: '/v1/ledger/exports/{export_id}/confirmation', pathParams: ['export_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

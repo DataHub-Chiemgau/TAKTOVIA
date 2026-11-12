@@ -230,7 +230,7 @@ class DocumentServices(
     val uploads: Uploads, val expenses: Expenses, val intake: ReceiptIntake, val settings: DocumentSettings, val integrity: IntegrityChecks, val extraction: ReceiptExtraction,
     val review: ReceiptReview,
     val costs: CostAssignments, val costEvents: CostEvents, val accounting: AccountingMappings,
-    val allocations: CostAllocations, val splits: ExpenseSplits, val periods: FiscalPeriods, val corrections: CostEventCorrections,
+    val allocations: CostAllocations, val splits: ExpenseSplits, val periods: FiscalPeriods, val corrections: CostEventCorrections, val exports: LedgerExports,
     val fuel: FuelReceipts, val policies: FinancePolicies, val plausibility: FuelPlausibility,
     val duplicates: DuplicateReview, val approvals: ExpenseApprovals,
 )

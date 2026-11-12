@@ -21,7 +21,8 @@ object ExpenseStates {
     val IN_WORKFLOW = setOf(IN_REVIEW, REVIEWED, WAITING_SECOND_APPROVAL)
 }
 
-enum class ExportState { NOT_EXPORTED, EXPORTED }
+/** Exportstatus am Beleg: `EXPORTED` = bereitgestellt (in einem Exportbatch), `CONFIRMED` = Import bestätigt (WP-M4-37); gesetzt nur vom Exportjob. */
+enum class ExportState { NOT_EXPORTED, EXPORTED, CONFIRMED }
 
 /** Ein Freigabeschritt mit Akteur, Dokumentrevision, Entscheidung, Begründung und Zeit (`approval_step`, append-only; zusätzlich im Audit). */
 data class ApprovalStepView(val id: UUID, val step: ApprovalStep, val documentRevision: Long, val decision: ApprovalDecision, val decidedBy: String, val reason: String, val decidedAt: Instant)

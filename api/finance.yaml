@@ -249,6 +249,287 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports:
+    get:
+      summary: Exportbatches des Hauptbuchs lesen
+      operationId: listLedgerExports
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Exportbatches (WP-M4-37) des Mandanten, aufsteigend nach Anlage und Kennung, Cursor-Seiten, `as_of` = Datenstand. Scope `ledger:read` und Finanzrolle (Dienstkonten genügt der Scope).'
+      parameters:
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Export des Hauptbuchs als Job anfordern
+      operationId: createLedgerExport
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Fordert den Export der gebuchten, vollständig freigegebenen Journale eines Rechtsträgers im Zeitraum `[period_from, period_to)` an (WP-M4-37). Der Export ist ein wiederholsicherer Job (`operation` `LEDGER_EXPORT` mit Lease und Fencing): 202 mit dem Auftrag (`state` REQUESTED, `operation_id`; Status über `getLedgerExport`). Dieselbe Anforderung (Rechtsträger, Zielsystem, Zeitraum) liefert 200 mit demselben offenen Auftrag bzw. dem vorhandenen Batch (gleiche Kennungen, gleicher Inhaltshash), solange nichts Neues exportierbar ist; neue Journale ergeben einen neuen Batch nur mit diesen, ein Journal erscheint in genau einem Batch. Leerer Zeitraum ohne Batch: 409. Eigene Exportberechtigung (Scope `ledger:export`), getrennt von der Freigabe; Rechtsträger eines anderen Mandanten: 404. Zielsystem bis D-06 nur `NEUTRAL` (neutrales Testformat). Der Auftrag hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLedgerExportRequest'
+      responses:
+        '200':
+          description: Der Umfang hat schon einen offenen Auftrag oder einen Batch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '202':
+          description: Auftrag eingestellt.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: /v1/operations/{operation_id}
+            Retry-After:
+              schema:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}:
+    get:
+      summary: Exportbatch lesen
+      operationId: getLedgerExport
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Stand eines Exportbatchs (WP-M4-37): Zustand, Auftrag, Kennung (`batch_ref`), Inhaltshash und Anzahl ab der Bereitstellung. Fremde Mandanten: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/lines:
+    get:
+      summary: Journale eines Exportbatchs lesen
+      operationId: listLedgerExportLines
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Die Journale des Batchs (eindeutige Journal-ID je Zeile, Beleg, Bestätigungs-ID, WP-M4-37), nach Journal-ID sortiert. Grundlage des Bestätigungsprotokolls.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportLinePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/download:
+    get:
+      summary: Kurzlebige Downloadadresse eines Exportbatchs
+      operationId: getLedgerExportDownload
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Liefert eine kurzlebige (höchstens 60 s), mandantengebundene signierte Adresse für den Inhalt eines bereitgestellten Batchs (WP-M4-37). Nicht bereitgestellt: 409. Scope `ledger:export`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportDownloadLink'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/content:
+    get:
+      summary: Inhalt eines Exportbatchs über signierte Adresse abrufen
+      operationId: readLedgerExportContent
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Liefert den Inhalt zur signierten Adresse aus `getLedgerExportDownload` (Parameter `exp`, `sig`; WP-M4-37). Signatur, Ablauf und Mandantenbindung werden geprüft: ungültige, abgelaufene oder mandantenfremde Adressen sind nicht von einem fehlenden Batch zu unterscheiden (404). Der Download steht im Audit.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - name: exp
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Ablauf (Unix-Sekunden).
+      - name: sig
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        description: Signatur (HMAC-SHA256, hexadezimal).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Inhalt des Batchs im Zielformat (Medientyp aus `media_type` des Batchs).
+          headers:
+            X-Content-SHA256:
+              schema:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+              description: SHA-256 des Inhalts (hexadezimal), gleich `content_sha256` des Batchs.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/confirmation:
+    post:
+      summary: Import des Exportbatchs bestätigen
+      operationId: confirmLedgerExport
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Bestätigungsprotokoll (WP-M4-37): die Import-ID des Zielsystems je Journal des Batchs, alle Journale genau einmal (sonst 422), Import-IDs eindeutig. Setzt den Batch auf `CONFIRMED` und den Exportstatus der Belege auf bestätigt. Dieselbe Bestätigung wiederholt liefert den unveränderten Stand, eine abweichende 409; ein nicht bereitgestellter Batch 409. Der Batch hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmLedgerExportRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/approve:
     post:
       summary: Belegrevision fachlich freigeben
@@ -1656,6 +1937,226 @@ components:
       - event
       - journal
       - allocation
+    CreateLedgerExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+          description: Erster Tag nach dem Zeitraum (exklusiv); höchstens 400 Tage nach `period_from`.
+        target_system:
+          type: string
+          enum:
+          - NEUTRAL
+          default: NEUTRAL
+          description: Bis zum Beschluss D-06 nur das neutrale Testformat.
+      required:
+      - legal_entity_id
+      - period_from
+      - period_to
+    LedgerExport:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        target_system:
+          type: string
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PROVIDED
+          - CONFIRMED
+          - EMPTY
+          - FAILED
+          description: REQUESTED = Auftrag wartet oder läuft, PROVIDED = bereitgestellt, CONFIRMED = Import bestätigt, EMPTY = nichts exportierbar, FAILED = ohne Ergebnis beendet (`result_code`).
+        operation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        batch_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        content_sha256:
+          oneOf:
+          - type: string
+            pattern: ^[0-9a-f]{64}$
+          - type: 'null'
+        content_size:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+        journal_count:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+        format:
+          oneOf:
+          - type: string
+          - type: 'null'
+        format_version:
+          oneOf:
+          - type: string
+          - type: 'null'
+        media_type:
+          oneOf:
+          - type: string
+          - type: 'null'
+        result_code:
+          oneOf:
+          - type: string
+          - type: 'null'
+        requested_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        provided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        confirmed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - target_system
+      - period_from
+      - period_to
+      - state
+      - operation_id
+      - batch_ref
+      - content_sha256
+      - content_size
+      - journal_count
+      - format
+      - format_version
+      - media_type
+      - result_code
+      - requested_by
+      - created_at
+      - provided_at
+      - confirmed_at
+    LedgerExportPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerExport'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    LedgerExportLine:
+      type: object
+      additionalProperties: false
+      properties:
+        journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        import_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        confirmed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - journal_id
+      - document_id
+      - import_ref
+      - confirmed_at
+    LedgerExportLinePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerExportLine'
+        next_cursor:
+          type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    LedgerExportDownloadLink:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          description: Relative, signierte Adresse (`exp`, `sig`), höchstens 60 s gültig und an den Mandanten gebunden.
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - url
+      - expires_at
+    ConfirmLedgerExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items:
+            $ref: '#/components/schemas/LedgerImportConfirmation'
+      required:
+      - entries
+    LedgerImportConfirmation:
+      type: object
+      additionalProperties: false
+      properties:
+        journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        import_ref:
+          type: string
+          pattern: ^[A-Za-z0-9._:/-]{1,100}$
+      required:
+      - journal_id
+      - import_ref
     CostEventPage:
       type: object
       additionalProperties: false
@@ -1829,7 +2330,8 @@ components:
           enum:
           - NOT_EXPORTED
           - EXPORTED
-          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege.
+          - CONFIRMED
+          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege. `EXPORTED` = bereitgestellt (in einem Exportbatch), `CONFIRMED` = Import im Zielsystem bestätigt (WP-M4-37).
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:

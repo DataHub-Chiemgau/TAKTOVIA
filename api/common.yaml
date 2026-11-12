@@ -495,6 +495,7 @@ components:
           - IMPACT_ANALYSIS
           - RETENTION_RUN
           - TEST_COMMAND
+          - LEDGER_EXPORT
         status:
           type: string
           enum:

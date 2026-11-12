@@ -247,3 +247,10 @@ listFiscalPeriods;periods:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 createFiscalPeriod;periods:manage;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 closeFiscalPeriod;periods:close;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 createCostEventReversal;costs:reverse;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+createLedgerExport;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+listLedgerExports;ledger:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+getLedgerExport;ledger:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+listLedgerExportLines;ledger:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+getLedgerExportDownload;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+readLedgerExportContent;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+confirmLedgerExport;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N

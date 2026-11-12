@@ -64,14 +64,26 @@ class Freigabeschritte(unittest.TestCase):
 
     def test_exportstatus_nur_fuer_gebuchte_belege_und_nur_einmal(self):
         d = self.doc()
+        job = lambda c: c.execute("SELECT set_config('app.export_job', 'on', true)")   # seit WP-M4-37 setzt nur der Exportjob den Status (transaktionslokaler Schalter)
         with tx(A) as c:
+            job(c)
             with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED', exported_at=now(), exported_by='svc' WHERE id=%s", (d,))
         with tx(A) as c: c.execute("UPDATE taktovia.expense_document SET state='POSTED', approved_by='user:x' WHERE id=%s", (d,))
         with tx(A) as c:
+            job(c)
             with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED' WHERE id=%s", (d,))   # Zeit und Akteur fehlen
-        with tx(A) as c: c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED', exported_at=now(), exported_by='svc' WHERE id=%s", (d,))
+        with tx(A) as c:   # ohne den Schalter des Exportjobs kann niemand den Status setzen, auch nicht mit Zeit und Akteur
+            with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED', exported_at=now(), exported_by='svc' WHERE id=%s", (d,))
         with tx(A) as c:
+            job(c); c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED', exported_at=now(), exported_by='svc' WHERE id=%s", (d,))
+        with tx(A) as c:
+            job(c)
             with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.expense_document SET export_state='NOT_EXPORTED', exported_at=NULL, exported_by=NULL WHERE id=%s", (d,))
+        with tx(A) as c:   # bereitgestellt -> bestätigt, danach endgültig
+            job(c); c.execute("UPDATE taktovia.expense_document SET export_state='CONFIRMED', export_confirmed_at=now() WHERE id=%s", (d,))
+        with tx(A) as c:
+            job(c)
+            with self.assertRaises(psycopg.errors.CheckViolation): c.execute("UPDATE taktovia.expense_document SET export_state='EXPORTED', export_confirmed_at=NULL WHERE id=%s", (d,))
 
     def test_schwelle_ist_begrenzt(self):
         with tx(A) as c: c.execute("INSERT INTO taktovia.finance_policy(tenant_id,updated_by) VALUES (%s,'u') ON CONFLICT DO NOTHING", (A,))

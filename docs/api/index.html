@@ -161,6 +161,67 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listLedgerExports"><h3><span class="m">GET</span> <code>/v1/ledger/exports</code></h3><p>Exportbatches des Hauptbuchs lesen</p><dl><dt>operationId</dt><dd><code>listLedgerExports</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="createLedgerExport"><h3><span class="m">POST</span> <code>/v1/ledger/exports</code></h3><p>Export des Hauptbuchs als Job anfordern</p><dl><dt>operationId</dt><dd><code>createLedgerExport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:export</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getLedgerExport"><h3><span class="m">GET</span> <code>/v1/ledger/exports/{export_id}</code></h3><p>Exportbatch lesen</p><dl><dt>operationId</dt><dd><code>getLedgerExport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listLedgerExportLines"><h3><span class="m">GET</span> <code>/v1/ledger/exports/{export_id}/lines</code></h3><p>Journale eines Exportbatchs lesen</p><dl><dt>operationId</dt><dd><code>listLedgerExportLines</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="getLedgerExportDownload"><h3><span class="m">GET</span> <code>/v1/ledger/exports/{export_id}/download</code></h3><p>Kurzlebige Downloadadresse eines Exportbatchs</p><dl><dt>operationId</dt><dd><code>getLedgerExportDownload</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:export</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="readLedgerExportContent"><h3><span class="m">GET</span> <code>/v1/ledger/exports/{export_id}/content</code></h3><p>Inhalt eines Exportbatchs über signierte Adresse abrufen</p><dl><dt>operationId</dt><dd><code>readLedgerExportContent</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:export</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="confirmLedgerExport"><h3><span class="m">POST</span> <code>/v1/ledger/exports/{export_id}/confirmation</code></h3><p>Import des Exportbatchs bestätigen</p><dl><dt>operationId</dt><dd><code>confirmLedgerExport</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>ledger:export</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="approveExpense"><h3><span class="m">POST</span> <code>/v1/expenses/{expense_id}/approve</code></h3><p>Belegrevision fachlich freigeben</p><dl><dt>operationId</dt><dd><code>approveExpense</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>expenses:approve</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>

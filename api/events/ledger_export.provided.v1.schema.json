@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/ledger_export.provided.v1.schema.json",
+  "title": "Exportbatch bereitgestellt (WP-M4-37)",
+  "description": "Payload von `ledger_export.provided`. Aggregat: ledger_export (Revision 1). Entsteht in derselben Transaktion, die den Batch, seine Zeilen und den Exportstatus der Belege schreibt (Outbox). Enthält Kennungen, Anzahl und Inhaltshash, keinen Inhalt.",
+  "type": "object",
+  "required": ["export_id", "batch_ref", "legal_entity_id", "journal_count", "content_sha256", "provided_at"],
+  "additionalProperties": false,
+  "properties": {
+    "export_id": {"type": "string", "format": "uuid"},
+    "batch_ref": {"type": "string", "pattern": "^[A-Z0-9-]{8,40}$"},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "journal_count": {"type": "integer", "minimum": 1},
+    "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provided_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"export_id": "11111111-2222-4333-8444-555555555555", "batch_ref": "EXP-111122224333", "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "journal_count": 3, "content_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "provided_at": "2026-12-01T06:10:00Z"}
+  ]
+}

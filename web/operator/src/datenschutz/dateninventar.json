@@ -5649,6 +5649,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "export_confirmed_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "export_state",
           "personenbezogen": "nein",
           "zweck": "BUCHHALTUNG_BELEGE",
@@ -8534,6 +8543,274 @@
           "spalte": "tenant_id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "ledger_export",
+      "aggregat": "Exportbatch Hauptbuch (WP-M4-37)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "",
+      "spalten": [
+        {
+          "spalte": "batch_ref",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "confirmed_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "confirmed_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "content",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "content_sha256",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "content_size",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "format_name",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "format_version",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "journal_count",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "legal_entity_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "media_type",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "operation_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "period_from",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "period_to",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "provided_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "requested_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "result_code",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "state",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "target_system",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "ledger_export_line",
+      "aggregat": "Exportbatch Hauptbuch, Zeile (WP-M4-37)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "",
+      "spalten": [
+        {
+          "spalte": "confirmed_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "document_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "export_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "import_ref",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "journal_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
           "rechtsgrundlage": "",
           "schutzklasse": "",
           "loeschklasse": "",
