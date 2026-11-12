@@ -5,12 +5,16 @@ import de.taktovia.app.identity.RequestContexts
 import de.taktovia.bookingdispatch.api.BookingDetail
 import de.taktovia.bookingdispatch.api.Bookings
 import de.taktovia.bookingdispatch.api.ConfirmBooking
+import de.taktovia.bookingdispatch.api.HistoryView
 import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Paging
 import de.taktovia.platform.api.Revisioned
+import de.taktovia.platform.problem.ProblemException
+import de.taktovia.platform.problem.Violation
+import de.taktovia.platform.problem.ViolationCode
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -60,6 +64,36 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         val lim = Paging.limit(limit); val pos = Paging.position(cursor, codec, scope)
         val rows = bookings.list(ctx, lim, pos?.let { it.createdAt to it.id })
         return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { render(it) }
+    }
+
+    /**
+     * `GET /v1/bookings/{id}/history` (WP-M2-25): Fahrgäste sehen die reduzierte Sicht ihrer eigenen Buchung, Betriebspersonal im Dienstscope und Prüfer standardmäßig die Prüfersicht;
+     * `view=audit` für Fahrgäste ist 403, ein unbekannter Wert 422.
+     */
+    @GetMapping("/v1/bookings/{booking_id}/history")
+    fun history(@PathVariable("booking_id") id: UUID, @RequestParam(required = false) view: String?, request: HttpServletRequest): Map<String, Any?> {
+        val ctx = RequestContexts.require(request)
+        val v = when (view) {
+            null -> if ("passenger" in ctx.roles) HistoryView.PASSENGER else HistoryView.AUDIT
+            "reduced" -> HistoryView.PASSENGER
+            "audit" -> HistoryView.AUDIT
+            else -> throw ProblemException.invalid(Violation("/\$query/view", ViolationCode.NOT_IN_ENUM))
+        }
+        val items = bookings.history(ctx, id, v).map { e ->
+            val m = linkedMapOf<String, Any?>(
+                "revision" to e.revision, "from_state" to e.fromState, "to_state" to e.toState, "reason" to e.reason.name, "reason_text" to e.reasonText,
+                "occurred_at" to e.occurredAt.toString(), "actor_kind" to e.actorKind,
+            )
+            e.actorRef?.let { m["actor_ref"] = it }; e.correlationId?.let { m["correlation_id"] = it.toString() }
+            e.links?.let { l ->
+                m["links"] = linkedMapOf<String, Any?>().also { o ->
+                    l.attemptId?.let { o["attempt_id"] = it.toString() }; l.offerId?.let { o["offer_id"] = it.toString() }; l.holdId?.let { o["hold_id"] = it.toString() }
+                    l.quoteId?.let { o["quote_id"] = it.toString() }; l.paymentIntentId?.let { o["payment_intent_id"] = it.toString() }
+                }
+            }
+            m
+        }
+        return linkedMapOf("items" to items, "view" to if (v == HistoryView.AUDIT) "audit" else "reduced")
     }
 
     companion object {

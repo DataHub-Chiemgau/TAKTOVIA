@@ -2,6 +2,10 @@ package de.taktovia.bookingdispatch.internal
 
 import de.taktovia.bookingdispatch.api.BookingDemand
 import de.taktovia.bookingdispatch.api.BookingDetail
+import de.taktovia.bookingdispatch.api.BookingHistoryEntry
+import de.taktovia.bookingdispatch.api.BookingReason
+import de.taktovia.bookingdispatch.api.HistoryLinks
+import de.taktovia.bookingdispatch.api.HistoryView
 import de.taktovia.bookingdispatch.api.BookingPromise
 import de.taktovia.bookingdispatch.api.Bookings
 import de.taktovia.bookingdispatch.api.ConfirmBooking
@@ -86,7 +90,8 @@ internal class JdbcBookings(
         val identity = JdbcCapacityHolds.ConfirmIdentity(passengerId, FourEyes.refOf(ctx).value, offer.quoteId, operatorRef, offer.pickupStopRevisionId?.toString() ?: "unbound", offer.dropoffStopRevisionId?.toString() ?: "unbound")
         val created = holds.confirmIn(j, ctx, cmd.holdId, offer.serviceId, promise, BookingDemand(vector.seats + vector.wheelchair, vector, emptySet()), identity)
         // Zahlungsvoraussetzung (OP-5): tariflich kostenfrei = sofort bestätigt, sonst CONFIRMING bis zum verifizierten PSP-Status AUTHORIZED (WP-M2-30)
-        if (quote.payAtPlatformMinor == 0L) transitions.apply(j, created.id, BookingState.CONFIRMED, 1, ctx.correlationId)
+        transitions.recordCreated(j, ctx, created.id, BookingState.CONFIRMING)
+        if (quote.payAtPlatformMinor == 0L) transitions.apply(j, ctx, created.id, BookingState.CONFIRMED, BookingReason.FREE_OF_CHARGE, 1)
         ConfirmedBooking(detail(j, ctx, created.id, passengerOf = passengerId), replayed = false)
     }
 
@@ -139,6 +144,34 @@ internal class JdbcBookings(
             j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND service_id = ANY(CAST(? AS uuid[]))$cursor ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(ids) + cursorArgs + (limit + 1)).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
         }
         rows.map { view(j, ctx, it) }
+    }
+
+    // ---- Zustandsübergang und Historie (WP-M2-25) --------------------------------------------------------------------------------------
+
+    override fun transition(ctx: RequestContext, bookingId: UUID, to: BookingState, reason: BookingReason, expectedRevision: Long?): BookingDetail = ctxTx.run(ctx) { j ->
+        if (isPassengerView(ctx)) throw ProblemException(ErrorCode.FORBIDDEN, "Fahrgäste ändern Buchungen nur über den Storno.")
+        val r = row(j, bookingId) ?: throw ProblemException.notFound()
+        authorizer.requireWrite(j, ctx, ScopedObject("BOOKING", r.id, ctx.tenant, r.serviceId))
+        transitions.apply(j, ctx, bookingId, to, reason, expectedRevision)
+        detail(j, ctx, bookingId, passengerOf = null)
+    }
+
+    private class HistRow(val revision: Long, val from: String?, val to: String, val reason: String, val text: String, val at: Instant, val kind: String, val actor: String, val correlation: UUID?, val links: HistoryLinks)
+
+    override fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry> = ctxTx.run(ctx, readOnly = true) { j ->
+        val passenger = isPassengerView(ctx)
+        val r = row(j, bookingId) ?: throw ProblemException.notFound()
+        authorize(j, ctx, r, if (passenger) passengerOf(j, ctx) else null)
+        if (passenger && view == HistoryView.AUDIT) throw ProblemException(ErrorCode.FORBIDDEN, "Die Prüfersicht steht Fahrgästen nicht zur Verfügung.")
+        j.query(
+            "SELECT h.booking_revision, h.from_state, h.to_state, h.reason_code, c.passenger_text, h.occurred_at, h.actor_kind, h.actor_ref, h.correlation_id, h.attempt_id, h.offer_id, h.hold_id, h.quote_id, h.payment_intent_id " +
+                "FROM taktovia.booking_status_history h JOIN taktovia.booking_status_reason c ON c.code = h.reason_code WHERE h.booking_id = ? ORDER BY h.booking_revision",
+            { rs, _ -> HistRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getTimestamp(6).toInstant(), rs.getString(7), rs.getString(8), rs.getObject(9, UUID::class.java),
+                HistoryLinks(rs.getObject(10, UUID::class.java), rs.getObject(11, UUID::class.java), rs.getObject(12, UUID::class.java), rs.getObject(13, UUID::class.java), rs.getObject(14, UUID::class.java))) }, bookingId,
+        ).map { h ->
+            val audit = view == HistoryView.AUDIT
+            BookingHistoryEntry(h.revision, h.from, h.to, BookingReason.parse(h.reason)!!, h.text, h.at, h.kind, if (audit) h.actor else null, if (audit) h.correlation else null, if (audit) h.links else null)
+        }
     }
 
     private companion object {

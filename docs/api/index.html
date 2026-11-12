@@ -477,6 +477,15 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listBookingHistory"><h3><span class="m">GET</span> <code>/v1/bookings/{booking_id}/history</code></h3><p>Statushistorie der Buchung</p><dl><dt>operationId</dt><dd><code>listBookingHistory</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rides:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="cancelBooking"><h3><span class="m">POST</span> <code>/v1/bookings/{booking_id}/cancel</code></h3><p>Buchung stornieren</p><dl><dt>operationId</dt><dd><code>cancelBooking</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>rides:write</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>

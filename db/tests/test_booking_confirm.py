@@ -8,18 +8,14 @@ from helpers import tx, uid, seed_tenant, admin
 from test_route_stop import make_run
 from test_capacity_hold_state import hold
 from geo_helpers import make_service
+from test_booking_status_history import numbered_booking, advance
 
 A, B = uid(), uid()
 SNAP = json.dumps({'pickup_earliest': '2026-11-02T09:00:00Z', 'gross_minor': 950})
 
 
 def booking(c, tenant, run, number=None, state='CONFIRMING', service=None):
-    h = hold(c, tenant, run)
-    service = service or make_service(c, tenant)
-    bid = uid()
-    c.execute("INSERT INTO taktovia.booking(tenant_id,id,hold_id,service_id,federation_ref,state,promise_snapshot,revision,booking_no,created_by) VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb,1,%s,'user:test')",
-              (tenant, bid, h, service, f"fed-{bid}", state, SNAP, number))
-    return bid, h
+    return numbered_booking(c, tenant, run, number, service)
 
 
 class BookingConfirm(unittest.TestCase):
@@ -50,8 +46,8 @@ class BookingConfirm(unittest.TestCase):
         with self.assertRaises(psycopg.errors.CheckViolation):                      # Revision springt
             with tx(A) as c: c.execute("UPDATE taktovia.booking SET state='CONFIRMED', revision=5 WHERE id=%s", (bid,))
         with tx(A) as c:
-            c.execute("UPDATE taktovia.booking SET state='CONFIRMED', revision=2 WHERE id=%s", (bid,))
-            c.execute("UPDATE taktovia.booking SET state='CANCEL_PENDING', revision=3 WHERE id=%s", (bid,))
+            advance(c, A, bid, 2, 'CONFIRMING', 'CONFIRMED', 'PAYMENT_AUTHORIZED')
+            advance(c, A, bid, 3, 'CONFIRMED', 'CANCEL_PENDING', 'PASSENGER_REQUEST')
             self.assertEqual(c.execute("SELECT state, revision FROM taktovia.booking WHERE id=%s", (bid,)).fetchone(), ('CANCEL_PENDING', 3))
 
     def test_buchungsnummer_je_mandant_eindeutig_zaehler_und_format(self):

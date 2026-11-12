@@ -6,6 +6,7 @@ import de.taktovia.farepayment.api.FareQuotes
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.statemachine.BookingState
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
@@ -48,6 +49,16 @@ interface Bookings {
 
     /** Eigene Buchungen (Fahrgast) bzw. Buchungen der Dienste des Scopes (Betrieb), aufsteigend nach `(created_at, id)`; [limit] + 1 Zeilen ab [after] (Seitenbildung beim Aufrufer). */
     fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?): List<BookingDetail>
+
+    /**
+     * Zustandsübergang einer Buchung durch Betrieb oder System (Zahlungsautomat, Abgleich, Fahrtabschluss), einziger Weg neben Confirm und Storno (WP-M2-25): Automat `booking`, Revision (CAS,
+     * [expectedRevision] `null` = nur Zustand prüfen, nie überschreiben), **Grund aus dem Katalog** (passt er nicht zum Zielzustand: 422), Historieneintrag und Ereignis in derselben Transaktion;
+     * unzulässiger Übergang `409 INVALID_STATE_TRANSITION` ohne Wirkung. Fahrgäste dürfen nur über Storno ändern (403); Objektberechtigung wie Lesen, schreibend (fremder Dienst: 404).
+     */
+    fun transition(ctx: RequestContext, bookingId: UUID, to: BookingState, reason: BookingReason, expectedRevision: Long? = null): BookingDetail
+
+    /** Statushistorie in der [view]; die Prüfersicht ist Fahrgästen verwehrt (403), fremde Buchungen und Dienste ohne Scope sind 404. */
+    fun history(ctx: RequestContext, bookingId: UUID, view: HistoryView): List<BookingHistoryEntry>
 
     companion object {
         fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC()): Bookings = BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock)

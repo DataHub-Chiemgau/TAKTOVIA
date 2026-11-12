@@ -162,6 +162,7 @@ class ConfirmConcurrencyTest {
             assertThrows<Exception> { cf.confirm(h) }
         } finally {
             cf.fx.adminUpdate("DROP TRIGGER m2_23_abort ON taktovia.outbox")
+            cf.fx.adminUpdate("DROP FUNCTION taktovia.m2_23_fail_outbox()")
         }
         assertEquals(0, cf.count("SELECT count(*) FROM taktovia.booking WHERE tenant_id = ?", t), "keine Buchung")
         assertEquals(0, cf.count("SELECT count(*) FROM taktovia.journey WHERE tenant_id = ?", t), "keine Journey-Hülle")

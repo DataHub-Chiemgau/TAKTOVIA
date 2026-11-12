@@ -899,6 +899,30 @@ export interface RideCancelRequest {
   reason: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY';
 }
 
+export interface RideBookingHistoryEntry {
+  revision: number;
+  from_state: string | null;
+  to_state: string;
+  reason: string;
+  reason_text: string;
+  occurred_at: Timestamp;
+  actor_kind: 'PASSENGER' | 'OPERATOR' | 'SYSTEM';
+  actor_ref?: string;
+  correlation_id?: UUID;
+  links?: {
+    attempt_id?: UUID;
+    offer_id?: UUID;
+    hold_id?: UUID;
+    quote_id?: UUID;
+    payment_intent_id?: UUID;
+  };
+}
+
+export interface RideBookingHistory {
+  items: RideBookingHistoryEntry[];
+  view: 'reduced' | 'audit';
+}
+
 export interface RideBookingPage {
   items: RideBooking[];
   next_cursor: string | null;
@@ -3362,6 +3386,13 @@ export interface Operations {
     body: undefined;
     response: RideBooking;
   };
+  listBookingHistory: {
+    path: { booking_id: UUID };
+    query: { view?: 'reduced' | 'audit' };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: RideBookingHistory;
+  };
   cancelBooking: {
     path: { booking_id: UUID };
     query: Record<string, never>;
@@ -4664,6 +4695,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listBookings: { method: 'GET', path: '/v1/bookings', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   confirmBooking: { method: 'POST', path: '/v1/bookings', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   cancelBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/cancel', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref', 'actor_ref', 'action', 'from', 'to', 'purpose'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

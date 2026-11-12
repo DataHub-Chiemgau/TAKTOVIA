@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+booking_status_history;SELECT,INSERT;WP-M2-25: Statushistorie der Buchung, append-only (Trigger reject_mutation), kein UPDATE/DELETE
+booking_status_reason;SELECT;WP-M2-25: Katalog der Änderungs- und Stornogründe, global, nur per Migration gepflegt

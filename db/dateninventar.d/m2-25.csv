@@ -1,0 +1,20 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+booking_status_history;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;from_state;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;to_state;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;reason_code;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;actor_ref;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_BETRIEB;WP-M2-25: Akteur des Übergangs (Pseudonym user:<uuid>), nie Name oder Mailadresse
+booking_status_history;actor_kind;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;occurred_at;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;booking_revision;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;correlation_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;attempt_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;offer_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;hold_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;quote_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_history;payment_intent_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_reason;code;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_reason;kind;nein;BUCHUNGSABWICKLUNG;;;;
+booking_status_reason;passenger_text;nein;BUCHUNGSABWICKLUNG;;;;

@@ -317,6 +317,54 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/bookings/{booking_id}/history:
+    get:
+      summary: Statushistorie der Buchung
+      operationId: listBookingHistory
+      description: 'Unveränderliche Historie aller Zustandsübergänge mit Änderungsgrund (WP-M2-25, LH-6.4-BKG-013), aufsteigend nach Revision. `view=reduced` (Standard für Fahrgäste):
+        Zeitpunkt, Zustand und Grund in Fahrgastsprache, ohne Akteur-IDs und Verknüpfungen. `view=audit` (Standard für Betriebspersonal im Dienstscope und Prüfer): zusätzlich Akteur,
+        Korrelation und Verknüpfungen zu Anfrage, Angebot, Hold und Preisangebot; für Fahrgäste `403`. Fremde Buchung, fremder Dienst oder Mandant: `404`.'
+      security:
+      - oidc:
+        - rides:read
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID.
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - reduced
+          - audit
+        description: Sichtweise; Standard `reduced` für Fahrgäste, `audit` sonst.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideBookingHistory'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/bookings/{booking_id}/cancel:
     post:
       summary: Buchung stornieren
@@ -986,6 +1034,91 @@ components:
       description: Einstufiges Storno (M2 OP-24, Annahme). Die Antwort nennt Erstattung und neuen Zustand.
       examples:
       - reason: PASSENGER_REQUEST
+    RideBookingHistoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Buchungsrevision nach dem Übergang (laufend ab 1, ohne Lücke).
+        from_state:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 40
+          - type: 'null'
+        to_state:
+          type: string
+          minLength: 1
+          maxLength: 40
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 40
+          description: Grund aus dem Katalog der Änderungs- und Stornogründe (z. B. `HOLD_CONFIRMED`, `PASSENGER_REQUEST`, `VEHICLE_OUTAGE`).
+        reason_text:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Grund in Fahrgastsprache.
+        occurred_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        actor_kind:
+          type: string
+          enum:
+          - PASSENGER
+          - OPERATOR
+          - SYSTEM
+        actor_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Nur Prüfersicht (Pseudonym des Akteurs).
+        correlation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        links:
+          type: object
+          additionalProperties: false
+          description: Nur Prüfersicht. Verknüpfungen zur Rekonstruktion der Kette Anfrage, Angebot, Hold, Bestätigung (und Zahlung).
+          properties:
+            attempt_id:
+              $ref: common.yaml#/components/schemas/UUID
+            offer_id:
+              $ref: common.yaml#/components/schemas/UUID
+            hold_id:
+              $ref: common.yaml#/components/schemas/UUID
+            quote_id:
+              $ref: common.yaml#/components/schemas/UUID
+            payment_intent_id:
+              $ref: common.yaml#/components/schemas/UUID
+      required:
+      - revision
+      - from_state
+      - to_state
+      - reason
+      - reason_text
+      - occurred_at
+      - actor_kind
+    RideBookingHistory:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RideBookingHistoryEntry'
+          maxItems: 100
+        view:
+          type: string
+          enum:
+          - reduced
+          - audit
+      required:
+      - items
+      - view
     RideBookingPage:
       type: object
       additionalProperties: false

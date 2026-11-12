@@ -72,4 +72,28 @@ class BookingHttpApiTest {
         assertEquals(404, foreign.get(id, foreignToken).status)
         assertNotNull(g.header("ETag"))
     }
+
+    @Test
+    fun historie_fahrgast_reduziert_betrieb_pruefersicht_und_403_404() {
+        val h = s.held(); val id = s.confirm(h).json["id"].asString()
+        // Fahrgast: reduzierte Sicht der eigenen Buchung, ohne Akteur-IDs und Verknüpfungen
+        val own = s.env.get("/v1/bookings/$id/history", h.account.token)
+        assertEquals(200, own.status, own.text); assertEquals("reduced", own.json["view"].asString())
+        val e = own.json["items"][0]
+        assertEquals(1, e["revision"].asInt()); assertTrue(e["from_state"].isNull); assertEquals("CONFIRMING", e["to_state"].asString()); assertEquals("HOLD_CONFIRMED", e["reason"].asString())
+        assertEquals("PASSENGER", e["actor_kind"].asString()); assertTrue(e["reason_text"].asString().isNotBlank())
+        assertFalse(e.has("actor_ref")); assertFalse(e.has("links")); assertFalse(e.has("correlation_id"))
+        // Prüfersicht für den Fahrgast: 403; unbekannte Sicht: 422
+        assertEquals(403, s.env.get("/v1/bookings/$id/history?view=audit", h.account.token).status)
+        assertEquals(422, s.env.get("/v1/bookings/$id/history?view=alles", h.account.token).status)
+        // Betriebspersonal im Dienstscope: Prüfersicht mit Verknüpfungen; fremder Dienst und fremder Fahrgast: 404
+        val op = s.operator(listOf(java.util.UUID.fromString(s.world.service)))
+        val audit = s.env.get("/v1/bookings/$id/history", op)
+        assertEquals(200, audit.status, audit.text); assertEquals("audit", audit.json["view"].asString())
+        val a = audit.json["items"][0]
+        assertEquals(h.holdId, a["links"]["hold_id"].asString()); assertEquals(h.offerId, a["links"]["offer_id"].asString()); assertTrue(a.has("actor_ref") && a.has("correlation_id"))
+        assertEquals(404, s.env.get("/v1/bookings/$id/history", s.operator(listOf(java.util.UUID.randomUUID()))).status)
+        assertEquals(404, s.env.get("/v1/bookings/$id/history", s.newAccount().token).status)
+        assertEquals(404, s.env.get("/v1/bookings/$id/history", BookingHttpSupport().newAccount().token).status)
+    }
 }
