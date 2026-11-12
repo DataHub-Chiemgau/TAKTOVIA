@@ -183,6 +183,9 @@ internal class JdbcCapacityHolds(
         j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ? FOR SHARE", { _, _ -> 1 }, vehicleId)
         if (!resources.isAssigned(j, vehicleId, serviceId, java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant()))
             throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Das Fahrzeug ist dem Dienst zum Abholzeitpunkt nicht mehr zugeordnet.")
+        // Dienststatus (WP-M3-31): der Statuswechsel sperrt dieselbe Fahrzeugzeile; nach Pause, Störung oder Ende entsteht keine Zusage
+        if (!resources.isStatusDispatchable(j, vehicleId, java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant()))
+            throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Das Fahrzeug ist laut Dienststatus nicht disponierbar.")
         // Routeninvariante (gemeinsamer Validator, WP-M2-16): die Belegung der Abschnitte des Holds liegt unter dem Lock innerhalb der Fahrzeugkapazität
         val capacity = ResourceVector.parse(j.queryForObject(
             "SELECT v.capacity_config::text FROM taktovia.vehicle_run r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id WHERE r.id = ?", String::class.java, runId)!!, "/vehicle/capacity_config")

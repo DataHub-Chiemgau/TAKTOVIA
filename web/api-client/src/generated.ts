@@ -959,6 +959,45 @@ export interface RosterCreate {
   week_start: string;
 }
 
+export interface DriverServiceStatusReport {
+  event_id: UUID;
+  device_id?: UUID;
+  vehicle_id?: UUID;
+  target_status: 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'ENDED';
+  occurred_at: string;
+  device_recorded_at: string;
+  offline_recorded: boolean;
+}
+
+export interface DriverServiceStatusChange {
+  from: ServiceStatus | null;
+  to: ServiceStatus;
+  trigger: 'DRIVER' | 'SYSTEM' | 'DISPATCH';
+  occurred_at: string | null;
+  recorded_at: string;
+  offline_recorded: boolean;
+  revision: number;
+}
+
+export type ServiceStatus = 'NOT_READY' | 'AVAILABLE' | 'EN_ROUTE' | 'WAITING' | 'BREAK' | 'DISRUPTED' | 'ENDED';
+
+export interface DriverServiceStatus {
+  shift_id: UUID;
+  vehicle_id: UUID;
+  status: ServiceStatus;
+  dispatchable: boolean;
+  revision: number;
+  changed_at: string | null;
+  history: DriverServiceStatusChange[];
+}
+
+export interface DriverServiceStatusResult {
+  state: 'APPLIED' | 'DUPLICATE' | 'REVIEW_REQUIRED';
+  reason_code: 'INVALID_TRANSITION' | 'STALE_EVENT' | 'RELEASE_REQUIRED' | 'NO_EFFECT' | null;
+  received_at: string;
+  status: DriverServiceStatus;
+}
+
 export interface DriverEvent {
   event_id: UUID;
   shift_id: UUID;
@@ -4446,6 +4485,20 @@ export interface Operations {
     body: undefined;
     response: DriverPlanSnapshot;
   };
+  getDriverServiceStatus: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: DriverServiceStatus;
+  };
+  reportDriverServiceStatus: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: DriverServiceStatusReport;
+    response: DriverServiceStatusResult;
+  };
   listOwnAbsences: {
     path: Record<string, never>;
     query: { from?: string; to?: string; limit?: number; cursor?: string };
@@ -6049,6 +6102,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverPlanChanges: { method: 'GET', path: '/v1/driver/plan-changes', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getDriverPlanChangesSnapshot: { method: 'GET', path: '/v1/driver/plan-changes/snapshot', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  getDriverServiceStatus: { method: 'GET', path: '/v1/driver/shifts/{shift_id}/service-status', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  reportDriverServiceStatus: { method: 'POST', path: '/v1/driver/shifts/{shift_id}/service-status', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listOwnAbsences: { method: 'GET', path: '/v1/absences/own', pathParams: [], query: ['from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },

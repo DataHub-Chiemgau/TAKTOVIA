@@ -15,6 +15,8 @@ interface StafftimeApi {
     val driverEvents: DriverEvents
     /** Boarding-Code je Buchung: Ausstellung und Verbraucher des Bestätigungsereignisses (WP-M3-30); die Prüfung läuft im Ereigniseingang. */
     val boardingCodes: BoardingCodes
+    /** Fahrzeug- und Dienststatus mit Historie (WP-M3-31). */
+    val serviceStatus: VehicleServiceStatuses
     /** Abwesenheit als Verfügbarkeitsrestriktion (WP-M4-06). */
     val absences: Absences
     /** Ist-Arbeitszeit als Zeitereignisse (WP-M4-08). */

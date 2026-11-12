@@ -45,7 +45,7 @@ import java.util.UUID
 internal class JdbcDriverEvents(
     private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock,
     private val settings: StafftimeSettings = StafftimeSettings(), private val effects: DriverEventEffects = DriverEventEffects.NONE,
-    private val codes: JdbcBoardingCodes? = null,
+    private val codes: JdbcBoardingCodes? = null, private val statuses: JdbcVehicleServiceStatuses? = null,
 ) : DriverEvents {
 
     override fun record(ctx: RequestContext, cmd: DriverEventCommand): DriverEventResult {
@@ -150,6 +150,8 @@ internal class JdbcDriverEvents(
         ).firstOrNull() ?: return Reply(existing(j, cmd.eventId, hash, ctx) ?: throw ProblemException(ErrorCode.CONFLICT))
         val receivedAt = received.toInstant()
         publish(j, ctx, cmd, outcome, reason, noShow, receivedAt, effective)
+        // Dienststatus (WP-M3-31): Anfahrt, Wartezeit, Pause, Störung und Ende folgen dem Ereignis in derselben Transaktion; ein veraltetes Ereignis (REVIEW_REQUIRED) ändert den Status nie
+        if (outcome == DriverEventOutcome.APPLIED) statuses?.deriveFromDriverEvent(j, ctx, cmd.type, cmd.eventId, cmd.shiftId, cmd.routeStopId, cmd.occurredAt, cmd.offlineRecorded)
         return Reply(DriverEventResult(cmd.eventId, outcome, receivedAt, current, reason, null))
     }
 

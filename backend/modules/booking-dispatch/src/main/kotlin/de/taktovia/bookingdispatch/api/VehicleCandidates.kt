@@ -21,6 +21,8 @@ enum class ExclusionReason(val category: RejectionCategory, val depth: Int) {
     NO_SHIFT(RejectionCategory.PERSONNEL, 2),
     /** Keine gültige, nicht widerrufene Einsatzfreigabe: niemand einsatzbereit (Freigabe verbindet Fahrzeug und Fahrerqualifikation). */
     NO_VALID_RELEASE(RejectionCategory.PERSONNEL, 3),
+    /** Dienststatus der Schicht erlaubt keine neue Zuweisung: Pause, Störung, Ende oder nicht bereitgemeldet (WP-M3-31, DRV-007); der Fahrer ist nicht einsetzbar (Personalmangel, Arbeitsannahme OP-14). */
+    SERVICE_STATUS(RejectionCategory.PERSONNEL, 3),
     /** Ausstattungsmerkmal fehlt oder die Dimension Rollstuhlplatz existiert am Fahrzeug nicht (wie im Hold, WP-M2-14). */
     EQUIPMENT_MISSING(RejectionCategory.EQUIPMENT, 4),
     /** Zähler der Fahrzeugkapazität (Sitze, Rollstuhlplätze) kleiner als der Bedarf. */

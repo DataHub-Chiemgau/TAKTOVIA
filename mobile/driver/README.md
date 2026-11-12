@@ -20,6 +20,8 @@ Die Lizenzen sind nicht einzeln geprüft (Flutter BSD-3-Clause laut Plan, `sqlit
 
 - **WP-M4-14/-20 (nicht ausgeführt):** `lib/zeit/next_duty.dart` (Eigensicht `GET /v1/rosters/own-shifts`, „Nächster Dienst“) mit `test/zeit/next_duty_test.dart`; reine Dart-Logik, ohne Widgetanbindung, weder analysiert noch getestet. Die Anzeige UI-13 ist als Web-Ansicht gebaut und getestet (`web/operator/src/zeit`).
 
+- **WP-M3-31 (nicht ausgeführt):** `lib/shift/service_status.dart` (Dienststatus, Umschaltziele des Fahrers, Hinweis auf die Wirkung offline gemeldeter Störung und Ende, Body von `reportDriverServiceStatus`) mit `test/dienststatus_test.dart`; reine Dart-Logik, ohne Widgetanbindung, weder analysiert noch getestet.
+
 ## Was fehlt (Blocker)
 
 - **Flutter/Dart nicht ausgeführt.** Das Flutter-SDK wurde heruntergeladen und geprüft, der Start (`flutter --version`) wurde von der Berechtigungsprüfung der Sitzung abgelehnt (Ausführung heruntergeladenen Codes). Es liegen daher **kein** `flutter analyze`, **kein** `flutter test`, **kein** `pubspec.lock`, **kein** Build-Ergebnis vor. Die Dart-Dateien sind ungeprüft und können Syntax- oder Typfehler enthalten.

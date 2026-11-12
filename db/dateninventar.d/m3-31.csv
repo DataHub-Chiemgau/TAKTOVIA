@@ -1,0 +1,10 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+vehicle_service_status;tenant_id;nein;PERSONALEINSATZ;;;;
+vehicle_service_status;shift_id;nein;PERSONALEINSATZ;;;;
+vehicle_service_status;vehicle_id;nein;PERSONALEINSATZ;;;;
+vehicle_service_status;status;nein;PERSONALEINSATZ;;;;
+vehicle_service_status;revision;nein;PERSONALEINSATZ;;;;
+vehicle_service_status;changed_at;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;event_id;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;occurred_at;nein;PERSONALEINSATZ;;;;
+vehicle_status_history;offline_recorded;nein;PERSONALEINSATZ;;;;

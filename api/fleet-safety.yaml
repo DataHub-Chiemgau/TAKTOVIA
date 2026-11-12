@@ -3098,10 +3098,12 @@ components:
         folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s). Ohne
         bekannte Position ist `position` null und `position_stale` wahr; die letzte
         gemessene Position bleibt nach Überschreiten der Schwelle sichtbar und wird
-        nie extrapoliert (AT-10). Bis WP-M3-08/-31/-36 tragen `release_valid_until`,
+        nie extrapoliert (AT-10). Bis WP-M3-08/-36 tragen `release_valid_until`,
         `missing_requirements`, `active_blocks`, `open_defect_count` und `current_run_id`
-        noch keine Werte und `operational_state` leitet sich nur aus der Sperrkennung
-        ab.
+        noch keine Werte. `operational_state` ist `NOT_READY` solange das Fahrzeug
+        gesperrt ist, sonst der Dienststatus der jüngsten Schicht (WP-M3-31,
+        Verfügbarkeit, Anfahrt, Wartezeit, Pause, Störung, Ende), ohne Meldung
+        `AVAILABLE`.
     OperatorVehiclePage:
       type: object
       additionalProperties: false
