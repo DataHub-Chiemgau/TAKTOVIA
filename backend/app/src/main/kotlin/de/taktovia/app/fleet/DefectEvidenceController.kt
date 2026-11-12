@@ -73,12 +73,13 @@ class DefectEvidenceController(private val fleet: FleetsafetyApi) {
 
     private fun json(t: EvidenceTicketView): Map<String, Any?> = linkedMapOf(
         "id" to t.id.toString(), "state" to t.state.name, "mime" to t.mime, "size_bytes" to t.sizeBytes, "sha256" to t.sha256Wire, "captured_at" to t.capturedAt.toString(),
-        "max_bytes" to t.maxBytes, "expires_at" to t.expiresAt.toString(), "upload_key" to t.uploadKey, "reject_reason" to t.rejectReason, "defect_id" to t.defectId?.toString(), "revision" to t.revision,
+        "max_bytes" to t.maxBytes, "expires_at" to t.expiresAt.toString(), "upload_key" to t.uploadKey, "reject_reason" to t.rejectReason, "defect_id" to t.defectId?.toString(), "revision" to t.revision, "confidentiality" to t.confidentiality,
     )
 
     private fun json(e: EvidenceDetail): Map<String, Any?> = linkedMapOf(
         "id" to e.id.toString(), "defect_id" to e.defectId.toString(), "mime" to e.mime, "size_bytes" to e.sizeBytes,
         "sha256" to java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { e.sha256Hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }),
         "captured_at" to e.capturedAt.toString(), "received_at" to e.receivedAt.toString(), "added_in_version" to e.addedInVersion, "replaces_id" to e.replacesId?.toString(),
+        "confidentiality" to e.confidentiality,
     )
 }

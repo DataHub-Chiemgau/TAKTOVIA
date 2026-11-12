@@ -1545,6 +1545,7 @@ export interface DefectEvidenceUploadRequest {
   size_bytes: number;
   sha256: string;
   captured_at: string;
+  confidentiality?: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidenceUpload {
@@ -1560,6 +1561,7 @@ export interface DefectEvidenceUpload {
   reject_reason: 'EXPIRED' | 'OBJECT_MISSING' | 'SIZE_MISMATCH' | 'HASH_MISMATCH' | 'MIME_MISMATCH' | 'SIZE_LIMIT' | 'MALWARE' | 'MEDIA_INVALID' | null;
   defect_id: UUID | null;
   revision: number;
+  confidentiality: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidence {
@@ -1572,6 +1574,7 @@ export interface DefectEvidence {
   received_at: string;
   added_in_version: number;
   replaces_id: UUID | null;
+  confidentiality: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidencePage {

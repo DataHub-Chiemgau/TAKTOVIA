@@ -76,7 +76,7 @@ internal class JdbcDefects(
         } catch (e: DataIntegrityViolationException) {
             // Gleichzeitige Wiederholung derselben Geräteereignis-ID: die zweite Transaktion scheitert an UNIQUE und liefert die erste Akte
             if (sqlState(e) == "23505" && cmd.deviceEventId != null) {
-                val existing = ctxTx.run(ctx, readOnly = true) { j -> findByDeviceEvent(j, cmd.deviceEventId) } ?: throw e
+                val existing = ctxTx.run(ctx, readOnly = true) { j -> findByDeviceEvent(j, ctx, cmd.deviceEventId) } ?: throw e
                 return ReportedDefect(existing, created = false)
             }
             if (sqlState(e) == "23514") throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.INVALID_VALUE))   // Ereigniszeit in der Zukunft (Trigger)
@@ -89,7 +89,7 @@ internal class JdbcDefects(
         val now = clock.instant()
         if (cmd.occurredAt.isAfter(now.plusSeconds(DefectCatalog.FUTURE_TOLERANCE_SECONDS))) throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.INVALID_VALUE))
         // Wiederholung (Gerät, Offline-Synchronisation): dieselbe Akte, nur für denselben Meldenden
-        if (cmd.deviceEventId != null) findByDeviceEvent(j, cmd.deviceEventId)?.let {
+        if (cmd.deviceEventId != null) findByDeviceEvent(j, ctx, cmd.deviceEventId)?.let {
             if (it.reportedBy != subject || it.vehicleId != cmd.vehicleId) throw ProblemException(ErrorCode.IDEMPOTENCY_CONFLICT, "Die Geräteereignis-ID gehört zu einer anderen Meldung.")
             return ReportedDefect(it, created = false)
         }
@@ -111,7 +111,7 @@ internal class JdbcDefects(
             mapOf("defect_id" to id.toString(), "case_number" to view.caseNumber, "vehicle_id" to cmd.vehicleId.toString(), "category_code" to cmd.categoryCode, "reporter_role" to role,
                 "evidence_ids" to cmd.evidenceIds.map { it.toString() }),
             clock.instant(), correlationId = ctx.correlationId))
-        return ReportedDefect(loadOrNull(j, id)!!, created = true)
+        return ReportedDefect(loadOrNull(j, ctx, id)!!, created = true)
     }
 
     private fun insertCase(j: JdbcOperations, id: UUID, actor: ActorRef, subject: UUID, cmd: ReportDefect): DefectView =
@@ -132,7 +132,7 @@ internal class JdbcDefects(
     }
 
     override fun get(ctx: RequestContext, id: UUID): DefectView = ctxTx.run(ctx, readOnly = true) { j ->
-        val v = loadOrNull(j, id) ?: throw ProblemException.notFound()
+        val v = loadOrNull(j, ctx, id) ?: throw ProblemException.notFound()
         if (DefectRoles.driverOnly(ctx) && v.reportedBy.toString() != ctx.actor.subject.lowercase()) throw ProblemException.notFound()
         v
     }
@@ -140,7 +140,7 @@ internal class JdbcDefects(
     override fun list(ctx: RequestContext, filter: DefectFilter, limit: Int, after: Pair<Instant, UUID>?): List<DefectView> = ctxTx.run(ctx, readOnly = true) { j ->
         val own = if (DefectRoles.driverOnly(ctx)) reporter(ctx) else null
         val afterTs = after?.first?.let(Timestamp::from)
-        enrich(j, j.query(
+        enrich(j, ctx, j.query(
             "SELECT $COLUMNS FROM taktovia.defect_case d WHERE (CAST(? AS uuid) IS NULL OR d.vehicle_id = CAST(? AS uuid)) AND (CAST(? AS text) IS NULL OR d.status = CAST(? AS text)) " +
                 "AND (CAST(? AS text) IS NULL OR d.severity = CAST(? AS text)) AND (CAST(? AS timestamptz) IS NULL OR d.reported_at >= CAST(? AS timestamptz)) " +
                 "AND (CAST(? AS timestamptz) IS NULL OR d.reported_at < CAST(? AS timestamptz)) AND (CAST(? AS uuid) IS NULL OR d.reported_by = CAST(? AS uuid)) " +
@@ -195,7 +195,7 @@ internal class JdbcDefects(
         outbox.append(j, OutboxEvent(id, after.revision, "defect.state_changed",
             mapOf("defect_id" to id.toString(), "case_number" to after.caseNumber, "vehicle_id" to after.vehicleId.toString(), "from_status" to from.name, "to_status" to to.name,
                 "revision" to after.revision, "reopened" to cmd.reopen), clock.instant(), correlationId = ctx.correlationId))
-        return loadOrNull(j, id)!!
+        return loadOrNull(j, ctx, id)!!
     }
 
     /**
@@ -282,7 +282,7 @@ internal class JdbcDefects(
         )
         evidence.attach(j, id, cmd.addEvidenceIds, actor, version, "/add_evidence_ids")
         evidence.attach(j, id, cmd.replaceEvidence.map { it.ticketId }, actor, version, "/replace_evidence", cmd.replaceEvidence.associate { it.ticketId to it.evidenceId })
-        val after = loadOrNull(j, id)!!
+        val after = loadOrNull(j, ctx, id)!!
         audit.record(j, AuditEntry(actor, AuditActions.DEFECT_AMENDED, ObjectRef("defect", id), ctx.correlationId,
             mapOf("case_number" to after.caseNumber, "version" to version, "changed_fields" to changed, "evidence_added" to cmd.addEvidenceIds.size, "evidence_replaced" to cmd.replaceEvidence.size)))
         outbox.append(j, OutboxEvent(id, after.revision, "defect.amended",
@@ -337,19 +337,24 @@ internal class JdbcDefects(
 
     // ---------------- Hilfen ----------------
 
-    private fun findByDeviceEvent(j: JdbcOperations, deviceEventId: UUID): DefectView? =
-        enrich(j, j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.device_event_id = ?", MAPPER, deviceEventId)).firstOrNull()
+    private fun findByDeviceEvent(j: JdbcOperations, ctx: RequestContext, deviceEventId: UUID): DefectView? =
+        enrich(j, ctx, j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.device_event_id = ?", MAPPER, deviceEventId)).firstOrNull()
 
-    private fun loadOrNull(j: JdbcOperations, id: UUID): DefectView? = enrich(j, j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.id = ?", MAPPER, id)).firstOrNull()
+    private fun loadOrNull(j: JdbcOperations, ctx: RequestContext, id: UUID): DefectView? = enrich(j, ctx, j.query("SELECT $COLUMNS FROM taktovia.defect_case d WHERE d.id = ?", MAPPER, id)).firstOrNull()
 
-    /** Ergänzt freigegebene Fotos und die Zahl der Fotos in Prüfung (nicht sichtbar, nicht abrufbar). Eine Abfrage je Seite. */
-    private fun enrich(j: JdbcOperations, views: List<DefectView>): List<DefectView> {
+    /**
+     * Ergänzt freigegebene Fotos und die Zahl der Fotos in Prüfung (nicht sichtbar, nicht abrufbar) in der **Projektion der aufrufenden Rolle** (WP-M3-50): vertrauliche Dokumente fehlen für
+     * Unberechtigte vollständig, auch als Zähler. Eine Abfrage je Seite.
+     */
+    private fun enrich(j: JdbcOperations, ctx: RequestContext, views: List<DefectView>): List<DefectView> {
         if (views.isEmpty()) return views
         val ids = views.joinToString(",") { it.id.toString() }
+        val privileged = DefectConfidentiality.privileged(ctx.roles)
         val released = j.query("SELECT $EVIDENCE_COLUMNS FROM taktovia.defect_evidence e WHERE e.defect_id = ANY (string_to_array(?, ',')::uuid[]) AND NOT EXISTS (SELECT 1 FROM taktovia.defect_evidence r WHERE r.replaces_evidence_id = e.id) ORDER BY e.created_at, e.id",
-            JdbcDefectEvidence.EV_MAPPER, ids).groupBy { it.defectId }
-        val pending = j.query("SELECT defect_id, count(*) FROM taktovia.defect_evidence_upload WHERE state = 'IN_REVIEW' AND defect_id = ANY (string_to_array(?, ',')::uuid[]) GROUP BY defect_id",
-            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, ids).toMap()
+            JdbcDefectEvidence.EV_MAPPER, ids).filter { DefectConfidentiality.visibleTo(ctx, it) }.groupBy { it.defectId }
+        val pending = j.query("SELECT defect_id, count(*) FROM taktovia.defect_evidence_upload WHERE state = 'IN_REVIEW' AND defect_id = ANY (string_to_array(?, ',')::uuid[]) " +
+            "AND (confidentiality = 'STANDARD' OR ? OR uploaded_by = ?) GROUP BY defect_id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, ids, privileged, DefectConfidentiality.actorRef(ctx)).toMap()
         return views.map { v ->
             v.copy(evidence = released[v.id].orEmpty().map { EvidenceView(it.id, it.mime ?: "", it.sizeBytes ?: 0, it.sha256Hex, it.capturedAt, it.receivedAt, it.addedInVersion, it.replacesId) }, evidencePending = pending[v.id] ?: 0)
         }
@@ -364,7 +369,7 @@ internal class JdbcDefects(
 
     internal companion object {
         /** Wie [JdbcDefectEvidence.EV_COLUMNS] (hier als eigene Konstante, damit die Abfrage-Prüfung den Text sieht). */
-        const val EVIDENCE_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id"
+        const val EVIDENCE_COLUMNS = "e.id, e.defect_id, e.mime, e.size_bytes, e.sha256, e.captured_at, e.received_at, e.created_by, e.defect_version, e.replaces_evidence_id, e.confidentiality"
         const val ACTIVE_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status <> 'CANCELED'"
         const val PROVEN_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status = 'PROOF_RECORDED'"
         const val RELEASE_DECISIONS = "SELECT count(*) FROM taktovia.vehicle_release_decision d JOIN taktovia.repair_order r ON r.tenant_id = d.tenant_id AND r.id = d.repair_order_id " +

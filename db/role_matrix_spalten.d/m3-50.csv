@@ -1,0 +1,11 @@
+role;table;column;privileges
+taktovia_runtime;defect_personal_detail;tenant_id;SELECT
+taktovia_runtime;defect_personal_detail;id;SELECT
+taktovia_fields;defect_personal_detail;tenant_id;SELECT,INSERT
+taktovia_fields;defect_personal_detail;id;SELECT,INSERT
+taktovia_fields;defect_personal_detail;defect_id;SELECT,INSERT
+taktovia_fields;defect_personal_detail;detail_kind;SELECT,INSERT
+taktovia_fields;defect_personal_detail;content;SELECT,INSERT
+taktovia_fields;defect_personal_detail;recorded_by;SELECT,INSERT
+taktovia_fields;defect_personal_detail;revision;SELECT
+taktovia_fields;defect_personal_detail;created_at;SELECT
