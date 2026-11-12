@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/odometer.conflict_detected.v1.schema.json",
+  "title": "Kilometerstandskonflikt erkannt (WP-M4-41)",
+  "description": "Payload von `odometer.conflict_detected`. Aggregat: odometer_conflict / 1. Ausgelöst, wenn das Kilometerstandsregister einen rückläufigen Stand (DECREASING) oder widersprüchliche Quellen im selben Zeitfenster (SOURCE_MISMATCH) erkennt. Nur Kennungen, Art und Toleranz; die Stände selbst stehen im Register.",
+  "type": "object",
+  "required": ["conflict_id", "vehicle_id", "kind", "earlier_reading_id", "later_reading_id", "tolerance_km", "detected_at"],
+  "additionalProperties": false,
+  "properties": {
+    "conflict_id": {"type": "string", "format": "uuid"},
+    "vehicle_id": {"type": "string", "format": "uuid"},
+    "kind": {"enum": ["DECREASING", "SOURCE_MISMATCH"]},
+    "earlier_reading_id": {"type": "string", "format": "uuid"},
+    "later_reading_id": {"type": "string", "format": "uuid"},
+    "tolerance_km": {"type": "integer", "minimum": 0, "maximum": 1000},
+    "detected_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"conflict_id": "11111111-2222-4333-8444-555555555555", "vehicle_id": "66666666-7777-4888-8999-000000000000", "kind": "DECREASING",
+     "earlier_reading_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "later_reading_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff", "tolerance_km": 5, "detected_at": "2026-06-15T08:05:00Z"}
+  ]
+}

@@ -42,3 +42,7 @@ expense_split;documents-finance;VERAENDERLICH;;WP-M4-35;Aufteilungsplan des Bele
 expense_split_line;documents-finance;VERAENDERLICH;;WP-M4-35;Zeilen des Aufteilungsplans
 ledger_export;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;bereitgestellter Exportbatch unveränderlich
 ledger_export_line;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;Batchzeile, je Journal genau ein Batch
+odometer_reading;documents-finance;APPEND_ONLY;;WP-M4-41;Kilometerstand mit Herkunft, nie geändert
+odometer_conflict;documents-finance;APPEND_ONLY;;WP-M4-41;erkannter Kilometerstandskonflikt, nie geändert
+odometer_conflict_resolution;documents-finance;APPEND_ONLY;;WP-M4-41;protokollierte Auflösung eines Konflikts
+odometer_policy;documents-finance;VERAENDERLICH;;WP-M4-41;Konflikttoleranz und Zeitfenster je Mandant

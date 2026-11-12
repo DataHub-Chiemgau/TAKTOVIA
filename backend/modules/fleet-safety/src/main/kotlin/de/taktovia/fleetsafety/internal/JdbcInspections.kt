@@ -202,6 +202,9 @@ internal class JdbcInspections(
         // letzter bestätigter Kilometerstand: nur steigend, bedingtes UPDATE unter der Fahrzeugsperre (ein später abgeschlossener Lauf mit kleinerem, begründet freigegebenem Wert senkt ihn nie)
         evaluated.filter { it.input.answer == ChecklistAnswerStatus.OK && it.input.numberValue != null && steps.firstOrNull { st -> st.code == it.input.stepCode }?.kind == ChecklistInputKind.ODOMETER_KM }
             .forEach { j.update("UPDATE taktovia.vehicle SET last_confirmed_odometer_km = ? WHERE id = ? AND (last_confirmed_odometer_km IS NULL OR last_confirmed_odometer_km < ?)", it.input.numberValue!!.toLong(), run.vehicleId, it.input.numberValue!!.toLong()) }
+        // Kilometerstand der Prüfung für das Kilometerstandsregister (WP-M4-41): höchster bestätigter Wert dieses Laufs, Messzeit = Abschlusszeit des Geräts
+        val odometerKm = evaluated.filter { it.input.answer == ChecklistAnswerStatus.OK && it.input.numberValue != null && steps.firstOrNull { st -> st.code == it.input.stepCode }?.kind == ChecklistInputKind.ODOMETER_KM }
+            .maxOfOrNull { it.input.numberValue!!.toLong() }
         // Einsatzfreigabe im selben Commit, nur bei bestandener Prüfung (ein kritischer Mangel erteilt keine); fehlende Voraussetzungen bleiben als Liste der Antwort sichtbar
         var releaseId: UUID? = null
         if (run.kind != "PRE_BOARDING" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
@@ -214,7 +217,7 @@ internal class JdbcInspections(
             "outcome" to outcome.name, "answer_count" to merged.size, "defect_step_count" to defectSteps, "release_id" to releaseId?.toString(), "safety_revision" to safetyRevision)))
         outbox.append(j, OutboxEvent(id, expected + 1, "inspection.completed", linkedMapOf(
             "inspection_id" to id.toString(), "vehicle_id" to run.vehicleId.toString(), "shift_id" to run.shiftId.toString(), "kind" to run.kind, "outcome" to outcome.name,
-            "defect_step_count" to defectSteps, "template_revision_id" to run.templateRevisionId.toString()), now, correlationId = ctx.correlationId))
+            "defect_step_count" to defectSteps, "template_revision_id" to run.templateRevisionId.toString()).also { if (odometerKm != null) { it["odometer_km"] = odometerKm; it["odometer_measured_at"] = cmd.clientSubmittedAt.toString() } }, now, correlationId = ctx.correlationId))
         return load(j, ctx, id)!!
     }
 

@@ -9444,6 +9444,317 @@
       ]
     },
     {
+      "tabelle": "odometer_conflict",
+      "aggregat": "Kilometerstandskonflikt (WP-M4-41)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "append-only",
+      "spalten": [
+        {
+          "spalte": "detected_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "earlier_reading_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "kind",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "later_reading_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tolerance_km",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "odometer_conflict_resolution",
+      "aggregat": "Aufloesung eines Kilometerstandskonflikts (WP-M4-41)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "append-only",
+      "spalten": [
+        {
+          "spalte": "chosen_reading_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "conflict_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "decision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "resolved_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "resolved_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "odometer_policy",
+      "aggregat": "Konfliktparameter des Kilometerstandsregisters je Mandant (WP-M4-41)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "",
+      "spalten": [
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tolerance_km",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "updated_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "window_minutes",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "tabelle": "odometer_reading",
+      "aggregat": "Kilometerstand mit Herkunft (WP-M4-41)",
+      "loeschklasse": "LK_BELEG",
+      "bemerkung": "append-only",
+      "spalten": [
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "measured_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reading_km",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_at",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "recorded_by",
+          "personenbezogen": "ja",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "ART6_1_C_RECHTLICHE_VERPFLICHTUNG",
+          "schutzklasse": "BELEGE_JOURNAL",
+          "loeschklasse": "LK_BELEG",
+          "bemerkung": "handelnder Akteur (Subject)"
+        },
+        {
+          "spalte": "source",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "source_ref",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHHALTUNG_BELEGE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "operation",
       "aggregat": "asynchrone Operation",
       "loeschklasse": "LK_BETRIEB",

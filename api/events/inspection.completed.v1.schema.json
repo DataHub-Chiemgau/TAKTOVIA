@@ -50,6 +50,17 @@
     "template_revision_id": {
       "type": "string",
       "format": "uuid"
+    },
+    "odometer_km": {
+      "description": "Optional (WP-M4-41, additiv): höchster bestätigter Kilometerstand des Laufs; Quelle DRIVER_CHECK im Kilometerstandsregister.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "odometer_measured_at": {
+      "description": "Optional, nur zusammen mit odometer_km: Messzeit (Abschlusszeit des Geräts).",
+      "type": "string",
+      "format": "date-time"
     }
   },
   "examples": [

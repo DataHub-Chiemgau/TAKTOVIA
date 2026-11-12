@@ -1,0 +1,5 @@
+table;owner;quelle
+odometer_reading;documents-finance;WP-M4-41 (Kilometerstandsregister)
+odometer_conflict;documents-finance;WP-M4-41 (Kilometerstandskonflikt)
+odometer_conflict_resolution;documents-finance;WP-M4-41 (Aufloesung)
+odometer_policy;documents-finance;WP-M4-41 (Konfliktparameter)

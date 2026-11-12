@@ -1,0 +1,32 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+odometer_conflict;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;kind;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;earlier_reading_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;later_reading_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;tolerance_km;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict;detected_at;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;conflict_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;decision;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;chosen_reading_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;reason;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_conflict_resolution;resolved_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+odometer_conflict_resolution;resolved_at;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_policy;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_policy;tolerance_km;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_policy;window_minutes;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_policy;revision;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_policy;updated_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+odometer_policy;updated_at;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;vehicle_id;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;reading_km;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;source;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;source_ref;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;measured_at;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;recorded_at;nein;BUCHHALTUNG_BELEGE;;;;
+odometer_reading;recorded_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)

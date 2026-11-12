@@ -10,6 +10,7 @@ import { DataTable, Field, Form, ResourceView, ScreenFrame } from '@taktovia/des
 import type { ProblemLike, ResourceState } from '@taktovia/design-system';
 import { useCallback, useEffect, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
+import { Kilometerstand } from '../fahrzeuge/Kilometerstand';
 import { Dienstzuordnung } from './Dienstzuordnung';
 
 /** Ausstattungsmerkmale (Platzhalterkatalog, OP-14), wie im Ressourcenvektor. */
@@ -464,6 +465,11 @@ export function Fahrzeugstamm() {
         </section>
       ) : null}
       {editing ? <Dienstzuordnung api={api} vehicle={editing} canWrite={canWrite} /> : null}
+      {editing &&
+      session.status === 'ready' &&
+      (session.me.scopes ?? []).includes('odometer:read') ? (
+        <Kilometerstand vehicleId={editing.id} />
+      ) : null}
     </ScreenFrame>
   );
 }

@@ -1,0 +1,5 @@
+table;runtime_privileges;note
+odometer_reading;SELECT,INSERT;WP-M4-41: Kilometerstand mit Herkunft, append-only (Trigger, kein UPDATE/DELETE)
+odometer_conflict;SELECT,INSERT;WP-M4-41: erkannter Konflikt zwischen zwei Staenden, append-only
+odometer_conflict_resolution;SELECT,INSERT;WP-M4-41: protokollierte Aufloesung eines Konflikts, append-only, hoechstens eine je Konflikt
+odometer_policy;SELECT,INSERT,UPDATE;WP-M4-41: Konflikttoleranz und Zeitfenster je Mandant

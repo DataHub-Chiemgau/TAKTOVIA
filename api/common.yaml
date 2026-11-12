@@ -31,6 +31,9 @@ components:
             periods:manage: periods:manage
             periods:close: periods:close
             ledger:read: ledger:read
+            odometer:read: odometer:read
+            odometer:record: odometer:record
+            odometer:resolve: odometer:resolve
             ledger:export: ledger:export
             expenses:approve: expenses:approve
             expenses:review: expenses:review
@@ -125,6 +128,9 @@ components:
             periods:manage: periods:manage
             periods:close: periods:close
             ledger:read: ledger:read
+            odometer:read: odometer:read
+            odometer:record: odometer:record
+            odometer:resolve: odometer:resolve
             ledger:export: ledger:export
             expenses:approve: expenses:approve
             expenses:review: expenses:review

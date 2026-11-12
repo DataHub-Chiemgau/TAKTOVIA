@@ -160,6 +160,7 @@ class CrossTenantIsolationTest {
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "shift_id" to shift, "roster_shift_id" to rosterShift, "roster_id" to roster, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "expense_id" to receipt, "time_event_id" to timeEvent,
             "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
+            "conflict_id" to UUID.randomUUID().toString(),
         ), subject = b.passenger.toString())
     }
 
@@ -291,6 +292,11 @@ class CrossTenantIsolationTest {
             "getLedgerExportDownload" to Probe("GET", "/v1/ledger/exports/{export_id}/download", role = "finance"),
             "readLedgerExportContent" to Probe("GET", "/v1/ledger/exports/{export_id}/content?exp=4102444800&sig=${"0".repeat(64)}", role = "finance"),
             "confirmLedgerExport" to Probe("POST", "/v1/ledger/exports/{export_id}/confirmation", """{"entries":[{"journal_id":"${UUID.randomUUID()}","import_ref":"ERP-1"}]}""", false, role = "finance"),
+            // Kilometerstandsregister (WP-M4-41)
+            "listOdometerReadings" to Probe("GET", "/v1/vehicles/{vehicle_id}/odometer", role = "finance"),
+            "createOdometerReading" to Probe("POST", "/v1/vehicles/{vehicle_id}/odometer", """{"reading_km":1000,"source_ref":"fremd-1","measured_at":"2026-06-01T08:00:00Z"}""", false, role = "finance"),
+            "listOdometerConflicts" to Probe("GET", "/v1/vehicles/{vehicle_id}/odometer/conflicts", role = "finance"),
+            "resolveOdometerConflict" to Probe("POST", "/v1/vehicles/{vehicle_id}/odometer/conflicts/{conflict_id}/resolution", """{"decision":"DISCARDED","reason":"Fremdversuch"}""", false, role = "finance"),
             "acknowledgeExpenseHint" to Probe("POST", "/v1/expenses/{expense_id}/hints/{hint_id}/acknowledgement", """{"reason":"Fremdversuch"}""", true, role = "finance"),
             "requestReceiptExtraction" to Probe("POST", "/v1/expenses/receipts/{document_id}/extract", null, true, role = "finance"),
             "getReceiptExtraction" to Probe("GET", "/v1/expenses/receipts/{document_id}/extraction", role = "finance"),

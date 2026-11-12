@@ -1,0 +1,5 @@
+tabelle;aggregat;loeschklasse;bemerkung
+odometer_reading;Kilometerstand mit Herkunft (WP-M4-41);LK_BELEG;append-only
+odometer_conflict;Kilometerstandskonflikt (WP-M4-41);LK_BELEG;append-only
+odometer_conflict_resolution;Aufloesung eines Kilometerstandskonflikts (WP-M4-41);LK_BELEG;append-only
+odometer_policy;Konfliktparameter des Kilometerstandsregisters je Mandant (WP-M4-41);LK_BELEG;
