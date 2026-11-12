@@ -89,7 +89,14 @@ data class Registered(val passenger: PassengerSummary, val verification: Verific
 object RecoveryAcknowledged { override fun toString() = "RecoveryAcknowledged" }
 
 data class ChannelView(val value: String?, val status: ChannelStatus, val verifiedAt: Instant?)
-data class FavoriteView(val label: String, val stopId: UUID)
+/**
+ * Ortsfavorit (WP-M2-36): Koordinate (WGS84) immer vorhanden; `stopId` optional. `stopBookable` ist wahr, solange der Haltepunkt eine heute wirksame, aktive Revision hat;
+ * ein Favorit mit inaktivem Haltepunkt bleibt als Ort nutzbar, wird aber nicht als buchbarer Haltepunkt vorgeschlagen.
+ */
+data class FavoriteView(val label: String, val lat: Double, val lon: Double, val stopId: UUID? = null, val stopBookable: Boolean = false)
+
+/** Eingabe eines Favoriten: entweder Koordinate (`lat` und `lon`) oder Haltepunkt (Koordinate dann aus der jüngsten Haltepunktrevision). */
+data class FavoriteInput(val label: String, val stopId: UUID? = null, val lat: Double? = null, val lon: Double? = null)
 data class ProfileView(
     val id: UUID, val status: String, val locale: String, val createdAt: Instant, val revision: Long,
     val email: ChannelView?, val phone: ChannelView?,
@@ -99,7 +106,7 @@ data class ProfileView(
 /** Änderung des Profils: nur gesetzte Bereiche ändern sich; Listen ersetzen den jeweiligen Bereich vollständig. */
 class ProfilePatch(
     val locale: String? = null, val email: String? = null, val phone: String? = null,
-    val favorites: List<FavoriteView>? = null, val preferredStops: List<UUID>? = null, val notificationChannels: List<String>? = null,
+    val favorites: List<FavoriteInput>? = null, val preferredStops: List<UUID>? = null, val notificationChannels: List<String>? = null,
 ) {
     val isEmpty get() = locale == null && email == null && phone == null && favorites == null && preferredStops == null && notificationChannels == null
     override fun toString() = "ProfilePatch"
@@ -141,6 +148,9 @@ interface PassengerProfiles {
 
     /** Eigene Auswahl des Unterstützungsbedarfs lesen. */
     fun readSupportNeeds(ctx: RequestContext): List<String>
+
+    /** Nur die eigenen Favoriten (leichter als [get], ohne Kontakt; Ortssuche WP-M2-38). Ein Akteur ohne Fahrgastkonto hat keine: leere Liste statt 404. */
+    fun favorites(ctx: RequestContext): List<FavoriteView>
 }
 
 /** Fest vorgegebene Zweckklassen der Nachrichtenzustellung. */

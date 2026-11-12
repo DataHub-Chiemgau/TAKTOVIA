@@ -1,7 +1,7 @@
 package de.taktovia.identity
 
 import de.taktovia.identity.api.ContactChannel
-import de.taktovia.identity.api.FavoriteView
+import de.taktovia.identity.api.FavoriteInput
 import de.taktovia.identity.api.ProfilePatch
 import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.problem.ProblemException
@@ -45,7 +45,7 @@ class PassengerProfileTest {
         val rev = f.api.profiles.get(ctx).revision
         val email = PassengerTestFixture.defaultValue(ContactChannel.EMAIL); val phone = "+4915${(10000000..99999999).random()}"
         val changed = f.api.profiles.update(ctx, rev, ProfilePatch(
-            locale = "en-GB", email = email, phone = phone, favorites = listOf(FavoriteView("Zuhause", s1), FavoriteView("Arbeit", s2)),
+            locale = "en-GB", email = email, phone = phone, favorites = listOf(FavoriteInput("Zuhause", s1), FavoriteInput("Arbeit", s2)),
             preferredStops = listOf(s3, s1), notificationChannels = listOf("PUSH", "SMS")))
         assertTrue(changed.revision > rev)
         // Abmeldung und erneute Anmeldung / zweites Gerät: neuer Kontext desselben Kontos liest denselben Stand
@@ -53,7 +53,7 @@ class PassengerProfileTest {
             val p = f.api.profiles.get(again)
             assertEquals("en-GB", p.locale)
             assertEquals(email, p.email!!.value); assertEquals(phone, p.phone!!.value)
-            assertEquals(listOf(FavoriteView("Zuhause", s1), FavoriteView("Arbeit", s2)), p.favorites)
+            assertEquals(listOf("Zuhause" to s1, "Arbeit" to s2), p.favorites.map { it.label to it.stopId })
             assertEquals(listOf(s3, s1), p.preferredStops)
             assertEquals(listOf("PUSH", "SMS"), p.notificationChannels)
             assertEquals(changed.revision, p.revision)
@@ -97,7 +97,7 @@ class PassengerProfileTest {
         assertEquals(ErrorCode.VALIDATION_FAILED, v.code); assertEquals("/locale", v.violations.single().pointer)
         val unknown = problem { f.api.profiles.update(ctx, rev, ProfilePatch(preferredStops = listOf(known, UUID.randomUUID()))) }
         assertEquals("/preferred_stops/1", unknown.violations.single().pointer)
-        assertEquals("/favorites/0/stop_id", problem { f.api.profiles.update(ctx, rev, ProfilePatch(favorites = listOf(FavoriteView("X", foreign)))) }.violations.single().pointer, "Haltestelle eines anderen Mandanten ist unbekannt")
+        assertEquals("/favorites/0/stop_id", problem { f.api.profiles.update(ctx, rev, ProfilePatch(favorites = listOf(FavoriteInput("X", foreign)))) }.violations.single().pointer, "Haltestelle eines anderen Mandanten ist unbekannt")
         assertEquals(ErrorCode.VALIDATION_FAILED, problem { f.api.profiles.update(ctx, rev, ProfilePatch(notificationChannels = listOf("FAX"))) }.code)
         assertEquals(ErrorCode.VALIDATION_FAILED, problem { f.api.profiles.update(ctx, rev, ProfilePatch(email = "kein-kontakt")) }.code)
         assertEquals(ErrorCode.VALIDATION_FAILED, problem { f.api.profiles.update(ctx, rev, ProfilePatch(preferredStops = listOf(known, known))) }.code)

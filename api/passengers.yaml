@@ -495,7 +495,7 @@ components:
       type: object
       additionalProperties: false
       description: Eigenes Profil des Fahrgasts. Kontakt nur mit Verifikationsstatus je Kanal; Favoriten und bevorzugte Haltestellen verweisen auf Haltepunkte
-        (M1 Fixture-Haltepunkte, gepflegter Stamm mit M2).
+        des gepflegten Haltepunktstamms (M2); Favoriten tragen zusätzlich eine Koordinate (WP-M2-36).
       properties:
         id:
           $ref: common.yaml#/components/schemas/UUID
@@ -561,16 +561,56 @@ components:
     Favorite:
       type: object
       additionalProperties: false
+      description: Ortsfavorit mit bestätigter Koordinate (WGS84). `stop_id` ist gesetzt, wenn der Favorit einem Haltepunkt zugeordnet ist; `stop_bookable` ist
+        nur wahr, solange dessen Haltepunkt aktiv ist. Ein Favorit mit inaktivem Haltepunkt bleibt als Ort nutzbar, wird aber nicht als buchbarer Haltepunkt
+        vorgeschlagen (WP-M2-36).
       properties:
         label:
           type: string
           minLength: 1
           maxLength: 80
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
+        stop_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        stop_bookable:
+          type: boolean
+      required:
+      - label
+      - lat
+      - lon
+      - stop_id
+      - stop_bookable
+    FavoriteInput:
+      type: object
+      additionalProperties: false
+      description: Favorit in der Anfrage. Entweder `lat` und `lon` (nie 0/0, im Wertebereich) oder `stop_id` (die Koordinate stammt dann aus der jüngsten
+        Haltepunktrevision). Eine unbekannte oder fremde Haltepunktkennung ergibt 422 mit Zeiger `/favorites/{i}/stop_id`.
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
         stop_id:
           $ref: common.yaml#/components/schemas/UUID
       required:
       - label
-      - stop_id
     NotificationChannel:
       type: string
       enum:
@@ -604,7 +644,7 @@ components:
           type: array
           maxItems: 20
           items:
-            $ref: '#/components/schemas/Favorite'
+            $ref: '#/components/schemas/FavoriteInput'
         preferred_stops:
           type: array
           maxItems: 10

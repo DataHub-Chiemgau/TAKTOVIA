@@ -9,7 +9,14 @@ import {
   StateView,
   SupportNeedsSelect,
 } from '@taktovia/design-system';
-import type { SupportNeedCode } from '@taktovia/design-system';
+import type { ProblemLike, SupportNeedCode } from '@taktovia/design-system';
+import {
+  FavoritenEditor,
+  favoritesToDraft,
+  favoritesToInput,
+  validateFavorites,
+} from './Favoriten';
+import type { FavoriteDraft } from './Favoriten';
 
 const LOCALES: readonly { value: Profile['locale']; label: string }[] = [
   { value: 'de-DE', label: 'Deutsch' },
@@ -30,7 +37,7 @@ interface Draft {
   locale: Profile['locale'];
   email: string;
   phone: string;
-  favorites: { label: string; stop_id: string }[];
+  favorites: FavoriteDraft[];
   stops: string[];
   channels: NotificationChannel[];
 }
@@ -40,9 +47,24 @@ function toDraft(p: Profile): Draft {
     locale: p.locale,
     email: p.contact.email?.value ?? '',
     phone: p.contact.phone?.value ?? '',
-    favorites: p.favorites.map((f) => ({ label: f.label, stop_id: f.stop_id })),
+    favorites: favoritesToDraft(p.favorites),
     stops: [...p.preferred_stops],
     channels: [...p.notification_channels],
+  };
+}
+
+/**
+ * Die Haltestellenauswahl eines Favoriten ist kein Textfeld des Formulars: ein Fehler an `/favorites/{i}/stop_id` wird an der Koordinate des Favoriten gezeigt
+ * (der Haltepunkt bestimmt dort den Ort), damit die Zusammenfassung ein Feld mit Namen nennt.
+ */
+function favoriteStopPointers(problem: ProblemLike | undefined): ProblemLike | undefined {
+  if (!problem?.violations) return problem;
+  return {
+    ...problem,
+    violations: problem.violations.map((v) => ({
+      ...v,
+      pointer: v.pointer.replace(/^(\/favorites\/\d+)\/stop_id$/, '$1/lat'),
+    })),
   };
 }
 
@@ -57,7 +79,7 @@ function diff(p: Profile, d: Draft): ProfileUpdate {
   if (d.email.trim() !== base.email && d.email.trim() !== '') contact.email = d.email.trim();
   if (d.phone.trim() !== base.phone && d.phone.trim() !== '') contact.phone = d.phone.trim();
   if (Object.keys(contact).length > 0) out.contact = contact;
-  if (!same(d.favorites, base.favorites)) out.favorites = d.favorites;
+  if (!same(d.favorites, base.favorites)) out.favorites = favoritesToInput(d.favorites);
   if (!same(d.stops, base.stops)) out.preferred_stops = d.stops;
   if (!same(d.channels, base.channels)) out.notification_channels = d.channels;
   return out;
@@ -166,13 +188,14 @@ function Unterstuetzung() {
 /**
  * UI-05 Basis: Profil des Fahrgasts (WP-M1-29): Kontakt mit Verifikationsstatus, Sprache, Favoriten, bevorzugte Haltestellen, Benachrichtigungskanäle.
  * Änderungen laufen mit `If-Match`; eine zwischenzeitliche Änderung (412) überschreibt nichts, der Fahrgast lädt den aktuellen Stand.
- * Haltestellen werden in M1 als Kennung des Fixture-Haltepunkts erfasst; die Auswahl aus dem Haltepunktstamm folgt mit M2 (OP-30).
+ * Favoriten (WP-M2-36) tragen eine bestätigte Koordinate und optional einen Haltepunkt aus der Haltestellenliste; bevorzugte Haltestellen werden weiter als Kennung erfasst.
+ * Die gespeicherte Sprache bestimmt `lang` des Dokuments (Screenreader, Silbentrennung); die Nachrichten nutzen sie serverseitig (WP-M2-33).
  */
 export function Profil() {
   const api = useApi();
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [draft, setDraft] = useState<Draft | undefined>(undefined);
-  const [problem, setProblem] = useState<ApiError['problem']>(undefined);
+  const [problem, setProblem] = useState<ProblemLike | undefined>(undefined);
   const [notice, setNotice] = useState<string | undefined>(undefined);
 
   const fetchProfile = useCallback(() => {
@@ -186,6 +209,10 @@ export function Profil() {
     );
   }, [api]);
   useEffect(() => fetchProfile(), [fetchProfile]);
+  const savedLocale = load.status === 'ready' ? load.profile.locale : undefined;
+  useEffect(() => {
+    if (savedLocale) document.documentElement.lang = savedLocale;
+  }, [savedLocale]);
   const reload = () => {
     setLoad({ status: 'loading' });
     fetchProfile();
@@ -204,6 +231,11 @@ export function Profil() {
   const save = async () => {
     setProblem(undefined);
     setNotice(undefined);
+    const invalid = validateFavorites(draft.favorites);
+    if (invalid) {
+      setProblem(invalid);
+      return;
+    }
     const body = diff(profile, draft);
     if (Object.keys(body).length === 0) {
       setNotice('Keine Änderungen.');
@@ -220,7 +252,7 @@ export function Profil() {
           'Das Profil wurde zwischenzeitlich geändert (anderes Gerät). Es wurde nichts überschrieben; bitte den aktuellen Stand laden.',
         );
       } else if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
-        setProblem(e.problem);
+        setProblem(favoriteStopPointers(e.problem));
         if (e.status === 409) setNotice('Dieser Kontakt kann nicht verwendet werden.');
       } else setNotice('Das Profil konnte nicht gespeichert werden.');
     }
@@ -295,47 +327,7 @@ export function Profil() {
             </label>
           ))}
         </fieldset>
-        <fieldset>
-          <legend>Favoriten</legend>
-          {draft.favorites.map((f, i) => (
-            <div key={i} role="group" aria-label={`Favorit ${i + 1}`}>
-              <Field
-                pointer={`/favorites/${i}/label`}
-                label={`Bezeichnung Favorit ${i + 1}`}
-                value={f.label}
-                onChange={(e) =>
-                  set({
-                    favorites: draft.favorites.map((x, j) =>
-                      j === i ? { ...x, label: e.target.value } : x,
-                    ),
-                  })
-                }
-              />
-              <Field
-                pointer={`/favorites/${i}/stop_id`}
-                label={`Haltepunkt Favorit ${i + 1}`}
-                value={f.stop_id}
-                onChange={(e) =>
-                  set({
-                    favorites: draft.favorites.map((x, j) =>
-                      j === i ? { ...x, stop_id: e.target.value } : x,
-                    ),
-                  })
-                }
-              />
-              <button
-                type="button"
-                onClick={() => set({ favorites: draft.favorites.filter((_, j) => j !== i) })}
-              >{`Favorit ${i + 1} entfernen`}</button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => set({ favorites: [...draft.favorites, { label: '', stop_id: '' }] })}
-          >
-            Favorit hinzufügen
-          </button>
-        </fieldset>
+        <FavoritenEditor value={draft.favorites} onChange={(favorites) => set({ favorites })} />
         <fieldset>
           <legend>Bevorzugte Haltestellen</legend>
           {draft.stops.map((s, i) => (

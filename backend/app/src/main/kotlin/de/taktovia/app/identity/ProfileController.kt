@@ -4,12 +4,15 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.identity.api.ChannelView
 import de.taktovia.identity.api.ConsentPurpose
 import de.taktovia.identity.api.ContactChannel
-import de.taktovia.identity.api.FavoriteView
+import de.taktovia.identity.api.FavoriteInput
 import de.taktovia.identity.api.PassengerApi
 import de.taktovia.identity.api.ProfilePatch
 import de.taktovia.identity.api.ProfileView
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Revisioned
+import de.taktovia.platform.problem.ProblemException
+import de.taktovia.platform.problem.Violation
+import de.taktovia.platform.problem.ViolationCode
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -40,7 +43,7 @@ class ProfileController(private val passengerApi: org.springframework.beans.fact
         val contact = body["contact"] as Map<*, *>?
         val patch = ProfilePatch(
             locale = body["locale"] as String?, email = contact?.get("email") as String?, phone = contact?.get("phone") as String?,
-            favorites = (body["favorites"] as List<*>?)?.map { val f = it as Map<*, *>; FavoriteView(f["label"] as String, UUID.fromString(f["stop_id"] as String)) },
+            favorites = (body["favorites"] as List<*>?)?.map { favorite(it) },
             preferredStops = (body["preferred_stops"] as List<*>?)?.map { UUID.fromString(it as String) },
             notificationChannels = (body["notification_channels"] as List<*>?)?.map { it as String },
         )
@@ -86,6 +89,14 @@ class ProfileController(private val passengerApi: org.springframework.beans.fact
         return ResponseEntity.noContent().build()
     }
 
+    /** Ein Favorit der Anfrage; falsch getypte Felder ergeben 422 mit Zeiger statt eines Serverfehlers. */
+    private fun favorite(raw: Any?): FavoriteInput {
+        val f = raw as? Map<*, *> ?: throw ProblemException.invalid(Violation("/favorites", ViolationCode.INVALID_VALUE))
+        fun num(k: String): Double? = when (val v = f[k]) { null -> null; is Number -> v.toDouble(); else -> throw ProblemException.invalid(Violation("/favorites/$k", ViolationCode.INVALID_VALUE)) }
+        val stop = (f["stop_id"] as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() ?: throw ProblemException.invalid(Violation("/favorites/stop_id", ViolationCode.INVALID_VALUE)) }
+        return FavoriteInput(f["label"] as? String ?: throw ProblemException.invalid(Violation("/favorites/label", ViolationCode.REQUIRED)), stop, num("lat"), num("lon"))
+    }
+
     private fun revision(r: de.taktovia.identity.api.ConsentRevisionView): Map<String, Any?> =
         linkedMapOf("id" to r.id.toString(), "purpose" to r.purpose.name, "sequence" to r.sequence, "granted" to r.granted, "recorded_at" to r.recordedAt.toString(), "text_version" to r.textVersion)
 
@@ -94,7 +105,7 @@ class ProfileController(private val passengerApi: org.springframework.beans.fact
     private fun resource(p: ProfileView) = ProfileResource(linkedMapOf(
         "id" to p.id.toString(), "status" to p.status, "locale" to p.locale, "created_at" to p.createdAt.toString(), "revision" to p.revision,
         "contact" to linkedMapOf("email" to channel(p.email), "phone" to channel(p.phone)),
-        "favorites" to p.favorites.map { linkedMapOf("label" to it.label, "stop_id" to it.stopId.toString()) },
+        "favorites" to p.favorites.map { linkedMapOf("label" to it.label, "lat" to it.lat, "lon" to it.lon, "stop_id" to it.stopId?.toString(), "stop_bookable" to it.stopBookable) },
         "preferred_stops" to p.preferredStops.map { it.toString() }, "notification_channels" to p.notificationChannels,
     ), p.revision)
 }
