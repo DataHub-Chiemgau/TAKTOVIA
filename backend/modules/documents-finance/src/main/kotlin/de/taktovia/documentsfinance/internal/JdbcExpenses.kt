@@ -1,15 +1,19 @@
 package de.taktovia.documentsfinance.internal
 
 import de.taktovia.documentsfinance.api.CorrectExpense
+import de.taktovia.documentsfinance.api.DocumentKind
 import de.taktovia.documentsfinance.api.DocumentState
 import de.taktovia.documentsfinance.api.EditedViewContent
 import de.taktovia.documentsfinance.api.ExpenseFields
+import de.taktovia.documentsfinance.api.ExpenseSummary
 import de.taktovia.documentsfinance.api.ExpenseView
+import de.taktovia.documentsfinance.api.ExportState
 import de.taktovia.documentsfinance.api.ExtractedFieldKind
 import de.taktovia.documentsfinance.api.Expenses
 import de.taktovia.documentsfinance.api.FieldChange
 import de.taktovia.documentsfinance.api.IntegrityState
 import de.taktovia.documentsfinance.api.RevisionView
+import de.taktovia.documentsfinance.api.SourceChannel
 import de.taktovia.documentsfinance.api.UploadPolicy
 import de.taktovia.documentsfinance.api.Uploads
 import de.taktovia.documentsfinance.internal.DocumentRows.SCOPE_READ
@@ -32,7 +36,11 @@ import de.taktovia.platform.storage.TenantObjectStore
 import org.springframework.jdbc.core.JdbcOperations
 import java.sql.Timestamp
 import java.time.Clock
+import java.time.Instant
 import java.util.UUID
+
+/** Rohzustände, nach denen die Arbeitsliste filtert (WP-M4-38). */
+private val LIST_STATES = setOf("QUARANTINED", "QUARANTINE_REJECTED", "STORED", "IN_REVIEW", "REVIEWED", "WAITING_SECOND_APPROVAL", "APPROVED", "POSTED")
 
 /**
  * Belegstand, Revisionen und Korrektur (WP-M4-22, WP-M4-23). Eine Korrektur sperrt die Belegzeile (`FOR UPDATE`), prüft `If-Match` gegen die Revision und schreibt in einer Transaktion
@@ -65,6 +73,27 @@ internal class JdbcExpenses(
         val m = v as Map<String, Any?>
         fun n(x: Any?): Any? = if (key in ExpenseFields.ALL) x?.let { ExpenseFieldCodec.normalize(key, it) } else x   // z. B. `cost_assignment` (WP-M4-29): Kennungslisten unverändert
         return FieldChange(n(m["old"]), n(m["new"]), m["confirmed"] == true, n(m["ocr_proposal"]))
+    }
+
+    override fun list(ctx: RequestContext, state: String?, limit: Int, after: Pair<Instant, UUID>?): List<ExpenseSummary> {
+        require(ctx, SCOPE_READ)
+        if (limit !in 1..200) throw ProblemException.invalid(Violation("/limit", ViolationCode.INVALID_VALUE))
+        if (state != null && state !in LIST_STATES) throw ProblemException.invalid(Violation("/state", ViolationCode.NOT_IN_ENUM))
+        val finance = DocumentRows.isFinance(ctx)
+        return ctxTx.run(ctx, readOnly = true) { j ->
+            val ts = after?.first?.let { java.sql.Timestamp.from(it) }
+            j.query("SELECT d.id, d.legal_entity_id, d.state, d.document_kind, d.source_channel, d.original_received_at, d.revision, d.current_fields::text AS fields, d.export_state, " +
+                "(SELECT e.id FROM taktovia.economic_event e WHERE e.tenant_id = d.tenant_id AND e.document_id = d.id AND e.reverses_id IS NULL AND e.scenario = 'ACTUAL') AS event_id " +
+                "FROM taktovia.expense_document d WHERE d.upload_ticket_id IS NOT NULL AND (CAST(? AS text) IS NULL OR d.state = ?) AND (? OR d.created_by = ?) " +
+                "AND (CAST(? AS timestamptz) IS NULL OR (d.original_received_at, d.id) > (CAST(? AS timestamptz), CAST(? AS uuid))) ORDER BY d.original_received_at, d.id LIMIT ?",
+                { rs, _ ->
+                    val f = ExpenseFieldCodec.parseStored(rs.getString("fields"))
+                    ExpenseSummary(rs.getObject("id", UUID::class.java), rs.getObject("legal_entity_id", UUID::class.java), rs.getString("state"), DocumentKind.valueOf(rs.getString("document_kind")),
+                        SourceChannel.valueOf(rs.getString("source_channel")), rs.getTimestamp("original_received_at").toInstant(), rs.getLong("revision"), f[ExpenseFields.MERCHANT] as String?,
+                        (f[ExpenseFields.AMOUNT_MINOR] as Number?)?.toLong(), f[ExpenseFields.CURRENCY] as String?, f[ExpenseFields.DOCUMENT_DATE] as String?,
+                        ExportState.valueOf(rs.getString("export_state")), rs.getObject("event_id", UUID::class.java))
+                }, state, state, finance, ctx.actor.subject, ts, ts, after?.second, limit)
+        }
     }
 
     override fun original(ctx: RequestContext, id: UUID): ByteArray = uploads.openOriginal(ctx, id)

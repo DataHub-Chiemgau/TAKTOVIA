@@ -234,6 +234,14 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listExpenses"><h3><span class="m">GET</span> <code>/v1/expenses</code></h3><p>Arbeitsliste der Belege lesen</p><dl><dt>operationId</dt><dd><code>listExpenses</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>receipts:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="getExpense"><h3><span class="m">GET</span> <code>/v1/expenses/{expense_id}</code></h3><p>Beleg mit Feldstand lesen</p><dl><dt>operationId</dt><dd><code>getExpense</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>receipts:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>

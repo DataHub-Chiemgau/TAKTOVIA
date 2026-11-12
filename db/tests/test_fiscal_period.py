@@ -48,8 +48,8 @@ class Fiskalperiode(unittest.TestCase):
                 barrier.wait()
                 try:
                     period(c, A, le, starts, ends); out.append('ok')
-                except psycopg.errors.ExclusionViolation:
-                    out.append('overlap')
+                except (psycopg.errors.ExclusionViolation, psycopg.errors.DeadlockDetected):
+                    out.append('overlap')   # die Datenbank weist genau eine ab (Konflikt oder, bei gleichzeitigem Einfügen, erkannte Verklemmung); die Anwendung serialisiert zusätzlich (JdbcFiscalPeriods)
         ts = [threading.Thread(target=run, args=a) for a in ((D(2027, 1, 1), D(2027, 2, 1)), (D(2027, 1, 15), D(2027, 2, 15)))]; [t.start() for t in ts]; [t.join(30) for t in ts]
         self.assertEqual(sorted(out), ['ok', 'overlap'])
 

@@ -109,4 +109,44 @@ describe('generierter API-Client', () => {
     expect(e).toBeInstanceOf(ApiError);
     expect(e.status).toBe(0);
   });
+
+  it('callBlob_laedt_binaere_antworten_mit_token_und_meldet_fehler_wie_call', async () => {
+    const seen: Seen[] = [];
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff]);
+    const impl = (url: string | URL | Request, init?: RequestInit) => {
+      seen.push({ url: String(url), init: init ?? {} });
+      return Promise.resolve(
+        seen.length === 1
+          ? new Response(bytes, { status: 200, headers: { 'content-type': 'image/jpeg' } })
+          : new Response(
+              JSON.stringify({
+                type: 'about:blank',
+                title: 'x',
+                status: 404,
+                code: 'NOT_FOUND',
+                correlation_id: 'c',
+              }),
+              {
+                status: 404,
+                headers: { 'content-type': 'application/problem+json' },
+              },
+            ),
+      );
+    };
+    const client = createApiClient({
+      baseUrl: 'https://api.test',
+      fetch: impl as typeof fetch,
+      getToken: () => 'tok',
+    });
+    const id = '00000000-0000-4000-8000-0000000000e1';
+    const r = await client.callBlob?.('getExpenseOriginal', { path: { expense_id: id } });
+    expect(r?.mime).toBe('image/jpeg');
+    expect(r?.blob.size).toBe(3);
+    expect(seen[0]?.url).toBe(`https://api.test/v1/expenses/${id}/original`);
+    expect(new Headers(seen[0]?.init.headers).get('authorization')).toBe('Bearer tok');
+    expect(new Headers(seen[0]?.init.headers).get('accept')).toBe('*/*');
+    await expect(
+      client.callBlob?.('getExpenseOriginal', { path: { expense_id: id } }),
+    ).rejects.toMatchObject({ status: 404 });
+  });
 });

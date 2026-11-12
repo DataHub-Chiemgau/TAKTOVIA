@@ -60,6 +60,8 @@ internal class JdbcFiscalPeriods(private val ctxTx: ContextTransactions, private
 
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, cmd: CreateFiscalPeriod): FiscalPeriodView {
         if (j.queryForObject("SELECT count(*) FROM taktovia.legal_entity WHERE id = ?", Int::class.java, cmd.legalEntityId) != 1) throw ProblemException.notFound()
+        // Anlegen je Rechtsträger nacheinander: gleichzeitige Exclusion-Prüfungen könnten sich sonst gegenseitig verklemmen; der Constraint bleibt die Absicherung
+        j.queryForObject("SELECT pg_advisory_xact_lock(hashtextextended('fiscal_period:' || taktovia.current_tenant()::text || ':' || ?, 0))::text", String::class.java, cmd.legalEntityId.toString())
         if (j.queryForObject("SELECT count(*) FROM taktovia.fiscal_period WHERE legal_entity_id = ? AND daterange(starts_on, ends_on, '[)') && daterange(?, ?, '[)')", Int::class.java,
                 cmd.legalEntityId, Date.valueOf(cmd.startsOn), Date.valueOf(cmd.endsOn))!! > 0) throw overlap()
         val id = UUID.randomUUID()

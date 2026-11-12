@@ -254,3 +254,4 @@ listLedgerExportLines;ledger:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 getLedgerExportDownload;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 readLedgerExportContent;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 confirmLedgerExport;ledger:export;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+listExpenses;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J

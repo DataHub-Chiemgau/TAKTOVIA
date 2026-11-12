@@ -26,6 +26,7 @@ import { DatenschutzScreen } from './datenschutz/DatenschutzScreen';
 import { CompanyProfileForm } from './identity/CompanyProfileForm';
 import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
+import { Belegpruefung } from './belege/Belegpruefung';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { EigeneZeit } from './zeit/EigeneZeit';
 import { Dienstplan } from './dienstplan/Dienstplan';
@@ -175,8 +176,16 @@ export function App() {
                 <PlaceholderScreen
                   title="Finanzen"
                   emptyTitle="Noch keine Inhalte"
-                  hint="Belege und Clearing (UI-14, UI-16) folgen in M4 und M6."
+                  hint="Belege prüfen und freigeben (UI-14) finden Sie unter „Belege“; Clearing (UI-16) folgt in M6."
                 />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/finanzen/belege"
+            element={
+              <RequireRight right="finance">
+                <Belegpruefung />
               </RequireRight>
             }
           />

@@ -114,7 +114,10 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Datenschutz, Audit, Support',
         ],
       ],
-      ['finance', ['Start', 'Finanzen', 'Eigene Zeit und Abwesenheit']],
+      [
+        'finance',
+        ['Start', 'Finanzen', 'Belege prüfen und freigeben', 'Eigene Zeit und Abwesenheit'],
+      ],
       [
         'staff_planning',
         [

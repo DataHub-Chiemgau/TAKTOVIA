@@ -64,6 +64,9 @@ internal object W11C5ContractCases {
     }
 
     val cases: List<ContractCase> = listOf(
+        ContractCase("listExpenses",
+            200, { val w = World(); w.postedEvent(); ContractRequest("GET", "/v1/expenses?state=POSTED&limit=5", null, env.headers(w.finance)) },
+            422, { val w = World(); ContractRequest("GET", "/v1/expenses?state=GIBT_ES_NICHT", null, env.headers(w.finance)) }, server = { env.server }),
         ContractCase("createLedgerExport",
             202, { val w = World(); w.postedEvent(); ContractRequest("POST", "/v1/ledger/exports", exportBody(w.base.le), env.headers(w.allocatorToken, extra = idem())) },
             422, { val w = World(); ContractRequest("POST", "/v1/ledger/exports", exportBody(w.base.le, "2026-07-01", "2026-06-01"), env.headers(w.allocatorToken, extra = idem())) }, server = { env.server }),

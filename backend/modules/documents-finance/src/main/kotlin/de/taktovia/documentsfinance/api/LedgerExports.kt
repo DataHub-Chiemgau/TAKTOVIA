@@ -58,7 +58,7 @@ class LedgerExportConfig(val format: LedgerExportFormat? = null, val downloadSec
  * ERP-Export als wiederholsicherer Job (WP-M4-37). Ein Exportauftrag ist eine `operation` (`LEDGER_EXPORT`, Lease und Fencing): der Runner führt ihn aus, ein abgestürzter Worker wird nach Ablauf der Lease von
  * einem anderen ersetzt, der alte schreibt nichts mehr; **ein** Auftrag erzeugt höchstens **einen** Batch (Batch, Zeilen, Beleg-Exportstatus, Audit und Outbox entstehen in der Transaktion, die auch die Operation
  * abschließt). Exportiert werden nur `POSTED`-Journale des Rechtsträgers im Zeitraum, deren Beleg gebucht und vollständig freigegeben ist (Budgetfreigabe, bei Überschreitung der Schwelle auch die zweite) und die
- * noch in keinem Batch sind: ein Journal erscheint in genau einem Batch (Primärschlüssel), auch bei parallelen Aufträgen (Sperre je Rechtsträger). Der Exportstatus am Beleg (nicht exportiert, bereitgestellt,
+ * noch in keinem Batch sind: ein Journal erscheint in genau einem Batch (Primärschlüssel), auch bei parallelen Aufträgen (Sperre je Mandant). Der Exportstatus am Beleg (nicht exportiert, bereitgestellt,
  * bestätigt) wird ausschließlich im Exportjob und in der Bestätigung gesetzt.
  *
  * **Wiederholung:** dieselbe Anforderung (Rechtsträger, Zielsystem, Zeitraum) liefert denselben offenen Auftrag bzw. den vorhandenen Batch mit denselben Kennungen und demselben Inhaltshash; neu entstehen nur

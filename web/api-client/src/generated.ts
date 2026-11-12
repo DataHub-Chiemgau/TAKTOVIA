@@ -643,6 +643,28 @@ export interface LedgerImportConfirmation {
   import_ref: string;
 }
 
+export interface ExpenseSummary {
+  document_id: UUID;
+  legal_entity_id: UUID | null;
+  state: string;
+  document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
+  source_channel: string;
+  received_at: string;
+  revision: number;
+  merchant: string | null;
+  amount_minor: number | null;
+  currency: string | null;
+  document_date: string | null;
+  export_state: 'NOT_EXPORTED' | 'EXPORTED' | 'CONFIRMED';
+  cost_event_id: UUID | null;
+}
+
+export interface ExpensePage {
+  items: ExpenseSummary[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface CostEventPage {
   items: CostEvent[];
   next_cursor: string | null;
@@ -678,6 +700,7 @@ export interface Expense {
   plausibility_notes?: ExpensePlausibilityNote[];
   duplicates?: ExpenseDuplicate[];
   split?: null | ExpenseSplitView;
+  cost_event_id?: UUID | null;
   split_problem?: string | null;
   approval_steps?: ExpenseApprovalStep[];
   export_state?: 'NOT_EXPORTED' | 'EXPORTED' | 'CONFIRMED';
@@ -3592,6 +3615,13 @@ export interface Operations {
     body: ApprovalRequest;
     response: ExpenseApproval;
   };
+  listExpenses: {
+    path: Record<string, never>;
+    query: { state?: 'QUARANTINED' | 'QUARANTINE_REJECTED' | 'STORED' | 'IN_REVIEW' | 'REVIEWED' | 'WAITING_SECOND_APPROVAL' | 'APPROVED' | 'POSTED'; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ExpensePage;
+  };
   getExpense: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -5213,6 +5243,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   readLedgerExportContent: { method: 'GET', path: '/v1/ledger/exports/{export_id}/content', pathParams: ['export_id'], query: ['exp', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   confirmLedgerExport: { method: 'POST', path: '/v1/ledger/exports/{export_id}/confirmation', pathParams: ['export_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listExpenses: { method: 'GET', path: '/v1/expenses', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

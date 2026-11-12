@@ -53,7 +53,9 @@ data class ExpenseView(val document: StoredDocumentView, val fields: Map<String,
     /** Freigabeschritte (WP-M4-34) und Exportstatus. */
     val approvalSteps: List<ApprovalStepView> = emptyList(), val exportState: ExportState = ExportState.NOT_EXPORTED,
     /** Aufteilungsplan vor dem Posting (WP-M4-35) und der Grund, falls er unvollständig ist (nur bei mehreren zugeordneten Kostenobjekten). */
-    val split: SplitView? = null, val splitProblem: String? = null) {
+    val split: SplitView? = null, val splitProblem: String? = null,
+    /** Das Kostenereignis des gebuchten Belegs (WP-M4-36: Grundlage des Gegenbelegs), sonst `null`. */
+    val costEventId: UUID? = null) {
     /** Freigabefähig, wenn kein Hindernis besteht (Dokument, Bestätigungspflicht und Kostenzuordnung). */
     val approvable: Boolean get() = blockers.isEmpty()
 }
@@ -79,8 +81,20 @@ data class CorrectExpense(val reason: String, val fields: Map<String, Any?> = em
 /** Die bearbeitete Ansicht eines Belegs (jüngste Revision mit eigener Ansicht), unabhängig vom Original; `sha256` = Hash der Ansicht. */
 class EditedViewContent(val revision: Long, val mime: String, val bytes: ByteArray, val sha256: String)
 
+/** Zeile der Arbeitsliste (WP-M4-38): Kopfdaten und Feldwerte des Belegs, ohne Kostenobjekte und Schritte. `state` ist der Rohzustand (`STORED`, `IN_REVIEW`, ..., `POSTED`, in Quarantäne `QUARANTINED`). */
+data class ExpenseSummary(
+    val documentId: UUID, val legalEntityId: UUID?, val state: String, val kind: DocumentKind, val channel: SourceChannel, val receivedAt: Instant, val revision: Long, val merchant: String?,
+    val amountMinor: Long?, val currency: String?, val documentDate: String?, val exportState: ExportState, val costEventId: UUID?,
+)
+
 /** Beleg lesen, Revisionen abrufen, korrigieren und das Original abrufen (WP-M4-22, WP-M4-23). */
 interface Expenses {
+    /**
+     * Arbeitsliste (WP-M4-38): Belege des Mandanten, optional nach Rohzustand gefiltert, aufsteigend nach `(Eingangszeit, Kennung)` mit Cursor. Die Finanzrolle sieht alle Belege, andere Akteure nur die von ihnen
+     * erfassten (wie [get]). Scope `receipts:read`.
+     */
+    fun list(ctx: RequestContext, state: String?, limit: Int, after: Pair<Instant, UUID>?): List<ExpenseSummary>
+
     /** Fremder Mandant und fremde Belege (nicht Erfasser, keine Finanzrolle): 404. */
     fun get(ctx: RequestContext, id: UUID): ExpenseView
 

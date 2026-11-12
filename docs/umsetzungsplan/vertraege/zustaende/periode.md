@@ -1,0 +1,12 @@
+# Zustandsautomat Fiskalperiode (`fiscal_period`, WP-M4-36)
+
+| Zustand | Bedeutung | Übergänge |
+|---|---|---|
+| `OPEN` (`closed_at` leer) | Buchungen, Aufteilungen und Gegenereignisse mit Buchungsdatum in der Periode sind möglich | `CLOSED` (`closeFiscalPeriod`) |
+| `CLOSED` (`closed_at`, `closed_by` gesetzt) | endgültig: Posting und Aufteilung ergeben 409 `PERIOD_CLOSED`; Grenzen, Abschlusszeit und Abschließender sind unveränderlich (Trigger `guard_fiscal_period`, Härtung V2 und V40360) | keine (eine Wiederöffnung gibt es weder als Befehl noch als API-Pfad) |
+
+**Regeln.** Perioden eines Rechtsträgers überlappen sich nie (Exclusion Constraint über `daterange(starts_on, ends_on, '[)')`, benachbarte Perioden sind zulässig, paralleles Anlegen überlappender Perioden ergibt genau eine). Der Abschluss braucht ein eigenes Finanzrecht (`periods:close`, Mensch mit Finanzrolle), sperrt die Periodenzeile (`FOR UPDATE`, wie Posting, Aufteilung und Gegenereignis): bei Konkurrenz gewinnt genau eine Transaktion, wer als Zweiter abschließt oder danach schreibt, erhält 409 `PERIOD_CLOSED`. Akteur und Zeit stehen an der Periode und im Audit (`finance.period.closed`).
+
+**„Nächste offene Periode“ (Gegenereignis).** Zielperiode ist die erste offene Periode des Rechtsträgers, die nach dem gewünschten Buchungsdatum endet; das Buchungsdatum ist das spätere von Wunschdatum und Beginn dieser Periode. Wird die gewählte Periode zwischen Auswahl und Sperre geschlossen, wird neu gewählt. Gibt es keine offene Periode, ist der Gegenbeleg 409 `CONFLICT`.
+
+**Gegenereignis.** Ein eigenes unveränderliches `economic_event` (`reverses_id` = Ursprung, Ereignisart `EXPENSE_REVERSAL`, negative Beträge) mit eigenem Journal: die Gegenbuchung trifft dieselben Konten wie der Ursprung mit **getauschten Seiten und positiven Zeilen** (Kern-DDL `journal_line.amount_minor > 0`, Offener Punkt 42; die Rolle der Zeile steht in `journal_line.account_role`). Die Datenbank erzwingt: Gegenvorzeichen, gleicher Rechtsträger, gleiche Währung, nie ein Gegenereignis eines Gegenereignisses, die Summe aller Gegenereignisse überschreitet den Ursprung nie. Ein zweites Gegenereignis zum selben Ursprung und Betrag ist 409 `ALREADY_REVERSED` (einmalige Wirkung; Quellreferenz `<Ursprung>:REV:<Betrag>`). Die gespeicherte Aufteilung des Ursprungs wird als negierte Aufteilung des Gegenereignisses fortgeschrieben (voller Rest: exakte Negation der gespeicherten Beträge, Teilbetrag: Largest Remainder im Verhältnis der gespeicherten Beträge).

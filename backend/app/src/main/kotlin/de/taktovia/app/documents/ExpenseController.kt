@@ -22,9 +22,14 @@ import de.taktovia.documentsfinance.api.FuelView
 import de.taktovia.documentsfinance.api.CorrectExpense
 import de.taktovia.documentsfinance.api.CostAssignments
 import de.taktovia.documentsfinance.api.CostObjectView
+import de.taktovia.documentsfinance.api.ExpenseSummary
 import de.taktovia.documentsfinance.api.ExpenseView
 import de.taktovia.documentsfinance.api.Expenses
 import de.taktovia.documentsfinance.api.RevisionView
+import de.taktovia.platform.api.CursorCodec
+import de.taktovia.platform.api.CursorPosition
+import de.taktovia.platform.api.CursorScope
+import de.taktovia.platform.api.Paging
 import de.taktovia.platform.api.Etag
 import de.taktovia.platform.api.Revisioned
 import de.taktovia.platform.problem.ProblemException
@@ -62,7 +67,22 @@ class ApprovalResource(@get:JsonValue val data: Map<String, Any?>, override val 
  * dem Kontext. Änderungen nur mit `If-Match` (428 ohne, 412 bei veralteter Revision). Das Original wird unverändert ausgeliefert, nach einer Hashprüfung.
  */
 @RestController
-class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview, private val approvals: ExpenseApprovals, private val splits: ExpenseSplits) {
+class ExpenseController(private val expenses: Expenses, private val costs: CostAssignments, private val fuel: FuelReceipts, private val plausibility: FuelPlausibility, private val duplicates: DuplicateReview, private val approvals: ExpenseApprovals, private val splits: ExpenseSplits, private val codec: CursorCodec) {
+
+    /** Arbeitsliste der Belege nach Status (WP-M4-38, UI-14): signierte Cursor, `as_of` = Datenstand. */
+    @GetMapping("/v1/expenses")
+    fun list(@org.springframework.web.bind.annotation.RequestParam(required = false) state: String?, @org.springframework.web.bind.annotation.RequestParam(required = false) limit: String?,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) cursor: String?, request: HttpServletRequest): Map<String, Any?> {
+        val ctx = RequestContexts.require(request)
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "expenses:${state ?: "all"}")
+        val lim = Paging.limit(limit)
+        val rows = expenses.list(ctx, state, lim + 1, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
+        return Paging.page(rows, lim, { CursorPosition(it.receivedAt, it.documentId) }, codec, scope, java.time.Instant.now()).toMap(::summary)
+    }
+
+    private fun summary(e: ExpenseSummary): Map<String, Any?> = linkedMapOf("document_id" to e.documentId.toString(), "legal_entity_id" to e.legalEntityId?.toString(), "state" to e.state, "document_kind" to e.kind.name,
+        "source_channel" to e.channel.name, "received_at" to e.receivedAt.toString(), "revision" to e.revision, "merchant" to e.merchant, "amount_minor" to e.amountMinor, "currency" to e.currency,
+        "document_date" to e.documentDate, "export_state" to e.exportState.name, "cost_event_id" to e.costEventId?.toString())
 
     @GetMapping("/v1/expenses/{expense_id}")
     fun get(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ExpenseResource = resource(expenses.get(RequestContexts.require(request), id))
@@ -211,7 +231,7 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
             "received_at" to d.receivedAt.toString(), "scanned_at" to d.scannedAt?.toString(), "sender_verified" to d.senderVerified, "integrity" to d.integrity.name, "approvable" to e.approvable,
             "blockers" to e.blockers.map { it.name }, "unconfirmed_fields" to e.review.unconfirmedFields, "sum_mismatch" to e.review.sumMismatch, "cost_objects" to e.costObjects.map(::json), "fuel" to e.fuel?.let(::fuelJson),
             "hints" to e.plausibility.hints.map(::hintJson), "plausibility_notes" to e.plausibility.notes.map { linkedMapOf("rule" to it.rule.name, "code" to it.code, "text" to it.text) },
-            "duplicates" to e.duplicates.map(::duplicateJson), "split" to e.split?.let(::splitJson), "split_problem" to e.splitProblem, "approval_steps" to e.approvalSteps.map(::stepJson), "export_state" to e.exportState.name, "fields" to e.fields, "revision" to d.revision,
+            "duplicates" to e.duplicates.map(::duplicateJson), "split" to e.split?.let(::splitJson), "split_problem" to e.splitProblem, "cost_event_id" to e.costEventId?.toString(), "approval_steps" to e.approvalSteps.map(::stepJson), "export_state" to e.exportState.name, "fields" to e.fields, "revision" to d.revision,
         ), d.revision)
     }
 
