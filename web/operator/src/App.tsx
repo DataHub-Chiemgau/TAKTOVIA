@@ -28,6 +28,7 @@ import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Geodaten } from './geo/Geodaten';
+import { Tarife } from './tarife/Tarife';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
@@ -221,6 +222,8 @@ export function App() {
                   {' · '}
                   <Link to="/admin/geodaten">Zu Gebieten, Haltepunkten und Betriebszeiten</Link>
                   {' · '}
+                  <Link to="/admin/tarife">Zu den Tarifen</Link>
+                  {' · '}
                   <Link to="/admin/konfiguration">Zur wirksamen Konfiguration</Link>
                 </p>
               </RequireRight>
@@ -231,6 +234,14 @@ export function App() {
             element={
               <RequireRight right="admin.ui17">
                 <Geodaten />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/admin/tarife"
+            element={
+              <RequireRight right="admin.ui17">
+                <Tarife />
               </RequireRight>
             }
           />

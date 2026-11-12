@@ -2,6 +2,8 @@
 import threading, unittest
 import psycopg
 from helpers import runtime, set_tenant, tx, uid, seed_tenant
+from geo_helpers import make_service
+from tarif_helpers import add_revision
 
 T = uid()
 LE = uid()
@@ -191,10 +193,10 @@ class Trigger(unittest.TestCase):
                     cfg = uid()
                     c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
                                  VALUES (%s,%s,'TENANT',%s,1,'1','{}',now(),'user:u','Testdaten')""", (T, cfg, T))
-                    q = uid()
+                    q = uid(); trev = add_revision(c, T, make_service(c, T), state='VEROEFFENTLICHT')   # Preisbindung: Tarifrevision (WP-M2-07)
                     c.execute("""INSERT INTO taktovia.fare_quote(tenant_id,id,attempt_id,currency,pay_at_platform_minor,external_known_minor,external_unknown_leg_ids,
                                  expires_at,tariff_revision_id,config_revision_id,snapshot,content_hash)
-                                 VALUES (%s,%s,%s,'EUR',1000,0,'{}',now(),%s,%s,'{}',%s)""", (T, q, qa, uid(), cfg, 'a' * 64))
+                                 VALUES (%s,%s,%s,'EUR',1000,0,'{}',now(),%s,%s,'{}',%s)""", (T, q, qa, trev, cfg, 'a' * 64))
                     pid = uid()
                     c.execute("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (%s,%s,%s,now())", (T, pid, str(uid())))
                     c.execute("INSERT INTO taktovia.journey(tenant_id,id,passenger_id,quote_id,state,created_at,currency) VALUES (%s,%s,%s,%s,'HELD',now(),'EUR')", (T, jid, pid, q))
@@ -205,12 +207,13 @@ class Trigger(unittest.TestCase):
         from helpers import admin
         with tx(T) as c:
             qa = uid(); cfg = uid(); q = uid()
+            trev = add_revision(c, T, make_service(c, T), state='VEROEFFENTLICHT')   # Preisbindung: Tarifrevision (WP-M2-07)
             c.execute("INSERT INTO taktovia.travel_attempt(tenant_id,id,created_at,channel) VALUES (%s,%s,now(),'WEB')", (T, qa))
             c.execute("""INSERT INTO taktovia.config_revision(tenant_id,id,scope_kind,scope_id,revision,schema_version,values_json,effective_from,created_by,reason)
                          VALUES (%s,%s,'TENANT',%s,2,'1','{}',now(),'user:u','Testdaten')""", (T, cfg, T))
             c.execute("""INSERT INTO taktovia.fare_quote(tenant_id,id,attempt_id,currency,pay_at_platform_minor,external_known_minor,external_unknown_leg_ids,
                          expires_at,tariff_revision_id,config_revision_id,snapshot,content_hash)
-                         VALUES (%s,%s,%s,'EUR',1000,0,'{}',now(),%s,%s,'{}',%s)""", (T, q, qa, uid(), cfg, 'b' * 64))
+                         VALUES (%s,%s,%s,'EUR',1000,0,'{}',now(),%s,%s,'{}',%s)""", (T, q, qa, trev, cfg, 'b' * 64))
         with admin() as a:
             with self.assertRaises(psycopg.errors.CheckViolation):
                 a.execute('UPDATE taktovia.fare_quote SET pay_at_platform_minor=1 WHERE id=%s', (q,))

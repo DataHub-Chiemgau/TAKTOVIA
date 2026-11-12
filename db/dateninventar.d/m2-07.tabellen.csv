@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+tariff_revision;Tarifrevision mit Gültigkeit je Dienst und Tarifklasse (WP-M2-07);LK_STAMM;Preisstände ohne Personenbezug, Angebote verweisen auf die Revision, daher keine Löschung
+tariff_rule;Preisregel einer Tarifrevision (WP-M2-07);LK_STAMM;Preis- und Steuersätze, unveränderlich nach Veröffentlichung

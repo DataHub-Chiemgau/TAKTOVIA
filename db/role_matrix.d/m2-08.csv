@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+fare_component;SELECT,INSERT;WP-M2-08: Preiskomponente je Segment eines Angebots, unveränderlich (kein UPDATE/DELETE)

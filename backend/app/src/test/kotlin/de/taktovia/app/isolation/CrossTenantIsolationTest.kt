@@ -55,6 +55,8 @@ class CrossTenantIsolationTest {
         // Geodaten (WP-M2-03 bis -06): Bediengebiet und Haltepunkt in B
         val area = create("/v1/service-areas", """{"service_id":"$service","area":{"type":"MultiPolygon","coordinates":[[[[13.7,51.0],[13.8,51.0],[13.8,51.1],[13.7,51.1],[13.7,51.0]]]]},"valid_from":"2026-01-01T00:00:00Z","valid_to":null}""").json["id"].asString()
         val stop = create("/v1/stops", """{"name":"Halt B","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"valid_from":"2026-01-01T00:00:00Z"}""").json["stop_id"].asString()
+        // Tarifrevision (WP-M2-07) in B
+        val tariff = create("/v1/tariffs", """{"service_id":"$service","tariff_class":"STANDARD","valid_from":"2026-01-01T00:00:00Z","valid_to":null,"currency":"EUR","reason":"Tarif B","rules":[{"rule_type":"FESTPREIS","amount_minor":450,"tax_rate":"0.07","tax_rule_revision":"DE-2026-1"}]}""").json["id"].asString()
         val cost = create("/v1/cost-centers", """{"code":"KST-B","name":"Kostenstelle B","legal_entity_id":"$le"}""").json["id"].asString()
         val rev = create("/v1/config/revisions", """{"scope_kind":"TENANT","scope_id":"${b.tenant}","schema_version":"1","values":{"max_wait_min":20},"effective_from":"2030-01-01T00:00:00Z","reason":"Bestand B"}""").json["id"].asString()
         val report = env.server.send("POST", "/v1/config/revisions/$rev/impact", null, env.headers(b.adminToken, extra = idem() + ("If-Match" to "\"1\""))).json["id"].asString()
@@ -98,7 +100,7 @@ class CrossTenantIsolationTest {
         }.toString()
         return Ids(mapOf(
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
-            "area_id" to area, "stop_id" to stop,
+            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
             "membership_id" to membership, "session_id" to session, "absence_id" to absence, "receipt_ticket_id" to ticketJson["ticket_id"].asString(), "document_id" to receipt, "time_event_id" to timeEvent,
@@ -143,6 +145,12 @@ class CrossTenantIsolationTest {
             "checkServiceRelation" to Probe("GET", "/v1/services/{service_id}/relation-check?origin_latitude=51.05&origin_longitude=13.05&destination_latitude=51.05&destination_longitude=14.05"),
             "getServiceArea" to Probe("GET", "/v1/service-areas/{area_id}"),
             "updateServiceArea" to Probe("PUT", "/v1/service-areas/{area_id}", """{"area":{"type":"MultiPolygon","coordinates":[[[[13.7,51.0],[13.8,51.0],[13.8,51.1],[13.7,51.1],[13.7,51.0]]]]},"valid_from":"2027-01-01T00:00:00Z","valid_to":null}""", true),
+            // Tarifrevisionen (WP-M2-07)
+            "getTariffRevision" to Probe("GET", "/v1/tariffs/{tariff_id}"),
+            "updateTariffRevision" to Probe("PUT", "/v1/tariffs/{tariff_id}", """{"valid_from":"2027-01-01T00:00:00Z","valid_to":null,"reason":"Fremdversuch","rules":[{"rule_type":"FESTPREIS","amount_minor":1,"tax_rule_revision":"x"}]}""", true),
+            "reviewTariffRevision" to Probe("POST", "/v1/tariffs/{tariff_id}/review", null, true),
+            "publishTariffRevision" to Probe("POST", "/v1/tariffs/{tariff_id}/publish", null, true),
+            "getEffectiveTariff" to Probe("GET", "/v1/services/{service_id}/tariff?at=2026-06-01T00:00:00Z"),
             "getStop" to Probe("GET", "/v1/stops/{stop_id}"),
             "updateStop" to Probe("PUT", "/v1/stops/{stop_id}", """{"name":"Gekapert","point":{"latitude":51.05,"longitude":13.74},"accessibility":{"schema_version":"1.0","step_free":"YES","wheelchair_boarding":"UNVERIFIED"},"traffic_products":["AREA_ON_DEMAND"],"active":false,"valid_from":"2027-01-01T00:00:00Z"}""", true),
             "updateService" to Probe("PUT", "/v1/services/{service_id}", """{"name":"Gekapert","timezone":"Europe/Berlin"}""", true),
@@ -176,7 +184,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
     )
     private val selfScoped = setOf(

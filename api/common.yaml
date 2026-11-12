@@ -62,6 +62,9 @@ components:
             rides:write: rides:write
             geo:read: geo:read
             geo:write: geo:write
+            tariffs:read: tariffs:read
+            tariffs:write: tariffs:write
+            tariffs:publish: tariffs:publish
             notifications:read: notifications:read
             driver-releases:read: driver-releases:read
             driver-releases:write: driver-releases:write
@@ -133,6 +136,9 @@ components:
             rides:write: rides:write
             geo:read: geo:read
             geo:write: geo:write
+            tariffs:read: tariffs:read
+            tariffs:write: tariffs:write
+            tariffs:publish: tariffs:publish
             notifications:read: notifications:read
             driver-releases:read: driver-releases:read
             driver-releases:write: driver-releases:write
