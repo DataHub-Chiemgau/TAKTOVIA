@@ -1716,6 +1716,68 @@ export interface AccountRecovery {
   started_at: string;
 }
 
+export interface TimeEventCreate {
+  event_id: UUID;
+  kind: TimeEventKind;
+  occurred_at: string;
+  device_recorded_at: string;
+  channel: 'APP' | 'WEB';
+  shift_id?: UUID | null;
+}
+
+export interface TimeEventBackfillCreate {
+  event_id: UUID;
+  person_ref: string;
+  kind: TimeEventKind;
+  occurred_at: string;
+  shift_id?: UUID | null;
+  reason: string;
+}
+
+export type TimeEventKind = 'WORK_START' | 'WORK_END' | 'BREAK_START' | 'BREAK_END';
+
+export interface TimeEvent {
+  event_id: UUID;
+  person_ref: string;
+  kind: TimeEventKind;
+  occurred_at: string;
+  device_recorded_at: string | null;
+  received_at: string;
+  source: 'APP' | 'WEB' | 'BACKFILL';
+  recorded_by: string;
+  shift_id: UUID | null;
+  backfill_reason: string | null;
+}
+
+export interface TimeEventPage {
+  items: TimeEvent[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface TimeInterval {
+  start: string | null;
+  end: string | null;
+  breaks: ({
+    start: string;
+    end: string | null;
+  })[];
+  net_seconds: number | null;
+  flags: ('MISSING_END' | 'END_WITHOUT_START' | 'BREAK_NOT_ENDED')[];
+  event_ids: UUID[];
+}
+
+export interface TimeIntervalList {
+  person_ref: string;
+  from: string;
+  to: string;
+  intervals: TimeInterval[];
+  anomalies: ({
+    event_id: UUID;
+    code: 'BREAK_OUTSIDE_WORK' | 'BREAK_END_WITHOUT_START' | 'BREAK_ALREADY_STARTED';
+  })[];
+}
+
 export interface WebhookSubscription {
   id: UUID;
   url: string;
@@ -2641,6 +2703,34 @@ export interface Operations {
     body: AccountRecoveryCreate;
     response: AccountRecovery;
   };
+  listTimeEvents: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from?: string; to?: string; shift_id?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TimeEventPage;
+  };
+  recordTimeEvent: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TimeEventCreate;
+    response: TimeEvent;
+  };
+  createTimeEventBackfill: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: TimeEventBackfillCreate;
+    response: TimeEvent;
+  };
+  listTimeIntervals: {
+    path: Record<string, never>;
+    query: { person_ref?: string; from: string; to: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: TimeIntervalList;
+  };
   listWebhookSubscriptions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -2814,6 +2904,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   lockAccount: { method: 'POST', path: '/v1/account-locks', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   unlockAccount: { method: 'DELETE', path: '/v1/account-locks/{subject}', pathParams: ['subject'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['accounts:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   startAccountRecovery: { method: 'POST', path: '/v1/account-recoveries', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['accounts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listTimeEvents: { method: 'GET', path: '/v1/time-events', pathParams: [], query: ['person_ref', 'from', 'to', 'shift_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listTimeIntervals: { method: 'GET', path: '/v1/time-events/intervals', pathParams: [], query: ['person_ref', 'from', 'to'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getWebhookSubscription: { method: 'GET', path: '/v1/webhook-subscriptions/{subscription_id}', pathParams: ['subscription_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

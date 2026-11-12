@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+time_event;SELECT,INSERT;WP-M4-08: Ist-Arbeitszeit als Zeitereignis; unveränderlich (Trigger), kein UPDATE/DELETE

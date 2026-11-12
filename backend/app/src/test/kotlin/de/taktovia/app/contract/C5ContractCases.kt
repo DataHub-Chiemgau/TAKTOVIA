@@ -18,6 +18,9 @@ internal object C5ContractCases {
 
     private val absenceBody get() = """{"person_ref":"${UUID.randomUUID()}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"TRAINING"}"""
 
+    private fun timeBody() = """{"event_id":"${UUID.randomUUID()}","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}"""
+    private fun backfillBody(person: String) = """{"event_id":"${UUID.randomUUID()}","person_ref":"$person","kind":"WORK_END","occurred_at":"2026-12-01T14:00:00Z","shift_id":null,"reason":"Stempeln vergessen"}"""
+
     val cases: List<ContractCase> = listOf(
         ContractCase("createAbsence",
             201, { val w = World(); ContractRequest("POST", "/v1/absences", absenceBody, env.headers(w.hrToken, extra = idem())) },
@@ -31,5 +34,18 @@ internal object C5ContractCases {
         ContractCase("withdrawAbsence",
             200, { val w = World(); ContractRequest("POST", "/v1/absences/${w.absence()}/withdraw", null, env.headers(w.hrToken, extra = idem() + ("If-Match" to "\"1\""))) },
             404, { val w = World(); ContractRequest("POST", "/v1/absences/${UUID.randomUUID()}/withdraw", null, env.headers(w.hrToken, extra = idem() + ("If-Match" to "\"1\""))) }, server = { env.server }),
+
+        ContractCase("recordTimeEvent",
+            201, { val w = World(); ContractRequest("POST", "/v1/time-events", timeBody(), env.headers(w.driverToken, extra = idem())) },
+            403, { val w = World(); ContractRequest("POST", "/v1/time-events", timeBody(), env.headers(w.passengerToken, extra = idem())) }, server = { env.server }),
+        ContractCase("listTimeEvents",
+            200, { val w = World(); ContractRequest("GET", "/v1/time-events", null, env.headers(w.driverToken)) },
+            404, { val w = World(); ContractRequest("GET", "/v1/time-events?person_ref=${UUID.randomUUID()}", null, env.headers(w.driverToken)) }, server = { env.server }),
+        ContractCase("listTimeIntervals",
+            200, { val w = World(); ContractRequest("GET", "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", null, env.headers(w.driverToken)) },
+            404, { val w = World(); ContractRequest("GET", "/v1/time-events/intervals?person_ref=${UUID.randomUUID()}&from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", null, env.headers(w.driverToken)) }, server = { env.server }),
+        ContractCase("createTimeEventBackfill",
+            201, { val w = World(); ContractRequest("POST", "/v1/time-events/backfills", backfillBody(w.driver.toString()), env.headers(w.hrToken, extra = idem())) },
+            403, { val w = World(); ContractRequest("POST", "/v1/time-events/backfills", backfillBody(w.driver.toString()), env.headers(w.driverToken, extra = idem())) }, server = { env.server }),
     )
 }

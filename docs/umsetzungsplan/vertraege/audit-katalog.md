@@ -13,3 +13,4 @@
 - **Architekturregel:** Methoden mit `@AuditRequired` müssen `AuditPort.record` aufrufen (`ArchitectureRules.auditRequiredCallsAuditPort`, roter Selbsttest gegen Fixture).
 - **Fahrer-App (WP-M3-24):** `driver.device.registered` (Gerät an Konto und Sitzung gebunden oder neu gebunden) und `driver.device.revoked` (Bindung beendet); Objekt `driver_device:<id>`, `details`: `platform`, `change` (`registered`/`rebound`/`revoked`), `revision`; nie Sitzungs-ID oder Token.
 - **Abwesenheit (WP-M4-06):** `staff.absence.created` und `staff.absence.withdrawn` (Objekt `absence:<id>`, `details`: `revision`, `state`; nie Person oder Art, HR-Daten).
+- **Zeitereignis (WP-M4-08):** `staff.time_event.backfilled` (Nacherfassung durch die berechtigte Rolle; Objekt `time_event:<id>`, `details`: `kind`, `source`; nie Begründungstext). Selbsterfasste Zeitereignisse sind selbst die Spur (append-only) und lösen kein Audit aus.

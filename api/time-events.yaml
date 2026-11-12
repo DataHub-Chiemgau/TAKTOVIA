@@ -1,0 +1,471 @@
+paths:
+  /v1/time-events:
+    get:
+      summary: Zeitereignisse lesen
+      operationId: listTimeEvents
+      security:
+      - oidc:
+        - time-events:read
+      description: 'Liest die Zeitereignisse (Arbeitsbeginn, Arbeitsende, Pausenbeginn, Pausenende) der Ist-Arbeitszeit, sortiert nach Erfassungszeit. Ohne `person_ref` die eigenen; eine fremde Person sieht nur die Personalrolle (Planersicht), sonst 404. Filter `from`/`to` (Ereigniszeit, `to` exklusiv) und `shift_id`.'
+      parameters:
+      - name: person_ref
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description: Person, deren Ereignisse gelesen werden; ohne Angabe die eigene.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Nur Ereignisse ab dieser Ereigniszeit (RFC 3339 mit Offset).
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Nur Ereignisse vor dieser Ereigniszeit (exklusiv).
+      - name: shift_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+        description: Nur Ereignisse, die dieser geplanten Schicht zugeordnet sind.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEventPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Eigenes Zeitereignis erfassen
+      operationId: recordTimeEvent
+      security:
+      - oidc:
+        - time-events:write
+      description: 'Erfasst ein Ereignis der eigenen Ist-Arbeitszeit (Person = angemeldeter Akteur, nie aus dem Body). Die `event_id` ist die stabile Ereignis-ID und dedupliziert dauerhaft: eine Wiederholung mit demselben Inhalt liefert 200 mit dem gespeicherten Ereignis und erzeugt keine zweite Zeile, dieselbe ID mit anderem Inhalt ist 409. `occurred_at` ist die Ereigniszeit, `device_recorded_at` die Gerätezeit; die Serverempfangszeit (`received_at`) setzt der Server. Die Schicht (`shift_id`) ist optional und muss dem Akteur gehören (sonst 404). Ereignisse sind unveränderlich; ein Ende ohne Beginn wird nicht verworfen, sondern in der Intervallableitung gekennzeichnet.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEvent'
+        '200':
+          description: 'Wiederholung mit gleichem Inhalt: das gespeicherte Ereignis, keine zweite Zeile.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEvent'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEventCreate'
+  /v1/time-events/backfills:
+    post:
+      summary: Zeitereignis nacherfassen (Personalrolle)
+      operationId: createTimeEventBackfill
+      security:
+      - oidc:
+        - time-events:manage
+      description: 'Nacherfassung durch die berechtigte Personalrolle für eine andere Person: eigene Erfassungsquelle `BACKFILL`, Akteur (`recorded_by`) und Begründung sind Pflicht, die Nacherfassung steht im Audit und ersetzt oder ändert nie ein vorhandenes Ereignis. Gleiche Ereignis-ID: wie `recordTimeEvent` (gleicher Inhalt 200, anderer Inhalt 409).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEvent'
+        '200':
+          description: 'Wiederholung mit gleichem Inhalt: das gespeicherte Ereignis, keine zweite Zeile.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEvent'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEventBackfillCreate'
+  /v1/time-events/intervals:
+    get:
+      summary: Arbeitszeitintervalle ableiten
+      operationId: listTimeIntervals
+      security:
+      - oidc:
+        - time-events:read
+      description: 'Leitet Arbeitszeitintervalle aus den Zeitereignissen im Fenster `[from, to)` ab (Beginn bis Ende abzüglich Pausen); nichts davon wird gespeichert. Fehlendes Ende: das Intervall bleibt offen (`end` null, Kennzeichen `MISSING_END`), es wird nie automatisch abgeschlossen. Ende ohne Beginn: Intervall ohne `start` mit Kennzeichen `END_WITHOUT_START`. Höchstens 31 Tage je Abruf. Fremde Personen wie bei `listTimeEvents`.'
+      parameters:
+      - name: person_ref
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description: Person; ohne Angabe die eigene.
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Beginn des Fensters (RFC 3339 mit Offset).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          maxLength: 40
+        description: Ende des Fensters (exklusiv), höchstens 31 Tage nach `from`.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeIntervalList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    TimeEventCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          $ref: '#/components/schemas/TimeEventKind'
+        occurred_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: Ereigniszeit (wann die Handlung stattfand), mit UTC-Offset.
+        device_recorded_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: Gerätezeit der Erfassung; wird nie als Serverzeit übernommen.
+        channel:
+          type: string
+          enum:
+          - APP
+          - WEB
+          description: Erfassungskanal der Selbsterfassung. Nacherfassung ist ein eigener Endpunkt.
+        shift_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Optionaler Bezug auf die eigene geplante Schicht.
+      required:
+      - event_id
+      - kind
+      - occurred_at
+      - device_recorded_at
+      - channel
+    TimeEventBackfillCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          $ref: '#/components/schemas/TimeEventKind'
+        occurred_at:
+          type: string
+          format: date-time
+          maxLength: 40
+        shift_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+          description: Begründung der Nacherfassung (kurzer Text, keine Gesundheitsangaben).
+      required:
+      - event_id
+      - person_ref
+      - kind
+      - occurred_at
+      - reason
+    TimeEventKind:
+      type: string
+      enum:
+      - WORK_START
+      - WORK_END
+      - BREAK_START
+      - BREAK_END
+      description: Arbeitsbeginn, Arbeitsende, Pausenbeginn, Pausenende.
+    TimeEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        person_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          $ref: '#/components/schemas/TimeEventKind'
+        occurred_at:
+          type: string
+          format: date-time
+        device_recorded_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        received_at:
+          type: string
+          format: date-time
+          description: Serverempfangszeit.
+        source:
+          type: string
+          enum:
+          - APP
+          - WEB
+          - BACKFILL
+          description: Erfassungsquelle; BACKFILL = Nacherfassung durch eine berechtigte Rolle.
+        recorded_by:
+          type: string
+          maxLength: 200
+          description: Urheber der Erfassung (Subject).
+        shift_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        backfill_reason:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+      required:
+      - event_id
+      - person_ref
+      - kind
+      - occurred_at
+      - device_recorded_at
+      - received_at
+      - source
+      - recorded_by
+      - shift_id
+      - backfill_reason
+    TimeEventPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeEvent'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    TimeInterval:
+      type: object
+      additionalProperties: false
+      properties:
+        start:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Arbeitsbeginn; null bei Ende ohne Beginn.
+        end:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Arbeitsende; null solange offen (fehlendes Ende, nie automatisch abgeschlossen).
+        breaks:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              start:
+                type: string
+                format: date-time
+              end:
+                oneOf:
+                - type: string
+                  format: date-time
+                - type: 'null'
+            required:
+            - start
+            - end
+        net_seconds:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Beginn bis Ende abzüglich Pausen in Sekunden; null, wenn Beginn oder Ende fehlt.
+        flags:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            enum:
+            - MISSING_END
+            - END_WITHOUT_START
+            - BREAK_NOT_ENDED
+        event_ids:
+          type: array
+          maxItems: 200
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+      required:
+      - start
+      - end
+      - breaks
+      - net_seconds
+      - flags
+      - event_ids
+    TimeIntervalList:
+      type: object
+      additionalProperties: false
+      properties:
+        person_ref:
+          type: string
+          maxLength: 200
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        intervals:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/TimeInterval'
+        anomalies:
+          type: array
+          maxItems: 1000
+          description: Ereignisse, die zu keinem Arbeitsintervall passen (z. B. Pause außerhalb der Arbeit); sie bleiben erhalten und werden gekennzeichnet.
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              event_id:
+                $ref: common.yaml#/components/schemas/UUID
+              code:
+                type: string
+                enum:
+                - BREAK_OUTSIDE_WORK
+                - BREAK_END_WITHOUT_START
+                - BREAK_ALREADY_STARTED
+            required:
+            - event_id
+            - code
+      required:
+      - person_ref
+      - from
+      - to
+      - intervals
+      - anomalies

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/staff.time_event_recorded.v1.schema.json",
+  "title": "Zeitereignis erfasst (WP-M4-08)",
+  "description": "Payload von `staff.time_event_recorded`. Aggregat: time_event / 1. Nur Kennungen und Codes (Minimierungsregel, Kap. 05 §5.1): keine Namen, Kontaktdaten oder Begründungstexte; `person_ref` ist die pseudonyme Kennung (IdP-Subject).",
+  "type": "object",
+  "required": [
+    "event_id",
+    "person_ref",
+    "kind",
+    "source",
+    "shift_id",
+    "occurred_at",
+    "received_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "enum": [
+        "WORK_START",
+        "WORK_END",
+        "BREAK_START",
+        "BREAK_END"
+      ]
+    },
+    "source": {
+      "enum": [
+        "APP",
+        "WEB",
+        "BACKFILL"
+      ]
+    },
+    "shift_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "event_id": "11111111-2222-4333-8444-555555555555",
+      "person_ref": "5b3f6c0e-0f4a-4f0e-9f57-2c1a7b8d9e10",
+      "kind": "WORK_START",
+      "source": "APP",
+      "shift_id": null,
+      "occurred_at": "2026-12-01T06:00:00Z",
+      "received_at": "2026-12-01T06:00:02Z"
+    }
+  ]
+}

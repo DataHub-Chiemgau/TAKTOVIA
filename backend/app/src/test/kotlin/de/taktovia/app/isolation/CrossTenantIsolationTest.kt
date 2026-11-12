@@ -72,6 +72,9 @@ class CrossTenantIsolationTest {
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
         // WP-M4-06: Abwesenheit in B (Personalrolle)
         val absence = create("/v1/absences", """{"person_ref":"${b.planner}","from":"2027-03-01T00:00:00Z","to":"2027-03-06T00:00:00Z","kind":"LEAVE"}""", b.plannerToken).json["id"].asString()
+        // WP-M4-08: Zeitereignis in B (Fahrer von B stempelt)
+        val timeEvent = UUID.randomUUID().toString()
+        create("/v1/time-events", """{"event_id":"$timeEvent","kind":"WORK_START","occurred_at":"2026-12-01T06:00:00Z","device_recorded_at":"2026-12-01T06:00:00Z","channel":"APP","shift_id":null}""", b.driverToken)
         val recipient = UUID.randomUUID()
         val notification = env.tx.run(b.tenant) { j ->
             j.update("INSERT INTO taktovia.passenger_private(tenant_id,id,subject_token,retention_until) VALUES (taktovia.current_tenant(),?,?,now() + interval '1 year')", recipient, "tok-$recipient")
@@ -82,7 +85,7 @@ class CrossTenantIsolationTest {
             "release_id" to release, "device_id" to deviceId, "notification_id" to notification,
             "region_id" to region, "depot_id" to depot, "legal_entity_id" to le, "organization_id" to org, "service_id" to service, "cost_center_id" to cost,
             "revision_id" to rev, "impact_report_id" to report, "subscription_id" to hook, "passenger_id" to passenger, "operation_id" to operation,
-            "membership_id" to membership, "session_id" to session, "absence_id" to absence,
+            "membership_id" to membership, "session_id" to session, "absence_id" to absence, "time_event_id" to timeEvent,
         ), subject = b.passenger.toString())
     }
 
@@ -132,7 +135,7 @@ class CrossTenantIsolationTest {
     private val listPaths = mapOf(
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
-        "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
+        "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
         "getEffectiveConfig" to "/v1/config/effective", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
     )
     private val selfScoped = setOf(
@@ -182,13 +185,21 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listAbsences" -> a.plannerToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listAbsences", "listTimeEvents", "listTimeIntervals" -> a.plannerToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403, "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
                 assertFalse(r.text.contains(b.tenant.toString()), "$op: Liste von A nennt Mandant B")
             }
         }
+        // Zeitereignisse (WP-M4-08): die Personalrolle von A fragt gezielt die Person von B ab: leer, nie Ereignisse von B
+        for (path in listOf("/v1/time-events?person_ref=${b.driver}", "/v1/time-events/intervals?person_ref=${b.driver}&from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z")) {
+            val r = env.get(path, a.plannerToken)
+            assertEquals(200, r.status, r.text)
+            assertEquals(0, r.json[if (path.contains("intervals")) "intervals" else "items"].size(), "$path: Ereignisse von B sichtbar")
+            assertFalse(r.text.contains(ids.map.getValue("time_event_id")))
+        }
+        assertEquals(1, env.count("SELECT count(*) FROM taktovia.time_event WHERE tenant_id=?", b.tenant.value), "Zeitereignis in B unverändert")
         assertEquals(1, env.count("SELECT count(*) FROM taktovia.absence_request WHERE tenant_id=? AND state='APPROVED' AND revision=1", b.tenant.value), "Abwesenheit in B unverändert (Rücknahme aus A wirkungslos)")
         assertEquals(before, snapshot(b), "Mandant B ist nach allen Fremdversuchen unverändert (Änderung und Löschung wirkungslos)")
     }

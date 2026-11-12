@@ -138,3 +138,7 @@ createAbsence;absences:write;HR;M4;N;N;N;N;N;N;N;N;J;N
 withdrawAbsence;absences:write;HR;M4;N;N;N;N;N;N;N;N;J;N
 listAbsences;absences:read;HR;M4;N;N;N;N;J;J;N;N;J;N
 getAbsence;absences:detail;HR;M4;N;N;N;N;N;N;N;N;J;N
+recordTimeEvent;time-events:write;HR;M4;N;J;J;J;J;J;N;J;J;J
+listTimeEvents;time-events:read;HR;M4;N;J;J;J;J;J;N;J;J;J
+listTimeIntervals;time-events:read;HR;M4;N;J;J;J;J;J;N;J;J;J
+createTimeEventBackfill;time-events:manage;HR;M4;N;N;N;N;N;N;N;N;J;N

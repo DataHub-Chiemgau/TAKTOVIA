@@ -15,6 +15,8 @@ interface StafftimeApi {
     val driverEvents: DriverEvents
     /** Abwesenheit als Verfügbarkeitsrestriktion (WP-M4-06). */
     val absences: Absences
+    /** Ist-Arbeitszeit als Zeitereignisse (WP-M4-08). */
+    val timeEvents: TimeEvents
 
     companion object {
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, clock: Clock = Clock.systemUTC()): StafftimeApi =

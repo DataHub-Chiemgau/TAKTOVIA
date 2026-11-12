@@ -20,7 +20,7 @@
 - **Parameter und Kennzahlen:** keine.
 - **Oberfläche:** UI-13 (Eigene Zeit/Abwesenheit) bzw. Stempeln in der Fahrer-App (WP-M4-11); hier nur Backend.
 - **Entscheidungen:** D-11 (Aufbewahrung von Arbeitszeitdaten; blockiert nur Produktivschaltung).
-- **Offene Punkte:** Regel für fehlendes Ende (Auto-Abschluss oder Kennzeichnung) ist im Pflichtenheft nicht festgelegt; Korrekturen (`time_correction`, TIM-007) und Zeitkonten (TIM-011) sind P2 (AT-48, OP-2).
+- **Offene Punkte:** Regel für fehlendes Ende (Auto-Abschluss oder Kennzeichnung) ist im Pflichtenheft nicht festgelegt (Annahme im Bau: Kennzeichnung `MISSING_END`, kein Auto-Abschluss, siehe `TimeIntervals`); Korrekturen (`time_correction`, TIM-007) und Zeitkonten (TIM-011) sind P2 (AT-48, OP-2).
 
 ## Tests
 
@@ -28,7 +28,7 @@
 - **Negativ:** Ende ohne Beginn wird gekennzeichnet statt verworfen; UPDATE/DELETE auf `time_event` scheitert; Mitarbeiter liest Ereignisse einer fremden Person -> 404; fremder Mandant abgewiesen; Nacherfassung ohne berechtigte Rolle -> 403; Nacherfassung überschreibt kein vorhandenes Ereignis.
 - **Konkurrierend:** identisches Ereignis (gleiche Ereignis-ID) parallel gesendet ergibt genau eine Zeile; zwei verschiedene Ereignisse parallel zu derselben Schicht ergeben zwei Zeilen.
 - **Referenztests:** AT-45 (Soll/Ist-Zeiten, Ermöglichung mit WP-M4-09/11; vom WP-Block M4-08 nicht ausdrücklich genannt, Ablauf Beginn/Pause/Ende entspricht dem Positivtest).
-- Testfälle: AT-45; geplant:db/tests/test_time_event.py::test_time_event_append_only_und_idempotent; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::zwei_ist_zeit_ereignisse_zu_einer_schicht_bleiben_nachvollziehbar; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::paralleles_identisches_ereignis_genau_eine_zeile; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::arbeitszeit_ohne_schicht_erfassbar_und_intervall_abzueglich_pausen; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::mitarbeiter_sieht_nur_eigene_ereignisse_fremder_mandant_abgewiesen; geplant:backend/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::nacherfassung_eigene_quelle_mit_akteur_im_audit_ohne_ueberschreiben
+- Testfälle: AT-45; db/tests/test_time_event.py::test_time_event_append_only_und_idempotent; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::zwei_ist_zeit_ereignisse_zu_einer_schicht_bleiben_nachvollziehbar; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::paralleles_identisches_ereignis_genau_eine_zeile; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::arbeitszeit_ohne_schicht_erfassbar_und_intervall_abzueglich_pausen; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::mitarbeiter_sieht_nur_eigene_ereignisse_fremder_mandant_abgewiesen; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeEventTest.kt::nacherfassung_eigene_quelle_mit_akteur_im_audit_ohne_ueberschreiben; backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/TimeIntervalsTest.kt::zweiter_beginn_ohne_ende_laesst_das_erste_intervall_offen; backend/app/src/test/kotlin/de/taktovia/app/staff/TimeEventApiTest.kt::wiederholung_mit_gleicher_ereignis_id_erzeugt_keinen_zweiten_eintrag_auch_parallel
 
 ## Reviews
 
