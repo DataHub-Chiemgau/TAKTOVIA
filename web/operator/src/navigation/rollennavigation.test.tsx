@@ -100,6 +100,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         'tenant_admin',
         [
           'Start',
+          'Checklistenvorlagen',
           'Gebiete, Stops, Tarife',
           'Kooperation und Rollen',
           'Datenschutz, Audit, Support',
@@ -110,7 +111,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         'staff_planning',
         ['Start', 'Personal', 'Flotte und Werkstatt', 'Fahrer und Qualifikationen'],
       ],
-      ['workshop', ['Start', 'Flotte und Werkstatt']],
+      ['workshop', ['Start', 'Flotte und Werkstatt', 'Checklistenvorlagen']],
     ];
     for (const [role, expected] of cases) {
       const view = renderFor(role);

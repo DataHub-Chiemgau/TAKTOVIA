@@ -28,6 +28,7 @@ import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { Geodaten } from './geo/Geodaten';
+import { Checklistenvorlagen } from './flotte/Checklistenvorlagen';
 import { Fahrerstamm } from './flotte/Fahrerstamm';
 import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
@@ -199,6 +200,14 @@ export function App() {
             element={
               <RequireRight right="drivers">
                 <Fahrerstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/checklisten"
+            element={
+              <RequireRight right="checklists">
+                <Checklistenvorlagen />
               </RequireRight>
             }
           />

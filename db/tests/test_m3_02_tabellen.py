@@ -31,7 +31,7 @@ def world(tenant):
                   "VALUES (%s,%s,%s,1,'PKW','ONDEMAND','DRAFT',NULL,%s)", (tenant, w['template'], uid(), ACTOR))
         c.execute("INSERT INTO taktovia.checklist_step(tenant_id,id,template_revision_id,step_code,position,title,mandatory,safety_critical,answer_kind,created_by) "
                   "VALUES (%s,%s,%s,'BRAKES',1,'Bremsen',true,true,'OK_DEFECT_NA',%s)", (tenant, w['step'], w['template'], ACTOR))
-        c.execute("UPDATE taktovia.checklist_template_revision SET state='PUBLISHED', published_at=now() WHERE id=%s", (w['template'],))
+        c.execute("UPDATE taktovia.checklist_template_revision SET state='PUBLISHED', published_at=now(), approved_by=%s WHERE id=%s", (ACTOR2, w['template']))
         c.execute("INSERT INTO taktovia.inspection_run(tenant_id,id,shift_id,vehicle_id,driver_ref,template_revision_id,kind,started_at,created_by) "
                   "VALUES (%s,%s,%s,%s,%s,%s,'PRE_SHIFT',now(),%s)", (tenant, w['run'], w['shift'], w['vehicle'], uid(), w['template'], ACTOR))
         c.execute("INSERT INTO taktovia.inspection_answer(tenant_id,id,inspection_id,step_code,answer,answered_at,created_by) VALUES (%s,%s,%s,'BRAKES','OK',now(),%s)",
@@ -262,7 +262,9 @@ class Struktur(unittest.TestCase):
         with admin() as c:
             for t in NEW_TABLES:
                 privs = {r[0] for r in c.execute("SELECT privilege_type FROM information_schema.role_table_grants WHERE table_schema='taktovia' AND table_name=%s AND grantee='taktovia_runtime'", (t,))}
-                self.assertFalse({'TRUNCATE', 'DELETE', 'REFERENCES', 'TRIGGER'} & privs, f'{t}: {privs}')
+                # WP-M3-10: Prüfelemente eines Vorlagenentwurfs dürfen beim Bearbeiten ersetzt werden (Trigger checklist_step_guard sperrt das Löschen nach Freigabe)
+                forbidden = {'TRUNCATE', 'DELETE', 'REFERENCES', 'TRIGGER'} - ({'DELETE'} if t == 'checklist_step' else set())
+                self.assertFalse(forbidden & privs, f'{t}: {privs}')
                 self.assertGreaterEqual(privs, {'SELECT', 'INSERT'}, t)
             parts = c.execute("SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid=i.inhparent JOIN pg_namespace n ON n.oid=p.relnamespace WHERE n.nspname='taktovia' AND p.relname = ANY(%s)", (NEW_TABLES,)).fetchone()[0]
             self.assertEqual(parts, 0, 'Partitionen sind nicht Teil von M3 (position_sample erst nach gemessenem Volumen)')

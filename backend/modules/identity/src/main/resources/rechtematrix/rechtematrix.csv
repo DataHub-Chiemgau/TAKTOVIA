@@ -173,3 +173,11 @@ createTimeEventBackfill;time-events:manage;HR;M4;N;N;N;N;N;N;N;N;J;N
 requestReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 completeReceiptUpload;receipts:write;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
 getReceiptDocument;receipts:read;FINANZ;M4;N;J;N;N;N;N;N;J;N;J
+listChecklistTemplateRevisions;checklists:read;-;M3;N;N;N;N;J;N;J;N;N;J
+getChecklistTemplateRevision;checklists:read;-;M3;N;N;N;N;J;N;J;N;N;J
+createChecklistTemplate;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+updateChecklistTemplateDraft;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+createChecklistTemplateRevision;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+publishChecklistTemplateRevision;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+putChecklistStepExampleImage;checklists:write;-;M3;N;N;N;N;N;N;J;N;N;J
+getChecklistStepExampleImage;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J
