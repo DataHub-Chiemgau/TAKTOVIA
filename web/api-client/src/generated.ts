@@ -50,6 +50,21 @@ export interface PublishRequest {
   impact_report_id: UUID;
 }
 
+export interface RuleHint {
+  rule: 'REST_PERIOD_SHORT' | 'DAILY_WORK_EXCEEDED' | 'BREAK_MISSING';
+  basis: 'PLAN' | 'ACTUAL';
+  person_ref: string;
+  expected: number;
+  actual: number;
+  unit: 'MINUTES';
+  day: string;
+  from: string;
+  to: string;
+  shift_ids: UUID[];
+  event_ids: UUID[];
+  message: string;
+}
+
 export interface PublishedRevision {
   resource_id: UUID;
   revision: number;
@@ -58,7 +73,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
 
@@ -589,6 +604,75 @@ export interface ExpenseApproval {
   posting_id: UUID | null;
 }
 
+export interface OwnShift {
+  shift_id: UUID;
+  roster_id: UUID;
+  roster_revision: number;
+  operating_day: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  function: string | null;
+  state: string;
+  break_minutes: number;
+}
+
+export interface OwnShiftList {
+  items: OwnShift[];
+}
+
+export interface RosterRevisionHead {
+  revision: number;
+  state: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED';
+  author: string;
+  created_at: string;
+  published_at: string | null;
+  published_by: string | null;
+  effective_from: string | null;
+  etag: number;
+}
+
+export interface RosterRevisionList {
+  items: RosterRevisionHead[];
+}
+
+export interface HistoricShift {
+  shift_id: UUID;
+  lineage_id: UUID;
+  operating_day: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  function: string | null;
+  required_qualification: string | null;
+  staffing_need: number;
+  driver_ref: UUID | null;
+  vehicle_id: UUID | null;
+  depot_id: UUID | null;
+  break_plan: BreakPlan;
+  state: string;
+}
+
+export interface RosterRevisionSnapshot {
+  head: RosterRevisionHead;
+  shifts: HistoricShift[];
+}
+
+export interface ShiftChange {
+  id: UUID;
+  kind: 'CREATED' | 'CHANGED' | 'PUBLISHED';
+  roster_revision: number;
+  shift_id: UUID;
+  shift_revision: number;
+  actor: string;
+  occurred_at: string;
+  snapshot: Record<string, unknown>;
+}
+
+export interface ShiftChangeList {
+  items: ShiftChange[];
+}
+
 export interface BreakPlan {
   schema_version: '1.0';
   breaks: ({
@@ -682,6 +766,7 @@ export interface Roster {
   draft: RosterSide | null;
   published: RosterSide | null;
   conflicts: RosterConflict[] | null;
+  hints?: RuleHint[] | null;
   revision: number;
 }
 
@@ -979,7 +1064,11 @@ export interface RideBooking {
   id: UUID;
   service_id: UUID;
   hold_id: UUID;
+  booking_number: string;
   state: 'CONFIRMING' | 'CONFIRMED' | 'RECONCILING' | 'COMPENSATING' | 'CANCEL_PENDING' | 'CANCELED' | 'COMPLETED' | 'FAILED';
+  created_at: Timestamp;
+  cancel_reason?: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY' | 'VEHICLE_OUTAGE';
+  cancel_cause_class?: 'FAHRGAST' | 'BETREIBER' | 'FAHRZEUGAUSFALL';
   passengers: number;
   wheelchair_spaces: number;
   assistance_codes?: RideAssistanceCodes;
@@ -999,7 +1088,31 @@ export interface RidePromise {
 }
 
 export interface RideCancelRequest {
-  reason: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY';
+  reason: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY' | 'VEHICLE_OUTAGE';
+}
+
+export interface RideBookingHistoryEntry {
+  revision: number;
+  from_state: string | null;
+  to_state: string;
+  reason: string;
+  reason_text: string;
+  occurred_at: Timestamp;
+  actor_kind: 'PASSENGER' | 'OPERATOR' | 'SYSTEM';
+  actor_ref?: string;
+  correlation_id?: UUID;
+  links?: {
+    attempt_id?: UUID;
+    offer_id?: UUID;
+    hold_id?: UUID;
+    quote_id?: UUID;
+    payment_intent_id?: UUID;
+  };
+}
+
+export interface RideBookingHistory {
+  items: RideBookingHistoryEntry[];
+  view: 'reduced' | 'audit';
 }
 
 export interface RideBookingPage {
@@ -1437,6 +1550,34 @@ export interface InspectionAnswer {
   answered_at: string;
 }
 
+export interface KnownDefect {
+  defect_id: UUID;
+  case_number: string;
+  category_code: DefectCategory;
+  kind?: DefectKind | null;
+  vehicle_area?: DefectArea | null;
+  photos: KnownDefectPhoto[];
+  still_open: boolean;
+  acknowledged: boolean;
+  acknowledged_at?: string | null;
+  acknowledged_defect_revision?: number | null;
+}
+
+export type KnownDefectAcknowledge = Record<string, never>;
+
+export interface KnownDefectList {
+  inspection_id?: UUID | null;
+  vehicle_id: UUID;
+  defects: KnownDefect[];
+  acknowledgement_required: boolean;
+  unacknowledged_count: number;
+}
+
+export interface KnownDefectPhoto {
+  evidence_id: UUID;
+  captured_at: string;
+}
+
 export interface InspectionCreate {
   shift_id: UUID;
   vehicle_id: UUID;
@@ -1519,6 +1660,7 @@ export interface DefectCreate {
   kind?: DefectKind;
   vehicle_area?: DefectArea;
   observed_effect?: DefectEffect;
+  confirm_new_despite_known?: boolean;
   capture_mode?: 'STANDARD' | 'GUIDED';
 }
 
@@ -3112,6 +3254,7 @@ export interface TimeTargetActualDay {
   actual: TimeInterval[];
   actual_net_seconds: number | null;
   flags: ('NO_ACTUAL_BOOKING' | 'ACTUAL_WITHOUT_PLAN' | 'ACTUAL_INCOMPLETE')[];
+  hints?: RuleHint[];
 }
 
 export interface WebhookSubscription {
@@ -3360,6 +3503,34 @@ export interface Operations {
     body: undefined;
     response: Roster;
   };
+  listOwnRosterShifts: {
+    path: Record<string, never>;
+    query: { from: string; to: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OwnShiftList;
+  };
+  listRosterRevisions: {
+    path: { roster_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: RosterRevisionList;
+  };
+  getRosterRevision: {
+    path: { roster_id: UUID; revision: number };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: RosterRevisionSnapshot;
+  };
+  listRosterShiftHistory: {
+    path: { roster_id: UUID; shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ShiftChangeList;
+  };
   recordDriverEvent: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -3422,6 +3593,13 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; traceparent?: string };
     body: DriverShiftEnd;
     response: DriverShift;
+  };
+  listOwnAbsences: {
+    path: Record<string, never>;
+    query: { from?: string; to?: string; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: AvailabilityRestrictionPage;
   };
   listAbsences: {
     path: Record<string, never>;
@@ -3489,7 +3667,7 @@ export interface Operations {
   confirmBooking: {
     path: Record<string, never>;
     query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string };
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: RideConfirmRequest;
     response: RideBooking;
   };
@@ -3499,6 +3677,13 @@ export interface Operations {
     headers: { traceparent?: string };
     body: undefined;
     response: RideBooking;
+  };
+  listBookingHistory: {
+    path: { booking_id: UUID };
+    query: { view?: 'reduced' | 'audit' };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: RideBookingHistory;
   };
   cancelBooking: {
     path: { booking_id: UUID };
@@ -3793,6 +3978,27 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: InspectionSubmit;
     response: Inspection;
+  };
+  listKnownDefects: {
+    path: { inspection_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: KnownDefectList;
+  };
+  acknowledgeKnownDefect: {
+    path: { inspection_id: UUID; defect_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: KnownDefectAcknowledge;
+    response: KnownDefect;
+  };
+  listVehicleKnownDefects: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: KnownDefectList;
   };
   listDefects: {
     path: Record<string, never>;
@@ -4787,6 +4993,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createRoster: { method: 'POST', path: '/v1/rosters', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRoster: { method: 'GET', path: '/v1/rosters/{roster_id}', pathParams: ['roster_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   openRosterDraft: { method: 'POST', path: '/v1/rosters/{roster_id}/draft', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
+  listOwnRosterShifts: { method: 'GET', path: '/v1/rosters/own-shifts', pathParams: [], query: ['from', 'to'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listRosterRevisions: { method: 'GET', path: '/v1/rosters/{roster_id}/revisions', pathParams: ['roster_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rosters:audit'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getRosterRevision: { method: 'GET', path: '/v1/rosters/{roster_id}/revisions/{revision}', pathParams: ['roster_id', 'revision'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rosters:audit'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listRosterShiftHistory: { method: 'GET', path: '/v1/rosters/{roster_id}/shifts/{shift_id}/history', pathParams: ['roster_id', 'shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rosters:audit'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDriverRun: { method: 'GET', path: '/v1/driver/shifts/{shift_id}/run', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 422, 429, 503, 304] },
@@ -4796,6 +5006,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listDriverShifts: { method: 'GET', path: '/v1/driver/shifts', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 429, 503] },
   startDriverShift: { method: 'POST', path: '/v1/driver/shift-starts', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   endDriverShift: { method: 'POST', path: '/v1/driver/shift-ends', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listOwnAbsences: { method: 'GET', path: '/v1/absences/own', pathParams: [], query: ['from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAbsences: { method: 'GET', path: '/v1/absences', pathParams: [], query: ['person_ref', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['absences:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
@@ -4805,8 +5016,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   listBookings: { method: 'GET', path: '/v1/bookings', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  confirmBooking: { method: 'POST', path: '/v1/bookings', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  confirmBooking: { method: 'POST', path: '/v1/bookings', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   cancelBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/cancel', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref', 'actor_ref', 'action', 'from', 'to', 'purpose'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getCompanyProfile: { method: 'GET', path: '/v1/company-profile', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['company:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
@@ -4849,6 +5061,9 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listKnownDefects: { method: 'GET', path: '/v1/inspections/{inspection_id}/known-defects', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  acknowledgeKnownDefect: { method: 'POST', path: '/v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge', pathParams: ['inspection_id', 'defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listVehicleKnownDefects: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/known-defects', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 200] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

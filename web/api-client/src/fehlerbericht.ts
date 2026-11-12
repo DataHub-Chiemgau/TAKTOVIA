@@ -53,15 +53,21 @@ function maskCards(text: string): string {
   for (const m of scan.matchAll(CARD_RUN)) {
     const idx: number[] = [];
     let digits = '';
-    for (let i = m.index!; i < m.index! + m[0].length; i++)
-      if (scan[i]! >= '0' && scan[i]! <= '9') {
+    const start = m.index ?? 0;
+    for (let i = start; i < start + m[0].length; i++) {
+      const ch = scan.charAt(i);
+      if (ch >= '0' && ch <= '9') {
         idx.push(i);
-        digits += scan[i]!;
+        digits += ch;
       }
+    }
     for (let len = 13; len <= Math.min(19, digits.length); len++)
       for (let st = 0; st + len <= digits.length; st++) {
         const part = digits.slice(st, st + len);
-        if (CARD_PREFIX.test(part) && luhn(part)) spans.push([idx[st]!, idx[st + len - 1]! + 1]);
+        const first = idx[st];
+        const last = idx[st + len - 1];
+        if (first !== undefined && last !== undefined && CARD_PREFIX.test(part) && luhn(part))
+          spans.push([first, last + 1]);
       }
   }
   spans.sort((a, b) => a[0] - b[0]);
@@ -115,7 +121,7 @@ export interface Fehlerbericht {
 
 /** Route ohne Query und Fragment; Pfadsegmente mit Kontaktmustern werden maskiert. */
 export function maskiereRoute(route: string): string {
-  return maskiereText(route.split('?')[0]!.split('#')[0]!);
+  return maskiereText((route.split('?')[0] ?? '').split('#')[0] ?? '');
 }
 
 /**
