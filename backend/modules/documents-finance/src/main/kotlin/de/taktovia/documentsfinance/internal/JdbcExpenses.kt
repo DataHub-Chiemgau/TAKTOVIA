@@ -63,7 +63,7 @@ internal class JdbcExpenses(
     @Suppress("UNCHECKED_CAST")
     private fun change(key: String, v: Any?): FieldChange {
         val m = v as Map<String, Any?>
-        fun n(x: Any?): Any? = x?.let { ExpenseFieldCodec.normalize(key, it) }
+        fun n(x: Any?): Any? = if (key in ExpenseFields.ALL) x?.let { ExpenseFieldCodec.normalize(key, it) } else x   // z. B. `cost_assignment` (WP-M4-29): Kennungslisten unverändert
         return FieldChange(n(m["old"]), n(m["new"]), m["confirmed"] == true, n(m["ocr_proposal"]))
     }
 
@@ -81,8 +81,8 @@ internal class JdbcExpenses(
     }
 
     private fun view(j: JdbcOperations, r: DocRow): ExpenseView {
-        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields)
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review), review)
+        val fields = ExpenseFieldCodec.parseStored(r.fieldsJson); val review = ReviewRules.state(j, r.view.documentId, fields); val objects = CostAssignmentRows.assigned(j, r.view.documentId)
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects), review, objects)
     }
 
     override fun correct(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: CorrectExpense): ExpenseView {

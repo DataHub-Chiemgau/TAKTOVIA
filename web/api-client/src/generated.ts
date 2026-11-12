@@ -58,9 +58,9 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
-export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
+export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED';
 
 export interface Money {
   amount_minor: number;
@@ -338,15 +338,63 @@ export interface ExpenseFieldValues {
   merchant?: string;
   document_number?: string;
   vat_amounts?: ExpenseVatAmount[];
-  net_amount_minor?: number;
 }
 
-export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts' | 'net_amount_minor';
+export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | 'merchant' | 'document_number' | 'vat_amounts';
 
 export interface ExpenseCorrection {
-  reason: string;
+  cost_assignment?: ExpenseCostAssignment;
+  reason?: string;
   fields?: ExpenseFieldValues;
   confirm?: ExpenseFieldName[];
+}
+
+export interface ExpenseCostAssignment {
+  cost_object_ids?: UUID[];
+  vehicle_ids?: UUID[];
+}
+
+export interface CostObject {
+  id: UUID;
+  kind: 'VEHICLE' | 'COST_CENTER';
+  reference: string;
+  name: string | null;
+  legal_entity_id: UUID;
+  vehicle_id: UUID | null;
+  active: boolean;
+}
+
+export interface CostObjectPage {
+  items: CostObject[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CostEvent {
+  id: UUID;
+  legal_entity_id: UUID;
+  source_system: string;
+  source_ref: string;
+  event_type: string;
+  scenario: 'ACTUAL';
+  category: string;
+  currency: string;
+  net_minor: number;
+  tax_minor: number;
+  gross_minor: number;
+  recoverable_tax_minor: number;
+  cost_basis_minor: number;
+  tax_rule_revision: string;
+  occurred_at: string;
+  booked_at: string;
+  document_id: UUID | null;
+  reverses_id: UUID | null;
+}
+
+export interface CostEventPage {
+  items: CostEvent[];
+  next_cursor: string | null;
+  as_of: string;
 }
 
 export interface ExpenseCaseRef {
@@ -369,9 +417,8 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH')[];
-  unconfirmed_fields: ExpenseFieldName[];
-  sum_mismatch: boolean;
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE')[];
+  cost_objects: CostObject[];
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -482,63 +529,12 @@ export interface Shift {
   created_by: string;
   created_at: string;
   revision: number;
-  conflicts?: RosterConflict[] | null;
 }
 
 export interface ShiftPage {
   items: Shift[];
   next_cursor: string | null;
   as_of: string;
-}
-
-export interface NeedLine {
-  date: string;
-  function: string;
-  need: number;
-  assigned: number;
-  unstaffed: number;
-}
-
-export interface RosterSide {
-  revision: number;
-  state: 'DRAFT' | 'PUBLISHED';
-  author: string;
-  created_at: string;
-  published_at: string | null;
-  etag: number;
-  shift_count: number;
-  open_shifts: number;
-  unstaffed_need: number;
-  need_lines: NeedLine[];
-}
-
-export interface RosterConflict {
-  code: 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
-  person_ref: UUID;
-  shift_ids: UUID[];
-  cause: string;
-  missing_qualification: string | null;
-}
-
-export interface Roster {
-  id: UUID;
-  depot_id: UUID;
-  week_start: string;
-  draft: RosterSide | null;
-  published: RosterSide | null;
-  conflicts: RosterConflict[] | null;
-  revision: number;
-}
-
-export interface RosterPage {
-  items: Roster[];
-  next_cursor: string | null;
-  as_of: string;
-}
-
-export interface RosterCreate {
-  depot_id: UUID;
-  week_start: string;
 }
 
 export interface DriverEvent {
@@ -751,21 +747,6 @@ export interface RideOfferProposal {
   arrival_window: RideWindow;
   arrival_grace_min: number;
   direct_seconds: number;
-  id: UUID;
-  expires_at: Timestamp;
-  gross: Money;
-  fare_components: FareComponent[];
-  tariff_revision?: number;
-  cancellation_policy_ref?: string;
-  pickup_stop?: RideOfferStop;
-  dropoff_stop?: RideOfferStop;
-  run_revision?: number;
-  revision: number;
-}
-
-export interface RideOfferStop {
-  stop_id: UUID;
-  revision_id: UUID;
 }
 
 export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
@@ -795,9 +776,6 @@ export interface RideOffer {
   gross: Money;
   tariff_revision?: number;
   cancellation_policy_ref?: string;
-  fare_components: FareComponent[];
-  pickup_stop: RideOfferStop;
-  dropoff_stop: RideOfferStop;
   demand: RideResourceVector;
   hold: RideHold | null;
   revision: number;
@@ -1285,7 +1263,7 @@ export interface InspectionAnswer {
 export interface InspectionCreate {
   shift_id: UUID;
   vehicle_id: UUID;
-  template_revision_id?: UUID;
+  template_revision_id: UUID;
   kind: 'PRE_SHIFT' | 'FOLLOW_UP' | 'VEHICLE_CHANGE';
   odometer_km?: number | null;
   battery_soc_pct?: number | null;
@@ -1321,29 +1299,6 @@ export interface Inspection {
   started_at: string;
   completed_at: string | null;
   received_at: string | null;
-  template?: {
-    template_revision_id: UUID;
-    template_id: UUID;
-    version: number;
-    vehicle_class: string;
-    service_mode: string;
-    step_count: number;
-    steps: ({
-      step_code: string;
-      position: number;
-      title: string;
-      mandatory: boolean;
-      safety_critical: boolean;
-      answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT';
-      photo_required_on_defect?: boolean;
-      help_text?: string | null;
-      na_requires_reason?: boolean;
-      number_min?: number | null;
-      number_max?: number | null;
-      number_unit?: string | null;
-      has_example_image?: boolean;
-    })[];
-  };
   revision: number;
 }
 
@@ -1640,7 +1595,6 @@ export interface DefectEvidenceUploadRequest {
   size_bytes: number;
   sha256: string;
   captured_at: string;
-  confidentiality?: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidenceUpload {
@@ -1656,7 +1610,6 @@ export interface DefectEvidenceUpload {
   reject_reason: 'EXPIRED' | 'OBJECT_MISSING' | 'SIZE_MISMATCH' | 'HASH_MISMATCH' | 'MIME_MISMATCH' | 'SIZE_LIMIT' | 'MALWARE' | 'MEDIA_INVALID' | null;
   defect_id: UUID | null;
   revision: number;
-  confidentiality: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidence {
@@ -1669,7 +1622,6 @@ export interface DefectEvidence {
   received_at: string;
   added_in_version: number;
   replaces_id: UUID | null;
-  confidentiality: 'STANDARD' | 'CONFIDENTIAL';
 }
 
 export interface DefectEvidencePage {
@@ -2325,11 +2277,6 @@ export interface ProviderEventReceipt {
   status: 'ACCEPTED' | 'ALREADY_RECEIVED';
 }
 
-export interface ReceiptEditedViewRequest {
-  mime: 'image/jpeg' | 'image/png';
-  content_base64: string;
-}
-
 export interface ReceiptUploadRequest {
   legal_entity_id: UUID;
   purpose: UploadPurpose;
@@ -2339,8 +2286,6 @@ export interface ReceiptUploadRequest {
   source_channel?: 'DRIVER_APP' | 'DISPATCH_WEB';
   document_kind?: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
   case_ref?: ExpenseCaseRef;
-  client_uuid?: UUID;
-  captured_at?: string;
 }
 
 export type UploadPurpose = 'RECEIPT' | 'DAMAGE_PHOTO';
@@ -2353,10 +2298,7 @@ export interface ReceiptUploadTicket {
   sha256: string;
   max_bytes: number;
   expires_at: string;
-  state: 'ISSUED' | 'CONSUMED';
-  client_uuid?: UUID | null;
-  captured_at?: string | null;
-  document_id?: UUID | null;
+  state: 'ISSUED';
   revision: number;
   upload_key: string;
   upload: null | {
@@ -2380,13 +2322,11 @@ export interface ReceiptDocument {
   source_channel: 'DRIVER_APP' | 'DISPATCH_WEB' | 'EMAIL_INBOUND' | 'INVOICE_IMPORT';
   document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
-  client_uuid?: UUID | null;
-  captured_at?: string | null;
 }
 
 export interface ExtractedField {
   id: UUID;
-  field: 'DOCUMENT_DATE' | 'AMOUNT' | 'CURRENCY' | 'MERCHANT' | 'DOCUMENT_NUMBER' | 'VAT_AMOUNT' | 'NET_AMOUNT';
+  field: 'DOCUMENT_DATE' | 'AMOUNT' | 'CURRENCY' | 'MERCHANT' | 'DOCUMENT_NUMBER' | 'VAT_AMOUNT';
   occurrence: number;
   origin: 'OCR' | 'HUMAN';
   status: 'PROPOSED' | 'CONFIRMED' | 'CORRECTED';
@@ -2406,7 +2346,6 @@ export interface ExtractedField {
   corrects_field_id: UUID | null;
   decided_by: string | null;
   decided_at: string | null;
-  flag_reason: 'LOW_CONFIDENCE' | 'SUM_MISMATCH' | null;
 }
 
 export interface ExtractionRun {
@@ -2864,7 +2803,6 @@ export interface TimeEventCreate {
   event_id: UUID;
   kind: TimeEventKind;
   occurred_at: string;
-  time_zone?: string;
   device_recorded_at: string;
   channel: 'APP' | 'WEB';
   shift_id?: UUID | null;
@@ -2875,19 +2813,11 @@ export interface TimeEventBackfillCreate {
   person_ref: string;
   kind: TimeEventKind;
   occurred_at: string;
-  time_zone?: string;
   shift_id?: UUID | null;
   reason: string;
 }
 
 export type TimeEventKind = 'WORK_START' | 'WORK_END' | 'BREAK_START' | 'BREAK_END';
-
-export interface LocalTimePresentation {
-  local: string;
-  offset: string;
-  operating_day: string;
-  ambiguous: boolean;
-}
 
 export interface TimeEvent {
   event_id: UUID;
@@ -2900,8 +2830,6 @@ export interface TimeEvent {
   recorded_by: string;
   shift_id: UUID | null;
   backfill_reason: string | null;
-  time_zone: string;
-  occurred_at_local: LocalTimePresentation;
 }
 
 export interface TimeEventPage {
@@ -2920,10 +2848,6 @@ export interface TimeInterval {
   net_seconds: number | null;
   flags: ('MISSING_END' | 'END_WITHOUT_START' | 'BREAK_NOT_ENDED')[];
   event_ids: UUID[];
-  time_zone: string;
-  start_local: LocalTimePresentation | null;
-  end_local: LocalTimePresentation | null;
-  operating_day: string | null;
 }
 
 export interface TimeIntervalList {
@@ -2935,28 +2859,6 @@ export interface TimeIntervalList {
     event_id: UUID;
     code: 'BREAK_OUTSIDE_WORK' | 'BREAK_END_WITHOUT_START' | 'BREAK_ALREADY_STARTED';
   })[];
-}
-
-export interface TimeTargetActualList {
-  person_ref: string;
-  timezone: string;
-  days: TimeTargetActualDay[];
-}
-
-export interface TimeTargetActualDay {
-  day: string;
-  planned: ({
-    shift_id: UUID;
-    starts_at: string;
-    ends_at: string;
-    timezone: string;
-    planned_seconds: number;
-    state: string;
-  })[];
-  planned_seconds: number;
-  actual: TimeInterval[];
-  actual_net_seconds: number | null;
-  flags: ('NO_ACTUAL_BOOKING' | 'ACTUAL_WITHOUT_PLAN' | 'ACTUAL_INCOMPLETE')[];
 }
 
 export interface WebhookSubscription {
@@ -3044,6 +2946,13 @@ export interface Operations {
     body: undefined;
     response: Operation;
   };
+  listCostEvents: {
+    path: Record<string, never>;
+    query: { as_of?: string; legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CostEventPage;
+  };
   allocateCost: {
     path: { cost_event_id: UUID };
     query: Record<string, never>;
@@ -3072,6 +2981,13 @@ export interface Operations {
     body: ExpenseCorrection;
     response: Expense;
   };
+  listCostObjects: {
+    path: Record<string, never>;
+    query: { kind?: 'VEHICLE' | 'COST_CENTER'; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: CostObjectPage;
+  };
   listExpenseRevisions: {
     path: { expense_id: UUID };
     query: Record<string, never>;
@@ -3095,7 +3011,7 @@ export interface Operations {
   };
   listRosterShifts: {
     path: Record<string, never>;
-    query: { roster_id: UUID; view?: 'planner' | 'published'; open?: boolean; limit?: number; cursor?: string };
+    query: { roster_id: UUID; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: ShiftPage;
@@ -3127,34 +3043,6 @@ export interface Operations {
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: PublishRequest;
     response: PublishedRevision;
-  };
-  listRosters: {
-    path: Record<string, never>;
-    query: { depot_id?: UUID; from?: string; to?: string; limit?: number; cursor?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: RosterPage;
-  };
-  createRoster: {
-    path: Record<string, never>;
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string };
-    body: RosterCreate;
-    response: Roster;
-  };
-  getRoster: {
-    path: { roster_id: UUID };
-    query: { view?: 'planner' | 'published' };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: Roster;
-  };
-  openRosterDraft: {
-    path: { roster_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
-    body: undefined;
-    response: Roster;
   };
   recordDriverEvent: {
     path: Record<string, never>;
@@ -4199,20 +4087,6 @@ export interface Operations {
     body: undefined;
     response: ExtractionResult;
   };
-  getReceiptEditedView: {
-    path: { document_id: UUID };
-    query: Record<string, never>;
-    headers: { traceparent?: string };
-    body: undefined;
-    response: undefined;
-  };
-  attachReceiptEditedView: {
-    path: { document_id: UUID };
-    query: Record<string, never>;
-    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
-    body: ReceiptEditedViewRequest;
-    response: ReceiptDocument;
-  };
   getEffectiveConfig: {
     path: Record<string, never>;
     query: { at?: string; parameter?: string; region_id?: UUID; service_id?: UUID; vehicle_id?: UUID };
@@ -4500,13 +4374,6 @@ export interface Operations {
     body: undefined;
     response: TimeIntervalList;
   };
-  listTimeTargetActual: {
-    path: Record<string, never>;
-    query: { person_ref?: string; from: string; to: string; timezone?: string };
-    headers: { traceparent?: string };
-    body: undefined;
-    response: TimeTargetActualList;
-  };
   listWebhookSubscriptions: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -4560,22 +4427,20 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   cancelJourney: { method: 'POST', path: '/v1/federation/journeys/{journey_id}/cancel', pathParams: ['journey_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['journeys:cancel'], statuses: [202, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   receivePartnerEvent: { method: 'POST', path: '/v1/federation/partners/{partner_id}/events', pathParams: ['partner_id'], query: [], headers: ['X-Partner-Key-Id', 'X-Partner-Timestamp'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listExpenseRevisions: { method: 'GET', path: '/v1/expenses/{expense_id}/revisions', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
-  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'view', 'open', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
-  listRosters: { method: 'GET', path: '/v1/rosters', pathParams: [], query: ['depot_id', 'from', 'to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
-  createRoster: { method: 'POST', path: '/v1/rosters', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  getRoster: { method: 'GET', path: '/v1/rosters/{roster_id}', pathParams: ['roster_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  openRosterDraft: { method: 'POST', path: '/v1/rosters/{roster_id}/draft', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getDriverRun: { method: 'GET', path: '/v1/driver/shifts/{shift_id}/run', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 404, 422, 429, 503, 304] },
@@ -4634,7 +4499,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   publishChecklistTemplateRevision: { method: 'POST', path: '/v1/operator/checklist-templates/{checklist_revision_id}/publish', pathParams: ['checklist_revision_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getChecklistStepExampleImage: { method: 'GET', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   putChecklistStepExampleImage: { method: 'PUT', path: '/v1/operator/checklist-templates/{checklist_revision_id}/steps/{step_code}/example-image', pathParams: ['checklist_revision_id', 'step_code'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['checklists:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 415, 422, 429, 503] },
-  createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  createInspection: { method: 'POST', path: '/v1/inspections', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getInspection: { method: 'GET', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   saveInspectionDraft: { method: 'PUT', path: '/v1/inspections/{inspection_id}', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   submitInspection: { method: 'POST', path: '/v1/inspections/{inspection_id}/submit', pathParams: ['inspection_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
@@ -4720,13 +4585,11 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getMyTransportSupport: { method: 'GET', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['me:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   replaceMyTransportSupport: { method: 'PUT', path: '/v1/me/transport-support', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['me:write'], statuses: [204, 400, 401, 403, 404, 422, 429, 503] },
   receiveProviderEvent: { method: 'POST', path: '/v1/payments/provider-events/{provider}', pathParams: ['provider'], query: [], headers: ['X-Provider-Timestamp', 'traceparent'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 413, 422, 429, 503] },
-  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
-  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  requestReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  completeReceiptUpload: { method: 'POST', path: '/v1/expenses/receipts/{ticket_id}/complete', pathParams: ['ticket_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getReceiptDocument: { method: 'GET', path: '/v1/expenses/receipts/{document_id}', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   requestReceiptExtraction: { method: 'POST', path: '/v1/expenses/receipts/{document_id}/extract', pathParams: ['document_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['receipts:write'], statuses: [202, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
   getReceiptExtraction: { method: 'GET', path: '/v1/expenses/receipts/{document_id}/extraction', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  getReceiptEditedView: { method: 'GET', path: '/v1/expenses/receipts/{document_id}/edited-view', pathParams: ['document_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  attachReceiptEditedView: { method: 'PUT', path: '/v1/expenses/receipts/{document_id}/edited-view', pathParams: ['document_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getEffectiveConfig: { method: 'GET', path: '/v1/config/effective', pathParams: [], query: ['at', 'parameter', 'region_id', 'service_id', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listConfigParameters: { method: 'GET', path: '/v1/config/parameters', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 429, 503] },
   listConfigRevisions: { method: 'GET', path: '/v1/config/revisions', pathParams: [], query: ['limit', 'cursor', 'scope_kind', 'scope_id', 'state', 'as_of'], headers: ['traceparent'], hasBody: false, scopes: ['config:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -4768,7 +4631,6 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   recordTimeEvent: { method: 'POST', path: '/v1/time-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   createTimeEventBackfill: { method: 'POST', path: '/v1/time-events/backfills', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['time-events:manage'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listTimeIntervals: { method: 'GET', path: '/v1/time-events/intervals', pathParams: [], query: ['person_ref', 'from', 'to'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  listTimeTargetActual: { method: 'GET', path: '/v1/time-events/target-actual', pathParams: [], query: ['person_ref', 'from', 'to', 'timezone'], headers: ['traceparent'], hasBody: false, scopes: ['time-events:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listWebhookSubscriptions: { method: 'GET', path: '/v1/webhook-subscriptions', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createWebhookSubscription: { method: 'POST', path: '/v1/webhook-subscriptions', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['webhooks:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getWebhookSubscription: { method: 'GET', path: '/v1/webhook-subscriptions/{subscription_id}', pathParams: ['subscription_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['webhooks:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

@@ -104,6 +104,14 @@
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
 <h2 id="finance">finance.yaml</h2>
+<article id="listCostEvents"><h3><span class="m">GET</span> <code>/v1/cost-events</code></h3><p>Kostenereignisse des Ist-Berichts lesen</p><dl><dt>operationId</dt><dd><code>listCostEvents</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="allocateCost"><h3><span class="m">POST</span> <code>/v1/cost-events/{cost_event_id}/allocations</code></h3><p>Kostenbasis auf Kostenträger verteilen</p><dl><dt>operationId</dt><dd><code>allocateCost</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>costs:allocate</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>
@@ -145,6 +153,14 @@
 <li>412: <code>REVISION_MISMATCH</code></li>
 <li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code></li>
 <li>428: <code>PRECONDITION_REQUIRED</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listCostObjects"><h3><span class="m">GET</span> <code>/v1/cost-objects</code></h3><p>Zuordenbare Kostenobjekte lesen</p><dl><dt>operationId</dt><dd><code>listCostObjects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>receipts:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>422: <code>VALIDATION_FAILED</code></li>
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>

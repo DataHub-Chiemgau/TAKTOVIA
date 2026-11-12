@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+accounting_mapping;SELECT,INSERT,UPDATE;WP-M4-33: Kontierungsregeln je Rechtsträger, kein DELETE

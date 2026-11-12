@@ -25,6 +25,7 @@ components:
             journeys:cancel: journeys:cancel
             operations:read: operations:read
             costs:allocate: costs:allocate
+            costs:read: costs:read
             expenses:approve: expenses:approve
             config:publish: config:publish
             rosters:publish: rosters:publish
@@ -107,6 +108,7 @@ components:
             journeys:cancel: journeys:cancel
             operations:read: operations:read
             costs:allocate: costs:allocate
+            costs:read: costs:read
             expenses:approve: expenses:approve
             config:publish: config:publish
             rosters:publish: rosters:publish

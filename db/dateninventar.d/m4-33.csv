@@ -1,0 +1,10 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+accounting_mapping;tenant_id;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;legal_entity_id;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;category;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;expense_account;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;input_tax_account;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;payable_account;nein;BUCHHALTUNG_BELEGE;;;;
+accounting_mapping;revision;nein;TECHNISCHER_BETRIEB;;;;
+accounting_mapping;updated_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject)
+accounting_mapping;updated_at;nein;TECHNISCHER_BETRIEB;;;;

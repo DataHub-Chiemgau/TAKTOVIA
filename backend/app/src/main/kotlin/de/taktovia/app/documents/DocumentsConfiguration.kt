@@ -5,6 +5,9 @@ import de.taktovia.adapters.ocr.api.OcrAdapter
 import de.taktovia.adapters.ocr.api.OcrTimeoutException
 import de.taktovia.adapters.ocr.api.OcrUnsupportedException
 import de.taktovia.adapters.ocr.api.PdfTextLayerOcr
+import de.taktovia.documentsfinance.api.AccountingMappings
+import de.taktovia.documentsfinance.api.CostAssignments
+import de.taktovia.documentsfinance.api.CostEvents
 import de.taktovia.documentsfinance.api.DocumentServices
 import de.taktovia.documentsfinance.api.DocumentSettings
 import de.taktovia.documentsfinance.api.DocumentUploads
@@ -102,6 +105,9 @@ class DocumentsConfiguration {
     @Bean fun receiptReview(s: DocumentServices): de.taktovia.documentsfinance.api.ReceiptReview = s.review
     @Bean fun integrityChecks(s: DocumentServices): IntegrityChecks = s.integrity
     @Bean fun receiptExtraction(s: DocumentServices): ReceiptExtraction = s.extraction
+    @Bean fun costAssignments(s: DocumentServices): CostAssignments = s.costs
+    @Bean fun costEvents(s: DocumentServices): CostEvents = s.costEvents
+    @Bean fun accountingMappings(s: DocumentServices): AccountingMappings = s.accounting
 
     /** Führt angestoßene Extraktionsläufe asynchron aus (Antwort 202); der Lauf selbst ist idempotent und lease-gesichert, ein Neustart verliert höchstens den Anstoß, nicht den Lauf. */
     @Bean(destroyMethod = "shutdown")

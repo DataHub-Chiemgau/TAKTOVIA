@@ -28,7 +28,7 @@
 - **Negativ:** Beleg ohne Kostenobjekt nicht freigabefähig; fremde Fahrzeug-/Kostenstellen-/Rechtsträger-ID (anderer Mandant) wird ohne Existenzhinweis abgewiesen; Kostenobjekt eines anderen Rechtsträgers; Kostenobjekt außerhalb der Objektberechtigung des Benutzers (404 ohne Existenzhinweis); direkter SQL-Versuch einer Cross-Tenant-Zuordnung scheitert am zusammengesetzten FK.
 - **Konkurrierend (Datentrennung):** Kostenobjekt wird deaktiviert, während die Zuordnung läuft; Ergebnis ist konsistent (Zuordnung abgewiesen oder Beleg danach nicht freigabefähig), nie ein Beleg mit inaktivem Kostenobjekt als freigegeben.
 - **Referenztests:** E2E-064, PH-AT-012.
-- Testfälle: E2E-064; PH-AT-012; geplant:db/tests/test_expense_cost_assignment.py::test_cross_tenant_zuordnung_scheitert_am_fk; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/CostAssignmentTest.kt::fremde_id_ergibt_404_ohne_existenzhinweis; geplant:backend/documents-finance/src/test/kotlin/de/taktovia/documents/CostAssignmentTest.kt::deaktiviertes_kostenobjekt_parallel_zur_zuordnung
+- Testfälle: E2E-064; PH-AT-012; db/tests/test_expense_cost_assignment.py::Kostenzuordnung::test_cross_tenant_zuordnung_scheitert_am_fk; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostAssignmentTest.kt::fremde_id_ergibt_404_ohne_existenzhinweis; backend/modules/documents-finance/src/test/kotlin/de/taktovia/documentsfinance/CostAssignmentTest.kt::deaktiviertes_kostenobjekt_parallel_zur_zuordnung; backend/app/src/test/kotlin/de/taktovia/app/documents/CostAssignmentApiTest.kt::zuordnung_per_patch_macht_den_beleg_freigabefaehig
 
 ## Reviews
 

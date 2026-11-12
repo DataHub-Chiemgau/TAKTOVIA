@@ -18,3 +18,7 @@ hängt im Gradle-Build nur von `platform` ab.
 ## Bestätigungspflicht für OCR-Vorschläge (WP-M4-28)
 
 `DocumentServices.review` (`ReceiptReview`): OCR-Vorschläge werden bei niedriger Konfidenz oder Summenabweichung markiert, nur Bestätigtes oder Korrigiertes ist Belegstand, Freigabevoraussetzung ist "alle Pflichtfelder bestätigt" (422 `UNCONFIRMED_FIELDS`). Vertrag und offene Punkte: [m4-cluster-wave9-c8.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-wave9-c8.md).
+
+## Kostenzuordnung, Kostenereignis, Posting (WP-M4-29, -33)
+
+`DocumentServices.costs` (`CostAssignments`: Beleg einem oder mehreren Kostenobjekten — Kostenstelle oder Fahrzeug — desselben Rechtsträgers zuordnen, zuordenbare Kostenobjekte lesen, Kostenobjekt deaktivieren), `costEvents` (`CostEvents`: einmaliges Posting eines freigegebenen Belegs zu Ereignis und ausgeglichenem Journal in einer Transaktion, Ist-Bericht nur mit `POSTED`, Salden als Projektion) und `accounting` (`AccountingMappings`: Kontierung Kostenart → Konten, Test-Kontenrahmen). Vertrag, Annahmen und offene Punkte: [m4-cluster-c9.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-c9.md).
