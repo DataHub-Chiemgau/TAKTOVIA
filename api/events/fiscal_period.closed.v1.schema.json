@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fiscal_period.closed.v1.schema.json",
+  "title": "Fiskalperiode abgeschlossen (WP-M4-36)",
+  "description": "Payload von `fiscal_period.closed`. Aggregat: fiscal_period (Revision 1, die Periode wird nur einmal geschlossen). Enthält Kennungen und Zeitraum, keinen Akteur.",
+  "type": "object",
+  "required": ["period_id", "legal_entity_id", "starts_on", "ends_on", "closed_at"],
+  "additionalProperties": false,
+  "properties": {
+    "period_id": {"type": "string", "format": "uuid"},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "starts_on": {"type": "string", "format": "date"},
+    "ends_on": {"type": "string", "format": "date"},
+    "closed_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"period_id": "11111111-2222-4333-8444-555555555555", "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "starts_on": "2026-09-01", "ends_on": "2026-10-01", "closed_at": "2026-10-02T06:10:00Z"}
+  ]
+}

@@ -17,6 +17,27 @@ const STEP_LABEL: Record<string, string> = {
   BUDGET: 'Budgetfreigabe',
   SECOND_APPROVAL: 'Zweite Freigabe',
 };
+/** Gründe, aus denen ein Beleg nicht freigabefähig ist (`blockers` des Servers), in verständlichem Deutsch; die Reihenfolge entspricht der Prüfreihenfolge des Servers. */
+const GATE_REASON: Record<string, string> = {
+  NOT_STORED: 'Der Beleg ist nicht abgelegt (Quarantäne).',
+  UNVERIFIED_SENDER: 'Der Absender des Belegs ist nicht verifiziert.',
+  INTEGRITY_VIOLATION: 'Das Original stimmt nicht mehr mit dem erfassten Hash überein.',
+  DUPLICATE_EVIDENCE: 'Der Beleg ist weitere Evidenz eines anderen Vorgangs.',
+  DUPLICATE_REVIEW_OPEN: 'Ein möglicher Dublettentreffer ist offen.',
+  UNCONFIRMED_FIELDS: 'Pflichtfelder sind nicht bestätigt oder korrigiert.',
+  SUM_MISMATCH: 'Netto und Steuer ergeben nicht den Bruttobetrag.',
+  COST_ASSIGNMENT_MISSING: 'Es fehlt die Kostenzuordnung (Kostenstelle oder Fahrzeug).',
+  COST_OBJECT_INACTIVE: 'Ein zugeordnetes Kostenobjekt ist inaktiv.',
+  FUEL_FIELDS_MISSING: 'Pflichtwerte des Tankbelegs fehlen.',
+  SPLIT_INCOMPLETE:
+    'Die Aufteilung auf die Kostenobjekte ist unvollständig oder hat eine Differenz.',
+  HINT_UNACKNOWLEDGED: 'Ein Plausibilitätshinweis ist nicht quittiert.',
+};
+const EXPORT_LABEL: Record<string, string> = {
+  NOT_EXPORTED: 'nicht exportiert',
+  EXPORTED: 'bereitgestellt',
+  CONFIRMED: 'Import bestätigt',
+};
 const time = (iso: string) => zeit.toRfc3339(Date.parse(iso), DEFAULT_ZONE);
 
 /** Meldung je Antwortstatus. Ein 403 nennt nie Daten des Belegs (keine Datenpreisgabe); jede Blockade der Freigabe hat ihren eigenen Text nach dem stabilen Problem-Code. */
@@ -44,9 +65,12 @@ const BLOCKER_TEXT: Record<string, string> = {
 export function BelegFreigabe({
   expense,
   onChanged,
+  onConflict,
 }: {
   expense: Expense;
   onChanged?: (e: Expense) => void;
+  /** Wird bei 412/428 gerufen, damit der Rahmen den Konfliktdialog zeigt (kein stilles Überschreiben). */
+  onConflict?: () => void;
 }) {
   const api = useApi();
   const session = useSession();
@@ -70,10 +94,16 @@ export function BelegFreigabe({
       (state === 'WAITING_SECOND_APPROVAL' && me.subject === firstApprover));
   const canSubmit = state === 'STORED' && scopes.has('receipts:write') && !busy;
   const canReview = state === 'IN_REVIEW' && scopes.has('expenses:review') && !busy;
+  // Gründe der Sperre: die Freigabe ist nur bei vollständiger Validierung möglich, der Grund wird genannt (UI-14 AK 4)
+  const gateReasons = (state === 'POSTED' ? [] : (current.blockers ?? [])).map(
+    (b) => GATE_REASON[b] ?? b,
+  );
+  const gated = gateReasons.length > 0;
   const canApprove =
     (state === 'REVIEWED' || state === 'WAITING_SECOND_APPROVAL') &&
     scopes.has('expenses:approve') &&
     !isSelf &&
+    !gated &&
     !busy;
   const canReject =
     (state === 'REVIEWED' || state === 'WAITING_SECOND_APPROVAL') &&
@@ -88,13 +118,14 @@ export function BelegFreigabe({
   const fail = (e: unknown) => {
     const status = e instanceof ApiError ? e.status : 0;
     const code = e instanceof ApiError ? e.problem?.code : undefined;
-    if (status === 412 || status === 428)
+    if (status === 412 || status === 428) {
+      onConflict?.();
       setNotice({
         tone: 'error',
         stale: true,
         text: 'Konflikt (412): Der Beleg wurde zwischenzeitlich geändert. Bitte den aktuellen Stand laden.',
       });
-    else if (status === 403)
+    } else if (status === 403)
       setNotice({
         tone: 'error',
         text: 'Dafür fehlt das Recht, oder die Freigabe muss durch eine andere Person erfolgen (403).',
@@ -204,8 +235,25 @@ export function BelegFreigabe({
           </StatusBadge>
         </dd>
         <dt>Exportstatus</dt>
-        <dd>{current.export_state === 'EXPORTED' ? 'exportiert' : 'nicht exportiert'}</dd>
+        <dd>{EXPORT_LABEL[current.export_state ?? 'NOT_EXPORTED']}</dd>
       </dl>
+      {state === 'WAITING_SECOND_APPROVAL' && (
+        <p role="status">
+          Die zweite Freigabe erteilt eine zweite Person (Vier-Augen-Prinzip), nicht{' '}
+          {firstApprover ?? 'der Erstfreigeber'}
+          {creator ? ` und nicht ${creator} (Erfasser)` : ''}.
+        </p>
+      )}
+      {gated && (
+        <div role="status" id="freigabe-gruende">
+          <p>Die Freigabe ist gesperrt, weil:</p>
+          <ul aria-label="Gründe der Sperre">
+            {gateReasons.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <h3>Schritte</h3>
       {steps.length === 0 ? (
@@ -237,13 +285,23 @@ export function BelegFreigabe({
         <button type="button" disabled={!canSubmit} onClick={submit}>
           Zur Prüfung einreichen
         </button>
-        <button type="button" disabled={!canReview || !reasonOk} onClick={() => review('APPROVED')}>
+        <button
+          type="button"
+          disabled={!canReview || !reasonOk || gated}
+          aria-describedby={gated ? 'freigabe-gruende' : undefined}
+          onClick={() => review('APPROVED')}
+        >
           Prüfung bestanden
         </button>
         <button type="button" disabled={!canReview || !reasonOk} onClick={() => review('REJECTED')}>
           Prüfung ablehnen
         </button>
-        <button type="button" disabled={!canApprove || !reasonOk} onClick={approve}>
+        <button
+          type="button"
+          disabled={!canApprove || !reasonOk}
+          aria-describedby={gated ? 'freigabe-gruende' : undefined}
+          onClick={approve}
+        >
           {state === 'WAITING_SECOND_APPROVAL' ? 'Zweite Freigabe erteilen' : 'Freigeben'}
         </button>
         <button type="button" disabled={!canReject || !reasonOk} onClick={reject}>

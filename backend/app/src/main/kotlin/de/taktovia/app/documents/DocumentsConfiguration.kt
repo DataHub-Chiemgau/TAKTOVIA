@@ -1,6 +1,11 @@
 package de.taktovia.app.documents
 
 import de.taktovia.documentsfinance.api.ClamdScanner
+import de.taktovia.adapters.erpexport.api.ErpBatch
+import de.taktovia.adapters.erpexport.api.ErpExportAdapter
+import de.taktovia.adapters.erpexport.api.ErpJournal
+import de.taktovia.adapters.erpexport.api.ErpLine
+import de.taktovia.adapters.erpexport.api.NeutralJsonExport
 import de.taktovia.adapters.ocr.api.OcrAdapter
 import de.taktovia.adapters.ocr.api.OcrTimeoutException
 import de.taktovia.adapters.ocr.api.OcrUnsupportedException
@@ -14,6 +19,10 @@ import de.taktovia.documentsfinance.api.DocumentUploads
 import de.taktovia.documentsfinance.api.Expenses
 import de.taktovia.documentsfinance.api.ExtractionPolicy
 import de.taktovia.documentsfinance.api.IntegrityChecks
+import de.taktovia.documentsfinance.api.LedgerBatch
+import de.taktovia.documentsfinance.api.LedgerExportConfig
+import de.taktovia.documentsfinance.api.LedgerExportFormat
+import de.taktovia.documentsfinance.api.RenderedLedgerBatch
 import de.taktovia.documentsfinance.api.ReceiptExtraction
 import de.taktovia.documentsfinance.api.ReceiptIntake
 import de.taktovia.documentsfinance.api.ReceiptRecognizer
@@ -92,11 +101,31 @@ class DocumentsConfiguration {
         lowConfidenceThreshold = env.getProperty("taktovia.documents.low-confidence-threshold", Double::class.java, 0.80),
     )
 
+    /** Zielformat des ERP-Exports (WP-M4-37): bis zum Beschluss D-06 nur das neutrale Testformat; ein DATEV-Adapter ist M8 (DOC-025). */
+    @Bean fun erpExportAdapter(): ErpExportAdapter = NeutralJsonExport()
+
+    /**
+     * Einstellungen des ERP-Exports: `taktovia.documents.ledger-download-secret` signiert die kurzlebigen Downloadadressen (mindestens 32 Zeichen; **Pflicht** außerhalb von `local`/`development`,
+     * dort sonst ein zufälliger Schlüssel je Prozess), `taktovia.documents.ledger-link-ttl-seconds` (60, höchstens 60).
+     */
+    @Bean
+    fun ledgerExportConfig(env: Environment, erp: ErpExportAdapter): LedgerExportConfig {
+        val configured = env.getProperty("taktovia.documents.ledger-download-secret")?.trim()?.ifEmpty { null }
+        check(configured != null || localLike(env)) { "taktovia.documents.ledger-download-secret fehlt: außerhalb der lokalen Umgebung ist der Schlüssel der Exportdownloads Pflicht" }
+        val ttl = Duration.ofSeconds(env.getProperty("taktovia.documents.ledger-link-ttl-seconds", Long::class.java, 60L).coerceIn(1, 60))
+        return if (configured != null) LedgerExportConfig(ErpBridge(erp), configured.toByteArray(), ttl) else LedgerExportConfig(ErpBridge(erp), linkTtl = ttl)
+    }
+
     @Bean
     fun documentServices(
         ctxTx: ContextTransactions, audit: AuditPort, security: SecurityEventPort, outbox: Outbox, store: TenantObjectStore, scanner: MalwareScanner, policy: UploadPolicy,
-        ocr: java.util.Optional<OcrAdapter>, extraction: ExtractionPolicy,
-    ): DocumentServices = DocumentUploads.services(ctxTx, audit, security, outbox, store, scanner, policy, recognizer = ocr.map { OcrBridge(it) as ReceiptRecognizer }.orElse(null), extraction = extraction)
+        ocr: java.util.Optional<OcrAdapter>, extraction: ExtractionPolicy, ledger: LedgerExportConfig,
+    ): DocumentServices = DocumentUploads.services(ctxTx, audit, security, outbox, store, scanner, policy, recognizer = ocr.map { OcrBridge(it) as ReceiptRecognizer }.orElse(null), extraction = extraction, ledger = ledger)
+
+    @Bean fun ledgerExports(s: DocumentServices): de.taktovia.documentsfinance.api.LedgerExports = s.exports
+
+    /** Ausführer der Operationsart `LEDGER_EXPORT` für den Operation-Runner (Lease und Fencing, WP-M1-15). */
+    @Bean fun ledgerExportHandler(exports: de.taktovia.documentsfinance.api.LedgerExports, tx: de.taktovia.platform.tenant.TenantTransactions): de.taktovia.platform.operation.OperationHandler = exports.operationHandler(tx)
 
     @Bean fun uploads(s: DocumentServices): Uploads = s.uploads
     @Bean fun expenses(s: DocumentServices): Expenses = s.expenses
@@ -108,6 +137,10 @@ class DocumentsConfiguration {
     @Bean fun costAssignments(s: DocumentServices): CostAssignments = s.costs
     @Bean fun costEvents(s: DocumentServices): CostEvents = s.costEvents
     @Bean fun accountingMappings(s: DocumentServices): AccountingMappings = s.accounting
+    @Bean fun costAllocations(s: DocumentServices): de.taktovia.documentsfinance.api.CostAllocations = s.allocations
+    @Bean fun expenseSplits(s: DocumentServices): de.taktovia.documentsfinance.api.ExpenseSplits = s.splits
+    @Bean fun fiscalPeriods(s: DocumentServices): de.taktovia.documentsfinance.api.FiscalPeriods = s.periods
+    @Bean fun costEventCorrections(s: DocumentServices): de.taktovia.documentsfinance.api.CostEventCorrections = s.corrections
     @Bean fun fuelReceipts(s: DocumentServices): de.taktovia.documentsfinance.api.FuelReceipts = s.fuel
     @Bean fun fuelPlausibility(s: DocumentServices): de.taktovia.documentsfinance.api.FuelPlausibility = s.plausibility
     @Bean fun duplicateReview(s: DocumentServices): de.taktovia.documentsfinance.api.DuplicateReview = s.duplicates
@@ -117,6 +150,18 @@ class DocumentsConfiguration {
     /** Führt angestoßene Extraktionsläufe asynchron aus (Antwort 202); der Lauf selbst ist idempotent und lease-gesichert, ein Neustart verliert höchstens den Anstoß, nicht den Lauf. */
     @Bean(destroyMethod = "shutdown")
     fun extractionDispatcher(extraction: ReceiptExtraction) = ExtractionDispatcher(extraction)
+}
+
+/** Brücke vom Adapter `erp-export` zum Port des Belegmoduls (Module kennen keine Adapter, Leitlinie 1). */
+class ErpBridge(private val adapter: ErpExportAdapter) : LedgerExportFormat {
+    override val name get() = adapter.format
+    override val version get() = adapter.version
+    override fun render(batch: LedgerBatch): RenderedLedgerBatch {
+        val r = adapter.render(ErpBatch(batch.batchRef, batch.exportId.toString(), batch.legalEntityId.toString(), batch.periodFrom.toString(), batch.periodTo.toString(), batch.journals.map { j ->
+            ErpJournal(j.journalId.toString(), j.eventId.toString(), j.documentId?.toString(), j.reversesEventId?.toString(), j.accountingDate.toString(), j.currency, j.lines.map { ErpLine(it.account, it.side, it.amountMinor) })
+        }))
+        return RenderedLedgerBatch(r.mediaType, r.fileExtension, r.bytes)
+    }
 }
 
 /** Brücke vom Adapter `ocr` zum Port des Belegmoduls (Module kennen keine Adapter, Leitlinie 1). */

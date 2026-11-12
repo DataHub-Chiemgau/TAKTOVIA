@@ -18,9 +18,10 @@ class Haertung(unittest.TestCase):
         cls.closed, cls.open_ = uid(), uid()
         with tx(T) as c:
             c.execute("INSERT INTO taktovia.legal_entity(tenant_id,id,name,country) VALUES (%s,%s,'LE','DE')", (T, LE))
-            for pid, closed in ((cls.closed, True), (cls.open_, False)):
-                c.execute("INSERT INTO taktovia.fiscal_period(tenant_id,id,legal_entity_id,starts_on,ends_on,closed_at) VALUES (%s,%s,%s,'2026-09-01','2026-10-01',%s)",
-                          (T, pid, LE, 'now' if closed else None))
+            # seit WP-M4-36 überschneiden sich Perioden eines Rechtsträgers nie: die offene Periode folgt der geschlossenen
+            for pid, closed, starts, ends in ((cls.closed, True, '2026-09-01', '2026-10-01'), (cls.open_, False, '2026-10-01', '2026-11-01')):
+                c.execute("INSERT INTO taktovia.fiscal_period(tenant_id,id,legal_entity_id,starts_on,ends_on,closed_at) VALUES (%s,%s,%s,%s,%s,%s)",
+                          (T, pid, LE, starts, ends, 'now' if closed else None))
 
     def test_b01_geschlossene_periode_nicht_wieder_oeffnen_oder_verschieben(self):
         for stmt in ('UPDATE taktovia.fiscal_period SET closed_at=NULL WHERE id=%s',

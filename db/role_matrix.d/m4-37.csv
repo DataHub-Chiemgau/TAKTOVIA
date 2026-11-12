@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+ledger_export;SELECT,INSERT,UPDATE;WP-M4-37: Exportbatch, Inhalt und Hash ab Bereitstellung unveränderlich, kein DELETE
+ledger_export_line;SELECT,INSERT,UPDATE;WP-M4-37: Batchzeilen, je Journal genau ein Batch, nur die Bestätigungs-ID einmal änderbar

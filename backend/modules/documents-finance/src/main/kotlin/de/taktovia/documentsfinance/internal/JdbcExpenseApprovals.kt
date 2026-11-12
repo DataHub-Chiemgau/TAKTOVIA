@@ -173,6 +173,7 @@ internal class JdbcExpenseApprovals(
             val row = j.query(EXPORT_DOC_SQL, DocumentRows.MAPPER, documentId).firstOrNull() ?: throw ProblemException.notFound()
             if (row.stateRaw != ExpenseStates.POSTED) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Exportiert wird nur ein gebuchter, also vollständig freigegebener Beleg.")
             if (ApprovalRows.exportState(j, documentId) == de.taktovia.documentsfinance.api.ExportState.NOT_EXPORTED) {
+                j.queryForObject("SELECT set_config('app.export_job', 'on', true)", String::class.java)   // nur der Exportjob setzt den Exportstatus (WP-M4-37); dieser Port ist sein Altpfad mit Exportberechtigung
                 j.update("UPDATE taktovia.expense_document SET export_state = 'EXPORTED', exported_at = clock_timestamp(), exported_by = ? WHERE id = ? AND state = 'POSTED' AND export_state = 'NOT_EXPORTED'", ctx.actor.subject.take(200), documentId)
                 audit.record(j, AuditEntry(DocumentRows.actor(ctx), AuditActions.FINANCE_EXPENSE_EXPORTED, ObjectRef("expense", documentId), ctx.correlationId, mapOf("revision" to row.view.revision)))
             }

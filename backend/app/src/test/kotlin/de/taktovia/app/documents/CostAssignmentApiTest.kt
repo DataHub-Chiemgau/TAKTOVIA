@@ -55,7 +55,7 @@ class CostAssignmentApiTest {
         assertEquals(422, patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":["${w.ks}"]},"fields":{"amount_minor":100},"reason":"x"}""", w.financeToken, 1).status, "nicht mit Feldkorrektur kombinierbar")
         val ok = patch("/v1/expenses/$doc", """{"cost_assignment":{"cost_object_ids":["${w.ks}"],"vehicle_ids":["${w.vehicle}"]}}""", w.financeToken, 1)
         assertEquals(200, ok.status, ok.text); assertEquals("\"2\"", ok.header("ETag"))
-        assertFalse(ok.json["approvable"].asBoolean(), "Pflichtfelder sind noch unbestätigt (WP-M4-28)"); assertEquals(1, ok.json["blockers"].size()); assertEquals("UNCONFIRMED_FIELDS", ok.json["blockers"][0].asString()); assertEquals(2, ok.json["cost_objects"].size())
+        assertFalse(ok.json["approvable"].asBoolean(), "Pflichtfelder sind noch unbestätigt (WP-M4-28)"); assertEquals(setOf("UNCONFIRMED_FIELDS", "SPLIT_INCOMPLETE"), (0 until ok.json["blockers"].size()).map { ok.json["blockers"][it].asString() }.toSet(), "zwei Kostenobjekte brauchen seit WP-M4-35 zusätzlich einen vollständigen Aufteilungsplan"); assertEquals(2, ok.json["cost_objects"].size())
         assertEquals(setOf("COST_CENTER", "VEHICLE"), (0 until 2).map { ok.json["cost_objects"][it]["kind"].asString() }.toSet())
         assertEquals(412, patch("/v1/expenses/$doc", """{"cost_assignment":{"vehicle_ids":["${w.vehicle}"]}}""", w.financeToken, 1).status)
         // Ersetzen durch nur das Fahrzeug; die Revisionen zeigen die Zuordnung

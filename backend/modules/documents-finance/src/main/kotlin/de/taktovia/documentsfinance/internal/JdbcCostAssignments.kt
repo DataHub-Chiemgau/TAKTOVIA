@@ -91,6 +91,7 @@ internal class JdbcCostAssignments(private val ctxTx: ContextTransactions, priva
         }
         val before = CostAssignmentRows.assigned(j, documentId)
         if (before.map { it.id }.toSet() == objects.map { it.id }.toSet()) return view(j, ctx, documentId)   // keine Änderung: keine neue Revision
+        j.update("DELETE FROM taktovia.expense_split WHERE document_id = ?", documentId)                // eine geänderte Zuordnung verwirft den Aufteilungsplan (WP-M4-35)
         j.update("DELETE FROM taktovia.expense_cost_assignment WHERE document_id = ?", documentId)
         val by = ctx.actor.subject.take(200)
         objects.forEach { o ->

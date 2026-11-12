@@ -145,7 +145,7 @@ class CostEventPostingTest {
             if (p.isSuccess) {   // Posting kam vor dem Abschluss: Ereignis, Journal und Belegzustand sind vollständig
                 assertEquals(1, s.events()); assertEquals(1, s.journals()); assertEquals("POSTED", bf.fx.strings("SELECT state FROM taktovia.expense_document WHERE id=?", s.doc.documentId).single())
             } else {             // Abschluss kam zuerst: abgewiesen, nichts gebucht, Beleg bleibt freigegeben
-                assertEquals(ErrorCode.CONFLICT, (p.exceptionOrNull() as de.taktovia.platform.problem.ProblemException).code, p.toString())
+                assertEquals(ErrorCode.PERIOD_CLOSED, (p.exceptionOrNull() as de.taktovia.platform.problem.ProblemException).code, p.toString())
                 assertEquals(0, s.events()); assertEquals(0, s.journals()); assertEquals("APPROVED", bf.fx.strings("SELECT state FROM taktovia.expense_document WHERE id=?", s.doc.documentId).single())
             }
         }
@@ -154,7 +154,7 @@ class CostEventPostingTest {
     @Test
     fun geschlossene_periode_fehlende_periode_und_fehlende_kontierung_werden_abgewiesen_ohne_spuren() {
         val closed = Scenario(periodClosed = true)
-        assertEquals(ErrorCode.CONFLICT, bf.problem { closed.post() }.code); assertTrue(bf.problem { closed.post() }.detail!!.contains("geschlossen"))
+        assertEquals(ErrorCode.PERIOD_CLOSED, bf.problem { closed.post() }.code); assertTrue(bf.problem { closed.post() }.detail!!.contains("geschlossen"))
         val noMap = Scenario(mapping = false)
         assertEquals(ErrorCode.CONFLICT, bf.problem { noMap.post() }.code); assertTrue(bf.problem { noMap.post() }.detail!!.contains("Kontierungsregel"))
         val noPeriod = Scenario(); bf.fx.exec("UPDATE taktovia.expense_document SET state='STORED' WHERE id=?", noPeriod.doc.documentId)

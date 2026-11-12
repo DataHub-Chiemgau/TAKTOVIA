@@ -84,8 +84,11 @@ internal object ExpenseViews {
             if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.GLEICHE_EVIDENZ }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_EVIDENCE)
             if (duplicates.any { it.role == de.taktovia.documentsfinance.api.DuplicateRole.NEWER && it.state == de.taktovia.documentsfinance.api.DuplicateState.OFFEN }) add(de.taktovia.documentsfinance.api.ReleaseBlocker.DUPLICATE_REVIEW_OPEN)
         }
-        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers + duplicateBlockers, review, objects, fuel, plausibility, duplicates,
-            ApprovalRows.steps(j, r.view.documentId), ApprovalRows.exportState(j, r.view.documentId))
+        val splitProblem = if (r.view.workflowState == "POSTED") null else runCatching { SplitRows.incompleteReason(j, r.view.documentId, fields, objects) }.getOrNull()   // Pflichtfelder fehlen: eigener Hinweis, nicht „Aufteilung unvollständig“
+        val splitBlockers = if (splitProblem != null) listOf(de.taktovia.documentsfinance.api.ReleaseBlocker.SPLIT_INCOMPLETE) else emptyList()
+        return ExpenseView(r.view, fields, r.view.blockers + ReviewRules.blockers(review) + CostAssignmentRows.blockers(objects) + fuelBlockers + hintBlockers + duplicateBlockers + splitBlockers, review, objects, fuel, plausibility, duplicates,
+            ApprovalRows.steps(j, r.view.documentId), ApprovalRows.exportState(j, r.view.documentId), SplitRows.load(j, r.view.documentId), splitProblem,
+            j.query("SELECT id FROM taktovia.economic_event WHERE document_id = ? AND reverses_id IS NULL AND scenario = 'ACTUAL'", { rs, _ -> rs.getObject(1, UUID::class.java) }, r.view.documentId).firstOrNull())
     }
 }
 

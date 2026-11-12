@@ -109,7 +109,7 @@ internal object ApprovalGate {
             val fuel = FuelRows.forDocument(j, row.view.kind, id)
             if (JdbcFinancePolicies.load(j).fuelReceiptRequired && fuel != null && !fuel.complete) throw FuelRows.missingProblem(fuel)
         }
-        if (includeCosts) SplitGate.require(j, id)
+        if (includeCosts) SplitGate.require(j, id, ExpenseFieldCodec.parseStored(row.fieldsJson))
         PlausibilityRows.requireAcknowledged(j, audit, ctx, row.view.kind, id, row.view.revision)
     }
 
@@ -122,12 +122,4 @@ internal object ApprovalGate {
             }
         }
     }
-}
-
-/**
- * Aufteilung auf mehrere Kostenobjekte (WP-M4-35, DOC-011): der Beleg-Split ist noch nicht gebaut, es gibt daher nie einen unvollständigen Split. Der Einhängepunkt (Code `SPLIT_INCOMPLETE`, 422) ist
- * vorhanden; WP-M4-35 ersetzt ihn durch die Prüfung „Summe der Teilbeträge = Belegbetrag“.
- */
-internal object SplitGate {
-    fun require(@Suppress("UNUSED_PARAMETER") j: JdbcOperations, @Suppress("UNUSED_PARAMETER") documentId: UUID) {}
 }

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/cost_event.reversed.v1.schema.json",
+  "title": "Gegenereignis gebucht (WP-M4-36)",
+  "description": "Payload von `cost_event.reversed`. Aggregat: economic_event (das Gegenereignis, Revision 1). Entsteht in derselben Transaktion wie Gegenereignis, Gegenjournal und negierte Aufteilung (Outbox). Enthält Kennungen und Beträge in kleinster Einheit (negativ), keine Konten oder Begründungen.",
+  "type": "object",
+  "required": ["event_id", "reverses_id", "legal_entity_id", "currency", "gross_minor", "cost_basis_minor", "period_id", "booked_at"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {"type": "string", "format": "uuid"},
+    "reverses_id": {"type": "string", "format": "uuid"},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "gross_minor": {"type": "integer", "minimum": -9007199254740991, "maximum": -1},
+    "cost_basis_minor": {"type": "integer", "minimum": -9007199254740991, "maximum": -1},
+    "period_id": {"type": "string", "format": "uuid"},
+    "booked_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"event_id": "11111111-2222-4333-8444-555555555555", "reverses_id": "66666666-7777-4888-8999-000000000000", "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "currency": "EUR", "gross_minor": -2000, "cost_basis_minor": -2000, "period_id": "99999999-8888-4777-8666-555555555555", "booked_at": "2026-10-05T06:10:00Z"}
+  ]
+}

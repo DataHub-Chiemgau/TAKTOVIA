@@ -38,3 +38,7 @@ expense_hint;documents-finance;APPEND_ONLY;;WP-M4-31;Plausibilitätshinweis je R
 expense_hint_ack;documents-finance;APPEND_ONLY;;WP-M4-31;Quittierung eines Hinweises mit Begründung
 fuel_vehicle_policy;documents-finance;VERAENDERLICH;;WP-M4-31;Tankschwellen je Fahrzeug
 duplicate_candidate;documents-finance;VERAENDERLICH;;WP-M4-32;Dublettentreffer, nur offene Treffer änderbar
+expense_split;documents-finance;VERAENDERLICH;;WP-M4-35;Aufteilungsplan des Belegs vor dem Posting
+expense_split_line;documents-finance;VERAENDERLICH;;WP-M4-35;Zeilen des Aufteilungsplans
+ledger_export;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;bereitgestellter Exportbatch unveränderlich
+ledger_export_line;documents-finance;FREIGABE_UNVERAENDERLICH;;WP-M4-37;Batchzeile, je Journal genau ein Batch

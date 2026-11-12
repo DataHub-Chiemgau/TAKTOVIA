@@ -22,7 +22,7 @@ internal object UploadServicesFactory {
     fun services(
         ctxTx: ContextTransactions, audit: AuditPort, security: de.taktovia.platform.audit.SecurityEventPort, outbox: de.taktovia.platform.outbox.Outbox, store: de.taktovia.platform.storage.TenantObjectStore,
         scanner: de.taktovia.documentsfinance.api.MalwareScanner, policy: de.taktovia.documentsfinance.api.UploadPolicy, signer: de.taktovia.documentsfinance.api.UploadTargetSigner?, clock: java.time.Clock,
-        recognizer: de.taktovia.documentsfinance.api.ReceiptRecognizer?, extraction: de.taktovia.documentsfinance.api.ExtractionPolicy,
+        recognizer: de.taktovia.documentsfinance.api.ReceiptRecognizer?, extraction: de.taktovia.documentsfinance.api.ExtractionPolicy, ledger: de.taktovia.documentsfinance.api.LedgerExportConfig,
     ): de.taktovia.documentsfinance.api.DocumentServices {
         // Originale sind schreibgeschützt: der Objektspeicher der Bausteine lässt unter `originals/` weder Überschreiben noch Löschen zu (WP-M4-23).
         val guarded = de.taktovia.documentsfinance.api.ProtectedObjectStore(store)
@@ -32,7 +32,8 @@ internal object UploadServicesFactory {
         return de.taktovia.documentsfinance.api.DocumentServices(
             uploads, JdbcExpenses(ctxTx, audit, outbox, guarded, uploads, policy, clock), JdbcIntake(ctxTx, uploads, policy), JdbcDocumentSettings(ctxTx, audit), integrity,
             JdbcExtraction(ctxTx, outbox, guarded, recognizer, extraction, clock), JdbcReceiptReview(ctxTx, integrity, clock, audit, outbox), JdbcCostAssignments(ctxTx, audit, outbox, clock),
-            costEvents, JdbcAccountingMappings(ctxTx, audit),
+            costEvents, JdbcAccountingMappings(ctxTx, audit), JdbcCostAllocations(ctxTx, audit, outbox, clock), JdbcExpenseSplits(ctxTx, audit, clock),
+            JdbcFiscalPeriods(ctxTx, audit, outbox, clock), JdbcCostEventCorrections(ctxTx, audit, outbox, clock), JdbcLedgerExports(ctxTx, audit, outbox, clock, ledger),
             JdbcFuelReceipts(ctxTx, audit, outbox, clock), JdbcFinancePolicies(ctxTx, audit), JdbcFuelPlausibility(ctxTx, audit), JdbcDuplicateReview(ctxTx, audit, outbox, clock),
             JdbcExpenseApprovals(ctxTx, audit, outbox, costEvents, clock),
         )

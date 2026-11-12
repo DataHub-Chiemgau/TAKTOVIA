@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+ledger_export;Exportbatch Hauptbuch (WP-M4-37);LK_BELEG;
+ledger_export_line;Exportbatch Hauptbuch, Zeile (WP-M4-37);LK_BELEG;

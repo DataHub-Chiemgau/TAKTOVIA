@@ -100,3 +100,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 ## Änderungsstrom der Planrevisionen (WP-M2-28)
 
 `V20280` legt `plan_change` (je Planrevision eines Umlaufs genau eine Zeile, `seq` als monotoner Cursor des Änderungsstroms) und `plan_change_booking` (je Planänderung betroffene Buchung mit Art, fortlaufender `booking_seq` und Abhol-/Ausstiegszeit vorher und nachher) an; beide unveränderlich (Trigger), mit RLS, ohne Fremdschlüssel auf `booking` (der Hold schreibt die Planänderung vor der Bestätigung). Geschrieben in der Transaktion der Planänderung (`RunPlans.appendRevision`), gelesen als adressierte Projektion je Empfängerkanal (Fahrgast: eigene Buchungen; Fahrer: Umlauf der eigenen Schicht). Rechte in `R__runtime_grants_m2_28.sql`.
+
+## Belegaufteilung, Fiskalperiode, Hauptbuchexport (WP-M4-35, -36, -37)
+
+`V40350` (Umlage: Trigger für „Summe = Basis“ und finale Unveränderlichkeit, `allocation_activation` = genau eine aktive Revision je Ereignis, Beleg-Split `expense_split`/`expense_split_line`), `V40360` (Überlappungsverbot der Fiskalperioden per Exclusion Constraint, Abschließender, Rolle der Journalzeile, Regelwerk der Gegenereignisse, geschützte Abschlussfelder), `V40370` (`ledger_export`, `ledger_export_line`, Exportstatus `NOT_EXPORTED`/`EXPORTED`/`CONFIRMED` nur im Exportjob über den Schalter `app.export_job`). Rechte: `R__runtime_grants_m4_35.sql`, `_m4_37.sql`. Vertrag: [m4-cluster-wave11-c5.md](../docs/umsetzungsplan/vertraege/m4-cluster-wave11-c5.md).

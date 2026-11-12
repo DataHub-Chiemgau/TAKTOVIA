@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/ledger_export.confirmed.v1.schema.json",
+  "title": "Import des Exportbatchs bestätigt (WP-M4-37)",
+  "description": "Payload von `ledger_export.confirmed`. Aggregat: ledger_export (Revision 2). Enthält Kennungen und die Anzahl bestätigter Journale, keine Import-IDs.",
+  "type": "object",
+  "required": ["export_id", "batch_ref", "legal_entity_id", "confirmed_count", "confirmed_at"],
+  "additionalProperties": false,
+  "properties": {
+    "export_id": {"type": "string", "format": "uuid"},
+    "batch_ref": {"type": "string", "pattern": "^[A-Z0-9-]{8,40}$"},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "confirmed_count": {"type": "integer", "minimum": 1},
+    "confirmed_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"export_id": "11111111-2222-4333-8444-555555555555", "batch_ref": "EXP-111122224333", "legal_entity_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "confirmed_count": 3, "confirmed_at": "2026-12-02T08:00:00Z"}
+  ]
+}

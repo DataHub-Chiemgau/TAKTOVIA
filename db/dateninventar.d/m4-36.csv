@@ -1,0 +1,4 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+fiscal_period;closed_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject) beim Periodenabschluss
+fiscal_period;created_by;ja;BUCHHALTUNG_BELEGE;ART6_1_C_RECHTLICHE_VERPFLICHTUNG;BELEGE_JOURNAL;LK_BELEG;handelnder Akteur (Subject) beim Anlegen der Periode
+journal_line;account_role;nein;BUCHHALTUNG_BELEGE;;;;WP-M4-36: Rolle der Zeile (Aufwand, Vorsteuer, Verbindlichkeit) für die Gegenbuchung

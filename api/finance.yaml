@@ -86,15 +86,450 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '428':
           $ref: common.yaml#/components/responses/Problem
-      description: Atomare vollständige Allokationsrevision innerhalb eigener Rechtseinheit. Exakte Summe und freigegebene
-        offene Periode prüfen; 409 PERIOD_CLOSED oder ALREADY_ALLOCATED. Keine neue Quellkostenwirkung; Korrekturen erfolgen
-        über gesonderte Gegenbuchung.
+      description: 'Atomare vollständige Allokationsrevision (WP-M4-35) eines gebuchten Ist-Kostenereignisses innerhalb des eigenen Rechtsträgers
+        auf Kostenstellen, Fahrzeuge oder Projekte. `If-Match` = aktive Aufteilungsrevision (`"0"` = noch nicht aufgeteilt); eine neue Revision ersetzt die aktive
+        atomar und genau eine Fassung ist aktiv (veraltet 412, fehlend 428). Exakte Summe: Summe der Teilbeträge = Kostenbasis des Ereignisses, sonst
+        422 ALLOCATION_SUM_MISMATCH (auch um einen Cent; Prozent ungleich 100 ebenso). Geschlossene Periode: 409 PERIOD_CLOSED. 409 ALREADY_ALLOCATED, wenn
+        das Ereignis schon aufgeteilt ist, der Aufruf aber `"0"` als Revision nennt. Kostenobjekt eines anderen Rechtsträgers, inaktives, doppeltes oder
+        nicht zulässiges (nur COST_CENTER, VEHICLE, PROJECT): 422; Ereignis oder Kostenobjekt eines anderen Mandanten: 404. Scope `costs:allocate` und
+        Finanzrolle. Keine neue Quellkostenwirkung (weder Journal noch Verbindlichkeit); Korrekturen erfolgen als neue Revision bzw. als Gegenereignis (WP-M4-36).
+        Revision, Akteur, Regelrevision und Begründung stehen im Audit.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AllocationRequest'
+  /v1/fiscal-periods:
+    get:
+      summary: Fiskalperioden lesen
+      operationId: listFiscalPeriods
+      security:
+      - oidc:
+        - periods:read
+      description: 'Fiskalperioden des Mandanten (WP-M4-36), aufsteigend nach Beginn, Cursor-Seiten; `legal_entity_id` filtert auf einen Rechtsträger. Ein Zeitraum ist halboffen `[starts_on, ends_on)`; `closed_at` gesetzt = abgeschlossen. Scope `periods:read` und Finanzrolle.'
+      parameters:
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriodPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Fiskalperiode anlegen
+      operationId: createFiscalPeriod
+      security:
+      - oidc:
+        - periods:manage
+      description: 'Legt eine offene Periode eines Rechtsträgers an (WP-M4-36). Perioden eines Rechtsträgers überlappen sich nie (409 CONFLICT, auch bei parallelem Anlegen genau eine); benachbarte Perioden sind erlaubt. Rechtsträger eines anderen Mandanten: 404. Scope `periods:manage`, Finanzrolle, Mensch.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFiscalPeriodRequest'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriod'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/fiscal-periods/{period_id}/close:
+    post:
+      summary: Fiskalperiode abschließen
+      operationId: closeFiscalPeriod
+      security:
+      - oidc:
+        - periods:close
+      description: 'Schließt die Periode endgültig (WP-M4-36). Eigenes Finanzrecht (Scope `periods:close`, Finanzrolle, Mensch); Akteur und Zeit stehen an der Periode und im Audit. Die Periodenzeile wird gesperrt: bei Konkurrenz mit Posting, Aufteilung oder einem zweiten Abschluss gewinnt genau eine Transaktion; wer danach schreiben will, erhält 409 PERIOD_CLOSED. Ein zweiter Abschluss derselben Periode ist 409 PERIOD_CLOSED. Es gibt keinen Pfad, der eine geschlossene Periode wieder öffnet. Spätere Korrekturen entstehen als Gegenereignis in der nächsten offenen Periode (`createCostEventReversal`). Die Periode hat keine Revision (kein If-Match): der Abschluss ist einmalig.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/period_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriod'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/cost-events/{cost_event_id}/reversals:
+    post:
+      summary: Gegenereignis zu einem Kostenereignis anlegen
+      operationId: createCostEventReversal
+      security:
+      - oidc:
+        - costs:reverse
+      description: 'Korrigiert ein gebuchtes Ist-Kostenereignis als Gegenereignis (WP-M4-36, Leitlinie 5): das Ursprungsereignis und sein Journal bleiben unverändert (auch in einer geschlossenen Periode); das Gegenereignis (`reverses_id`, negative Beträge) bucht in der nächsten offenen Periode ab `accounting_date` (Vorgabe heute, UTC) eine Gegenbuchung mit getauschten Seiten auf denselben Konten und kehrt die gespeicherte Aufteilung des Ursprungs negativ um. `credit_gross_minor` = Bruttobetrag der Korrektur (leer = der noch nicht korrigierte Rest). Ein zweites Gegenereignis zum selben Ursprung und Betrag ist 409 ALREADY_REVERSED (einmalige Wirkung), mehr als der Rest 422, ein Gegenereignis eines Gegenereignisses oder ohne offene Periode 409 CONFLICT. Scope `costs:reverse`, Finanzrolle, Mensch. Das Ursprungsereignis ist unveränderlich und hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/cost_event_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostEventReversalRequest'
+      responses:
+        '201':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEventReversal'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports:
+    get:
+      summary: Exportbatches des Hauptbuchs lesen
+      operationId: listLedgerExports
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Exportbatches (WP-M4-37) des Mandanten, aufsteigend nach Anlage und Kennung, Cursor-Seiten, `as_of` = Datenstand. Scope `ledger:read` und Finanzrolle (Dienstkonten genügt der Scope).'
+      parameters:
+      - name: legal_entity_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Export des Hauptbuchs als Job anfordern
+      operationId: createLedgerExport
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Fordert den Export der gebuchten, vollständig freigegebenen Journale eines Rechtsträgers im Zeitraum `[period_from, period_to)` an (WP-M4-37). Der Export ist ein wiederholsicherer Job (`operation` `LEDGER_EXPORT` mit Lease und Fencing): 202 mit dem Auftrag (`state` REQUESTED, `operation_id`; Status über `getLedgerExport`). Dieselbe Anforderung (Rechtsträger, Zielsystem, Zeitraum) liefert 200 mit demselben offenen Auftrag bzw. dem vorhandenen Batch (gleiche Kennungen, gleicher Inhaltshash), solange nichts Neues exportierbar ist; neue Journale ergeben einen neuen Batch nur mit diesen, ein Journal erscheint in genau einem Batch. Leerer Zeitraum ohne Batch: 409. Eigene Exportberechtigung (Scope `ledger:export`), getrennt von der Freigabe; Rechtsträger eines anderen Mandanten: 404. Zielsystem bis D-06 nur `NEUTRAL` (neutrales Testformat). Der Auftrag hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLedgerExportRequest'
+      responses:
+        '200':
+          description: Der Umfang hat schon einen offenen Auftrag oder einen Batch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '202':
+          description: Auftrag eingestellt.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: /v1/operations/{operation_id}
+            Retry-After:
+              schema:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}:
+    get:
+      summary: Exportbatch lesen
+      operationId: getLedgerExport
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Stand eines Exportbatchs (WP-M4-37): Zustand, Auftrag, Kennung (`batch_ref`), Inhaltshash und Anzahl ab der Bereitstellung. Fremde Mandanten: 404.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/lines:
+    get:
+      summary: Journale eines Exportbatchs lesen
+      operationId: listLedgerExportLines
+      security:
+      - oidc:
+        - ledger:read
+      description: 'Die Journale des Batchs (eindeutige Journal-ID je Zeile, Beleg, Bestätigungs-ID, WP-M4-37), nach Journal-ID sortiert. Grundlage des Bestätigungsprotokolls.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportLinePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/download:
+    get:
+      summary: Kurzlebige Downloadadresse eines Exportbatchs
+      operationId: getLedgerExportDownload
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Liefert eine kurzlebige (höchstens 60 s), mandantengebundene signierte Adresse für den Inhalt eines bereitgestellten Batchs (WP-M4-37). Nicht bereitgestellt: 409. Scope `ledger:export`.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExportDownloadLink'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/content:
+    get:
+      summary: Inhalt eines Exportbatchs über signierte Adresse abrufen
+      operationId: readLedgerExportContent
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Liefert den Inhalt zur signierten Adresse aus `getLedgerExportDownload` (Parameter `exp`, `sig`; WP-M4-37). Signatur, Ablauf und Mandantenbindung werden geprüft: ungültige, abgelaufene oder mandantenfremde Adressen sind nicht von einem fehlenden Batch zu unterscheiden (404). Der Download steht im Audit.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - name: exp
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        description: Ablauf (Unix-Sekunden).
+      - name: sig
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        description: Signatur (HMAC-SHA256, hexadezimal).
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Inhalt des Batchs im Zielformat (Medientyp aus `media_type` des Batchs).
+          headers:
+            X-Content-SHA256:
+              schema:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+              description: SHA-256 des Inhalts (hexadezimal), gleich `content_sha256` des Batchs.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/ledger/exports/{export_id}/confirmation:
+    post:
+      summary: Import des Exportbatchs bestätigen
+      operationId: confirmLedgerExport
+      security:
+      - oidc:
+        - ledger:export
+      description: 'Bestätigungsprotokoll (WP-M4-37): die Import-ID des Zielsystems je Journal des Batchs, alle Journale genau einmal (sonst 422), Import-IDs eindeutig. Setzt den Batch auf `CONFIRMED` und den Exportstatus der Belege auf bestätigt. Dieselbe Bestätigung wiederholt liefert den unveränderten Stand, eine abweichende 409; ein nicht bereitgestellter Batch 409. Der Batch hat keine Revision (kein If-Match).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/export_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmLedgerExportRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerExport'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}/approve:
     post:
       summary: Belegrevision fachlich freigeben
@@ -148,6 +583,51 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ApprovalRequest'
+  /v1/expenses:
+    get:
+      summary: Arbeitsliste der Belege lesen
+      operationId: listExpenses
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Arbeitsliste der Belege nach Status (UI-14, WP-M4-38): Kopfdaten und Feldwerte je Beleg, aufsteigend nach Eingangszeit und Kennung, Cursor-Seiten, `as_of` = Datenstand. `state` filtert auf den Belegstatus. Die Finanzrolle sieht alle Belege des Mandanten, andere Akteure nur die von ihnen erfassten; fremde Mandanten sind nicht sichtbar. Scope `receipts:read`.'
+      parameters:
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - QUARANTINED
+          - QUARANTINE_REJECTED
+          - STORED
+          - IN_REVIEW
+          - REVIEWED
+          - WAITING_SECOND_APPROVAL
+          - APPROVED
+          - POSTED
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpensePage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/expenses/{expense_id}:
     get:
       summary: Beleg mit Feldstand lesen
@@ -679,12 +1159,14 @@ components:
     ExpenseCorrection:
       type: object
       additionalProperties: false
-      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment` oder `fuel` (Tankwerte, WP-M4-30); die drei Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
+      description: Entweder `fields`/`confirm` (mindestens eines, dann ist `reason` Pflicht), `cost_assignment`, `fuel` (Tankwerte, WP-M4-30) oder `split` (Aufteilungsplan, WP-M4-35); diese Arten sind nicht kombinierbar. Ein Feld in `fields` muss vom aktuellen Stand abweichen; `confirm` bestätigt den OCR-Vorschlag unverändert.
       properties:
         cost_assignment:
           $ref: '#/components/schemas/ExpenseCostAssignment'
         fuel:
           $ref: '#/components/schemas/FuelCapture'
+        split:
+          $ref: '#/components/schemas/ExpenseSplit'
         reason:
           type: string
           minLength: 1
@@ -1092,6 +1574,91 @@ components:
       - card_id
       - missing
       - complete
+    ExpenseSplit:
+      type: object
+      additionalProperties: false
+      description: 'Aufteilungsplan eines Belegs mit mehreren zugeordneten Kostenobjekten (WP-M4-35, Offener Punkt 18): ersetzt den bisherigen Plan, nur im Belegzustand STORED, `If-Match` Pflicht. Die Zeilen müssen zu den zugeordneten Kostenobjekten gehören; Freigabe und Posting verlangen einen vollständigen, centgenauen Plan (422 SPLIT_INCOMPLETE). Beim Posting wird er atomar die erste Umlagerevision des Kostenereignisses. Eine geänderte Kostenzuordnung verwirft den Plan.'
+      properties:
+        allocation_policy_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/AllocationRequestLine'
+      required:
+      - allocation_policy_revision
+      - reason
+      - lines
+    ExpenseSplitLine:
+      type: object
+      additionalProperties: false
+      properties:
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        percent:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalPercent'
+          - type: 'null'
+        amount_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+          - type: 'null'
+        quantity:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalQuantity'
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+          - type: 'null'
+      required:
+      - cost_object_id
+      - percent
+      - amount_minor
+      - quantity
+      - unit
+    ExpenseSplitView:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          enum:
+          - AMOUNT
+          - PERCENT
+          - WEIGHT
+        allocation_policy_revision:
+          type: string
+        reason:
+          type: string
+        lines:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ExpenseSplitLine'
+        set_by:
+          type: string
+        set_at:
+          type: string
+          format: date-time
+      required:
+      - mode
+      - allocation_policy_revision
+      - reason
+      - lines
+      - set_by
+      - set_at
     ExpenseCostAssignment:
       type: object
       additionalProperties: false
@@ -1239,6 +1806,499 @@ components:
       - booked_at
       - document_id
       - reverses_id
+    FiscalPeriod:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+          description: Erster Tag nach der Periode (halboffenes Intervall).
+        state:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+        closed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        closed_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        created_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - starts_on
+      - ends_on
+      - state
+      - closed_at
+      - closed_by
+      - created_by
+    FiscalPeriodPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalPeriod'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CreateFiscalPeriodRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+          description: Erster Tag nach der Periode; höchstens 400 Tage nach `starts_on`.
+      required:
+      - legal_entity_id
+      - starts_on
+      - ends_on
+    CostEventReversalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        credit_gross_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+          description: Bruttobetrag der Korrektur in kleinster Einheit; null = der noch nicht korrigierte Rest.
+        accounting_date:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+          description: Gewünschtes Buchungsdatum (Vorgabe heute, UTC); liegt es in einer geschlossenen Periode, gilt die nächste offene Periode.
+      required:
+      - reason
+    JournalLine:
+      type: object
+      additionalProperties: false
+      properties:
+        account:
+          type: string
+        side:
+          type: string
+          enum:
+          - D
+          - C
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - account
+      - side
+      - amount_minor
+    Journal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - POSTED
+        accounting_date:
+          type: string
+          format: date
+        period_id:
+          $ref: common.yaml#/components/schemas/UUID
+        posted_by:
+          oneOf:
+          - type: string
+          - type: 'null'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalLine'
+          minItems: 2
+      required:
+      - id
+      - event_id
+      - state
+      - accounting_date
+      - period_id
+      - posted_by
+      - lines
+    CostEventReversal:
+      type: object
+      additionalProperties: false
+      properties:
+        event:
+          $ref: '#/components/schemas/CostEvent'
+        journal:
+          $ref: '#/components/schemas/Journal'
+        allocation:
+          oneOf:
+          - $ref: '#/components/schemas/AllocationResult'
+          - type: 'null'
+          description: Die negierte Aufteilung des Gegenereignisses, wenn der Ursprung aufgeteilt war.
+      required:
+      - event
+      - journal
+      - allocation
+    CreateLedgerExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+          description: Erster Tag nach dem Zeitraum (exklusiv); höchstens 400 Tage nach `period_from`.
+        target_system:
+          type: string
+          enum:
+          - NEUTRAL
+          default: NEUTRAL
+          description: Bis zum Beschluss D-06 nur das neutrale Testformat.
+      required:
+      - legal_entity_id
+      - period_from
+      - period_to
+    LedgerExport:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          $ref: common.yaml#/components/schemas/UUID
+        target_system:
+          type: string
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PROVIDED
+          - CONFIRMED
+          - EMPTY
+          - FAILED
+          description: REQUESTED = Auftrag wartet oder läuft, PROVIDED = bereitgestellt, CONFIRMED = Import bestätigt, EMPTY = nichts exportierbar, FAILED = ohne Ergebnis beendet (`result_code`).
+        operation_id:
+          $ref: common.yaml#/components/schemas/UUID
+        batch_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        content_sha256:
+          oneOf:
+          - type: string
+            pattern: ^[0-9a-f]{64}$
+          - type: 'null'
+        content_size:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+        journal_count:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+        format:
+          oneOf:
+          - type: string
+          - type: 'null'
+        format_version:
+          oneOf:
+          - type: string
+          - type: 'null'
+        media_type:
+          oneOf:
+          - type: string
+          - type: 'null'
+        result_code:
+          oneOf:
+          - type: string
+          - type: 'null'
+        requested_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        provided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        confirmed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - legal_entity_id
+      - target_system
+      - period_from
+      - period_to
+      - state
+      - operation_id
+      - batch_ref
+      - content_sha256
+      - content_size
+      - journal_count
+      - format
+      - format_version
+      - media_type
+      - result_code
+      - requested_by
+      - created_at
+      - provided_at
+      - confirmed_at
+    LedgerExportPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerExport'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    LedgerExportLine:
+      type: object
+      additionalProperties: false
+      properties:
+        journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        import_ref:
+          oneOf:
+          - type: string
+          - type: 'null'
+        confirmed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - journal_id
+      - document_id
+      - import_ref
+      - confirmed_at
+    LedgerExportLinePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerExportLine'
+        next_cursor:
+          type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    LedgerExportDownloadLink:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          description: Relative, signierte Adresse (`exp`, `sig`), höchstens 60 s gültig und an den Mandanten gebunden.
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - url
+      - expires_at
+    ConfirmLedgerExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items:
+            $ref: '#/components/schemas/LedgerImportConfirmation'
+      required:
+      - entries
+    LedgerImportConfirmation:
+      type: object
+      additionalProperties: false
+      properties:
+        journal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        import_ref:
+          type: string
+          pattern: ^[A-Za-z0-9._:/-]{1,100}$
+      required:
+      - journal_id
+      - import_ref
+    ExpenseSummary:
+      type: object
+      additionalProperties: false
+      description: Zeile der Arbeitsliste (UI-14); `state` ist der Belegstatus, `cost_event_id` das Kostenereignis des gebuchten Belegs.
+      properties:
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        legal_entity_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        state:
+          type: string
+        document_kind:
+          type: string
+          enum:
+          - RECEIPT
+          - FUEL_RECEIPT
+          - INVOICE
+          - OTHER
+        source_channel:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        merchant:
+          oneOf:
+          - type: string
+          - type: 'null'
+        amount_minor:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+          - type: 'null'
+        currency:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        document_date:
+          oneOf:
+          - type: string
+            format: date
+          - type: 'null'
+        export_state:
+          type: string
+          enum:
+          - NOT_EXPORTED
+          - EXPORTED
+          - CONFIRMED
+        cost_event_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - document_id
+      - legal_entity_id
+      - state
+      - document_kind
+      - source_channel
+      - received_at
+      - revision
+      - merchant
+      - amount_minor
+      - currency
+      - document_date
+      - export_state
+      - cost_event_id
+    ExpensePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseSummary'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
     CostEventPage:
       type: object
       additionalProperties: false
@@ -1354,6 +2414,7 @@ components:
             - HINT_UNACKNOWLEDGED
             - DUPLICATE_REVIEW_OPEN
             - DUPLICATE_EVIDENCE
+            - SPLIT_INCOMPLETE
         unconfirmed_fields:
           type: array
           description: Pflichtfelder (`receipt_mandatory_fields`) ohne menschliche Bestätigung oder Korrektur sowie markierte OCR-Vorschläge ohne Entscheidung. Ein OCR-Vorschlag ist nie Belegstand.
@@ -1390,6 +2451,21 @@ components:
           items:
             $ref: '#/components/schemas/ExpenseDuplicate'
           description: Dublettentreffer, an denen der Beleg beteiligt ist (WP-M4-32).
+        split:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ExpenseSplitView'
+          description: Aufteilungsplan des Belegs (WP-M4-35), null solange keiner gesetzt ist.
+        cost_event_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Das Kostenereignis des gebuchten Belegs (Grundlage des Gegenbelegs, `createCostEventReversal`), sonst null.
+        split_problem:
+          oneOf:
+          - type: string
+          - type: 'null'
+          description: Grund, warum die Aufteilung unvollständig ist (Lücke, Differenz zur Kostenbasis); null, wenn keine Aufteilung nötig oder sie vollständig ist.
         approval_steps:
           type: array
           maxItems: 200
@@ -1401,7 +2477,8 @@ components:
           enum:
           - NOT_EXPORTED
           - EXPORTED
-          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege.
+          - CONFIRMED
+          description: Exportstatus, ein eigenes Statusfeld; gesetzt nur vom Exportjob unter eigener Berechtigung und nur für gebuchte Belege. `EXPORTED` = bereitgestellt (in einem Exportbatch), `CONFIRMED` = Import im Zielsystem bestätigt (WP-M4-37).
         fields:
           $ref: '#/components/schemas/ExpenseFieldValues'
         revision:
@@ -1491,12 +2568,21 @@ components:
       type: string
       pattern: ^-?(0|[1-9][0-9]*)(\.[0-9]{1,6})?$
       description: Exakte Dezimalzeichenfolge, maximal sechs Nachkommastellen; nicht als Binary Float verarbeiten.
+    DecimalPercent:
+      type: string
+      pattern: ^(100(\.0{1,8})?|[0-9]{1,2}(\.[0-9]{1,8})?)$
+      description: Prozentwert von 0 bis 100 als exakte Dezimalzeichenfolge, höchstens acht Nachkommastellen; nicht als Binary Float verarbeiten.
     CostAllocationLine:
       type: object
       additionalProperties: false
+      description: Ergebniszeile einer Aufteilung; `percent` ist der Anteil an der Kostenbasis (acht Nachkommastellen, nur Anzeige, die Beträge sind maßgeblich). `cost_center_id` ist die Kennung des Kostenobjekts, wenn es eine Kostenstelle ist, sonst null.
       properties:
+        percent:
+          $ref: '#/components/schemas/DecimalPercent'
         cost_center_id:
-          $ref: common.yaml#/components/schemas/UUID
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
         cost_object_type:
           type: string
           enum:
@@ -1532,6 +2618,48 @@ components:
       - amount
       - quantity
       - unit
+    AllocationRequestLine:
+      type: object
+      additionalProperties: false
+      description: 'Eine Zeile der Aufteilung (WP-M4-35). Genau eine Vorgabeart je Aufteilung: `amount` (Betrag, Summe = Kostenbasis), `percent` (Summe 100) oder nur `quantity` (Schlüsselmenge, Beträge nach Largest Remainder: abrunden je Empfänger, Restcent nach größtem Dezimalrest, Gleichstand nach kleinerer Kostenobjekt-ID). Eine Mischung von Betrags- und Prozentzeilen ist 422. `quantity` und `unit` dürfen `amount` bzw. `percent` als Schlüsselangabe ergänzen. `cost_center_id` ist optional (informativ, muss ggf. zum Kostenobjekt passen).'
+      properties:
+        cost_center_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        cost_object_type:
+          type: string
+          enum:
+          - VEHICLE
+          - COST_CENTER
+          - PROJECT
+        cost_object_id:
+          $ref: common.yaml#/components/schemas/UUID
+        amount:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/SignedMoney
+          - type: 'null'
+        percent:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalPercent'
+          - type: 'null'
+        quantity:
+          oneOf:
+          - $ref: '#/components/schemas/DecimalQuantity'
+          - type: 'null'
+        unit:
+          oneOf:
+          - type: string
+            enum:
+            - KM
+            - MIN
+            - KWH
+            - L
+            - ITEM
+          - type: 'null'
+      required:
+      - cost_object_type
+      - cost_object_id
     AllocationRequest:
       type: object
       additionalProperties: false
@@ -1547,21 +2675,22 @@ components:
         lines:
           type: array
           items:
-            $ref: '#/components/schemas/CostAllocationLine'
+            $ref: '#/components/schemas/AllocationRequestLine'
           minItems: 1
           maxItems: 1000
       required:
       - allocation_policy_revision
       - reason
       - lines
-      description: Summe amount = allokierbare Kostenbasis des Quellereignisses; gleiche Währung/Exponent. Keine Fremdmandanten-Kostenstelle.
-        Umlage über Rechtsträgergrenzen erzeugt separaten vertraglichen Intercompany-Vorgang.
+      description: Summe amount = allokierbare Kostenbasis des Quellereignisses (centgenau; sonst 422 ALLOCATION_SUM_MISMATCH); gleiche Währung/Exponent.
+        Alternativ Prozentzeilen (Summe 100) oder Schlüsselmengen (Largest Remainder). Keine Fremdmandanten-Kostenstelle. Umlage über Rechtsträgergrenzen erzeugt
+        separaten vertraglichen Intercompany-Vorgang.
       examples:
       - allocation_policy_revision: vehicle-km-v1
         reason: Tageskosten nach belegten Fahrzeugkilometern
         lines:
         - cost_center_id: 00000000-0000-4000-8000-000000000080
-          cost_object_type: SERVICE
+          cost_object_type: COST_CENTER
           cost_object_id: 00000000-0000-4000-8000-000000000081
           amount:
             amount_minor: 6000
@@ -1570,7 +2699,7 @@ components:
           quantity: '60.000000'
           unit: KM
         - cost_center_id: 00000000-0000-4000-8000-000000000082
-          cost_object_type: SERVICE
+          cost_object_type: COST_CENTER
           cost_object_id: 00000000-0000-4000-8000-000000000083
           amount:
             amount_minor: 4000

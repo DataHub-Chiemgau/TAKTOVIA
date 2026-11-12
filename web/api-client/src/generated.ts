@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT' | 'LEDGER_EXPORT';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -73,7 +73,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'PERIOD_CLOSED' | 'ALREADY_ALLOCATED' | 'ALREADY_REVERSED' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'ALLOCATION_SUM_MISMATCH' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP';
 
@@ -361,6 +361,7 @@ export type ExpenseFieldName = 'amount_minor' | 'currency' | 'document_date' | '
 export interface ExpenseCorrection {
   cost_assignment?: ExpenseCostAssignment;
   fuel?: FuelCapture;
+  split?: ExpenseSplit;
   reason?: string;
   fields?: ExpenseFieldValues;
   confirm?: ExpenseFieldName[];
@@ -464,6 +465,29 @@ export interface FuelData {
   complete: boolean;
 }
 
+export interface ExpenseSplit {
+  allocation_policy_revision: string;
+  reason: string;
+  lines: AllocationRequestLine[];
+}
+
+export interface ExpenseSplitLine {
+  cost_object_id: UUID;
+  percent: DecimalPercent | null;
+  amount_minor: number | null;
+  quantity: DecimalQuantity | null;
+  unit: string | null;
+}
+
+export interface ExpenseSplitView {
+  mode: 'AMOUNT' | 'PERCENT' | 'WEIGHT';
+  allocation_policy_revision: string;
+  reason: string;
+  lines: ExpenseSplitLine[];
+  set_by: string;
+  set_at: string;
+}
+
 export interface ExpenseCostAssignment {
   cost_object_ids?: UUID[];
   vehicle_ids?: UUID[];
@@ -506,6 +530,141 @@ export interface CostEvent {
   reverses_id: UUID | null;
 }
 
+export interface FiscalPeriod {
+  id: UUID;
+  legal_entity_id: UUID;
+  starts_on: string;
+  ends_on: string;
+  state: 'OPEN' | 'CLOSED';
+  closed_at: string | null;
+  closed_by: string | null;
+  created_by: string | null;
+}
+
+export interface FiscalPeriodPage {
+  items: FiscalPeriod[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CreateFiscalPeriodRequest {
+  legal_entity_id: UUID;
+  starts_on: string;
+  ends_on: string;
+}
+
+export interface CostEventReversalRequest {
+  reason: string;
+  credit_gross_minor?: number | null;
+  accounting_date?: string | null;
+}
+
+export interface JournalLine {
+  account: string;
+  side: 'D' | 'C';
+  amount_minor: number;
+}
+
+export interface Journal {
+  id: UUID;
+  event_id: UUID;
+  state: 'POSTED';
+  accounting_date: string;
+  period_id: UUID;
+  posted_by: string | null;
+  lines: JournalLine[];
+}
+
+export interface CostEventReversal {
+  event: CostEvent;
+  journal: Journal;
+  allocation: AllocationResult | null;
+}
+
+export interface CreateLedgerExportRequest {
+  legal_entity_id: UUID;
+  period_from: string;
+  period_to: string;
+  target_system?: 'NEUTRAL';
+}
+
+export interface LedgerExport {
+  id: UUID;
+  legal_entity_id: UUID;
+  target_system: string;
+  period_from: string;
+  period_to: string;
+  state: 'REQUESTED' | 'PROVIDED' | 'CONFIRMED' | 'EMPTY' | 'FAILED';
+  operation_id: UUID;
+  batch_ref: string | null;
+  content_sha256: string | null;
+  content_size: number | null;
+  journal_count: number | null;
+  format: string | null;
+  format_version: string | null;
+  media_type: string | null;
+  result_code: string | null;
+  requested_by: string;
+  created_at: string;
+  provided_at: string | null;
+  confirmed_at: string | null;
+}
+
+export interface LedgerExportPage {
+  items: LedgerExport[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface LedgerExportLine {
+  journal_id: UUID;
+  document_id: UUID;
+  import_ref: string | null;
+  confirmed_at: string | null;
+}
+
+export interface LedgerExportLinePage {
+  items: LedgerExportLine[];
+  next_cursor: null;
+  as_of: string;
+}
+
+export interface LedgerExportDownloadLink {
+  url: string;
+  expires_at: string;
+}
+
+export interface ConfirmLedgerExportRequest {
+  entries: LedgerImportConfirmation[];
+}
+
+export interface LedgerImportConfirmation {
+  journal_id: UUID;
+  import_ref: string;
+}
+
+export interface ExpenseSummary {
+  document_id: UUID;
+  legal_entity_id: UUID | null;
+  state: string;
+  document_kind: 'RECEIPT' | 'FUEL_RECEIPT' | 'INVOICE' | 'OTHER';
+  source_channel: string;
+  received_at: string;
+  revision: number;
+  merchant: string | null;
+  amount_minor: number | null;
+  currency: string | null;
+  document_date: string | null;
+  export_state: 'NOT_EXPORTED' | 'EXPORTED' | 'CONFIRMED';
+  cost_event_id: UUID | null;
+}
+
+export interface ExpensePage {
+  items: ExpenseSummary[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface CostEventPage {
   items: CostEvent[];
   next_cursor: string | null;
@@ -532,7 +691,7 @@ export interface Expense {
   sender_verified: boolean | null;
   integrity: 'UNCHECKED' | 'VERIFIED' | 'VIOLATED';
   approvable: boolean;
-  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED' | 'DUPLICATE_REVIEW_OPEN' | 'DUPLICATE_EVIDENCE')[];
+  blockers: ('NOT_STORED' | 'UNVERIFIED_SENDER' | 'INTEGRITY_VIOLATION' | 'UNCONFIRMED_FIELDS' | 'SUM_MISMATCH' | 'COST_ASSIGNMENT_MISSING' | 'COST_OBJECT_INACTIVE' | 'FUEL_FIELDS_MISSING' | 'HINT_UNACKNOWLEDGED' | 'DUPLICATE_REVIEW_OPEN' | 'DUPLICATE_EVIDENCE' | 'SPLIT_INCOMPLETE')[];
   unconfirmed_fields: ExpenseFieldName[];
   sum_mismatch: boolean;
   cost_objects: CostObject[];
@@ -540,8 +699,11 @@ export interface Expense {
   hints?: ExpenseHint[];
   plausibility_notes?: ExpensePlausibilityNote[];
   duplicates?: ExpenseDuplicate[];
+  split?: null | ExpenseSplitView;
+  cost_event_id?: UUID | null;
+  split_problem?: string | null;
   approval_steps?: ExpenseApprovalStep[];
-  export_state?: 'NOT_EXPORTED' | 'EXPORTED';
+  export_state?: 'NOT_EXPORTED' | 'EXPORTED' | 'CONFIRMED';
   fields: ExpenseFieldValues;
   revision: number;
 }
@@ -568,8 +730,11 @@ export interface ExpenseRevisionList {
 
 export type DecimalQuantity = string;
 
+export type DecimalPercent = string;
+
 export interface CostAllocationLine {
-  cost_center_id: UUID;
+  percent?: DecimalPercent;
+  cost_center_id: UUID | null;
   cost_object_type: 'VEHICLE' | 'SERVICE' | 'RUN' | 'LEG' | 'PROJECT' | 'COST_CENTER' | 'UNALLOCATED';
   cost_object_id: UUID;
   amount: SignedMoney;
@@ -577,10 +742,20 @@ export interface CostAllocationLine {
   unit: 'KM' | 'MIN' | 'KWH' | 'L' | 'ITEM' | null;
 }
 
+export interface AllocationRequestLine {
+  cost_center_id?: UUID | null;
+  cost_object_type: 'VEHICLE' | 'COST_CENTER' | 'PROJECT';
+  cost_object_id: UUID;
+  amount?: SignedMoney | null;
+  percent?: DecimalPercent | null;
+  quantity?: DecimalQuantity | null;
+  unit?: 'KM' | 'MIN' | 'KWH' | 'L' | 'ITEM' | null;
+}
+
 export interface AllocationRequest {
   allocation_policy_revision: string;
   reason: string;
-  lines: CostAllocationLine[];
+  lines: AllocationRequestLine[];
 }
 
 export interface AllocationResult {
@@ -3511,12 +3686,96 @@ export interface Operations {
     body: AllocationRequest;
     response: AllocationResult;
   };
+  listFiscalPeriods: {
+    path: Record<string, never>;
+    query: { legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: FiscalPeriodPage;
+  };
+  createFiscalPeriod: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CreateFiscalPeriodRequest;
+    response: FiscalPeriod;
+  };
+  closeFiscalPeriod: {
+    path: { period_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: undefined;
+    response: FiscalPeriod;
+  };
+  createCostEventReversal: {
+    path: { cost_event_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CostEventReversalRequest;
+    response: CostEventReversal;
+  };
+  listLedgerExports: {
+    path: Record<string, never>;
+    query: { legal_entity_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportPage;
+  };
+  createLedgerExport: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: CreateLedgerExportRequest;
+    response: LedgerExport;
+  };
+  getLedgerExport: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExport;
+  };
+  listLedgerExportLines: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportLinePage;
+  };
+  getLedgerExportDownload: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: LedgerExportDownloadLink;
+  };
+  readLedgerExportContent: {
+    path: { export_id: UUID };
+    query: { exp: number; sig: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Record<string, unknown>;
+  };
+  confirmLedgerExport: {
+    path: { export_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ConfirmLedgerExportRequest;
+    response: LedgerExport;
+  };
   approveExpense: {
     path: { expense_id: UUID };
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
     body: ApprovalRequest;
     response: ExpenseApproval;
+  };
+  listExpenses: {
+    path: Record<string, never>;
+    query: { state?: 'QUARANTINED' | 'QUARANTINE_REJECTED' | 'STORED' | 'IN_REVIEW' | 'REVIEWED' | 'WAITING_SECOND_APPROVAL' | 'APPROVED' | 'POSTED'; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ExpensePage;
   };
   getExpense: {
     path: { expense_id: UUID };
@@ -5183,7 +5442,19 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listFiscalPeriods: { method: 'GET', path: '/v1/fiscal-periods', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['periods:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['periods:manage'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  closeFiscalPeriod: { method: 'POST', path: '/v1/fiscal-periods/{period_id}/close', pathParams: ['period_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: false, scopes: ['periods:close'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
+  createCostEventReversal: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/reversals', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:reverse'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  listLedgerExports: { method: 'GET', path: '/v1/ledger/exports', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createLedgerExport: { method: 'POST', path: '/v1/ledger/exports', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['ledger:export'], statuses: [200, 202, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getLedgerExport: { method: 'GET', path: '/v1/ledger/exports/{export_id}', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listLedgerExportLines: { method: 'GET', path: '/v1/ledger/exports/{export_id}/lines', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getLedgerExportDownload: { method: 'GET', path: '/v1/ledger/exports/{export_id}/download', pathParams: ['export_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
+  readLedgerExportContent: { method: 'GET', path: '/v1/ledger/exports/{export_id}/content', pathParams: ['export_id'], query: ['exp', 'sig'], headers: ['traceparent'], hasBody: false, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  confirmLedgerExport: { method: 'POST', path: '/v1/ledger/exports/{export_id}/confirmation', pathParams: ['export_id'], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['ledger:export'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listExpenses: { method: 'GET', path: '/v1/expenses', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getExpense: { method: 'GET', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   correctExpense: { method: 'PATCH', path: '/v1/expenses/{expense_id}', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['receipts:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listCostObjects: { method: 'GET', path: '/v1/cost-objects', pathParams: [], query: ['kind', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
