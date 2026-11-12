@@ -364,6 +364,62 @@ export interface ExpenseApproval {
   posting_id: UUID | null;
 }
 
+export interface BreakPlan {
+  schema_version: '1.0';
+  breaks: ({
+    offset_min: number;
+    duration_min: number;
+    paid: boolean;
+  })[];
+}
+
+export interface ShiftWrite {
+  roster_id: UUID;
+  starts_local: string;
+  starts_offset?: string;
+  ends_local: string;
+  ends_offset?: string;
+  timezone: string;
+  break_plan?: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification?: string | null;
+  staffing_need: number;
+  driver_ref?: UUID | null;
+  vehicle_id?: UUID | null;
+}
+
+export interface Shift {
+  id: UUID;
+  roster_id: UUID;
+  date: string;
+  starts_local: string;
+  ends_local: string;
+  timezone: string;
+  starts_at: string;
+  ends_at: string;
+  duration_min: number;
+  break_plan: BreakPlan;
+  operator_id: UUID;
+  depot_id: UUID;
+  function: string;
+  required_qualification: string | null;
+  staffing_need: number;
+  driver_ref: UUID | null;
+  vehicle_id: UUID | null;
+  state: string;
+  created_by: string;
+  created_at: string;
+  revision: number;
+}
+
+export interface ShiftPage {
+  items: Shift[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
 export interface DriverEvent {
   event_id: UUID;
   shift_id: UUID;
@@ -517,11 +573,37 @@ export interface RideOfferRequest {
   wheelchair_spaces?: number;
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
   assistance_codes?: RideAssistanceCodes;
+  channel?: 'WEB' | 'APP' | 'API';
 }
 
 export interface RideWindow {
   earliest_at: Timestamp;
   latest_at: Timestamp;
+}
+
+export interface RideOfferProposal {
+  service_id: UUID;
+  booking_kind: 'IMMEDIATE' | 'ADVANCE';
+  time_kind: 'DEPARTURE' | 'ARRIVAL';
+  pickup_window: RideWindow;
+  arrival_window: RideWindow;
+  arrival_grace_min: number;
+  direct_seconds: number;
+}
+
+export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
+
+export interface RideRejection {
+  code: RideRejectionCode;
+  secondary_codes: RideRejectionCode[];
+  text: string;
+  next_action: string;
+}
+
+export interface RideOfferResponse {
+  attempt_id: UUID;
+  offers: RideOfferProposal[];
+  rejection: RideRejection | null;
 }
 
 export interface RideOffer {
@@ -2323,6 +2405,34 @@ export interface Operations {
     body: PublishRequest;
     response: PublishedRevision;
   };
+  listRosterShifts: {
+    path: Record<string, never>;
+    query: { roster_id: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ShiftPage;
+  };
+  createRosterShift: {
+    path: Record<string, never>;
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
+  getRosterShift: {
+    path: { shift_id: UUID };
+    query: { roster_id: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: Shift;
+  };
+  updateRosterShift: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: ShiftWrite;
+    response: Shift;
+  };
   publishRoster: {
     path: { roster_id: UUID };
     query: Record<string, never>;
@@ -2405,7 +2515,7 @@ export interface Operations {
     query: Record<string, never>;
     headers: { traceparent?: string; 'Idempotency-Key': string };
     body: RideOfferRequest;
-    response: RideOffer;
+    response: RideOfferResponse;
   };
   getRideOffer: {
     path: { ride_offer_id: UUID };
@@ -3492,6 +3602,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   approveExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/approve', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
+  listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
+  getRosterShift: { method: 'GET', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: ['roster_id'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  updateRosterShift: { method: 'PUT', path: '/v1/rosters/shifts/{shift_id}', pathParams: ['shift_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   publishRoster: { method: 'POST', path: '/v1/rosters/{roster_id}/publish', pathParams: ['roster_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rosters:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   recordDriverEvent: { method: 'POST', path: '/v1/driver/events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver:events'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   recordDriverPosition: { method: 'POST', path: '/v1/driver/positions', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['driver:positions'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
@@ -3503,7 +3617,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createAbsence: { method: 'POST', path: '/v1/absences', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['absences:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getAbsence: { method: 'GET', path: '/v1/absences/{absence_id}', pathParams: ['absence_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['absences:detail'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   withdrawAbsence: { method: 'POST', path: '/v1/absences/{absence_id}/withdraw', pathParams: ['absence_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['absences:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },
-  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
+  createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   releaseHold: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold/release', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 428, 429, 503] },

@@ -1,0 +1,28 @@
+{
+  "_hinweis": "Erwartete Sollwerte der Referenzfälle (Kap. 08 §8.4). Beträge in kleinster Einheit (Cent, EUR, Exponent 2). Von Hand abgeleitet, unabhängig von jeder Implementierung.",
+  "PH-AT-012": {
+    "titel": "Ein Kostenereignis trotz OCR, Tankkarte und Rechnung",
+    "brutto_minor": 11900, "netto_minor": 10000, "vorsteuer_minor": 1900, "verbindlichkeit_minor": 11900,
+    "kostenereignisse": 1, "kostenbasis_minor": 10000,
+    "dublettenverdacht": "MOEGLICHER_TREFFER_ZUR_PRUEFUNG"
+  },
+  "PH-AT-013": {
+    "titel": "Centgenaue Allokation und getrennte Rechtsträger",
+    "verteilbar_minor": 10001, "schluessel": ["A", "B", "C"], "regel": "LARGEST_REMAINDER",
+    "anteile_minor": {"A": 3334, "B": 3334, "C": 3333}, "summe_minor": 10001,
+    "referenzfall": {"eigentuemer": "le-x", "betreiber": "le-y", "verbindlichkeit_durch_allokation": false}
+  },
+  "PH-AT-015": {
+    "titel": "Geschlossene Periode, späte Gutschrift, keine Doppelzählung",
+    "september_kosten_minor": 10000, "oktober_gutschrift_minor": -2000, "septemberjournal_aenderung_minor": 0,
+    "plan_budget_minor": 9000, "ist_kosten_minor": 10000, "nicht_addieren_minor": 19000, "gesamtansicht_minor": 10000
+  },
+  "PH-AT-021": {
+    "titel": "KPI-Nenner, Datenlücke und Aggregationsschutz",
+    "quelle": "travel_attempt Mandant A (Seed)",
+    "versuche": 10, "ablehnungen": 3, "summe_primaergruende": 3, "ablehnungen_mit_nebengruenden": 2,
+    "primaergruende": {"OUTSIDE_AREA": 1, "NO_CAPACITY": 1, "OUTSIDE_HOURS": 1},
+    "fehlender_nenner": "NICHT_BERECHENBAR", "gps_luecke_prozent": 20
+  },
+  "Musterfahrt": {"strecke_m": 12400, "besetzt_m": 8200, "leer_m": 4200, "dauer_s": 2160}
+}

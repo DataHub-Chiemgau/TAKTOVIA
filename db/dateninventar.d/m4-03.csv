@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+staff_shift;roster_id;nein;PERSONALEINSATZ;;;;
+staff_shift;operator_id;nein;PERSONALEINSATZ;;;;
+staff_shift;depot_id;nein;PERSONALEINSATZ;;;;
+staff_shift;shift_function;nein;PERSONALEINSATZ;;;;
+staff_shift;required_qualification;nein;PERSONALEINSATZ;;;;"Qualifikationsart (Katalogcode), kein Nachweis"
+staff_shift;staffing_need;nein;PERSONALEINSATZ;;;;
+staff_shift;break_plan;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;"geplante Pausen der Schicht (Versatz, Dauer, bezahlt)"
+staff_shift;operating_day;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;"abgeleitet: Kalendertag des Beginns"
+staff_shift;shift_revision;nein;PERSONALEINSATZ;;;;
+staff_shift;created_by;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;"planende Person (Subject)"
+staff_shift;created_at;nein;TECHNISCHER_BETRIEB;;;;

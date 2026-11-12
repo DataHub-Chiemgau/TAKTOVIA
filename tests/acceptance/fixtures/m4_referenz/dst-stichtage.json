@@ -1,0 +1,19 @@
+{
+  "_hinweis": "Zeitumstellungen in Europe/Berlin (Kap. 05 §5.1, PH-AT-018 Zeitteil). Die Schichten des Seeds (shift-dst-autumn, shift-dst-spring) überspannen sie.",
+  "zone": "Europe/Berlin",
+  "herbst": {
+    "datum": "2026-10-25",
+    "stunden_am_tag": 25,
+    "doppelte_ortszeit": "02:30",
+    "offsets": ["+02:00", "+01:00"],
+    "instants_utc": ["2026-10-25T00:30:00Z", "2026-10-25T01:30:00Z"],
+    "schicht": {"key": "shift-dst-autumn", "lokal": "2026-10-24T22:00 bis 2026-10-25T06:00", "dauer_real_h": 9, "kalendertag_des_beginns": "2026-10-24"}
+  },
+  "fruehjahr": {
+    "datum": "2027-03-28",
+    "stunden_am_tag": 23,
+    "nicht_existente_ortszeit": "02:30",
+    "schicht": {"key": "shift-dst-spring", "lokal": "2027-03-27T22:00 bis 2027-03-28T06:00", "dauer_real_h": 7, "kalendertag_des_beginns": "2027-03-27"}
+  },
+  "tagschicht": {"key": "shift-day", "lokal": "2026-12-01T06:00 bis 2026-12-01T14:00", "dauer_real_h": 8}
+}

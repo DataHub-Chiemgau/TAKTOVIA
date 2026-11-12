@@ -1,10 +1,14 @@
 paths:
   /v1/ride-offers:
     post:
-      summary: Fahrtanfrage stellen und Angebot erhalten
+      summary: Fahrt suchen und Zeitfenster erhalten
       operationId: createRideOffer
-      description: 'Erfasst jeden fachlich neuen Versuch als `travel_attempt` (auch abgelehnte, mit Primärgrund) und liefert ein befristetes
-        Angebot ohne Kapazitätszusage. Ablehnung: 422 mit Primärgrund.'
+      description: 'Erfasst jeden fachlich neuen Versuch als `travel_attempt` (auch abgelehnte, mit Primärgrund) und liefert ein
+        Zeitfenster für Abholung und Ankunft ohne Preis und ohne Kapazitätszusage (WP-M2-11). Eine fachliche Ablehnung (Frist, Betriebszeit,
+        Gebiet, Regelverbot, Haltepunkt, Kapazität) ist **kein Fehler**: 200 mit leerer `offers`-Liste und normiertem Grund in `rejection`
+        (WP-M2-13). 422 nur bei formal fehlerhafter Eingabe (Personenzahl, Zeitzone, nicht existente Ortszeit, doppelte Ortszeit ohne Offset).
+        Gleicher `Idempotency-Key` mit gleichem Inhalt wiederholt das gespeicherte Ergebnis (kein neuer Versuch, Antwort mit `Idempotent-Replayed`),
+        mit anderem Inhalt: 409 `IDEMPOTENCY_CONFLICT`.'
       security:
       - oidc:
         - rides:write
@@ -18,27 +22,19 @@ paths:
             schema:
               $ref: '#/components/schemas/RideOfferRequest'
       responses:
-        '201':
-          description: Erfolgreich.
+        '200':
+          description: Zeitfenster oder normierter Ablehnungsgrund.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RideOffer'
-          headers:
-            ETag:
-              schema:
-                type: string
-                pattern: ^"[0-9]+"$
-              description: Starke Ressourcenrevision.
-            Location:
-              schema:
-                type: string
-              description: URL der angelegten Ressource.
+                $ref: '#/components/schemas/RideOfferResponse'
         '400':
           $ref: common.yaml#/components/responses/Problem
         '401':
           $ref: common.yaml#/components/responses/Problem
         '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
           $ref: common.yaml#/components/responses/Problem
         '409':
           $ref: common.yaml#/components/responses/Problem
@@ -492,6 +488,13 @@ components:
             - STRETCHER_FIXING
         assistance_codes:
           $ref: '#/components/schemas/RideAssistanceCodes'
+        channel:
+          type: string
+          enum:
+          - WEB
+          - APP
+          - API
+          description: Kanal der Anfrage für die Nachfrageauswertung (Standard `WEB`).
       required:
       - service_id
       - origin
@@ -526,6 +529,128 @@ components:
       required:
       - earliest_at
       - latest_at
+    RideOfferProposal:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_kind:
+          type: string
+          enum:
+          - IMMEDIATE
+          - ADVANCE
+          description: Sofort (Abfahrtswunsch höchstens 5 Minuten von jetzt) oder Voraus; der Mindestvorlauf gilt nur für Voraus.
+        time_kind:
+          type: string
+          enum:
+          - DEPARTURE
+          - ARRIVAL
+        pickup_window:
+          $ref: '#/components/schemas/RideWindow'
+        arrival_window:
+          $ref: '#/components/schemas/RideWindow'
+        arrival_grace_min:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 240
+          description: Ankunftstoleranz (`arrival_grace_min`) über dem späten Rand des Ankunftsfensters.
+        direct_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+          description: Zugrunde gelegte Direktfahrzeit (Planungsschätzung, nicht die Zusage).
+      required:
+      - service_id
+      - booking_kind
+      - time_kind
+      - pickup_window
+      - arrival_window
+      - arrival_grace_min
+      - direct_seconds
+      description: Angebotenes Zeitfenster ohne Preis und ohne gesicherte Kapazität (Kap. 01 §1.4 Schritt 4 folgt mit Hold und Angebotsobjekt).
+    RideRejectionCode:
+      type: string
+      enum:
+      - LEAD_TIME
+      - HORIZON
+      - WINDOW_NOT_FEASIBLE
+      - OUTSIDE_HOURS
+      - OUTSIDE_AREA
+      - RULE_FORBIDDEN
+      - NO_STOP_IN_RANGE
+      - NO_ACCESSIBLE_STOP
+      - NO_ROUTE
+      - EQUIPMENT_MISSING
+      - NO_STAFF
+      - NO_CAPACITY
+      description: 'Standardisierter Ablehnungsgrund (WP-M2-13, Katalog `rejection_reason`, Vorschlag M2 OP-14). Technische Fehler sind kein
+        Ablehnungsgrund (`503`, nie in dieser Liste).'
+    RideRejection:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          $ref: '#/components/schemas/RideRejectionCode'
+        secondary_codes:
+          type: array
+          maxItems: 12
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/RideRejectionCode'
+          description: Weitere Ursachen nach Priorität; der Primärgrund zählt den Versuch genau einmal.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: Begründung für den Fahrgast.
+        next_action:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: Nächste Handlung für UI-01.
+      required:
+      - code
+      - secondary_codes
+      - text
+      - next_action
+    RideOfferResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        attempt_id:
+          $ref: common.yaml#/components/schemas/UUID
+        offers:
+          type: array
+          maxItems: 1
+          items:
+            $ref: '#/components/schemas/RideOfferProposal'
+        rejection:
+          oneOf:
+          - $ref: '#/components/schemas/RideRejection'
+          - type: 'null'
+      required:
+      - attempt_id
+      - offers
+      - rejection
+      description: Entweder genau ein Zeitfenster (`rejection` null) oder eine leere Liste mit normiertem Grund.
+      examples:
+      - attempt_id: 00000000-0000-4000-8000-0000000000a1
+        offers:
+        - service_id: 00000000-0000-4000-8000-000000000005
+          booking_kind: ADVANCE
+          time_kind: DEPARTURE
+          pickup_window:
+            earliest_at: '2026-12-01T07:00:00Z'
+            latest_at: '2026-12-01T07:15:00Z'
+          arrival_window:
+            earliest_at: '2026-12-01T07:10:00Z'
+            latest_at: '2026-12-01T07:25:00Z'
+          arrival_grace_min: 5
+          direct_seconds: 600
+        rejection: null
     RideOffer:
       type: object
       additionalProperties: false
@@ -589,7 +714,7 @@ components:
       - hold
       - revision
       description: Angebot ohne Hold verspricht keine gesicherte Kapazität (Kap. 01 §1.4 Schritt 4). Ablehnung einer Anfrage ist keine
-        Angebotsressource, sondern ein 422 mit Primärgrund `code` (`NO_CAPACITY`, `EQUIPMENT_MISSING`, `OUTSIDE_AREA`, …, M2 OP-14).
+        Angebotsressource, sondern 200 mit leerer Liste und `rejection` (`NO_CAPACITY`, `EQUIPMENT_MISSING`, `OUTSIDE_AREA`, …, M2 OP-14).
     RideHold:
       type: object
       additionalProperties: false

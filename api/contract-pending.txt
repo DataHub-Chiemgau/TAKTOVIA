@@ -15,7 +15,6 @@ createDefect  # POST /v1/defects
 createDriverClearance  # POST /v1/driver-clearances
 createInspection  # POST /v1/inspections
 createRepairOrder  # POST /v1/repair-orders
-createRideOffer  # POST /v1/ride-offers
 createRunRevision  # POST /v1/runs/{run_id}/revisions
 createVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks
 createVehicleRelease  # POST /v1/vehicles/{vehicle_id}/release

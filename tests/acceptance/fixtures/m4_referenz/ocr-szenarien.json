@@ -1,0 +1,10 @@
+{
+  "_hinweis": "Steuerbare Ergebnisse des OCR-Simulators (tests/sandbox/ocr). Keine echten Belege; Beträge in kleinster Einheit.",
+  "szenarien": {
+    "tankbeleg_ok":        {"beschreibung": "Tankbeleg, alle Felder korrekt und sicher gelesen", "felder": {"brutto_minor": 11900, "netto_minor": 10000, "steuer_minor": 1900, "datum": "2026-11-03", "lieferant": "Tankstelle Test (synthetisch)"}, "konfidenz": 0.98},
+    "falscher_betrag":     {"beschreibung": "Betrag falsch gelesen (119,00 als 1190,00)", "felder": {"brutto_minor": 119000, "netto_minor": 100000, "steuer_minor": 19000, "datum": "2026-11-03", "lieferant": "Tankstelle Test (synthetisch)"}, "konfidenz": 0.93},
+    "niedrige_konfidenz":  {"beschreibung": "Alle Felder mit niedriger Konfidenz, Prüfung erzwungen", "felder": {"brutto_minor": 11900, "netto_minor": 10000, "steuer_minor": 1900, "datum": "2026-11-03", "lieferant": "Tankstelle Test (synthetisch)"}, "konfidenz": 0.41},
+    "aehnlicher_beleg":    {"beschreibung": "Zweiter, ähnlich aussehender Beleg (anderes Datum, gleicher Betrag): möglicher Treffer, keine Zusammenführung", "felder": {"brutto_minor": 11900, "netto_minor": 10000, "steuer_minor": 1900, "datum": "2026-11-04", "lieferant": "Tankstelle Test (synthetisch)"}, "konfidenz": 0.97},
+    "nicht_lesbar":        {"beschreibung": "Nicht lesbar: keine Felder", "felder": {}, "konfidenz": 0.0}
+  }
+}

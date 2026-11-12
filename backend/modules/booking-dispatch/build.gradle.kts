@@ -1,5 +1,8 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
+    implementation(project(":modules:service-geo"))   // Zulässigkeitsprüfung über die Fachoperationen von service-geo (WP-M2-12), nur deren api-Paket
+    implementation(project(":modules:config"))        // wirksame Dienstparameter (EffectiveConfig, WP-M2-11)
+    implementation("org.slf4j:slf4j-api")
     implementation("tools.jackson.core:jackson-databind")   // Routing-Client (WP-M2-10), Ressourcenvektor (WP-M2-14)
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")

@@ -1,0 +1,18 @@
+{
+  "_hinweis": "Test-Kontenrahmen, rein synthetisch und NICHT der freigegebene Kontenrahmen des Auftraggebers (Entscheidung D-06 steht aus). Nur für Tests der Belegbuchung, Allokation und Periodenlogik.",
+  "version": "test-1",
+  "waehrung": "EUR",
+  "konten": [
+    {"nummer": "4000", "name": "Kraftstoffkosten (Test)", "art": "AUFWAND"},
+    {"nummer": "4100", "name": "Fahrzeugunterhalt (Test)", "art": "AUFWAND"},
+    {"nummer": "4200", "name": "Personalkosten (Test)", "art": "AUFWAND"},
+    {"nummer": "1576", "name": "Abziehbare Vorsteuer 19 % (Test)", "art": "FORDERUNG"},
+    {"nummer": "1600", "name": "Verbindlichkeiten aus Lieferungen und Leistungen (Test)", "art": "VERBINDLICHKEIT"},
+    {"nummer": "1800", "name": "Bank (Test)", "art": "BESTAND"}
+  ],
+  "kostenarten": [
+    {"code": "FUEL", "konto": "4000"},
+    {"code": "MAINTENANCE", "konto": "4100"},
+    {"code": "PERSONNEL", "konto": "4200"}
+  ]
+}

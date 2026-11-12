@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://taktovia.example/schemas/booking.attempt_recorded.v1.schema.json",
-  "title": "Anfrageversuch erfasst oder abgelehnt (WP-M2-11)",
+  "title": "Anfrageversuch erfasst, abgelehnt oder technisch gescheitert (WP-M2-11/-13)",
   "description": "Payload von `booking.attempt_recorded`. Aggregat: travel_attempt. Empfänger: eigener Mandant (Analytics M4). Keine exakten Adressen oder Kontaktdaten im Payload (Kap. 05 §5.1 Minimierung). Katalog: docs/umsetzungsplan/vertraege/m2-ereigniskatalog.md.",
   "type": "object",
   "required": [
@@ -25,8 +25,10 @@
     "outcome": {
       "enum": [
         "RECORDED",
-        "REJECTED"
-      ]
+        "REJECTED",
+        "TECHNICAL_ERROR"
+      ],
+      "description": "RECORDED = Anfrage erfasst und Zeitfenster geliefert; REJECTED = fachlich abgelehnt (Primärgrund Pflicht); TECHNICAL_ERROR = technischer Fehler, keine fachliche Ablehnung (zählt in `Technische Anfragefehler`, nie in Ablehnungskennzahlen)."
     },
     "primary_reason": {
       "enum": [
@@ -39,9 +41,12 @@
         "LEAD_TIME",
         "HORIZON",
         "WINDOW_NOT_FEASIBLE",
+        "NO_STOP_IN_RANGE",
+        "NO_ACCESSIBLE_STOP",
+        "NO_STAFF",
         "TECHNICAL"
       ],
-      "description": "Primärgrund der Ablehnung (Kategorien nach Anhang K.1, Prioritätsregel offen: M2 OP-14). `EQUIPMENT_MISSING` zählt in `Ausstattungsablehnungen`."
+      "description": "Primärgrund der Ablehnung (Katalog `rejection_reason`, WP-M2-13; Kategorien nach Anhang K.1, Prioritätsregel in `RejectionCode`). `EQUIPMENT_MISSING` und `NO_ACCESSIBLE_STOP` zählen in `Ausstattungsablehnungen`."
     },
     "time_mode": {
       "enum": [
@@ -69,6 +74,36 @@
     "coarse_destination": {
       "type": "string",
       "maxLength": 64
+    },
+    "secondary_reasons": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "OUTSIDE_AREA",
+          "OUTSIDE_HOURS",
+          "NO_CAPACITY",
+          "EQUIPMENT_MISSING",
+          "RULE_FORBIDDEN",
+          "NO_ROUTE",
+          "LEAD_TIME",
+          "HORIZON",
+          "WINDOW_NOT_FEASIBLE",
+          "NO_STOP_IN_RANGE",
+          "NO_ACCESSIBLE_STOP",
+          "NO_STAFF",
+          "TECHNICAL"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "Weitere Ursachen nach Priorität; der Versuch zählt nur beim Primärgrund."
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "WEB",
+        "APP",
+        "API"
+      ]
     }
   },
   "examples": [

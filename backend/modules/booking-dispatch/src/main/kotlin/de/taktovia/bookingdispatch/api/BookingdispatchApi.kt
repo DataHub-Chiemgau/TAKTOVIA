@@ -29,6 +29,9 @@ interface BookingdispatchApi {
     /** Automatischer Prüfer harter Grenzen und zugesagter Fenster über bestätigte Buchungen und alle Planrevisionen (WP-M2-18/-19). */
     val audit: ConfirmedRideAudit
 
+    /** Leseport Fahrtenplan (Planzeiten, Kilometer) für M4 (WP-M4-02). */
+    val tripPlans: de.taktovia.platform.readports.TripPlanReadPort
+
     companion object {
         fun create(ctxTx: ContextTransactions, clock: Clock = Clock.systemUTC(), outbox: Outbox = Outbox(), routingWorkerUrl: String? = null, routingBudgetMillis: Long = 900,
             plannedPositions: PlannedPositionSource = PlannedPositionSource { _, _, _, _ -> null }, insertionWorker: InsertionWorker? = null,

@@ -1,0 +1,22 @@
+{
+  "_hinweis": "Musterfahrt des Mandanten A (Seed m4_referenz): Kilometer sind dokumentierte Sollwerte der Fixture, unabhängig von jeder Routing- oder Fahrzeugimplementierung.",
+  "mandant": "a",
+  "run": "run-1",
+  "schicht": "shift-day",
+  "fahrzeug": "veh-1",
+  "fahrer": "drv-1",
+  "buchung": "bkg-1",
+  "abschnitte": [
+    {"von": "stop-depot", "nach": "stop-pickup", "dauer_s": 900, "strecke_m": 4200, "art": "ANFAHRT_LEER"},
+    {"von": "stop-pickup", "nach": "stop-dropoff", "dauer_s": 1260, "strecke_m": 8200, "art": "BESETZT"}
+  ],
+  "summe": {"dauer_s": 2160, "strecke_m": 12400, "besetzt_strecke_m": 8200, "leer_strecke_m": 4200},
+  "plan": {"abholung": "2026-12-01T06:15:00Z", "ankunft": "2026-12-01T06:36:00Z"},
+  "zusage": {"abholfenster": ["2026-12-01T06:10:00Z", "2026-12-01T06:25:00Z"], "ankunftsfenster": ["2026-12-01T06:30:00Z", "2026-12-01T06:45:00Z"]},
+  "ist": {
+    "_hinweis": "Fahrerereignisse und Positionen sind in dieser Stufe Stub-Daten der Leseports (echte Quelle erst mit WP-M3-29 und WP-M3-34); die Positionsproben stehen zusätzlich im DB-Seed.",
+    "abholung_ist": "2026-12-01T06:17:00Z",
+    "ankunft_ist": "2026-12-01T06:38:00Z",
+    "no_show": false
+  }
+}

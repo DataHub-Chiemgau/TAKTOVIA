@@ -7924,6 +7924,68 @@
       ]
     },
     {
+      "tabelle": "rejection_reason",
+      "aggregat": "Katalog der Ablehnungsgründe (WP-M2-13)",
+      "loeschklasse": "LK_KATALOG",
+      "bemerkung": "globaler Katalog, nur per Migration",
+      "spalten": [
+        {
+          "spalte": "code",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "counts_as_rejection",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "label",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "metric",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "next_action",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "priority",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "relation_rule",
       "aggregat": "Version der erlaubten Zielpunkte eines Dienstes (WP-M2-06)",
       "loeschklasse": "LK_STAMM",
@@ -9338,6 +9400,42 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "break_plan",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "geplante Pausen der Schicht (Versatz, Dauer, bezahlt)"
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "planende Person (Subject)"
+        },
+        {
+          "spalte": "depot_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "driver_ref",
           "personenbezogen": "ja",
           "zweck": "PERSONALEINSATZ",
@@ -9365,7 +9463,70 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operating_day",
+          "personenbezogen": "ja",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "BDSG26_BESCHAEFTIGUNG",
+          "schutzklasse": "PERSONAL_HR",
+          "loeschklasse": "LK_BETRIEB",
+          "bemerkung": "abgeleitet: Kalendertag des Beginns"
+        },
+        {
+          "spalte": "operator_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "required_qualification",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Qualifikationsart (Katalogcode), kein Nachweis"
+        },
+        {
+          "spalte": "roster_id",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "roster_revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "shift_function",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "shift_revision",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "staffing_need",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",
           "rechtsgrundlage": "",
@@ -10051,6 +10212,15 @@
       "bemerkung": "",
       "spalten": [
         {
+          "spalte": "booking_kind",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "channel",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -10087,7 +10257,34 @@
           "bemerkung": ""
         },
         {
+          "spalte": "desired_at",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zeitwunsch ohne Personenbezug (Datenbasis Nachfragetrichter)"
+        },
+        {
           "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "outcome",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "passengers",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
@@ -10105,6 +10302,33 @@
           "bemerkung": ""
         },
         {
+          "spalte": "request_fingerprint",
+          "personenbezogen": "nein",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Hash des Anfrageinhalts, enthält keine lesbaren Orte"
+        },
+        {
+          "spalte": "request_scope",
+          "personenbezogen": "ja",
+          "zweck": "TECHNISCHER_BETRIEB",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_TECHNISCH",
+          "bemerkung": "Hash aus Akteur und Idempotency-Key (Wiederholungserkennung), nicht rückrechenbar"
+        },
+        {
+          "spalte": "result",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Zeitfenster und Ablehnungsgrund der Antwort, ohne Orte und Personenbezug"
+        },
+        {
           "spalte": "secondary_rejections",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -10114,7 +10338,34 @@
           "bemerkung": ""
         },
         {
+          "spalte": "service_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "time_kind",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "wheelchair_spaces",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",

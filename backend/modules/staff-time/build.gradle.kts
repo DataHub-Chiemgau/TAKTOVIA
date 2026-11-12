@@ -1,6 +1,7 @@
 // Abhängigkeiten: nur platform (siehe Wurzel-Build). Andere Module ausschließlich über deren api-Paket.
 dependencies {
     implementation("org.slf4j:slf4j-api")
+    implementation("tools.jackson.core:jackson-databind")   // Pausenplan (WP-M4-03)
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
     testImplementation(libs.json.schema.validator)
