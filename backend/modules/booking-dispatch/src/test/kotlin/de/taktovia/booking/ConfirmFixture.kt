@@ -21,7 +21,17 @@ import java.util.UUID
  */
 class ConfirmFixture : AutoCloseable {
     val fx = OfferObjectsFixture()
-    val bookings: Bookings = Bookings.create(fx.base.ctxTx, fx.base.outbox, fx.quotes, fx.clock)
+    val bookings: Bookings = Bookings.create(fx.base.ctxTx, fx.base.outbox, fx.quotes, fx.clock, fx.base.config.effective)
+    val runs: de.taktovia.bookingdispatch.api.RunPlans = de.taktovia.bookingdispatch.api.BookingdispatchApi.create(fx.base.ctxTx, fx.clock, fx.base.outbox).runs
+
+    /** Mandant mit Dienst und Tarif; [deadlineMin] und [reasons] sind die veröffentlichten Stornoparameter (ohne Angabe gelten die Planungsdefaults). */
+    fun world(deadlineMin: Int? = null, reasons: List<String>? = null): RideOfferFixture.World {
+        val params = linkedMapOf<String, Any?>("min_booking_lead_min" to 30, "max_booking_horizon_days" to 14, "pickup_window_min" to 15, "arrival_grace_min" to 5, "stop_walk_max_m" to 400)
+        deadlineMin?.let { params["cancellation_deadline_min"] = it }
+        reasons?.let { params["cancellation_reasons"] = mapOf("reasons" to it) }
+        val w = fx.base.world(params); fx.publishTariff(w, 450, 50)
+        return w
+    }
 
     /** Fahrgast mit Konto (`passenger_private`, Bindung an Aussteller und Subject des Tokens). */
     class Passenger(val ctx: RequestContext, val accountId: UUID)
@@ -44,10 +54,10 @@ class ConfirmFixture : AutoCloseable {
     class Held(val passenger: Passenger, val offer: IssuedOffer, val holdId: UUID, val offerRevision: Long, val grossMinor: Long)
 
     fun held(
-        w: RideOfferFixture.World, run: OfferObjectsFixture.Run, passenger: Passenger = passenger(w), passengers: Int = 2, wheelchair: Int = 0, from: Int = 0, to: Int = 2,
+        w: RideOfferFixture.World, run: OfferObjectsFixture.Run, passenger: Passenger = passenger(w), passengers: Int = 2, wheelchair: Int = 0, from: Int = 0, to: Int = 2, planRevision: Long = 1,
         offers: de.taktovia.bookingdispatch.api.RideOffers = fx.offers,
     ): Held {
-        val offer = fx.issue(w, passenger.ctx, fx.assigning(run, 1, from, to), passengers, wheelchair)
+        val offer = fx.issue(w, passenger.ctx, fx.assigning(run, planRevision, from, to), passengers, wheelchair)
         val gross = offer.quote.payAtPlatformMinor
         val h = offers.hold(passenger.ctx, offer.id, HoldRideOffer(offer.revision, "hold-" + UUID.randomUUID(), gross, "EUR"))
         return Held(passenger, offer, h.hold.id, h.offerRevision, gross)
@@ -56,8 +66,8 @@ class ConfirmFixture : AutoCloseable {
     fun confirm(h: Held, gross: Long = h.grossMinor, ctx: RequestContext = h.passenger.ctx, ifMatch: Long = h.offerRevision): ConfirmedBooking =
         bookings.confirm(ctx, ConfirmBooking(h.holdId, ifMatch, gross, "EUR"))
 
-    fun booked(w: RideOfferFixture.World, run: OfferObjectsFixture.Run, passenger: Passenger = passenger(w), passengers: Int = 2, wheelchair: Int = 0): Pair<Held, BookingDetail> {
-        val h = held(w, run, passenger, passengers, wheelchair); return h to confirm(h).booking
+    fun booked(w: RideOfferFixture.World, run: OfferObjectsFixture.Run, passenger: Passenger = passenger(w), passengers: Int = 2, wheelchair: Int = 0, planRevision: Long = 1): Pair<Held, BookingDetail> {
+        val h = held(w, run, passenger, passengers, wheelchair, planRevision = planRevision); return h to confirm(h).booking
     }
 
     fun count(sql: String, vararg args: Any?) = fx.count(sql, *args)

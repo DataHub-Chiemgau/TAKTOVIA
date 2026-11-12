@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/cancellation_reasons.v1.schema.json",
+  "title": "cancellation_reasons",
+  "description": "Zulässige Stornogründe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reasons"
+  ],
+  "properties": {
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "PASSENGER_REQUEST",
+          "OPERATOR_CANCELLATION",
+          "NO_SHOW",
+          "PAYMENT_FAILED",
+          "SAFETY",
+          "VEHICLE_OUTAGE"
+        ]
+      }
+    }
+  },
+  "default": {
+    "reasons": [
+      "PASSENGER_REQUEST",
+      "OPERATOR_CANCELLATION",
+      "NO_SHOW",
+      "PAYMENT_FAILED",
+      "SAFETY",
+      "VEHICLE_OUTAGE"
+    ]
+  },
+  "x-unit": "REASON_SET",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "nicht im Katalog (WP-M2-26, OP-23)",
+  "x-catalog-range": "Teilmenge des Grundkatalogs (booking_status_reason, Art CANCELLATION); Standard alle Gründe; Produktionswerte nach D-05"
+}

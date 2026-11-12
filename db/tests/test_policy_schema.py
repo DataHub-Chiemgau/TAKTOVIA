@@ -55,7 +55,7 @@ class Katalog(unittest.TestCase):
         with admin() as c:
             names = {r[0] for r in c.execute("SELECT parameter FROM taktovia.policy_schema WHERE parameter <> 'service_config'")}
         # Ausnahme: die vier Gewichte der Mehrzielbewertung (WP-M2-20, OP-18) stehen bewusst nicht im Pflichtenheft-Katalog
-        ohne_katalog = {'opt_weight_wait', 'opt_weight_detour', 'opt_weight_empty', 'opt_weight_quality'}
+        ohne_katalog = {'opt_weight_wait', 'opt_weight_detour', 'opt_weight_empty', 'opt_weight_quality', 'cancellation_deadline_min', 'cancellation_reasons'}   # WP-M2-26: Stornoparameter (OP-23)
         self.assertEqual(names - catalog - ohne_katalog, set(), 'Parameter im Schema, die kataloge.csv nicht kennt')
         self.assertTrue(set(START) <= names)
 

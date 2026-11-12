@@ -953,6 +953,23 @@ components:
           - FAILED
         created_at:
           $ref: common.yaml#/components/schemas/Timestamp
+        cancel_reason:
+          type: string
+          enum:
+          - PASSENGER_REQUEST
+          - OPERATOR_CANCELLATION
+          - NO_SHOW
+          - PAYMENT_FAILED
+          - SAFETY
+          - VEHICLE_OUTAGE
+          description: Stornogrund (WP-M2-27); nur bei stornierten Buchungen, nach dem Setzen unveränderlich.
+        cancel_cause_class:
+          type: string
+          enum:
+          - FAHRGAST
+          - BETREIBER
+          - FAHRZEUGAUSFALL
+          description: Verursacherklasse des Stornos (WP-M2-27); folgt dem Grund. Datenbasis der Stornoquoten (Fahrzeugausfall getrennt).
         passengers:
           type: integer
           format: int64
@@ -1029,9 +1046,11 @@ components:
           - NO_SHOW
           - PAYMENT_FAILED
           - SAFETY
+          - VEHICLE_OUTAGE
       required:
       - reason
-      description: Einstufiges Storno (M2 OP-24, Annahme). Die Antwort nennt Erstattung und neuen Zustand.
+      description: 'Einstufiges Storno (M2 OP-24, Annahme). Fahrgäste dürfen nur `PASSENGER_REQUEST` setzen (sonst 403) und nur innerhalb der Stornofrist des Dienstes
+        (`409 CANCEL_DEADLINE_EXPIRED`); Betrieb im Dienstscope setzt jeden für den Dienst zulässigen Grund (sonst 422), auch `VEHICLE_OUTAGE`. Antwort: die stornierte Buchung (Erstattungshinweis folgt mit WP-M2-31).'
       examples:
       - reason: PASSENGER_REQUEST
     RideBookingHistoryEntry:

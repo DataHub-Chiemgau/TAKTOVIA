@@ -96,4 +96,36 @@ class BookingHttpApiTest {
         assertEquals(404, s.env.get("/v1/bookings/$id/history", s.newAccount().token).status)
         assertEquals(404, s.env.get("/v1/bookings/$id/history", BookingHttpSupport().newAccount().token).status)
     }
+
+    @Test
+    fun storno_if_match_grund_frist_und_betreiberstorno() {
+        val h = s.held(); val id = s.confirm(h).json["id"].asString()
+        // 428 ohne If-Match, 412 veraltet, 422 unbekannter Grund (Schema), 403 Fahrgast mit Betreibergrund
+        assertEquals(428, s.cancel(id, h.account.token, ifMatch = null).status)
+        assertEquals(412, s.cancel(id, h.account.token, ifMatch = "7").status)
+        assertEquals(422, s.cancel(id, h.account.token, reason = "LANGEWEILE", ifMatch = "1").status)
+        val forbidden = s.cancel(id, h.account.token, reason = "VEHICLE_OUTAGE", ifMatch = "1")
+        assertEquals(403, forbidden.status, forbidden.text)
+        assertEquals("CONFIRMING", s.get(id, h.account.token).json["state"].asString())
+        // fremder Fahrgast und Betrieb ohne Scope: 404
+        assertEquals(404, s.cancel(id, s.newAccount().token, ifMatch = "1").status)
+        assertEquals(404, s.cancel(id, s.operator(emptyList()), reason = "OPERATOR_CANCELLATION", ifMatch = "1").status)
+        // Storno durch den Fahrgast (Abholung in 3 Tagen, Frist 60 min): Buchung storniert, Revision 3, ETag
+        val ok = s.cancel(id, h.account.token, ifMatch = "1")
+        assertEquals(200, ok.status, ok.text); assertEquals("CANCELED", ok.json["state"].asString()); assertEquals("\"3\"", ok.header("ETag")); assertEquals(3, ok.json["revision"].asInt())
+        assertEquals("PASSENGER_REQUEST", ok.json["cancel_reason"].asString()); assertEquals("FAHRGAST", ok.json["cancel_cause_class"].asString())
+        assertEquals("FAHRGAST", s.get(id, h.account.token).json["cancel_cause_class"].asString())
+        assertEquals(1, s.count("SELECT count(*) FROM taktovia.capacity_hold WHERE id = ?::uuid AND state = 'RELEASED'", h.holdId))
+        val hist = s.env.get("/v1/bookings/$id/history", h.account.token).json["items"].values().asSequence().map { it["to_state"].asString() }.toList()
+        assertEquals(listOf("CONFIRMING", "COMPENSATING", "CANCELED"), hist)
+        // zweites Storno mit neuem Schlüssel: 409
+        val again = s.cancel(id, h.account.token, ifMatch = "3")
+        assertEquals(409, again.status); assertEquals("INVALID_STATE_TRANSITION", again.json["code"].asString())
+        // Betreiberstorno im Dienstscope mit Grund Fahrzeugausfall
+        val h2 = s.held(); val id2 = s.confirm(h2).json["id"].asString()
+        val op = s.operator(listOf(java.util.UUID.fromString(s.world.service)))
+        val outage = s.cancel(id2, op, reason = "VEHICLE_OUTAGE", ifMatch = "1")
+        assertEquals(200, outage.status, outage.text); assertEquals("CANCELED", outage.json["state"].asString())
+        assertEquals("VEHICLE_OUTAGE", outage.json["cancel_reason"].asString()); assertEquals("FAHRZEUGAUSFALL", outage.json["cancel_cause_class"].asString())
+    }
 }

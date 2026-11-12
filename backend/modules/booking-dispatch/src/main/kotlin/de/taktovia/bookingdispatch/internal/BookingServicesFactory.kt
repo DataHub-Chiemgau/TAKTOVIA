@@ -2,6 +2,7 @@ package de.taktovia.bookingdispatch.internal
 
 import de.taktovia.bookingdispatch.api.BookingdispatchApi
 import de.taktovia.bookingdispatch.api.Bookings
+import de.taktovia.config.api.EffectiveConfig
 import de.taktovia.config.api.ImpactProvider
 import de.taktovia.farepayment.api.FareQuotes
 import de.taktovia.journeyfederation.api.JourneyShells
@@ -21,10 +22,11 @@ import java.time.Duration
 
 /** Nur innerhalb des Moduls `booking-dispatch` sichtbar (durch Architekturtest erzwungen). */
 internal object BookingServicesFactory {
-    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock): Bookings {
+    fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?): Bookings {
         val journeys = JourneyShells.create()
-        val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock), outbox, clock, JdbcRunPlans(ctxTx, outbox, clock), journeys)
-        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), clock)
+        val plans = JdbcRunPlans(ctxTx, outbox, clock)
+        val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock), outbox, clock, plans, journeys)
+        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock)
     }
 
     fun bookingImpactProvider(): ImpactProvider = BookingImpactProvider()

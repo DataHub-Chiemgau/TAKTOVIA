@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.bookingdispatch.api.BookingDetail
 import de.taktovia.bookingdispatch.api.Bookings
+import de.taktovia.bookingdispatch.api.BookingReason
+import de.taktovia.bookingdispatch.api.CancelBooking
 import de.taktovia.bookingdispatch.api.ConfirmBooking
 import de.taktovia.bookingdispatch.api.HistoryView
 import de.taktovia.platform.api.CursorCodec
@@ -67,6 +69,18 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     }
 
     /**
+     * `POST /v1/bookings/{id}/cancel` (WP-M2-26/-27): Storno mit Grundcode; `If-Match` (428/412) und `Idempotency-Key` sind Pflicht. Fahrgäste dürfen nur `PASSENGER_REQUEST` setzen (403)
+     * und nur innerhalb der Frist des Dienstes (409 `CANCEL_DEADLINE_EXPIRED`); Betrieb im Dienstscope storniert mit jedem zulässigen Grund (fremder Dienst 404).
+     */
+    @PostMapping("/v1/bookings/{booking_id}/cancel")
+    fun cancel(@PathVariable("booking_id") id: UUID, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): BookingResource {
+        val expected = Etag.parseIfMatch(ifMatch)
+        val reason = BookingReason.parse(body["reason"] as String) ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
+        val r = bookings.cancel(RequestContexts.require(request), id, CancelBooking(expected, reason))
+        return BookingResource(render(r.booking), r.booking.revision)
+    }
+
+    /**
      * `GET /v1/bookings/{id}/history` (WP-M2-25): Fahrgäste sehen die reduzierte Sicht ihrer eigenen Buchung, Betriebspersonal im Dienstscope und Prüfer standardmäßig die Prüfersicht;
      * `view=audit` für Fahrgäste ist 403, ein unbekannter Wert 422.
      */
@@ -112,6 +126,7 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
                 "created_at" to b.createdAt.toString(), "passengers" to b.passengers, "wheelchair_spaces" to b.wheelchairSpaces,
             )
             b.assistanceCodes?.let { m["assistance_codes"] = it }
+            b.cancelReason?.let { m["cancel_reason"] = it.name }; b.cancelCause?.let { m["cancel_cause_class"] = it.name }
             m["promise"] = promise; m["revision"] = b.revision
             return m
         }

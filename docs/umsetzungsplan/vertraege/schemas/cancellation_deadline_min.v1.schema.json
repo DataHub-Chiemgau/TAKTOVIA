@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/cancellation_deadline_min.v1.schema.json",
+  "title": "cancellation_deadline_min",
+  "description": "Stornofrist des Fahrgasts",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 43200,
+  "default": 60,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "nicht im Katalog (WP-M2-26, OP-23)",
+  "x-catalog-range": "0..43200; Mindestabstand zwischen Storno durch den Fahrgast und Beginn des zugesagten Abholfensters, Standard 60; Produktionswerte nach D-05"
+}

@@ -30,6 +30,9 @@ internal class BookingTransitions(outbox: Outbox, private val clock: Clock, priv
         if (to !in reason.targets) throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))   // der Grund passt nicht zum Zielzustand
         val t = transitioner.transition(j, StateMachines.BOOKING, bookingId, to, expectedRevision ?: (currentRevision(j, bookingId) ?: throw ProblemException.notFound()), ctx.correlationId)
         record(j, ctx, bookingId, t.from.name, t.to.name, reason, t.revision)
+        // Stornogrund und Verursacherklasse: genau einmal beim Eintritt in den Storno- bzw. Kompensationspfad (danach unveränderlich, auch per SQL)
+        if (reason.cause != null && (to == BookingState.CANCEL_PENDING || to == BookingState.COMPENSATING))
+            j.update("UPDATE taktovia.booking SET cancel_reason_code = ?, cancel_cause_class = ? WHERE id = ? AND cancel_reason_code IS NULL", reason.name, reason.cause.name, bookingId)
         j.query("SELECT journey_id FROM taktovia.booking WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, bookingId).firstOrNull()?.let { journeys.mirrorState(j, it, to.name) }
         return t
     }

@@ -44,6 +44,22 @@ class BookingIdempotencyHttpTest {
     }
 
     @Test
+    fun wiederholung_storno_liefert_gleiches_ergebnis() {
+        val h = s.held(); val id = s.confirm(h).json["id"].asString(); val key = key()
+        val a = s.cancel(id, h.account.token, ifMatch = "1", key = key); val b = s.cancel(id, h.account.token, ifMatch = "1", key = key)
+        assertEquals(200, a.status, a.text); assertEquals(a.json, b.json); assertEquals("true", b.header("Idempotent-Replayed"))
+        // anderer Grund mit demselben Schlüssel: Konflikt, keine Ausführung
+        val c = s.cancel(id, h.account.token, reason = "NO_SHOW", ifMatch = "1", key = key)
+        assertEquals(409, c.status); assertEquals("IDEMPOTENCY_CONFLICT", c.json["code"].asString())
+        assertEquals(1, s.count("SELECT count(*) FROM taktovia.outbox WHERE event_type = 'booking.cancelled' AND tenant_id = ?", s.tenant.value), "die Wiederholung erzeugt kein zweites Ereignis")
+        // paralleles doppeltes Storno mit verschiedenen Schlüsseln auf eine zweite Buchung: genau eine Ausführung
+        val h2 = s.held(); val id2 = s.confirm(h2).json["id"].asString()
+        val r = race(listOf(Callable { s.cancel(id2, h2.account.token, ifMatch = "1", key = key()) }, Callable { s.cancel(id2, h2.account.token, ifMatch = "1", key = key()) }))
+        assertEquals(1, r.count { it.status == 200 }, r.map { it.status }.toString()); assertTrue(r.single { it.status != 200 }.status in setOf(409, 412))
+        assertEquals(1, s.count("SELECT count(*) FROM taktovia.outbox WHERE event_type = 'booking.cancelled' AND aggregate_id = ?::uuid", id2))
+    }
+
+    @Test
     fun fingerprint_abweichung_ergibt_409_ohne_ausfuehrung() {
         val h = s.held(); val key = key()
         val ok = s.confirm(h, key = key); assertEquals(201, ok.status, ok.text)

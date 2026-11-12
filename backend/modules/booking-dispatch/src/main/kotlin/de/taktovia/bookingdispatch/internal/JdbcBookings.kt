@@ -4,6 +4,20 @@ import de.taktovia.bookingdispatch.api.BookingDemand
 import de.taktovia.bookingdispatch.api.BookingDetail
 import de.taktovia.bookingdispatch.api.BookingHistoryEntry
 import de.taktovia.bookingdispatch.api.BookingReason
+import de.taktovia.bookingdispatch.api.CancelBooking
+import de.taktovia.bookingdispatch.api.CancelResult
+import de.taktovia.bookingdispatch.api.CauseClass
+import de.taktovia.bookingdispatch.api.CancellationPolicy
+import de.taktovia.bookingdispatch.api.PlanStop
+import de.taktovia.bookingdispatch.api.RevisionCause
+import de.taktovia.bookingdispatch.api.RunState
+import de.taktovia.config.api.EffectiveConfig
+import de.taktovia.config.api.EffectiveRequest
+import de.taktovia.config.api.EffectiveStatus
+import de.taktovia.platform.outbox.Outbox
+import de.taktovia.platform.outbox.OutboxEvent
+import de.taktovia.platform.problem.Violation
+import de.taktovia.platform.problem.ViolationCode
 import de.taktovia.bookingdispatch.api.HistoryLinks
 import de.taktovia.bookingdispatch.api.HistoryView
 import de.taktovia.bookingdispatch.api.BookingPromise
@@ -18,6 +32,7 @@ import de.taktovia.platform.authz.ObjectAuthorizer
 import de.taktovia.platform.authz.ScopedObject
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.authz.ServiceScoped
+import de.taktovia.platform.context.ActorType
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.problem.ErrorCode
@@ -38,7 +53,8 @@ import java.util.UUID
  */
 @ServiceScoped
 internal class JdbcBookings(
-    private val ctxTx: ContextTransactions, private val quotes: FareQuotes, private val holds: JdbcCapacityHolds, private val transitions: BookingTransitions, private val clock: Clock,
+    private val ctxTx: ContextTransactions, private val quotes: FareQuotes, private val holds: JdbcCapacityHolds, private val transitions: BookingTransitions, private val plans: JdbcRunPlans,
+    private val outbox: Outbox, private val config: EffectiveConfig?, private val clock: Clock,
     private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer,
 ) : Bookings {
     private val json = JsonMapper.builder().build()
@@ -99,6 +115,7 @@ internal class JdbcBookings(
 
     private class Row(
         val id: UUID, val bookingNo: String, val serviceId: UUID, val holdId: UUID, val state: String, val revision: Long, val createdAt: Instant, val snapshot: String, val passengerId: UUID?,
+        val cancelReason: String?, val cancelCause: String?,
     )
 
     private fun isPassengerView(ctx: RequestContext) = "passenger" in ctx.roles
@@ -126,7 +143,8 @@ internal class JdbcBookings(
         val codes = if (isPassengerView(ctx) || ctx.roles.any { it in ASSISTANCE_ROLES })
             (j.query("SELECT array_to_string(assistance_codes, ',') FROM taktovia.passenger_trip WHERE booking_id = ? ORDER BY seq LIMIT 1", { rs, _ -> rs.getString(1) }, r.id).firstOrNull() ?: "")
                 .split(',').filter { it.isNotBlank() } else null
-        return BookingDetail(r.id, r.bookingNo, r.serviceId, r.holdId, r.state, r.revision, r.createdAt, (vector?.let { it.seats + it.wheelchair } ?: 0), vector?.wheelchair ?: 0, codes, promise)
+        return BookingDetail(r.id, r.bookingNo, r.serviceId, r.holdId, r.state, r.revision, r.createdAt, (vector?.let { it.seats + it.wheelchair } ?: 0), vector?.wheelchair ?: 0, codes, promise,
+            r.cancelReason?.let { BookingReason.parse(it) }, r.cancelCause?.let { CauseClass.valueOf(it) })
     }
 
     override fun get(ctx: RequestContext, bookingId: UUID): BookingDetail = ctxTx.run(ctx, readOnly = true) { j -> detail(j, ctx, bookingId, passengerOf(j, ctx)) }
@@ -144,6 +162,88 @@ internal class JdbcBookings(
             j.query("SELECT $COLS FROM taktovia.booking WHERE booking_no IS NOT NULL AND service_id = ANY(CAST(? AS uuid[]))$cursor ORDER BY created_at, id LIMIT ?", ROW, *(listOf<Any>(ids) + cursorArgs + (limit + 1)).toTypedArray())  // sql-lint: ok Fragment aus Konstanten, Werte gebunden
         }
         rows.map { view(j, ctx, it) }
+    }
+
+    // ---- Storno (WP-M2-26) -------------------------------------------------------------------------------------------------------------
+
+    /** Stornoregeln des Dienstes aus der wirksamen Konfiguration; ohne Wert (oder ohne Konfigurationszugriff) gelten die Planungsdefaults, nie ein erfundener Wert. */
+    private fun policy(j: JdbcOperations, ctx: RequestContext, serviceId: UUID): CancellationPolicy {
+        val defaulted = mutableSetOf<String>()
+        fun resolve(name: String): Any? {
+            val item = config?.resolveInTransaction(j, ctx, EffectiveRequest(parameter = name, serviceId = serviceId, at = clock.instant()))?.items?.firstOrNull()
+            return if (item != null && item.status == EffectiveStatus.EFFECTIVE) item.value else null.also { defaulted += name }
+        }
+        val deadline = (resolve("cancellation_deadline_min") as? Number)?.toInt() ?: CancellationPolicy.DEFAULT_DEADLINE_MIN
+        val reasons = ((resolve("cancellation_reasons") as? Map<*, *>)?.get("reasons") as? List<*>)?.mapNotNull { BookingReason.parse(it.toString()) }?.toSet() ?: CancellationPolicy.DEFAULT_REASONS
+        return CancellationPolicy(deadline, reasons, defaulted)
+    }
+
+    override fun cancel(ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult = ctxTx.run(ctx) { j ->
+        val passenger = isPassengerView(ctx)
+        val own = if (passenger) passengerOf(j, ctx) else null
+        val pre = row(j, bookingId) ?: throw ProblemException.notFound()
+        if (passenger) { if (own == null || pre.passengerId != own) throw ProblemException.notFound() }
+        else authorizer.requireWrite(j, ctx, ScopedObject("BOOKING", pre.id, ctx.tenant, pre.serviceId))
+        // Berechtigung je Grund: Fahrgäste setzen nur den Kundenstorno, alle Gründe müssen aus dem Stornokatalog stammen und für den Dienst zulässig sein
+        if (cmd.reason.kind != BookingReason.Kind.CANCELLATION || cmd.reason == BookingReason.CANCEL_COMPLETED || cmd.reason == BookingReason.CANCEL_UNDETERMINED)
+            throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
+        val actor = if (passenger) BookingReason.ReasonActor.PASSENGER else if (ctx.actor.type == ActorType.SERVICE) BookingReason.ReasonActor.SYSTEM else BookingReason.ReasonActor.OPERATOR
+        if (actor !in cmd.reason.settableBy) throw ProblemException(ErrorCode.FORBIDDEN, "Dieser Stornogrund darf von dieser Rolle nicht gesetzt werden.")
+        val policy = policy(j, ctx, pre.serviceId)
+        if (cmd.reason !in policy.reasons) throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
+        // Sperren in stabiler Reihenfolge: Umlauf (Kapazitätslock), Hold, Buchung
+        val holdId = pre.holdId
+        val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).first()
+        j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
+        j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, holdId)
+        val cur = j.query("SELECT state, revision FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> rs.getString(1) to rs.getLong(2) }, bookingId).first()
+        if (cur.second != cmd.ifMatch) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        if (cur.first != BookingState.CONFIRMED.name && cur.first != BookingState.CONFIRMING.name)
+            throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Eine Buchung im Zustand ${cur.first} kann nicht storniert werden.")
+        // Frist (nur Fahrgäste): Mindestabstand zum Beginn des zugesagten Abholfensters, Auswertung mit Serverzeit; die Fristgrenze selbst gilt noch als innerhalb
+        if (passenger) {
+            val pickup = OffsetDateTime.parse(json.readTree(pre.snapshot)["pickup_earliest"].asString()).toInstant()
+            if (clock.instant().isAfter(pickup.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))))
+                throw ProblemException(ErrorCode.CANCEL_DEADLINE_EXPIRED, "Die Stornofrist von ${policy.deadlineMin} Minuten vor der Abholung ist abgelaufen.")
+        }
+        val confirmed = cur.first == BookingState.CONFIRMED.name
+        transitions.apply(j, ctx, bookingId, if (confirmed) BookingState.CANCEL_PENDING else BookingState.COMPENSATING, cmd.reason, cmd.ifMatch)
+        // Reservierung freigeben: die Kapazität zählt auf allen Abschnitten und Dimensionen wieder (Belegung = CONSUMED plus gültiges HELD)
+        check(j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'CONSUMED'", holdId) == 1) { "Reservierung der Buchung nicht freigebbar" }
+        val planRevision = removeFromPlan(j, ctx, runId, bookingId)
+        transitions.apply(j, ctx, bookingId, BookingState.CANCELED, if (confirmed) BookingReason.CANCEL_COMPLETED else BookingReason.COMPENSATION_DONE, null)
+        val revision = cur.second + 2
+        val initiator = actor.name
+        outbox.append(j, OutboxEvent(bookingId, revision, "booking.cancelled", linkedMapOf(
+            "booking_id" to bookingId.toString(), "reason" to cmd.reason.name, "reason_code" to cmd.reason.name, "cause_class" to cmd.reason.cause!!.name, "initiator" to initiator, "released_hold_id" to holdId.toString(),
+        ), clock.instant(), correlationId = ctx.correlationId))
+        CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, planRevision)
+    }
+
+    /**
+     * Neue Planrevision ohne die Stopps der Buchung (Fahrerauftrag): nur wenn der aktuelle Plan sie enthält und der Umlauf änderbar ist (Zustand `PLANNED`/`ACTIVE`). Stopps, die nur für diese Buchung
+     * da waren, entfallen; die Planzeiten der übrigen Stopps bleiben unverändert (zugesagte Fenster bleiben eingehalten), die Fahrzeit zum Folgestopp wird um die entfallene Teilstrecke erweitert
+     * (Obergrenze; eine Neuoptimierung gehört nicht zum Umfang). Liefert die neue Revision oder `null`.
+     */
+    private fun removeFromPlan(j: JdbcOperations, ctx: RequestContext, runId: UUID, bookingId: UUID): Long? {
+        val run = j.query("SELECT revision, state FROM taktovia.vehicle_run WHERE id = ?", { rs, _ -> rs.getLong(1) to RunState.valueOf(rs.getString(2)) }, runId).first()
+        if (run.second !in RunState.PLAN_CHANGEABLE) return null
+        val plan = plans.planIn(j, runId, run.first)
+        fun has(s: PlanStop) = s.boardings.any { it.bookingId == bookingId } || s.alightings.any { it.bookingId == bookingId }
+        if (plan.stops.none { has(it) }) return null
+        val kept = mutableListOf<PlanStop>()
+        for (s in plan.stops) {
+            val stripped = s.copy(boardings = s.boardings.filter { it.bookingId != bookingId }, alightings = s.alightings.filter { it.bookingId != bookingId })
+            if (has(s) && stripped.boardings.isEmpty() && stripped.alightings.isEmpty()) {          // der Stopp bestand nur für diese Buchung: entfällt, seine Teilstrecke wandert zum Vorgänger
+                if (kept.isNotEmpty() && s.legDurationSec != null) {
+                    val prev = kept.removeAt(kept.lastIndex)
+                    kept += prev.copy(legDurationSec = (prev.legDurationSec ?: 0) + s.legDurationSec, legDistanceM = (prev.legDistanceM ?: 0) + (s.legDistanceM ?: 0))
+                } else if (kept.isNotEmpty()) kept += kept.removeAt(kept.lastIndex).copy(legDurationSec = null, legDistanceM = null)   // entfallener letzter Stopp
+                // entfallener erster Stopp: keine Teilstrecke zu übertragen, die Folgestopps rücken nach
+            } else kept += stripped
+        }
+        val renumbered = kept.mapIndexed { i, s -> s.copy(seq = i, legDurationSec = if (i == kept.lastIndex) null else s.legDurationSec, legDistanceM = if (i == kept.lastIndex) null else s.legDistanceM) }
+        return plans.appendIn(j, ctx, runId, run.first, renumbered, RevisionCause.BOOKING_REMOVED, listOf(bookingId)).revision
     }
 
     // ---- Zustandsübergang und Historie (WP-M2-25) --------------------------------------------------------------------------------------
@@ -180,10 +280,10 @@ internal class JdbcBookings(
             OfferRow(rs.getString(1), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getLong(4), rs.getTimestamp(5).toInstant(), rs.getTimestamp(6).toInstant(),
                 rs.getTimestamp(7).toInstant(), rs.getTimestamp(8).toInstant(), rs.getString(9), rs.getString(10), rs.getObject(11, UUID::class.java), rs.getObject(12, UUID::class.java))
         }
-        const val COLS = "id, booking_no, service_id, hold_id, state, revision, created_at, promise_snapshot::text, passenger_id"
+        const val COLS = "id, booking_no, service_id, hold_id, state, revision, created_at, promise_snapshot::text, passenger_id, cancel_reason_code, cancel_cause_class"
         val ASSISTANCE_ROLES = setOf("dispatcher", "callcenter")
         val ROW = RowMapper { rs, _ ->
-            Row(rs.getObject(1, UUID::class.java), rs.getString(2), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant(), rs.getString(8), rs.getObject(9, UUID::class.java))
+            Row(rs.getObject(1, UUID::class.java), rs.getString(2), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant(), rs.getString(8), rs.getObject(9, UUID::class.java), rs.getString(10), rs.getString(11))
         }
     }
 }

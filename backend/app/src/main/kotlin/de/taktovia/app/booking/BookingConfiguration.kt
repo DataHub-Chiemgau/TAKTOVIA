@@ -37,7 +37,7 @@ class BookingConfiguration {
         RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
-    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes): Bookings = Bookings.create(ctxTx, outbox, quotes)
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi): Bookings = Bookings.create(ctxTx, outbox, quotes, config = config.effective)
 
     @Bean fun bookingImpactProvider(): ImpactProvider = Bookings.impactProvider()
 
