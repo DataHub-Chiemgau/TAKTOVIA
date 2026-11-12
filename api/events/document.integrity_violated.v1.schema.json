@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/document.integrity_violated.v1.schema.json",
+  "title": "Integritätsverletzung erkannt (WP-M4-24)",
+  "description": "Payload von `document.integrity_violated` (Sicherheitsereignis). Aggregat: expense_document / Belegrevision bei der Feststellung. Entsteht höchstens einmal je Beleg (die Verletzung ist endgültig); ohne Hashwerte, diese stehen im unveränderlichen Vorfall.",
+  "type": "object",
+  "required": ["document_id", "trigger", "failure", "detected_at"],
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {"type": "string", "format": "uuid"},
+    "trigger": {"enum": ["DELIVERY", "APPROVAL", "SCHEDULED", "MANUAL"]},
+    "failure": {"enum": ["HASH_MISMATCH", "OBJECT_MISSING"]},
+    "detected_at": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"document_id": "11111111-2222-4333-8444-555555555555", "trigger": "SCHEDULED", "failure": "HASH_MISMATCH", "detected_at": "2026-12-01T06:10:00Z"}
+  ]
+}

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+document_integrity_incident;SELECT,INSERT;WP-M4-24: Integritätsvorfall, unveränderlich (Trigger), kein UPDATE/DELETE
