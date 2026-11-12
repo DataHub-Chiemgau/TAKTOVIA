@@ -183,7 +183,7 @@ class DefectAmendmentTest {
         assertEquals(ErrorCode.FORBIDDEN, problem { amend(w.ctx("support"), d.id, "description" to "x") }.code)
         val driver = UUID.randomUUID(); w.shift(driver)
         assertEquals(ErrorCode.NOT_FOUND, problem { amend(w.ctx("driver", subject = driver), d.id, "description" to "fremde Akte") }.code)
-        val own = h.fleet.defects.report(w.ctx("driver", subject = driver), ReportDefect.parse(w.raw())).defect
+        val own = h.fleet.defects.report(w.ctx("driver", subject = driver), ReportDefect.parse(w.raw(extra = mapOf("confirm_new_despite_known" to true)))).defect
         assertEquals(2, amend(w.ctx("driver", subject = driver), own.id, "description" to "eigene Ergänzung").contentVersion)
         assertEquals("Kratzer an der Beifahrertür", fx.strings("SELECT snapshot->>'description' FROM taktovia.defect_case_revision WHERE defect_id=? AND version=1", own.id).single())
         assertFalse(h.fleet.defects.get(ctx, d.id).description == "gekapert")

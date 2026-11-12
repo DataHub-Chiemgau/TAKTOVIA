@@ -7043,6 +7043,24 @@
           "bemerkung": ""
         },
         {
+          "spalte": "defect_revision",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "defect_status",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",

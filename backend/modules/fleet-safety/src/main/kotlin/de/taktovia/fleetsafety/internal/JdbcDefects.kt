@@ -96,6 +96,12 @@ internal class JdbcDefects(
         // Fahrzeug im eigenen Mandanten (RLS): fremd oder unbekannt = 404; ein Fahrer braucht zusätzlich den Bezug, ohne Hinweis auf die Existenz
         if (j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, cmd.vehicleId) != 1) throw ProblemException.notFound()
         if (DefectRoles.driverOnly(ctx) && !relation.hasRelation(j, ctx.actor.subject, cmd.vehicleId, now)) throw ProblemException.notFound()
+        // Bekannter Schaden: Fahrer sehen offene Fälle des Fahrzeugs vor der Neuanlage (CHK-012); ohne ausdrückliche Bestätigung wird nicht still neu angelegt
+        if (DefectRoles.driverOnly(ctx) && !cmd.confirmNewDespiteKnown) {
+            val open = j.query("SELECT case_number FROM taktovia.defect_case WHERE vehicle_id = ? AND status NOT IN ('CLOSED', 'DISMISSED') ORDER BY case_number LIMIT 5", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
+            if (open.isNotEmpty()) throw ProblemException(ErrorCode.CONFLICT, "${de.taktovia.fleetsafety.api.KnownDefectCatalog.OPEN_DEFECTS_PENDING}: Für dieses Fahrzeug sind offene Fälle bekannt (${open.joinToString(", ")}); " +
+                "sie sind vor der Neuanlage anzuzeigen, die Neuanlage ist mit confirm_new_despite_known=true möglich.")
+        }
         cmd.sourceInspectionId?.let {
             if (j.queryForObject("SELECT count(*) FROM taktovia.inspection_run WHERE id = ? AND vehicle_id = ?", Int::class.java, it, cmd.vehicleId) != 1)
                 throw ProblemException.invalid(Violation("/source_inspection_id", ViolationCode.INVALID_VALUE))

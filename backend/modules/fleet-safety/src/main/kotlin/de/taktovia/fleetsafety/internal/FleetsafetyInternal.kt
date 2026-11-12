@@ -26,6 +26,7 @@ internal object FleetServicesFactory {
         val evidenceService = JdbcDefectEvidence(ctxTx, audit, clock, evidenceWiring ?: DefectEvidenceWiring())
         val defectService = JdbcDefects(ctxTx, audit, outbox, clock, driverRelation ?: ShiftDriverRelation(), evidenceService)
         val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock)
+        val knownDefectService = JdbcKnownDefects(ctxTx, audit, driverRelation ?: ShiftDriverRelation(), clock)
         return object : FleetsafetyApi {
             override val checklistTemplates: ChecklistTemplates = checklists
             override val vehicleRoles: VehicleRoles = roles
@@ -36,6 +37,7 @@ internal object FleetServicesFactory {
             override val defects: Defects = defectService
             override val defectEvidence: DefectEvidenceUploads = evidenceService
             override val inspections: de.taktovia.fleetsafety.api.Inspections = inspectionService
+            override val knownDefects: de.taktovia.fleetsafety.api.KnownDefects = knownDefectService
         }
     }
 }

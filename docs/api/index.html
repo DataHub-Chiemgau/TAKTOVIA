@@ -899,6 +899,32 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="listKnownDefects"><h3><span class="m">GET</span> <code>/v1/inspections/{inspection_id}/known-defects</code></h3><p>Bekannte Altschäden zum Prüflauf</p><dl><dt>operationId</dt><dd><code>listKnownDefects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="acknowledgeKnownDefect"><h3><span class="m">POST</span> <code>/v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge</code></h3><p>Bekannten Altschaden quittieren</p><dl><dt>operationId</dt><dd><code>acknowledgeKnownDefect</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>inspections:write</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>IDEMPOTENCY_CONFLICT</code>, <code>OPERATION_IN_PROGRESS</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>INVALID_STATE_TRANSITION</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
+<article id="listVehicleKnownDefects"><h3><span class="m">GET</span> <code>/v1/vehicles/{vehicle_id}/known-defects</code></h3><p>Offene Fälle eines Fahrzeugs (Hinweis vor der Neuanlage)</p><dl><dt>operationId</dt><dd><code>listVehicleKnownDefects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <article id="listDefects"><h3><span class="m">GET</span> <code>/v1/defects</code></h3><p>Schadenakten auflisten</p><dl><dt>operationId</dt><dd><code>listDefects</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>defects:read</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code>, <code>INVALID_CURSOR</code></li>
 <li>401: <code>UNAUTHENTICATED</code></li>

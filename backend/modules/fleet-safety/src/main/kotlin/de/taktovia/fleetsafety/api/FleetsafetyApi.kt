@@ -38,6 +38,9 @@ interface FleetsafetyApi {
     /** Prüflauf-Start mit exakt freigegebener Vorlage (WP-M3-13). */
     val inspections: Inspections
 
+    /** Bekannte Altschäden anzeigen und quittieren (WP-M3-21). */
+    val knownDefects: KnownDefects
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
