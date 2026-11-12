@@ -280,3 +280,7 @@ getManualCostEvent;costs:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 reviewManualCostEvent;expenses:review;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 approveManualCostEvent;expenses:approve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 rejectManualCostEvent;expenses:approve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+listOdometerReadings;odometer:read;-;M4;N;N;N;N;J;N;J;J;N;J
+listOdometerConflicts;odometer:read;-;M4;N;N;N;N;J;N;J;J;N;J
+createOdometerReading;odometer:record;FINANZ;M4;N;N;N;N;N;N;N;J;N;J
+resolveOdometerConflict;odometer:resolve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N

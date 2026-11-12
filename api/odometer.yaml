@@ -1,0 +1,404 @@
+paths:
+  /v1/vehicles/{vehicle_id}/odometer:
+    get:
+      summary: Kilometerstände eines Fahrzeugs lesen
+      operationId: listOdometerReadings
+      security:
+      - oidc:
+        - odometer:read
+      description: 'Kilometerstandsverlauf eines Fahrzeugs mit Herkunft (WP-M4-41, FCO-003): je Eintrag Quelle, Bezug auf das Quellobjekt, Messzeit und Erfassungszeit. Aufsteigend nach Messzeit, Cursor-Seiten. Die Stände sind append-only und werden nie geändert oder gelöscht. Fremdes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdometerReadingPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    post:
+      summary: Werkstatt-Kilometerstand importieren
+      operationId: createOdometerReading
+      security:
+      - oidc:
+        - odometer:record
+      description: 'Importkanal der Werkstattquelle (WP-M4-41; `repair_order` ist nicht Teil von P1). Die Quelle ist stets `WORKSHOP`; Fahrercheck und Tankbeleg kommen aus ihren Ereignissen, Telematik nur aus dem Simulator bis zum Beschluss D-09. Derselbe Bezug (`source_ref`) ergibt genau einen Eintrag: eine Wiederholung liefert 200 mit dem vorhandenen Stand. Erkannte Konflikte stehen in der Antwort (`conflicts`); es wird nie ein vorhandener Stand überschrieben. Stand außerhalb 0 bis 10.000.000 km, leerer Bezug, Messzeit mehr als einen Tag in der Zukunft: 422. Fremdes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOdometerReadingRequest'
+      responses:
+        '200':
+          description: Der Bezug war schon erfasst; der vorhandene Stand.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdometerRecordResult'
+        '201':
+          description: Aufgenommen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdometerRecordResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/vehicles/{vehicle_id}/odometer/conflicts:
+    get:
+      summary: Kilometerstandskonflikte eines Fahrzeugs lesen
+      operationId: listOdometerConflicts
+      security:
+      - oidc:
+        - odometer:read
+      description: 'Konflikte eines Fahrzeugs mit beiden Ständen einander gegenübergestellt (WP-M4-41, FCO-003): `DECREASING` (rückläufiger Stand) und `SOURCE_MISMATCH` (widersprüchliche Quellen im selben Zeitfenster). `status` filtert auf offene oder aufgelöste Konflikte. Ein aufgelöster Konflikt nennt Akteur, Grund und Zeit der Auflösung; die Rohstände bleiben sichtbar. Fremdes Fahrzeug: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdometerConflictPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/vehicles/{vehicle_id}/odometer/conflicts/{conflict_id}/resolution:
+    post:
+      summary: Kilometerstandskonflikt auflösen
+      operationId: resolveOdometerConflict
+      security:
+      - oidc:
+        - odometer:resolve
+      description: 'Löst einen Konflikt durch eine protokollierte menschliche Entscheidung auf (WP-M4-41, FCO-003): einen der beiden Stände wählen (`CHOSEN` mit `chosen_reading_id`) oder beide verwerfen (`DISCARDED`), stets mit Grund (3 bis 1000 Zeichen). Das Register wählt nie automatisch. Akteur, Grund und Zeit stehen am Konflikt und im Audit; kein Stand wird geändert oder gelöscht. Scope `odometer:resolve`, Finanzrolle, Mensch. Ohne Grund, `CHOSEN` ohne Stand oder ein Stand, der nicht zum Konflikt gehört: 422. Bereits aufgelöster Konflikt (auch bei paralleler Auflösung): 409. Konflikt oder Fahrzeug eines anderen Mandanten: 404.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - name: conflict_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Konflikt-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveOdometerConflictRequest'
+      responses:
+        '200':
+          description: Aufgelöst.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdometerConflict'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    OdometerReading:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reading_km:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        source:
+          type: string
+          enum:
+          - DRIVER_CHECK
+          - FUEL_RECEIPT
+          - WORKSHOP
+          - TELEMATICS
+        source_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Bezug auf das Quellobjekt (Prüflauf, Beleg und Stand, Werkstattvorgang, Simulatorlauf).
+        measured_at:
+          type: string
+          format: date-time
+          description: Messzeit an der Quelle.
+        recorded_at:
+          type: string
+          format: date-time
+          description: Erfassungszeit im Register.
+        recorded_by:
+          type: string
+          maxLength: 200
+      required:
+      - id
+      - vehicle_id
+      - reading_km
+      - source
+      - source_ref
+      - measured_at
+      - recorded_at
+      - recorded_by
+    OdometerReadingPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OdometerReading'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    CreateOdometerReadingRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reading_km:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        source_ref:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Bezug auf den Werkstattvorgang; je Bezug genau ein Eintrag.
+        measured_at:
+          type: string
+          format: date-time
+      required:
+      - reading_km
+      - source_ref
+      - measured_at
+    OdometerConflictResolution:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - CHOSEN
+          - DISCARDED
+        chosen_reading_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        resolved_by:
+          type: string
+          maxLength: 200
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        resolved_at:
+          type: string
+          format: date-time
+      required:
+      - decision
+      - chosen_reading_id
+      - resolved_by
+      - reason
+      - resolved_at
+    OdometerConflict:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - DECREASING
+          - SOURCE_MISMATCH
+        status:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        tolerance_km:
+          type: integer
+          minimum: 0
+        earlier:
+          $ref: '#/components/schemas/OdometerReading'
+        later:
+          $ref: '#/components/schemas/OdometerReading'
+        detected_at:
+          type: string
+          format: date-time
+        resolution:
+          oneOf:
+          - $ref: '#/components/schemas/OdometerConflictResolution'
+          - type: 'null'
+      required:
+      - id
+      - vehicle_id
+      - kind
+      - status
+      - tolerance_km
+      - earlier
+      - later
+      - detected_at
+      - resolution
+    OdometerConflictPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OdometerConflict'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
+    OdometerRecordResult:
+      type: object
+      additionalProperties: false
+      properties:
+        reading:
+          $ref: '#/components/schemas/OdometerReading'
+        created:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/OdometerConflict'
+          maxItems: 100
+      required:
+      - reading
+      - created
+      - conflicts
+    ResolveOdometerConflictRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+          - CHOSEN
+          - DISCARDED
+        chosen_reading_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 1000
+      required:
+      - decision
+      - reason

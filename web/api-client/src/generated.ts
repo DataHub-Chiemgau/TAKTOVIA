@@ -3093,6 +3093,67 @@ export interface NotificationPage {
   as_of: string;
 }
 
+export interface OdometerReading {
+  id: UUID;
+  vehicle_id: UUID;
+  reading_km: number;
+  source: 'DRIVER_CHECK' | 'FUEL_RECEIPT' | 'WORKSHOP' | 'TELEMATICS';
+  source_ref: string;
+  measured_at: string;
+  recorded_at: string;
+  recorded_by: string;
+}
+
+export interface OdometerReadingPage {
+  items: OdometerReading[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface CreateOdometerReadingRequest {
+  reading_km: number;
+  source_ref: string;
+  measured_at: string;
+}
+
+export interface OdometerConflictResolution {
+  decision: 'CHOSEN' | 'DISCARDED';
+  chosen_reading_id: UUID | null;
+  resolved_by: string;
+  reason: string;
+  resolved_at: string;
+}
+
+export interface OdometerConflict {
+  id: UUID;
+  vehicle_id: UUID;
+  kind: 'DECREASING' | 'SOURCE_MISMATCH';
+  status: 'OPEN' | 'RESOLVED';
+  tolerance_km: number;
+  earlier: OdometerReading;
+  later: OdometerReading;
+  detected_at: string;
+  resolution: OdometerConflictResolution | null;
+}
+
+export interface OdometerConflictPage {
+  items: OdometerConflict[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export interface OdometerRecordResult {
+  reading: OdometerReading;
+  created: boolean;
+  conflicts: OdometerConflict[];
+}
+
+export interface ResolveOdometerConflictRequest {
+  decision: 'CHOSEN' | 'DISCARDED';
+  chosen_reading_id?: UUID;
+  reason: string;
+}
+
 export type ContactChannelCode = 'EMAIL' | 'PHONE';
 
 export type ChannelStatus = 'UNVERIFIED' | 'VERIFIED';
@@ -5393,6 +5454,34 @@ export interface Operations {
     body: undefined;
     response: Notification;
   };
+  listOdometerReadings: {
+    path: { vehicle_id: UUID };
+    query: { limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OdometerReadingPage;
+  };
+  createOdometerReading: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: CreateOdometerReadingRequest;
+    response: OdometerRecordResult;
+  };
+  listOdometerConflicts: {
+    path: { vehicle_id: UUID };
+    query: { status?: 'OPEN' | 'RESOLVED'; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OdometerConflictPage;
+  };
+  resolveOdometerConflict: {
+    path: { vehicle_id: UUID; conflict_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: ResolveOdometerConflictRequest;
+    response: OdometerConflict;
+  };
   listPassengers: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -6104,6 +6193,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   streamDriverLiveEvents: { method: 'GET', path: '/v1/driver/live/events', pathParams: [], query: ['after', 'wait_seconds'], headers: ['Last-Event-ID', 'traceparent'], hasBody: false, scopes: ['driver:run'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listNotifications: { method: 'GET', path: '/v1/notifications', pathParams: [], query: ['limit', 'cursor', 'state'], headers: ['traceparent'], hasBody: false, scopes: ['notifications:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getNotification: { method: 'GET', path: '/v1/notifications/{notification_id}', pathParams: ['notification_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['notifications:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  listOdometerReadings: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/odometer', pathParams: ['vehicle_id'], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['odometer:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  createOdometerReading: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/odometer', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['odometer:record'], statuses: [200, 201, 400, 401, 403, 404, 422, 429, 503] },
+  listOdometerConflicts: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts', pathParams: ['vehicle_id'], query: ['status', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['odometer:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  resolveOdometerConflict: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts/{conflict_id}/resolution', pathParams: ['vehicle_id', 'conflict_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['odometer:resolve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

@@ -40,3 +40,13 @@ internal object UploadServicesFactory {
         )
     }
 }
+
+/** Fabrik des Kilometerstandsregisters (WP-M4-41); nur innerhalb des Moduls sichtbar. */
+internal object OdometerServicesFactory {
+    fun create(
+        ctxTx: ContextTransactions, audit: AuditPort, outbox: de.taktovia.platform.outbox.Outbox, clock: java.time.Clock, processor: de.taktovia.platform.outbox.InboxProcessor, telematicsProductive: Boolean,
+    ): de.taktovia.documentsfinance.api.OdometerServices {
+        val register = JdbcOdometerRegister(ctxTx, audit, outbox, clock, telematicsProductive)
+        return de.taktovia.documentsfinance.api.OdometerServices(register, JdbcOdometerEvents(processor, register))
+    }
+}

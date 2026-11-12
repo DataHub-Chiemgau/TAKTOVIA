@@ -51,3 +51,7 @@ fact_vehicle_state;analytics;VERAENDERLICH;;WP-M4-45;abgeleitete Faktenbasis Fah
 export_job;analytics;FREIGABE_UNVERAENDERLICH;;WP-M5-19;Exportauftrag: Auftragsdaten und beendetes Ergebnis unveraenderlich
 manual_cost_event;documents-finance;VERAENDERLICH;;WP-M4-40;manuelles Fahrzeugkostenereignis, Inhalt unveränderlich
 manual_cost_event_step;documents-finance;APPEND_ONLY;;WP-M4-40;Freigabeschritt des manuellen Kostenereignisses
+odometer_reading;documents-finance;APPEND_ONLY;;WP-M4-41;Kilometerstand mit Herkunft, nie geändert
+odometer_conflict;documents-finance;APPEND_ONLY;;WP-M4-41;erkannter Kilometerstandskonflikt, nie geändert
+odometer_conflict_resolution;documents-finance;APPEND_ONLY;;WP-M4-41;protokollierte Auflösung eines Konflikts
+odometer_policy;documents-finance;VERAENDERLICH;;WP-M4-41;Konflikttoleranz und Zeitfenster je Mandant
