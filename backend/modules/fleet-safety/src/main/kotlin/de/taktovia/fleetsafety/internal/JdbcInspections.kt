@@ -1,6 +1,10 @@
 package de.taktovia.fleetsafety.internal
 
+import de.taktovia.fleetsafety.api.AmendmentKind
 import de.taktovia.fleetsafety.api.AnswerInput
+import de.taktovia.fleetsafety.api.CreateInspectionAmendment
+import de.taktovia.fleetsafety.api.InspectionAmendmentView
+import de.taktovia.fleetsafety.api.SaveInspectionDraft
 import de.taktovia.fleetsafety.api.ChecklistAnswer
 import de.taktovia.fleetsafety.api.ChecklistAnswerStatus
 import de.taktovia.fleetsafety.api.ChecklistAnswerValidator
@@ -151,12 +155,7 @@ internal class JdbcInspections(
         val now = clock.instant()
         if (cmd.clientSubmittedAt.isAfter(now.plusSeconds(InspectionCatalog.FUTURE_TOLERANCE_SECONDS))) throw ProblemException.invalid(Violation("/client_submitted_at", ViolationCode.INVALID_VALUE))
         // Zeilensperre des Laufs: zwei gleichzeitige Abschlüsse werden nacheinander entschieden, der zweite sieht den Abschluss. Fahrer nur eigener Schichten, sonst 404.
-        val mapper = RowMapper { rs, _ -> Locked(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant()) }
-        val run = (if (InspectionRoles.driverOnly(ctx))
-            j.query("SELECT i.shift_id, i.vehicle_id, i.template_revision_id, i.kind, i.status, i.revision, i.started_at FROM taktovia.inspection_run i WHERE i.id = ? AND EXISTS (SELECT 1 FROM taktovia.staff_shift s WHERE s.id = i.shift_id AND $OWN_SHIFT) FOR UPDATE OF i",
-                mapper, id, *ShiftScope.args(ctx.actor.issuer, ctx.actor.subject))
-        else j.query("SELECT i.shift_id, i.vehicle_id, i.template_revision_id, i.kind, i.status, i.revision, i.started_at FROM taktovia.inspection_run i WHERE i.id = ? FOR UPDATE OF i", mapper, id)).firstOrNull()
-            ?: throw ProblemException.notFound()
+        val run = lockRun(j, ctx, id) ?: throw ProblemException.notFound()
         if (run.status != "IN_PROGRESS") throw ProblemException(
             if (run.status == "COMPLETED") ErrorCode.IMMUTABLE_RECORD else ErrorCode.INVALID_STATE_TRANSITION,
             if (run.status == "COMPLETED") "Der Prüfnachweis ist abgeschlossen und unveränderlich; Korrekturen sind Nachträge." else "Der Prüflauf ist nicht mehr offen (${run.status}).")
@@ -215,6 +214,84 @@ internal class JdbcInspections(
 
     private class Locked(val shiftId: UUID, val vehicleId: UUID, val templateRevisionId: UUID, val kind: String, val status: String, val revision: Long, val startedAt: Instant)
 
+    // ------------------------------------------------------------------------------------------------ Entwurf und Nachträge (WP-M3-15)
+
+    override fun saveDraft(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: SaveInspectionDraft): InspectionView {
+        if (InspectionRoles.STARTERS.none { it in ctx.roles }) throw ProblemException(ErrorCode.FORBIDDEN, "Den Entwurf einer Prüfung speichern Fahrer und Werkstatt.")
+        return ctxTx.run(ctx) { j -> doSaveDraft(j, ctx, id, expectedRevision, cmd) }
+    }
+
+    private fun doSaveDraft(j: JdbcOperations, ctx: RequestContext, id: UUID, expected: Long, cmd: SaveInspectionDraft): InspectionView {
+        val run = lockRun(j, ctx, id) ?: throw ProblemException.notFound()
+        if (run.status != "IN_PROGRESS") throw ProblemException(
+            if (run.status == "COMPLETED") ErrorCode.IMMUTABLE_RECORD else ErrorCode.INVALID_STATE_TRANSITION,
+            if (run.status == "COMPLETED") "Der Prüfnachweis ist abgeschlossen; eine Änderung ist nur als Nachtrag möglich." else "Der Prüflauf ist nicht mehr offen (${run.status}).")
+        if (run.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        val steps = checklists.steps(j, run.templateRevisionId)
+        ChecklistAnswerValidator.require(steps.map { it.rule() }, cmd.answers.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note) }, complete = false)
+        val stepIds = j.query("SELECT step_code, id FROM taktovia.checklist_step WHERE template_revision_id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, run.templateRevisionId).toMap()
+        val actor = actor(ctx)
+        for (a in cmd.answers) {
+            j.update(
+                "INSERT INTO taktovia.inspection_answer (tenant_id, id, inspection_id, step_code, step_id, answer, number_value, note, answered_at, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                    "ON CONFLICT (tenant_id, inspection_id, step_code) DO UPDATE SET step_id = EXCLUDED.step_id, answer = EXCLUDED.answer, number_value = EXCLUDED.number_value, note = EXCLUDED.note, " +
+                    "answered_at = EXCLUDED.answered_at, revision = taktovia.inspection_answer.revision + 1",
+                UUID.randomUUID(), id, a.stepCode, stepIds[a.stepCode], a.answer, a.numberValue, a.note?.trim()?.takeIf { it.isNotEmpty() }, Timestamp.from(a.answeredAt), actor.value,
+            )
+        }
+        if (j.update("UPDATE taktovia.inspection_run SET revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'", id, expected) != 1)
+            throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
+        return load(j, ctx, id)!!
+    }
+
+    override fun amend(ctx: RequestContext, id: UUID, cmd: CreateInspectionAmendment): InspectionAmendmentView {
+        if (InspectionRoles.AMENDERS.none { it in ctx.roles }) throw ProblemException(ErrorCode.FORBIDDEN, "Einen Nachtrag zu einer Prüfung erfassen Werkstatt und Betriebsleitung.")
+        return ctxTx.run(ctx) { j -> doAmend(j, ctx, id, cmd) }
+    }
+
+    @AuditRequired
+    private fun doAmend(j: JdbcOperations, ctx: RequestContext, id: UUID, cmd: CreateInspectionAmendment): InspectionAmendmentView {
+        val run = j.query("SELECT shift_id, vehicle_id, template_revision_id, kind, status, revision, started_at FROM taktovia.inspection_run WHERE id = ?",
+            { rs, _ -> Locked(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant()) }, id).firstOrNull()
+            ?: throw ProblemException.notFound()
+        if (run.status != "COMPLETED") throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Ein Nachtrag setzt einen abgeschlossenen Prüflauf voraus; vorher wird der Entwurf bearbeitet.")
+        val steps = checklists.steps(j, run.templateRevisionId)
+        if (steps.none { it.code == cmd.stepCode }) throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
+        val violations = ChecklistAnswerValidator.validate(steps.filter { it.code == cmd.stepCode }.map { it.rule() }, listOf(ChecklistAnswer(cmd.stepCode, cmd.newAnswer, cmd.newNumberValue, cmd.newNote)), complete = false).toMutableList()
+        if (cmd.newAnswer == ChecklistAnswerStatus.DEFECT && cmd.newNote.isNullOrBlank() && violations.none { it.pointer.endsWith("/note") }) violations += Violation("/answers/${cmd.stepCode}/note", ViolationCode.REQUIRED)
+        if (violations.isNotEmpty()) throw ProblemException.invalid(*violations.map { Violation(amendPointer(it.pointer, cmd.stepCode), it.code) }.toTypedArray())
+        // Originalantwort sperren: gleichzeitige Nachträge zur selben Antwort werden nacheinander versioniert (1, 2, …), nie doppelt
+        val answerId = j.query("SELECT id FROM taktovia.inspection_answer WHERE inspection_id = ? AND step_code = ? FOR UPDATE", { rs, _ -> rs.getObject(1, UUID::class.java) }, id, cmd.stepCode).firstOrNull()
+            ?: throw ProblemException.invalid(Violation("/step_code", ViolationCode.INVALID_VALUE))
+        val version = j.queryForObject("SELECT coalesce(max(version), 0) + 1 FROM taktovia.inspection_amendment WHERE answer_id = ?", Int::class.java, answerId)!!
+        val amendmentId = UUID.randomUUID(); val actor = actor(ctx)
+        j.update(
+            "INSERT INTO taktovia.inspection_amendment (tenant_id, id, inspection_id, step_code, answer_id, version, kind, new_answer, new_number_value, new_note, amended_by, reason) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            amendmentId, id, cmd.stepCode, answerId, version, cmd.kind.name, cmd.newAnswer, cmd.newNumberValue, cmd.newNote, actor.value, cmd.reason,
+        )
+        audit.record(j, AuditEntry(actor, AuditActions.INSPECTION_AMENDED, ObjectRef("inspection", id), ctx.correlationId, linkedMapOf(
+            "amendment_id" to amendmentId.toString(), "step_code" to cmd.stepCode, "version" to version, "kind" to cmd.kind.name, "new_answer" to cmd.newAnswer)))
+        return amendments(j, id).single { it.id == amendmentId }
+    }
+
+    /** Verweis des Antwortvalidators (`/answers/<code>/…`) auf die Felder des Nachtrags. */
+    private fun amendPointer(p: String, code: String) = when (p.removePrefix("/answers/$code")) {
+        "/answer" -> "/new_answer"; "/note" -> "/new_note"; "/number_value" -> "/new_number_value"; else -> "/step_code"
+    }
+
+    private fun amendments(j: JdbcOperations, id: UUID): List<InspectionAmendmentView> = j.query(
+        "SELECT id, inspection_id, step_code, answer_id, version, kind, new_answer, new_number_value, new_note, reason, amended_by, created_at FROM taktovia.inspection_amendment WHERE inspection_id = ? ORDER BY step_code, version",
+        { rs, _ -> InspectionAmendmentView(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3), rs.getObject(4, UUID::class.java), rs.getInt(5), AmendmentKind.valueOf(rs.getString(6)),
+            rs.getString(7), rs.getBigDecimal(8), rs.getString(9), rs.getString(10), rs.getString(11), rs.getTimestamp(12).toInstant()) }, id)
+
+    private fun lockRun(j: JdbcOperations, ctx: RequestContext, id: UUID): Locked? {
+        val mapper = RowMapper { rs, _ -> Locked(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant()) }
+        return (if (InspectionRoles.driverOnly(ctx))
+            j.query("SELECT i.shift_id, i.vehicle_id, i.template_revision_id, i.kind, i.status, i.revision, i.started_at FROM taktovia.inspection_run i WHERE i.id = ? AND EXISTS (SELECT 1 FROM taktovia.staff_shift s WHERE s.id = i.shift_id AND $OWN_SHIFT) FOR UPDATE OF i",
+                mapper, id, *ShiftScope.args(ctx.actor.issuer, ctx.actor.subject))
+        else j.query("SELECT i.shift_id, i.vehicle_id, i.template_revision_id, i.kind, i.status, i.revision, i.started_at FROM taktovia.inspection_run i WHERE i.id = ? FOR UPDATE OF i", mapper, id)).firstOrNull()
+    }
+
     override fun get(ctx: RequestContext, id: UUID): InspectionView = ctxTx.run(ctx, readOnly = true) { j -> load(j, ctx, id) ?: throw ProblemException.notFound() }
 
     private fun load(j: JdbcOperations, ctx: RequestContext, id: UUID): InspectionView? {
@@ -239,7 +316,7 @@ internal class JdbcInspections(
             row.status == "IN_PROGRESS" -> listOf(ReleaseBlocker.INSPECTION_OPEN)
             else -> readiness.missing(j, row.vehicleId, row.shiftId, row.id).ifEmpty { listOf(ReleaseBlocker.NO_INSPECTION) }
         }
-        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, missing)
+        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing)
     }
 
     private class Shift(val id: UUID, val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)
@@ -260,6 +337,8 @@ internal class JdbcInspections(
 /** Rollen des Prüflaufs (Rechtematrix `createInspection`: Fahrer, Werkstatt; `getInspection` zusätzlich Disposition). */
 internal object InspectionRoles {
     val STARTERS = setOf("driver", "workshop")
+    /** Nachträge zu abgeschlossenen Prüfungen (Planungsannahme zu CHK-014: die berechtigte Rolle ist nicht festgelegt): Werkstatt und Betriebsleitung, nie der Fahrer. */
+    val AMENDERS = setOf("workshop", "tenant_admin")
     /** Ein Konto, das nur als Fahrer auftritt, sieht nur Läufe eigener Schichten. */
     fun driverOnly(ctx: RequestContext) = "driver" in ctx.roles && ctx.roles.none { it == "dispatcher" || it == "workshop" || it == "tenant_admin" }
 }

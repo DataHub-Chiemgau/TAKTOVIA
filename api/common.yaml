@@ -80,6 +80,7 @@ components:
             dispatch:write: dispatch:write
             inspections:read: inspections:read
             inspections:write: inspections:write
+            inspections:amend: inspections:amend
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read
@@ -165,6 +166,7 @@ components:
             dispatch:write: dispatch:write
             inspections:read: inspections:read
             inspections:write: inspections:write
+            inspections:amend: inspections:amend
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read

@@ -67,6 +67,8 @@ data class InspectionView(
     val answers: List<InspectionAnswerView> = emptyList(), val release: InspectionReleaseView? = null,
     /** Prüfer-ID aus der Sitzung beim Abschluss (`user:<kennung>`), Serverwert (WP-M3-14). */
     val completedBy: String? = null,
+    /** Nachträge zum abgeschlossenen Lauf (WP-M3-15), je Antwort nach Version; die Originalantworten in [answers] bleiben unverändert. */
+    val amendments: List<InspectionAmendmentView> = emptyList(),
     /** Noch fehlende Voraussetzungen der Einsatzfreigabe (leer, wenn die Freigabe erteilt ist). */
     val missing: List<ReleaseBlocker> = emptyList(),
 )
@@ -177,6 +179,56 @@ interface Inspections {
      */
     fun submit(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: SubmitInspection): InspectionView
 
+    /**
+     * Entwurf speichern (WP-M3-15): nur im Zustand `IN_PROGRESS` (danach 409 `IMMUTABLE_RECORD`, Änderung nur als Nachtrag); die angegebenen Antworten werden je Schritt angelegt
+     * oder ersetzt, nicht angegebene bleiben. Vollständigkeit wird erst beim Abschluss verlangt. [expectedRevision] ist die Revision des Laufs (412 wenn veraltet); jede Speicherung
+     * erhöht sie, sodass ein paralleler Abschluss mit altem Stand 412 erhält und kein Entwurf still verloren geht.
+     */
+    fun saveDraft(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: SaveInspectionDraft): InspectionView
+
+    /**
+     * Nachtrag zu einer Originalantwort eines **abgeschlossenen** Laufs (WP-M3-15): Werkstatt und Betriebsleitung; fremder Lauf oder Mandant 404; Lauf nicht abgeschlossen 409;
+     * Grund fehlt 422. Die Version je Originalantwort wird unter der Zeilensperre der Originalantwort fortlaufend vergeben (zwei gleichzeitige Nachträge: beide erhalten, 1 und 2).
+     */
+    fun amend(ctx: RequestContext, id: UUID, cmd: CreateInspectionAmendment): InspectionAmendmentView
+
     /** Lesen mit fester Vorlage und gespeicherten Antworten. Fahrer sehen nur Läufe eigener Schichten (sonst 404), Disposition und Werkstatt alle Läufe des Mandanten. */
     fun get(ctx: RequestContext, id: UUID): InspectionView
+}
+
+
+enum class AmendmentKind { CORRECTION, SUPPLEMENT }
+
+/** Versionierter Nachtrag zu einer Originalantwort (WP-M3-15): Autor, Zeit, Grund, Version je Originalantwort und Bezug; nie ein Überschreiben. */
+data class InspectionAmendmentView(
+    val id: UUID, val inspectionId: UUID, val stepCode: String, val answerId: UUID, val version: Int, val kind: AmendmentKind, val newAnswer: String,
+    val newNumberValue: java.math.BigDecimal?, val newNote: String?, val reason: String, val amendedBy: String, val createdAt: Instant,
+)
+
+/**
+ * Nachtrag nach dem Abschluss (WP-M3-15, Planungsannahme: ein Nachtrag ändert weder Ergebnis noch Sperre noch Freigabe, das geschieht nur über eine neue Prüfung bzw. WP-M3-51).
+ * Der Grund ist Pflicht (422, nicht leer, höchstens 500 Zeichen). Autor und Zeit setzt der Server.
+ */
+data class CreateInspectionAmendment(val stepCode: String, val kind: AmendmentKind, val newAnswer: String, val newNumberValue: java.math.BigDecimal?, val newNote: String?, val reason: String) {
+    companion object {
+        fun parse(raw: Map<String, Any?>): CreateInspectionAmendment {
+            val v = Violations()
+            v.unknown(raw, setOf("step_code", "kind", "new_answer", "new_number_value", "new_note", "reason"), "")
+            val step = v.text(raw, "step_code", 60, true)
+            val kind = v.code(raw, "kind", AmendmentKind.entries.map { it.name }.toSet(), true)
+            val answer = v.code(raw, "new_answer", setOf("OK", "DEFECT", "NOT_APPLICABLE", "NOT_CHECKABLE"), true)
+            val number = when (val n = raw["new_number_value"]) {
+                null -> null
+                is Int, is Long, is Short, is Byte -> java.math.BigDecimal((n as Number).toLong())
+                is Double -> if (n.isFinite()) java.math.BigDecimal.valueOf(n) else { v.add("/new_number_value", ViolationCode.TYPE_MISMATCH); null }
+                is java.math.BigDecimal -> n
+                is java.math.BigInteger -> java.math.BigDecimal(n)
+                else -> { v.add("/new_number_value", ViolationCode.TYPE_MISMATCH); null }
+            }
+            val note = if (raw["new_note"] == null) null else v.text(raw, "new_note", 500, false)
+            val reason = v.text(raw, "reason", 500, true)   // Pflichtgrund: leer oder nur Leerraum ist 422
+            v.throwIfAny()
+            return CreateInspectionAmendment(step!!, AmendmentKind.valueOf(kind!!), answer!!, number, note, reason!!)
+        }
+    }
 }
