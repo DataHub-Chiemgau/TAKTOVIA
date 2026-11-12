@@ -39,6 +39,8 @@ data class InsertionQuery(
 data class InsertionVariant(
     val vehicleId: UUID, val runId: UUID?, val planRevision: Long, val newRun: Boolean, val stops: List<PlanStop>, val posPickup: Int, val posDropoff: Int,
     val addedDriveSec: Int, val window: PromiseWindow,
+    /** Fahrzeit des Abschnitts in den Einstiegsstopp hinein (vom Vorgängerstopp bzw. Fahrzeugstart); Grundlage der Leerstrecke (WP-M2-20). */
+    val leadInSec: Int = 0,
 )
 
 sealed interface InsertionOutcome {
@@ -47,6 +49,11 @@ sealed interface InsertionOutcome {
 
     /** Begründete Ablehnung ([reason]: `NO_FEASIBLE_POSITION`, `TIMEOUT_NO_VALIDATED_PLAN`, `NO_CANDIDATE_VEHICLE`, `NO_VALID_VARIANT`); [grounds] zählt die Gründe der Positionen. */
     data class Rejected(val reason: String, val grounds: Map<String, Int>) : InsertionOutcome
+}
+
+sealed interface RankedResult {
+    data class Ranked(val ranking: RankedVariants, val outcome: InsertionOutcome.Offered) : RankedResult
+    data class NoOffer(val rejected: InsertionOutcome.Rejected, val weights: ScoringWeights) : RankedResult
 }
 
 /** Aufruf des Routing-Workers (`POST /v1/insert`); technische Fehler als [RoutingException]. Ersetzbar für Tests. */
@@ -129,6 +136,18 @@ class InsertionService(private val routing: RoutingPort, private val worker: Ins
         return InsertionOutcome.Offered(variants, partial, dropped)
     }
 
+    /**
+     * Wie [find], bewertet die Varianten zusätzlich nach der Mehrzielbewertung (WP-M2-20). Die Gewichte werden genau einmal zu Beginn gelesen (Schnappschuss mit Revision); eine
+     * parallele Änderung wirkt erst auf spätere Berechnungen, die Rangfolge entspricht der genannten Revision.
+     */
+    fun findRanked(ctx: RequestContext, q: InsertionQuery, weights: ScoringWeightsSource): RankedResult {
+        val w = weights.current(ctx)
+        return when (val o = find(ctx, q)) {
+            is InsertionOutcome.Offered -> RankedResult.Ranked(MultiObjectiveScoring.rank(o.variants, q.vehicles, w), o)
+            is InsertionOutcome.Rejected -> RankedResult.NoOffer(o, w)
+        }
+    }
+
     private fun movement(m: StopMovement) = linkedMapOf("booking_id" to m.bookingId.toString(), "seats" to m.vector.seats, "wheelchair" to m.vector.wheelchair)
 
     private fun toVariant(q: InsertionQuery, v: JsonNode, matrix: MatrixInfo, keys: List<String>, window: PromiseWindow): InsertionVariant? {
@@ -153,6 +172,7 @@ class InsertionService(private val routing: RoutingPort, private val worker: Ins
         // Prüfung im Kern: Routeninvarianten, zugesagte Fenster und harte Grenzen aller Buchungen, der neuen eingeschlossen
         if (RunPlanValidator.validate(vehicle.capacity, stops).isNotEmpty()) return null
         if (PromiseWindowGuard.check(stops, vehicle.protectedWindows + window).isNotEmpty()) return null
-        return InsertionVariant(vehicle.vehicleId, vehicle.runId, vehicle.planRevision, vehicle.runId == null, stops, posP, posD, v.get("added_drive_s").asInt(), window)
+        val leadIn = if (posP == 0) keys.indexOf(vehicle.start.routingKey).let { s0 -> matrix.cells[s0][nodes[0]]?.timeSeconds } else matrix.cells[nodes[posP - 1]][nodes[posP]]?.timeSeconds
+        return InsertionVariant(vehicle.vehicleId, vehicle.runId, vehicle.planRevision, vehicle.runId == null, stops, posP, posD, v.get("added_drive_s").asInt(), window, leadIn ?: 0)
     }
 }
