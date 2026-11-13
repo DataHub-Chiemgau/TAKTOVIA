@@ -4317,6 +4317,23 @@ components:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
+        defect_ids:
+          type: array
+          maxItems: 100
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Verknüpfte Schadenakten (WP-M3-20, DMG-003); die Akte trägt die
+            Incident-Referenz und ist von hier aus erreichbar.
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Dienstbezug der Sichtbarkeit (leer = mandantenweit).
+        closed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
         revision:
           type: integer
           format: int64

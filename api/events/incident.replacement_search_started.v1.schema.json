@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/incident.replacement_search_started.v1.schema.json",
+  "title": "Ersatzfahrzeugsuche gestartet (WP-M3-53)",
+  "description": "Payload von `incident.replacement_search_started`. Aggregat: incident / n (Revision nach dem Wechsel OPEN -> REPLACEMENT_SEARCH). Je Incident höchstens einmal. Nur Kennungen: keine Diagnosen, Beschreibungstexte, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "incident_id",
+    "operation_id",
+    "vehicle_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "operation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "incident_id": "11111111-2222-4333-8444-555555555555",
+      "operation_id": "99999999-8888-4777-8666-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa"
+    }
+  ]
+}

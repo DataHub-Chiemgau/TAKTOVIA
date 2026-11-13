@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT' | 'LEDGER_EXPORT';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT' | 'LEDGER_EXPORT' | 'REPLACEMENT_SEARCH';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -2394,6 +2394,9 @@ export interface Incident {
   rule_revision_id: UUID | null;
   affected_run_ids: UUID[];
   replacement_operation_id: UUID | null;
+  defect_ids?: UUID[];
+  service_id?: UUID | null;
+  closed_at?: string | null;
   revision: number;
 }
 

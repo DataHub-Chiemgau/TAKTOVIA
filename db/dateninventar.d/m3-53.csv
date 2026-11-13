@@ -1,0 +1,6 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+workflow_rule_revision;revision_no;nein;FLOTTE_SICHERHEIT;;;;
+incident;service_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;trigger_event_id;nein;FLOTTE_SICHERHEIT;;;;
+incident;subject_ref;nein;FLOTTE_SICHERHEIT;;;;
+incident;closed_at;nein;FLOTTE_SICHERHEIT;;;;
