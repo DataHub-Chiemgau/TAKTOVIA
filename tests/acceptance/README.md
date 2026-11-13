@@ -54,3 +54,5 @@ python tests/acceptance/m2_gate/run.py [--write-e2e]   # 16 Szenarien, Evidenz n
 
 PH-AT-004, AT-01 bis AT-19 (soweit M2) und die M2-Anteile von PH-AT-001/-010/-011/-018, E2E-096/-098. Umfang je Test und offene Teilschritte (AT-01 bis M3, AT-13 bis M6/M7, AT-19 manuelles Protokoll): [docs/m2-gate-umfang.md](docs/m2-gate-umfang.md).
 Datenbank-, Web- und Browsertests werden im Szenario **ausgeführt**; Backend-Tests über ihre JUnit-Ergebnisse. Last- und Skalierungsläufe liegen in `tests/performance` (eigener Lauf). Die RLS-Abdeckungsprüfung aller M2-Tabellen: `db/tests/test_m2_48_rls_abdeckung.py`.
+
+- `test_stammdaten_migration.py` (WP-M5-25, LH-6.20-QAT-005): Einspielwerkzeug `tools/stammdaten_import` gegen die **echte Anwendung** (Spring-Boot-Jar als Prozess, lokaler JWT-Test-Issuer statt Keycloak, Testwelt `stammdaten_testwelt/`, Referenzdatensatz `fixtures/stammdaten_referenz/`); braucht `cd backend && ./gradlew :app:bootJar`, sonst werden die Tests übersprungen (mit `TAKTOVIA_REQUIRE_APP_JAR=true` schlagen sie fehl).

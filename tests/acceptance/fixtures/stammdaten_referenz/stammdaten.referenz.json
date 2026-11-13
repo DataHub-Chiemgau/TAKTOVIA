@@ -1,0 +1,54 @@
+{
+  "format": "taktovia-stammdaten/1",
+  "beschreibung": "Synthetischer Referenzdatensatz (keine realen Personen oder Betriebe). Platzhalter __TENANT__, __ISSUER__ und __SUBJ_n__ setzt die Testwelt je Lauf.",
+  "mandant": {"tenant_id": "__TENANT__", "issuer": "__ISSUER__"},
+  "betreiber": [
+    {"key": "b-stadtbus", "name": "Stadtbus Beispielstadt GmbH", "country": "DE", "federation_ref": "fed-stadtbus", "roles": ["TRANSPORT_COMPANY", "ACTUAL_CARRIER"]},
+    {"key": "b-taxi", "name": "Taxi Beispielstadt eG", "country": "DE", "federation_ref": "fed-taxi", "roles": ["ACTUAL_CARRIER"]}
+  ],
+  "dienste": [
+    {"key": "d-rufbus", "name": "Rufbus Beispielstadt", "betreiber": "b-stadtbus", "timezone": "Europe/Berlin",
+     "betriebszeiten": {"traffic_product": "AREA_ON_DEMAND", "weekly_hours": [{"weekdays": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"], "from": "00:00", "to": "24:00"}],
+                        "exceptions": [], "valid_from": "2026-01-01T00:00:00+01:00", "valid_to": null, "reason": "Pilotbetrieb"}}
+  ],
+  "bediengebiete": [
+    {"key": "g-kern", "dienst": "d-rufbus", "valid_from": "2026-01-01T00:00:00+01:00", "valid_to": null, "zone_role": "BOTH",
+     "area": {"type": "MultiPolygon", "coordinates": [[[[13.70, 51.00], [13.80, 51.00], [13.80, 51.10], [13.70, 51.10], [13.70, 51.00]]]]}}
+  ],
+  "haltepunkte": [
+    {"key": "h-markt", "gebiet": "g-kern", "name": "Markt", "point": {"latitude": 51.05, "longitude": 13.74}, "valid_from": "2026-01-01T00:00:00+01:00",
+     "accessibility": {"schema_version": "1.0", "step_free": "YES", "wheelchair_boarding": "YES"}, "traffic_products": ["AREA_ON_DEMAND"]},
+    {"key": "h-bahnhof", "gebiet": "g-kern", "name": "Bahnhof", "point": {"latitude": 51.08, "longitude": 13.78}, "valid_from": "2026-01-01T00:00:00+01:00",
+     "accessibility": {"schema_version": "1.0", "step_free": "YES", "wheelchair_boarding": "YES"}, "traffic_products": ["AREA_ON_DEMAND"]},
+    {"key": "h-klinik", "gebiet": "g-kern", "name": "Klinikum", "point": {"latitude": 51.02, "longitude": 13.72}, "valid_from": "2026-01-01T00:00:00+01:00",
+     "accessibility": {"schema_version": "1.0", "step_free": "YES", "wheelchair_boarding": "UNVERIFIED"}, "traffic_products": ["AREA_ON_DEMAND"]}
+  ],
+  "tarife": [
+    {"key": "t-standard", "dienst": "d-rufbus", "tariff_class": "STANDARD", "valid_from": "2026-01-01T00:00:00+01:00", "valid_to": null, "currency": "EUR",
+     "reason": "Pilottarif (Testannahme bis zur Freigabe durch den Auftraggeber, D-05)", "freigabe": true,
+     "rules": [{"rule_type": "FESTPREIS", "amount_minor": 450, "tax_rate": "0.07", "tax_rule_revision": "DE-2026-1"}]}
+  ],
+  "fahrzeuge": [
+    {"key": "f-101", "kennzeichen": "XX-TX 101", "vehicle_type": "MINIBUS", "betreiber": "b-stadtbus", "dienst": "d-rufbus", "gebiet": "g-kern", "zuordnung_ab": "2026-01-01T00:00:00+01:00",
+     "capacity": {"seats": 8, "wheelchair": 1}, "equipment": ["RAMP"], "active": true},
+    {"key": "f-102", "kennzeichen": "XX-TX 102", "vehicle_type": "MINIBUS", "betreiber": "b-stadtbus", "dienst": "d-rufbus", "gebiet": "g-kern", "zuordnung_ab": "2026-01-01T00:00:00+01:00",
+     "capacity": {"seats": 6, "wheelchair": 2}, "equipment": ["RAMP", "LIFT"], "active": true},
+    {"key": "f-103", "kennzeichen": "XX-TX 103", "vehicle_type": "PKW", "betreiber": "b-taxi", "dienst": "d-rufbus", "zuordnung_ab": "2026-01-01T00:00:00+01:00",
+     "capacity": {"seats": 4, "wheelchair": 0}, "equipment": [], "active": true}
+  ],
+  "benutzer": [
+    {"key": "u-dispo", "subject": "__SUBJ_1__", "rolle": "dispatcher"},
+    {"key": "u-fahrer-1", "subject": "__SUBJ_2__", "rolle": "driver", "dienste": ["d-rufbus"]},
+    {"key": "u-fahrer-2", "subject": "__SUBJ_3__", "rolle": "driver", "dienste": ["d-rufbus"]},
+    {"key": "u-callcenter", "subject": "__SUBJ_4__", "rolle": "callcenter"}
+  ],
+  "fahrer": [
+    {"key": "p-1", "benutzer": "u-fahrer-1", "display_name": "Testfahrer Eins", "contact_channel": "EMAIL", "contact_value": "fahrer.eins@example.invalid",
+     "qualifikationen": [{"qualification_code": "PBEFG", "valid_from": "2026-01-01T00:00:00+01:00", "decision": "APPROVED"}]},
+    {"key": "p-2", "benutzer": "u-fahrer-2", "display_name": "Testfahrer Zwei", "contact_channel": "PHONE", "contact_value": "+49 351 5550102",
+     "qualifikationen": [{"qualification_code": "PBEFG", "valid_from": "2026-01-01T00:00:00+01:00", "decision": "APPROVED"}]}
+  ],
+  "konfiguration": [
+    {"key": "c-pilot", "values": {"max_wait_min": 20}, "effective_from": "2027-01-01T00:00:00+01:00", "reason": "Erstwerte Pilotbetrieb (fachlich freizugeben, Kap. 01 §1.6)"}
+  ]
+}
