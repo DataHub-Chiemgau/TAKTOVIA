@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonValue
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.fleetsafety.api.DefectCatalog
 import de.taktovia.fleetsafety.api.DefectAmendment
-import de.taktovia.fleetsafety.api.DefectFilter
+import de.taktovia.fleetsafety.api.DefectListQuery
 import de.taktovia.fleetsafety.api.EvidenceView
 import de.taktovia.fleetsafety.api.DefectTransition
 import de.taktovia.fleetsafety.api.DefectView
 import de.taktovia.fleetsafety.api.FleetsafetyApi
 import de.taktovia.fleetsafety.api.ReportDefect
+import de.taktovia.fleetsafety.api.TriageDefect
 import de.taktovia.platform.api.CursorCodec
 import de.taktovia.platform.api.CursorPosition
 import de.taktovia.platform.api.CursorScope
@@ -47,6 +48,7 @@ internal object DefectJson {
         "severity" to d.severity, "status" to d.status, "assignee_ref" to d.assigneeRef?.toString(), "blocks_vehicle" to d.blocksVehicle,
         "evidence_ids" to d.evidence.map { it.id.toString() }, "evidence_pending" to d.evidencePending, "content_version" to d.contentVersion,
         "description" to d.description, "revision" to d.revision,
+        "severity_rule_version" to d.severityRuleVersion, "suggested_severity" to d.suggestedSeverity,
     )
 
     fun resource(d: DefectView) = DefectResource(of(d), d.revision)
@@ -77,13 +79,22 @@ class DefectController(private val fleet: FleetsafetyApi, private val codec: Cur
     fun transition(@PathVariable("defect_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): DefectResource =
         DefectJson.resource(fleet.defects.transition(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch), DefectTransition.parse(body)))
 
+    /** Triage (WP-M3-45, DMG-005): Klasse bestätigen oder korrigieren, Zuständiger, Folgeentscheidung; `If-Match` Pflicht (428/412). */
+    @PostMapping("/v1/defects/{defect_id}/triage")
+    fun triage(@PathVariable("defect_id") id: UUID, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): DefectResource =
+        DefectJson.resource(fleet.defects.triage(RequestContexts.require(request), id, Etag.parseIfMatch(ifMatch), TriageDefect.parse(body)).defect)
+
     @GetMapping("/v1/defects/{defect_id}/status-history")
     fun statusHistory(@PathVariable("defect_id") id: UUID, request: HttpServletRequest): Map<String, Any?> {
-        val items = fleet.defects.statusHistory(RequestContexts.require(request), id)
+        val ctx = RequestContexts.require(request)
+        val items = fleet.defects.statusHistory(ctx, id)
+        val timeline = fleet.defects.timeline(ctx, id)
         return linkedMapOf("items" to items.map { h ->
             linkedMapOf("id" to h.id.toString(), "from_status" to h.fromStatus, "to_status" to h.toStatus, "actor" to h.actor, "reason" to h.reason, "revision" to h.revision,
                 "reopening" to h.reopening, "occurred_at" to h.occurredAt.toString())
-        }, "next_cursor" to null, "as_of" to Instant.now().toString())
+        }, "next_cursor" to null, "as_of" to Instant.now().toString(), "timeline" to timeline.map { e ->
+            linkedMapOf("kind" to e.kind.name, "occurred_at" to e.occurredAt.toString(), "actor" to e.actor, "detail" to e.detail, "reason" to e.reason)
+        })
     }
 
     @PostMapping("/v1/defects/{defect_id}/amendments")
@@ -109,24 +120,22 @@ class DefectController(private val fleet: FleetsafetyApi, private val codec: Cur
     @GetMapping("/v1/defects/{defect_id}")
     fun get(@PathVariable("defect_id") id: UUID, request: HttpServletRequest): DefectResource = DefectJson.resource(fleet.defects.get(RequestContexts.require(request), id))
 
+    /**
+     * Schadenliste (WP-M3-49): sechs Filter, Sortierung, `limit` 1-100, signierter Cursor mit Sortierwert und Stand der Momentaufnahme. Filter und Sortierung gehören zur Cursorbindung: ein Cursor einer anderen
+     * Abfrage, eines anderen Akteurs oder Mandanten ist wie ein manipulierter Cursor 400. Ungültige Werte: 422 mit Feldverweis.
+     */
     @GetMapping("/v1/defects")
-    fun list(
-        @RequestParam(required = false) limit: String?, @RequestParam(required = false) cursor: String?, @RequestParam(required = false) vehicle_id: String?,
-        @RequestParam(required = false) status: String?, @RequestParam(required = false) severity: String?, @RequestParam(required = false) reported_from: String?,
-        @RequestParam(required = false) reported_to: String?, request: HttpServletRequest,
-    ): Map<String, Any?> {
+    fun list(@RequestParam params: Map<String, String>, request: HttpServletRequest): Map<String, Any?> {
         val ctx = RequestContexts.require(request)
-        val filter = DefectFilter(
-            vehicleId = vehicle_id?.let { uuid("vehicle_id", it) },
-            status = status?.also { if (it !in DefectCatalog.STATUSES) throw bad("status", ViolationCode.NOT_IN_ENUM) },
-            severity = severity?.also { if (it !in DefectCatalog.SEVERITIES) throw bad("severity", ViolationCode.NOT_IN_ENUM) },
-            reportedFrom = reported_from?.let { instant("reported_from", it) }, reportedTo = reported_to?.let { instant("reported_to", it) },
-        )
-        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, "defects|${filter.vehicleId ?: "-"}|${filter.status ?: "-"}|${filter.severity ?: "-"}|${filter.reportedFrom ?: "-"}|${filter.reportedTo ?: "-"}")
-        val lim = Paging.limit(limit)
-        val rows = fleet.defects.list(ctx, filter, lim, Paging.position(cursor, codec, scope)?.let { it.createdAt to it.id })
-        return Paging.page(rows, lim, { CursorPosition(it.createdAt, it.id) }, codec, scope, Instant.now()).toMap { DefectJson.of(it) }
+        val raw = params.filterKeys { it in LIST_PARAMS }
+        val probe = DefectListQuery.parse(raw)
+        val scope = CursorScope(ctx.tenant.toString(), ctx.actor.subject, probe.resourceKey)
+        val query = probe.copy(after = params["cursor"]?.let { codec.decodeKeyed(it, scope) })
+        val page = fleet.defects.listPage(ctx, query)
+        return linkedMapOf("items" to page.items.map { DefectJson.of(it) }, "next_cursor" to page.next?.let { codec.encodeKeyed(it, scope) }, "as_of" to page.asOf.toString())
     }
+
+    private companion object { val LIST_PARAMS = setOf("vehicle_id", "priority", "severity", "status", "reported_from", "reported_to", "depot_id", "assignee_ref", "sort", "limit") }
 
     private fun bad(name: String, code: ViolationCode) = ProblemException.invalid(Violation("/\$query/$name", code))
     private fun uuid(name: String, v: String): UUID = runCatching { UUID.fromString(v) }.getOrNull() ?: throw bad(name, ViolationCode.INVALID_FORMAT)

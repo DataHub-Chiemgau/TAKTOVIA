@@ -70,6 +70,28 @@
     "policy_revision_no": {
       "type": "integer",
       "minimum": 1
+    },
+    "case_number": {
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 40
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "affected_run_count": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "examples": [

@@ -107,6 +107,13 @@ object AuditActions {
     const val DEFECT_STATE_CHANGED = "fleet.defect.state_changed"
     const val DEFECT_AMENDED = "fleet.defect.amended"
     const val DEFECT_HISTORY_READ = "fleet.defect.history_read"
+    /** Triage der Schadenakte (WP-M3-45): Klasse bestätigt oder korrigiert, Zuständiger, Folgestatus; Objekt `defect:<id>`, Details nur Codes, Fallnummer und Revision, nie Begründungs- oder Beschreibungstext. */
+    const val DEFECT_TRIAGED = "fleet.defect.triaged"
+    /** Reparaturauftrag und Wiederfreigabe (WP-M3-51): Auftrag angelegt/geändert (Objekt `repair_order:<id>`), Freigabeentscheidung (ausstehend oder abgeschlossen) und abgewiesener Freigabeversuch (Objekt `vehicle:<id>`); Details nur Kennungen und Codes. */
+    const val REPAIR_ORDER_CREATED = "fleet.repair_order.created"
+    const val REPAIR_ORDER_CHANGED = "fleet.repair_order.changed"
+    const val RELEASE_DECISION_RECORDED = "fleet.release_decision.recorded"
+    const val RELEASE_ATTEMPT_REJECTED = "fleet.release.attempt_rejected"
     /** Prüflauf gestartet bzw. kein Start möglich, weil keine eindeutig passende freigegebene Vorlage besteht (WP-M3-13); Objekt `inspection:<id>` bzw. `staff_shift:<id>`, Details nur Kennungen und Codes. */
     const val INSPECTION_STARTED = "fleet.inspection.started"
     const val INSPECTION_TEMPLATE_UNAVAILABLE = "fleet.inspection.template_unavailable"
@@ -315,7 +322,8 @@ object AuditActions {
         SECURITY_LOGIN_SUCCEEDED, SECURITY_LOGIN_FAILED, SECURITY_LOGOUT, SECURITY_MFA_FAILED, SECURITY_CONTAINMENT_EXECUTED, AUDIT_READ,
         PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
         SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED,
-        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED, DRIVER_ASSISTANCE_VIEWED, DRIVER_PLAN_ACKNOWLEDGED, ALERT_ACKNOWLEDGED, ALERT_POLICY_PUBLISHED)
+        GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED, DRIVER_ASSISTANCE_VIEWED, DRIVER_PLAN_ACKNOWLEDGED, ALERT_ACKNOWLEDGED, ALERT_POLICY_PUBLISHED,
+        DEFECT_TRIAGED, REPAIR_ORDER_CREATED, REPAIR_ORDER_CHANGED, RELEASE_DECISION_RECORDED, RELEASE_ATTEMPT_REJECTED)
 }
 
 /**

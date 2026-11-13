@@ -26,22 +26,30 @@ class DefectWorld(val fx: FleetFixture) {
         "description" to description).also { m -> if (description == null) m.remove("description"); m.putAll(extra) }
 
     /** Setzt die Klasse (Triage, WP-M3-45) per Administration, solange die Triage nicht gebaut ist. */
-    fun classify(defect: UUID, severity: String) = fx.exec("UPDATE taktovia.defect_case SET severity = ? WHERE id = ?", severity, defect)
+    fun classify(defect: UUID, severity: String) = fx.exec("UPDATE taktovia.defect_case SET severity = ?, severity_rule_version = 'test-v1', severity_source = 'TRIAGE' WHERE id = ?", severity, defect)
 
     /** Akte direkt in einem Status (Administration; der Anlagepfad fängt immer bei NEW an): Fixture für tabellengetriebene Übergangstests. */
     fun caseIn(status: String, severity: String? = null, vehicle: UUID = this.vehicle): UUID = UUID.randomUUID().also { id ->
-        fx.exec("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,status,severity,dismissed_reason) " +
-            "VALUES (?,?,?,?,?,now() - interval '1 hour','BODY','Testakte','user:11111111-1111-4111-8111-111111111111',?,?,?)",
-            tenant.value, id, "SCH-T-" + id.toString().take(12), vehicle, UUID.randomUUID(), status, severity, if (status == "DISMISSED") "Fehlmeldung" else null)
+        fx.exec("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,status,severity,severity_rule_version,severity_source,dismissed_reason) " +
+            "VALUES (?,?,?,?,?,now() - interval '1 hour','BODY','Testakte','user:11111111-1111-4111-8111-111111111111',?,?,?,?,?)",
+            tenant.value, id, "SCH-T-" + id.toString().take(12), vehicle, UUID.randomUUID(), status, severity, severity?.let { "test-v1" }, severity?.let { "TRIAGE" }, if (status == "DISMISSED") "Fehlmeldung" else null)
     }
 
     fun repairOrder(defect: UUID, status: String = "OPEN"): UUID = UUID.randomUUID().also { id ->
         fx.exec("INSERT INTO taktovia.repair_order(tenant_id,id,defect_id,vehicle_id,status,created_by) VALUES (?,?,?,?,?,'user:11111111-1111-4111-8111-111111111111')", tenant.value, id, defect, vehicle, status)
     }
 
+    /** Reparaturnachweis wie die Anwendung ihn erfasst: Nachweis (Evidenz der Akte) und Kostenbezug, Auftrag über `IN_PROGRESS` nach `PROOF_RECORDED` (Wächter `repair_order_guard`). */
+    fun recordProof(defect: UUID) {
+        val ev = UUID.randomUUID()
+        fx.exec("INSERT INTO taktovia.defect_evidence(tenant_id,id,defect_id,media_ref,sha256,captured_at,created_by) VALUES (?,?,?,'obj',?,now(),'user:t')", tenant.value, ev, defect, "0".repeat(64))
+        fx.exec("UPDATE taktovia.repair_order SET status='IN_PROGRESS', revision=revision+1 WHERE defect_id=? AND status='OPEN'", defect)
+        fx.exec("UPDATE taktovia.repair_order SET status='PROOF_RECORDED', revision=revision+1, proof_evidence_id=?, proof_recorded_at=now(), proof_recorded_by='user:t', cost_reference='KST-1' WHERE defect_id=? AND status='IN_PROGRESS'", ev, defect)
+    }
+
     /** Reparaturauftrag mit Nachweis, Folgeprüfung und Freigabeentscheidung (Vieraugen) zur Akte. */
     fun releaseDecision(defect: UUID, decision: String = "RELEASED") {
-        val ro = repairOrder(defect, "PROOF_RECORDED"); val shift = UUID.randomUUID(); val tpl = UUID.randomUUID(); val run = UUID.randomUUID()
+        val ro = fx.strings("SELECT id::text FROM taktovia.repair_order WHERE defect_id=? AND status <> 'CANCELED'", defect).firstOrNull()?.let(UUID::fromString) ?: repairOrder(defect, "PROOF_RECORDED"); val shift = UUID.randomUUID(); val tpl = UUID.randomUUID(); val run = UUID.randomUUID()
         fx.exec("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?,now(),now()+interval '1 hour','Europe/Berlin',0,'PUBLISHED')", tenant.value, shift, UUID.randomUUID(), vehicle)
         fx.exec("INSERT INTO taktovia.checklist_template_revision(tenant_id,id,template_id,version,vehicle_class,service_mode,created_by) VALUES (?,?,?,1,'PKW','AREA','user:11111111-1111-4111-8111-111111111111')", tenant.value, tpl, UUID.randomUUID())
         fx.exec("INSERT INTO taktovia.inspection_run(tenant_id,id,shift_id,vehicle_id,driver_ref,template_revision_id,kind,started_at,created_by) VALUES (?,?,?,?,?,?,'FOLLOW_UP',now(),'user:11111111-1111-4111-8111-111111111111')", tenant.value, run, shift, vehicle, UUID.randomUUID(), tpl)

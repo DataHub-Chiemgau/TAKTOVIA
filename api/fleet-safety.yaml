@@ -1197,9 +1197,13 @@ paths:
       security:
       - oidc:
         - defects:read
-      description: Filter `vehicle_id`, `status`, `severity` und Zeitraum `reported_from`/`reported_to`
-        (auffindbar über Fahrzeug und Datum, DMG-002); Fahrer sehen nur eigene Meldungen
-        (DMG-011).
+      description: 'Filter `vehicle_id`, `status`, `severity`/`priority`, Zeitraum `reported_from`/`reported_to`,
+        `depot_id` und `assignee_ref` (die sechs Filter der Schadenliste, DMG-002/-009), Sortierung
+        `sort`, stabile Paginierung mit dem Stand der ersten Seite (`as_of`; Status, Klasse und Zuständiger
+        werden für alle Seiten zu diesem Stand gelesen). Nur Akten, die der Aufrufer nach Rolle
+        und Dienst sehen darf; die Listenprojektion enthält weder `description` noch Fotos. Fahrer
+        sehen nur eigene Meldungen (DMG-011). Ungültiger Filterwert oder `limit` außerhalb 1-100:
+        422; manipulierter Cursor: 400 `INVALID_CURSOR`.'
       parameters:
       - name: vehicle_id
         in: query
@@ -1240,6 +1244,45 @@ paths:
           type: string
           format: date-time
         description: Nur Akten mit Meldezeitpunkt vor diesem Zeitpunkt.
+      - name: priority
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 4
+        description: 'Priorität, abgeleitet aus der Klasse (Arbeitsannahme WP-M3-49): 1 SAFETY_CRITICAL, 2 OPERATIONALLY_RELEVANT, 3 COSMETIC, 4 OTHER. Wirkt zusammen mit `severity` (UND).'
+      - name: depot_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Akten von Fahrzeugen dieses Betriebshofs (`vehicle.depot_id`, Arbeitsannahme OP-22).
+      - name: assignee_ref
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Akten dieses Verantwortlichen (Zuständiger der Triage).
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - reported_at
+          - -reported_at
+          - case_number
+          - -case_number
+          - vehicle
+          - -vehicle
+          - priority
+          - -priority
+          - status
+          - -status
+          - assignee
+          - -assignee
+        description: Sortierung nach einer angezeigten Spalte, `-` vorangestellt = absteigend; bei gleichen Werten entscheidet `id` in derselben Richtung. Ohne Angabe `(created_at, id)`.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent
@@ -1526,6 +1569,69 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RepairOrderCreate'
+  /v1/repair-orders/{repair_order_id}/transitions:
+    post:
+      summary: Reparaturauftrag fortschreiben
+      operationId: transitionRepairOrder
+      security:
+      - oidc:
+        - repair:write
+      description: 'Zustandsautomat `reparaturauftrag.md`: OPEN -> IN_PROGRESS | CANCELED,
+        IN_PROGRESS -> PROOF_RECORDED | CANCELED; PROOF_RECORDED und CANCELED sind endgültig
+        (409 IMMUTABLE_RECORD). PROOF_RECORDED verlangt `proof_evidence_id` (freigegebene
+        Evidenz derselben Akte) und einen Kostenbezug (422 mit Feldverweis), CANCELED eine
+        Begründung; die Stornierung setzt die Akte von REPAIR zurück auf IN_PROGRESS. Nur
+        Rolle workshop; fremder Auftrag: 404; ohne `If-Match`: 428; veraltet: 412. Der Nachweis
+        hebt keine Sperre auf (AT-35).'
+      parameters:
+      - name: repair_order_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Reparaturauftrags-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepairOrder'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepairOrderTransition'
   /v1/vehicles/{vehicle_id}/release:
     post:
       summary: Fahrzeug nach Sicherheitssperre wieder freigeben
@@ -1533,10 +1639,16 @@ paths:
       security:
       - oidc:
         - fleet:release
-      description: 'Verlangt Reparaturnachweis, bestandene Folgeprüfung und die berechtigte
-        Rolle; ohne zweite Person: Entscheidung PENDING_SECOND_APPROVAL (Vieraugenpflicht).
-        Der Aufrufer mit gleicher Identität wie der Erstfreigeber kann nicht zweiter
-        Freigeber sein (403). If-Match: Revision des Fahrzeugs.'
+      description: 'Verlangt Reparaturnachweis (Auftrag PROOF_RECORDED), bestandene Folgeprüfung
+        nach dem Nachweis und die berechtigte Rolle; ohne zweite Person: Entscheidung PENDING_SECOND_APPROVAL
+        (Vieraugenpflicht, erste Freigabe nur Rolle workshop). Der Aufrufer mit gleicher Identität
+        wie der Erstfreigeber kann nicht zweiter Freigeber sein (403). If-Match: `safety_revision`
+        des Fahrzeugs (412, wenn sich der Sicherheitsstand geändert hat, z. B. durch eine neue
+        kritische Meldung). Die Entscheidung hebt nur die Sicherheitssperre der Akte auf, erhöht
+        die `safety_revision` und erteilt selbst keine Einsatzfreigabe; die entsteht erst mit
+        einer neuen Prüfung. Fehlende Bedingung: 409 (die Sperre bleibt); abgewiesene Versuche
+        stehen als Fehlversuch im Audit. Wiederholung nach abgeschlossener Entscheidung: 200
+        mit derselben Entscheidung.'
       parameters:
       - name: vehicle_id
         in: path
@@ -1548,6 +1660,12 @@ paths:
       - $ref: common.yaml#/components/parameters/IfMatch
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
+        '200':
+          description: Die Entscheidung war bereits abgeschlossen (dieselbe Entscheidung, keine zweite).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleRelease'
         '201':
           description: Angelegt.
           content:
@@ -4061,6 +4179,16 @@ components:
           minimum: 1
           maximum: 100000
           description: Version des Meldungsinhalts (steigt mit jedem Nachtrag, WP-M3-48).
+        severity_rule_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 40
+          - type: 'null'
+          description: Regelversion der Klassifikation (WP-M3-45); jede Akte mit Klasse nennt sie.
+        suggested_severity:
+          $ref: '#/components/schemas/DefectSeverity'
+          description: Vorschlag der Regelmatrix für den aktuellen Inhalt (Triageansicht, WP-M3-45); die geltende Klasse steht in `severity`.
       required:
       - id
       - case_number
@@ -4169,6 +4297,16 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        proof_evidence_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Reparaturnachweis (freigegebene Evidenz der Akte), gesetzt mit `PROOF_RECORDED`.
+        proof_recorded_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
       required:
       - id
       - defect_id
@@ -4179,6 +4317,35 @@ components:
       - cost_reference
       - created_at
       - revision
+    RepairOrderTransition:
+      type: object
+      additionalProperties: false
+      properties:
+        to:
+          type: string
+          enum:
+          - IN_PROGRESS
+          - PROOF_RECORDED
+          - CANCELED
+        proof_evidence_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        cost_reference:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+          - type: 'null'
+      required:
+      - to
+      description: Übergang des Reparaturauftrags (WP-M3-51); `PROOF_RECORDED` mit `proof_evidence_id` und Kostenbezug, `CANCELED` mit `reason`.
     RepairOrderPage:
       type: object
       additionalProperties: false
@@ -4260,6 +4427,31 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        repair_order_id:
+          $ref: common.yaml#/components/schemas/UUID
+        defect_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        decided_by_role:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+        second_approver:
+          oneOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+        second_approver_role:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+        proof_evidence_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
       required:
       - id
       - vehicle_id
@@ -4269,7 +4461,7 @@ components:
       - safety_revision
       - lifted_block_ids
       - revision
-      description: Unveränderliche Freigabeentscheidung.
+      description: Unveränderliche Freigabeentscheidung (Akteur, Rolle, Nachweis und Schadenakte).
     Incident:
       type: object
       additionalProperties: false
@@ -4432,6 +4624,11 @@ components:
             $ref: '#/components/schemas/VehicleEquipment'
         active:
           type: boolean
+        depot_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Betriebshof des Fahrzeugs (Arbeitsannahme OP-22, WP-M3-49); fehlt das Feld, bleibt er bei einer Änderung unverändert, `null` entfernt ihn. Ein fremder oder unbekannter Betriebshof ergibt 422.
       required:
       - vehicle_label
       - vehicle_type
@@ -4496,6 +4693,11 @@ components:
         updated_at:
           type: string
           format: date-time
+        depot_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Betriebshof des Fahrzeugs (Arbeitsannahme OP-22, WP-M3-49).
       required:
       - id
       - vehicle_label
@@ -5376,10 +5578,48 @@ components:
         as_of:
           type: string
           format: date-time
+        timeline:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/DefectTimelineEvent'
+          description: Aktenhistorie aus Statuswechseln, Klassifikation, Zuweisung und Sperre in zeitlicher Folge mit Akteur und Zeit (AT-34, WP-M3-45).
       required:
       - items
       - next_cursor
       - as_of
+    DefectTimelineEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+          - STATUS
+          - CLASSIFICATION
+          - ASSIGNMENT
+          - VEHICLE_BLOCK
+        occurred_at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+          maxLength: 200
+        detail:
+          type: string
+          maxLength: 200
+          description: 'Codes: Statuswechsel `A>B`, Klassenwechsel `A>B`, Zuständigenwechsel `<alt>><neu>`, Sperre `Quelle|Grund`; nie Freitext.'
+        reason:
+          oneOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+      required:
+      - kind
+      - occurred_at
+      - actor
+      - detail
+      - reason
     DefectAmendment:
       type: object
       additionalProperties: false

@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+defect_classification_history;SELECT,INSERT;WP-M3-45: Klassifikationshistorie der Schadenakte; unveränderlich (Trigger), kein UPDATE/DELETE

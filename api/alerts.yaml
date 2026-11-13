@@ -232,6 +232,18 @@ components:
           oneOf:
           - $ref: '#/components/schemas/AlertAcknowledgement'
           - type: 'null'
+        case_number:
+          oneOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: Fallnummer der Schadenakte beim kritischen Schadensalarm (WP-M3-46).
+        affected_run_count:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+          description: Zahl der betroffenen Fahrten (offene Umläufe des Fahrzeugs) beim kritischen Schadensalarm (WP-M3-46).
       required:
       - id
       - kind

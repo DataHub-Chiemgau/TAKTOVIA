@@ -35,6 +35,7 @@ internal object AlertJson {
         "recipient_role" to a.recipientRole, "policy_revision_no" to a.policyRevisionNo, "escalation_level" to a.escalationLevel, "escalated_at" to a.escalatedAt?.toString(),
         "escalate_at" to a.escalateAt?.toString(), "reason_code" to a.reasonCode, "ref_type" to a.refType, "ref_id" to a.refId?.toString(), "created_at" to a.createdAt.toString(),
         "updated_at" to a.updatedAt.toString(), "resolved_at" to a.resolvedAt?.toString(), "revision" to a.revision,
+        "case_number" to a.caseNumber, "affected_run_count" to a.affectedRunCount,
         "acknowledgement" to a.acknowledgement?.let { linkedMapOf("acknowledged_by" to it.acknowledgedBy, "acknowledged_at" to it.acknowledgedAt.toString(), "cause" to it.cause?.name, "note" to it.note) },
     )
 

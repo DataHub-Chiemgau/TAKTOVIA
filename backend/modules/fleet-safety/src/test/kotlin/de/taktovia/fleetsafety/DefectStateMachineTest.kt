@@ -78,7 +78,7 @@ class DefectStateMachineTest {
         w.repairOrder(d.id, "OPEN")
         assertEquals("REPAIR", go(w, d.id, "workshop", to(DefectState.REPAIR)).status)
         assertEquals("Der Reparaturnachweis fehlt.", problem { go(w, d.id, "workshop", to(DefectState.CLOSED)) }.detail!!.substringAfter(": "))
-        fx.exec("UPDATE taktovia.repair_order SET status='PROOF_RECORDED' WHERE defect_id=?", d.id)
+        w.recordProof(d.id)   // Auftrag über IN_PROGRESS mit Nachweis und Kostenbezug (Wächter repair_order_guard, WP-M3-51)
         val closed = go(w, d.id, "tenant_admin", to(DefectState.CLOSED))
         assertEquals("CLOSED", closed.status); assertEquals(5, closed.revision)
         val history = fx.fleet.defects.statusHistory(w.ctx("workshop"), d.id)

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/repair.proof_recorded.v1.schema.json",
+  "title": "Reparaturnachweis gemeldet (WP-M3-51)",
+  "description": "Payload von `repair.proof_recorded`. Aggregat: repair_order / n. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "repair_order_id",
+    "defect_id",
+    "vehicle_id",
+    "proof_evidence_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "repair_order_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "defect_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "proof_evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "examples": [
+    {
+      "repair_order_id": "11111111-2222-4333-8444-555555555555",
+      "defect_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "vehicle_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "proof_evidence_id": "cccccccc-dddd-4eee-8fff-000000000000"
+    }
+  ]
+}

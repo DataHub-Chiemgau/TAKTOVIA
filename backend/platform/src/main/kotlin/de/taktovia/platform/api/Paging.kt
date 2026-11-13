@@ -53,7 +53,32 @@ class CursorCodec(secret: ByteArray) {
             CursorPosition(Instant.ofEpochSecond(Math.floorDiv(micros, 1_000_000L), Math.floorMod(micros, 1_000_000L) * 1_000), UUID.fromString(f[1]))
         } catch (_: RuntimeException) { throw bad }
     }
+
+    /** Cursor mit Sortierwert (Format `v2.<base64url(Nutzdaten)>.<base64url(HMAC)>`, Nutzdaten `base64url(key)|uuid|sha256(scope)`); gleiche Fehlerantwort wie [decode]. */
+    fun encodeKeyed(pos: KeyedCursorPosition, scope: CursorScope): String {
+        val payload = "${b64.encodeToString(pos.key.toByteArray())}|${pos.id}|${scopeHash(scope)}".toByteArray()
+        return "v2.${b64.encodeToString(payload)}.${b64.encodeToString(mac(payload))}"
+    }
+
+    fun decodeKeyed(token: String, scope: CursorScope): KeyedCursorPosition {
+        val bad = ProblemException(ErrorCode.INVALID_CURSOR, "Der Cursor ist ungültig oder abgelaufen; Liste ohne Cursor neu beginnen.")
+        if (token.length > 512) throw bad
+        val parts = token.split('.')
+        if (parts.size != 3 || parts[0] != "v2") throw bad
+        val payload: ByteArray; val sig: ByteArray
+        try { payload = d64.decode(parts[1]); sig = d64.decode(parts[2]) } catch (_: IllegalArgumentException) { throw bad }
+        if (!MessageDigest.isEqual(mac(payload), sig)) throw bad
+        val f = String(payload).split('|')
+        if (f.size != 3 || !MessageDigest.isEqual(f[2].toByteArray(), scopeHash(scope).toByteArray())) throw bad
+        return try { KeyedCursorPosition(String(d64.decode(f[0])), UUID.fromString(f[1])) } catch (_: RuntimeException) { throw bad }
+    }
 }
+
+/**
+ * Position einer Liste mit frei wählbarer Sortierung (Schadenliste, WP-M3-49): [key] ist der Sortierwert samt Stand der Momentaufnahme des letzten gelieferten Elements (vom Aufrufer
+ * gebildet, beliebiger Text), [id] der Tiebreaker. Der Cursor bindet beides an Mandant, Akteur und Ressource (Sortierung und Filter gehören zur Ressource) und ist signiert.
+ */
+data class KeyedCursorPosition(val key: String, val id: UUID)
 
 /** Antwortform aller Listen: `{items, next_cursor, as_of}`. */
 data class Page<T>(val items: List<T>, val nextCursor: String?, val asOf: Instant) {

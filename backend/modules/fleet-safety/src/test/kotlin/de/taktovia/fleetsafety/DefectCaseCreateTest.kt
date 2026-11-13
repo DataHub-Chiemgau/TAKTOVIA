@@ -51,7 +51,7 @@ class DefectCaseCreateTest {
         assertEquals(0, fx.count("SELECT count(*) FROM taktovia.staff_shift WHERE tenant_id=?", w.tenant.value))
         assertEquals(0, fx.count("SELECT count(*) FROM taktovia.booking WHERE tenant_id=?", w.tenant.value))
         val r = report(w, ctx); val d = r.defect
-        assertTrue(r.created); assertEquals("NEW", d.status); assertEquals(1, d.revision); assertNull(d.severity)
+        assertTrue(r.created); assertEquals("NEW", d.status); assertEquals(1, d.revision); assertEquals("COSMETIC", d.severity, "Klasse setzt der Server nach der Regelmatrix (WP-M3-45)"); assertEquals("RULE", d.severitySource)
         assertTrue(Regex("^SCH-\\d{4}-\\d{6}$").matches(d.caseNumber), d.caseNumber)
         assertEquals(w.vehicle, d.vehicleId); assertEquals("BODY", d.categoryCode); assertEquals("Kratzer an der Beifahrertür", d.description)
         val second = report(w, ctx).defect
@@ -153,7 +153,7 @@ class DefectCaseCreateTest {
             assertEquals(listOf("/$k"), p.violations.map { it.pointer }); assertEquals(ViolationCode.UNKNOWN_FIELD, p.violations.single().code)
         }
         val d = report(w, ctx).defect
-        assertEquals(UUID.fromString(ctx.actor.subject), d.reportedBy); assertEquals("NEW", d.status); assertNull(d.severity)
+        assertEquals(UUID.fromString(ctx.actor.subject), d.reportedBy); assertEquals("NEW", d.status); assertEquals("RULE", d.severitySource, "die Klasse stammt nie vom Client")
         assertTrue(d.reportedAt.isAfter(Instant.now().minusSeconds(60)))
         assertEquals(w.tenant.value, fx.strings("SELECT tenant_id::text FROM taktovia.defect_case WHERE id=?", d.id).single().let(UUID::fromString))
     }

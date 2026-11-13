@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.release_attempt_rejected.v1.schema.json",
+  "title": "Freigabeversuch abgewiesen (WP-M3-51)",
+  "description": "Payload von `fleet.release_attempt_rejected`. Aggregat: Hinweis (je Ereignis neue Aggregat-ID) / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "vehicle_id",
+    "repair_order_id",
+    "reason_code",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "repair_order_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "status": {
+      "type": "integer",
+      "minimum": 400,
+      "maximum": 499
+    }
+  },
+  "examples": [
+    {
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "repair_order_id": null,
+      "reason_code": "FORBIDDEN",
+      "status": 403
+    }
+  ]
+}

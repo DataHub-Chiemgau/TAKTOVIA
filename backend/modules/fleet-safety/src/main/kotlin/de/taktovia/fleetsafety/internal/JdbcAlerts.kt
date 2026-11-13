@@ -74,10 +74,10 @@ internal class JdbcAlerts(
         val id = UUID.randomUUID()
         val n = j.update(
             "INSERT INTO taktovia.business_alert(tenant_id, id, alert_kind, priority, vehicle_id, dedupe_key, state, policy_revision_id, revision, created_by, created_at, updated_at, service_id, source_event_id, " +
-                "recipient_role, escalation_level, escalate_at, escalated_at, reason_code, ref_type, ref_id) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, 'OPEN', ?, 1, 'system:alert-service', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+                "recipient_role, escalation_level, escalate_at, escalated_at, reason_code, ref_type, ref_id, case_number, affected_run_count) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, 'OPEN', ?, 1, 'system:alert-service', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
             id, req.kind, priority.name, req.vehicleId, dedupeKey, policy.id, Timestamp.from(now), Timestamp.from(now), req.serviceId, req.sourceEventId, recipient, level,
-            escalateAt?.let(Timestamp::from), if (critical) Timestamp.from(now) else null, req.reasonCode, req.refType, req.refId)
+            escalateAt?.let(Timestamp::from), if (critical) Timestamp.from(now) else null, req.reasonCode, req.refType, req.refId, req.caseNumber, req.affectedRunCount)
         if (n == 0) {
             val existing = if (req.sourceEventId != null)
                 j.query("SELECT id, priority, escalation_level, (SELECT revision_no FROM taktovia.alert_policy_revision p WHERE p.id = a.policy_revision_id) FROM taktovia.business_alert a " +
@@ -90,7 +90,9 @@ internal class JdbcAlerts(
         }
         outbox.append(j, OutboxEvent(id, 1, "alert.raised", linkedMapOf(
             "alert_id" to id.toString(), "alert_kind" to req.kind, "priority" to priority.name, "vehicle_id" to req.vehicleId?.toString(), "dedupe_key" to dedupeKey,
-            "service_id" to req.serviceId?.toString(), "recipient_role" to recipient, "escalation_level" to level, "policy_revision_no" to policy.revisionNo), now))
+            "service_id" to req.serviceId?.toString(), "recipient_role" to recipient, "escalation_level" to level, "policy_revision_no" to policy.revisionNo)
+            // Fallnummer und Zahl der betroffenen Fahrten nur beim kritischen Schadensalarm (WP-M3-46); andere Alarme behalten die feste Nutzlast
+            + listOfNotNull(req.caseNumber?.let { "case_number" to it }, req.affectedRunCount?.let { "affected_run_count" to it }), now))
         return BusinessAlertResult(id, true, priority, policy.revisionNo, level)
     }
 
@@ -158,7 +160,8 @@ internal class JdbcAlerts(
         AlertView(rs.getObject(1, UUID::class.java), rs.getString(2), AlertPriority.valueOf(rs.getString(3)), AlertState.valueOf(rs.getString(4)), rs.getObject(5, UUID::class.java), rs.getObject(6, UUID::class.java),
             rs.getString(7), rs.getObject(8) as Int?, rs.getInt(9), rs.getTimestamp(10)?.toInstant(), rs.getTimestamp(11)?.toInstant(), rs.getString(12), rs.getString(13), rs.getObject(14, UUID::class.java),
             rs.getTimestamp(15).toInstant(), rs.getTimestamp(16).toInstant(), rs.getTimestamp(17)?.toInstant(), rs.getLong(18),
-            rs.getString(19)?.let { AlertAcknowledgementView(it, rs.getTimestamp(20).toInstant(), rs.getString(21)?.let { c -> AckCause.valueOf(c) }, rs.getString(22)) })
+            rs.getString(19)?.let { AlertAcknowledgementView(it, rs.getTimestamp(20).toInstant(), rs.getString(21)?.let { c -> AckCause.valueOf(c) }, rs.getString(22)) },
+            rs.getString(23), rs.getObject(24) as Int?)
     }
 
     override fun list(ctx: RequestContext, state: AlertState?, limit: Int, after: Pair<Instant, UUID>?): List<AlertView> {
@@ -237,7 +240,7 @@ internal class JdbcAlerts(
 
     private companion object {
         const val COLUMNS = "a.id, a.alert_kind, a.priority, a.state, a.vehicle_id, a.service_id, a.recipient_role, p.revision_no, a.escalation_level, a.escalated_at, a.escalate_at, a.reason_code, a.ref_type, a.ref_id, " +
-            "a.created_at, a.updated_at, a.resolved_at, a.revision, k.acknowledged_by, k.created_at, k.cause_code, k.note"
+            "a.created_at, a.updated_at, a.resolved_at, a.revision, k.acknowledged_by, k.created_at, k.cause_code, k.note, a.case_number, a.affected_run_count"
         const val FROM = "FROM taktovia.business_alert a LEFT JOIN taktovia.alert_policy_revision p ON p.tenant_id = a.tenant_id AND p.id = a.policy_revision_id " +
             "LEFT JOIN taktovia.alert_acknowledgement k ON k.tenant_id = a.tenant_id AND k.alert_id = a.id"
         val POLICY_ROLES = setOf("dispatcher", "tenant_admin")

@@ -18,6 +18,9 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `defect.state_changed` | `fleet-safety` | `defect_case` / n | Status gewechselt (WP-M3-47, auch Wiedereröffnung) | Leitstelle, Alarm | `defect_case` |
 | `defect.amended` | `fleet-safety` | `defect_case` / n | Nachtrag zur Meldung (WP-M3-48) | Leitstelle, Prüfer | `defect_case` |
 | `repair.order_created` | `fleet-safety` | `repair_order` / 1 | Reparaturauftrag | Leitstelle, M4 (Kostenbezug) | `reparaturauftrag` |
+| `repair.proof_recorded` | `fleet-safety` | `repair_order` / n | Reparatur abgeschlossen gemeldet, Nachweis erfasst (WP-M3-51); hebt keine Sperre auf | Leitstelle, M4 (Kostenbezug) | `reparaturauftrag` |
+| `fleet.release_decided` | `fleet-safety` | `vehicle_release_decision` / 1 | Technische Freigabe erteilt: erste Entscheidung (ausstehend) oder abgeschlossene Vieraugenentscheidung (WP-M3-51) | Leitstelle | – |
+| `fleet.release_attempt_rejected` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Freigabeversuch abgewiesen (Rolle, fehlende Bedingung, veralteter Sicherheitsstand, WP-M3-51, AT-51); nur Codes | Leitstelle, Sicherheitsüberwachung | – |
 | `driver.event_recorded` | `staff-time` | `driver_event` / 1 | Fahrerereignis verarbeitet (`APPLIED` oder `REVIEW_REQUIRED`) | `booking-dispatch` (Fahrtstatus, No-Show), Leitstelle | – |
 | `driver.passenger_boarded` | `staff-time` | `driver_event` / 1 | Einstieg wirksam (WP-M3-29) | Analytics (Fakten), Leitstelle | `fahrerereignis` |
 | `driver.passenger_alighted` | `staff-time` | `driver_event` / 1 | Ausstieg wirksam (WP-M3-29) | Analytics (Fakten), Leitstelle | `fahrerereignis` |

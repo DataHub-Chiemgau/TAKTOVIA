@@ -69,9 +69,11 @@ internal class Violations {
  */
 data class VehicleMasterInput(
     val label: String, val type: String, val operatorOrganizationId: UUID, val seats: Int, val wheelchair: Int, val equipment: Set<String>, val active: Boolean,
+    /** Betriebshof (Arbeitsannahme OP-22, WP-M3-49); [depotGiven] = `depot_id` kam in der Anfrage vor (fehlt es, bleibt der Betriebshof bei einer Änderung unverändert, `null` entfernt ihn). */
+    val depotId: UUID? = null, val depotGiven: Boolean = false,
 ) {
     companion object {
-        private val FIELDS = setOf("vehicle_label", "vehicle_type", "operator_organization_id", "capacity", "equipment", "active")
+        private val FIELDS = setOf("vehicle_label", "vehicle_type", "operator_organization_id", "capacity", "equipment", "active", "depot_id")
 
         fun parse(raw: Map<String, Any?>): VehicleMasterInput {
             val v = Violations()
@@ -94,8 +96,10 @@ data class VehicleMasterInput(
             }
             val equipment = v.equipment(raw, "equipment", "/equipment")
             val active = raw["active"] as? Boolean ?: run { v.add("/active", if (raw["active"] == null) ViolationCode.REQUIRED else ViolationCode.TYPE_MISMATCH); null }
+            val depotGiven = raw.containsKey("depot_id")
+            val depot = if (depotGiven && raw["depot_id"] != null) v.uuid(raw, "depot_id", false) else null
             v.throwIfAny()
-            return VehicleMasterInput(label!!, type!!, operator!!, seats!!, wheelchair!!, equipment!!, active!!)
+            return VehicleMasterInput(label!!, type!!, operator!!, seats!!, wheelchair!!, equipment!!, active!!, depot, depotGiven)
         }
     }
 }
@@ -104,6 +108,7 @@ data class VehicleMasterInput(
 data class VehicleMasterView(
     val id: UUID, val label: String?, val type: String?, val operatorOrganizationId: UUID?, val seats: Int, val wheelchair: Int, val equipment: List<String>,
     val active: Boolean, val dispatchBlocked: Boolean, val safetyRevision: Long, val hasCapacityLayout: Boolean, val revision: Long, val createdAt: Instant, val updatedAt: Instant,
+    val depotId: UUID? = null,
 ) {
     /** Disponierbar nur aktiv und ohne Sperre (ein neues Fahrzeug ist bis zur Einsatzfreigabe gesperrt, OP-01). */
     val dispatchable: Boolean get() = active && !dispatchBlocked

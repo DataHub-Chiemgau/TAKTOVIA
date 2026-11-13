@@ -1,80 +1,29 @@
 import { ApiError, hasRight, useApi, useSession } from '@taktovia/api-client';
 import type {
   Defect,
-  DefectArea,
   DefectCategory,
-  DefectEffect,
   DefectKind,
   DefectRevision,
   VehicleMaster,
 } from '@taktovia/api-client';
-import { DataTable, Field, Form, ResourceView, ScreenFrame } from '@taktovia/design-system';
-import type { ProblemLike, ResourceState } from '@taktovia/design-system';
+import { DataTable, Field, Form, ScreenFrame } from '@taktovia/design-system';
+import type { ProblemLike } from '@taktovia/design-system';
 import { useCallback, useEffect, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
+import {
+  AREA_LABELS,
+  CATEGORY_LABELS,
+  EFFECT_LABELS,
+  KIND_LABELS,
+  STATUS_LABELS,
+} from './schadenkatalog';
+import type { Status } from './schadenkatalog';
+import { Schadenliste } from './Schadenliste';
+import { Triage } from './Triage';
+import { Reparatur } from './Reparatur';
+import { SEVERITY_LABELS } from './schadenkatalog';
 
-type Status = Defect['status'];
-
-/** Anzeigenamen der Kataloge (Detailvertrag `m3-schadenakte.md`, Planungsannahmen). */
-export const CATEGORY_LABELS: Readonly<Record<DefectCategory, string>> = {
-  BODY: 'Karosserie',
-  GLASS: 'Glas',
-  TIRES_WHEELS: 'Räder und Reifen',
-  LIGHTS: 'Beleuchtung',
-  BRAKES: 'Bremsen',
-  DRIVETRAIN: 'Antrieb',
-  STEERING_SUSPENSION: 'Lenkung und Fahrwerk',
-  ELECTRICAL_HV: 'Elektrik und Hochvolt',
-  INTERIOR: 'Innenraum',
-  ACCESSIBILITY_EQUIPMENT: 'Barrierefreiheits-Ausstattung',
-  SAFETY_EQUIPMENT: 'Sicherheitsausstattung',
-  CLEANLINESS: 'Sauberkeit',
-  OTHER: 'Sonstiges',
-};
-export const KIND_LABELS: Readonly<Record<DefectKind, string>> = {
-  SCRATCH: 'Kratzer',
-  DENT: 'Delle',
-  CRACK_BREAK: 'Riss oder Bruch',
-  MALFUNCTION: 'Funktionsstörung',
-  MISSING_PART: 'Teil fehlt',
-  LEAK: 'Undicht',
-  WEAR: 'Verschleiß',
-  CONTAMINATION: 'Verschmutzung',
-  OTHER: 'Sonstiges',
-};
-export const AREA_LABELS: Readonly<Record<DefectArea, string>> = {
-  FRONT: 'Front',
-  REAR: 'Heck',
-  LEFT_SIDE: 'Linke Seite',
-  RIGHT_SIDE: 'Rechte Seite',
-  ROOF: 'Dach',
-  UNDERBODY: 'Unterboden',
-  WHEELS_TIRES: 'Räder und Reifen',
-  INTERIOR_PASSENGER: 'Fahrgastraum',
-  INTERIOR_DRIVER: 'Fahrerplatz',
-  LUGGAGE: 'Gepäckraum',
-  WHEELCHAIR_AREA: 'Rollstuhlplatz',
-  ENGINE_BATTERY: 'Antrieb und Batterie',
-  OTHER: 'Sonstiges',
-};
-export const EFFECT_LABELS: Readonly<Record<DefectEffect, string>> = {
-  NONE_VISIBLE: 'Keine sichtbare Auswirkung',
-  COSMETIC_ONLY: 'Nur optisch',
-  FUNCTION_LIMITED: 'Funktion eingeschränkt',
-  NOT_ROADWORTHY: 'Nicht fahrbereit',
-  FLUID_LEAK: 'Flüssigkeit tritt aus',
-  WARNING_LIGHT: 'Warnleuchte',
-  NOISE_VIBRATION: 'Geräusch oder Vibration',
-  OTHER: 'Sonstiges',
-};
-export const STATUS_LABELS: Readonly<Record<Status, string>> = {
-  NEW: 'neu',
-  REVIEWED: 'geprüft',
-  IN_PROGRESS: 'in Bearbeitung',
-  REPAIR: 'Reparatur',
-  CLOSED: 'abgeschlossen',
-  DISMISSED: 'verworfen',
-};
+export { AREA_LABELS, CATEGORY_LABELS, EFFECT_LABELS, KIND_LABELS, STATUS_LABELS };
 
 /** Folgeaktionen je Status laut Übergangstabelle (`zustaende/defect_case.md`); der Server prüft Rolle und Vorbedingung jedes Übergangs erneut. */
 const ACTIONS: Readonly<
@@ -150,7 +99,10 @@ export function Schadenakte() {
   const canWrite = me !== undefined && hasRight(me, 'defects.write');
   const canState = me !== undefined && hasRight(me, 'defects.state');
   const canHistory = me !== undefined && hasRight(me, 'defects.history');
-  const [rows, setRows] = useState<ResourceState<Defect[]>>({ status: 'loading' });
+  const canTriage = me !== undefined && hasRight(me, 'defects.triage');
+  const canRepairRead = me !== undefined && hasRight(me, 'repair');
+  const canRepairWrite = me !== undefined && hasRight(me, 'repair.write');
+  const canRelease = me !== undefined && hasRight(me, 'fleet.release');
   const [vehicles, setVehicles] = useState<VehicleMaster[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [problem, setProblem] = useState<ProblemLike | undefined>(undefined);
@@ -166,21 +118,11 @@ export function Schadenakte() {
   const [tick, setTick] = useState(0);
 
   const load = useCallback(() => {
-    setRows({ status: 'loading' });
     setTick((n) => n + 1);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .call('listDefects', { query: { limit: 100 } })
-      .then((page) => {
-        if (!cancelled) setRows({ status: 'ready', data: page.items });
-      })
-      .catch((e: unknown) => {
-        if (!cancelled)
-          setRows({ status: 'error', error: e instanceof ApiError ? e : { status: 0 } });
-      });
     api
       .call('listVehicleMasters', { query: { limit: 100 } })
       .then((page) => {
@@ -309,45 +251,12 @@ export function Schadenakte() {
   return (
     <ScreenFrame title="Flotte und Werkstatt: Schadenakten" context={context}>
       {notice ? <p role="status">{notice}</p> : null}
-      <ResourceView
-        state={rows}
-        isEmpty={(d) => d.length === 0}
-        empty={{
-          title: 'Noch keine Schadenakten in diesem Mandanten',
-          hint: canWrite
-            ? 'Erfassen Sie unten den ersten Schaden.'
-            : 'Es wurden noch keine Schäden gemeldet.',
-        }}
-        errorAction={
-          <button type="button" onClick={load}>
-            Erneut versuchen
-          </button>
-        }
-      >
-        {(data) => (
-          <DataTable
-            caption="Schadenakten des aktiven Mandanten"
-            rows={data}
-            rowKey={(d) => d.id}
-            columns={[
-              { key: 'nr', header: 'Fallnummer', render: (d) => d.case_number },
-              { key: 'veh', header: 'Fahrzeug', render: (d) => vehicleLabel(d.vehicle_id) },
-              { key: 'cat', header: 'Kategorie', render: (d) => CATEGORY_LABELS[d.category_code] },
-              { key: 'st', header: 'Status', render: (d) => STATUS_LABELS[d.status] },
-              { key: 'at', header: 'Gemeldet', render: (d) => fmt(d.reported_at) },
-              {
-                key: 'act',
-                header: 'Aktion',
-                render: (d) => (
-                  <button type="button" onClick={() => void openDefect(d)}>
-                    Öffnen {d.case_number}
-                  </button>
-                ),
-              },
-            ]}
-          />
-        )}
-      </ResourceView>
+      <Schadenliste
+        vehicles={vehicles}
+        onOpen={(d) => void openDefect(d)}
+        reloadKey={tick}
+        canWrite={canWrite}
+      />
 
       {selected ? (
         <section aria-labelledby="akte-titel">
@@ -377,6 +286,42 @@ export function Schadenakte() {
             <dt>Version</dt>
             <dd>{selected.content_version ?? 1}</dd>
           </dl>
+
+          <dl>
+            <dt>Klasse</dt>
+            <dd>{selected.severity ? SEVERITY_LABELS[selected.severity] : 'nicht eingestuft'}</dd>
+            {selected.blocks_vehicle ? (
+              <>
+                <dt>Fahrzeugstatus</dt>
+                <dd>gesperrt · kritischer Mangel</dd>
+              </>
+            ) : null}
+          </dl>
+
+          {canTriage ? (
+            <Triage
+              key={`triage-${selected.id}`}
+              defect={selected}
+              onUpdated={(d) => {
+                setSelected(d);
+                load();
+              }}
+            />
+          ) : null}
+
+          {canRepairRead ? (
+            <Reparatur
+              key={`repair-${selected.id}`}
+              defect={selected}
+              vehicle={vehicles.find((v) => v.id === selected.vehicle_id)}
+              canWrite={canRepairWrite}
+              canRelease={canRelease}
+              onChanged={() => {
+                load();
+                void openDefect(selected);
+              }}
+            />
+          ) : null}
 
           {canState ? (
             <div role="group" aria-label="Folgeaktionen">

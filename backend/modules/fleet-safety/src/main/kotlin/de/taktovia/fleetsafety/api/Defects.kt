@@ -100,7 +100,12 @@ data class DefectView(
     val categoryCode: String, val kind: String?, val vehicleArea: String?, val observedEffect: String?, val description: String?, val severity: String?, val status: String,
     val assigneeRef: UUID?, val sourceInspectionId: UUID?, val sourceStepCode: String?, val contentVersion: Int, val revision: Long, val updatedAt: Instant, val createdAt: Instant,
     val evidence: List<EvidenceView> = emptyList(), val evidencePending: Int = 0, val blocksVehicle: Boolean = false,
-)
+    /** Regelversion der Klassifikation (WP-M3-45), Herkunft der Klasse (`RULE`, `REPORTER_HINT`, `TRIAGE`) und Zeitpunkt der letzten Einstufung. */
+    val severityRuleVersion: String? = null, val severitySource: String? = null, val classifiedAt: Instant? = null,
+) {
+    /** Vorschlag der Regelmatrix für den aktuellen Inhalt (Triageansicht: vorgeschlagene Klasse neben der geltenden). */
+    val suggestedSeverity: String get() = DefectClassification.classify(categoryCode, kind, vehicleArea, observedEffect).severity
+}
 
 /** Ergebnis einer Meldung: [created] ist `false`, wenn dieselbe Geräteereignis-ID bereits eine Akte erzeugt hat (dieselbe Akte, keine zweite). */
 data class ReportedDefect(val defect: DefectView, val created: Boolean)
@@ -127,6 +132,14 @@ interface Defects {
     fun list(ctx: RequestContext, filter: DefectFilter, limit: Int, after: Pair<Instant, UUID>?): List<DefectView>
 
     /**
+     * Schadenliste der Leitstelle (WP-M3-49, DMG-009) mit den sechs Filtern, Sortierung nach jeder angezeigten Spalte und stabiler Paginierung: Sortierung `(Sortierwert, id)`, der Cursor trägt den Sortierwert und den
+     * Stand der Momentaufnahme (`as_of`). Status, Klasse und Zuständiger werden für alle Seiten derselben Paginierung **zum Stand der ersten Seite** gelesen (aus den unveränderlichen Historien), eine Akte, die während
+     * der Paginierung den Status wechselt, erscheint daher weder doppelt noch geht sie verloren; später angelegte Akten gehören nicht zur Momentaufnahme. Nur Akten, die der Aufrufer nach Rolle und Dienst sehen darf;
+     * Fahrer sehen nur eigene Meldungen. Die Listenprojektion enthält weder Beschreibungstext noch Fotos noch vertrauliche Inhalte.
+     */
+    fun listPage(ctx: RequestContext, query: DefectListQuery): DefectListPage
+
+    /**
      * Statusübergang (WP-M3-47, DMG-007) nach der Tabelle in [DefectStateMachine]; `expectedRevision` = `If-Match` (fehlt: 428 im Anfragefilter, veraltet: 412). Fremder Mandant oder fremde Akte: 404;
      * ohne Rolle für den Übergang: 403; nicht in der Tabelle (auch aus einem Endzustand ohne dokumentierte Wiedereröffnung) oder Vorbedingung verletzt: 409 `INVALID_STATE_TRANSITION`;
      * `DISMISSED` und Wiedereröffnung ohne Begründung: 422 mit Feldverweis. Bei zwei gleichzeitigen Übergängen derselben Revision gelingt genau einer. `CLOSED` und `DISMISSED` heben nie eine
@@ -136,6 +149,21 @@ interface Defects {
 
     /** Statushistorie der Akte (Disposition, Werkstatt, Betriebsleitung); Fahrer: 403. */
     fun statusHistory(ctx: RequestContext, id: UUID): List<StatusHistoryEntry>
+
+    /**
+     * Triage (WP-M3-45, DMG-005): bestätigt oder korrigiert die Klasse (Korrektur nur mit Grund, 422), speichert den Zuständigen und führt die Akte in den Folgestatus (`decision`). Rollen: Disposition und
+     * Werkstatt; **Herabstufung** von `SAFETY_CRITICAL` und `DISMISSED` nur die Werkstatt (403). `expectedRevision` = `If-Match` (428 im Filter, 412 bei veralteter Revision, auch für den zweiten von zwei
+     * gleichzeitigen Schreibern). Fremder Mandant oder fremde Akte: 404; nicht mehr triagierbarer Status (REPAIR, Endzustand): 409. Eine Hochstufung auf eine sperrende Klasse sperrt das Fahrzeug,
+     * widerruft die Einsatzfreigaben, löst den Alarm nach der wirksamen `alert_policy_revision` aus und überführt bestehende Zuweisungen in den Störungsablauf: alles **im selben Commit**.
+     * Eine Herabstufung hebt keine Sperre auf (nur die Wiederfreigabe, WP-M3-51).
+     */
+    fun triage(ctx: RequestContext, id: UUID, expectedRevision: Long, cmd: TriageDefect): TriageResult
+
+    /** Klassifikationshistorie (Erstklassifikation, Bestätigungen, Korrekturen mit Akteur, Zeit, Grund); Disposition, Werkstatt, Betriebsleitung. */
+    fun classificationHistory(ctx: RequestContext, id: UUID): List<ClassificationEntry>
+
+    /** Aktenhistorie aus Statuswechseln, Klassifikation, Zuweisung und Sperre in zeitlicher Folge, mit Akteur und Zeit (AT-34, P1-Anteil); Disposition, Werkstatt, Betriebsleitung. */
+    fun timeline(ctx: RequestContext, id: UUID): List<TimelineEvent>
 
     /**
      * Nachtrag zur Meldung (WP-M3-48, DMG-008): ändert nie eine Zeile der Historie, sondern legt eine neue Version mit Autor, Zeit und Änderungsgrund (Pflicht, sonst 422) an und trägt die geänderten

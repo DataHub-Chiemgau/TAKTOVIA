@@ -5,6 +5,7 @@ import de.taktovia.documentsfinance.api.ScanResult
 import de.taktovia.fleetsafety.api.AlertKinds
 import de.taktovia.fleetsafety.api.AlertSettings
 import de.taktovia.fleetsafety.api.DefectEvidenceWiring
+import de.taktovia.fleetsafety.api.DefectSettings
 import de.taktovia.fleetsafety.api.EvidencePolicy
 import de.taktovia.fleetsafety.api.FleetsafetyApi
 import de.taktovia.fleetsafety.api.MediaInspectors
@@ -61,8 +62,14 @@ class FleetConfiguration {
         maxEscalationLevel = env.getProperty("taktovia.alerts.max-escalation-level", Int::class.java, 1),
     )
 
-    @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings): FleetsafetyApi =
-        FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings)
+    /**
+     * Schadenklassifikation (WP-M3-45): `taktovia.defects.workshop-auto-block-severity` (`workshop_auto_block_severity`, Planungsdefault `SAFETY_CRITICAL`) nennt die Klasse, ab der die Klassifikation
+     * das Fahrzeug sperrt. Unzulässige Werte (auch solche, die sicherheitskritische Schäden von der Sperre ausnähmen) verhindern den Start; der Parameterkatalog ist eingefroren (wie bei den Alarmwerten).
+     */
+    @Bean fun defectSettings(env: Environment): DefectSettings = DefectSettings.parse(env.getProperty("taktovia.defects.workshop-auto-block-severity"))
+
+    @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings, defectSettings: DefectSettings): FleetsafetyApi =
+        FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings, defectSettings = defectSettings)
 
     /** Port der Alarm-Grundlage für Fachmodule und technische Betriebsalarme (die Tabellen gehören `fleet-safety`). */
     @Bean fun businessAlertPort(fleet: FleetsafetyApi): BusinessAlertPort = fleet.alerts.port
