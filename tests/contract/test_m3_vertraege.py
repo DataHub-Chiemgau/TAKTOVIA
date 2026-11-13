@@ -62,6 +62,9 @@ VALID = {
                                           'na_requires_reason': False, 'photo_required_on_defect': False}]},
     'ChecklistExampleImage': {'content_type': 'image/png', 'data_base64': 'iVBORw0KGgoBAgM='},
     'KnownDefectAcknowledge': {},
+    'ResolveOdometerConflictRequest': {'decision': 'CHOSEN', 'chosen_reading_id': '11111111-2222-4333-8444-555555555555', 'reason': 'Werkstattprotokoll bestätigt den Wert'},
+    'CreateOdometerReadingRequest': {'reading_km': 120000, 'source_ref': 'WERKSTATT-2026-001', 'measured_at': '2026-11-05T09:00:00Z'},
+    'DriverServiceStatusReport': {'event_id': '11111111-2222-4333-8444-555555555555', 'target_status': 'BREAK', 'occurred_at': '2026-11-05T09:00:00Z', 'device_recorded_at': '2026-11-05T09:00:00Z', 'offline_recorded': False},
     'InspectionAnswerJustification': {'number_value': 120000, 'reason': 'Kilometerstand nach Tachowechsel'},
     'InspectionAmendmentCreate': {'step_code': 'BRAKES', 'kind': 'CORRECTION', 'new_answer': 'DEFECT', 'reason': 'Befund nachträglich erkannt'},
     # WP-M3-03/-04: Fahrzeugstamm und Kapazitätskonfiguration
@@ -95,6 +98,9 @@ BROKEN = {
     'ChecklistTemplateWrite': ('vehicle_class', 'klein'),
     'ChecklistExampleImage': ('content_type', 'text/html'),
     'KnownDefectAcknowledge': ('schuld', 'Fahrer'),
+    'ResolveOdometerConflictRequest': ('decision', 'MAYBE'),
+    'CreateOdometerReadingRequest': ('reading_km', -1),
+    'DriverServiceStatusReport': ('target_status', 'SLEEPING'),
     'InspectionAnswerJustification': ('reason', ''),
     'InspectionAmendmentCreate': ('kind', 'DELETE'),
     'VehicleMasterWrite': ('capacity', {'seats': -1, 'wheelchair': 1}),
@@ -160,7 +166,11 @@ class EreignisschemasM3(unittest.TestCase):
             self.assertTrue(s['examples'], name)
             for ex in s['examples']:
                 validator(s).validate(ex)
-            self.assertEqual(set(s['required']), set(s['properties']), f'{name}: alle Felder Pflicht (feste Nutzlast)')
+            # feste Nutzlast: alle Felder Pflicht; additiv nachgerüstete Felder sind ausdrücklich als „Optional“ beschrieben (rückwärtskompatibel, z. B. Kilometerstand in inspection.completed, WP-M4-41)
+            optional = set(s['properties']) - set(s['required'])
+            self.assertTrue(set(s['required']) <= set(s['properties']), f'{name}: Pflichtfeld ohne Eigenschaft')
+            for o in optional:
+                self.assertTrue(str(s['properties'][o].get('description', '')).startswith('Optional'), f'{name}: {o} ist weder Pflicht noch als optional beschrieben')
 
     def test_minimierung_keine_diagnosen_namen_oder_ortsdaten(self):
         for name in M3_EVENTS:
