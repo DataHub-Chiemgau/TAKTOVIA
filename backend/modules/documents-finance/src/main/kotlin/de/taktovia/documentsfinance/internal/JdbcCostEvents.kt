@@ -97,7 +97,7 @@ internal class JdbcCostEvents(
             "INSERT INTO taktovia.economic_event (tenant_id, id, legal_entity_id, source_system, source_ref, event_type, scenario, category, currency, net_minor, tax_minor, gross_minor, recoverable_tax_minor, " +
                 "tax_rule_revision, occurred_at, booked_at, document_id, cost_behavior, attribution, cost_object_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_COST', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
             eventId, entity, documentId.toString(), cmd.category, amounts.currency, amounts.net, amounts.tax, amounts.gross, amounts.recoverable, TAX_RULE_REVISION,
-            Timestamp.from(date.atStartOfDay().toInstant(ZoneOffset.UTC)), Timestamp.from(now), documentId, cls?.first, cls?.second, objects.singleOrNull()?.id)
+            Timestamp.from(date.atStartOfDay(ZoneOffset.UTC).toInstant()), Timestamp.from(now), documentId, cls?.first, cls?.second, objects.singleOrNull()?.id)
         if (inserted == 0) return existing(j, documentId)   // paralleler Auslöser desselben Ursprungs hat gebucht
         j.update("INSERT INTO taktovia.journal (tenant_id, id, event_id, legal_entity_id, currency, period_id, accounting_date, state) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, 'DRAFT')",
             journalId, eventId, entity, amounts.currency, period.first, java.sql.Date.valueOf(date))

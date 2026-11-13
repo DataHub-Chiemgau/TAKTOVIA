@@ -191,7 +191,7 @@ internal class JdbcCostEventCorrections(private val ctxTx: ContextTransactions, 
         val now = clock.instant(); val newId = UUID.randomUUID(); val journalId = UUID.randomUUID()
         val inserted = j.update("INSERT INTO taktovia.economic_event (tenant_id, id, legal_entity_id, source_system, source_ref, event_type, scenario, category, currency, net_minor, tax_minor, gross_minor, recoverable_tax_minor, tax_rule_revision, " +
             "occurred_at, booked_at, service_from, service_to, document_id, reverses_id, cost_behavior, attribution, cost_object_id) VALUES (taktovia.current_tenant(), ?, ?, 'EXPENSE', ?, 'EXPENSE_REVERSAL', 'ACTUAL', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-            newId, o.entity, "$eventId:REV:$credit", o.category, o.currency, -net, -tax, -credit, -rec, o.taxRule, Timestamp.from(accountingDate.atStartOfDay().toInstant(ZoneOffset.UTC)), Timestamp.from(now),
+            newId, o.entity, "$eventId:REV:$credit", o.category, o.currency, -net, -tax, -credit, -rec, o.taxRule, Timestamp.from(accountingDate.atStartOfDay(ZoneOffset.UTC).toInstant()), Timestamp.from(now),
             Timestamp.from(o.serviceFrom ?: o.occurredAt), Timestamp.from(o.serviceTo ?: o.occurredAt), o.documentId, eventId, o.behavior, o.attribution, o.costObjectId)   // das Gegenereignis trägt Klassifikation und Kostenobjekt des Ursprungs (Summe je Klasse bleibt konsistent)
         if (inserted == 0) throw ProblemException(ErrorCode.ALREADY_REVERSED, "Zu diesem Kostenereignis besteht bereits ein Gegenereignis in dieser Höhe (einmalige Wirkung).")
 

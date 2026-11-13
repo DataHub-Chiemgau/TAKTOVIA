@@ -31,6 +31,16 @@ class ArchitectureRulesSelfTest {
 
     @Test fun `Geld als Double bricht`() = rules.noFloatingPointMoney().forEach { (n, r) -> mustFail(n, r) }
 
+    @Test fun `eigene Rundung, Gleitkomma fuer Geld und LocalDateTime in Fachmodulen brechen`() =
+        rules.timeAndMoneyRules().forEach { (n, r) -> mustFail(n, r) }
+
+    @Test fun `Allowlist nimmt eine Klasse aus, platform darf runden`() {
+        val allowed = ArchitectureRules(root = bad, modules = listOf("identity", "config"), adapters = listOf("psp"),
+            roundingAllowlist = setOf("$bad.config.ZeitGeldVerstoss"), localDateTimeAllowlist = setOf("$bad.config.ZeitGeldVerstoss"))
+        allowed.noOwnRounding().check(classes); allowed.noLocalDateTimeInDomainModules().check(classes)
+        org.junit.jupiter.api.Assertions.assertTrue(classes.any { it.name.startsWith("$bad.platform") }, "platform-Fixture importiert (nicht von der Regel erfasst)")
+    }
+
     @Test fun `Adapteraufruf in Transaktion bricht`() = rules.noAdapterCallInTransaction().forEach { (n, r) -> mustFail(n, r) }
 
     @Test fun `auditpflichtiger Befehl ohne Audit-Aufruf bricht, mit Aufruf (direkt oder ueber Hilfsmethode) nicht`() {

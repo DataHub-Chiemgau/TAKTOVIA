@@ -3,7 +3,7 @@ package de.taktovia.farepayment.api
 import de.taktovia.platform.money.MoneyLimits
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.math.RoundingMode
+import de.taktovia.platform.money.MoneyRounding
 import java.util.UUID
 
 /** Komponentencodes (Schema `FareComponent` in `api/federation.yaml`, Tabelle `fare_component`). Rabatt, Zuschuss und Provision erzeugt die Engine in Phase 1 nicht (P2). */
@@ -78,7 +78,7 @@ object FareEngine {
             // Überlaufprüfung vor der Multiplikation: der exakte Wert (Satz * Meter / 1000) darf die Betragsgrenze nicht überschreiten
             val exact = perKm.multiply(BigDecimal.valueOf(meters)).movePointLeft(3)
             if (exact > BigDecimal(MAX)) return reject(FareRejection.OVERFLOW, "Streckenanteil überschreitet den Betragsbereich")
-            unit += exact.setScale(0, RoundingMode.HALF_UP).toBigIntegerExact()
+            unit += MoneyRounding.halfUp(exact)
             if (unit > MAX) return reject(FareRejection.OVERFLOW, "Preis je Einheit überschreitet den Betragsbereich")
         }
         if (unit.signum() != 0 && BigInteger.valueOf(units) > MAX.divide(unit)) return reject(FareRejection.OVERFLOW, "Transportbetrag überschreitet den Betragsbereich")
@@ -91,15 +91,14 @@ object FareEngine {
         fun add(code: FareComponentCode, v: BigInteger) { out += FareComponentAmount(code, v.toLong(), rule.id) }
         val taxed = rate.signum() > 0
         if (rule.taxMode == TaxMode.NET.name) {
-            val tax = if (taxed) BigDecimal(base).multiply(rate).setScale(0, RoundingMode.HALF_UP).toBigIntegerExact() else BigInteger.ZERO
+            val tax = if (taxed) MoneyRounding.tax(base, rate) else BigInteger.ZERO
             if (base + tax > MAX) return reject(FareRejection.OVERFLOW, "Bruttobetrag überschreitet den Betragsbereich")
             add(FareComponentCode.TRANSPORT, transport)
             if (fee.signum() > 0) add(FareComponentCode.SURCHARGE, fee)
             if (taxed) add(FareComponentCode.TAX, tax)
         } else {
-            val divisor = BigDecimal.ONE.add(rate)
-            val net = if (taxed) BigDecimal(base).divide(divisor, 0, RoundingMode.HALF_UP).toBigIntegerExact() else base
-            val feeNet = if (taxed) BigDecimal(fee).divide(divisor, 0, RoundingMode.HALF_UP).toBigIntegerExact() else fee
+            val net = if (taxed) MoneyRounding.netOfGross(base, rate) else base
+            val feeNet = if (taxed) MoneyRounding.netOfGross(fee, rate) else fee
             add(FareComponentCode.TRANSPORT, net - feeNet)
             if (fee.signum() > 0) add(FareComponentCode.SURCHARGE, feeNet)
             if (taxed) add(FareComponentCode.TAX, base - net)

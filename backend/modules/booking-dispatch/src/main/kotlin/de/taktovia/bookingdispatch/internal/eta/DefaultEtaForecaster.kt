@@ -18,8 +18,8 @@ import de.taktovia.config.api.EffectiveRequest
 import de.taktovia.config.api.EffectiveStatus
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.money.MoneyRounding
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
@@ -100,7 +100,7 @@ internal class DefaultEtaForecaster(
         )
     }
 
-    private fun ceilPct(seconds: Int, pct: BigDecimal): Int = BigDecimal(seconds).multiply(pct).divide(HUNDRED, 0, RoundingMode.CEILING).toInt()
+    private fun ceilPct(seconds: Int, pct: BigDecimal): Int = MoneyRounding.ceilPercent(java.math.BigInteger.valueOf(seconds.toLong()), pct).toInt()
 
     private fun fallback(snapshot: EtaConfigSnapshot?, reason: EtaFallbackReason, roadDataVersion: String?) =
         EtaForecast(emptyList(), emptyList(), 0, 0, 0, 0, snapshot?.settings?.quantile, snapshot?.model?.version, snapshot?.configVersion, roadDataVersion, snapshot?.settings, reason)

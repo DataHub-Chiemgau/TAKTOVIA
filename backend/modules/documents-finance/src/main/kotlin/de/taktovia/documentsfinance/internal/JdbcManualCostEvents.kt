@@ -253,7 +253,7 @@ internal class JdbcManualCostEvents(private val ctxTx: ContextTransactions, priv
             ManualCostStepView(rs.getObject("id", UUID::class.java), ApprovalStep.valueOf(rs.getString("step")), rs.getLong("revision"), ApprovalDecision.valueOf(rs.getString("decision")), rs.getString("decided_by"), rs.getString("reason"),
                 rs.getTimestamp("decided_at").toInstant()) }, id)
 
-    private fun utc(d: LocalDate) = Timestamp.from(d.atStartOfDay().toInstant(ZoneOffset.UTC))
+    private fun utc(d: LocalDate) = Timestamp.from(d.atStartOfDay(ZoneOffset.UTC).toInstant())
 
     private companion object {
         const val SCOPE_WRITE = "costs:write"
