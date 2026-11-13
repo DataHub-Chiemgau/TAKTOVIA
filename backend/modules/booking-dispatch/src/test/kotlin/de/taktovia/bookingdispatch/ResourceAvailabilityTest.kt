@@ -51,7 +51,7 @@ class ResourceAvailabilityTest {
         // Fenster außerhalb der Schicht: niemand
         val late = api.resources.usableVehicles(ctx, a("svc-nord"), TimeWindow(Instant.parse("2026-12-01T13:30:00Z"), Instant.parse("2026-12-01T14:30:00Z")))
         assertTrue(late.vehicles.isEmpty(), "Schicht deckt das Fenster nicht")
-        assertTrue(late.excluded.all { it.reason == Unusable.NO_SHIFT || it.reason == Unusable.VEHICLE_BLOCKED })
+        assertTrue(late.excluded.all { it.reason == Unusable.NO_SHIFT || it.reason == Unusable.SHIFT_ENDED_IN_WINDOW || it.reason == Unusable.VEHICLE_BLOCKED })
     }
 
     @Test

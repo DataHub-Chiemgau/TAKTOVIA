@@ -33,6 +33,8 @@ enum class ExclusionReason(val category: RejectionCategory, val depth: Int) {
     OUTSIDE_SERVICE_AREA(RejectionCategory.CAPACITY, 1),
     /** Abholpunkt vom geplanten Standort aus nicht rechtzeitig oder gar nicht erreichbar. */
     PICKUP_UNREACHABLE(RejectionCategory.CAPACITY, 5),
+    /** Eine Schicht mit Fahrer beginnt vor dem Fenster und endet darin: das Fahrpersonal ist nicht mehr im Dienst (WP-M4-49: Schichtende, Personalmangel). */
+    SHIFT_ENDED_IN_WINDOW(RejectionCategory.PERSONNEL, 2),
 }
 
 /** Geplante Position eines Fahrzeugs laut Fahrtenplan: Haltepunkt, an dem es ab [availableAt] frei ist (M2: kein Live-Standort, OP-16). */

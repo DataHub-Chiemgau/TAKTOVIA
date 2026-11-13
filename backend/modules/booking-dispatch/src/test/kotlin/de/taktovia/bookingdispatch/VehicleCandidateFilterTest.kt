@@ -98,7 +98,7 @@ class VehicleCandidateFilterTest {
         val late = TimeWindow(Instant.parse("2026-12-01T13:30:00Z"), Instant.parse("2026-12-01T14:30:00Z"))
         val r = filter(std()).find(fx.context(fx.tenantA), req(a("svc-nord"), twoSeats, late, Instant.parse("2026-12-01T14:00:00Z")))
         assertTrue(r.candidates.isEmpty())
-        assertEquals(ExclusionReason.NO_SHIFT, r.reasonOf(a("veh-v-std")))
+        assertEquals(ExclusionReason.SHIFT_ENDED_IN_WINDOW, r.reasonOf(a("veh-v-std")), "Schicht endet um 14:00 im Fenster (WP-M4-49: Schichtende)")
         assertEquals(ExclusionReason.NO_SHIFT, r.reasonOf(a("veh-v-noshift")))
         // Schicht am Vortag, auch im regulären Fenster
         assertEquals(ExclusionReason.NO_SHIFT, filter(std()).find(fx.context(fx.tenantA), req(a("svc-nord"), twoSeats)).reasonOf(a("veh-v-noshift")))
