@@ -264,6 +264,8 @@ def at_19(ctx):
     vitest(ctx, "web/passenger", "src/a11y", min_tests=8)
     vitest(ctx, "web/passenger", "src/booking", min_tests=40)
     browser_a11y(ctx)
+    protokoll = REPO / "docs" / "umsetzungsplan" / "nachweise" / "WP-M2-47-pruefprotokoll.md"
+    ctx.check("Vorlage des manuellen Prüfprotokolls vorhanden (Status offen, nicht durchgeführt)", "Datei vorhanden", "vorhanden" if protokoll.is_file() else "fehlt", ok=protokoll.is_file())
     offen(ctx, "AT-19 als manuelles Prüfprotokoll mit Screenreader (NVDA + Firefox, VoiceOver + Safari): docs/umsetzungsplan/nachweise/WP-M2-47-pruefprotokoll.md, keine Hilfstechnik in dieser Umgebung")
 
 
