@@ -115,6 +115,9 @@ interface Expenses {
 
     /** Das Original, byteweise unverändert; geprüft gegen den gespeicherten Hash (Verletzung: Vorfall und 409 `DOCUMENT_INTEGRITY_VIOLATION`). */
     fun original(ctx: RequestContext, id: UUID): ByteArray
+
+    /** Ansichtsfassung ohne Bildmetadaten, siehe [Uploads.openDeliveryVersion] (WP-M5-20). */
+    fun deliveryVersion(ctx: RequestContext, id: UUID): DeliveryVersion
 }
 
 // ---- Kanäle (WP-M4-22) ----

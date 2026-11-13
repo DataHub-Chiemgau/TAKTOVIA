@@ -1,11 +1,6 @@
 package de.taktovia.fleetsafety.api
 
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import javax.imageio.IIOImage
-import javax.imageio.ImageIO
-import javax.imageio.ImageWriteParam
+import de.taktovia.platform.media.ImageMetadataMinimizer
 
 /**
  * Medienprüfung der Schadenfotos. [basic] ist **kein Virenscanner**: sie erkennt die EICAR-Testsignatur und ausführbare Dateien, dekodiert das Bild (kein Bild, übergroße
@@ -38,18 +33,6 @@ object MediaInspectors {
         (b.size >= 2 && b[0] == 'M'.code.toByte() && b[1] == 'Z'.code.toByte()) || (b.size >= 4 && b[0] == 0x7F.toByte() && b[1] == 'E'.code.toByte() && b[2] == 'L'.code.toByte() && b[3] == 'F'.code.toByte()) ||
             (b.size >= 2 && b[0] == '#'.code.toByte() && b[1] == '!'.code.toByte())
 
-    private fun reencode(bytes: ByteArray, mime: String): ByteArray {
-        val img = try { ImageIO.read(ByteArrayInputStream(bytes)) } catch (e: Exception) { null } ?: throw IllegalArgumentException("kein-gueltiges-Bild")
-        if (img.width.toLong() * img.height > MAX_PIXELS) throw IllegalArgumentException("Abmessungen-zu-gross")
-        val out = ByteArrayOutputStream()
-        if (mime == "image/png") {
-            if (!ImageIO.write(img, "png", out)) throw IllegalArgumentException("PNG-nicht-schreibbar")
-        } else {
-            val rgb = if (img.type == BufferedImage.TYPE_3BYTE_BGR || img.type == BufferedImage.TYPE_INT_RGB) img else BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_RGB).also { it.createGraphics().apply { drawImage(img, 0, 0, null); dispose() } }
-            val writer = ImageIO.getImageWritersByFormatName("jpeg").next()
-            val param = writer.defaultWriteParam.also { it.compressionMode = ImageWriteParam.MODE_EXPLICIT; it.compressionQuality = 0.92f }
-            ImageIO.createImageOutputStream(out).use { ios -> writer.output = ios; writer.write(null, IIOImage(rgb, null, null), param); writer.dispose() }
-        }
-        return out.toByteArray()
-    }
+    /** Gemeinsame Minimierungsregel der Plattform (WP-M5-20): nur Pixel, Ausrichtung eingerechnet, alle Metadaten entfernt. */
+    private fun reencode(bytes: ByteArray, mime: String): ByteArray = ImageMetadataMinimizer.minimize(bytes, mime, MAX_PIXELS)
 }

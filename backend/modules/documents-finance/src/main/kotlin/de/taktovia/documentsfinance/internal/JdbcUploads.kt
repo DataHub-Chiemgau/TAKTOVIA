@@ -1,8 +1,10 @@
 package de.taktovia.documentsfinance.internal
 
+import de.taktovia.platform.media.ImageMetadataMinimizer
 import de.taktovia.documentsfinance.api.CaseKind
 import de.taktovia.documentsfinance.api.CaseRef
 import de.taktovia.documentsfinance.api.DocumentKind
+import de.taktovia.documentsfinance.api.DeliveryVersion
 import de.taktovia.documentsfinance.api.DocumentState
 import de.taktovia.documentsfinance.api.IngestFile
 import de.taktovia.documentsfinance.api.CompletedReceipt
@@ -292,6 +294,17 @@ internal class JdbcUploads(
             throw IntegrityChecksSupport.violation()
         }
         return bytes
+    }
+
+    override fun openDeliveryVersion(ctx: RequestContext, documentId: UUID): DeliveryVersion {
+        val original = openOriginal(ctx, documentId)   // gleiche Rechte, Zustandsprüfung und Integritätsprüfung wie das Original
+        val view = ctxTx.run(ctx, readOnly = true) { j -> DocumentRows.visible(j, ctx, documentId) }.view
+        val originalHash = sha256(original)
+        if (view.mime != "image/jpeg" && view.mime != "image/png") return DeliveryVersion(original, view.mime, originalHash, originalHash, minimized = false)
+        val clean = try { ImageMetadataMinimizer.minimize(original, view.mime) } catch (e: IllegalArgumentException) {
+            throw ProblemException.invalid(Violation("/document", ViolationCode.INVALID_VALUE, "Das Bild lässt sich nicht von Metadaten befreien und wird nicht ausgeliefert."))
+        }
+        return DeliveryVersion(clean, view.mime, sha256(clean), originalHash, minimized = true)
     }
 
     /** (D) Prüfergebnis anwenden; idempotent (nur aus QUARANTINED), das Dokument ist danach in genau einem Endzustand oder weiter in Quarantäne. */

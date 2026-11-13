@@ -57,7 +57,7 @@ AT-55;11.2;Unterdeckung und KI-Bedarf;Nachfrageprognose erhöht Personalbedarf, 
 AT-56;11.2;Ruhezeit beim Schichtangebot;Fahrer bewirbt sich auf Schicht trotz gesperrter Ruhezeit;Bewerbung wird als nicht zulässig angezeigt und nicht vergeben;Nicht ausgeführt;;;
 AT-57;11.2;Schadenskosten;Werkstattbeleg erfassen, freigeben, Erstattungsdaten anzeigen;Kostenarten, Freigaberollen und Summen konsistent;Nicht ausgeführt;;;
 AT-58;11.2;Fahrzeugkontrolle E-Flotte;E-Fahrzeug unter Lade-/Reichweitenschwelle prüfen;Konfigurationsgerechte Warnung/Sperre und korrekte Dispositionswirkung;Nicht ausgeführt;;;
-AT-59;11.2;Standortdaten minimieren;GPS-Stempeln ohne Freigabe konfigurieren und Medienbilder hochladen;Keine unerlaubte Standortverfolgung und EXIF-Minimierung nachgewiesen;Nicht ausgeführt;;;
+AT-59;11.2;Standortdaten minimieren;GPS-Stempeln ohne Freigabe konfigurieren und Medienbilder hochladen;Keine unerlaubte Standortverfolgung und EXIF-Minimierung nachgewiesen;Bestanden (P1-Mindestumfang);3c46312a593bb0a4bb1762c3dfdf546370309e6f+lokal;"run-2d76f9fb3920ac94; tests/acceptance/evidence/m5/AT-59-run-2d76f9fb3920ac94.json";Ausstehend (Auftraggeber, D-12)
 AT-60;11.2;Wiederinbetriebnahme;Reparatur, technische Freigabe und neue Checkliste durchführen;Disposition wird erst nach allen drei Bedingungen möglich;Nicht ausgeführt;;;
 AT-61;11.2;Archiv-/Exportberechtigungen;Alten veröffentlichten Plan und frühere Prüfungen aus anderen Mandanten lesen;"Eigene Revisionen unverändert; fremde Daten verweigert";Nicht ausgeführt;;;
 AT-62;11.2;Schichtendreport;Schichtende mit Kilometerstand, Fundsache und neuem Mangel abschließen;Daten vollständig, Folgeprozess eröffnet, Zeitstempel prüfbar;Nicht ausgeführt;;;

@@ -19,6 +19,8 @@ REPO = HERE.parents[2]
 GATE_IDS = ["PH-AT-001", "PH-AT-011", "PH-AT-017", "PH-AT-018", "AT-18", "AT-24", "AT-49", "E2E-091", "E2E-096", "E2E-097", "E2E-098"]
 # Gate-Suite M2 (WP-M2-48): Katalogtests mit eigener Zeile in e2e.csv; Evidenz unter evidence/m2
 M2_GATE_IDS = ["AT-01", "AT-02", "AT-03", "AT-04", "AT-05", "AT-07", "AT-13", "AT-15", "AT-19"]
+# Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py)
+M5_GATE_IDS = ["AT-59"]
 GREEN = {"Umgesetzt", "Abgenommen"}
 CATALOG_ID = re.compile(r"^(AT-\d{2}|E2E-\d{3}|PH-AT-\d{3})$")
 
@@ -68,10 +70,12 @@ def check(root: Path = REPO, strict: bool = False) -> tuple[list[str], dict]:
             suite, ev_dir = "m1", "m1"
         elif tid in M2_GATE_IDS:
             suite, ev_dir = "m2", "m2"
+        elif tid in M5_GATE_IDS:
+            suite, ev_dir = "m5", "m5"
         else:
             errors.append(f"R3 {tid}: Status '{status}' ohne Lauf der M1-Gate-Suite")
             continue
-        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/(m1|m2)/[\w.-]+\.json)$", r["nachweis"])
+        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/(m1|m2|m5)/[\w.-]+\.json)$", r["nachweis"])
         if not r["build"] or not m:
             errors.append(f"R3 {tid}: Build oder Nachweis (Lauf-ID; Evidenzdatei) fehlt")
             continue

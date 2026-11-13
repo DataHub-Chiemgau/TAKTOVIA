@@ -59,6 +59,9 @@ interface StafftimeApi {
     val shiftStaffing: de.taktovia.platform.readports.ShiftStaffingReadPort
 
     companion object {
+        /** Regel „Geozone beim Stempeln nur mit dokumentierter Freigabe“ (WP-M5-20) für `ConfigApi.create(revisionValidators = …)`; ohne Abhängigkeit von `ConfigApi` (kein Verdrahtungszyklus). */
+        fun geofenceReleaseValidator(): de.taktovia.config.api.RevisionValidator = de.taktovia.stafftime.internal.GeofenceReleaseValidator()
+
         /** ImpactProvider „Schichten“ für die Wirkungsanalyse (WP-M1-23, Zusage WP-M4-17): veröffentlichte Schichten des aktiven Mandanten, nur Verweise. */
         fun impactProvider(): de.taktovia.config.api.ImpactProvider = StafftimeServicesFactory.impactProvider()
 

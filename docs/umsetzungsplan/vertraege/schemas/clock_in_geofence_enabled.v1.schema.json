@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/clock_in_geofence_enabled.v1.schema.json",
+  "title": "clock_in_geofence_enabled",
+  "description": "Standortgestütztes Stempeln (Geozone); nur mit dokumentierter Freigabe",
+  "type": "boolean",
+  "default": false,
+  "x-unit": "BOOLEAN",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "KATALOG",
+  "x-catalog": "LH-J.4-clock_in_geofence_enabled",
+  "x-catalog-range": "Nur mit legitimer Zweckbindung; Aktivierung nur zusammen mit clock_in_geofence_release_ref (WP-M5-20)"
+}
