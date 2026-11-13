@@ -1,0 +1,3 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+business_alert;case_number;nein;FLOTTE_SICHERHEIT;;;;Fallnummer der Schadenakte (kritischer Alarm), WP-M3-46
+business_alert;affected_run_count;nein;FLOTTE_SICHERHEIT;;;;Zahl der betroffenen Fahrten (Umläufe) bei der Sperre, WP-M3-46
