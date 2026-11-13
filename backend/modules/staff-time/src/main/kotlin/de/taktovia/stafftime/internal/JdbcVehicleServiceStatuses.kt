@@ -1,5 +1,11 @@
 package de.taktovia.stafftime.internal
 
+import de.taktovia.platform.audit.ActorRef
+import de.taktovia.platform.audit.AuditActions
+import de.taktovia.platform.audit.AuditEntry
+import de.taktovia.platform.audit.AuditPort
+import de.taktovia.platform.audit.AuditRequired
+import de.taktovia.platform.audit.ObjectRef
 import de.taktovia.platform.context.ActorType
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
@@ -28,23 +34,28 @@ import java.util.UUID
  * Wechsel liest), Statuszeile `FOR UPDATE`, Kantenprüfung gegen [ServiceStatusAutomaton], Statuszeile, Historie und Ereignis `vehicle.service_status_changed` atomar. Die Dedupe über die Ereignis-ID gilt
  * dauerhaft (Unique-Index) und wird nach dem Sperren erneut geprüft, damit parallele Wiederholungen genau einen Wechsel ergeben.
  */
-internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock) : VehicleServiceStatuses {
+internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions, private val audit: AuditPort, private val outbox: Outbox, private val clock: Clock) : VehicleServiceStatuses {
 
     private class ShiftRow(val id: UUID, val vehicleId: UUID, val state: String)
 
     private class Current(val status: ServiceStatus, val revision: Long, val changedAt: Instant)
 
+    /** Ergebnis eines Wechsels; [refusal] ist die abgewiesene Bereitmeldung (409), die erst **nach** dem Commit der Prüfspur geworfen wird (sonst ginge der Audit-Eintrag mit der Transaktion verloren). */
+    private class Applied(val result: ServiceStatusResult, val refusal: ProblemException? = null)
+
     override fun report(ctx: RequestContext, cmd: ServiceStatusReport): ServiceStatusResult {
         if (ctx.actor.type != ActorType.HUMAN) throw ProblemException(ErrorCode.FORBIDDEN)
         val session = ctx.actor.sessionId ?: throw ProblemException(ErrorCode.FORBIDDEN)
-        return ctxTx.run(ctx) { j ->
+        val applied = ctxTx.run(ctx) { j ->
             DeviceGuard.requireBound(j, ctx, cmd.deviceId ?: boundDevice(j, ctx, session))
             val shift = ownShift(j, ctx, cmd.shiftId) ?: throw ProblemException.notFound()
             if (cmd.vehicleId != null && cmd.vehicleId != shift.vehicleId) throw ProblemException.notFound()
-            existing(j, cmd.eventId)?.let { return@run duplicate(j, it, shift, cmd.status) }
+            existing(j, cmd.eventId)?.let { return@run Applied(duplicate(j, it, shift, cmd.status)) }
             if (shift.state != "STARTED") throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Die Schicht ist nicht angetreten oder bereits beendet; ein Status kann nicht gemeldet werden.")
             apply(j, ctx, shift, StatusTrigger.DRIVER, userRef(ctx), cmd.eventId, cmd.occurredAt, cmd.offlineRecorded, strict = true) { cmd.status }
         }
+        applied.refusal?.let { throw it }
+        return applied.result
     }
 
     override fun current(ctx: RequestContext, shiftId: UUID): ServiceStatusView = ctxTx.run(ctx, readOnly = true) { j ->
@@ -54,11 +65,13 @@ internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions
 
     override fun byDispatch(ctx: RequestContext, shiftId: UUID, target: ServiceStatus): ServiceStatusResult {
         if ("dispatcher" !in ctx.roles) throw ProblemException(ErrorCode.FORBIDDEN)
-        return ctxTx.run(ctx) { j ->
+        val applied = ctxTx.run(ctx) { j ->
             val shift = j.query("SELECT id, vehicle_id, state FROM taktovia.staff_shift WHERE id = ?", { rs, _ -> ShiftRow(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3)) }, shiftId)
                 .firstOrNull() ?: throw ProblemException.notFound()
             apply(j, ctx, shift, StatusTrigger.DISPATCH, userRef(ctx), null, null, false, strict = true) { target }
         }
+        applied.refusal?.let { throw it }
+        return applied.result
     }
 
     override fun latestForVehicles(ctx: RequestContext, vehicleIds: Collection<UUID>): Map<UUID, ServiceStatus> {
@@ -113,10 +126,11 @@ internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions
      * Gemeinsamer Wechsel unter Sperre. [targetOf] liefert das Ziel aus dem unter Sperre gelesenen aktuellen Status (`null` = nichts zu tun). [strict]: unzulässiger Übergang wirft 409 (Fahrermeldung online, Leitstelle);
      * sonst oder bei offline erfassten Meldungen bleibt er ohne Änderung ([StatusOutcome.REVIEW_REQUIRED]).
      */
+    @AuditRequired
     private fun apply(
         j: JdbcOperations, ctx: RequestContext, shift: ShiftRow, trigger: StatusTrigger, createdBy: String, eventId: UUID?, occurredAt: Instant?, offline: Boolean, strict: Boolean,
         targetOf: (ServiceStatus) -> ServiceStatus?,
-    ): ServiceStatusResult {
+    ): Applied {
         val now = clock.instant()
         // 1. Sperrreihenfolge: Fahrzeugzeile, dann Statuszeile
         j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ? FOR UPDATE", { _, _ -> 1 }, shift.vehicleId)
@@ -127,17 +141,25 @@ internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions
         val cur = j.query("SELECT status, revision, changed_at FROM taktovia.vehicle_service_status WHERE shift_id = ? FOR UPDATE",
             { rs, _ -> Current(ServiceStatus.valueOf(rs.getString(1)), rs.getLong(2), rs.getTimestamp(3).toInstant()) }, shift.id).single()
         // 2. dieselbe Meldung nach dem Sperren erneut: ein paralleler Gewinner macht sie zum Duplikat
-        if (eventId != null) existing(j, eventId)?.let { return duplicate(j, it, shift, null) }
-        val target = targetOf(cur.status) ?: return ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, "NO_EFFECT")
-        fun reject(reason: String, detail: String): ServiceStatusResult {
+        if (eventId != null) existing(j, eventId)?.let { return Applied(duplicate(j, it, shift, null)) }
+        val target = targetOf(cur.status) ?: return Applied(ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, "NO_EFFECT"))
+        fun reject(reason: String, detail: String): Applied {
             if (strict && !offline) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, detail)
-            return ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, reason)
+            return Applied(ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, reason))
         }
         if (!ServiceStatusAutomaton.allowed(cur.status, target, trigger))
             return reject("INVALID_TRANSITION", "Der Statuswechsel ${cur.status} -> $target ist nicht zulässig.")
         // eine offline erfasste Meldung, die älter ist als der aktuelle Serverstand, überschreibt ihn nie
         if (offline && occurredAt != null && occurredAt.isBefore(cur.changedAt)) return reject("STALE_EVENT", "Die Meldung ist älter als der aktuelle Status.")
-        if (cur.status == ServiceStatus.NOT_READY && target == ServiceStatus.AVAILABLE) missingForReady(j, shift, now)?.let { return reject("RELEASE_REQUIRED", "Die Bereitmeldung braucht $it.") }
+        if (cur.status == ServiceStatus.NOT_READY && target == ServiceStatus.AVAILABLE) missingForReady(j, shift, now)?.let { missing ->
+            // der abgewiesene Bereitversuch bleibt mit Akteur und fehlender Voraussetzung nachvollziehbar (CHK-001): die Prüfspur wird committet, die Abweisung danach geworfen
+            audit.record(j, AuditEntry(ActorRef(createdBy), AuditActions.READINESS_REFUSED, ObjectRef("staff_shift", shift.id), ctx.correlationId, linkedMapOf(
+                "vehicle_id" to shift.vehicleId.toString(), "target" to target.name, "trigger" to trigger.name, "offline" to offline, "missing" to missing)))
+            val detail = "Die Bereitmeldung braucht eine gültige Einsatzfreigabe; es fehlt: ${missing.joinToString(", ")}."
+            val refusal = ProblemException(ErrorCode.INVALID_STATE_TRANSITION, detail)
+            return if (strict && !offline) Applied(ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, "RELEASE_REQUIRED"), refusal)
+            else Applied(ServiceStatusResult(StatusOutcome.REVIEW_REQUIRED, view(j, shift), now, "RELEASE_REQUIRED"))
+        }
         // 3. Wechsel: Wächter der Datenbank zählt die Revision
         j.update("UPDATE taktovia.vehicle_service_status SET status = ?, changed_at = ? WHERE shift_id = ?", target.name, Timestamp.from(now), shift.id)
         val revision = cur.revision + 1
@@ -145,18 +167,15 @@ internal class JdbcVehicleServiceStatuses(private val ctxTx: ContextTransactions
         outbox.append(j, OutboxEvent(shift.id, revision, "vehicle.service_status_changed", linkedMapOf(
             "vehicle_id" to shift.vehicleId.toString(), "shift_id" to shift.id.toString(), "previous" to cur.status.name, "current" to target.name, "trigger" to trigger.name,
         ), now, correlationId = ctx.correlationId))
-        return ServiceStatusResult(StatusOutcome.APPLIED, view(j, shift), now, null)
+        return Applied(ServiceStatusResult(StatusOutcome.APPLIED, view(j, shift), now, null))
     }
 
-    /** Voraussetzung der Bereitmeldung (CHK-001): Fahrzeug aktiv und nicht gesperrt, gültige Einsatzfreigabe der Schicht gegen den aktuellen Sicherheitsstand. `null` = erfüllt, sonst der fehlende Nachweis. */
-    private fun missingForReady(j: JdbcOperations, shift: ShiftRow, now: Instant): String? {
-        val usable = j.queryForObject("SELECT active AND NOT active_block FROM taktovia.vehicle WHERE id = ?", Boolean::class.java, shift.vehicleId)
-        if (usable != true) return "ein aktives, nicht gesperrtes Fahrzeug"
-        val released = j.queryForObject(
-            "SELECT count(*) FROM taktovia.resource_release r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id " +
-                "WHERE r.shift_id = ? AND r.revoked_at IS NULL AND r.valid_until > ? AND r.safety_revision = v.safety_revision", Int::class.java, shift.id, Timestamp.from(now))!!
-        return if (released > 0) null else "eine gültige Einsatzfreigabe"
-    }
+    /**
+     * Voraussetzung der Bereitmeldung (CHK-001): dieselbe Regel wie der Fahrerlauf ([ReleaseCheck]) - aktives, nicht gesperrtes Fahrzeug und gültige, nicht widerrufene Einsatzfreigabe genau dieser
+     * Schicht gegen den aktuellen Sicherheitsstand. Gelesen unter der Fahrzeugsperre dieses Wechsels. `null` = erfüllt, sonst die Codes der fehlenden Voraussetzungen.
+     */
+    private fun missingForReady(j: JdbcOperations, shift: ShiftRow, now: Instant): List<String>? =
+        ReleaseCheck.check(j, shift.id, shift.vehicleId, now).let { (state, missing) -> if (state == de.taktovia.stafftime.api.RunReleaseState.RELEASED) null else missing }
 
     private fun history(j: JdbcOperations, shift: ShiftRow, from: ServiceStatus?, to: ServiceStatus, trigger: StatusTrigger, createdBy: String, eventId: UUID?, occurredAt: Instant?, offline: Boolean, now: Instant, revision: Long) {
         j.update(
