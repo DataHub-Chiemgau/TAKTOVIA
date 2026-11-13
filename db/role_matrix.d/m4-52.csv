@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+time_fact;SELECT,INSERT;WP-M4-52: Zeitfakten, nur anhängen (Trigger)

@@ -26,3 +26,7 @@ hängt im Gradle-Build nur von `platform` ab.
 
 Versuche (`fact_attempt`): je `attempt_id` ein Fakt, Wiederholungen derselben Suche sind höhere Revisionen und zählen nicht neu, Testanfragen (`is_test`) sind ausgeschlossen; `FactBase.reconcileAttempts` gleicht gegen `travel_attempt` ab. Ablehnungen tragen genau einen Primärgrund und Nebengründe als Labels; der Katalog `rejection_reason` (Gruppe, Gültigkeit, Texte je Sprache) wird beim Verarbeiten und per Trigger durchgesetzt (`ConsumeOutcome.REJECTED_REASON`).
 Vertragsstand: [LH-I.6-KPI-001/-002/-003/-004/-010](../../../docs/umsetzungsplan/vertraege/LH-I.6-KPI-010.md).
+
+## Zeitfakten (WP-M4-52)
+
+`AnalyticsApi.timeFacts` ([TimeFacts](src/main/kotlin/de/taktovia/analytics/api/TimeFacts.kt)): geplante, angekündigte, zugesagte, prognostizierte und tatsächliche Abhol- und Ankunftszeiten je Fahrgastfahrt, append-only in `time_fact` (V40520). Verspätung = Ist minus Zielzeit der gebundenen (höchsten) Zusageversion, `null` mit Grund bei fehlender Ist-Zeit oder Zusage. `announced` ist bis zur Festlegung von OP 28 nur mit Testwert belegbar. Vertrag: [LH-I.6-KPI-006.md](../../../docs/umsetzungsplan/vertraege/LH-I.6-KPI-006.md).

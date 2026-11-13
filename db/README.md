@@ -123,3 +123,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 (`business_alert.case_number`, `affected_run_count`, unveränderlich) und den Index `vehicle_run (tenant_id, vehicle_id, state)` für die Zählung. `V30490` ergänzt `vehicle.depot_id` (Arbeitsannahme OP-22) und die Listenindizes der Schadenliste samt Historienindizes für die Momentaufnahme der Paginierung. `V30510` härtet `repair_order` (Trigger `repair_order_guard`: Zustandsautomat, Nachweis nur mit Evidenz der Akte und Kostenbezug,
 höchstens ein nicht stornierter Auftrag je Akte, Revision +1) und `vehicle_release_decision` (Rolle, Schadenakte, Nachweis, Bezug der zweiten auf die erste Entscheidung; höchstens eine ausstehende und eine abgeschlossene Entscheidung je Auftrag). **Fixtures** legen Reparaturaufträge nur noch über gültige Zustandsfolgen an (`DefectWorld.recordProof`); direktes `UPDATE ... SET status = 'PROOF_RECORDED'` wird abgewiesen.
 Detailverträge: [m3-schadenakte.md](../docs/umsetzungsplan/vertraege/m3-schadenakte.md) §7 und §8, [m3-wiederfreigabe.md](../docs/umsetzungsplan/vertraege/m3-wiederfreigabe.md). Tests: `test_defect_case.py`, `test_repair_release.py`.
+
+## Zeitfakten (WP-M4-52)
+
+`V40520` legt `time_fact` an (Modul `analytics`, append-only per Trigger, Runtime nur SELECT/INSERT; je Fahrt, Stopp, Zeitart und Versionsschlüssel genau eine Zeile) und die Funktion `time_fact_delay(booking)` (Verspätung gegen die höchste Zusageversion, `NULL` mit Grund statt 0). Rechte: `R__runtime_grants_m4_52.sql`; Test: `db/tests/test_zeitfakten.py`.

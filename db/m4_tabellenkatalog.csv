@@ -57,3 +57,4 @@ odometer_conflict_resolution;documents-finance;APPEND_ONLY;;WP-M4-41;protokollie
 odometer_policy;documents-finance;VERAENDERLICH;;WP-M4-41;Konflikttoleranz und Zeitfenster je Mandant
 vehicle_km_run;analytics;APPEND_ONLY;;WP-M4-42;Klassifikationslauf mit Datenstand, nie geaendert
 vehicle_km_segment;analytics;APPEND_ONLY;;WP-M4-42;Kilometerabschnitt je Lauf und Kategorie, nie geaendert
+time_fact;analytics;APPEND_ONLY;;WP-M4-52;Zeitfakten je Fahrt und Stopp, nur anhängen

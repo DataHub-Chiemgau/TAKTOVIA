@@ -23,6 +23,9 @@ interface AnalyticsApi {
     /** Kennzahlregister, Versuchs- und Ablehnungskennzahlen mit Datenstand (WP-M4-46 bis -50, `/v1/analytics/metrics`). */
     val metrics: Metrics
 
+    /** Zeitfakten je Fahrgastfahrt und Stopp: geplant, angekündigt, zugesagt, prognostiziert, tatsächlich (WP-M4-52). */
+    val timeFacts: TimeFacts
+
     companion object {
         /**
          * [downloadSecret] signiert die kurzlebigen Abruflinks (HMAC-SHA256, mindestens 32 Byte, nie im Repository); [checklist] ist die Freigabecheckliste des PBefG-Exports
@@ -44,6 +47,9 @@ interface AnalyticsApi {
 
         /** Schwelle für kleine Gruppen (freigegebener Wert fehlt, WP-M4-46 Offene Punkte): Testwert 3. */
         const val DEFAULT_SMALL_GROUP_THRESHOLD = 3
+
+        /** Nur die Zeitfakten (WP-M4-52). */
+        fun createTimeFacts(tx: TenantTransactions): TimeFacts = AnalyticsServicesFactory.createTimeFacts(tx)
     }
 }
 
