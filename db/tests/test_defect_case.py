@@ -138,6 +138,50 @@ class Schadenakte(unittest.TestCase):
             plan = "\n".join(r[0] for r in c.execute("EXPLAIN SELECT id FROM taktovia.defect_case WHERE vehicle_id=%s AND reported_at >= now()", (v1,)).fetchall())
             self.assertIn('defect_case', plan)
 
+    # ---- WP-M3-45 / LH-6.22-DMG-005: Klasse, Regelversion und Klassifikationshistorie ----
+
+    def test_klasse_check_und_klassifikationshistorie_append_only(self):
+        classes = ['SAFETY_CRITICAL', 'OPERATIONALLY_RELEVANT', 'COSMETIC', 'OTHER']
+        # genau eine der vier Klassen, nie ohne Regelversion und Herkunft
+        with tx(A) as c:
+            for k in classes:
+                cid, _ = new_case(c, A, self.va)
+                c.execute("UPDATE taktovia.defect_case SET severity=%s, severity_rule_version='dmg-klassen-v1', severity_source='RULE' WHERE id=%s", (k, cid))
+        for bad_sql in ("severity='KRITISCH', severity_rule_version='v1', severity_source='RULE'",
+                        "severity='COSMETIC'",
+                        "severity='COSMETIC', severity_rule_version='v1'",
+                        "severity='COSMETIC', severity_rule_version='v1', severity_source='MAGIE'",
+                        "severity='COSMETIC', severity_rule_version='MIT LEERZEICHEN', severity_source='RULE'"):
+            with tx(A) as c:
+                cid, _ = new_case(c, A, self.va)
+                with self.assertRaises(psycopg.errors.CheckViolation, msg=bad_sql):
+                    c.execute(f"UPDATE taktovia.defect_case SET {bad_sql} WHERE id=%s", (cid,))
+        # Historie: Erstklassifikation, Bestätigung, Korrektur nur mit Grund
+        def hist(c, cid, frm, to, source='RULE', reason=None):
+            c.execute("INSERT INTO taktovia.defect_classification_history(tenant_id,id,defect_id,from_severity,to_severity,rule_version,source,reason,actor,defect_revision) "
+                      "VALUES (%s,%s,%s,%s,%s,'dmg-klassen-v1',%s,%s,%s,1)", (A, uid(), cid, frm, to, source, reason, ACTOR))
+        with tx(A) as c:
+            cid, _ = new_case(c, A, self.va)
+            hist(c, cid, None, 'OPERATIONALLY_RELEVANT')
+            hist(c, cid, 'OPERATIONALLY_RELEVANT', 'OPERATIONALLY_RELEVANT', 'TRIAGE')          # Bestätigung ohne Grund
+            hist(c, cid, 'OPERATIONALLY_RELEVANT', 'SAFETY_CRITICAL', 'TRIAGE', 'Bremsscheibe gerissen')
+        with tx(A) as c:
+            cid, _ = new_case(c, A, self.va)
+            with self.assertRaises(psycopg.errors.CheckViolation):
+                hist(c, cid, 'COSMETIC', 'SAFETY_CRITICAL', 'TRIAGE', None)                      # Korrektur ohne Grund
+        with tx(A) as c:
+            with self.assertRaises(psycopg.errors.CheckViolation):
+                hist(c, new_case(c, A, self.va)[0], None, 'GEFAEHRLICH')
+        # append-only auch für die Administration, RLS trennt Mandanten
+        with tx(A) as c:
+            cid, _ = new_case(c, A, self.va); hist(c, cid, None, 'COSMETIC')
+        for sql in ("UPDATE taktovia.defect_classification_history SET to_severity='OTHER'", "DELETE FROM taktovia.defect_classification_history"):
+            with admin() as a:
+                with self.assertRaises(psycopg.errors.CheckViolation, msg=sql):
+                    a.execute(sql)
+        with tx(B) as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM taktovia.defect_classification_history").fetchone()[0], 0)
+
 
 if __name__ == '__main__':
     unittest.main()

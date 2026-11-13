@@ -39,6 +39,18 @@
     "safety_revision": {
       "type": "integer",
       "minimum": 0
+    },
+    "reason_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Quellbezug der Sperre, bei Schaden die Fallnummer der Schadenakte (WP-M3-46)"
     }
   },
   "examples": [

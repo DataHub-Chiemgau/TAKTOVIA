@@ -25,8 +25,12 @@ export type Right =
   | 'inspections.amend'
   | 'defects'
   | 'defects.write'
+  | 'defects.triage'
   | 'defects.state'
   | 'defects.history'
+  | 'repair'
+  | 'repair.write'
+  | 'fleet.release'
   | 'alerts'
   | 'livebetrieb'
   | 'alerts.ack'
@@ -62,10 +66,14 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'inspections:justify': ['inspections'],
   'inspections:amend': ['inspections', 'inspections.amend'],
   // Der Bereich „Schadenakten“ des Operator-Web öffnet das Triagerecht (Disposition, Werkstatt); Fahrer lesen und melden über die Fahrer-App, nicht im Operator-Web.
-  'defects:triage': ['defects'],
+  'defects:triage': ['defects', 'defects.triage'],
   'defects:write': ['defects.write'],
   'defects:state': ['defects.state'],
   'defects:history': ['defects.history'],
+  // UI-11 Reparaturauftrag und Wiederfreigabe (WP-M3-51): Lesen, Pflegen (Werkstatt) und technische Freigabe als getrennte Rechte; ohne `fleet:release` zeigt die Anzeige „Freigaberolle fehlt“.
+  'repair:read': ['repair'],
+  'repair:write': ['repair', 'repair.write'],
+  'fleet:release': ['fleet.release'],
   // UI-07 Leitstelle: Arbeitsliste „Offene Störungen“ (WP-M3-52): Lesen mit `operator:read`, Quittieren nur mit `operator:write`
   // UI-07 Livebetrieb Fahrzeuge (WP-M3-36): Lesen mit `operator:read`; die Fahrzeuge begrenzt der Server auf die berechtigten Dienste
   'operator:read': ['alerts', 'livebetrieb'],
@@ -94,19 +102,33 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
     'shifts.write',
     'defects',
     'defects.write',
+    'defects.triage',
     'defects.state',
+    'repair',
   ],
   WORKSHOP: [
     'fleet',
     'fleet.write',
     'defects',
     'defects.write',
+    'defects.triage',
     'defects.state',
     'defects.history',
+    'repair',
+    'repair.write',
+    'fleet.release',
   ],
   PLANNER: ['admin.ui17', 'fleet', 'drivers', 'shifts', 'roster', 'roster.write'],
   ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20'],
-  TENANT_ADMIN: ['admin.ui17', 'admin.ui18', 'admin.ui20', 'defects.state', 'defects.history'],
+  TENANT_ADMIN: [
+    'admin.ui17',
+    'admin.ui18',
+    'admin.ui20',
+    'defects.state',
+    'defects.history',
+    'repair',
+    'fleet.release',
+  ],
   FINANCE: ['finance'],
   STAFF_PLANNING: [
     'staff',

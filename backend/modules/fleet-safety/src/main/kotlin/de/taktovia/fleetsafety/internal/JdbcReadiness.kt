@@ -48,6 +48,7 @@ import java.util.UUID
  */
 internal class JdbcReadiness(
     private val ctxTx: ContextTransactions, private val audit: AuditPort, private val outbox: Outbox, private val clock: Clock, private val policy: ReleasePolicy = ReleasePolicy(),
+    private val attempts: ReleaseAttempts? = null,
 ) : Readiness {
 
     // ------------------------------------------------------------------------------------------------ Sperren
@@ -80,7 +81,8 @@ internal class JdbcReadiness(
         audit.record(j, AuditEntry(actor, AuditActions.VEHICLE_BLOCKED, ObjectRef("vehicle", cmd.vehicleId), correlationId, linkedMapOf(
             "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "reason_ref" to cmd.reasonRef, "safety_revision" to revision, "revoked_releases" to revoked.size)))
         outbox.append(j, OutboxEvent(id, 1, "fleet.vehicle_blocked", linkedMapOf(
-            "vehicle_id" to cmd.vehicleId.toString(), "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "safety_revision" to revision),
+            "vehicle_id" to cmd.vehicleId.toString(), "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "safety_revision" to revision,
+            "reason_ref" to cmd.reasonRef),
             clock.instant(), correlationId = correlationId))
         for ((releaseId, shiftId) in revoked) {
             audit.record(j, AuditEntry(actor, AuditActions.RELEASE_REVOKED, ObjectRef("resource_release", releaseId), correlationId, linkedMapOf(
@@ -120,7 +122,13 @@ internal class JdbcReadiness(
 
     override fun liftOperationalBlock(ctx: RequestContext, vehicleId: UUID, blockId: UUID): LiftOutcome {
         requireRole(ctx, OPERATORS)
-        return ctxTx.run(ctx) { j -> liftIn(j, actor(ctx), ctx.correlationId, vehicleId, blockId, null) }
+        try {
+            return ctxTx.run(ctx) { j -> liftIn(j, actor(ctx), ctx.correlationId, vehicleId, blockId, null) }
+        } catch (e: ProblemException) {
+            // AT-51: der Versuch, eine Sicherheitssperre ohne Werkstattnachweis zu entfernen, wird verhindert und als Fehlversuch protokolliert (eigene Transaktion, wirkt auch beim Abbruch dieser)
+            if (e.code == ErrorCode.INVALID_STATE_TRANSITION) attempts?.record(ctx, vehicleId, null, "SAFETY_BLOCK_NEEDS_RELEASE_DECISION", e.code.status)
+            throw e
+        }
     }
 
     override fun liftSafetyBlock(ctx: RequestContext, vehicleId: UUID, blockId: UUID, releaseDecisionId: UUID): LiftOutcome {
@@ -153,6 +161,29 @@ internal class JdbcReadiness(
             clock.instant(), correlationId = correlationId))
         return LiftOutcome(view, revision, stillBlocked)
     }
+
+    /** `safety_revision` des Fahrzeugs unter der exklusiven Zeilensperre (Wiederfreigabe, WP-M3-51); `null` = unbekannt oder fremd. */
+    fun lockedSafetyRevision(j: JdbcOperations, vehicleId: UUID): Long? = lockVehicle(j, vehicleId, exclusive = true)?.safetyRevision
+
+    /**
+     * Hebt die aktiven Sicherheitssperren der Schadenakte [caseNumber] mit der Wiederfreigabeentscheidung [decisionId] auf (WP-M3-51) und liefert die aufgehobenen Sperren und den neuen Stand der `safety_revision`.
+     * Weitere Sperrgründe bleiben. Ohne aktive Sperre dieser Akte wird die Revision trotzdem einmal erhöht (die Entscheidung ist eine Änderung des Sicherheitsstands).
+     */
+    fun liftSafetyBlocksForCase(j: JdbcOperations, actor: ActorRef, correlationId: UUID, vehicleId: UUID, decisionId: UUID, caseNumber: String): Pair<List<UUID>, Long> {
+        val ids = j.query("SELECT id FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE' AND source = 'SAFETY' AND reason_code = 'DEFECT_CRITICAL' AND reason_ref = ? ORDER BY set_at, id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleId, caseNumber)
+        var revision = j.queryForObject("SELECT safety_revision FROM taktovia.vehicle WHERE id = ?", Long::class.java, vehicleId)!!
+        for (id in ids) revision = liftIn(j, actor, correlationId, vehicleId, id, decisionId).safetyRevision
+        if (ids.isEmpty()) {
+            val still = j.queryForObject("SELECT count(*) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", Int::class.java, vehicleId)!! > 0
+            revision = bump(j, vehicleId, blocked = still)
+        }
+        return ids to revision
+    }
+
+    /** Anzahl der aktiven Sicherheitssperren der Akte (Vorausberechnung des Stands der `safety_revision` nach der Entscheidung). */
+    fun activeSafetyBlockCount(j: JdbcOperations, vehicleId: UUID, caseNumber: String): Int =
+        j.queryForObject("SELECT count(*) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE' AND source = 'SAFETY' AND reason_code = 'DEFECT_CRITICAL' AND reason_ref = ?", Int::class.java, vehicleId, caseNumber)!!
 
     override fun activeBlocks(ctx: RequestContext, vehicleId: UUID): List<VehicleBlockView> = ctxTx.run(ctx, readOnly = true) { j ->
         if (j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ?", { _, _ -> 1 }, vehicleId).isEmpty()) throw ProblemException.notFound()
@@ -227,8 +258,8 @@ internal class JdbcReadiness(
         return list
     }
 
-    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome FROM taktovia.inspection_run WHERE id = ?",
-        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5)) }, id).firstOrNull()
+    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at FROM taktovia.inspection_run WHERE id = ?",
+        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant()) }, id).firstOrNull()
 
     private fun blockers(j: JdbcOperations, vehicle: Vehicle, shift: Shift, inspection: Insp?, cmd: IssueRelease, now: Instant, lock: Boolean): Set<ReleaseBlocker> {
         val missing = linkedSetOf<ReleaseBlocker>()
@@ -242,6 +273,10 @@ internal class JdbcReadiness(
         if (qualification(j, shift.driverRef, now, lock = lock) == null) missing += ReleaseBlocker.QUALIFICATION_MISSING
         val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
         if (blocks.any { it == "SAFETY" } || shiftBlocked(j, cmd.shiftId)) missing += ReleaseBlocker.DEFECT_BLOCK
+        // Nach einer Wiederfreigabeentscheidung ist eine **neue** Prüfung Voraussetzung (WP-M3-51, AT-60): eine vor der Aufhebung der Sicherheitssperre abgeschlossene Prüfung begründet keine Einsatzfreigabe
+        val lastLift = j.query("SELECT max(lifted_at) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND source = 'SAFETY' AND status = 'LIFTED' AND release_decision_id IS NOT NULL",
+            { rs, _ -> rs.getTimestamp(1)?.toInstant() }, cmd.vehicleId).firstOrNull()
+        if (inspection?.completedAt != null && lastLift != null && inspection.completedAt.isBefore(lastLift)) missing += ReleaseBlocker.NO_INSPECTION
         if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += ReleaseBlocker.OPERATIONAL_BLOCK
         return missing
     }
@@ -366,7 +401,7 @@ internal class JdbcReadiness(
 
     private class Vehicle(val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean)
     private class Shift(val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)
-    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?)
+    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?, val completedAt: Instant?)
 
     /** Sperrreihenfolge: immer zuerst die Fahrzeugzeile. [exclusive] für Änderungen, sonst gemeinsam (Hold-Commit, Prüfung). */
     private fun lockVehicle(j: JdbcOperations, vehicleId: UUID, exclusive: Boolean, lock: Boolean = true): Vehicle? {

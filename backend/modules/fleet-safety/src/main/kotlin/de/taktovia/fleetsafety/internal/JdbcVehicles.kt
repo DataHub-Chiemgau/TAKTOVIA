@@ -81,12 +81,13 @@ internal class JdbcVehicles(
     @AuditRequired
     private fun doCreate(j: JdbcOperations, actor: ActorRef, correlationId: UUID, input: VehicleMasterInput): VehicleMasterView {
         requireOrganization(j, input.operatorOrganizationId)
+        input.depotId?.let { requireDepot(j, it) }
         val id = UUID.randomUUID()
         val config = ConfiguredVector("BASE", input.seats, input.wheelchair, input.equipment.sorted()).toJson()
         val view = j.query(
-            "INSERT INTO taktovia.vehicle AS v (tenant_id, id, owner_org_ref, capacity_config, capacity_schema_version, vehicle_label, vehicle_type, equipment, active, created_by) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, CAST(? AS jsonb), '1.0', ?, ?, $EQUIPMENT_PARAM, ?, ?) RETURNING $COLUMNS",
-            MAPPER, id, input.operatorOrganizationId.toString(), config, input.label, input.type, equipmentParam(input.equipment), equipmentParam(input.equipment), input.active, actor.value,
+            "INSERT INTO taktovia.vehicle AS v (tenant_id, id, owner_org_ref, capacity_config, capacity_schema_version, vehicle_label, vehicle_type, equipment, active, created_by, depot_id) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, CAST(? AS jsonb), '1.0', ?, ?, $EQUIPMENT_PARAM, ?, ?, ?) RETURNING $COLUMNS",
+            MAPPER, id, input.operatorOrganizationId.toString(), config, input.label, input.type, equipmentParam(input.equipment), equipmentParam(input.equipment), input.active, actor.value, input.depotId,
         ).single()
         audit.record(j, AuditEntry(actor, AuditActions.VEHICLE_CREATED, ObjectRef("vehicle", id), correlationId, auditDetails(view)))
         outbox.append(j, OutboxEvent(id, view.revision, "vehicle.created", eventPayload(view), clock.instant(), correlationId = correlationId))
@@ -98,6 +99,7 @@ internal class JdbcVehicles(
         val before = load(j, id, lock = true) ?: notFound()   // unbekannt oder fremder Mandant (RLS): 404; die Sperre serialisiert gleichzeitige Änderungen
         if (before.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Das Fahrzeug wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         requireOrganization(j, input.operatorOrganizationId)
+        if (input.depotGiven) input.depotId?.let { requireDepot(j, it) }
         val layoutRow = before.hasCapacityLayout
         if (layoutRow && (before.seats != input.seats || before.wheelchair != input.wheelchair || before.equipment.toSet() != input.equipment)) {
             throw ProblemException(ErrorCode.CONFLICT, "Kapazität und Ausstattung werden über die Kapazitätskonfiguration gepflegt (/capacity), solange eine Konfiguration besteht.",
@@ -107,15 +109,15 @@ internal class JdbcVehicles(
         val config = ConfiguredVector("BASE", input.seats, input.wheelchair, input.equipment.sorted()).toJson()
         val view = (if (layoutRow) {
             j.query(
-                "UPDATE taktovia.vehicle AS v SET owner_org_ref = ?, vehicle_label = ?, vehicle_type = ?, active = ?, master_revision = master_revision + 1, updated_at = clock_timestamp() " +
+                "UPDATE taktovia.vehicle AS v SET owner_org_ref = ?, vehicle_label = ?, vehicle_type = ?, active = ?, depot_id = CASE WHEN ? THEN CAST(? AS uuid) ELSE v.depot_id END, master_revision = master_revision + 1, updated_at = clock_timestamp() " +
                     "WHERE v.id = ? AND v.master_revision = ? RETURNING $COLUMNS",
-                MAPPER, input.operatorOrganizationId.toString(), input.label, input.type, input.active, id, expected,
+                MAPPER, input.operatorOrganizationId.toString(), input.label, input.type, input.active, input.depotGiven, input.depotId, id, expected,
             )
         } else {
             j.query(
                 "UPDATE taktovia.vehicle AS v SET owner_org_ref = ?, vehicle_label = ?, vehicle_type = ?, active = ?, capacity_config = CAST(? AS jsonb), equipment = $EQUIPMENT_PARAM, " +
-                    "master_revision = master_revision + 1, updated_at = clock_timestamp() WHERE v.id = ? AND v.master_revision = ? RETURNING $COLUMNS",
-                MAPPER, input.operatorOrganizationId.toString(), input.label, input.type, input.active, config, equipmentParam(input.equipment), equipmentParam(input.equipment), id, expected,
+                    "depot_id = CASE WHEN ? THEN CAST(? AS uuid) ELSE v.depot_id END, master_revision = master_revision + 1, updated_at = clock_timestamp() WHERE v.id = ? AND v.master_revision = ? RETURNING $COLUMNS",
+                MAPPER, input.operatorOrganizationId.toString(), input.label, input.type, input.active, config, equipmentParam(input.equipment), equipmentParam(input.equipment), input.depotGiven, input.depotId, id, expected,
             )
         }).singleOrNull() ?: throw ProblemException(ErrorCode.REVISION_MISMATCH, "Das Fahrzeug wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         val deactivated = before.active && !view.active
@@ -188,6 +190,11 @@ internal class JdbcVehicles(
             throw ProblemException.invalid(Violation("/operator_organization_id", ViolationCode.INVALID_VALUE))
     }
 
+    private fun requireDepot(j: JdbcOperations, depot: UUID) {
+        // Betriebshof des eigenen Mandanten (RLS): ein fremder oder unbekannter ist nicht speicherbar (Feldfehler, keine Existenzauskunft)
+        if (j.queryForObject("SELECT count(*) FROM taktovia.depot WHERE id = ?", Int::class.java, depot) != 1) throw ProblemException.invalid(Violation("/depot_id", ViolationCode.INVALID_VALUE))
+    }
+
     private fun load(j: JdbcOperations, id: UUID, lock: Boolean): VehicleMasterView? =
         (if (lock) j.query(VEHICLE_ROW_LOCK, MAPPER, id) else j.query(VEHICLE_ROW, MAPPER, id)).firstOrNull()
 
@@ -221,7 +228,7 @@ internal class JdbcVehicles(
         val MAPPER_JSON: JsonMapper = JsonMapper.builder().build()
         const val EQUIPMENT_PARAM = "CASE WHEN ? = '' THEN '{}'::text[] ELSE string_to_array(?, ',') END"
         const val COLUMNS = "v.id, v.vehicle_label, v.vehicle_type, v.owner_org_ref, v.capacity_config::text AS capacity_config, coalesce(array_to_string(v.equipment, ','), '') AS equipment, " +
-            "v.active, v.active_block, v.safety_revision, (v.capacity_layout IS NOT NULL) AS has_layout, v.master_revision, v.created_at, v.updated_at"
+            "v.active, v.active_block, v.safety_revision, (v.capacity_layout IS NOT NULL) AS has_layout, v.master_revision, v.created_at, v.updated_at, v.depot_id"
         const val VEHICLE_ROW = "SELECT $COLUMNS FROM taktovia.vehicle v WHERE v.id = ?"
         const val VEHICLE_ROW_LOCK = "$VEHICLE_ROW FOR NO KEY UPDATE"
         const val CAPACITY_ROW = "SELECT v.capacity_layout::text AS layout, v.capacity_config::text AS config, v.master_revision FROM taktovia.vehicle v WHERE v.id = ?"
@@ -234,6 +241,7 @@ internal class JdbcVehicles(
                 (cfg["seats"] as? Number)?.toInt() ?: 0, (cfg["wheelchair"] as? Number)?.toInt() ?: 0,
                 rs.getString("equipment").split(',').filter { it.isNotEmpty() }, rs.getBoolean("active"), rs.getBoolean("active_block"), rs.getLong("safety_revision"),
                 rs.getBoolean("has_layout"), rs.getLong("master_revision"), rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
+                rs.getObject("depot_id", UUID::class.java),
             )
         }
     }

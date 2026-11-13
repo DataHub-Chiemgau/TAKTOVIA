@@ -49,6 +49,8 @@ data class AlertView(
     val id: UUID, val kind: String, val priority: AlertPriority, val state: AlertState, val vehicleId: UUID?, val serviceId: UUID?, val recipientRole: String,
     val policyRevisionNo: Int?, val escalationLevel: Int, val escalatedAt: Instant?, val escalateAt: Instant?, val reasonCode: String?, val refType: String?, val refId: UUID?,
     val createdAt: Instant, val updatedAt: Instant, val resolvedAt: Instant?, val revision: Long, val acknowledgement: AlertAcknowledgementView?,
+    /** Fallnummer der Schadenakte und Zahl der betroffenen Fahrten (kritischer Alarm, WP-M3-46); sonst `null`. */
+    val caseNumber: String? = null, val affectedRunCount: Int? = null,
 )
 
 data class AlertSettings(

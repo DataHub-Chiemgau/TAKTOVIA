@@ -31,15 +31,15 @@ class CrossTenantIsolationTest {
     private fun idem() = mapOf("Idempotency-Key" to "iso-" + UUID.randomUUID())
 
     private class Side(val tenant: TenantId, val admin: UUID, val adminToken: String, val callcenter: UUID, val ccToken: String, val passenger: UUID, val passengerToken: String,
-        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String, val finance: UUID, val financeToken: String)
+        val planner: UUID, val plannerToken: String, val dispatcher: UUID, val dispatcherToken: String, val driver: UUID, val driverToken: String, val finance: UUID, val financeToken: String, val workshopToken: String = "")
 
     private fun side(): Side {
         val t = env.tenant("Iso-" + UUID.randomUUID()); val a = UUID.randomUUID(); val c = UUID.randomUUID(); val p = UUID.randomUUID()
         env.grant(t, a, "tenant_admin"); env.grant(t, c, "callcenter"); env.grant(t, p, "passenger")
         val pl = UUID.randomUUID(); val di = UUID.randomUUID(); val dr = UUID.randomUUID()
         env.grant(t, pl, "staff_planning"); env.grant(t, di, "dispatcher"); env.grant(t, dr, "driver")
-        val fi = UUID.randomUUID(); env.grant(t, fi, "finance")
-        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr), fi, env.token(fi))
+        val fi = UUID.randomUUID(); env.grant(t, fi, "finance"); val ws = UUID.randomUUID(); env.grant(t, ws, "workshop")
+        return Side(t, a, env.token(a), c, env.token(c), p, env.token(p), pl, env.token(pl), di, env.token(di), dr, env.token(dr), fi, env.token(fi), env.token(ws))
     }
 
     private class Ids(val map: Map<String, String>, val subject: String)
@@ -100,6 +100,8 @@ class CrossTenantIsolationTest {
         env.server.ctx.getBean(de.taktovia.platform.storage.TenantObjectStore::class.java).put(de.taktovia.platform.storage.ObjectKey(b.tenant, ticket.json["upload_key"].asString()), photo, "image/jpeg")
         check(env.post("/v1/defect-evidence-uploads/$uploadId/complete", "{}", b.dispatcherToken, null, idem() + ("If-Match" to "\"1\"")).status == 200)
         val defect = create("/v1/defects", """{"vehicle_id":"$vehicleMaster","occurred_at":"${Instant.now().minusSeconds(600)}","category_code":"BODY","description":"Kratzer B","evidence_ids":["$uploadId"]}""", b.dispatcherToken).json["id"].asString()
+        val repairOrder = UUID.randomUUID().toString()   // Reparaturauftrag in B (WP-M3-51): Zeile per SQL, der Fremdzugriff aus A muss gleichartig 404 ergeben
+        env.exec("INSERT INTO taktovia.repair_order(tenant_id,id,defect_id,vehicle_id,status,created_by) VALUES (?,CAST(? AS uuid),CAST(? AS uuid),CAST(? AS uuid),'OPEN','user:test')", b.tenant.value, repairOrder, defect, vehicleMaster)
         val deviceId = UUID.randomUUID().toString()
         create("/v1/driver/devices", """{"device_id":"$deviceId","platform":"ANDROID","app_version":"1.0.0"}""", b.driverToken)
         // WP-M4-06: Abwesenheit in B (Personalrolle)
@@ -168,7 +170,7 @@ class CrossTenantIsolationTest {
 "alert_id" to alert, "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
             "manual_cost_event_id" to UUID.randomUUID().toString(), "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
             "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
-            "conflict_id" to UUID.randomUUID().toString(),
+            "conflict_id" to UUID.randomUUID().toString(), "repair_order_id" to repairOrder,
         ), subject = b.passenger.toString())
     }
 
@@ -263,6 +265,9 @@ class CrossTenantIsolationTest {
             "listVehicleKnownDefects" to Probe("GET", "/v1/vehicles/{vehicle_id}/known-defects", role = "dispatcher"),
             "getDefect" to Probe("GET", "/v1/defects/{defect_id}", role = "dispatcher"),
             "transitionDefect" to Probe("POST", "/v1/defects/{defect_id}/transitions", """{"to":"REVIEWED"}""", true, role = "dispatcher"),
+            "transitionRepairOrder" to Probe("POST", "/v1/repair-orders/{repair_order_id}/transitions", """{"to":"IN_PROGRESS"}""", true, role = "repair_workshop"),
+            "createVehicleRelease" to Probe("POST", "/v1/vehicles/{vehicle_id}/release", """{"repair_order_id":"00000000-0000-4000-8000-000000000000","follow_up_inspection_id":"00000000-0000-4000-8000-000000000001","reason":"Fremdversuch"}""", true, role = "repair_workshop"),
+            "triageDefect" to Probe("POST", "/v1/defects/{defect_id}/triage", """{"severity":"COSMETIC","decision":"REVIEWED"}""", true, role = "dispatcher"),
             "listDefectStatusHistory" to Probe("GET", "/v1/defects/{defect_id}/status-history", role = "dispatcher"),
             "amendDefect" to Probe("POST", "/v1/defects/{defect_id}/amendments", """{"change_reason":"Fremdversuch","description":"gekapert"}""", false, role = "dispatcher"),
             "listDefectHistory" to Probe("GET", "/v1/defects/{defect_id}/history"),   // Prüfer: Betriebsleitung (Standardtoken)
@@ -346,7 +351,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listTimeTargetActual" to "/v1/time-events/target-actual?from=2026-12-01&to=2026-12-02", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
-        "listOperatorAlerts" to "/v1/operator/alerts", "listDefects" to "/v1/defects", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
+        "listOperatorAlerts" to "/v1/operator/alerts", "listDefects" to "/v1/defects", "listRepairOrders" to "/v1/repair-orders", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
         "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "getCostClassification" to "/v1/cost-events/classification?valuation=ACTUAL&currency=EUR&period_from=2026-01-01&period_to=2027-01-01", "listExpenses" to "/v1/expenses", "listBookings" to "/v1/bookings",
     )
@@ -372,7 +377,7 @@ class CrossTenantIsolationTest {
         return listOf(r.status, j["type"]?.asString(), j["code"]?.asString(), j["title"]?.asString(), j["detail"]?.asString()).joinToString("|")
     }
 
-    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.role == "passenger" -> a.passengerToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
+    private fun call(a: Side, p: Probe, path: String, token: String = when { p.role == "planner" -> a.plannerToken; p.role == "dispatcher" -> a.dispatcherToken; p.role == "driver" -> a.driverToken; p.role == "finance" -> a.financeToken; p.role == "repair_workshop" -> a.workshopToken; p.role == "passenger" -> a.passengerToken; p.cc -> a.ccToken; else -> a.adminToken }): Resp =
         env.server.send(p.method, path, p.body, env.headers(token, extra = (if (p.method != "GET") idem() else emptyMap()) + (if (p.ifMatch) mapOf("If-Match" to "\"1\"") else emptyMap()) + (if (p.purpose) mapOf("X-Access-Purpose" to "BOOKING_ASSISTANCE") else emptyMap())))
 
     private fun snapshot(b: Side): String = listOf("/v1/regions", "/v1/depots", "/v1/legal-entities", "/v1/organizations", "/v1/services", "/v1/cost-centers", "/v1/config/revisions", "/v1/memberships", "/v1/webhook-subscriptions")

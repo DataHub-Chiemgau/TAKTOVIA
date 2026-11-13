@@ -93,7 +93,7 @@ class VehicleMasterController(private val fleet: FleetsafetyApi, private val cod
         "id" to v.id.toString(), "vehicle_label" to v.label, "vehicle_type" to v.type, "operator_organization_id" to v.operatorOrganizationId?.toString(),
         "capacity" to linkedMapOf("seats" to v.seats, "wheelchair" to v.wheelchair), "equipment" to v.equipment, "active" to v.active,
         "dispatch_blocked" to v.dispatchBlocked, "dispatchable" to v.dispatchable, "safety_revision" to v.safetyRevision, "has_capacity_layout" to v.hasCapacityLayout,
-        "revision" to v.revision, "created_at" to v.createdAt.toString(), "updated_at" to v.updatedAt.toString(),
+        "revision" to v.revision, "created_at" to v.createdAt.toString(), "updated_at" to v.updatedAt.toString(), "depot_id" to v.depotId?.toString(),
     )
 
     private fun json(v: ConfiguredVector): Map<String, Any?> = linkedMapOf("code" to v.code, "seats" to v.seats, "wheelchair" to v.wheelchair, "equipment" to v.equipment)

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.release_decided.v1.schema.json",
+  "title": "Technische Freigabeentscheidung erteilt (WP-M3-51)",
+  "description": "Payload von `fleet.release_decided`. Aggregat: vehicle_release_decision / 1. Nur Kennungen und Codes: keine Diagnosen, Beschreibungstexte, Fotos, Namen oder Kontaktdaten (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "vehicle_id",
+    "repair_order_id",
+    "decision",
+    "safety_revision"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "repair_order_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "decision": {
+      "enum": [
+        "PENDING_SECOND_APPROVAL",
+        "RELEASED",
+        "REJECTED"
+      ]
+    },
+    "safety_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "examples": [
+    {
+      "decision_id": "11111111-2222-4333-8444-555555555555",
+      "vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "repair_order_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "decision": "RELEASED",
+      "safety_revision": 9
+    }
+  ]
+}

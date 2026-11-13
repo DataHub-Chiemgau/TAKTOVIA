@@ -22,6 +22,9 @@ data class BusinessAlertRequest(
     val reasonCode: String? = null,
     /** `null` = die Empfängerrolle der Regel (Alarmrichtlinie) entscheidet. */
     val recipientRole: String? = null,
+    /** Fallnummer der Schadenakte und Zahl der betroffenen Fahrten (kritischer Alarm, WP-M3-46): Kennungen und Zahlen, nie Texte. */
+    val caseNumber: String? = null,
+    val affectedRunCount: Int? = null,
 ) {
     init {
         require(Regex("^[A-Z][A-Z0-9_]{1,59}$").matches(kind)) { "ungültige Alarmart" }
@@ -31,6 +34,8 @@ data class BusinessAlertRequest(
         require(refType == null || Regex("^[a-z][a-z_]{1,39}$").matches(refType)) { "ungültiger Bezugstyp" }
         require(recipientRole == null || Regex("^[a-z][a-z_]{1,39}$").matches(recipientRole)) { "ungültige Empfängerrolle" }
         require(dedupeKey == null || dedupeKey.length in 1..200) { "Dedupe-Schlüssel 1..200 Zeichen" }
+        require(caseNumber == null || Regex("^[A-Za-z0-9-]{1,40}$").matches(caseNumber)) { "ungültige Fallnummer" }
+        require(affectedRunCount == null || affectedRunCount >= 0) { "Zahl der betroffenen Fahrten >= 0" }
     }
 }
 

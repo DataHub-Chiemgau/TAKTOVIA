@@ -85,7 +85,7 @@ class SchadenHistorie(unittest.TestCase):
             self.assertEqual(rows, [(1, 'v1'), (2, 'Kratzer links')])
         with tx(A) as c:   # Statuswechsel und Zuständigkeit bleiben ohne Version möglich
             cid = case(c)
-            c.execute("UPDATE taktovia.defect_case SET severity='COSMETIC', assignee_ref=gen_random_uuid(), updated_at=clock_timestamp() WHERE id=%s", (cid,))
+            c.execute("UPDATE taktovia.defect_case SET severity='COSMETIC', severity_rule_version='test-v1', severity_source='TRIAGE', assignee_ref=gen_random_uuid(), updated_at=clock_timestamp() WHERE id=%s", (cid,))
 
     def test_version_unique_je_akte(self):
         with tx(A) as c:

@@ -1260,6 +1260,8 @@ export interface Alert {
   resolved_at: string | null;
   revision: number;
   acknowledgement: AlertAcknowledgement | null;
+  case_number?: string | null;
+  affected_run_count?: number | null;
 }
 
 export interface AlertAcknowledgement {
@@ -2363,6 +2365,8 @@ export interface Defect {
   source_step_code?: string | null;
   evidence_pending?: number;
   content_version?: number;
+  severity_rule_version?: string | null;
+  suggested_severity?: DefectSeverity;
 }
 
 export interface DefectPage {
@@ -2388,6 +2392,15 @@ export interface RepairOrder {
   cost_reference: string | null;
   created_at: string;
   revision: number;
+  proof_evidence_id?: UUID | null;
+  proof_recorded_at?: string | null;
+}
+
+export interface RepairOrderTransition {
+  to: 'IN_PROGRESS' | 'PROOF_RECORDED' | 'CANCELED';
+  proof_evidence_id?: UUID | null;
+  cost_reference?: string | null;
+  reason?: string | null;
 }
 
 export interface RepairOrderPage {
@@ -2412,6 +2425,12 @@ export interface VehicleRelease {
   safety_revision: number;
   lifted_block_ids: UUID[];
   revision: number;
+  repair_order_id?: UUID;
+  defect_id?: UUID | null;
+  decided_by_role?: string | null;
+  second_approver?: string | null;
+  second_approver_role?: string | null;
+  proof_evidence_id?: UUID | null;
 }
 
 export interface Incident {
@@ -2453,6 +2472,7 @@ export interface VehicleMasterWrite {
   capacity: VehicleCapacityBasic;
   equipment: VehicleEquipment[];
   active: boolean;
+  depot_id?: UUID | null;
 }
 
 export interface VehicleMaster {
@@ -2470,6 +2490,7 @@ export interface VehicleMaster {
   revision: number;
   created_at: string;
   updated_at: string;
+  depot_id?: UUID | null;
 }
 
 export interface VehicleMasterPage {
@@ -2677,6 +2698,15 @@ export interface DefectStatusHistoryPage {
   items: DefectStatusHistoryEntry[];
   next_cursor: string | null;
   as_of: string;
+  timeline?: DefectTimelineEvent[];
+}
+
+export interface DefectTimelineEvent {
+  kind: 'STATUS' | 'CLASSIFICATION' | 'ASSIGNMENT' | 'VEHICLE_BLOCK';
+  occurred_at: string;
+  actor: string;
+  detail: string;
+  reason: string | null;
 }
 
 export interface DefectAmendment {
@@ -5049,7 +5079,7 @@ export interface Operations {
   };
   listDefects: {
     path: Record<string, never>;
-    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; reported_from?: string; reported_to?: string; limit?: number; cursor?: string };
+    query: { vehicle_id?: UUID; status?: 'NEW' | 'REVIEWED' | 'IN_PROGRESS' | 'REPAIR' | 'CLOSED' | 'DISMISSED'; severity?: DefectSeverity; reported_from?: string; reported_to?: string; priority?: number; depot_id?: UUID; assignee_ref?: UUID; sort?: 'reported_at' | '-reported_at' | 'case_number' | '-case_number' | 'vehicle' | '-vehicle' | 'priority' | '-priority' | 'status' | '-status' | 'assignee' | '-assignee'; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: DefectPage;
@@ -5087,6 +5117,13 @@ export interface Operations {
     query: Record<string, never>;
     headers: { 'Idempotency-Key': string; traceparent?: string };
     body: RepairOrderCreate;
+    response: RepairOrder;
+  };
+  transitionRepairOrder: {
+    path: { repair_order_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: RepairOrderTransition;
     response: RepairOrder;
   };
   createVehicleRelease: {
@@ -6221,13 +6258,14 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listKnownDefects: { method: 'GET', path: '/v1/inspections/{inspection_id}/known-defects', pathParams: ['inspection_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   acknowledgeKnownDefect: { method: 'POST', path: '/v1/inspections/{inspection_id}/known-defects/{defect_id}/acknowledge', pathParams: ['inspection_id', 'defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['inspections:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listVehicleKnownDefects: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/known-defects', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
-  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listDefects: { method: 'GET', path: '/v1/defects', pathParams: [], query: ['vehicle_id', 'status', 'severity', 'reported_from', 'reported_to', 'priority', 'depot_id', 'assignee_ref', 'sort', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createDefect: { method: 'POST', path: '/v1/defects', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 200] },
   getDefect: { method: 'GET', path: '/v1/defects/{defect_id}', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   triageDefect: { method: 'POST', path: '/v1/defects/{defect_id}/triage', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['defects:triage'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRepairOrders: { method: 'GET', path: '/v1/repair-orders', pathParams: [], query: ['defect_id', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['repair:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRepairOrder: { method: 'POST', path: '/v1/repair-orders', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['repair:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
-  createVehicleRelease: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/release', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:release'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  transitionRepairOrder: { method: 'POST', path: '/v1/repair-orders/{repair_order_id}/transitions', pathParams: ['repair_order_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['repair:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createVehicleRelease: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/release', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['fleet:release'], statuses: [200, 201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listOperatorIncidents: { method: 'GET', path: '/v1/operator/incidents', pathParams: [], query: ['status', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getOperatorIncident: { method: 'GET', path: '/v1/operator/incidents/{incident_id}', pathParams: ['incident_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

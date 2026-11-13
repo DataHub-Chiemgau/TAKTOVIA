@@ -50,11 +50,17 @@ interface FleetsafetyApi {
     /** Leitstellenprojektion der Fahrzeuge des berechtigten Dienstes (WP-M3-36). */
     val operatorVehicles: OperatorVehicles
 
+    /** Reparaturaufträge zu Schadenakten (WP-M3-51). */
+    val repairOrders: RepairOrders
+
+    /** Wiederfreigabe nach Sicherheitssperre mit Reparaturnachweis, Folgeprüfung und Vieraugenpflicht (WP-M3-51). */
+    val vehicleReleases: VehicleReleases
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
-            evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(), alertSettings: AlertSettings = AlertSettings(),
-        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings)
+            evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(), alertSettings: AlertSettings = AlertSettings(), defectSettings: DefectSettings = DefectSettings(),
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings, defectSettings)
     }
 }
 

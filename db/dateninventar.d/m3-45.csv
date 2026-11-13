@@ -1,0 +1,19 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+defect_case;severity_rule_version;nein;FLOTTE_SICHERHEIT;;;;Regelversion der Klassifikation, WP-M3-45
+defect_case;severity_source;nein;FLOTTE_SICHERHEIT;;;;Herkunft der Klasse (Regel, Meldehinweis, Triage), WP-M3-45
+defect_case;classified_at;nein;FLOTTE_SICHERHEIT;;;;Zeitpunkt der letzten Einstufung, WP-M3-45
+defect_case;classified_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Akteur der letzten Einstufung (Pseudonym user:<uuid>)
+defect_classification_history;tenant_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_classification_history;id;nein;FLOTTE_SICHERHEIT;;;;
+defect_classification_history;defect_id;nein;FLOTTE_SICHERHEIT;;;;
+defect_classification_history;from_severity;nein;FLOTTE_SICHERHEIT;;;;vorherige Klasse
+defect_classification_history;to_severity;nein;FLOTTE_SICHERHEIT;;;;neue Klasse
+defect_classification_history;rule_version;nein;FLOTTE_SICHERHEIT;;;;Regelversion
+defect_classification_history;rule_id;nein;FLOTTE_SICHERHEIT;;;;angewandte Regel der Regelmatrix
+defect_classification_history;source;nein;FLOTTE_SICHERHEIT;;;;Herkunft (Regel, Meldehinweis, Triage)
+defect_classification_history;reason;nein;FLOTTE_SICHERHEIT;;;;Begründung der Korrektur (Freitext, begrenzt, keine Personenangaben)
+defect_classification_history;assignee_before;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zuständiger vorher (Pseudonym-ID)
+defect_classification_history;assignee_after;ja;PERSONALEINSATZ;BDSG26_BESCHAEFTIGUNG;PERSONAL_HR;LK_BETRIEB;Zuständiger nachher (Pseudonym-ID)
+defect_classification_history;actor;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Akteur (Pseudonym user:<uuid>)
+defect_classification_history;defect_revision;nein;FLOTTE_SICHERHEIT;;;;Revision der Akte nach der Einstufung
+defect_classification_history;created_at;nein;FLOTTE_SICHERHEIT;;;;

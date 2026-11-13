@@ -178,6 +178,7 @@ listDefectHistory;defects:history;-;M3;N;N;N;N;N;N;J;N;N;J
 getDefectAsOf;defects:history;-;M3;N;N;N;N;N;N;J;N;N;J
 listRepairOrders;repair:read;-;M3;N;N;N;N;J;N;J;N;N;J
 createRepairOrder;repair:write;-;M3;N;N;N;N;N;N;N;N;N;J
+transitionRepairOrder;repair:write;-;M3;N;N;N;N;N;N;N;N;N;J
 createVehicleRelease;fleet:release;-;M3;N;N;N;N;N;N;J;N;N;J
 listVehicleMasters;fleet:read;-;M3;N;N;N;J;J;J;N;N;J;J
 getVehicleMaster;fleet:read;-;M3;N;N;N;J;J;J;N;N;J;J

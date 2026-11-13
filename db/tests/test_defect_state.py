@@ -18,9 +18,10 @@ ALLOWED = {('NEW', 'REVIEWED'), ('NEW', 'DISMISSED'), ('REVIEWED', 'IN_PROGRESS'
 def case(c, status='NEW', severity=None):
     vid, cid = uid(), uid()
     c.execute("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config) VALUES (%s,%s,'o','{}'::jsonb)", (A, vid))
-    c.execute("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,status,severity,dismissed_reason) "
-              "VALUES (%s,%s,%s,%s,%s,clock_timestamp(),'BODY','x',%s,%s,%s,%s)",
-              (A, cid, c.execute('SELECT taktovia.next_defect_case_number()').fetchone()[0], vid, uid(), ACTOR, status, severity, 'Fehlmeldung' if status == 'DISMISSED' else None))
+    c.execute("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,status,severity,severity_rule_version,severity_source,dismissed_reason) "
+              "VALUES (%s,%s,%s,%s,%s,clock_timestamp(),'BODY','x',%s,%s,%s,%s,%s,%s)",
+              (A, cid, c.execute('SELECT taktovia.next_defect_case_number()').fetchone()[0], vid, uid(), ACTOR, status, severity,
+               'test-v1' if severity else None, 'TRIAGE' if severity else None, 'Fehlmeldung' if status == 'DISMISSED' else None))
     return cid
 
 

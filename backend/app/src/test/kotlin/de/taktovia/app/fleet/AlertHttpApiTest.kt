@@ -63,7 +63,7 @@ class AlertHttpApiTest {
         val t = env.tenant(); val d = actor(t, "dispatcher"); raise(t, AlertKinds.OVERDUE)
         val item = env.get("/v1/operator/alerts", d.token).json["items"][0]
         assertEquals(setOf("id", "kind", "priority", "state", "vehicle_id", "service_id", "recipient_role", "policy_revision_no", "escalation_level", "escalated_at", "escalate_at", "reason_code", "ref_type", "ref_id",
-            "created_at", "updated_at", "resolved_at", "revision", "acknowledgement"), item.propertyNames().toSet())
+            "created_at", "updated_at", "resolved_at", "revision", "acknowledgement", "case_number", "affected_run_count"), item.propertyNames().toSet())
         for (forbidden in listOf("name", "phone", "email", "address", "diagnos", "passenger", "contact")) assertFalse(item.toString().contains("\"$forbidden", ignoreCase = true), forbidden)
     }
 
