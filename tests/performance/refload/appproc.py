@@ -4,6 +4,7 @@ vorherigen `./gradlew :app:bootJar` und ohne laufende PostgreSQL-Instanz."""
 from __future__ import annotations
 
 import os
+import secrets
 import shutil
 import socket
 import subprocess
@@ -50,10 +51,10 @@ class App:
         env = dict(os.environ, TAKTOVIA_DB_NAME=self.db_name, TAKTOVIA_DB_HOST=os.environ.get("TAKTOVIA_DB_HOST", "127.0.0.1"), TAKTOVIA_ENVIRONMENT="local",
                    TAKTOVIA_TLS_ENABLED="false", TAKTOVIA_DB_SSLMODE="disable", TAKTOVIA_TRACING_EXPORT="false", PORT=str(self.port))
         args = ["java", self.heap, "-jar", str(JAR), "--server.port=%d" % self.port, "--management.tracing.export.enabled=false",
-                "--taktovia.api.cursor-secret=load-cursor-secret-load-cursor-secret-1234",
+                "--taktovia.api.cursor-secret=" + secrets.token_urlsafe(48),
                 "--taktovia.idp.enabled=true", f"--taktovia.idp.issuer-uri={self.idp.issuer}", f"--taktovia.idp.jwks-uri={self.idp.jwks_uri}", f"--taktovia.idp.audience={self.idp.AUDIENCE}",
                 "--taktovia.idp.jwks-min-refresh-seconds=0", "--taktovia.idp.privileged-roles=tenant_admin,dispatcher,finance",
-                f"--taktovia.api.rate-limit.requests={self.rate_limit}", "--taktovia.identity.context-secret=load-context-secret-load-context-secret-123456",
+                f"--taktovia.api.rate-limit.requests={self.rate_limit}", "--taktovia.identity.context-secret=" + secrets.token_urlsafe(48),
                 "--taktovia.geocoding.provider=simulator", *self.extra]
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._log = self.log_path.open("wb")
