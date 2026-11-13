@@ -93,7 +93,7 @@ paths:
       operationId: getVehicleKmClasses
       security:
       - oidc:
-        - analytics:read
+        - costs:read
       description: 'WP-M4-42 (FCO-005, Kap. 05 §5.7): Fahrzeugkilometer je Kategorie (`PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`) und **separat** die nicht zuordenbaren Kilometer (`unassigned_km_thousandths`, der Rest zur Gesamtstrecke, nie auf andere Kategorien verteilt). Es gilt `total_km_thousandths` = Summe der vier Kategorien + `unassigned_km_thousandths` (ganzzahlig in Tausendstel Kilometern, also Metern). Je Fahrzeug und Betriebstag (UTC) zählt der jüngste Klassifikationslauf; `as_of` ist dessen Datenstand, `completeness` ist `INCOMPLETE`, solange die Fahrerereignisse eines Laufs unvollständig sind (Revisionslücke, Einstieg ohne Ausstieg). `definition_version` ist die Regelversion der Klassifikation (Vorschlag, in WP-M4-01 freizugeben, OP-22). Ohne `vehicle_id` über alle Fahrzeuge des Mandanten; ein Zeitraum ohne Fahrten liefert eine leere Auswertung (200, `days` leer). **`metric`, `from` und `to` sind Pflicht** (422 ohne), höchstens 366 Tage, `to` nicht vor `from`; fremdes oder unbekanntes Fahrzeug 404. Keine Fahrerbezüge.'
       parameters:
       - $ref: common.yaml#/components/parameters/Traceparent

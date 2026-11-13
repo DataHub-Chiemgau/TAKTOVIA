@@ -76,7 +76,7 @@ function fill() {
 
 describe('Kilometerklassen (WP-M4-42)', () => {
   it('zeigt_nicht_zuordenbar_als_eigene_zeile', async () => {
-    const { calls, container } = setup(['analytics:read'], { getVehicleKmClasses: () => MUSTER });
+    const { calls, container } = setup(['costs:read'], { getVehicleKmClasses: () => MUSTER });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     const table = await screen.findByRole('table', { name: 'Kilometer je Kategorie' });
@@ -107,13 +107,13 @@ describe('Kilometerklassen (WP-M4-42)', () => {
       unassigned_km_thousandths: 0,
       days: [],
     };
-    const a = setup(['analytics:read'], { getVehicleKmClasses: () => empty });
+    const a = setup(['costs:read'], { getVehicleKmClasses: () => empty });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     expect(await screen.findByText('Keine Fahrten im Zeitraum')).toBeInTheDocument();
     a.unmount();
 
-    const b = setup(['analytics:read'], {
+    const b = setup(['costs:read'], {
       getVehicleKmClasses: () => ({ ...MUSTER, completeness: 'INCOMPLETE' }),
     });
     await screen.findByRole('button', { name: 'Auswerten' });
@@ -122,7 +122,7 @@ describe('Kilometerklassen (WP-M4-42)', () => {
     expect(screen.getByText(/Fahrerereignisse sind unvollständig/)).toBeInTheDocument();
     b.unmount();
 
-    const c = setup(['analytics:read'], { getVehicleKmClasses: () => new ApiError(503) });
+    const c = setup(['costs:read'], { getVehicleKmClasses: () => new ApiError(503) });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();

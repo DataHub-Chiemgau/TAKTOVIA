@@ -16,7 +16,7 @@ import java.time.format.DateTimeParseException
 import java.util.UUID
 
 /**
- * Kennzahlen-Datenbasis `GET /v1/analytics/vehicle-km` (WP-M4-42, Kap. 05 §5.7, Modul `analytics`): Fahrzeugkilometer je Kategorie, nicht zuordenbare Kilometer separat. Recht `analytics:read` aus der
+ * Kennzahlen-Datenbasis `GET /v1/analytics/vehicle-km` (WP-M4-42, Kap. 05 §5.7, Modul `analytics`): Fahrzeugkilometer je Kategorie, nicht zuordenbare Kilometer separat. Recht `costs:read` aus der
  * Rechtematrix im Filter und im Dienst. `metric`, `from` und `to` sind Pflicht (422 statt 400); der Mandant steht nie in der Anfrage.
  */
 @RestController

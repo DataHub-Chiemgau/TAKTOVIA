@@ -290,4 +290,4 @@ resolveOdometerConflict;odometer:resolve;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
 reportDriverServiceStatus;driver:events;-;M3;N;J;N;N;N;N;N;N;N;N
 getDriverServiceStatus;driver:run;-;M3;N;J;N;N;N;N;N;N;N;N
 getAnalyticsMetrics;analytics:read;-;M4;N;N;N;N;J;J;J;N;N;N
-getVehicleKmClasses;analytics:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N
+getVehicleKmClasses;costs:read;FINANZ;M4;N;N;N;N;N;N;N;J;N;N

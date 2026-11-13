@@ -37,12 +37,12 @@ interface KmClassification {
     /** Klassifikationsjob eines Betriebstags: alle Fahrzeuge des Mandanten mit Positionen an diesem Tag, je Fahrzeug eine eigene Transaktion; liefert die Läufe (neu oder unverändert). */
     fun classifyDay(tenant: TenantId, serviceDay: LocalDate): List<KmRunView>
 
-    /** Kilometer je Kategorie aus dem jeweils jüngsten Lauf je Fahrzeug und Tag. Recht `analytics:read`; ungültiger Zeitraum (von nach bis, mehr als 366 Tage): 422; fremdes Fahrzeug: 404. */
+    /** Kilometer je Kategorie aus dem jeweils jüngsten Lauf je Fahrzeug und Tag. Recht `costs:read`; ungültiger Zeitraum (von nach bis, mehr als 366 Tage): 422; fremdes Fahrzeug: 404. */
     fun summary(ctx: RequestContext, vehicleId: UUID?, from: LocalDate, to: LocalDate): KmSummary
 
     companion object {
         const val RULE_VERSION = 1
-        const val SCOPE_READ = "analytics:read"
+        const val SCOPE_READ = "costs:read"
         const val MAX_DAYS = 366L
         /** Größter Abstand zweier Positionen in Sekunden, über den eine Strecke noch als durchgehend erfasst gilt (Planungsannahme, OP-22; nicht im Parameterkatalog). */
         const val MAX_GAP_SECONDS = 300L

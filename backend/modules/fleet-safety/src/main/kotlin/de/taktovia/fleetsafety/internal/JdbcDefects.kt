@@ -195,13 +195,13 @@ internal class JdbcDefects(
         val eventId = UUID.randomUUID()
         insertClassification(j, eventId, id, null, severity, ruleId, source, null, null, null, actor, view.revision)
         if (settings.blocks(severity)) blocker.apply(j, actor, correlationId, view, severity, eventId)
+        // Herkunft Störung: die Akte ist vom Incident aus erreichbar (Verknüpfung am Incident, einmalig)
+        cmd.sourceIncidentId?.let { j.update("INSERT INTO taktovia.incident_link(tenant_id, id, incident_id, link_kind, object_id, created_by) VALUES (taktovia.current_tenant(), ?, ?, 'DEFECT', ?, ?) ON CONFLICT DO NOTHING", UUID.randomUUID(), it, id, actor.value) }
     }
 
     private fun insertClassification(j: JdbcOperations, eventId: UUID, defectId: UUID, from: String?, to: String, ruleId: String?, source: String, reason: String?, assigneeBefore: UUID?, assigneeAfter: UUID?, actor: ActorRef, revision: Long) {
         j.update("INSERT INTO taktovia.defect_classification_history (tenant_id, id, defect_id, from_severity, to_severity, rule_version, rule_id, source, reason, assignee_before, assignee_after, actor, defect_revision) " +
             "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", eventId, defectId, from, to, DefectClassification.VERSION, ruleId, source, reason, assigneeBefore, assigneeAfter, actor.value, revision)
-        // Herkunft Störung: die Akte ist vom Incident aus erreichbar (Verknüpfung am Incident, einmalig)
-        cmd.sourceIncidentId?.let { j.update("INSERT INTO taktovia.incident_link(tenant_id, id, incident_id, link_kind, object_id, created_by) VALUES (taktovia.current_tenant(), ?, ?, 'DEFECT', ?, ?) ON CONFLICT DO NOTHING", UUID.randomUUID(), it, id, actor.value) }
     }
 
     override fun get(ctx: RequestContext, id: UUID): DefectView = ctxTx.run(ctx, readOnly = true) { j ->

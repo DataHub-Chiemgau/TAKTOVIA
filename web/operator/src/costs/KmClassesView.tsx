@@ -26,14 +26,14 @@ export function formatKm(thousandths: number): string {
 /**
  * Kilometerklassen je Fahrzeug und Zeitraum (WP-M4-42, FCO-005; Baustein der Kostenübersicht UI-15 aus WP-M4-44 und des Kennzahlenteils): Kilometer je Kategorie mit **separater Zeile „nicht zuordenbar“**
  * (nie auf andere Kategorien verteilt), Gesamtkilometer, Datenstand und Vollständigkeit aus `getVehicleKmClasses`. Ohne Fahrten im Zeitraum erscheint „keine Fahrten im Zeitraum“. Es werden keine
- * Fahrerbezüge angezeigt. Die Anzeige ist keine Rechtequelle: der Server prüft `analytics:read` bei jeder Anfrage.
+ * Fahrerbezüge angezeigt. Die Anzeige ist keine Rechtequelle: der Server prüft `costs:read` bei jeder Anfrage.
  */
 export function KmClassesView() {
   const api = useApi();
   const session = useSession();
   const context = useScreenContext({ tone: 'info', label: 'Kilometerklassen' });
   const scopes = new Set(session.status === 'ready' ? session.me.scopes : []);
-  const canRead = scopes.has('analytics:read');
+  const canRead = scopes.has('costs:read');
 
   const [vehicle, setVehicle] = useState('');
   const [from, setFrom] = useState('');
