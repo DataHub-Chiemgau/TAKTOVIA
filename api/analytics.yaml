@@ -1,0 +1,190 @@
+paths:
+  /v1/analytics/metrics:
+    get:
+      summary: Kennzahlen-Datenbasis lesen (Fahrzeugkilometer je Kategorie)
+      operationId: getAnalyticsMetrics
+      security:
+      - oidc:
+        - analytics:read
+      description: 'WP-M4-42 (FCO-005, Kap. 05 §5.7): Fahrzeugkilometer je Kategorie (`PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`) und **separat** die nicht zuordenbaren Kilometer (`unassigned_km_thousandths`, der Rest zur Gesamtstrecke, nie auf andere Kategorien verteilt). Es gilt `total_km_thousandths` = Summe der vier Kategorien + `unassigned_km_thousandths` (ganzzahlig in Tausendstel Kilometern, also Metern). Je Fahrzeug und Betriebstag (UTC) zählt der jüngste Klassifikationslauf; `as_of` ist dessen Datenstand, `completeness` ist `INCOMPLETE`, solange die Fahrerereignisse eines Laufs unvollständig sind (Revisionslücke, Einstieg ohne Ausstieg). `definition_version` ist die Regelversion der Klassifikation (Vorschlag, in WP-M4-01 freizugeben, OP-22). Ohne `vehicle_id` über alle Fahrzeuge des Mandanten; ein Zeitraum ohne Fahrten liefert eine leere Auswertung (200, `days` leer). **`metric`, `from` und `to` sind Pflicht** (422 ohne), höchstens 366 Tage, `to` nicht vor `from`; fremdes oder unbekanntes Fahrzeug 404. Keine Fahrerbezüge.'
+      parameters:
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - name: metric
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - VEHICLE_KM_CLASSES
+        description: Kennzahl, **Pflicht**; in P1 nur `VEHICLE_KM_CLASSES` (Datenbasis für `Leerkilometerquote` und `Produktive Kilometer`, Formeln in WP-M4-56).
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+        description: Erster Betriebstag (inklusive, `JJJJ-MM-TT`, UTC-Tag), **Pflicht**.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+        description: Letzter Betriebstag (inklusive), **Pflicht**.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Auf ein Fahrzeug des Mandanten einschränken.
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KmMetrics'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    KmCategories:
+      type: object
+      additionalProperties: false
+      description: Kilometer je Kategorie in Tausendstel Kilometern (Meter, ganzzahlig).
+      properties:
+        PASSENGER:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Fahrgastfahrt (mindestens ein Fahrgast an Bord, von Einstieg bis Ausstieg).
+        EMPTY:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Leerfahrt im Betriebsdienst mit Fahrtenplan, ohne Fahrgast.
+        TRANSFER:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Überführung (Schicht mit Überführungsbezug).
+        WORKSHOP:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Werkstattfahrt (Schicht mit Werkstattbezug).
+      required:
+      - PASSENGER
+      - EMPTY
+      - TRANSFER
+      - WORKSHOP
+    KmDay:
+      type: object
+      additionalProperties: false
+      properties:
+        service_day:
+          type: string
+          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}$
+          description: Betriebstag (UTC).
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        as_of:
+          type: string
+          format: date-time
+          description: Datenstand des Klassifikationslaufs.
+        total_km_thousandths:
+          type: integer
+          format: int64
+          minimum: 0
+        km_thousandths_by_category:
+          $ref: '#/components/schemas/KmCategories'
+        unassigned_km_thousandths:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Nicht zuordenbare Kilometer (Lücke in den Positionsdaten, keine Fahrtenplan- oder Ereignisdeckung).
+        events_complete:
+          type: boolean
+      required:
+      - service_day
+      - vehicle_id
+      - run_id
+      - as_of
+      - total_km_thousandths
+      - km_thousandths_by_category
+      - unassigned_km_thousandths
+      - events_complete
+    KmMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        metric:
+          type: string
+          enum:
+          - VEHICLE_KM_CLASSES
+        definition_version:
+          type: integer
+          minimum: 1
+          description: Regelversion der Klassifikation.
+        from:
+          type: string
+          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}$
+        to:
+          type: string
+          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}$
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        as_of:
+          description: Jüngster Datenstand der enthaltenen Läufe; `null` ohne Läufe im Zeitraum.
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        completeness:
+          type: string
+          enum:
+          - COMPLETE
+          - INCOMPLETE
+        total_km_thousandths:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Gesamtkilometer = Summe der vier Kategorien + `unassigned_km_thousandths`.
+        km_thousandths_by_category:
+          $ref: '#/components/schemas/KmCategories'
+        unassigned_km_thousandths:
+          type: integer
+          format: int64
+          minimum: 0
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/KmDay'
+      required:
+      - metric
+      - definition_version
+      - from
+      - to
+      - vehicle_id
+      - as_of
+      - completeness
+      - total_km_thousandths
+      - km_thousandths_by_category
+      - unassigned_km_thousandths
+      - days

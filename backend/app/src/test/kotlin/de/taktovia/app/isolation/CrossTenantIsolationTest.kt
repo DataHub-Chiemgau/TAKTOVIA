@@ -360,6 +360,7 @@ class CrossTenantIsolationTest {
         "listOperatorAlerts" to "/v1/operator/alerts", "listDefects" to "/v1/defects", "listRepairOrders" to "/v1/repair-orders", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
         "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "getCostClassification" to "/v1/cost-events/classification?valuation=ACTUAL&currency=EUR&period_from=2026-01-01&period_to=2027-01-01", "listExpenses" to "/v1/expenses", "listBookings" to "/v1/bookings",
+        "getAnalyticsMetrics" to "/v1/analytics/metrics?metric=VEHICLE_KM_CLASSES&from=2026-01-01&to=2026-12-31",
     )
     private val selfScoped = setOf(
         "getMe", "listOwnRosterShifts", "listOwnAbsences", "searchPlaces", "listServiceOfferModels", "getCompanyProfile", "getMyProfile", "getMyPrivacySettings", "getMyTransportSupport", "listMySessions", "listConfigParameters",
@@ -414,7 +415,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listOperatorAlerts", "listOperatorIncidents", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "getCostClassification", "listFiscalPeriods", "listLedgerExports", "listExpenses" -> a.financeToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listOperatorAlerts", "listOperatorIncidents", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "getCostClassification", "listFiscalPeriods", "listLedgerExports", "listExpenses", "getAnalyticsMetrics" -> a.financeToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }
