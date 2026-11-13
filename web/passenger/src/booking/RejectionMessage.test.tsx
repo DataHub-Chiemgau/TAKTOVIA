@@ -38,14 +38,22 @@ describe('RejectionMessage (WP-M2-13)', () => {
 
   it('texte_entsprechen_dem_katalog_der_datenbank', () => {
     // Die Textbausteine sind eine Kopie des Katalogs `rejection_reason` (Migration V20130); ein Auseinanderlaufen fällt hier auf.
-    const sql = readFileSync(
-      join(process.cwd(), '..', '..', 'db', 'migrations', 'V20130__ablehnungsgruende.sql'),
-      'utf-8',
-    );
+    const migration = (name: string) =>
+      readFileSync(join(process.cwd(), '..', '..', 'db', 'migrations', name), 'utf-8');
     const rows = [
-      ...sql.matchAll(
+      ...migration('V20130__ablehnungsgruende.sql').matchAll(
         /^\s+\('([A-Z_]+)',\s+\d+,\s+(?:true|false),\s+(?:'[A-Z_]+'|NULL),\s+'([^']+)',\s+'([^']+)'\)[,;]/gm,
       ),
+      // spätere Erweiterungen des Katalogs (WP-M4-48 bis -50): zusätzlich Gruppe und englischer Text
+      ...[
+        'V40480__ablehnungskatalog_gruppen.sql',
+        'V40490__ablehnungscodes_ressourcen.sql',
+        'V40500__ablehnungscodes_grenzen_partner.sql',
+      ].flatMap((name) => [
+        ...migration(name).matchAll(
+          /^\s+\('([A-Z_]+)',\s+\d+,\s+true,\s+(?:'[A-Z_]+'|NULL),\s+'([^']+)',\s+'([^']+)',\s+'[A-Z_]+'/gm,
+        ),
+      ]),
     ];
     expect(rows.length).toBe(REJECTION_CODES.length + 1); // plus TECHNICAL (kein Ablehnungsgrund, nur Meldung)
     const catalog = texte as Record<string, string>;

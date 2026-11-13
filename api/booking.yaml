@@ -799,6 +799,12 @@ components:
       - EQUIPMENT_MISSING
       - NO_STAFF
       - NO_CAPACITY
+      - NO_TARIFF
+      - NO_VEHICLE
+      - SHIFT_ENDED
+      - MAX_WAIT_EXCEEDED
+      - MAX_DETOUR_EXCEEDED
+      - PARTNER_UNAVAILABLE
       description: 'Standardisierter Ablehnungsgrund (WP-M2-13, Katalog `rejection_reason`, Vorschlag M2 OP-14). Technische Fehler sind kein
         Ablehnungsgrund (`503`, nie in dieser Liste).'
     RideRejection:
