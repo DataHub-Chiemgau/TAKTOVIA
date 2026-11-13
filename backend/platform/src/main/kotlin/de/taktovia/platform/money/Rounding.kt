@@ -33,6 +33,9 @@ object MoneyRounding {
     /** Verhältnis `numerator / denominator` auf `scale` Nachkommastellen, HALF_UP (Prozentanteile zur Anzeige; nie Grundlage von Beträgen). */
     fun ratioHalfUp(numerator: BigDecimal, denominator: BigDecimal, scale: Int): BigDecimal = numerator.divide(denominator, scale, RoundingMode.HALF_UP)
 
+    /** Verhältnis `numerator / denominator` auf `scale` Nachkommastellen, abgerundet (Abdeckungsgrade: eine Lücke ergibt nie 100 %); nie Grundlage von Beträgen. */
+    fun ratioDown(numerator: BigDecimal, denominator: BigDecimal, scale: Int): BigDecimal = numerator.divide(denominator, scale, RoundingMode.DOWN)
+
     /** Dezimalmenge/Satz auf `scale` Nachkommastellen, HALF_UP (z. B. Prozentanzeige mit 8 Stellen). Nie Grundlage von Beträgen. */
     fun scaleHalfUp(value: BigDecimal, scale: Int): BigDecimal = value.setScale(scale, RoundingMode.HALF_UP)
 }

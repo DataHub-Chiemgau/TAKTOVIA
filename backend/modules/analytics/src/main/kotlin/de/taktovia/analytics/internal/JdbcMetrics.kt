@@ -24,7 +24,6 @@ import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcOperations
 import tools.jackson.databind.json.JsonMapper
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.security.MessageDigest
 import java.sql.Timestamp
 import java.util.UUID
@@ -82,7 +81,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     private fun coverage(c: Counts): BigDecimal? =
         if (!c.incomplete) BigDecimal.ONE.setScale(4) else if (c.factsTotal <= 0) BigDecimal.ZERO.setScale(4)
-        else BigDecimal(maxOf(0L, c.factsTotal - c.gaps)).divide(BigDecimal(c.factsTotal), 4, RoundingMode.DOWN)   // abgerundet: eine Lücke ergibt nie 100 %
+        else de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(maxOf(0L, c.factsTotal - c.gaps)), BigDecimal(c.factsTotal), 4)   // abgerundet: eine Lücke ergibt nie 100 %
 
     private fun value(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: Counts): MetricValue {
         fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, persist: Boolean = true): MetricValue {
@@ -103,7 +102,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         if (d.valueKind == MetricValueKind.RATIO) {
             if (den == null) return result(MetricState.NOT_COMPUTABLE, MetricReason.MISSING_DENOMINATOR, null, null, null)
             if (den.signum() == 0) return result(MetricState.NOT_COMPUTABLE, MetricReason.ZERO_DENOMINATOR, null, null, den)   // nie 0 oder 100 %
-            return result(state, null, num.divide(den, 6, RoundingMode.HALF_UP), num, den)
+            return result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(num, den, 6), num, den)
         }
         return result(state, null, num, num, den)
     }

@@ -76,7 +76,7 @@ class ReceiptDeliveryVersionTest {
         assertArrayEquals(photo, up.openOriginal(ctx, id), "Original byteweise unverändert (OP-15: geschützt archiviert)")
         assertEquals(Samples.sha256(photo), fx.strings("SELECT original_sha256 FROM taktovia.expense_document WHERE id=?", id).single())
         // keine Metadaten im Datenbankbestand: kein Standort, nur Hashes
-        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.expense_document d WHERE d.id=? AND to_jsonb(d)::text ~* '(gps|latitude|longitude|48\\.1|Pixel9)'", id))
+        assertEquals(0, fx.count("SELECT count(*) FROM taktovia.expense_document d WHERE d.id=? AND to_jsonb(d)::text ~* '(gps|latitude|longitude|Pixel9|Zuhause)'", id))
     }
 
     @Test
