@@ -28,7 +28,7 @@
 - **Negativ:** kalter Routingcache; langsame Routingquelle; Anfrage ohne zulässiges Fahrzeug führt zu schneller Ablehnung; Solver-Timeout liefert nur validierten Plan oder begründete Ablehnung, kein Angebot verletzt zugesagte Zeitfenster.
 - **Konkurrierend (Kapazität):** viele gleichzeitige Angebote auf dieselbe Restkapazität: Angebote ohne Hold versprechen keine Kapazität, Hold/Confirm bleiben korrekt (PH-AT-004 unter Last).
 - **Referenztests:** PH-AT-004.
-- Testfälle: PH-AT-004; geplant:tests/performance/test_angebot_p95.py::test_p95_angebot_mit_dokumentierter_testflotte; geplant:tests/performance/test_angebot_p95.py::test_solver_timeout_liefert_nur_validierten_plan_oder_ablehnung; geplant:tests/performance/test_angebot_p95.py::test_parallele_angebote_ohne_hold_versprechen_keine_kapazitaet; geplant:tests/performance/test_angebot_p95.py::test_solver_timeout_zaehlt_als_technischer_fehler_nicht_als_kapazitaetsablehnung
+- Testfälle: PH-AT-004; tests/performance/test_angebot_p95.py::test_p95_angebot_mit_dokumentierter_testflotte; tests/performance/test_angebot_p95.py::test_solver_timeout_liefert_nur_validierten_plan_oder_ablehnung; tests/performance/test_angebot_p95.py::test_parallele_angebote_ohne_hold_versprechen_keine_kapazitaet; tests/performance/test_angebot_p95.py::test_solver_timeout_zaehlt_als_technischer_fehler_nicht_als_kapazitaetsablehnung
 
 ## Reviews
 

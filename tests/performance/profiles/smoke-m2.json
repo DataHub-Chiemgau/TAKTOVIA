@@ -1,0 +1,9 @@
+{
+  "name": "m2-buchung-smoke",
+  "status": "vorläufig, D-05 offen",
+  "tenants": 2, "vehicles_per_tenant": 20, "passengers_per_tenant": 60,
+  "bookings_per_day": 30000, "peak_factor": 3.0, "sessions": 100, "sessions_scope": "pro_mandant", "session_think_s": 5,
+  "operators_per_tenant": 3, "operator_think_s": 2, "driver_interval_s": 5,
+  "warmup_s": 3,
+  "stages": [{"name": "100 %", "factor": 1.0, "duration_s": 20}]
+}

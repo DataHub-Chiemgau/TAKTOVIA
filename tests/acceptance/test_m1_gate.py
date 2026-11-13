@@ -82,7 +82,7 @@ class Rueckverfolgbarkeit(unittest.TestCase):
         ok = ["AT-18", "Bestanden (M1-Umfang)", "abc", "run-0123456789abcdef; tests/acceptance/evidence/m1/AT-18-run-0123456789abcdef.json", "Ausstehend (Auftraggeber, D-12)"]
         self.write([], [ok])
         self.assertEqual(traceability.check(self.root)[0], [])
-        for bad, expect in ((["AT-01", "Bestanden", "abc", "run-0123456789abcdef; tests/acceptance/evidence/m1/AT-18-run-0123456789abcdef.json", ""], "ohne Lauf der M1-Gate-Suite"),
+        for bad, expect in ((["AT-99", "Bestanden", "abc", "run-0123456789abcdef; tests/acceptance/evidence/m1/AT-18-run-0123456789abcdef.json", ""], "ohne Lauf der M1-Gate-Suite"),
                             (["AT-18", "Bestanden (M1-Umfang)", "", "", ""], "Build oder Nachweis"),
                             (["AT-18", "Bestanden (M1-Umfang)", "xyz", ok[3], ok[4]], "passt nicht zur Evidenzdatei"),
                             (["AT-18", "Fehlgeschlagen", "abc", ok[3], ok[4]], "widerspricht dem Ergebnis"),

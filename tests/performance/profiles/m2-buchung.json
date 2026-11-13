@@ -1,0 +1,10 @@
+{
+  "name": "m2-buchung",
+  "status": "vorläufig, D-05 offen",
+  "tenants": 2, "vehicles_per_tenant": 50, "passengers_per_tenant": 100,
+  "bookings_per_day": 30000, "peak_factor": 3.0, "sessions": 200, "sessions_scope": "pro_mandant", "session_think_s": 5,
+  "offers_per_booking": 2.0, "cancel_share": 0.1, "wheelchair_share": 0.05,
+  "operators_per_tenant": 3, "operator_think_s": 3, "driver_interval_s": 8,
+  "warmup_s": 4,
+  "stages": [{"name": "100 %", "factor": 1.0, "duration_s": 30}]
+}

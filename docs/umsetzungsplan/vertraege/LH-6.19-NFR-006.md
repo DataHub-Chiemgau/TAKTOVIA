@@ -28,7 +28,7 @@
 - **Negativ:** Überlaststufe liefert `429` mit `Retry-After` ohne Datenkorruption; Lauf mit kaltem Cache; Abweichung vom Profil oder Ziel im Bericht mit Ursache, Engpass, Maßnahme; Invariantenabfrage nach dem Lauf ohne Überbuchung.
 - **Konkurrierend (Kapazität, Datentrennung):** 100 parallele Bestätigungen auf den letzten Platz während der Grundlast (PH-AT-004 unter Last): genau eine wirksame Bestätigung; zwei Mandanten mit identischen Objektnamen parallel ohne Fremdreferenzen.
 - **Referenztests:** PH-AT-004.
-- Testfälle: PH-AT-004; geplant:tests/performance/test_referenzprofil.py::test_skalierungslauf_zwei_mandanten_referenzprofil; geplant:tests/performance/test_referenzprofil.py::test_ueberlast_liefert_429_ohne_datenkorruption; geplant:tests/performance/test_referenzprofil.py::test_keine_ueberbuchung_nach_lauf_invariantenabfrage; geplant:tests/performance/test_referenzprofil.py::test_100_parallele_bestaetigungen_letzter_platz_unter_grundlast; geplant:tests/performance/test_referenzprofil.py::test_gleiche_objektnamen_zweier_mandanten_ohne_fremdreferenzen
+- Testfälle: PH-AT-004; tests/performance/test_referenzprofil.py::test_skalierungslauf_zwei_mandanten_referenzprofil; tests/performance/test_referenzprofil.py::test_ueberlast_liefert_429_ohne_datenkorruption; tests/performance/test_referenzprofil.py::test_keine_ueberbuchung_nach_lauf_invariantenabfrage; tests/performance/test_referenzprofil.py::test_100_parallele_bestaetigungen_letzter_platz_unter_grundlast; tests/performance/test_referenzprofil.py::test_gleiche_objektnamen_zweier_mandanten_ohne_fremdreferenzen
 
 ## Reviews
 

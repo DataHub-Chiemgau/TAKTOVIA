@@ -49,7 +49,9 @@ object CardDataFilter {
         when {
             depth > MAX_DEPTH -> out += here   // unzulässig tief verschachtelt: nicht prüfbar, also nicht zulassen
             n.isString -> if (CardData.contains(n.asString())) out += here
-            n.isNumber -> if (CardData.contains(n.asString())) out += here
+            // Gleitkommazahlen (Koordinaten, Messwerte mit 15 bis 17 gültigen Stellen) sind keine Kartennummern: ohne diese Ausnahme wies der Filter ~10 % der Positionsmeldungen
+            // mit einem Breitengrad 51..55 und 16 Stellen fälschlich ab (Luhn + Mastercard-Präfix). Ganzzahlen bleiben geprüft.
+            n.isNumber -> if (!n.isFloatingPointNumber && CardData.contains(n.asString())) out += here
             n.isObject -> for (key in n.propertyNames()) {
                 if (CardData.contains(key)) out += here
                 walk(n.get(key), pointer + "/" + safe(key), depth + 1, out)
