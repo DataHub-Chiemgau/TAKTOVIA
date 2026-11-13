@@ -279,6 +279,8 @@ class CrossTenantIsolationTest {
             "completeReceiptUpload" to Probe("POST", "/v1/expenses/receipts/{receipt_ticket_id}/complete", null, true, role = "finance"),
             "getDriverRun" to Probe("GET", "/v1/driver/shifts/{shift_id}/run", role = "driver"),
             "listExpectedPassengers" to Probe("GET", "/v1/driver/shifts/{shift_id}/passengers", role = "driver"),
+            "getDriverServiceStatus" to Probe("GET", "/v1/driver/shifts/{shift_id}/service-status", role = "driver"),
+            "reportDriverServiceStatus" to Probe("POST", "/v1/driver/shifts/{shift_id}/service-status", """{"event_id":"00000000-0000-4000-8000-0000000000a1","target_status":"BREAK","occurred_at":"2026-11-05T09:00:00Z","device_recorded_at":"2026-11-05T09:00:00Z","offline_recorded":false}""", true, role = "driver"),
             // WP-M3-27 / WP-M3-52 (Cluster wave12-c5)
             "acknowledgeDriverRunRevision" to Probe("POST", "/v1/driver/shifts/{shift_id}/run/acknowledgements", """{"plan_revision":1,"acknowledged_at":"2026-11-05T09:00:00Z"}""", true, role = "driver"),
             "getOperatorAlert" to Probe("GET", "/v1/operator/alerts/{alert_id}", role = "dispatcher"),
