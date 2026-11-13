@@ -34,7 +34,7 @@ nötig ist; das Profilformat und das Berichtsformat bleiben davon unberührt. Da
 
 Spitzen-Requests/s und Anzahl aktiver Mandanten sind im Profil als `open_parameters` mit Wert `null` und Status „OFFEN (D-05)“ ausgewiesen.
 Ein Profil im Modus `measurement` wird ohne diese Werte abgewiesen; ein Beispielprofil läuft, der Bericht ist dann `valid_for_acceptance: false`.
-Das Restore-Drehbuch ist nur eine Vorlage; seine Durchführung gehört zu M5.
+Das Restore-Drehbuch ist nur eine Vorlage; das Wiederanlaufdrehbuch (WP-M5-14) steht in `wiederanlauf-drehbuch-m5.md` (Tests `test_pitr.py`, `test_wiederanlauf_drehbuch.py`, Trockenlaufprotokoll in `protokolle/`); die Durchführung der Ausfallübung mit Messung gehört zu WP-M5-15.
 
 ## Referenzdatenbestand (WP-M5-02)
 

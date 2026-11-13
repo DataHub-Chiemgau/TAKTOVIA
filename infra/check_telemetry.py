@@ -22,6 +22,8 @@ def defined_metrics(repo):
     for base, glob in ((repo / "backend", "**/src/main/**/*.kt"), (repo / "workers", "**/src/**/*.py")):
         for f in base.glob(glob):
             names |= set(re.findall(r'"(taktovia_[a-z0-9_]+)"', f.read_text(encoding="utf-8")))
+    for f in (repo / "infra" / "backup").glob("taktovia_backup/*.py"):    # Betriebsmetriken der Datensicherung (WP-M5-14, Textfile-Collector)
+        names |= set(re.findall(r'"(taktovia_(?:backup|wal|standby)_[a-z0-9_]+)"', f.read_text(encoding="utf-8")))
     return names
 
 

@@ -5,8 +5,9 @@ Was dieser Nachweis ist (und was nicht): Prometheus und Alertmanager laufen in d
 alertmanager.yml (chain.py) und eine ECHTE HTTPS-Zustellung an den Test-Empfänger. Die Szenarien werden durch vorgegebene Messreihen gezielt ausgelöst. Nicht belegt ist das Verhalten des echten
 Prometheus/Alertmanager (Extrapolation von rate(), Notification-Log, Inhibition, Cluster); dafür liegen promtool-Fälle (infra/alerting/rules_test.yml) für die CI bei, hier NICHT ausgeführt.
 
-Die Abnahme von NFR-008 ist erst vollständig, wenn auch die Backup-/Replikationsalarme aus WP-M5-14 ausgelöst wurden: `test_katalogabgleich_szenario_alarm_ohne_luecke` weist diese Lücke
-ausdrücklich aus und bestätigt keine vollständige Abnahme.
+Die Backup-/Replikationsalarme aus WP-M5-14 (BackupFehlgeschlagen, BackupZuAlt, WalArchivierungsverzug, WalArchivierungFehlgeschlagen, StandbyGetrennt) sind in TRIGGERS enthalten und werden
+wie alle anderen ausgelöst und zugestellt; `test_katalogabgleich_szenario_alarm_ohne_luecke` weist keine Lücke und keine ausstehende Lieferung mehr aus. Ihre Messreihen sind vorgegebene
+Reihen gemäß der Metrikdefinition in infra/backup/taktovia_backup/metrics.py; dass die echten Metriken gegen einen echten Cluster entstehen, belegt tests/performance/test_pitr.py.
 """
 import json
 import os
@@ -98,6 +99,12 @@ TRIGGERS = [
      None),
     ("AlertmanagerZustellungFehlgeschlagen", lambda s, t0, t1: counter(s, "alertmanager_notifications_failed_total", {"job": "alertmanager"}, t0, t1, 0.05), None),
     ("PrometheusRegelauswertungFehlgeschlagen", lambda s, t0, t1: counter(s, "prometheus_rule_evaluation_failures_total", {"job": "prometheus"}, t0, t1, 0.05), None),
+    ("BackupFehlgeschlagen", lambda s, t0, t1: gauge(s, "taktovia_backup_last_status", {"job": "postgres"}, t0, t1, 0), lambda s, t0, t1: gauge(s, "taktovia_backup_last_status", {"job": "postgres"}, t0, t1, 1)),
+    ("BackupZuAlt", lambda s, t0, t1: gauge(s, "taktovia_backup_last_success_timestamp_seconds", {"job": "postgres"}, t0, t1, T0 - 140000.0),
+     lambda s, t0, t1: gauge(s, "taktovia_backup_last_success_timestamp_seconds", {"job": "postgres"}, t0, t1, T0 - 129000.0)),
+    ("WalArchivierungsverzug", lambda s, t0, t1: gauge(s, "taktovia_wal_archive_lag_seconds", {"job": "postgres"}, t0, t1, 700), lambda s, t0, t1: gauge(s, "taktovia_wal_archive_lag_seconds", {"job": "postgres"}, t0, t1, 600)),
+    ("WalArchivierungFehlgeschlagen", lambda s, t0, t1: counter(s, "taktovia_wal_archive_failed_total", {"job": "postgres"}, t0, t1, 0.01), lambda s, t0, t1: gauge(s, "taktovia_wal_archive_failed_total", {"job": "postgres"}, t0, t1, 5)),
+    ("StandbyGetrennt", lambda s, t0, t1: gauge(s, "taktovia_standby_connected", {"job": "postgres"}, t0, t1, 0), lambda s, t0, t1: gauge(s, "taktovia_standby_connected", {"job": "postgres"}, t0, t1, 1)),
     ("Watchdog", lambda s, t0, t1: None, None),
 ]
 
@@ -216,9 +223,14 @@ class AlertScenarios(unittest.TestCase):
     def test_katalogabgleich_szenario_alarm_ohne_luecke(self):
         luecken, ausstehend = abgleich(KATALOG, self.results)
         self.assertEqual(luecken, [], f"aktive Szenarien ohne ausgelösten Alarm: {luecken}")
-        self.assertEqual(sorted(ausstehend), ["ARCHIVIERUNGS_REPLIKATIONSVERZUG", "BACKUP_FEHLGESCHLAGEN"], "die Alarme aus WP-M5-14 stehen im Katalog, sind aber noch nicht ausgelöst")
-        # Die Abnahme von NFR-008 ist damit NICHT vollständig: ausdrücklich ausgewiesen
-        self.assertFalse(nfr_008_vollstaendig(ausstehend), "NFR-008 gilt erst mit den Alarmen aus WP-M5-14 als vollständig abgenommen")
+        self.assertEqual(ausstehend, [], "keine Lieferung steht mehr aus: auch die Alarme aus WP-M5-14 sind aktiv")
+        for szenario in ("BACKUP_FEHLGESCHLAGEN", "ARCHIVIERUNGS_REPLIKATIONSVERZUG"):    # ausgelöst und zugestellt, nicht nur vorhanden
+            namen = next(x for x in KATALOG["szenarien"] if x["id"] == szenario)["regeln"]
+            self.assertTrue(namen and all(self.results[n]["firing"] and self.results[n]["delivered"] for n in namen), szenario)
+        self.assertTrue(nfr_008_vollstaendig(ausstehend), "NFR-008: Katalogabgleich ohne Lücke und ohne ausstehende Lieferung")
+        # Negativ: ein noch nicht geliefertes Szenario würde die vollständige Abnahme wieder verhindern
+        kat0 = json.loads(json.dumps(KATALOG)); kat0["szenarien"].append({"id": "SPAETER", "lieferung": "WP-M5-99", "regeln": []})
+        self.assertFalse(nfr_008_vollstaendig(abgleich(kat0, self.results)[1]))
         # Negativ: ein Katalogszenario ohne ausgelösten Alarm (oder ohne Regel) lässt den Abgleich fehlschlagen
         kat = json.loads(json.dumps(KATALOG))
         kat["szenarien"].append({"id": "NEU_OHNE_ALARM", "lieferung": "aktiv", "regeln": ["GibtEsNicht"]})

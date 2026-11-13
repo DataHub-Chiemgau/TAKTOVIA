@@ -23,7 +23,7 @@ sys.path.insert(0, str(REPO / "infra" / "backup"))
 
 try:
     import psycopg
-    from taktovia_backup import crypto, dbops
+    from taktovia_backup import crypto, dbops, wal
     from taktovia_backup.store import BackupStore, StoreDenied
     IMPORT_ERROR = None
 except ImportError as e:  # pragma: no cover
@@ -359,15 +359,18 @@ class RestoreDrehbuch(unittest.TestCase):
             self.assertEqual(a.execute("""SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='taktovia' AND pg_get_userbyid(c.relowner)='taktovia_runtime'""").fetchone()[0], 0)
 
     def test_wal_segment_verschluesselt_archiviert_und_authentifiziert(self):
-        """archive_command/restore_command: Verschlüsselung und Rückweg eines WAL-Segments (das Abspielen gegen einen Cluster, PITR, ist hier nicht ausgeführt)."""
+        """archive_command/restore_command: Verschlüsselung und Rückweg eines WAL-Segments (das Abspielen gegen einen Cluster ist in test_pitr.py belegt, WP-M5-14)."""
         seg = self.root / "000000010000000000000007"; seg.write_bytes(os.urandom(3 * 1024 * 1024))
         dbops.archive_wal(seg, seg.name, self.store, self.key)
         stored = Path(self.store.get(f"wal-{seg.name}.enc")).read_bytes()
         self.assertNotIn(seg.read_bytes()[:64], stored)
         out = self.root / "wal-back"; dbops.restore_wal(seg.name, out, self.restore_store, self.key)
         self.assertEqual(out.read_bytes(), seg.read_bytes())
-        with self.assertRaises(FileExistsError):
-            dbops.archive_wal(seg, seg.name, self.store, self.key)    # Segmente werden nie überschrieben
+        dbops.archive_wal(seg, seg.name, self.store, self.key)        # gleicher Inhalt: Erfolg (PostgreSQL wiederholt archive_command nach einem Abbruch; sonst bliebe das Archiv stehen, WP-M5-14)
+        other = self.root / "000000010000000000000007.neu"; other.write_bytes(os.urandom(3 * 1024 * 1024))
+        with self.assertRaises(wal.WalArchiveConflict):               # abweichender Inhalt: Segmente werden nie überschrieben
+            dbops.archive_wal(other, seg.name, self.store, self.key)
+        self.assertEqual(self.restore_store.get(f"wal-{seg.name}.enc").stat().st_size, stored and len(stored))
         with self.assertRaises(crypto.WrongKeyError):
             dbops.restore_wal(seg.name, self.root / "wal-bad", self.restore_store, os.urandom(32))
 

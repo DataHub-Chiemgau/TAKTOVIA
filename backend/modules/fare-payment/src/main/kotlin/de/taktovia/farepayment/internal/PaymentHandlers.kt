@@ -155,8 +155,11 @@ internal class VoidHandler(tx: TenantTransactions, core: PaymentCore, gateway: P
 internal class ReconcileHandler(tx: TenantTransactions, core: PaymentCore, gateway: PaymentGateway, config: PaymentConfig) : PaymentHandler("RECONCILE_PAYMENT", tx, core, gateway, config) {
     override fun execute(ctx: OperationContext): OperationOutcome {
         val l = load(ctx)
-        val ref = l.payment.pspPaymentId ?: l.payment.providerRef ?: return OperationOutcome.Succeeded("NO_PSP_REFERENCE")
-        return when (val o = gateway.status(ref)) {
+        val ref = l.payment.pspPaymentId ?: l.payment.providerRef
+        // Abgleich nach Restore (WP-M5-14): ohne Providerreferenz (Autorisierung lokal verloren) über die eigene Händlerreferenz; nie eine neue Autorisierung
+        val merchantRef = l.payment.merchantRef
+        if (ref == null && merchantRef == null) return OperationOutcome.Succeeded("NO_PSP_REFERENCE")
+        return when (val o = if (ref != null) gateway.status(ref) else gateway.statusByMerchantRef(merchantRef!!)) {
             is GatewayOutcome.Ok -> ctx.commit("RECONCILED") { j -> core.observe(j, l.payment.id, o.payment) }
             GatewayOutcome.NotFound -> OperationOutcome.Succeeded("NOT_FOUND")
             is GatewayOutcome.Unavailable -> throw OperationRetryException("PSP_UNAVAILABLE", o.retryAfter)

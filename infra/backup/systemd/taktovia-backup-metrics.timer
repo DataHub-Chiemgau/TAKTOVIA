@@ -1,0 +1,10 @@
+[Unit]
+Description=Taktovia: Backup-Metriken jede Minute (WP-M5-14, nicht ausgeführt)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

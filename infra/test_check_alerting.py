@@ -69,7 +69,7 @@ class Alarmpruefung(unittest.TestCase):
         f = repo / "infra/alerting/katalog.yaml"
         doc = yaml.safe_load(f.read_text(encoding="utf-8"))
         next(s for s in doc["szenarien"] if s["id"] == "REDIS_AUSFALL")["regeln"] = []
-        next(s for s in doc["szenarien"] if s["id"] == "BACKUP_FEHLGESCHLAGEN")["lieferung"] = "aktiv"
+        next(s for s in doc["szenarien"] if s["id"] == "BACKUP_FEHLGESCHLAGEN")["regeln"] = []      # seit WP-M5-14 aktiv: ohne Regel rot
         f.write_text(yaml.safe_dump(doc, allow_unicode=True), encoding="utf-8")
         errs = self.run_check(repo)
         self.assertTrue(any("REDIS_AUSFALL" in e for e in errs)); self.assertTrue(any("BACKUP_FEHLGESCHLAGEN" in e for e in errs))

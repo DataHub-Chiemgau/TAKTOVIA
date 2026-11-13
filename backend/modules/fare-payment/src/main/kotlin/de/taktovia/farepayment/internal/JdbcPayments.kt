@@ -11,6 +11,7 @@ import de.taktovia.farepayment.api.PaymentGateway
 import de.taktovia.farepayment.api.CancelledBooking
 import de.taktovia.farepayment.api.PaymentView
 import de.taktovia.farepayment.api.RefundHint
+import de.taktovia.farepayment.api.RestoreReconcileReport
 import de.taktovia.farepayment.api.RefundRequest
 import de.taktovia.farepayment.api.RefundView
 import de.taktovia.farepayment.api.Payments
@@ -105,6 +106,23 @@ internal class JdbcPayments(
 
     override fun requestRefundIn(j: JdbcOperations, request: RefundRequest): RefundView =
         (core.requestRefund(j, request.paymentId, request.caseKey, request.reasonCode, request.causeClass, request.amountMinor) ?: throw ProblemException(ErrorCode.CONFLICT, "Keine Erstattung möglich.")).view()
+
+    override fun reconcileAfterRestoreIn(j: JdbcOperations, limit: Int): RestoreReconcileReport {
+        require(limit in 1..5000)
+        val ids = j.query(
+            "SELECT id FROM taktovia.payment_intent WHERE state IN ('CREATED', 'REQUIRES_ACTION', 'CAPTURE_PENDING', 'CAPTURE_UNKNOWN', 'RECONCILING', 'VOID_PENDING', 'REFUND_PENDING') ORDER BY created_at, id LIMIT ?",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, limit,
+        )
+        val queued = ArrayList<UUID>()
+        var already = 0
+        for (id in ids) {
+            val row = core.lock(j, id)
+            val before = core.hasQueuedReconcile(j, id)
+            if (core.enqueueReconcile(j, row, byMerchantRef = true) == null) continue
+            if (before) already++ else queued += id
+        }
+        return RestoreReconcileReport(ids.size, queued.size, already, queued)
+    }
 
     override fun handlers(gateway: PaymentGateway): List<OperationHandler> = listOf(
         AuthorizeHandler(tx, core, gateway, config), CaptureHandler(tx, core, gateway, config), VoidHandler(tx, core, gateway, config), RefundHandler(tx, core, gateway, config), ReconcileHandler(tx, core, gateway, config),

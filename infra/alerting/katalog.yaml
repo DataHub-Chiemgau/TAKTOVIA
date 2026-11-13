@@ -187,22 +187,22 @@ szenarien:
   - id: BACKUP_FEHLGESCHLAGEN
     titel: Fehlgeschlagenes Backup
     komponente: postgres
-    regeln: []
-    signal: "Metriken aus WP-M5-14 (noch nicht vorhanden)"
-    schwelle: "wird mit WP-M5-14 festgelegt"
+    regeln: [BackupFehlgeschlagen, BackupZuAlt]
+    signal: "taktovia_backup_last_status (0 = letzter Lauf fehlgeschlagen) und taktovia_backup_last_success_timestamp_seconds (infra/backup/taktovia_backup/metrics.py)"
+    schwelle: "letzter Backuplauf fehlgeschlagen über 1 min bzw. letztes erfolgreiches Backup älter als 36 h (Planungswert, OP-31/D-05)"
     schweregrad: critical
     empfaenger: betrieb-bereitschaft
     eskalation_nach_min: 60
     runbook: "docs/betrieb/alarm-handlungsschritte.md#backup_fehlgeschlagen"
-    lieferung: WP-M5-14
+    lieferung: aktiv
   - id: ARCHIVIERUNGS_REPLIKATIONSVERZUG
     titel: Archivierungs-/Replikationsverzug (WAL)
     komponente: postgres
-    regeln: []
-    signal: "Metriken aus WP-M5-14 (noch nicht vorhanden)"
-    schwelle: "wird mit WP-M5-14 festgelegt"
+    regeln: [WalArchivierungsverzug, WalArchivierungFehlgeschlagen, StandbyGetrennt]
+    signal: "taktovia_wal_archive_lag_seconds, taktovia_wal_archive_failed_total, taktovia_standby_connected (infra/backup/taktovia_backup/metrics.py aus pg_stat_archiver und pg_stat_replication)"
+    schwelle: "Archivierungsverzug > 10 min über 2 min (Vorwarnung vor der RPO-Grenze 15 min); fehlgeschlagene Archivierung (Zuwachs in 10 min); erwarteter Standby nicht verbunden über 5 min"
     schweregrad: critical
     empfaenger: betrieb-bereitschaft
     eskalation_nach_min: 60
     runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
-    lieferung: WP-M5-14
+    lieferung: aktiv

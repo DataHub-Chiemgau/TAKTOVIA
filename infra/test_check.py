@@ -24,6 +24,23 @@ class CheckTests(unittest.TestCase):
         errs, _ = check.run(INFRA)
         self.assertEqual(errs, [])
 
+    def test_datensicherung_verstoesse_werden_rot(self):
+        d = self.copy()
+        f = d / "terraform/modules/datensicherung/main.tf"
+        orig = f.read_text()
+        for old, new, needle in (("var.restore_target_environment == var.environment", "true", "Restore nur in die Quellumgebung"),
+                                 ("var.replica_failure_domain != var.source_failure_domain", "true", "Replik in anderer Ausfalldomäne"),
+                                 ('object_lock_mode       = "compliance"', 'object_lock_mode       = "none"', "Aufbewahrungssperre"),
+                                 ("var.wal_retention_days >= 35", "true", "Aufbewahrung mindestens 35 Tage")):
+            f.write_text(orig.replace(old, new))
+            errs, _ = check.run(d)
+            self.assertTrue(any("datensicherung" in e and needle in e for e in errs), (needle, errs))
+        f.write_text(orig)
+        conf = d / "backup/postgresql-archive.conf"
+        conf.write_text(conf.read_text().replace("archive_mode = on", "archive_mode = off"))
+        errs, _ = check.run(d)
+        self.assertTrue(any("Archivierung nicht" in e or "aktiviert die verschluesselte" in e for e in errs), errs)
+
     def test_missing_required_tf_param(self):
         d = self.copy()
         f = d / "terraform/envs/staging/terraform.tfvars.example"

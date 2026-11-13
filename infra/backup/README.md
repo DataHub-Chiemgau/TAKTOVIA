@@ -11,7 +11,11 @@ Tests: `tests/performance/test_restore_drehbuch.py`. Vertrag: [LH-6.18-SEC-010](
 | Konsistentes Backup (`pg_dump --snapshot` auf exportiertem Snapshot, Prüfsummen je Tabelle im selben Snapshot), Manifest mit Authentifizierungscode | `taktovia_backup/dbops.py` | ausgeführt (Test), auch unter Schreiblast |
 | Lösch-/Sperrjournal außerhalb der Datenbank (hash-verkettet) und Wiedereinspielung vor Freigabe | `dbops.export_journal`, `taktovia.replay_erasure_journal` (V10330) | ausgeführt (Test) |
 | Restore-Job: isolierte Datenbank, Prüfsummen, Struktur (RLS, Trigger, Rollen, Rechte), Isolationstest WP-M1-01, Protokoll mit Ergebnis und Dauer | `dbops.restore`, `python -m taktovia_backup restore-test` | ausgeführt (Test) |
-| WAL-Archiv (PITR): `archive_command`/`restore_command` verschlüsseln und authentifizieren Segmente | `dbops.archive_wal/restore_wal`, `postgresql-archive.conf` | Ver- und Entschlüsselung ausgeführt; **Abspielen gegen einen Cluster (PITR) nicht ausgeführt** |
+| WAL-Archiv (PITR): `archive_command`/`restore_command` verschlüsseln und authentifizieren Segmente, einmalig und idempotent abgelegt, Kette (Beschädigung, Lücken) prüfbar | `wal.py` (ohne Datenbanktreiber), `postgresql-archive.conf` | **ausgeführt gegen einen echten privaten Cluster** (WP-M5-14, `tests/performance/test_pitr.py`) |
+| Basissicherung und Wiederherstellung auf Zeitpunkt (`pg_basebackup` → verschlüsselt; Restore prüft Manifest, Umgebung, WAL-Kette vor jeder Wirkung) | `pitr.py`, `environment.py` | ausgeführt (Test); Restore in andere Umgebung technisch abgewiesen |
+| Metriken Backup-Erfolg, Archivierungsverzug, Archivierungsfehler, Standby; Alarme `BackupFehlgeschlagen`, `BackupZuAlt`, `WalArchivierungsverzug`, `WalArchivierungFehlgeschlagen`, `StandbyGetrennt` | `metrics.py`, `systemd/taktovia-backup-metrics.*`, `../observability/alert-rules.d/` | Metriken aus echtem Cluster, Regeln gegen die Nachbildung ausgelöst; Timer und Prometheus **nicht ausgeführt** |
+| Konsistenzprüfungen nach Restore (Outbox/Inbox, Idempotenz, Kapazität, Audit-Schutz, Migrationsstand, Wirkung des Lösch-/Sperrjournals) und Freigabeschranke | `consistency.py`, `drehbuch.py`, `tests/performance/wiederanlauf-drehbuch-m5.md` | ausgeführt (Trockenlauf, automatisiert) |
+| Standby (Streaming) | `postgresql-standby.conf` | **Entwurf, nicht ausgeführt** (kein zweiter Host, D-05) |
 | Geplanter Betrieb (Backup täglich, Restore-Test wöchentlich) | `systemd/*.service`, `*.timer` | **nicht ausgeführt** (keine Zielumgebung, D-05); Planungswerte in `backup-policy.json` |
 | Objektspeicher-Backup (Tar, verschlüsselt, Prüfsumme je Objekt) | `create_backup(objects_dir=…)` | ausgeführt gegen ein Verzeichnis als Ersatz für den S3-Bucket; **kein S3/MinIO** |
 
@@ -23,4 +27,4 @@ Tests: `tests/performance/test_restore_drehbuch.py`. Vertrag: [LH-6.18-SEC-010](
 
 ## Grenzen (nicht ausgeführt, nicht Gegenstand von M1)
 
-Kontinuierliches WAL/PITR gegen einen Cluster, S3 Object Lock, verwaltete Dienste, RPO-/RTO-Messung und PSP-Abgleich (**WP-M5-14, WP-M5-15**), Failover. Backupintervall, Aufbewahrung und Testzyklus sind im Pflichtenheft nicht beziffert (OP-31); `backup-policy.json` enthält Planungswerte.
+S3 Object Lock, verwaltete Dienste, Standby über Hosts und Failover (Entwurf), die Messung von RPO/RTO unter Last und der Abgleichbericht der Ausfallübung (**WP-M5-15**). Kontinuierliches WAL/PITR gegen einen privaten Cluster ist seit WP-M5-14 ausgeführt. Backupintervall, Aufbewahrung und Testzyklus sind im Pflichtenheft nicht beziffert (OP-31); `backup-policy.json` enthält Planungswerte.

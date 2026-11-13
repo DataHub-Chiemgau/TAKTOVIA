@@ -135,6 +135,45 @@ groups:
         annotations:
           summary: "Mehr als 30 Prozent der Dokumentenaufgaben scheitern"
           runbook: "docs/betrieb/alarm-handlungsschritte.md#dokumenten_worker_ausfall"
+  - name: datensicherung
+    interval: 15s
+    rules:
+      # WP-M5-14: Metriken aus infra/backup/taktovia_backup/metrics.py (Textfile-Collector). Schwellen sind Planungswerte (OP-31, D-05): Vorwarnung 10 min vor der RPO-Grenze von 15 min.
+      - alert: BackupFehlgeschlagen
+        expr: taktovia_backup_last_status == 0
+        for: 1m
+        labels: { severity: critical, component: postgres, scenario: BACKUP_FEHLGESCHLAGEN, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Der letzte Backuplauf ist fehlgeschlagen"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#backup_fehlgeschlagen"
+      - alert: BackupZuAlt
+        expr: time() - taktovia_backup_last_success_timestamp_seconds > 129600
+        for: 5m
+        labels: { severity: critical, component: postgres, scenario: BACKUP_FEHLGESCHLAGEN, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Das letzte erfolgreiche Backup ist älter als 36 Stunden"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#backup_fehlgeschlagen"
+      - alert: WalArchivierungsverzug
+        expr: taktovia_wal_archive_lag_seconds > 600
+        for: 2m
+        labels: { severity: critical, component: postgres, scenario: ARCHIVIERUNGS_REPLIKATIONSVERZUG, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "WAL-Archivierungsverzug über 10 Minuten (Zielwert RPO 15 Minuten)"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
+      - alert: WalArchivierungFehlgeschlagen
+        expr: increase(taktovia_wal_archive_failed_total[10m]) > 0
+        for: 1m
+        labels: { severity: critical, component: postgres, scenario: ARCHIVIERUNGS_REPLIKATIONSVERZUG, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Die WAL-Archivierung schlägt fehl"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
+      - alert: StandbyGetrennt
+        expr: taktovia_standby_connected == 0
+        for: 5m
+        labels: { severity: critical, component: postgres, scenario: ARCHIVIERUNGS_REPLIKATIONSVERZUG, empfaenger: betrieb-bereitschaft }
+        annotations:
+          summary: "Der erwartete Standby ist nicht per Streaming verbunden"
+          runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
   - name: alarmkette
     interval: 15s
     rules:

@@ -1,0 +1,202 @@
+{
+ "abgleich_externe_vorgaenge": [],
+ "ausfallzeitpunkt": "2026-11-13T05:27:51.024802+00:00",
+ "bewertung": {
+  "rpo_erfuellt": true,
+  "rpo_min_gemessen": 7.0,
+  "rto_erfuellt": true,
+  "rto_h_gemessen": 1.0
+ },
+ "drehbuch_version": "m5-1.0",
+ "hinweis": "Automatisierter Trockenlauf gegen lokale PostgreSQL (logisches Backup/Restore), Uhr SIMULIERT: die Zeitabstände zwischen den Schritten sind festgelegt, nicht gemessen; RPO und RTO sind damit nur die Rechenregel, keine Messung. Abgleich ist ein Platzhalter, die Probe ein Datenbank-Ersatz. Keine Ausführung durch Dritte (Abnahme 2 offen).",
+ "konsistenz": {
+  "checks": [
+   {
+    "count": 0,
+    "detail": "fehlend: []; unbekannt: []",
+    "id": "migrationsstand",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "veröffentlicht vor Eintritt des Ereignisses",
+    "id": "outbox_zeitfolge",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "Ereignis aus der Zukunft des wiederhergestellten Stands",
+    "id": "outbox_nicht_aus_der_zukunft",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "Eingangszeile aus der Zukunft oder mit ungültiger Prüfsumme",
+    "id": "inbox_zeitfolge_und_pruefsumme",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 1,
+    "detail": "werden nach dem Wiederanlauf mindestens einmal veröffentlicht; Empfänger deduplizieren über die Inbox",
+    "id": "outbox_unveroeffentlicht",
+    "ok": true,
+    "severity": "info"
+   },
+   {
+    "count": 0,
+    "detail": "doppelte Ereignisse je Aggregatrevision",
+    "id": "outbox_eindeutigkeit",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "Idempotenzeintrag verweist auf eine fehlende Operation",
+    "id": "idempotenz_operation_vorhanden",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "Wiederholung durch den Client führt zur ursprünglichen oder zu einer neuen Bearbeitung, nie zu zwei Wirkungen (Eindeutigkeit des Schlüssels)",
+    "id": "idempotenz_in_bearbeitung",
+    "ok": true,
+    "severity": "info"
+   },
+   {
+    "count": 0,
+    "detail": "Ablaufzeitpunkt weit in der Zukunft",
+    "id": "idempotenz_ablauf_plausibel",
+    "ok": true,
+    "severity": "info"
+   },
+   {
+    "count": 0,
+    "detail": "Segmente über der Fahrzeugkapazität (Sitze, Rollstuhlplätze)",
+    "id": "kapazitaet_nicht_ueberbucht",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "bestätigte Buchung ohne verbrauchte Kapazität",
+    "id": "keine_buchung_ohne_kapazitaet",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "stornierte Buchung hält noch Kapazität",
+    "id": "kapazitaet_stornierter_buchungen_frei",
+    "ok": true,
+    "severity": "info"
+   },
+   {
+    "count": 0,
+    "detail": "Trigger audit_immutable fehlt oder ist abgeschaltet",
+    "id": "audit_unveraenderlich_aktiv",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "Auditereignis aus der Zukunft des wiederhergestellten Stands",
+    "id": "audit_zeitfolge",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "gelöschte Datensätze mit Personendaten bzw. aufgehobene Archivsperre im wiederhergestellten Bestand",
+    "id": "journal_wirksam",
+    "ok": true,
+    "severity": "block"
+   },
+   {
+    "count": 0,
+    "detail": "keine",
+    "id": "zahlungen_abzugleichen",
+    "ok": true,
+    "severity": "info"
+   },
+   {
+    "count": 0,
+    "detail": "offene Operationen werden von den Workern mit Lease und Fencing fortgesetzt; PSP-Aufrufe wiederholen nur mit derselben Kommandoreferenz",
+    "id": "operationen_offen",
+    "ok": true,
+    "severity": "info"
+   }
+  ],
+  "release_allowed": true,
+  "violations": []
+ },
+ "letzter_wiederherstellbarer_commit": {
+  "referenz": "20261113T052051Z-d23ed3",
+  "zeitpunkt": "2026-11-13T05:20:51.024802+00:00"
+ },
+ "referenzziele": {
+  "provisional": true,
+  "rpo_min": 15.0,
+  "rto_h": 2.0
+ },
+ "schritte": [
+  {
+   "ergebnis": "Primärdatenbank nicht verfügbar",
+   "nr": 1,
+   "schritt": "Ausfall feststellen und Zeitpunkt festhalten",
+   "zeitpunkt": "2026-11-13T05:27:51.024802+00:00"
+  },
+  {
+   "ergebnis": "gestoppt",
+   "nr": 2,
+   "schritt": "Schreibzugriffe stoppen, Ereignisstrom und Worker anhalten",
+   "zeitpunkt": "2026-11-13T05:29:51.024802+00:00"
+  },
+  {
+   "ergebnis": "wiederhergestellt bis 2026-11-13T05:20:51.024802+00:00",
+   "nr": 3,
+   "schritt": "Datenbank aus Basissicherung und WAL auf den Zeitpunkt wiederherstellen; letzten wiederherstellbaren Commit bestimmen",
+   "zeitpunkt": "2026-11-13T05:49:51.024802+00:00"
+  },
+  {
+   "ergebnis": "Prüfsummen, RLS, Trigger, Rollen identisch zum gesicherten Stand",
+   "nr": 4,
+   "schritt": "Migrationsstand und Rollen/RLS prüfen",
+   "zeitpunkt": "2026-11-13T05:52:51.024802+00:00"
+  },
+  {
+   "ergebnis": "17 Prüfungen, keine blockierenden Befunde",
+   "nr": 5,
+   "schritt": "Lösch-/Sperrjournal wieder einspielen und Konsistenzprüfungen ausführen (blockiert die Freigabe)",
+   "zeitpunkt": "2026-11-13T05:57:51.024802+00:00"
+  },
+  {
+   "ergebnis": "0 Vorgänge abgeglichen (PLATZHALTER im Test; echter Abgleich: PaymentRestoreReconcileTest)",
+   "nr": 6,
+   "schritt": "Externe Buchungen und Zahlungen mit Providerreferenzen abgleichen, bevor unsichere Schritte wiederholt werden",
+   "zeitpunkt": "2026-11-13T06:07:51.024802+00:00"
+  },
+  {
+   "ergebnis": "Worker und Ereignisstrom aktiv",
+   "nr": 7,
+   "schritt": "Freigabe: Worker und Ereignisstrom wieder aktivieren",
+   "zeitpunkt": "2026-11-13T06:12:51.024802+00:00"
+  },
+  {
+   "ergebnis": "Probe erfolgreich",
+   "nr": 8,
+   "schritt": "Funktionsfähige End-to-End-Probe (Buchungs- und Operatorprobe)",
+   "zeitpunkt": "2026-11-13T06:27:51.024802+00:00"
+  }
+ ],
+ "status": "ABGESCHLOSSEN",
+ "umgebung": {
+  "name": "staging",
+  "verantwortlich": "Trockenlauf-Automat (WP-M5-14, nicht von Dritten ausgeführt)"
+ },
+ "zeitpunkt_e2e_probe": "2026-11-13T06:27:51.024802+00:00"
+}
