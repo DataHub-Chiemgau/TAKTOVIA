@@ -1,6 +1,8 @@
 package de.taktovia.documentsfinance.api
 
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.money.LargestRemainder
+import de.taktovia.platform.money.MoneyRounding
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.time.Instant
@@ -22,28 +24,12 @@ object AllocationCalculator {
 
     /** Verteilt `basisMinor` auf die Empfänger nach `weights` (Schlüssel >= 0, Summe > 0; höchstens 8 Nachkommastellen). Ergebnis in Eingabereihenfolge, Summe = `basisMinor`. */
     fun distribute(basisMinor: Long, weights: List<Pair<UUID, BigDecimal>>): List<Long> {
-        require(weights.isNotEmpty()) { "keine Empfänger" }
-        require(weights.map { it.first }.toSet().size == weights.size) { "Empfänger nicht eindeutig" }
-        val ints = weights.map { (_, w) ->
-            require(w.signum() >= 0) { "Gewicht negativ" }
-            w.setScale(8, java.math.RoundingMode.UNNECESSARY).movePointRight(8).toBigIntegerExact()
-        }
-        val total = ints.fold(BigInteger.ZERO, BigInteger::add)
-        require(total.signum() > 0) { "Summe der Gewichte ist 0" }
-        val abs = BigInteger.valueOf(basisMinor).abs()
-        val floors = ints.map { abs.multiply(it).divide(total) }
-        val remainders = ints.map { abs.multiply(it).mod(total) }
-        var rest = abs.subtract(floors.fold(BigInteger.ZERO, BigInteger::add)).toInt()   // < Anzahl der Empfänger
-        val order = weights.indices.sortedWith(compareByDescending<Int> { remainders[it] }.thenBy { weights[it].first.toString() })   // Kennung als Text: dieselbe Reihenfolge wie die Datenbank (unsigned), nicht die vorzeichenbehaftete UUID-Ordnung der JVM
-        val extra = IntArray(weights.size)
-        for (i in order) { if (rest == 0) break; extra[i] = 1; rest-- }
-        val sign = if (basisMinor < 0) -1L else 1L
-        return weights.indices.map { sign * (floors[it].toLong() + extra[it]) }
+        return LargestRemainder.distribute(basisMinor, weights.map { (id, w) -> id.toString() to w })   // Kennung als Text: dieselbe Reihenfolge wie die Datenbank (unsigned), nicht die vorzeichenbehaftete UUID-Ordnung der JVM
     }
 
     /** Gewicht in Prozent (8 Nachkommastellen, kaufmännisch gerundet) für die Anzeige und die Spalte `weight`; nie Grundlage der Beträge. */
     fun percentOf(amountMinor: Long, basisMinor: Long): BigDecimal =
-        if (basisMinor == 0L) BigDecimal.ZERO.setScale(8) else BigDecimal(amountMinor).multiply(BigDecimal(100)).divide(BigDecimal(basisMinor), 8, java.math.RoundingMode.HALF_UP)
+        if (basisMinor == 0L) BigDecimal.ZERO.setScale(8) else MoneyRounding.ratioHalfUp(BigDecimal(amountMinor).multiply(BigDecimal(100)), BigDecimal(basisMinor), 8)
 
 }
 

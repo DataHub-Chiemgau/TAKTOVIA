@@ -22,6 +22,8 @@ class ArchitectureRules(
     private val root: String = "de.taktovia",
     private val modules: List<String> = MODULES,
     private val adapters: List<String> = ADAPTERS,
+    private val roundingAllowlist: Set<String> = ROUNDING_ALLOWLIST,
+    private val localDateTimeAllowlist: Set<String> = LOCAL_DATE_TIME_ALLOWLIST,
 ) {
     companion object {
         val MODULES = listOf(
@@ -32,6 +34,25 @@ class ArchitectureRules(
         const val TRANSACTIONAL = "org.springframework.transaction.annotation.Transactional"
         const val AUDIT_REQUIRED = "de.taktovia.platform.audit.AuditRequired"
         const val AUDIT_PORT = "de.taktovia.platform.audit.AuditPort"
+
+        /**
+         * Klassen (Präfix des Klassennamens), die ausnahmsweise selbst runden dürfen, weil sie kein Geld berechnen (Begründung je Eintrag).
+         * Geld und Steuer laufen ausschließlich über `platform.money.MoneyRounding`/`LargestRemainder` (WP-M5-07).
+         */
+        val ROUNDING_ALLOWLIST = setOf(
+            // Plausibilitätsquoten (Liter je 100 km, Preisabweichung in Prozent) als Findings, keine Beträge; Zehntel-Prozent-Anzeige mit fester MathContext
+            "de.taktovia.documentsfinance.internal.FuelPlausibilityRules",
+        )
+
+        /**
+         * Klassen, die `java.time.LocalDateTime` verwenden dürfen, weil der Wert dort nie allein steht, sondern mit Zone und Offset
+         * aus einem absoluten Zeitpunkt abgeleitet wird (Darstellung, Eingabeauflösung über `platform.time`). Speichern oder Rechnen
+         * mit Ortszeit ohne Zone bleibt verboten.
+         */
+        val LOCAL_DATE_TIME_ALLOWLIST = setOf(
+            "de.taktovia.stafftime.api.LocalPresentation", "de.taktovia.stafftime.api.WorkTime", "de.taktovia.stafftime.api.LocalTimeRejected",
+            "de.taktovia.stafftime.api.RosterShiftView",
+        )
     }
 
     private val modulePackages get() = modules.map { "$root.$it.." }.toTypedArray()
@@ -76,6 +97,42 @@ class ArchitectureRules(
             .should().haveRawType(java.lang.Double.TYPE).orShould().haveRawType(java.lang.Float.TYPE).allowEmptyShould(true),
     )
 
+    private fun fachCode() = noClasses().that().resideInAnyPackage(*modulePackages, adapterRoot)
+
+    /**
+     * WP-M5-07 (LH-6.19-NFR-012): Fachmodule und Adapter runden nicht selbst. `java.math.RoundingMode` und `MathContext` sind nur in
+     * `platform` zulässig (Bausteine `MoneyRounding`, `LargestRemainder`); Ausnahmen stehen begründet in [ROUNDING_ALLOWLIST].
+     */
+    fun noOwnRounding(): ArchRule = fachCode().and().haveNameNotMatching(allowlistRegex(roundingAllowlist))
+        .should().dependOnClassesThat().haveFullyQualifiedName("java.math.RoundingMode")
+        .orShould().dependOnClassesThat().haveFullyQualifiedName("java.math.MathContext").allowEmptyShould(true)
+
+    /** WP-M5-07: kein Gleitkomma für Geld, auch nicht als Parameter (Name `*Minor`, `*Cents`, `amount*`, `price*`, `fare*`, `tax*`). */
+    fun noFloatingPointMoneyParameters(): ArchRule = noMethods().that().haveNameMatching("(get)?(amount|price|fare|tax|cost|net|gross)[A-Za-z]*|[a-zA-Z]*(Minor|Cents)")
+        .and().areDeclaredInClassesThat().resideInAnyPackage(*modulePackages, adapterRoot)
+        .should(haveFloatingPointSignature()).allowEmptyShould(true)
+
+    private fun haveFloatingPointSignature() = object : ArchCondition<JavaMethod>("Float/Double als Parameter oder Rückgabe haben") {
+        private val fp = setOf("double", "float", "java.lang.Double", "java.lang.Float")
+        override fun check(method: JavaMethod, events: ConditionEvents) {
+            val hit = (method.rawParameterTypes.map { it.name } + method.rawReturnType.name).filter { it in fp }
+            if (hit.isNotEmpty()) events.add(SimpleConditionEvent.satisfied(method, "${method.fullName} nutzt $hit für Geld"))
+        }
+    }
+
+    /** WP-M5-07: `LocalDateTime` (Ortszeit ohne Zone) ist in Fachmodulen verboten; Zeit ist `Instant`/`OffsetDateTime`/`ZonedMoment`. */
+    fun noLocalDateTimeInDomainModules(): ArchRule = fachCode().and().haveNameNotMatching(allowlistRegex(localDateTimeAllowlist))
+        .should().dependOnClassesThat().haveFullyQualifiedName("java.time.LocalDateTime").allowEmptyShould(true)
+
+    private fun allowlistRegex(prefixes: Set<String>): String =
+        if (prefixes.isEmpty()) "(?!)" else "(" + prefixes.joinToString("|") { Regex.escape(it) } + ")(\\$.*)?"
+
+    fun timeAndMoneyRules(): Map<String, ArchRule> = mapOf(
+        "keine eigene Rundung in Fachmodulen" to noOwnRounding(),
+        "kein Gleitkomma für Geld in Signaturen" to noFloatingPointMoneyParameters(),
+        "kein LocalDateTime in Fachmodulen" to noLocalDateTimeInDomainModules(),
+    )
+
     /**
      * Leitlinie 3 (Näherung): Code mit `@Transactional` ruft keine Adapter. Die vollständige Regel
      * „kein PSP-/Partneraufruf in offener SQL-Transaktion“ wird mit dem Transaktionsmanagement in M1 geschärft.
@@ -115,7 +172,7 @@ class ArchitectureRules(
     }
 
     fun all(): Map<String, ArchRule> = internalIsolation() + layering() + ("Redis nur in platform.cache" to redisOnlyInCachePackage()) +
-        noFloatingPointMoney() + noAdapterCallInTransaction() + ("@AuditRequired ruft AuditPort.record" to auditRequiredCallsAuditPort())
+        noFloatingPointMoney() + timeAndMoneyRules() + noAdapterCallInTransaction() + ("@AuditRequired ruft AuditPort.record" to auditRequiredCallsAuditPort())
 }
 
 fun Map<String, ArchRule>.checkAll(classes: JavaClasses) = forEach { (name, rule) ->
