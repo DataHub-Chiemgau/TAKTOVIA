@@ -1280,6 +1280,38 @@ export interface AlertPage {
   as_of: string;
 }
 
+export interface KmCategories {
+  PASSENGER: number;
+  EMPTY: number;
+  TRANSFER: number;
+  WORKSHOP: number;
+}
+
+export interface KmDay {
+  service_day: string;
+  vehicle_id: UUID;
+  run_id: UUID;
+  as_of: string;
+  total_km_thousandths: number;
+  km_thousandths_by_category: KmCategories;
+  unassigned_km_thousandths: number;
+  events_complete: boolean;
+}
+
+export interface KmMetrics {
+  metric: 'VEHICLE_KM_CLASSES';
+  definition_version: number;
+  from: string;
+  to: string;
+  vehicle_id: UUID | null;
+  as_of: string | null;
+  completeness: 'COMPLETE' | 'INCOMPLETE';
+  total_km_thousandths: number;
+  km_thousandths_by_category: KmCategories;
+  unassigned_km_thousandths: number;
+  days: KmDay[];
+}
+
 export interface RideResourceVector {
   schema_version?: '1.0';
   seats: number;
@@ -4555,6 +4587,13 @@ export interface Operations {
     body: AlertAcknowledge;
     response: Alert;
   };
+  getAnalyticsMetrics: {
+    path: Record<string, never>;
+    query: { metric?: 'VEHICLE_KM_CLASSES'; from?: string; to?: string; vehicle_id?: UUID };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: KmMetrics;
+  };
   createRideOffer: {
     path: Record<string, never>;
     query: Record<string, never>;
@@ -6112,6 +6151,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorAlerts: { method: 'GET', path: '/v1/operator/alerts', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

@@ -17,6 +17,9 @@ interface AnalyticsApi {
     /** Exportaufträge mit Empfängerrechten und Datenstand (WP-M5-19). */
     val reportJobs: ReportJobs
 
+    /** Klassifikation der Fahrzeugkilometer (WP-M4-42). */
+    val km: KmClassification
+
     companion object {
         /**
          * [downloadSecret] signiert die kurzlebigen Abruflinks (HMAC-SHA256, mindestens 32 Byte, nie im Repository); [checklist] ist die Freigabecheckliste des PBefG-Exports
@@ -29,6 +32,9 @@ interface AnalyticsApi {
 
         /** Nur die Faktenbasis (Projektionsworker und Tests ohne Exportaufträge). */
         fun createFacts(tx: TenantTransactions, clock: Clock = Clock.systemUTC()): FactBase = AnalyticsServicesFactory.createFacts(tx, clock)
+
+        /** Nur die Kilometerklassifikation (Tests und Klassifikationsworker ohne Exportaufträge). */
+        fun createKm(ctxTx: ContextTransactions, tx: TenantTransactions, clock: Clock = Clock.systemUTC()): KmClassification = AnalyticsServicesFactory.createKm(ctxTx, tx, clock)
     }
 }
 

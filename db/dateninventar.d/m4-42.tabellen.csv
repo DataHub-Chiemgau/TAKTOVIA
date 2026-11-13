@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+vehicle_km_run;Kilometerklassifikationslauf (WP-M4-42);LK_BETRIEB;append-only, Datenstand je Lauf
+vehicle_km_segment;Kilometerabschnitt (WP-M4-42);LK_BETRIEB;append-only
