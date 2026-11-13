@@ -32,6 +32,12 @@ type StepDraft = {
   mandatory: boolean;
   safety_critical: boolean;
   na_requires_reason: boolean;
+  /** Sperrart bei negativer Antwort auf ein kritisches Element (WP-M3-16); leer = Fahrzeugsperre. */
+  block_kind: '' | 'VEHICLE' | 'SERVICE';
+  /** Nur für Fahrzeuge mit Rampe oder Lift (WP-M3-12). */
+  equipment_condition: '' | 'RAMP_OR_LIFT';
+  /** Entfallende Ressourcendimension bei Mangel oder „Nicht prüfbar“ (WP-M3-12). */
+  restricts_dimension: '' | 'wheelchair';
 };
 const EMPTY_STEP: StepDraft = {
   step_code: '',
@@ -41,6 +47,9 @@ const EMPTY_STEP: StepDraft = {
   mandatory: true,
   safety_critical: false,
   na_requires_reason: false,
+  block_kind: '',
+  equipment_condition: '',
+  restricts_dimension: '',
 };
 
 /**
@@ -108,6 +117,9 @@ export function Checklistenvorlagen() {
         mandatory: step.mandatory,
         safety_critical: step.safety_critical,
         na_requires_reason: step.na_requires_reason,
+        ...(step.safety_critical && step.block_kind ? { block_kind: step.block_kind } : {}),
+        ...(step.equipment_condition ? { equipment_condition: step.equipment_condition } : {}),
+        ...(step.restricts_dimension ? { restricts_dimension: step.restricts_dimension } : {}),
       },
     ]);
     setStep(EMPTY_STEP);
@@ -288,6 +300,54 @@ export function Checklistenvorlagen() {
                 />{' '}
                 Sicherheitskritisch
               </label>
+              {step.safety_critical ? (
+                <label>
+                  Sperrart bei Mangel
+                  <select
+                    value={step.block_kind}
+                    onChange={(e) =>
+                      setStep({ ...step, block_kind: e.target.value as StepDraft['block_kind'] })
+                    }
+                  >
+                    <option value="">Fahrzeugsperre (Standard)</option>
+                    <option value="VEHICLE">Fahrzeugsperre</option>
+                    <option value="SERVICE">Dienstsperre (nur diese Schicht)</option>
+                  </select>
+                </label>
+              ) : null}
+              <label>
+                Ausstattungsbedingung
+                <select
+                  value={step.equipment_condition}
+                  onChange={(e) =>
+                    setStep({
+                      ...step,
+                      equipment_condition: e.target.value as StepDraft['equipment_condition'],
+                      restricts_dimension: e.target.value === '' ? '' : step.restricts_dimension,
+                    })
+                  }
+                >
+                  <option value="">Für alle Fahrzeuge</option>
+                  <option value="RAMP_OR_LIFT">Nur Fahrzeuge mit Rampe oder Lift</option>
+                </select>
+              </label>
+              {step.equipment_condition ? (
+                <label>
+                  Entfallende Dimension bei Mangel oder „Nicht prüfbar“
+                  <select
+                    value={step.restricts_dimension}
+                    onChange={(e) =>
+                      setStep({
+                        ...step,
+                        restricts_dimension: e.target.value as StepDraft['restricts_dimension'],
+                      })
+                    }
+                  >
+                    <option value="">Keine (nur Mangel)</option>
+                    <option value="wheelchair">Rollstuhlplätze</option>
+                  </select>
+                </label>
+              ) : null}
               <label>
                 <input
                   type="checkbox"
