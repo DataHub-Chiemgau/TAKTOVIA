@@ -40,6 +40,7 @@ import { Schichtzuweisung } from './flotte/Schichtzuweisung';
 import { Schadenakte } from './flotte/Schadenakte';
 import { Arbeitsliste } from './alarm/Arbeitsliste';
 import { VehicleList } from './vehicles/VehicleList';
+import { Vorfaelle } from './alarm/Vorfaelle';
 import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
@@ -234,6 +235,14 @@ export function App() {
             element={
               <RequireRight right="alerts">
                 <Arbeitsliste />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/leitstelle/vorfaelle"
+            element={
+              <RequireRight right="alerts">
+                <Vorfaelle />
               </RequireRight>
             }
           />

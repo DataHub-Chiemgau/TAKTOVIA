@@ -519,6 +519,7 @@ components:
           - REFUND_PAYMENT
           - RECONCILE_PAYMENT
           - LEDGER_EXPORT
+          - REPLACEMENT_SEARCH
         status:
           type: string
           enum:

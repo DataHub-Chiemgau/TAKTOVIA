@@ -29,6 +29,7 @@ import de.taktovia.fleetsafety.api.ReleaseBlocker
 import de.taktovia.fleetsafety.api.ReleaseOutcome
 import de.taktovia.fleetsafety.api.SubmitInspection
 import de.taktovia.fleetsafety.api.InspectionAnswerView
+import de.taktovia.fleetsafety.api.InspectionDefectRef
 import de.taktovia.fleetsafety.api.InspectionCatalog
 import de.taktovia.fleetsafety.api.InspectionReleaseView
 import de.taktovia.fleetsafety.api.InspectionTemplateView
@@ -487,7 +488,7 @@ internal class JdbcInspections(
             json.readTree(rs.getString(1)).let { n -> InspectionRestriction((0 until n.get("unavailable_dimensions").size()).map { i -> n.get("unavailable_dimensions").get(i).asString() }.toSet(),
                 (0 until n.get("step_codes").size()).map { i -> n.get("step_codes").get(i).asString() }) } }, id).firstOrNull()
         val block = if (row.outcome == "BLOCKED") blockOf(j, row.id) else null
-        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing, restriction, block)
+        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing, restriction, block, defectRefs(j, ctx, row.id))
     }
 
     /** Sperre aus diesem Lauf (Fahrzeug- oder Dienstsperre; Quellbezug beginnt mit der Lauf-ID): Art, Vorgangsnummer, auslösende Elemente (aus den kritischen Mängeln des Laufs). */
@@ -498,6 +499,15 @@ internal class JdbcInspections(
         val codes = j.query("SELECT a.step_code FROM taktovia.inspection_answer a JOIN taktovia.inspection_run r ON r.tenant_id = a.tenant_id AND r.id = a.inspection_id JOIN taktovia.checklist_step s ON s.tenant_id = r.tenant_id AND s.template_revision_id = r.template_revision_id " +
             "AND s.step_code = a.step_code WHERE a.inspection_id = ? AND a.answer = 'DEFECT' AND s.safety_critical ORDER BY s.position", { rs, _ -> rs.getString(1) }, inspectionId)
         return InspectionBlock(BlockKind.valueOf(b.first), b.second ?: "", codes)
+    }
+
+    /**
+     * Gegenreferenz Prüfschritt -> Schadenakte (WP-M3-20): aus der Herkunft der Akten dieses Laufs. Ein Fahrer sieht nur Akten, die er selbst gemeldet hat (DMG-011); Disposition und Werkstatt alle.
+     */
+    private fun defectRefs(j: JdbcOperations, ctx: RequestContext, inspectionId: UUID): List<InspectionDefectRef> {
+        val own = if (InspectionRoles.driverOnly(ctx)) runCatching { UUID.fromString(ctx.actor.subject) }.getOrNull() ?: return emptyList() else null
+        return j.query("SELECT source_step_code, id, case_number FROM taktovia.defect_case WHERE source_inspection_id = ? AND source_step_code IS NOT NULL AND (CAST(? AS uuid) IS NULL OR reported_by = CAST(? AS uuid)) ORDER BY source_step_code, created_at",
+            { rs, _ -> InspectionDefectRef(rs.getString(1), rs.getObject(2, UUID::class.java), rs.getString(3)) }, inspectionId, own, own)
     }
 
     private class Shift(val id: UUID, val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)

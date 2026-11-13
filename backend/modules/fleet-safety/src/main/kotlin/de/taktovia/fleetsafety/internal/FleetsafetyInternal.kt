@@ -18,7 +18,7 @@ import java.time.Clock
 
 /** Nur innerhalb des Moduls `fleet-safety` sichtbar (durch Architekturtest erzwungen). */
 internal object FleetServicesFactory {
-    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock, driverRelation: DriverVehicleRelation?, evidenceWiring: DefectEvidenceWiring?, releasePolicy: de.taktovia.fleetsafety.api.ReleasePolicy = de.taktovia.fleetsafety.api.ReleasePolicy(), alertSettings: de.taktovia.fleetsafety.api.AlertSettings = de.taktovia.fleetsafety.api.AlertSettings(), defectSettings: de.taktovia.fleetsafety.api.DefectSettings = de.taktovia.fleetsafety.api.DefectSettings()): FleetsafetyApi {
+    fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, clock: Clock, driverRelation: DriverVehicleRelation?, evidenceWiring: DefectEvidenceWiring?, releasePolicy: de.taktovia.fleetsafety.api.ReleasePolicy = de.taktovia.fleetsafety.api.ReleasePolicy(), alertSettings: de.taktovia.fleetsafety.api.AlertSettings = de.taktovia.fleetsafety.api.AlertSettings(), defectSettings: de.taktovia.fleetsafety.api.DefectSettings = de.taktovia.fleetsafety.api.DefectSettings(), replacementSearch: de.taktovia.fleetsafety.api.ReplacementSearchPort = de.taktovia.fleetsafety.api.ReplacementSearchPort.UNAVAILABLE): FleetsafetyApi {
         val roles = JdbcVehicleRoles(ctxTx, audit, outbox, clock)
         val vehicles = JdbcVehicles(ctxTx, audit, outbox, clock)
         val pool = JdbcVehiclePool(ctxTx, audit, outbox, clock)
@@ -34,6 +34,8 @@ internal object FleetServicesFactory {
         val releaseService = JdbcVehicleReleases(ctxTx, audit, outbox, clock, readinessService, attempts)
         val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock, readinessService, alertService.port)
         val knownDefectService = JdbcKnownDefects(ctxTx, audit, driverRelation ?: ShiftDriverRelation(), clock)
+        val workflowService = JdbcIncidentWorkflow(ctxTx, audit, outbox, clock, replacementSearch)
+        val incidentService = JdbcIncidents(ctxTx)
         return object : FleetsafetyApi {
             override val checklistTemplates: ChecklistTemplates = checklists
             override val vehicleRoles: VehicleRoles = roles
@@ -50,6 +52,8 @@ internal object FleetServicesFactory {
             override val operatorVehicles: de.taktovia.fleetsafety.api.OperatorVehicles = operatorVehicleService
             override val repairOrders: de.taktovia.fleetsafety.api.RepairOrders = repairService
             override val vehicleReleases: de.taktovia.fleetsafety.api.VehicleReleases = releaseService
+            override val incidentWorkflow: de.taktovia.fleetsafety.api.IncidentWorkflow = workflowService
+            override val incidents: de.taktovia.fleetsafety.api.Incidents = incidentService
         }
     }
 }

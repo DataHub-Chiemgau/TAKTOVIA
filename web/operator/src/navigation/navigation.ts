@@ -33,6 +33,12 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
     requires: 'livebetrieb',
   },
   { id: 'ui07', label: 'Offene Störungen', href: '/leitstelle/stoerungen', requires: 'alerts' },
+  {
+    id: 'ui07-vorfaelle',
+    label: 'Vorfälle und Ablauf',
+    href: '/leitstelle/vorfaelle',
+    requires: 'alerts',
+  },
   { id: 'ui11', label: 'Flotte und Werkstatt', href: '/flotte', requires: 'fleet' },
   {
     id: 'ui11-fahrer',

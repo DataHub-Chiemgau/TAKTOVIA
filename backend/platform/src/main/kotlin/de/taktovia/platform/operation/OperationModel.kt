@@ -11,7 +11,7 @@ import java.util.UUID
  * ohne Migration ergänzen.
  */
 object OperationKind {
-    val ALL = setOf("HOLD", "CONFIRM", "CANCEL", "RECONCILE", "PUBLISH_CONFIG", "IMPACT_ANALYSIS", "RETENTION_RUN", "TEST_COMMAND", "AUTHORIZE_PAYMENT", "CAPTURE_PAYMENT", "VOID_PAYMENT", "REFUND_PAYMENT", "RECONCILE_PAYMENT", "LEDGER_EXPORT")
+    val ALL = setOf("HOLD", "CONFIRM", "CANCEL", "RECONCILE", "PUBLISH_CONFIG", "IMPACT_ANALYSIS", "RETENTION_RUN", "TEST_COMMAND", "AUTHORIZE_PAYMENT", "CAPTURE_PAYMENT", "VOID_PAYMENT", "REFUND_PAYMENT", "RECONCILE_PAYMENT", "LEDGER_EXPORT", "REPLACEMENT_SEARCH")
 }
 
 /** Planungsdefaults (Detailvertrag `operation.md`): Lease 60 s, Wiederabfrage-Hinweis 3 s, Backoff nach der Staffel des Outbox-Relays. */

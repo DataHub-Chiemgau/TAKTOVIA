@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/ablaufprotokoll.v1.schema.json",
+  "title": "Ablaufprotokoll-Eintrag (WP-M3-55, LH-I.8-AUT-002)",
+  "description": "Ein Eintrag der Tabelle workflow_run_log, wie ihn `GET /v1/operator/incidents/{id}` im Feld workflow_log liefert. Append-only. Nur Codes und Kennungen (Referenzen statt Rohpayloads); Personendaten gelangen nicht ins Protokoll. Lesen: Rollen callcenter, support, dispatcher, planner, workshop (Rechtematrix getOperatorIncident).",
+  "type": "object",
+  "required": ["seq", "at", "event_id", "event_type", "rule_revision_id", "rule_revision_no", "action", "outcome", "decision", "actor", "correlation_id", "ref", "reason_code"],
+  "additionalProperties": false,
+  "properties": {
+    "seq": { "type": "integer", "minimum": 0, "description": "Lückenlose Ordnungsnummer je Incident, von der Datenbank unter der Zeilensperre des Incidents vergeben." },
+    "at": { "type": "string", "format": "date-time", "description": "Serverzeit." },
+    "event_id": { "type": "string", "format": "uuid", "description": "Auslöserereignis (Referenz); bei Ersatzsuche die Operation, bei Leitstellenentscheidung eine neue Kennung." },
+    "event_type": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_.:-]{1,64}$" },
+    "rule_revision_id": { "type": ["string", "null"], "format": "uuid" },
+    "rule_revision_no": { "type": ["integer", "null"], "minimum": 1 },
+    "action": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,99}$" },
+    "outcome": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,100}$" },
+    "decision": { "type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_:.-]{0,99}$" },
+    "actor": { "type": "string", "pattern": "^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$" },
+    "correlation_id": { "type": ["string", "null"], "format": "uuid", "description": "Bezug zu audit_event.correlation_id." },
+    "ref": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_.:-]{1,64}$" },
+    "reason_code": { "type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{1,59}$" }
+  },
+  "examples": [
+    {
+      "seq": 1, "at": "2026-12-01T08:00:00Z", "event_id": "11111111-2222-4333-8444-555555555555", "event_type": "VEHICLE_BLOCKED",
+      "rule_revision_id": "66666666-7777-4888-8999-aaaaaaaaaaaa", "rule_revision_no": 1, "action": "EVALUATE_RULE", "outcome": "MATCHED:2", "decision": "RULE_MATCHED",
+      "actor": "system:workflow", "correlation_id": "99999999-8888-4777-8666-555555555555", "ref": null, "reason_code": null
+    }
+  ]
+}

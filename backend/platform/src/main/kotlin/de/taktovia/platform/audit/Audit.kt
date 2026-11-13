@@ -102,6 +102,8 @@ object AuditActions {
     const val ALERT_ACKNOWLEDGED = "fleet.alert.acknowledged"
     /** Neue Alarmregelrevision (WP-M3-52): Objekt `alert_policy_revision:<id>`, Details mit Revisionsnummer und Zahl der Regeln. */
     const val ALERT_POLICY_PUBLISHED = "fleet.alert.policy_published"
+    /** Neue Workflow-Regelrevision (WP-M3-53): Objekt `workflow_rule_revision:<id>`, Details mit Ereignisart, Revisionsnummer und Zahl der Aktionen, nie mit Freitext. */
+    const val WORKFLOW_RULE_PUBLISHED = "fleet.workflow.rule_published"
     /** Schadenakte (WP-M3-43/-47/-48): gemeldet, Statuswechsel, Nachtrag, Historie gelesen; Objekt `defect:<id>`, Details nennen nie Beschreibungstexte. */
     const val DEFECT_REPORTED = "fleet.defect.reported"
     const val DEFECT_STATE_CHANGED = "fleet.defect.state_changed"
@@ -327,7 +329,7 @@ object AuditActions {
         PASSENGER_REGISTERED, PASSENGER_VERIFICATION_STARTED, PASSENGER_CONTACT_VERIFIED, PASSENGER_PROFILE_CHANGED, PASSENGER_SUPPORT_NEEDS_CHANGED, CONSENT_RECORDED,
         SECURITY_CONTACT_VERIFICATION_FAILED, SECURITY_CONTACT_VERIFICATION_LIMITED, COMMUNICATION_TEMPLATE_CREATED,
         GEO_SERVICE_REVISION_PUBLISHED, GEO_SERVICE_AREA_CHANGED, GEO_STOP_CHANGED, GEO_RELATION_RULE_PUBLISHED, TARIFF_REVISION_CHANGED, TARIFF_REVISION_PUBLISHED, DRIVER_ASSISTANCE_VIEWED, DRIVER_PLAN_ACKNOWLEDGED, ALERT_ACKNOWLEDGED, ALERT_POLICY_PUBLISHED,
-        DEFECT_TRIAGED, REPAIR_ORDER_CREATED, REPAIR_ORDER_CHANGED, RELEASE_DECISION_RECORDED, RELEASE_ATTEMPT_REJECTED)
+        DEFECT_TRIAGED, REPAIR_ORDER_CREATED, REPAIR_ORDER_CHANGED, RELEASE_DECISION_RECORDED, RELEASE_ATTEMPT_REJECTED, WORKFLOW_RULE_PUBLISHED)
 }
 
 /**

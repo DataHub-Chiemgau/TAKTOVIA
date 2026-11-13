@@ -35,7 +35,7 @@ export interface Point {
 
 export interface Operation {
   operation_id: UUID;
-  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT' | 'LEDGER_EXPORT';
+  kind: 'HOLD' | 'CONFIRM' | 'CANCEL' | 'RECONCILE' | 'PUBLISH_CONFIG' | 'IMPACT_ANALYSIS' | 'RETENTION_RUN' | 'TEST_COMMAND' | 'AUTHORIZE_PAYMENT' | 'CAPTURE_PAYMENT' | 'VOID_PAYMENT' | 'REFUND_PAYMENT' | 'RECONCILE_PAYMENT' | 'LEDGER_EXPORT' | 'REPLACEMENT_SEARCH';
   status: 'QUEUED' | 'RUNNING' | 'RECONCILING' | 'SUCCEEDED' | 'FAILED' | 'MANUAL_REVIEW';
   journey_id: UUID | null;
   created_at: string;
@@ -2274,6 +2274,11 @@ export interface Inspection {
     dispatch_contact: string | null;
   } | null;
   completed_by?: string | null;
+  defect_refs?: ({
+    step_code: string;
+    defect_id: UUID;
+    case_number: string;
+  })[];
   amendments?: InspectionAmendment[];
   answers: InspectionAnswer[];
   release: {
@@ -2324,6 +2329,7 @@ export interface DefectCreate {
   description: string;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
+  source_incident_id?: UUID | null;
   evidence_ids?: UUID[];
   device_event_id?: UUID;
   severity_hint?: DefectSeverity;
@@ -2363,6 +2369,7 @@ export interface Defect {
   observed_effect?: DefectEffect | null;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
+  source_incident_id?: UUID | null;
   evidence_pending?: number;
   content_version?: number;
   severity_rule_version?: string | null;
@@ -2444,7 +2451,27 @@ export interface Incident {
   rule_revision_id: UUID | null;
   affected_run_ids: UUID[];
   replacement_operation_id: UUID | null;
+  defect_ids?: UUID[];
+  service_id?: UUID | null;
+  closed_at?: string | null;
+  workflow_log?: WorkflowLogEntry[];
   revision: number;
+}
+
+export interface WorkflowLogEntry {
+  seq: number;
+  at: string;
+  event_id: UUID;
+  event_type: string | null;
+  rule_revision_id: UUID | null;
+  rule_revision_no: number | null;
+  action: string;
+  outcome: string;
+  decision: string | null;
+  actor: string;
+  correlation_id: UUID | null;
+  ref: string | null;
+  reason_code: string | null;
 }
 
 export interface IncidentPage {

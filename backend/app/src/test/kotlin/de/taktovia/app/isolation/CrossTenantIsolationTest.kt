@@ -133,6 +133,9 @@ class CrossTenantIsolationTest {
             b.tenant.value, ledgerExport, le, ledgerOperation)
         // Alarm in B (WP-M3-52): über den Port der Alarm-Grundlage in der Transaktion von B; der Fremdzugriff aus A darf ihn weder sehen noch quittieren
         val alert = env.tx.run(b.tenant) { j -> env.server.ctx.getBean(de.taktovia.platform.alert.BusinessAlertPort::class.java).raise(j, de.taktovia.platform.alert.BusinessAlertRequest("OVERDUE", sourceEventId = UUID.randomUUID())).alertId }.toString()
+        // Incident in B (WP-M3-53): der Workflow eröffnet ihn aus einer Sperre in der Transaktion von B; aus A darf er weder les- noch auffindbar sein
+        val incident = env.tx.run(b.tenant) { j -> env.server.ctx.getBean(de.taktovia.fleetsafety.api.FleetsafetyApi::class.java).incidentWorkflow.handle(j,
+            de.taktovia.fleetsafety.api.WorkflowEvent(UUID.randomUUID(), de.taktovia.fleetsafety.api.WorkflowEventKinds.VEHICLE_BLOCKED, UUID.fromString(vehicleMaster), Instant.now())).incidentId }.toString()
         val recipient = UUID.randomUUID()
         // Angebot in B (WP-M2-21/-22): Versuch, Preisstand und Angebot per SQL (der Fremdzugriff aus A prüft nur, dass nichts sichtbar oder änderbar ist)
         val offerAttempt = UUID.randomUUID(); val offerQuote = UUID.randomUUID(); val rideOffer = UUID.randomUUID()
@@ -171,6 +174,7 @@ class CrossTenantIsolationTest {
             "manual_cost_event_id" to UUID.randomUUID().toString(), "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
             "hint_id" to UUID.randomUUID().toString(), "candidate_id" to UUID.randomUUID().toString(), "period_id" to fiscalPeriod, "cost_event_id" to costEvent, "export_id" to ledgerExport,
             "conflict_id" to UUID.randomUUID().toString(), "repair_order_id" to repairOrder,
+            "incident_id" to incident,
         ), subject = b.passenger.toString())
     }
 
@@ -291,6 +295,7 @@ class CrossTenantIsolationTest {
             "acknowledgeDriverRunRevision" to Probe("POST", "/v1/driver/shifts/{shift_id}/run/acknowledgements", """{"plan_revision":1,"acknowledged_at":"2026-11-05T09:00:00Z"}""", true, role = "driver"),
             "getOperatorAlert" to Probe("GET", "/v1/operator/alerts/{alert_id}", role = "dispatcher"),
             "acknowledgeOperatorAlert" to Probe("POST", "/v1/operator/alerts/{alert_id}/acknowledgements", """{"cause":"HANDLED"}""", true, role = "dispatcher"),
+            "getOperatorIncident" to Probe("GET", "/v1/operator/incidents/{incident_id}", role = "dispatcher"),
             "getStaffShift" to Probe("GET", "/v1/shifts/{shift_id}", role = "dispatcher"),
             "updateStaffShift" to Probe("PUT", "/v1/shifts/{shift_id}", """{"driver_id":"${UUID.randomUUID()}","vehicle_id":"${UUID.randomUUID()}","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin","withdrawn":true}""", true, role = "dispatcher"),
             // Belege: Aggregat, Revisionen, Original, Extraktion (WP-M4-22 bis -27)
@@ -351,6 +356,7 @@ class CrossTenantIsolationTest {
         "listMemberships" to "/v1/memberships", "listLegalEntities" to "/v1/legal-entities", "listRegions" to "/v1/regions", "listDepots" to "/v1/depots",
         "listCostCenters" to "/v1/cost-centers", "listOrganizations" to "/v1/organizations", "listServices" to "/v1/services", "listConfigRevisions" to "/v1/config/revisions",
         "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "listStaffShifts" to "/v1/shifts", "listOperatorVehicles" to "/v1/operator/vehicles", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications", "listRosterShifts" to "/v1/rosters/shifts?roster_id=00000000-0000-4000-8000-0000000000c1", "listRosters" to "/v1/rosters", "listSessions" to "/v1/sessions", "listAbsences" to "/v1/absences", "listTimeEvents" to "/v1/time-events", "listTimeIntervals" to "/v1/time-events/intervals?from=2026-12-01T00:00:00Z&to=2026-12-02T00:00:00Z", "listTimeTargetActual" to "/v1/time-events/target-actual?from=2026-12-01&to=2026-12-02", "listWebhookSubscriptions" to "/v1/webhook-subscriptions", "listVehicleRoles" to "/v1/vehicle-roles", "listAuditEvents" to "/v1/audit-events?purpose=security_review",
+        "listOperatorIncidents" to "/v1/operator/incidents",
         "listOperatorAlerts" to "/v1/operator/alerts", "listDefects" to "/v1/defects", "listRepairOrders" to "/v1/repair-orders", "listVehicleMasters" to "/v1/operator/vehicle-master", "listDrivers" to "/v1/drivers", "getEffectiveConfig" to "/v1/config/effective", "listServiceAreas" to "/v1/service-areas", "listTariffRevisions" to "/v1/tariffs", "listStops" to "/v1/stops", "listPassengers" to "/v1/passengers", "listNotifications" to "/v1/notifications",
         "listChecklistTemplates" to "/v1/checklist-templates", "listChecklistTemplateRevisions" to "/v1/operator/checklist-templates", "listRetentionRules" to "/v1/retention-rules", "listErasureJobs" to "/v1/erasure-jobs", "listErasureJournal" to "/v1/erasure-journal",
         "listCostObjects" to "/v1/cost-objects", "listCostEvents" to "/v1/cost-events", "listFiscalPeriods" to "/v1/fiscal-periods", "listLedgerExports" to "/v1/ledger/exports", "getCostClassification" to "/v1/cost-events/classification?valuation=ACTUAL&currency=EUR&period_from=2026-01-01&period_to=2027-01-01", "listExpenses" to "/v1/expenses", "listBookings" to "/v1/bookings",
@@ -408,7 +414,7 @@ class CrossTenantIsolationTest {
 
         // Listen: nie Objekte oder Kennungen von B
         for ((op, path) in listPaths) {
-            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listOperatorAlerts", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "getCostClassification", "listFiscalPeriods", "listLedgerExports", "listExpenses" -> a.financeToken; else -> a.adminToken })
+            val r = env.get(path, when (op) { "listPassengers" -> a.ccToken; "listVehicleMasters", "listOperatorVehicles", "listOperatorAlerts", "listOperatorIncidents", "listDefects", "listBookings" -> a.dispatcherToken; "listDrivers", "listAbsences", "listTimeEvents", "listTimeIntervals", "listTimeTargetActual", "listRosterShifts", "listRosters", "listStaffShifts" -> a.plannerToken; "listCostObjects", "listCostEvents", "getCostClassification", "listFiscalPeriods", "listLedgerExports", "listExpenses" -> a.financeToken; else -> a.adminToken })
             assertTrue(r.status == 200 || r.status == 403 || (op == "listRosterShifts" && r.status == 404), "$op: ${r.status} ${r.text}")
             if (r.status == 200) {
                 ids.map.filterKeys { it != "session_id" }.values.forEach { assertFalse(r.text.contains(it), "$op: Liste von A enthält Kennung aus B") }

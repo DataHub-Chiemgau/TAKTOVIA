@@ -100,6 +100,8 @@ class InspectionController(private val fleet: FleetsafetyApi, private val config
         "block" to v.block?.let { linkedMapOf("block_kind" to it.kind.name, "case_number" to it.caseNumber, "step_codes" to it.stepCodes, "dispatch_contact" to dispatchContact(v.block)) },
         "completed_by" to v.completedBy,
         "amendments" to v.amendments.map { amendment(it) },
+        // Gegenreferenz Prüfschritt -> Schadenakte (WP-M3-20): aus der Herkunft der Akte, nie als Änderung der Antwort
+        "defect_refs" to v.defectRefs.map { linkedMapOf("step_code" to it.stepCode, "defect_id" to it.defectId.toString(), "case_number" to it.caseNumber) },
         "answers" to v.answers.map { a ->
             linkedMapOf("step_code" to a.stepCode, "answer" to a.answer, "number_value" to a.numberValue, "text_value" to a.textValue, "note" to a.note, "answered_at" to a.answeredAt.toString(),
                 "plausibility" to a.plausibility?.name, "previous_value" to a.previousValue,

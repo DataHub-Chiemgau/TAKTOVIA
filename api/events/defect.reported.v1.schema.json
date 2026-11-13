@@ -45,6 +45,21 @@
         "format": "uuid"
       },
       "description": "Ids der freigegebenen oder in Prüfung befindlichen Fotos, nur Kennungen (WP-M3-44)."
+    },
+    "source_inspection_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Herkunft Prüfschritt (WP-M3-20): Prüflauf; nur Kennung."
+    },
+    "source_step_code": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Herkunft Prüfschritt (WP-M3-20): Schrittkennung der Vorlage."
+    },
+    "source_incident_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Herkunft Störung (WP-M3-20): Incident."
     }
   },
   "examples": [

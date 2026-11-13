@@ -71,8 +71,26 @@ class FleetConfiguration {
      */
     @Bean fun defectSettings(env: Environment): DefectSettings = DefectSettings.parse(env.getProperty("taktovia.defects.workshop-auto-block-severity"))
 
-    @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings, defectSettings: DefectSettings): FleetsafetyApi =
-        FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings, defectSettings = defectSettings)
+    /**
+     * Regelbasierter Workflow (WP-M3-53): die Ersatzfahrzeugsuche ruft den Port des Moduls `booking-dispatch` (WP-M3-54). Ohne Umsetzung meldet der Standard ehrlich „nicht verfügbar“: der Incident
+     * bleibt offen und sichtbar, es wird kein Ergebnis vorgetäuscht.
+     */
+    @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings, defectSettings: DefectSettings,
+        search: org.springframework.beans.factory.ObjectProvider<de.taktovia.fleetsafety.api.ReplacementSearchPort>): FleetsafetyApi =
+        FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings, defectSettings = defectSettings,
+            replacementSearch = search.getIfAvailable { de.taktovia.fleetsafety.api.ReplacementSearchPort.UNAVAILABLE })
+
+    /** Betriebsauftrag `REPLACEMENT_SEARCH` beim Operation-Runner (läuft nur mit `taktovia.operations.worker-enabled` und einer TenantSource des Betriebs, OP-06/OP-08). */
+    @Bean fun replacementSearchHandler(fleet: FleetsafetyApi): de.taktovia.platform.operation.OperationHandler = fleet.incidentWorkflow.searchHandler
+
+    /**
+     * Ereigniskonsum des Workflows über die Inbox (Quelle: Broker-Verbraucher, nicht ausgeführt); lazy: ohne Aufrufer entsteht nichts. Der Workflow hält keinen Aggregatzustand und braucht deshalb
+     * keinen Snapshotabruf.
+     */
+    @org.springframework.context.annotation.Lazy
+    @Bean fun workflowEventConsumer(fleet: FleetsafetyApi, tx: de.taktovia.platform.tenant.TenantTransactions, security: de.taktovia.platform.audit.SecurityEventPort): de.taktovia.fleetsafety.api.WorkflowEventConsumer =
+        fleet.incidentWorkflow.eventConsumer(de.taktovia.platform.outbox.InboxProcessor(tx, security,
+            de.taktovia.platform.outbox.SnapshotFetcher { _, _, _ -> throw de.taktovia.platform.outbox.SnapshotNotYetAvailableException("Der Workflow hält keinen Aggregatzustand") }))
 
     /** Port der Alarm-Grundlage für Fachmodule und technische Betriebsalarme (die Tabellen gehören `fleet-safety`). */
     @Bean fun businessAlertPort(fleet: FleetsafetyApi): BusinessAlertPort = fleet.alerts.port

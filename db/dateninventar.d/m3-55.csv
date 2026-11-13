@@ -1,0 +1,8 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+incident;log_seq;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;seq;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;correlation_id;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;event_type;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;decision;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;result_ref;nein;FLOTTE_SICHERHEIT;;;;
+workflow_run_log;reason_code;nein;FLOTTE_SICHERHEIT;;;;

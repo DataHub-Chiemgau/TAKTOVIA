@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/workflow-regel.v1.schema.json",
+  "title": "Workflow-Regel (WP-M3-53, LH-I.8-AUT-001)",
+  "description": "Eine Regelrevision je Ereignisart (Tabelle workflow_rule_revision.rule): geordnete Folgeaktionen. Revisionen sind unveränderlich und wirken auf neue Ereignisse. Eine leere Aktionsliste ist gültig (nichts tun). START_REPLACEMENT_SEARCH setzt eine vorher stehende OPEN_INCIDENT-Aktion voraus; je Aktion höchstens einmal.",
+  "type": "object",
+  "required": ["schema", "event_kind", "actions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "workflow-regel.v1" },
+    "event_kind": { "enum": ["VEHICLE_BLOCKED", "DISRUPTION_REPORTED", "CRITICAL_DEFECT", "DEFECT_REPORTED", "REJECTION", "CRITICAL_DELAY"] },
+    "actions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object", "additionalProperties": false, "required": ["action", "incident_kind"],
+            "properties": { "action": { "const": "OPEN_INCIDENT" }, "incident_kind": { "enum": ["VEHICLE_OUTAGE", "DEFECT", "REJECTION", "CRITICAL_DELAY"] } }
+          },
+          {
+            "type": "object", "additionalProperties": false, "required": ["action"],
+            "properties": { "action": { "const": "START_REPLACEMENT_SEARCH" } }
+          }
+        ]
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema": "workflow-regel.v1",
+      "event_kind": "VEHICLE_BLOCKED",
+      "actions": [ { "action": "OPEN_INCIDENT", "incident_kind": "VEHICLE_OUTAGE" }, { "action": "START_REPLACEMENT_SEARCH" } ]
+    }
+  ]
+}

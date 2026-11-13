@@ -90,7 +90,15 @@ data class InspectionView(
     val restriction: InspectionRestriction? = null,
     /** Sperre aus diesem Lauf bei kritischem Mangel (WP-M3-16), sonst `null`; die Sperrart bestimmt allein das Prüfelement. */
     val block: InspectionBlock? = null,
+    /**
+     * Gegenreferenz Prüfschritt -> Schadenakte (WP-M3-20, DMG-003): die zu Prüfschritten dieses Laufs erzeugten Akten, abgeleitet aus der Herkunft der Akte. Die Antwort selbst trägt keine Referenz
+     * (abgeschlossene Antworten bleiben unveränderlich, CHK-013). Ein Fahrer sieht nur eigene Akten.
+     */
+    val defectRefs: List<InspectionDefectRef> = emptyList(),
 )
+
+/** Eine aus einem negativ beantworteten Prüfschritt erzeugte Schadenakte (Fallnummer, Kennung). */
+data class InspectionDefectRef(val stepCode: String, val defectId: UUID, val caseNumber: String)
 
 /** Antwort im Entwurf oder im Abschluss, wie der Client sie liefert (Rohwerte; die Prüfung gegen die Vorlagenrevision macht der Server). */
 data class AnswerInput(val stepCode: String, val answer: String?, val numberValue: java.math.BigDecimal?, val note: String?, val answeredAt: Instant, val textValue: String? = null)
@@ -124,7 +132,8 @@ internal object AnswerParsing {
             val note = when (val n = a["note"]) { null -> null; is String -> n; else -> { t.add("/note", ViolationCode.TYPE_MISMATCH); null } }
             val text = when (val n = a["text_value"]) { null -> null; is String -> n.trim().takeIf { it.isNotEmpty() } ?: run { t.add("/text_value", ViolationCode.TOO_SHORT); null }; else -> { t.add("/text_value", ViolationCode.TYPE_MISMATCH); null } }
             if (text != null && text.length > 100) t.add("/text_value", ViolationCode.TOO_LONG)
-            // Fotoevidenz an Prüfantworten gehört zu WP-M3-20 (Abweichung mit Foto); bis dahin werden Verweise nicht stillschweigend ignoriert
+            // Fotos zu einer Abweichung hängen an der Schadenakte, nicht an der Antwort (WP-M3-20: `POST /v1/defects` mit `source_inspection_id`/`source_step_code` und `evidence_ids`; die abgeschlossene
+            // Antwort bleibt unveränderlich, CHK-013); Verweise an der Antwort werden deshalb nicht stillschweigend ignoriert
             if ((a["evidence_ids"] as? List<*>)?.isNotEmpty() == true || (a["evidence_ids"] != null && a["evidence_ids"] !is List<*>)) t.add("/evidence_ids", ViolationCode.INVALID_VALUE)
             val at = t.instant(a, "answered_at", true)
             t.list.forEach { v.add(p + it.pointer, it.code) }

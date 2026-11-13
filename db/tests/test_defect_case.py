@@ -183,5 +183,27 @@ class Schadenakte(unittest.TestCase):
             self.assertEqual(c.execute("SELECT count(*) FROM taktovia.defect_classification_history").fetchone()[0], 0)
 
 
+
+class Herkunft(unittest.TestCase):
+    """LH-6.22-DMG-003: Herkunft Prüfschritt je (Mandant, Prüflauf, Prüfschritt) höchstens einmal (ausführlich: test_defect_origin.py)."""
+
+    @classmethod
+    def setUpClass(cls):
+        seed_tenant(A, 'm343-a'); seed_tenant(B, 'm343-b')
+
+    def test_herkunft_eindeutig_je_pruefschritt(self):
+        from test_damage_ack import run, vehicle as run_vehicle
+        veh = run_vehicle(A); rid = run(A, veh)
+
+        def with_origin(c):
+            cid = uid(); number = c.execute("SELECT taktovia.next_defect_case_number()").fetchone()[0]
+            c.execute("INSERT INTO taktovia.defect_case(tenant_id,id,case_number,vehicle_id,reported_by,occurred_at,category_code,description,created_by,source_inspection_id,source_step_code) "
+                      "VALUES (%s,%s,%s,%s,%s,clock_timestamp() - interval '1 hour','BODY','Mangel',%s,%s,'S1')", (A, cid, number, veh, uid(), ACTOR, rid))
+        with tx(A) as c:
+            with_origin(c)
+        with self.assertRaises(psycopg.errors.UniqueViolation), tx(A) as c:
+            with_origin(c)
+
+
 if __name__ == '__main__':
     unittest.main()

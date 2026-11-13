@@ -56,11 +56,18 @@ interface FleetsafetyApi {
     /** Wiederfreigabe nach Sicherheitssperre mit Reparaturnachweis, Folgeprüfung und Vieraugenpflicht (WP-M3-51). */
     val vehicleReleases: VehicleReleases
 
+    /** Regelbasierter Workflow: Incident bei Fahrzeugausfall, Ersatzfahrzeugsuche, Regelrevisionen (WP-M3-53). */
+    val incidentWorkflow: IncidentWorkflow
+
+    /** Lesesicht der Incidents mit Verknüpfungen und Ablaufprotokoll (WP-M3-53/-55). */
+    val incidents: Incidents
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
             evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(), alertSettings: AlertSettings = AlertSettings(), defectSettings: DefectSettings = DefectSettings(),
-        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings, defectSettings)
+            replacementSearch: ReplacementSearchPort = ReplacementSearchPort.UNAVAILABLE,
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings, defectSettings, replacementSearch)
     }
 }
 

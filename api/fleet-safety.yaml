@@ -4033,6 +4033,30 @@ components:
           - type: 'null'
           description: Prüfer-ID aus der Sitzung beim Abschluss; setzt allein der Server
             (CHK-013).
+        defect_refs:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              step_code:
+                type: string
+                minLength: 1
+                maxLength: 64
+              defect_id:
+                $ref: common.yaml#/components/schemas/UUID
+              case_number:
+                type: string
+                minLength: 1
+                maxLength: 32
+            required:
+            - step_code
+            - defect_id
+            - case_number
+          description: Gegenreferenz Prüfschritt -> Schadenakte (WP-M3-20, DMG-003),
+            aus der Herkunft der Akte abgeleitet; die Antwort selbst bleibt unverändert
+            (CHK-013). Ein Fahrer sieht nur eigene Akten.
         amendments:
           type: array
           maxItems: 500
@@ -4255,6 +4279,14 @@ components:
             minLength: 1
             maxLength: 64
           - type: 'null'
+        source_incident_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: 'Herkunft Störung (DMG-003): der Incident, aus dem die Akte erzeugt
+            wird. Schließt `source_inspection_id` aus (422); ein Fahrer kennt keine Incidents
+            (404), ein fremder oder unbekannter Incident ist 404, ein anderes Fahrzeug
+            als das des Incidents 422.'
         evidence_ids:
           type: array
           maxItems: 10
@@ -4417,6 +4449,12 @@ components:
             minLength: 1
             maxLength: 64
           - type: 'null'
+        source_incident_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Herkunft Störung (DMG-003); vom Incident aus ist die Akte über
+            `defect_ids` erreichbar.
         evidence_pending:
           type: integer
           minimum: 0
@@ -4758,6 +4796,30 @@ components:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
+        defect_ids:
+          type: array
+          maxItems: 100
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Verknüpfte Schadenakten (WP-M3-20, DMG-003); die Akte trägt die
+            Incident-Referenz und ist von hier aus erreichbar.
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Dienstbezug der Sichtbarkeit (leer = mandantenweit).
+        closed_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        workflow_log:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/WorkflowLogEntry'
+          description: Ablaufprotokoll (WP-M3-55, AUT-002), nur im Detail `getOperatorIncident`,
+            in zeitlicher Reihenfolge (`seq`). Append-only, nur Codes und Kennungen.
         revision:
           type: integer
           format: int64
@@ -4777,6 +4839,93 @@ components:
       - revision
       description: Incident (AUT-001, OP-02). Je Dedupe-Schlüssel (Fahrzeug, Ursache,
         offener Zeitraum) höchstens ein offener Incident.
+    WorkflowLogEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        seq:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Lückenlose Ordnungsnummer je Incident (0 nur bei Zeilen aus der
+            Zeit vor der Einführung).
+        at:
+          type: string
+          format: date-time
+          description: Serverzeit des Eintrags.
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        event_type:
+          oneOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          description: 'Auslöser: Ereignisart des Workflows (VEHICLE_BLOCKED, DISRUPTION_REPORTED,
+            …), REPLACEMENT_SEARCH oder DISPATCH.'
+        rule_revision_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        rule_revision_no:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Regelversion, nach der entschieden wurde.
+        action:
+          type: string
+          maxLength: 100
+          description: 'Schritt: EVALUATE_RULE, OPEN_INCIDENT, START_REPLACEMENT_SEARCH,
+            SEARCH_RESULT, NO_ACTION, DISPATCH_DECISION, …'
+        outcome:
+          type: string
+          maxLength: 100
+          description: Ergebnis als Code (z. B. CREATED, JOINED, STARTED, ALREADY_STARTED,
+            SKIPPED_NO_SUBJECT, PROPOSALS:2, FAILED:CODE), nie Freitext.
+        decision:
+          oneOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          description: Entscheidung der Regel (RULE_MATCHED, NO_RULE, …) oder MANUAL_DECISION
+            der Leitstelle.
+        actor:
+          type: string
+          pattern: ^(user|service|system|partner):[A-Za-z0-9._:-]{1,120}$
+        correlation_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Bezug zu `audit_event.correlation_id`.
+        ref:
+          oneOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          description: Ergebnisreferenz (z. B. Operation der Ersatzsuche, Incident).
+        reason_code:
+          oneOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          description: Grundcode einer Leitstellenentscheidung.
+      required:
+      - seq
+      - at
+      - event_id
+      - event_type
+      - rule_revision_id
+      - rule_revision_no
+      - action
+      - outcome
+      - decision
+      - actor
+      - correlation_id
+      - ref
+      - reason_code
+      description: Eintrag des Ablaufprotokolls (AUT-002), Schema `ablaufprotokoll.v1`.
+        Referenzen und Codes statt Rohpayloads; Personendaten gelangen nicht ins Protokoll.
     IncidentPage:
       type: object
       additionalProperties: false

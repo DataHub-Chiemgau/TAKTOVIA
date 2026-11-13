@@ -52,10 +52,12 @@ data class ReportDefect(
     val evidenceIds: List<UUID>, val deviceEventId: UUID?, val severityHint: String?, val captureMode: CaptureMode,
     /** Bestätigung „trotz offener Fälle desselben Fahrzeugs neu anlegen“ (WP-M3-21, CHK-012): Fahrer ohne diese Bestätigung erhalten bei offenen Fällen 409 [KnownDefectCatalog.OPEN_DEFECTS_PENDING]. */
     val confirmNewDespiteKnown: Boolean = false,
+    /** Herkunft Störung (WP-M3-20, DMG-003): der Incident, aus dem die Akte erzeugt wird; schließt die Herkunft Prüfschritt aus. */
+    val sourceIncidentId: UUID? = null,
 ) {
     companion object {
         private val FIELDS = setOf("vehicle_id", "occurred_at", "location_kind", "location_value", "category_code", "description", "kind", "vehicle_area", "observed_effect",
-            "source_inspection_id", "source_step_code", "evidence_ids", "device_event_id", "severity_hint", "capture_mode", "confirm_new_despite_known")
+            "source_inspection_id", "source_step_code", "source_incident_id", "evidence_ids", "device_event_id", "severity_hint", "capture_mode", "confirm_new_despite_known")
 
         fun parse(raw: Map<String, Any?>): ReportDefect {
             val v = Violations()
@@ -78,13 +80,17 @@ data class ReportDefect(
             val effect = v.code(raw, "observed_effect", DefectCatalog.EFFECTS, guided)
             val inspection = v.uuid(raw, "source_inspection_id", false)
             val step = v.text(raw, "source_step_code", 64, false)
+            val incident = v.uuid(raw, "source_incident_id", false)
+            // Herkunft Prüfschritt: Prüflauf und Prüfschritt gehören zusammen (CHK-011); Prüfschritt und Störung zugleich gibt es nicht (DMG-003)
+            if ((inspection == null) != (step == null) && !v.has("/source_inspection_id") && !v.has("/source_step_code")) v.add(if (inspection == null) "/source_inspection_id" else "/source_step_code", ViolationCode.REQUIRED)
+            if (incident != null && inspection != null) v.add("/source_incident_id", ViolationCode.INVALID_VALUE)
             val evidence = v.uuidList(raw, "evidence_ids", DefectCatalog.MAX_EVIDENCE)
             if (guided && evidence.isEmpty() && !v.has("/evidence_ids")) v.add("/evidence_ids", ViolationCode.TOO_FEW_ITEMS)
             val deviceEvent = v.uuid(raw, "device_event_id", false)
             val hint = v.code(raw, "severity_hint", DefectCatalog.SEVERITIES, false)
             val confirm = when (val c = raw["confirm_new_despite_known"]) { null -> false; is Boolean -> c; else -> { v.add("/confirm_new_despite_known", ViolationCode.TYPE_MISMATCH); false } }
             v.throwIfAny()
-            return ReportDefect(vehicle!!, occurred!!, locKind, locValue, category!!, description!!, kind, area, effect, inspection, step, evidence, deviceEvent, hint, mode, confirm)
+            return ReportDefect(vehicle!!, occurred!!, locKind, locValue, category!!, description!!, kind, area, effect, inspection, step, evidence, deviceEvent, hint, mode, confirm, incident)
         }
     }
 }
@@ -102,6 +108,8 @@ data class DefectView(
     val evidence: List<EvidenceView> = emptyList(), val evidencePending: Int = 0, val blocksVehicle: Boolean = false,
     /** Regelversion der Klassifikation (WP-M3-45), Herkunft der Klasse (`RULE`, `REPORTER_HINT`, `TRIAGE`) und Zeitpunkt der letzten Einstufung. */
     val severityRuleVersion: String? = null, val severitySource: String? = null, val classifiedAt: Instant? = null,
+    /** Herkunft Störung (WP-M3-20): der Incident, aus dem die Akte erzeugt wurde; vom Incident aus ist die Akte über [IncidentView.defectIds] erreichbar. */
+    val sourceIncidentId: UUID? = null,
 ) {
     /** Vorschlag der Regelmatrix für den aktuellen Inhalt (Triageansicht: vorgeschlagene Klasse neben der geltenden). */
     val suggestedSeverity: String get() = DefectClassification.classify(categoryCode, kind, vehicleArea, observedEffect).severity
