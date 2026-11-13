@@ -35,7 +35,7 @@ const ME = {
     tenants: [],
 };
 
-const APPS = [
+const ALL_APPS = [
     {
         name: 'operator',
         routes: [
@@ -62,6 +62,9 @@ const APPS = [
         ],
     },
 ];
+// A11Y_APPS=passenger beschränkt den Lauf auf einzelne Anwendungen (Gate-Suite M2: nur die Passenger-PWA).
+const ONLY = (process.env.A11Y_APPS ?? '').split(',').filter(Boolean);
+const APPS = ALL_APPS.filter((a) => ONLY.length === 0 || ONLY.includes(a.name));
 const VIEWPORTS = [
     { label: 'Desktop 1280x800', width: 1280, height: 800 },
     { label: 'Mobil 320x568', width: 320, height: 568 },
