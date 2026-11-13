@@ -1,6 +1,6 @@
 # Restore-Drehbuch M1 (WP-M1-39, LH-6.18-SEC-010)
 
-Automatisiert, wiederholbar, in einer **isolierten** Datenbank. Die Restore-Übung mit RPO/RTO-Messung und PSP-Abgleich (Vorlage `templates/restore-drehbuch-vorlage.json`) folgt mit WP-M5-14/-15.
+Automatisiert, wiederholbar, in einer **isolierten** Datenbank. Die Restore-Übung mit RPO/RTO-Messung und PSP-Abgleich (Vorlage `templates/restore-drehbuch-vorlage.json`) steht seit WP-M5-14 in [wiederanlauf-drehbuch-m5.md](wiederanlauf-drehbuch-m5.md); die Übung mit Messung folgt mit WP-M5-15.
 
 | Schritt | Werkzeug | Erwartung |
 |---|---|---|

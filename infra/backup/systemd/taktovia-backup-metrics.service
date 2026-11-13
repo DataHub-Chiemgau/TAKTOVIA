@@ -1,0 +1,10 @@
+[Unit]
+Description=Taktovia: Metriken Backup, WAL-Archivierung und Standby (WP-M5-14, nicht ausgeführt)
+
+[Service]
+Type=oneshot
+User=taktovia-backup
+WorkingDirectory=/opt/taktovia/infra/backup
+EnvironmentFile=/etc/taktovia/backup.env
+Environment=TAKTOVIA_METRICS_FILE=/var/lib/node_exporter/textfile/taktovia_backup.prom TAKTOVIA_BACKUP_STATE_FILE=/var/lib/taktovia/backup-state.json
+ExecStart=/usr/bin/python3 -m taktovia_backup metrics --database postgres

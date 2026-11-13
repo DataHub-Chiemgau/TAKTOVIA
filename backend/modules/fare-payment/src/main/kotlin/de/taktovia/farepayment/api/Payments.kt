@@ -78,6 +78,9 @@ data class BeginPayment(
 /** Ergebnis von [Payments.begin]: [replayed] = für die Buchung läuft bereits eine wirksame Zahlung (kein zweiter Einzug), geliefert wird diese. */
 data class BegunPayment(val payment: PaymentView, val operationId: UUID, val replayed: Boolean)
 
+/** Ergebnis von [Payments.reconcileAfterRestoreIn]: [paymentIds] sind die Zahlungen, für die ein Abgleich neu eingestellt wurde; [alreadyQueued] hatten bereits einen offenen Abgleich. */
+data class RestoreReconcileReport(val examined: Int, val enqueued: Int, val alreadyQueued: Int, val paymentIds: List<UUID>)
+
 /** Anstehende Kopplung einer Zahlung an ihre Buchung (explizite Fachoperation statt gemeinsamer Zustandsfelder). */
 data class CouplingTask(val paymentId: UUID, val bookingId: UUID, val serviceId: UUID, val kind: CouplingKind, val state: PaymentState)
 
@@ -136,6 +139,13 @@ interface Payments {
 
     /** Beauftragt eine Erstattung (Betrieb, Korrektur); ein Betrag über dem noch erstattbaren Rest ist `409 CONFLICT` (nie über dem erfassten Betrag, auch nicht unter parallelen Aufträgen). */
     fun requestRefundIn(j: JdbcOperations, request: RefundRequest): RefundView
+
+    /**
+     * Abgleichlauf nach einem Wiederanlauf (WP-M5-14): stellt für jede Zahlung des Mandanten in unbestimmtem oder schwebendem Zustand (`CREATED`, `REQUIRES_ACTION`, `CAPTURE_PENDING`,
+     * `CAPTURE_UNKNOWN`, `RECONCILING`, `VOID_PENDING`, `REFUND_PENDING`) höchstens einen Statusabgleich ein (Händler- bzw. Providerreferenz). Der Lauf ruft den PSP nie selbst und wiederholt
+     * nie einen unsicheren Schritt mit neuer Referenz; ein Übergang folgt nur dem verifizierten PSP-Stand. Idempotent, höchstens [limit] Zahlungen je Aufruf.
+     */
+    fun reconcileAfterRestoreIn(j: JdbcOperations, limit: Int = 500): RestoreReconcileReport
 
     /** Die Operationshandler (`AUTHORIZE_PAYMENT`, `CAPTURE_PAYMENT`, `VOID_PAYMENT`, `REFUND_PAYMENT`, `RECONCILE_PAYMENT`); gegen den [gateway] des Zahlungsdienstleisters. */
     fun handlers(gateway: PaymentGateway): List<OperationHandler>

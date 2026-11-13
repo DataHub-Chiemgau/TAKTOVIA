@@ -2,7 +2,7 @@
 
 Konsistenz: Der Dump läuft mit `pg_dump --snapshot` auf einem exportierten Snapshot (REPEATABLE READ); die Prüfsummen je Tabelle werden in
 derselben Transaktion berechnet. Der Stand ist damit transaktionskonsistent (keine halben Transaktionen) und passt zu den Prüfsummen. Der Zeitpunkt T ist
-der Beginn dieses Snapshots (`taken_at`). Kontinuierliches WAL (PITR) ergänzt das im Betrieb (archive-wal/restore-wal, `postgresql-archive.conf`) und ist hier nicht ausgeführt.
+der Beginn dieses Snapshots (`taken_at`). Kontinuierliches WAL (PITR) ergänzt das (wal.py, pitr.py, `postgresql-archive.conf`; WP-M5-14).
 """
 import hashlib
 import hmac
@@ -22,6 +22,7 @@ import psycopg
 from psycopg import sql
 
 from . import crypto
+from .environment import assert_restore_target
 from .store import BackupStore
 
 SCHEMA = "taktovia"
@@ -99,7 +100,7 @@ def verify_manifest(doc: dict, key: bytes) -> None:
 
 # --- Backup -----------------------------------------------------------------------------------------------------------------------------------
 
-def create_backup(cluster: Cluster, db_name: str, store: BackupStore, key: bytes, backup_id: str | None = None, objects_dir: Path | None = None) -> dict:
+def create_backup(cluster: Cluster, db_name: str, store: BackupStore, key: bytes, backup_id: str | None = None, objects_dir: Path | None = None, environment: str | None = None) -> dict:
     """Erstellt ein verschlüsseltes, konsistentes Backup der Datenbank (und optional eines Objektspeicherverzeichnisses) im Backupspeicher; liefert das Manifest."""
     backup_id = backup_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6]
     with tempfile.TemporaryDirectory(prefix="tkbk-") as tmp:
@@ -125,6 +126,9 @@ def create_backup(cluster: Cluster, db_name: str, store: BackupStore, key: bytes
             "key_id": crypto.key_id(key).hex(), "files": {}, "tables": checksums, "structure_sha256": hashlib.sha256(json.dumps(fingerprint, sort_keys=True).encode()).hexdigest(),
             "objects": {},
         }
+        env_id = environment if environment is not None else os.environ.get("TAKTOVIA_ENVIRONMENT")
+        if env_id:
+            manifest["environment"] = env_id      # Quellumgebung, vom Manifest-Authentifizierungscode mit geschützt (WP-M5-14)
         store.put(f"{backup_id}.db.enc", enc_path)
         manifest["files"][f"{backup_id}.db.enc"] = {"sha256": crypto.sha256_file(store.path(f"{backup_id}.db.enc")), "size": enc_path.stat().st_size}
         if objects_dir is not None:
@@ -209,13 +213,15 @@ def verify_backup(store: BackupStore, key: bytes, backup_id: str) -> dict:
 
 
 def restore(cluster: Cluster, store: BackupStore, key: bytes, backup_id: str, target_db: str, out_dir: Path | None = None, run_isolation_tests: bool = True,
-            journal_store: BackupStore | None = None, objects_target: Path | None = None) -> dict:
+            journal_store: BackupStore | None = None, objects_target: Path | None = None, target_environment: str | None = None) -> dict:
     """Stellt ein Backup in die **neue, isolierte** Datenbank `target_db` her, prüft Prüfsummen, spielt das Lösch-/Sperrjournal wieder ein und prüft RLS, Trigger, Rollen
     und Isolation. Liefert das Protokoll (auch bei Fehlschlag, dann `result` = FAILED und Ausnahme [RestoreFailed] nach dem Schreiben des Protokolls)."""
     started = datetime.now(timezone.utc); t0 = time.monotonic()
     protocol = {"backup_id": backup_id, "target_database": target_db, "started_at": started.isoformat(), "result": "FAILED", "steps": []}
     try:
         manifest = verify_backup(store, key, backup_id)
+        if manifest.get("environment") is not None:       # Restore nur in die Quellumgebung; vor jeder Wirkung (WP-M5-14)
+            assert_restore_target(manifest["environment"], target_environment)
         protocol["snapshot_t"] = manifest["taken_at"]; protocol["steps"].append("backup_verified")
         with cluster.connect("postgres") as adm:
             if adm.execute("SELECT 1 FROM pg_database WHERE datname=%s", (target_db,)).fetchone():
@@ -304,16 +310,6 @@ def drop_database(cluster: Cluster, db_name: str) -> None:
         c.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(db_name)))
 
 
-# --- WAL-Archivierung (PITR), im Betrieb eingesetzt; hier nur die Verschlüsselung selbst ausgeführt ---------------------------------------
+# --- WAL-Archivierung (PITR): Logik in wal.py (ohne Datenbanktreiber), hier nur durchgereicht -----------------------------------------------
 
-def archive_wal(src: Path, name: str, store: BackupStore, key: bytes) -> None:
-    """archive_command: verschlüsselt ein WAL-Segment und legt es einmalig im Backupspeicher ab."""
-    with tempfile.TemporaryDirectory(prefix="tkwal-") as tmp:
-        enc = Path(tmp) / "wal.enc"
-        crypto.encrypt_file(src, enc, key)
-        store.put(f"wal-{name}.enc", enc)
-
-
-def restore_wal(name: str, dst: Path, store: BackupStore, key: bytes) -> None:
-    """restore_command: entschlüsselt ein WAL-Segment (Authentifizierung inklusive) an den Zielpfad."""
-    crypto.decrypt_file(store.get(f"wal-{name}.enc"), dst, key)
+from .wal import archive_wal, restore_wal  # noqa: E402,F401

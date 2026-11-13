@@ -154,16 +154,16 @@ Jedes kritische Fehlerszenario aus [infra/alerting/katalog.yaml](../../infra/ale
 ### BACKUP_FEHLGESCHLAGEN: Fehlgeschlagenes Backup
 
 - **Komponente:** postgres · **Schweregrad:** critical · **Empfänger:** betrieb-bereitschaft
-- **Schwelle:** wird mit WP-M5-14 festgelegt
-- **Erster Handlungsschritt:** Wird mit WP-M5-14 geliefert (Metriken und Regel); bis dahin Sicherungsprotokoll manuell prüfen (infra/backup/).
-- **Eskalation:** –
-- **Lieferung:** Regel folgt mit WP-M5-14 (im Katalog geführt, noch nicht ausgelöst)
+- **Schwelle:** letzter Backuplauf fehlgeschlagen über 1 min bzw. letztes erfolgreiches Backup älter als 36 h (Planungswert, OP-31/D-05)
+- **Erster Handlungsschritt:** Lauf des Dienstes `taktovia-backup` und das Sicherungsprotokoll prüfen (`journalctl -u taktovia-backup`); Ursache sind meist Schlüsseldatei, Backupspeicher (Platz, Schreibrolle `ops-backup`) oder Datenbankverbindung. Backup nach Behebung von Hand starten (`python -m taktovia_backup backup --database <db>`); der Alarm schließt mit dem nächsten erfolgreichen Lauf. Solange kein gültiges Backup besteht, keine riskanten Änderungen an der Datenbank. Danach `python -m taktovia_backup verify <id>`.
+- **Eskalation:** Stufe 1 nach 60 min.
+- **Lieferung:** Regel aktiv (WP-M5-14)
 
 <a id="archivierungs_replikationsverzug"></a>
 ### ARCHIVIERUNGS_REPLIKATIONSVERZUG: Archivierungs-/Replikationsverzug (WAL)
 
 - **Komponente:** postgres · **Schweregrad:** critical · **Empfänger:** betrieb-bereitschaft
-- **Schwelle:** wird mit WP-M5-14 festgelegt
-- **Erster Handlungsschritt:** Wird mit WP-M5-14 geliefert (WAL-Archivierung und Replikation); bis dahin Archivstatus manuell prüfen.
-- **Eskalation:** –
-- **Lieferung:** Regel folgt mit WP-M5-14 (im Katalog geführt, noch nicht ausgelöst)
+- **Schwelle:** Archivierungsverzug > 10 min über 2 min (Vorwarnung vor der RPO-Grenze 15 min); fehlgeschlagene Archivierung; erwarteter Standby nicht verbunden über 5 min
+- **Erster Handlungsschritt:** `pg_stat_archiver` ansehen (`last_failed_wal`, `failed_count`) und das Serverprotokoll des `archive_command` lesen (`taktovia_backup.wal`): Backupspeicher voll oder nicht beschreibbar, Schlüsseldatei fehlt, abweichender Inhalt eines Segments (Konflikt, nie überschreiben). Nicht archivierte Segmente bleiben im `pg_wal` und füllen die Platte: Platz überwachen. Beim Standby: Verbindung (`pg_stat_replication`), Netzwerk und Replikationsslot prüfen. Solange der Verzug 15 min überschreitet, ist das RPO verletzt.
+- **Eskalation:** Stufe 1 nach 60 min.
+- **Lieferung:** Regel aktiv (WP-M5-14)

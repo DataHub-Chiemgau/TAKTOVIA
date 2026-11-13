@@ -80,3 +80,36 @@ tests:
             exp_annotations:
               summary: "Zahlungen seit über 15 Minuten unbestimmt (PSP nicht erreichbar oder Abgleich hängt)"
               runbook: "docs/betrieb/alarm-handlungsschritte.md#psp_unbestimmt"
+  # WP-M5-14: Backup und WAL-Archivierung (NICHT ausgeführt, promtool fehlt; dieselben Reihen laufen in tests/acceptance/alerting gegen die Nachbildung)
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_backup_last_status{job="postgres"}'
+        values: '0x12'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: BackupFehlgeschlagen
+        exp_alerts:
+          - exp_labels: { severity: critical, component: postgres, scenario: BACKUP_FEHLGESCHLAGEN, empfaenger: betrieb-bereitschaft, job: postgres }
+            exp_annotations:
+              summary: "Der letzte Backuplauf ist fehlgeschlagen"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#backup_fehlgeschlagen"
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_wal_archive_lag_seconds{job="postgres"}'
+        values: '700x40'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: WalArchivierungsverzug
+        exp_alerts:
+          - exp_labels: { severity: critical, component: postgres, scenario: ARCHIVIERUNGS_REPLIKATIONSVERZUG, empfaenger: betrieb-bereitschaft, job: postgres }
+            exp_annotations:
+              summary: "WAL-Archivierungsverzug über 10 Minuten (Zielwert RPO 15 Minuten)"
+              runbook: "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
+  - interval: 15s
+    input_series:
+      - series: 'taktovia_wal_archive_lag_seconds{job="postgres"}'
+        values: '600x40'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: WalArchivierungsverzug
+        exp_alerts: []

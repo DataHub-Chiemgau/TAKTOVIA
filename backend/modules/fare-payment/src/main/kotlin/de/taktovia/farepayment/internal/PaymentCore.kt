@@ -117,15 +117,19 @@ internal class PaymentCore(private val outbox: Outbox, private val config: Payme
     }
 
     /** Abgleich einstellen: höchstens ein noch nicht begonnener Abgleich je Zahlung (ein bereits laufender hat den Stand eventuell vor dem Ereignis gelesen, dann folgt ein weiterer). */
-    fun enqueueReconcile(j: JdbcOperations, p: PRow): UUID? {
-        if (p.state in SETTLED || (p.providerRef == null && p.pspPaymentId == null)) return null
-        j.query(
-            "SELECT po.operation_id FROM taktovia.payment_operation po JOIN taktovia.operation o ON o.tenant_id = po.tenant_id AND o.id = po.operation_id " +
-                "WHERE po.payment_id = ? AND po.action = 'RECONCILE' AND o.status = 'QUEUED'", { rs, _ -> rs.getObject(1, UUID::class.java) }, p.id,
-        ).firstOrNull()?.let { return it }
+    fun enqueueReconcile(j: JdbcOperations, p: PRow, byMerchantRef: Boolean = false): UUID? {
+        if (p.state in SETTLED || (p.providerRef == null && p.pspPaymentId == null && !(byMerchantRef && p.merchantRef != null))) return null
+        queuedReconcile(j, p.id)?.let { return it }
         val seq = (j.queryForObject("SELECT COALESCE(max(seq), 0) FROM taktovia.payment_operation WHERE payment_id = ? AND action = 'RECONCILE'", Int::class.java, p.id) ?: 0) + 1
         return enqueue(j, p, PaymentAction.RECONCILE, seq, null)
     }
+
+    private fun queuedReconcile(j: JdbcOperations, paymentId: UUID): UUID? = j.query(
+        "SELECT po.operation_id FROM taktovia.payment_operation po JOIN taktovia.operation o ON o.tenant_id = po.tenant_id AND o.id = po.operation_id " +
+            "WHERE po.payment_id = ? AND po.action = 'RECONCILE' AND o.status = 'QUEUED'", { rs, _ -> rs.getObject(1, UUID::class.java) }, paymentId,
+    ).firstOrNull()
+
+    fun hasQueuedReconcile(j: JdbcOperations, paymentId: UUID): Boolean = queuedReconcile(j, paymentId) != null
 
     // ---- Beobachteter (vom PSP verifizierter) Status --------------------------------------------------------------------------------
 

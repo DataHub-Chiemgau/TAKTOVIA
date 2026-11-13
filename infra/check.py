@@ -212,6 +212,31 @@ def check_terraform(root, errs, notes):
     notes.append("terraform: statische Struktur geprueft (terraform validate NICHT ausgefuehrt)")
 
 
+def check_datensicherung(root, errs, notes):
+    """WP-M5-14: Modul Datensicherung (Versionierung, Aufbewahrungssperre, Replikation in andere Ausfalldomäne, Restore nur in die Quellumgebung, Ausschluss der Anwendungsidentitäten)."""
+    d = root / "terraform" / "modules" / "datensicherung"
+    main = (d / "main.tf").read_text(encoding="utf-8")
+    need = {"environment", "hosting_provider", "backup_domain", "application_identities", "restore_target_environment", "wal_retention_days", "replica_failure_domain", "source_failure_domain", "standby_expected"}
+    missing = need - declared_vars(d / "variables.tf")
+    if missing:
+        errs.append(f"datensicherung: Modulvariablen fehlen: {sorted(missing)}")
+    if re.search(r"^\s*default\s*=", (d / "variables.tf").read_text(encoding="utf-8"), re.M):
+        errs.append("datensicherung: Modulvariable mit Default (Pflichtparameter)")
+    for label, pattern in (("Versionierung", r"versioning\s*=\s*true"), ("Aufbewahrungssperre Compliance", r'object_lock_mode\s*=\s*"compliance"'),
+                           ("Restore nur in die Quellumgebung", r"var\.restore_target_environment\s*==\s*var\.environment"),
+                           ("Replik in anderer Ausfalldomäne", r"var\.replica_failure_domain\s*!=\s*var\.source_failure_domain"), ("Aufbewahrung mindestens 35 Tage", r"var\.wal_retention_days\s*>=\s*35"),
+                           ("Anwendungsidentitäten ausgeschlossen", r"denied_identities\s*=\s*var\.application_identities")):
+        if not re.search(pattern, main):
+            errs.append(f"datensicherung: {label} fehlt in modules/datensicherung/main.tf")
+    for f in ("backup-policy.json", "postgresql-archive.conf", "postgresql-standby.conf"):
+        if not (root / "backup" / f).exists():
+            errs.append(f"datensicherung: backup/{f} fehlt")
+    conf = (root / "backup" / "postgresql-archive.conf").read_text(encoding="utf-8")
+    if not re.search(r"^archive_mode\s*=\s*on", conf, re.M) or "taktovia_backup.wal archive" not in conf:
+        errs.append("datensicherung: postgresql-archive.conf aktiviert die verschluesselte Archivierung nicht")
+    notes.append("datensicherung: statische Struktur geprueft (Modul nicht angewendet)")
+
+
 def check_deploy(root, errs, notes):
     d = root / "deploy"
     for name in ("umgebungsmatrix.csv", "geheimnisse.csv"):
@@ -314,7 +339,7 @@ def check_umgebungen(root, errs, notes):
 
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_deploy, check_secrets, check_gateway, check_alerting, check_alarmkatalog, check_env_separation, check_umgebungen):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_datensicherung, check_deploy, check_secrets, check_gateway, check_alerting, check_alarmkatalog, check_env_separation, check_umgebungen):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz
