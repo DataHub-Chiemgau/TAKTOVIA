@@ -25,7 +25,7 @@ class IncidentHttpApiTest {
     private fun vehicle(t: TenantId): UUID = UUID.randomUUID().also { v -> env.tx.run(t) { j -> j.update("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config) VALUES (?,?,'fixture','{}')", t.value, v) } }
 
     private fun outage(t: TenantId, vehicle: UUID, kind: String = WorkflowEventKinds.VEHICLE_BLOCKED): UUID? =
-        env.tx.run(t) { j -> fleet.incidentWorkflow.handle(j, WorkflowEvent(UUID.randomUUID(), kind, vehicle, Instant.now())).incidentId }
+        env.tx.run(t) { j -> fleet.incidentWorkflow.handle(j, WorkflowEvent(UUID.randomUUID(), kind, vehicle, Instant.now(), correlationId = UUID.randomUUID())).incidentId }
 
     @Test
     fun fahrzeugausfall_erscheint_genau_einmal_mit_etag_und_verknuepfungen() {
@@ -77,5 +77,33 @@ class IncidentHttpApiTest {
         assertEquals(200, env.get("/v1/operator/incidents/$dienstIncident", token(t, "dispatcher", services = listOf(svc))).status)
         assertFalse(env.get("/v1/operator/incidents", token(t, "dispatcher", services = listOf(UUID.randomUUID()))).text.contains(dienstIncident.toString()))
         assertEquals(404, env.get("/v1/operator/incidents/${UUID.randomUUID()}", token(t, "dispatcher")).status)
+    }
+
+    /** WP-M3-55: Ablaufprotokoll im Detail (Zeitleiste), nur lesend; jede schreibende Anfrage am Incident und am Protokoll wird abgewiesen. */
+    @Test
+    fun ablaufprotokoll_im_detail_geordnet_und_ohne_schreibwege() {
+        val t = env.tenant(); val d = token(t, "dispatcher"); val v = vehicle(t)
+        val id = outage(t, v)!!
+        outage(t, v, WorkflowEventKinds.DISRUPTION_REPORTED)
+        val detail = env.get("/v1/operator/incidents/$id", d); assertEquals(200, detail.status, detail.text)
+        val log = detail.json["workflow_log"].values().toList()
+        assertEquals(listOf("EVALUATE_RULE", "OPEN_INCIDENT", "START_REPLACEMENT_SEARCH", "EVALUATE_RULE", "OPEN_INCIDENT", "START_REPLACEMENT_SEARCH"), log.map { it["action"].asString() })
+        assertEquals((1..log.size).toList(), log.map { it["seq"].asInt() }, "geordnet, lückenlos")
+        assertEquals(listOf("MATCHED:2", "CREATED", "STARTED", "MATCHED:2", "JOINED", "ALREADY_STARTED"), log.map { it["outcome"].asString() })
+        assertEquals("VEHICLE_BLOCKED", log[0]["event_type"].asString()); assertEquals("DISRUPTION_REPORTED", log[3]["event_type"].asString())
+        assertEquals(1, log[0]["rule_revision_no"].asInt()); assertEquals("system:workflow", log[0]["actor"].asString()); assertFalse(log[0]["correlation_id"].isNull)
+        assertEquals(detail.json["replacement_operation_id"].asString(), log[2]["ref"].asString())
+        // die Liste trägt das Protokoll nicht (nur das Detail)
+        assertFalse(env.get("/v1/operator/incidents", d).json["items"][0].has("workflow_log"))
+        // keine schreibenden Wege: PUT, PATCH, DELETE und POST am Incident und am Protokoll sind keine Operation des Vertrags
+        for ((method, path) in listOf("PUT" to "/v1/operator/incidents/$id", "PATCH" to "/v1/operator/incidents/$id", "DELETE" to "/v1/operator/incidents/$id", "POST" to "/v1/operator/incidents/$id",
+            "POST" to "/v1/operator/incidents/$id/workflow-log", "DELETE" to "/v1/operator/incidents/$id/workflow-log")) {
+            val r = env.server.send(method, path, "{}", env.headers(d, extra = mapOf("Idempotency-Key" to "w-" + UUID.randomUUID(), "If-Match" to "\"2\"")), "application/json")
+            assertTrue(r.status in setOf(404, 405), "$method $path: ${r.status} ${r.text}")
+        }
+        assertEquals(6, env.get("/v1/operator/incidents/$id", d).json["workflow_log"].size(), "das Protokoll ist unverändert")
+        // ohne Rolle 403, fremder Mandant 404
+        assertEquals(403, env.get("/v1/operator/incidents/$id", token(t, "passenger")).status)
+        assertEquals(404, env.get("/v1/operator/incidents/$id", token(env.tenant(), "dispatcher")).status)
     }
 }

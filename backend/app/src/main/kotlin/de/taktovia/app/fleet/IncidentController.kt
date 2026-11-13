@@ -30,7 +30,17 @@ internal object IncidentJson {
         "updated_at" to i.updatedAt.toString(), "rule_revision_id" to i.ruleRevisionId?.toString(), "affected_run_ids" to i.affectedRunIds.map { it.toString() },
         "defect_ids" to i.defectIds.map { it.toString() }, "replacement_operation_id" to i.replacementOperationId?.toString(), "service_id" to i.serviceId?.toString(),
         "closed_at" to i.closedAt?.toString(), "revision" to i.revision,
-    )
+    ).also { m ->
+        // Ablaufprotokoll nur im Detail (WP-M3-55, UI-07-Zeitleiste): Auslöser, Regelversion, Entscheidung, Folgeaktionen mit Ergebnis, in zeitlicher Reihenfolge; nur Codes und Kennungen
+        i.workflowLog?.let { log ->
+            m["workflow_log"] = log.map { e ->
+                linkedMapOf<String, Any?>(
+                    "seq" to e.seq, "at" to e.at.toString(), "event_id" to e.eventId.toString(), "event_type" to e.eventType, "rule_revision_id" to e.ruleRevisionId?.toString(), "rule_revision_no" to e.ruleRevisionNo,
+                    "action" to e.action, "outcome" to e.outcome, "decision" to e.decision, "actor" to e.actor, "correlation_id" to e.correlationId?.toString(), "ref" to e.ref, "reason_code" to e.reasonCode,
+                )
+            }
+        }
+    }
 
     fun resource(i: IncidentView) = IncidentResource(of(i), i.revision)
 }

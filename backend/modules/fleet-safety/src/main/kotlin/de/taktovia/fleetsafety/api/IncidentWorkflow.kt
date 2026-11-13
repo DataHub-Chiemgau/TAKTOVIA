@@ -148,6 +148,13 @@ interface IncidentWorkflow {
      */
     fun handle(jdbc: JdbcOperations, event: WorkflowEvent): WorkflowResult
 
+    /**
+     * Protokolliert eine Entscheidung der Leitstelle am Incident (DMG-010, WP-M3-54 ruft sie in seiner Transaktion): Akteur und Zeit setzt der Server, [decision] und [reasonCode] sind Codes
+     * (`[A-Z][A-Z0-9_]{1,59}`, nie Freitext). Nur Disposition und Betriebsleitung (403 sonst); Incident fremd oder nicht im Dienstscope: 404; ungültiger Code: 422. Der Eintrag ist wie jeder
+     * andere unveränderlich und bekommt die nächste Ordnungsnummer des Incidents.
+     */
+    fun recordDecision(jdbc: JdbcOperations, ctx: RequestContext, incidentId: UUID, decision: String, reasonCode: String)
+
     /** Konsument für Ereignisse vom Bus über die Inbox; unbekannte Ereignisarten werden protokolliert und abgewiesen, nicht verarbeitet. */
     fun eventConsumer(processor: InboxProcessor): WorkflowEventConsumer
 
@@ -184,10 +191,14 @@ data class IncidentView(
     val workflowLog: List<WorkflowLogEntry>? = null,
 )
 
-/** Eintrag des Ablaufprotokolls (WP-M3-55); Schema `ablaufprotokoll.v1`. */
+/**
+ * Eintrag des Ablaufprotokolls (WP-M3-55); Schema `ablaufprotokoll.v1`. [seq] ist die lückenlose Ordnungsnummer je Incident (0 nur bei Zeilen aus der Zeit vor `V30550`), [at] die Serverzeit,
+ * [eventId]/[eventType] der Auslöser, [ruleRevisionNo] die Regelversion, [action]/[outcome] Folgeaktion und Ergebnis, [decision] die Entscheidung der Regel (oder `MANUAL_DECISION` der Leitstelle),
+ * [actor] `system:workflow` oder `user:<Kennung>`, [ref] eine Ergebnisreferenz (z. B. die Operation der Ersatzsuche). Alles sind Kennungen und Codes, nie Rohpayloads oder Freitext.
+ */
 data class WorkflowLogEntry(
     val seq: Long, val at: Instant, val eventId: UUID, val eventType: String?, val ruleRevisionId: UUID?, val ruleRevisionNo: Int?, val action: String, val outcome: String,
-    val decision: String?, val actor: String, val correlationId: UUID?, val ref: String?,
+    val decision: String?, val actor: String, val correlationId: UUID?, val ref: String?, val reasonCode: String? = null,
 )
 
 /**

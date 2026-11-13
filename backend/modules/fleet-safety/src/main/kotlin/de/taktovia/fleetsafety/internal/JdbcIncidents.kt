@@ -3,6 +3,7 @@ package de.taktovia.fleetsafety.internal
 import de.taktovia.fleetsafety.api.IncidentStatus
 import de.taktovia.fleetsafety.api.IncidentView
 import de.taktovia.fleetsafety.api.Incidents
+import de.taktovia.fleetsafety.api.WorkflowLogEntry
 import de.taktovia.platform.authz.ScopedObject
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ActorType
@@ -42,9 +43,16 @@ internal class JdbcIncidents(private val ctxTx: ContextTransactions) : Incidents
         return ctxTx.run(ctx, readOnly = true) { j ->
             val row = j.query("SELECT $COLUMNS FROM taktovia.incident i WHERE i.id = ?", MAPPER, id).firstOrNull() ?: throw ProblemException.notFound()
             if (!ServiceScopeAuthorizer.canRead(j, ctx, ScopedObject("incident", id, ctx.tenant, row.serviceId), Purpose.OPERATIONS)) throw ProblemException.notFound()
-            enrich(j, listOf(row)).single()
+            enrich(j, listOf(row)).single().copy(workflowLog = log(j, id))
         }
     }
+
+    /** Ablaufprotokoll des Incidents in der Reihenfolge der Ordnungsnummer (Zeilen aus der Zeit vor `V30550` ohne Nummer zuerst, nach Zeit); nur Codes und Kennungen. */
+    private fun log(j: JdbcOperations, incident: UUID): List<WorkflowLogEntry> = j.query(
+        "SELECT l.seq, l.created_at, l.event_id, l.event_type, l.rule_revision_id, r.revision_no, l.action, l.outcome, l.decision, l.created_by, l.correlation_id, l.result_ref, l.reason_code " +
+            "FROM taktovia.workflow_run_log l LEFT JOIN taktovia.workflow_rule_revision r ON r.tenant_id = l.tenant_id AND r.id = l.rule_revision_id WHERE l.incident_id = ? ORDER BY l.seq NULLS FIRST, l.created_at, l.id",
+        { rs, _ -> WorkflowLogEntry(rs.getLong(1), rs.getTimestamp(2).toInstant(), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getObject(5, UUID::class.java), rs.getObject(6) as Int?, rs.getString(7),
+            rs.getString(8), rs.getString(9), rs.getString(10), rs.getObject(11, UUID::class.java), rs.getString(12), rs.getString(13)) }, incident)
 
     private fun enrich(j: JdbcOperations, rows: List<Row>): List<IncidentView> {
         if (rows.isEmpty()) return emptyList()
