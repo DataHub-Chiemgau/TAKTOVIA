@@ -17,6 +17,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 GATE_IDS = ["PH-AT-001", "PH-AT-011", "PH-AT-017", "PH-AT-018", "AT-18", "AT-24", "AT-49", "E2E-091", "E2E-096", "E2E-097", "E2E-098"]
+# Gate-Suite M2 (WP-M2-48): Katalogtests mit eigener Zeile in e2e.csv; Evidenz unter evidence/m2
+M2_GATE_IDS = ["AT-01", "AT-02", "AT-03", "AT-04", "AT-05", "AT-07", "AT-13", "AT-15", "AT-19"]
 GREEN = {"Umgesetzt", "Abgenommen"}
 CATALOG_ID = re.compile(r"^(AT-\d{2}|E2E-\d{3}|PH-AT-\d{3})$")
 
@@ -56,19 +58,25 @@ def check(root: Path = REPO, strict: bool = False) -> tuple[list[str], dict]:
     if strict and no_exec:
         errors += [f"R2 {k}: kein ausführbarer positiver Test eingetragen" for k in sorted(no_exec)]
     e2e = rd(root / "docs/pflichtenheft/e2e.csv")
-    ev_dir = root / "tests/acceptance/evidence/m1"
     for r in e2e:
         tid, status = r["test_id_original"], r["status"]
         if status == "Nicht ausgeführt":
             if r["build"] or r["nachweis"]:
                 errors.append(f"R3 {tid}: Status 'Nicht ausgeführt', aber Build/Nachweis eingetragen")
             continue
-        if tid not in GATE_IDS:
+        if tid in GATE_IDS:
+            suite, ev_dir = "m1", "m1"
+        elif tid in M2_GATE_IDS:
+            suite, ev_dir = "m2", "m2"
+        else:
             errors.append(f"R3 {tid}: Status '{status}' ohne Lauf der M1-Gate-Suite")
             continue
-        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/m1/[\w.-]+\.json)$", r["nachweis"])
+        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/(m1|m2)/[\w.-]+\.json)$", r["nachweis"])
         if not r["build"] or not m:
             errors.append(f"R3 {tid}: Build oder Nachweis (Lauf-ID; Evidenzdatei) fehlt")
+            continue
+        if m.group(3) != ev_dir:
+            errors.append(f"R3 {tid}: Nachweis liegt in evidence/{m.group(3)}, der Test gehört zur Suite {suite.upper()}")
             continue
         f = root / m.group(2)
         if not f.is_file():
@@ -76,7 +84,7 @@ def check(root: Path = REPO, strict: bool = False) -> tuple[list[str], dict]:
         ev = json.loads(f.read_text(encoding="utf-8"))
         if ev["run_id"] != m.group(1) or ev["test"]["id"] != tid or ev["software_build"]["build_id"] != r["build"]:
             errors.append(f"R3 {tid}: Nachweis passt nicht zur Evidenzdatei (Lauf-ID, Test oder Build)")
-        if status.startswith("Bestanden") != (ev["result"] == "PASSED"):
+        if status.startswith(("Bestanden", "Teilweise bestanden")) != (ev["result"] == "PASSED"):
             errors.append(f"R3 {tid}: Status '{status}' widerspricht dem Ergebnis der Evidenz ({ev['result']})")
         if ev["acceptance_decision"] != "PENDING" or "Ausstehend" not in r["freigabe"]:
             errors.append(f"R3 {tid}: Abnahmeentscheidung darf nicht aus dem Lauf stammen (Auftraggeber)")

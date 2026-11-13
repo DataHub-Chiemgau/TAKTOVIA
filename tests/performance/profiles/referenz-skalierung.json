@@ -1,0 +1,14 @@
+{
+  "name": "referenz-skalierung",
+  "status": "vorläufig, D-05 offen",
+  "tenants": 2, "vehicles_per_tenant": 250, "passengers_per_tenant": 1000,
+  "bookings_per_day": 30000, "peak_factor": 3.0, "sessions": 5000, "sessions_scope": "pro_mandant", "session_think_s": 30,
+  "offers_per_booking": 2.0, "cancel_share": 0.1, "wheelchair_share": 0.05,
+  "operators_per_tenant": 10, "operator_think_s": 5, "driver_interval_s": 15,
+  "warmup_s": 15,
+  "stages": [
+    {"name": "50 %", "factor": 0.5, "duration_s": 60},
+    {"name": "100 %", "factor": 1.0, "duration_s": 90},
+    {"name": "Überlast", "factor": 3.0, "duration_s": 60, "burst_actors": 10}
+  ]
+}

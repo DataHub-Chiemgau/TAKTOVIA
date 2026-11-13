@@ -1,0 +1,41 @@
+# BEISPIEL (nicht aktiv, nicht ausgeführt): regelmäßiger Lasttest für Buchung und Disposition ab M2 (WP-M2-48) und Referenzlauf (WP-M5-10/-12).
+# Zur Übernahme nach .github/workflows/lasttest-m2.yml durch den Eigentümer von .github/ gedacht; dieses Paket ändert .github/ nicht.
+name: Lasttest M2 (regelmäßig)
+on:
+  schedule:
+    - cron: '17 2 * * *'          # täglich, nachts (Solverlaufzeit und Kapazitätssperren unter Last, Umsetzungsplan §7)
+  workflow_dispatch:
+    inputs:
+      referenz:
+        description: Referenzlauf (WP-M5-10, dauert länger)
+        default: 'false'
+jobs:
+  lasttest:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+    env:
+      TAKTOVIA_REQUIRE_DB: 'true'
+      TAKTOVIA_PERF_RUN: '1'
+      TAKTOVIA_DB_HOST: 127.0.0.1
+      # Zugangsdaten der Testdatenbank aus den Repository-Secrets bzw. wie im Job `datenbank` von ci.yml (nicht im Repository)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -r tests/requirements.txt psycopg[binary] cryptography
+      - run: python db/db.py bootstrap && python db/db.py migrate
+      - run: cd backend && ./gradlew :app:bootJar --console=plain
+      - name: Regressionsprofil M2 (Angebot, Hold, Confirm, zwei Mandanten)
+        run: python -m unittest tests/performance/test_m2_lastprofil.py -v
+      - name: Referenzlauf und Angebotskette
+        if: ${{ inputs.referenz == 'true' }}
+        run: TAKTOVIA_PERF_STAGE_SCALE=1.0 python -m unittest tests/performance/test_referenzprofil.py tests/performance/test_angebot_p95.py -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: lastlauf-bericht, path: tests/performance/out }

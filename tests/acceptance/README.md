@@ -43,3 +43,14 @@ python tests/acceptance/m1_gate/traceability.py [--strict]   # CI-Regeln: keine 
 Die Szenarien prüfen den in M1 prüfbaren Umfang ([m1-gate-umfang.md](docs/m1-gate-umfang.md)); nicht prüfbare Teilschritte stehen dort mit Zielmeilenstein (OP-02). Die Abnahmeentscheidung bleibt `PENDING`/`Ausstehend`.
 
 - `test_m4_referenz.py` (WP-M4-02): Referenzdaten M4 (zwei Mandanten, Musterfahrt, Sollwerte PH-AT-012/-013/-015/-021, DST-Stichtage) laden reproduzierbar und mandantengetrennt; Beschreibung in `fixtures/m4_referenz/README.md`.
+
+## M2-Gate-Suite (WP-M2-48)
+
+```bash
+cd backend && ./gradlew build --continue        # JUnit-Ergebnisse
+cd web && npm ci                                  # Web- und Browserläufe (Chrome)
+python tests/acceptance/m2_gate/run.py [--write-e2e]   # 16 Szenarien, Evidenz nach tests/acceptance/evidence/m2/
+```
+
+PH-AT-004, AT-01 bis AT-19 (soweit M2) und die M2-Anteile von PH-AT-001/-010/-011/-018, E2E-096/-098. Umfang je Test und offene Teilschritte (AT-01 bis M3, AT-13 bis M6/M7, AT-19 manuelles Protokoll): [docs/m2-gate-umfang.md](docs/m2-gate-umfang.md).
+Datenbank-, Web- und Browsertests werden im Szenario **ausgeführt**; Backend-Tests über ihre JUnit-Ergebnisse. Last- und Skalierungsläufe liegen in `tests/performance` (eigener Lauf). Die RLS-Abdeckungsprüfung aller M2-Tabellen: `db/tests/test_m2_48_rls_abdeckung.py`.
