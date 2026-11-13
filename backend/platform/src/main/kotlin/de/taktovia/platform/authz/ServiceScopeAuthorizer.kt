@@ -14,6 +14,12 @@ object ServiceScopeAuthorizer : ObjectAuthorizer {
     override fun canRead(jdbc: JdbcOperations, ctx: RequestContext, obj: ScopedObject, purpose: Purpose) = decide(ctx, obj, currentScope(jdbc, ctx, lock = false))
     override fun canWrite(jdbc: JdbcOperations, ctx: RequestContext, obj: ScopedObject, purpose: Purpose) = decide(ctx, obj, currentScope(jdbc, ctx, lock = true))
 
+    /**
+     * Aktueller Dienstscope in der laufenden Transaktion (ohne Sperre): für lesende Listen, die ab dem Commit eines Scope-Entzugs keine Objekte des entzogenen Dienstes mehr zeigen dürfen
+     * (WP-M3-36). Konten ohne Mitgliedschaft entscheiden aus der Momentaufnahme des Kontexts.
+     */
+    fun currentServices(jdbc: JdbcOperations, ctx: RequestContext): Set<UUID> = currentScope(jdbc, ctx, lock = false)
+
     override fun effectiveServices(ctx: RequestContext, requested: Set<UUID>?, tenantWide: Boolean): Set<UUID>? = when {
         tenantWide -> requested
         requested == null -> ctx.services

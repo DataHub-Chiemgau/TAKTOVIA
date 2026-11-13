@@ -28,7 +28,7 @@ internal class VehicleCandidateFilter(
         val excluded = snap.excluded.map { ExcludedVehicle(it.vehicleId, it.reason.toExclusion()) }.toMutableList()
         val candidates = mutableListOf<VehicleCandidate>()
         for (v in snap.vehicles) {
-            val capacity = ResourceVector.parse(v.capacityConfig, "/capacity_config")
+            val capacity = ResourceVector.parse(v.effectiveCapacityConfig, "/capacity_config")
             val reason = capacityReason(capacity, request.demand)
             if (reason != null) { excluded += ExcludedVehicle(v.vehicleId, reason); continue }
             val pos = positions.positionOf(ctx, v.vehicleId, v.shiftId, request.window.from)

@@ -61,6 +61,9 @@ class FleetConfiguration {
         maxEscalationLevel = env.getProperty("taktovia.alerts.max-escalation-level", Int::class.java, 1),
     )
 
+    /** Aufträge je Fahrzeug aus dem Fahrtenplan für die Leitstellenansicht (WP-M3-36). */
+    @Bean fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = de.taktovia.bookingdispatch.api.OperatorOrders.create(ctxTx)
+
     @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings): FleetsafetyApi =
         FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings)
 

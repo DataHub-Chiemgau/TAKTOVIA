@@ -6,12 +6,31 @@ paths:
       security:
       - oidc:
         - operator:read
-      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Filter `state`,
-        `depot_id` (in M3 nicht unterstützt, dann 422; kein Betriebshofbezug am Fahrzeug,
-        OP-22). Fremdmandanten sind nie sichtbar. Der Standort trägt `measured_at`
-        und `position_age_seconds`; ab `position_stale_after_sec` ist `position_stale`
-        wahr (OP-04).
+      description: Listenform {items,next_cursor,as_of} (Kap. 05 §5.1). Sichtbar
+        sind nur aktive Fahrzeuge des berechtigten Dienstes (Dienstscope der Mitgliedschaft,
+        in jeder Abfrage frisch gelesen; ein Fahrzeug ohne Dienstzuordnung unterliegt
+        nur der Mandantengrenze). Filter `state`, `service_id` und `open_incidents`
+        schränken die Berechtigung nur weiter ein; ein Wunschdienst außerhalb des Scopes
+        ergibt eine leere Liste ohne Hinweis auf die Existenz. `depot_id` (in M3 nicht
+        unterstützt, dann 422; kein Betriebshofbezug am Fahrzeug, OP-22). Fremdmandanten
+        sind nie sichtbar. Der Standort trägt `measured_at` und `position_age_seconds`;
+        ab `position_stale_after_sec` ist `position_stale` wahr (OP-04); die Position
+        wird nie extrapoliert. `limit` 1 bis 100, ein manipulierter Cursor ergibt
+        400 `INVALID_CURSOR`.
       parameters:
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Fahrzeuge dieses Dienstes (Schnittmenge mit dem Dienstscope).
+      - name: open_incidents
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Nur Fahrzeuge mit (true) bzw. ohne (false) offenen Alarmen der
+          Arbeitsliste „Offene Störungen“.
       - name: state
         in: query
         required: false
@@ -43,6 +62,44 @@ paths:
         '404':
           $ref: common.yaml#/components/responses/Problem
         '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/vehicles/{vehicle_id}:
+    get:
+      summary: Fahrzeug der Leitstelle lesen
+      operationId: getOperatorVehicle
+      security:
+      - oidc:
+        - operator:read
+      description: 'Ein Fahrzeug der Leitstellenansicht mit Zustand, Sperren, fehlenden
+        Voraussetzungen der Einsatzfreigabe, letzter Position und Aufträgen. Fremder
+        Mandant, unbekanntes Fahrzeug und Fahrzeug eines nicht berechtigten Dienstes:
+        einheitlich 404 `NOT_FOUND`, nie 403 mit Existenzhinweis.'
+      parameters:
+      - name: vehicle_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorVehicle'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
           $ref: common.yaml#/components/responses/Problem
         '429':
           $ref: common.yaml#/components/responses/Problem
@@ -2999,6 +3056,24 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        block_kind:
+          type: string
+          enum:
+          - VEHICLE
+          - SERVICE
+          description: Fahrzeugsperre oder Dienstsperre einer Schicht (LH-6.21-CHK-004);
+            die Art bestimmt allein das Prüfelement.
+        case_number:
+          oneOf:
+          - type: string
+            pattern: ^SPE-[0-9]{4}-[0-9]{6,}$
+          - type: 'null'
+          description: Vorgangsnummer der Sperre (nur bei Sperren aus der Prüfung).
+        shift_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Betroffene Schicht bei einer Dienstsperre.
       required:
       - id
       - vehicle_id
@@ -3078,6 +3153,34 @@ components:
           format: int64
           minimum: 1
           maximum: 9007199254740991
+        service_ids:
+          type: array
+          maxItems: 50
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Dienste, denen das Fahrzeug zum Abfragezeitpunkt zugeordnet ist
+            (Fahrzeugpool); leer = keinem Dienst zugeordnet.
+        unavailable_dimensions:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            enum:
+            - wheelchair
+          description: Durch die Freigabeprüfung entfallene Ressourcendimensionen (LH-6.21-CHK-007);
+            das Fahrzeug bleibt für alle anderen Fahrten nutzbar (Zustand `RESTRICTED`).
+        open_alert_count:
+          type: integer
+          minimum: 0
+          description: Offene Alarme der Arbeitsliste „Offene Störungen“ zu diesem
+            Fahrzeug.
+        orders:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/OperatorOrder'
+          description: Laufende und nächste Aufträge des aktuellen Umlaufs (höchstens
+            fünf, nach geplantem Einstieg); keine Fahrgastdaten.
       required:
       - vehicle_id
       - vehicle_label
@@ -3098,12 +3201,44 @@ components:
         folgt dem Parameter `position_stale_after_sec` (OP-04, Annahme 30 s). Ohne
         bekannte Position ist `position` null und `position_stale` wahr; die letzte
         gemessene Position bleibt nach Überschreiten der Schwelle sichtbar und wird
-        nie extrapoliert (AT-10). Bis WP-M3-08/-36 tragen `release_valid_until`,
-        `missing_requirements`, `active_blocks`, `open_defect_count` und `current_run_id`
-        noch keine Werte. `operational_state` ist `NOT_READY` solange das Fahrzeug
-        gesperrt ist, sonst der Dienststatus der jüngsten Schicht (WP-M3-31,
-        Verfügbarkeit, Anfahrt, Wartezeit, Pause, Störung, Ende), ohne Meldung
-        `AVAILABLE`.
+        nie extrapoliert (AT-10). Betriebszustand `operational_state` wie folgt, aktive Sperre `BLOCKED`, Pause,
+        Störung und Ende wie gemeldet; fehlt der angetretenen Schicht eine Voraussetzung
+        der Einsatzfreigabe `RELEASE_PENDING` (mit `missing_requirements`); eine Freigabe
+        mit entfallener Ressourcendimension `RESTRICTED`; sonst der Dienststatus der
+        Schicht (WP-M3-31), ohne Schicht und Meldung `NOT_READY` bei gesetztem Sperrkennzeichen
+        und sonst `AVAILABLE`.
+    OperatorOrder:
+      type: object
+      additionalProperties: false
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_no:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 40
+          - type: 'null'
+        state:
+          type: string
+          minLength: 1
+          maxLength: 40
+        planned_pickup_at:
+          type: string
+          format: date-time
+        phase:
+          type: string
+          enum:
+          - RUNNING
+          - NEXT
+      required:
+      - booking_id
+      - booking_no
+      - state
+      - planned_pickup_at
+      - phase
+      description: Ein Auftrag eines Fahrzeugs in der Leitstellenansicht (LH-6.7-OPS-001).
+        `RUNNING` = Einstieg bereits fällig bei laufendem Umlauf, `NEXT` = noch ausstehend.
     OperatorVehiclePage:
       type: object
       additionalProperties: false
@@ -3196,6 +3331,32 @@ components:
                 type: boolean
               safety_critical:
                 type: boolean
+              equipment_condition:
+                oneOf:
+                - type: string
+                  enum:
+                  - RAMP_OR_LIFT
+                - type: 'null'
+                description: Ausstattungsbedingung (LH-6.21-CHK-007); das Prüfelement gehört nur zu Prüfläufen
+                  von Fahrzeugen mit Rampe oder Lift, abgeleitet aus dem Fahrzeugstamm.
+              restricts_dimension:
+                oneOf:
+                - type: string
+                  enum:
+                  - wheelchair
+                - type: 'null'
+                description: Ressourcendimension, die bei Mangel oder „Nicht prüfbar“ entfällt
+                  (nur mit Ausstattungsbedingung); „Nicht prüfbar“ gilt nie als Ja.
+              block_kind:
+                oneOf:
+                - type: string
+                  enum:
+                  - VEHICLE
+                  - SERVICE
+                - type: 'null'
+                description: Sperrart bei negativer Antwort auf ein sicherheitskritisches Element
+                  (Fahrzeugsperre oder Dienstsperre der Schicht, LH-6.21-CHK-004); bestimmt
+                  allein das Prüfelement. Ohne Angabe bei kritischem Element VEHICLE.
               answer_kind:
                 type: string
                 enum:
@@ -3685,6 +3846,68 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/MissingRequirement'
+        restriction:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              unavailable_dimensions:
+                type: array
+                minItems: 1
+                maxItems: 10
+                items:
+                  type: string
+                  enum:
+                  - wheelchair
+              step_codes:
+                type: array
+                maxItems: 60
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+            required:
+            - unavailable_dimensions
+            - step_codes
+          - type: 'null'
+          description: Einschränkung des Ergebnisses PASSED_RESTRICTED (LH-6.21-CHK-007);
+            das Fahrzeug bleibt für Fahrten ohne die entfallene Ressourcendimension nutzbar,
+            „Nicht prüfbar“ gilt nie als Ja.
+        block:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              block_kind:
+                type: string
+                enum:
+                - VEHICLE
+                - SERVICE
+              case_number:
+                type: string
+                pattern: ^SPE-[0-9]{4}-[0-9]{6,}$
+              step_codes:
+                type: array
+                maxItems: 60
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              dispatch_contact:
+                oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 40
+                - type: 'null'
+            required:
+            - block_kind
+            - case_number
+            - step_codes
+            - dispatch_contact
+          - type: 'null'
+          description: Sperre aus diesem Prüflauf bei kritischem Mangel (LH-6.21-CHK-004)
+            mit Sperrart, Vorgangsnummer und Kontakt zur Leitstelle; der Fahrer kann
+            sie nicht aufheben.
         completed_by:
           oneOf:
           - type: string
@@ -3775,6 +3998,32 @@ components:
                     type: boolean
                   safety_critical:
                     type: boolean
+                  equipment_condition:
+                    oneOf:
+                    - type: string
+                      enum:
+                      - RAMP_OR_LIFT
+                    - type: 'null'
+                    description: Ausstattungsbedingung (LH-6.21-CHK-007); das Prüfelement gehört nur zu Prüfläufen
+                      von Fahrzeugen mit Rampe oder Lift, abgeleitet aus dem Fahrzeugstamm.
+                  restricts_dimension:
+                    oneOf:
+                    - type: string
+                      enum:
+                      - wheelchair
+                    - type: 'null'
+                    description: Ressourcendimension, die bei Mangel oder „Nicht prüfbar“ entfällt
+                      (nur mit Ausstattungsbedingung); „Nicht prüfbar“ gilt nie als Ja.
+                  block_kind:
+                    oneOf:
+                    - type: string
+                      enum:
+                      - VEHICLE
+                      - SERVICE
+                    - type: 'null'
+                    description: Sperrart bei negativer Antwort auf ein sicherheitskritisches Element
+                      (Fahrzeugsperre oder Dienstsperre der Schicht, LH-6.21-CHK-004); bestimmt
+                      allein das Prüfelement. Ohne Angabe bei kritischem Element VEHICLE.
                   answer_kind:
                     type: string
                     enum:
@@ -4751,6 +5000,32 @@ components:
           type: boolean
         safety_critical:
           type: boolean
+        equipment_condition:
+          oneOf:
+          - type: string
+            enum:
+            - RAMP_OR_LIFT
+          - type: 'null'
+          description: Ausstattungsbedingung (LH-6.21-CHK-007); das Prüfelement gehört nur zu Prüfläufen
+            von Fahrzeugen mit Rampe oder Lift, abgeleitet aus dem Fahrzeugstamm.
+        restricts_dimension:
+          oneOf:
+          - type: string
+            enum:
+            - wheelchair
+          - type: 'null'
+          description: Ressourcendimension, die bei Mangel oder „Nicht prüfbar“ entfällt
+            (nur mit Ausstattungsbedingung); „Nicht prüfbar“ gilt nie als Ja.
+        block_kind:
+          oneOf:
+          - type: string
+            enum:
+            - VEHICLE
+            - SERVICE
+          - type: 'null'
+          description: Sperrart bei negativer Antwort auf ein sicherheitskritisches Element
+            (Fahrzeugsperre oder Dienstsperre der Schicht, LH-6.21-CHK-004); bestimmt
+            allein das Prüfelement. Ohne Angabe bei kritischem Element VEHICLE.
         na_requires_reason:
           type: boolean
           description: Bei „Nicht anwendbar" ist eine Begründung Pflicht.
@@ -4845,6 +5120,32 @@ components:
           type: boolean
         safety_critical:
           type: boolean
+        equipment_condition:
+          oneOf:
+          - type: string
+            enum:
+            - RAMP_OR_LIFT
+          - type: 'null'
+          description: Ausstattungsbedingung (LH-6.21-CHK-007); das Prüfelement gehört nur zu Prüfläufen
+            von Fahrzeugen mit Rampe oder Lift, abgeleitet aus dem Fahrzeugstamm.
+        restricts_dimension:
+          oneOf:
+          - type: string
+            enum:
+            - wheelchair
+          - type: 'null'
+          description: Ressourcendimension, die bei Mangel oder „Nicht prüfbar“ entfällt
+            (nur mit Ausstattungsbedingung); „Nicht prüfbar“ gilt nie als Ja.
+        block_kind:
+          oneOf:
+          - type: string
+            enum:
+            - VEHICLE
+            - SERVICE
+          - type: 'null'
+          description: Sperrart bei negativer Antwort auf ein sicherheitskritisches Element
+            (Fahrzeugsperre oder Dienstsperre der Schicht, LH-6.21-CHK-004); bestimmt
+            allein das Prüfelement. Ohne Angabe bei kritischem Element VEHICLE.
         na_requires_reason:
           type: boolean
         photo_required_on_defect:

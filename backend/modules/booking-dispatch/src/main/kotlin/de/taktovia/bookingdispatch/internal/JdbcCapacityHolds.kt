@@ -72,9 +72,11 @@ internal class JdbcCapacityHolds(
         if (usable !is VehicleAvailability.Usable) return@run HoldOutcome.Rejected(RejectionReason.RESOURCE_UNUSABLE, null)
         val capacity = ResourceVector.parse(usable.resource.capacityConfig, "/vehicle/capacity_config")
         cmd.reserve.validateAgainst(capacity)
-        // 4. Ausstattung ist keine verbrauchbare Größe; ein Fahrzeug ohne Rollstuhlplatz fehlt die Ausstattung (Kategorie Ausstattung)
-        if (!capacity.equipment.containsAll(cmd.demand.equipment)) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.EQUIPMENT)
-        if (cmd.demand.wheelchair > 0 && capacity.wheelchair == 0) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.WHEELCHAIR)
+        // 4. Ausstattung ist keine verbrauchbare Größe; ein Fahrzeug ohne Rollstuhlplatz fehlt die Ausstattung (Kategorie Ausstattung). Neuer Bedarf wird gegen den reduzierten Vektor der eingeschränkten
+        //    Freigabe geprüft (WP-M3-12): kein Commit auf eine entfallene Dimension; die Belegung bestehender Zusagen bleibt gegen den vollen Vektor (Schritt 5).
+        val effective = ResourceVector.parse(usable.resource.effectiveCapacityConfig, "/vehicle/capacity_config")
+        if (!effective.equipment.containsAll(cmd.demand.equipment)) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.EQUIPMENT)
+        if (cmd.demand.wheelchair > 0 && effective.wheelchair == 0) return@run HoldOutcome.Rejected(RejectionReason.EQUIPMENT_MISSING, Dimension.WHEELCHAIR)
         if (cmd.proposal != null) return@run placeWithPlan(j, ctx, cmd, run.revision, capacity)
         // 5. Belegung je Abschnitt und Dimension unter dem Lock prüfen (gemeinsamer Validator der Routeninvarianten, WP-M2-16): bestehende Belegung + geschützte Reserve + neuer Bedarf
         val existing = occupancy(j, cmd.runId, cmd.intervalFrom, cmd.intervalTo)
@@ -186,6 +188,9 @@ internal class JdbcCapacityHolds(
         // Dienststatus (WP-M3-31): der Statuswechsel sperrt dieselbe Fahrzeugzeile; nach Pause, Störung oder Ende entsteht keine Zusage
         if (!resources.isStatusDispatchable(j, vehicleId, java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant()))
             throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Das Fahrzeug ist laut Dienststatus nicht disponierbar.")
+        // Eingeschränkte Freigabe (WP-M3-12): fiel die Dimension Rollstuhl nach dem Hold weg, entsteht keine Zusage mit Rollstuhlplatz (die Einschränkung sperrt dieselbe Fahrzeugzeile)
+        if (demand.vector.wheelchair > 0 && "wheelchair" in resources.unavailableDimensions(j, vehicleId, java.time.OffsetDateTime.parse(promise.pickupEarliest).toInstant()))
+            throw ProblemException(ErrorCode.CAPACITY_UNAVAILABLE, "Das Fahrzeug nimmt laut Prüfung keine Rollstuhlfahrten mehr an.")
         // Routeninvariante (gemeinsamer Validator, WP-M2-16): die Belegung der Abschnitte des Holds liegt unter dem Lock innerhalb der Fahrzeugkapazität
         val capacity = ResourceVector.parse(j.queryForObject(
             "SELECT v.capacity_config::text FROM taktovia.vehicle_run r JOIN taktovia.vehicle v ON v.tenant_id = r.tenant_id AND v.id = r.vehicle_id WHERE r.id = ?", String::class.java, runId)!!, "/vehicle/capacity_config")

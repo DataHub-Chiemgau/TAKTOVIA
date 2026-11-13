@@ -98,6 +98,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Start',
           'Eigene Zeit und Abwesenheit',
           'Dienstplan',
+          'Livebetrieb: Fahrzeuge',
           'Offene Störungen',
           'Flotte und Werkstatt',
           'Fahrer und Qualifikationen',
@@ -143,6 +144,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
         [
           'Start',
           'Eigene Zeit und Abwesenheit',
+          'Livebetrieb: Fahrzeuge',
           'Offene Störungen',
           'Flotte und Werkstatt',
           'Checklistenvorlagen',

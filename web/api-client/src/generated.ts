@@ -2074,6 +2074,9 @@ export interface VehicleBlock {
   lifted_at: string | null;
   lifted_by: string | null;
   revision: number;
+  block_kind?: 'VEHICLE' | 'SERVICE';
+  case_number?: string | null;
+  shift_id?: UUID | null;
 }
 
 export interface OperatorVehicle {
@@ -2092,6 +2095,18 @@ export interface OperatorVehicle {
   open_defect_count: number;
   current_run_id: UUID | null;
   revision: number;
+  service_ids?: UUID[];
+  unavailable_dimensions?: 'wheelchair'[];
+  open_alert_count?: number;
+  orders?: OperatorOrder[];
+}
+
+export interface OperatorOrder {
+  booking_id: UUID;
+  booking_no: string | null;
+  state: string;
+  planned_pickup_at: string;
+  phase: 'RUNNING' | 'NEXT';
 }
 
 export interface OperatorVehiclePage {
@@ -2121,6 +2136,9 @@ export interface ChecklistTemplate {
     title: string;
     mandatory: boolean;
     safety_critical: boolean;
+    equipment_condition?: 'RAMP_OR_LIFT' | null;
+    restricts_dimension?: 'wheelchair' | null;
+    block_kind?: 'VEHICLE' | 'SERVICE' | null;
     answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
     photo_required_on_defect: boolean;
     help_text?: string | null;
@@ -2243,6 +2261,16 @@ export interface Inspection {
   status: 'IN_PROGRESS' | 'COMPLETED' | 'EXPIRED' | 'CANCELED';
   outcome: 'PASSED' | 'PASSED_RESTRICTED' | 'BLOCKED' | 'CLARIFICATION_REQUIRED' | null;
   missing_requirements: MissingRequirement[];
+  restriction?: {
+    unavailable_dimensions: 'wheelchair'[];
+    step_codes: string[];
+  } | null;
+  block?: {
+    block_kind: 'VEHICLE' | 'SERVICE';
+    case_number: string;
+    step_codes: string[];
+    dispatch_contact: string | null;
+  } | null;
   completed_by?: string | null;
   amendments?: InspectionAmendment[];
   answers: InspectionAnswer[];
@@ -2267,6 +2295,9 @@ export interface Inspection {
       title: string;
       mandatory: boolean;
       safety_critical: boolean;
+      equipment_condition?: 'RAMP_OR_LIFT' | null;
+      restricts_dimension?: 'wheelchair' | null;
+      block_kind?: 'VEHICLE' | 'SERVICE' | null;
       answer_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
       photo_required_on_defect?: boolean;
       help_text?: string | null;
@@ -2504,6 +2535,9 @@ export interface ChecklistStepWrite {
   input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
   mandatory: boolean;
   safety_critical?: boolean;
+  equipment_condition?: 'RAMP_OR_LIFT' | null;
+  restricts_dimension?: 'wheelchair' | null;
+  block_kind?: 'VEHICLE' | 'SERVICE' | null;
   na_requires_reason?: boolean;
   photo_required_on_defect?: boolean;
   number_min?: number | null;
@@ -2527,6 +2561,9 @@ export interface ChecklistStepRead {
   input_kind: 'OK_DEFECT_NA' | 'NUMBER' | 'TEXT_SHORT' | 'ODOMETER_KM' | 'ENERGY_PCT' | 'VEHICLE_IDENTITY' | 'READINESS_YES_NO';
   mandatory: boolean;
   safety_critical: boolean;
+  equipment_condition?: 'RAMP_OR_LIFT' | null;
+  restricts_dimension?: 'wheelchair' | null;
+  block_kind?: 'VEHICLE' | 'SERVICE' | null;
   na_requires_reason: boolean;
   photo_required_on_defect: boolean;
   number_min: number | null;
@@ -4858,10 +4895,17 @@ export interface Operations {
   };
   listOperatorVehicles: {
     path: Record<string, never>;
-    query: { state?: VehicleOperationalState; depot_id?: UUID; limit?: number; cursor?: string };
+    query: { service_id?: UUID; open_incidents?: boolean; state?: VehicleOperationalState; depot_id?: UUID; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: OperatorVehiclePage;
+  };
+  getOperatorVehicle: {
+    path: { vehicle_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OperatorVehicle;
   };
   createVehicleBlock: {
     path: { vehicle_id: UUID };
@@ -6155,7 +6199,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createVehicleRole: { method: 'POST', path: '/v1/vehicle-roles', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listDriverClearances: { method: 'GET', path: '/v1/driver-clearances', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createDriverClearance: { method: 'POST', path: '/v1/driver-clearances', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
-  listOperatorVehicles: { method: 'GET', path: '/v1/operator/vehicles', pathParams: [], query: ['state', 'depot_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listOperatorVehicles: { method: 'GET', path: '/v1/operator/vehicles', pathParams: [], query: ['service_id', 'open_incidents', 'state', 'depot_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getOperatorVehicle: { method: 'GET', path: '/v1/operator/vehicles/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   createVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   liftVehicleBlock: { method: 'POST', path: '/v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift', pathParams: ['vehicle_id', 'block_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listChecklistTemplates: { method: 'GET', path: '/v1/checklist-templates', pathParams: [], query: ['vehicle_class', 'service_mode', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['inspections:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+shift_block;SELECT,INSERT,UPDATE;WP-M3-16: Dienstsperre einer Schicht; nur ACTIVE -> LIFTED (Trigger), kein DELETE
+block_case_counter;SELECT,INSERT,UPDATE;WP-M3-16: Vorgangsnummernzähler der Sperren je Mandant und Jahr; steigt nur um 1 (Trigger), kein DELETE

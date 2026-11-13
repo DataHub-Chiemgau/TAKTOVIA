@@ -41,6 +41,14 @@ enum class Unusable {
 data class VehicleResource(
     val vehicleId: UUID, val capacityConfig: String, val safetyRevision: Long,
     val shiftId: UUID, val shiftStartsAt: Instant, val shiftEndsAt: Instant, val releaseId: UUID, val releaseValidUntil: Instant,
+    /** Durch die Freigabeprüfung entfallene Ressourcendimensionen (WP-M3-12, LH-6.21-CHK-007, z. B. `wheelchair`); das Fahrzeug bleibt für alle anderen Fahrten nutzbar. Leer bei voller Freigabe. */
+    val unavailableDimensions: Set<String> = emptySet(),
+    /**
+     * Der **reduzierte** Ressourcenvektor für **neuen** Bedarf (Rollstuhlplätze 0, ohne Rampe/Lift bei entfallener Dimension `wheelchair`): Kandidatenfilter und Zusage prüfen den Bedarf einer neuen Fahrt gegen ihn
+     * (kein Commit auf die entfallene Dimension). Die Belegungsprüfung bestehender Zusagen bleibt gegen [capacityConfig] (den vollen Vektor), damit eine neue Fahrt ohne den entfallenen Bedarf nicht wegen
+     * bereits zugesagter Fahrten scheitert (Umgang mit diesen: WP-M3-54). Ohne Einschränkung gleich [capacityConfig].
+     */
+    val effectiveCapacityConfig: String = capacityConfig,
 )
 
 sealed interface VehicleAvailability {
@@ -90,4 +98,10 @@ interface ResourceAvailability {
      * Statuszeile `true`. Der Zusage-Commit prüft das unter der Fahrzeugsperre erneut (der Statuswechsel sperrt dieselbe Fahrzeugzeile), damit nach einer Störung keine Zusage mehr entsteht.
      */
     fun isStatusDispatchable(jdbc: JdbcOperations, vehicleId: UUID, at: Instant): Boolean
+
+    /**
+     * Entfallene Ressourcendimensionen der eingeschränkten Freigabe (WP-M3-12, z. B. `wheelchair`) der Schicht des Fahrzeugs zum Zeitpunkt [at]: der Zusage-Commit prüft sie unter der Fahrzeugsperre erneut,
+     * damit nach einer Einschränkung kein Commit auf die entfallene Dimension entsteht (auch nicht für einen zuvor gehaltenen Hold). Leer ohne Einschränkung oder ohne gültige Freigabe.
+     */
+    fun unavailableDimensions(jdbc: JdbcOperations, vehicleId: UUID, at: Instant): Set<String>
 }

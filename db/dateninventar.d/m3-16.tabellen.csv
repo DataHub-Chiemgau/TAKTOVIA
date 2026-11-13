@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+shift_block;Dienstsperre einer Schicht (WP-M3-16);LK_BETRIEB;
+block_case_counter;Vorgangsnummernzähler der Sperren (WP-M3-16);LK_BETRIEB;Zähler je Mandant und Jahr, keine Personendaten
