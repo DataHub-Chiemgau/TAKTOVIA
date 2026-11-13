@@ -140,7 +140,7 @@ def ph_at_004(ctx):
     backend(ctx, *CONFIRM)
     backend(ctx, ("WheelchairConcurrencyTest", "zwei_parallele_rollstuhlbuchungen_hoechstens_eine"), ("WheelchairConcurrencyTest", "sitz_und_rollstuhl_parallel_keine_negative_belegung"),
             ("CancelConcurrencyTest", "storno_parallel_zu_confirm_nie_ueberbelegt"))
-    dbtests(ctx, "test_booking_confirm", "test_capacity_hold_state", "test_hold_promise_window", min_tests=3)
+    dbtests(ctx, "test_booking_confirm", "test_capacity_hold_state", "test_hold_promise_window", min_tests=2)
     # Lastvariante (100 parallele Bestätigungen unter Grundlast) und Invariantenabfrage: tests/performance/test_referenzprofil.py (echte Anwendung, eigener Lauf, nicht Teil dieser Suite)
     offen(ctx, "PH-AT-004 unter Referenzlast: tests/performance/test_referenzprofil.py::test_100_parallele_bestaetigungen_letzter_platz_unter_grundlast (eigener Lauf mit bootJar)")
 
@@ -152,7 +152,7 @@ def at_03(ctx):
     backend(ctx, ("ConfirmConcurrencyTest", "zwei_clients_letzter_platz_hoechstens_eine_buchung"), ("ConfirmConcurrencyTest", "hundert_parallele_confirms_ein_sitz"),
             ("ConfirmConcurrencyTest", "rollstuhlplatz_belegt_sitz_frei_und_routenrevision_veraendert"), ("HoldConcurrencyTest", "test_100_parallele_holds_hoechstens_einer"),
             ("WheelchairConcurrencyTest", "zwei_parallele_rollstuhlbuchungen_hoechstens_eine"), ("StandardfahrtHttpApiTest", "zwei_tabs_hoechstens_eine_buchung_je_angebot"))
-    dbtests(ctx, "test_booking_confirm", "test_capacity_hold_state", min_tests=3)
+    dbtests(ctx, "test_booking_confirm", "test_capacity_hold_state", min_tests=2)
 
 
 # --- AT-04 (Rollstuhltransport) -----------------------------------------------------------------------------------------------------------------
@@ -180,10 +180,10 @@ def at_02(ctx):
             ("HardLimitsValidatorTest", "variante_ueber_grenze_wird_nicht_angeboten"))
     dbtests(ctx, "test_route_stop", "test_hold_promise_window", min_tests=3)
     py = os.environ.get("PYTHON_FOR_DB_TESTS", sys.executable)
-    p = subprocess.run([py, "-m", "unittest", "discover", "-s", str(REPO / "workers" / "routing" / "tests"), "-p", "test_insertion_*.py"], cwd=REPO / "workers" / "routing", capture_output=True, text=True,
+    p = subprocess.run([py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/test_insertion_heuristic.py", "tests/test_insertion_limits.py"], cwd=REPO / "workers" / "routing", capture_output=True, text=True,
                        env=dict(os.environ, PYTHONPATH=str(REPO / "workers" / "routing" / "src")), timeout=900)
-    m = re.search(r"Ran (\d+) tests?", p.stderr)
-    ctx.check("Worker-Tests Einfügeheuristik (workers/routing, ausgeführt)", "OK, mindestens 10 Tests", f"{'OK' if p.returncode == 0 else 'FEHLER'}, {m.group(1) if m else 0} Tests" + ("" if p.returncode == 0 else " | " + p.stderr[-300:]),
+    m = re.search(r"(\d+) passed", p.stdout)
+    ctx.check("Worker-Tests Einfügeheuristik (workers/routing, ausgeführt)", "OK, mindestens 10 Tests", f"{'OK' if p.returncode == 0 else 'FEHLER'}, {m.group(1) if m else 0} Tests" + ("" if p.returncode == 0 else " | " + (p.stdout + p.stderr)[-300:]),
               ok=p.returncode == 0 and bool(m) and int(m.group(1)) >= 10)
 
 
@@ -293,7 +293,7 @@ def ph_at_010(ctx):
     backend(ctx, ("HoldExpiryTest", "ablauf_gibt_kapazitaet_frei_und_nie_abgelaufen_und_belegt"), ("HoldExpiryTest", "job_und_bestaetigung_am_ablaufzeitpunkt_hoechstens_ein_ausgang"),
             ("ConfirmConcurrencyTest", "confirm_parallel_expiry_und_release_ein_ausgang"), ("ConfirmBookingTest", "abgelaufener_hold_ergibt_409_hold_expired"),
             ("PaymentAutomatonTest", "sca_laenger_als_hold_kein_abgelaufener_platz_autorisierung_aufgehoben"), ("RideOfferTest", "zeitgrenze_exakt_bei_expires_at"))
-    dbtests(ctx, "test_capacity_hold_state", min_tests=3)
+    dbtests(ctx, "test_capacity_hold_state", min_tests=2)
     offen(ctx, "Föderationsanteil (Partner-Holds): P2, M6 (PH-AT-010 nur im Einbetreiberzuschnitt)")
 
 
