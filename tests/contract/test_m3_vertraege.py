@@ -44,6 +44,7 @@ VALID = {
     'DefectTransition': {'to': 'REVIEWED'},
     'DefectAmendment': {'change_reason': 'Beschreibung präzisiert', 'description': 'Kratzer links'},
     'RepairOrderCreate': {'defect_id': U1},
+    'RepairOrderTransition': {'to': 'IN_PROGRESS'},
     'VehicleReleaseCreate': {'repair_order_id': U1, 'follow_up_inspection_id': U2, 'reason': 'Reparatur nachgewiesen'},
     'IncidentTransition': {'event': 'START_REPLACEMENT_SEARCH'},
     'RunRevisionCreate': {'changes': [{'route_stop_id': U1, 'change': 'MOVE', 'new_sequence': 2}], 'reason': 'Disposition', 'base_plan_revision': 3},
@@ -85,6 +86,7 @@ BROKEN = {
     'DefectAmendment': ('change_reason', ''),                   # Änderungsgrund ist Pflicht
     'DefectTransition': ('to', 'NEW'),                          # Rücksprung nach NEW ist kein Ziel
     'RepairOrderCreate': ('defect_id', None),
+    'RepairOrderTransition': ('to', 'DONE'),
     'VehicleReleaseCreate': ('reason', ''),
     'IncidentTransition': ('event', 'CLOSED'),                  # Zustand statt Ereignis
     'RunRevisionCreate': ('changes', []),

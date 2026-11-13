@@ -119,7 +119,7 @@
     },
     "is_test": {
       "type": "boolean",
-      "description": "Testanfrage (WP-M4-47, Arbeitsannahme): wird aus den Kennzahlen ausgeschlossen; fehlt das Feld, ist es keine Testanfrage."
+      "description": "Optional: Testanfrage (WP-M4-47, Arbeitsannahme): wird aus den Kennzahlen ausgeschlossen; fehlt das Feld, ist es keine Testanfrage."
     }
   },
   "examples": [

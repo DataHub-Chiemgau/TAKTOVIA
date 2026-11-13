@@ -50,7 +50,7 @@
           "type": "null"
         }
       ],
-      "description": "Quellbezug der Sperre, bei Schaden die Fallnummer der Schadenakte (WP-M3-46)"
+      "description": "Optional: Quellbezug der Sperre, bei Schaden die Fallnummer der Schadenakte (WP-M3-46)"
     }
   },
   "examples": [

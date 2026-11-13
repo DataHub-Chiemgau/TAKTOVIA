@@ -80,7 +80,8 @@
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Optional: Fallnummer des Alarms (WP-M3-46), bei Alarmen ohne Fallbezug null."
     },
     "affected_run_count": {
       "oneOf": [
@@ -91,7 +92,8 @@
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Optional: Zahl der vom Alarm betroffenen Fahrten (WP-M3-46), sonst null."
     }
   },
   "examples": [
