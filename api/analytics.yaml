@@ -1,8 +1,96 @@
 paths:
   /v1/analytics/metrics:
     get:
-      summary: Kennzahlen-Datenbasis lesen (Fahrzeugkilometer je Kategorie)
+      summary: Kennzahlregister lesen und Kennzahlwerte mit Datenstand abfragen
       operationId: getAnalyticsMetrics
+      security:
+      - oidc:
+        - analytics:read
+      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten.'
+      parameters:
+      - name: metric_id
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{1,63}$
+        description: Stabile technische Kennzahl-ID; ohne Angabe alle Kennzahlen.
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+        description: Definitionsversion (nur zusammen mit `metric_id`); ohne Angabe die jüngste freigegebene Version.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Erster Betriebstag (lokales Datum in der `reporting_timezone`). Ohne Zeitraum werden nur Definitionen geliefert.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Letzter Betriebstag einschließlich; Standard `from`.
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Filterdimension Dienst (nur für Kennzahlen, deren Definition sie zulässt).
+      - name: channel
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - WEB
+          - APP
+          - API
+        description: Filterdimension Kanal (nur für Kennzahlen, deren Definition sie zulässt).
+      - name: breakdown
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - rejection_reason
+        description: Zusätzlich die Ablehnungsstatistik nach Grund (erfordert `from`).
+      - name: reason_code
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        description: 'Nur mit `breakdown=rejection_reason`, Katalogcode; ein unbekannter Code ist 400.'
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Definitionen und, bei angegebenem Zeitraum, Werte.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsMetrics'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/analytics/vehicle-km:
+    get:
+      summary: Kennzahlen-Datenbasis lesen (Fahrzeugkilometer je Kategorie)
+      operationId: getVehicleKmClasses
       security:
       - oidc:
         - analytics:read
@@ -60,6 +148,326 @@ paths:
           $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    MetricDefinition:
+      type: object
+      additionalProperties: false
+      description: Freigegebene Kennzahldefinition in einer Version; nach der Freigabe unveränderlich, eine Änderung ist eine neue Version.
+      properties:
+        metric_id:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{1,63}$
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        value_kind:
+          type: string
+          enum:
+          - COUNT
+          - RATIO
+          - MEAN
+          - SUM
+        unit:
+          type: string
+        numerator:
+          type: string
+          description: Definition des Zählers.
+        denominator:
+          type: string
+          description: Definition des Nenners (bei Absolutzahlen "Keiner").
+        exclusions:
+          type: string
+        time_basis:
+          type: string
+          description: Zeitbezug (Zeitpunkt, nach dem der Berichtszeitraum bestimmt wird).
+        period_basis:
+          type: string
+          enum:
+          - BUSINESS_DAY_LOCAL
+          - INSTANT
+        filter_dimensions:
+          type: array
+          items:
+            type: string
+            enum:
+            - service_id
+            - channel
+        executable:
+          type: boolean
+          description: In diesem Stand berechenbar.
+        not_executable_reason:
+          oneOf:
+          - type: string
+            enum:
+            - NOT_EXECUTABLE_IN_THIS_RELEASE
+            - NO_PARTNERS_IN_P1
+          - type: 'null'
+      required:
+      - metric_id
+      - version
+      - name
+      - value_kind
+      - unit
+      - numerator
+      - denominator
+      - exclusions
+      - time_basis
+      - period_basis
+      - filter_dimensions
+      - executable
+      - not_executable_reason
+    MetricFilterUsed:
+      type: object
+      additionalProperties: false
+      properties:
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        channel:
+          type: string
+          enum:
+          - WEB
+          - APP
+          - API
+    MetricPeriod:
+      type: object
+      additionalProperties: false
+      description: Berichtszeitraum aus Betriebstagen der `reporting_timezone`; `from_instant` inklusiv und `to_instant` exklusiv als absolute Zeitpunkte.
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        timezone:
+          type: string
+        from_instant:
+          type: string
+          format: date-time
+        to_instant:
+          type: string
+          format: date-time
+      required:
+      - from
+      - to
+      - timezone
+      - from_instant
+      - to_instant
+    MetricValue:
+      type: object
+      additionalProperties: false
+      properties:
+        metric_id:
+          type: string
+        definition_version:
+          type: integer
+          minimum: 1
+        state:
+          type: string
+          enum:
+          - OK
+          - PROVISIONAL
+          - NOT_COMPUTABLE
+          - SUPPRESSED
+        reason:
+          oneOf:
+          - type: string
+            enum:
+            - ZERO_DENOMINATOR
+            - MISSING_DENOMINATOR
+            - NO_DATA
+            - NOT_EXECUTABLE_IN_THIS_RELEASE
+            - NO_PARTNERS_IN_P1
+            - SMALL_GROUP
+          - type: 'null'
+        value:
+          oneOf:
+          - type: number
+          - type: 'null'
+          description: Wert; `null` bei `NOT_COMPUTABLE` und `SUPPRESSED`, nie ersatzweise 0 oder 100 %.
+        numerator:
+          oneOf:
+          - type: number
+          - type: 'null'
+        denominator:
+          oneOf:
+          - type: number
+          - type: 'null'
+        coverage:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 1
+          - type: 'null'
+          description: Abdeckungsgrad der Quelle (1 = vollständig); bei `PROVISIONAL` kleiner 1.
+        unit:
+          type: string
+        filter:
+          $ref: '#/components/schemas/MetricFilterUsed'
+        period:
+          $ref: '#/components/schemas/MetricPeriod'
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Datenstand der Quelle (jüngste Ereigniszeit der verarbeiteten Ereignisse), aus demselben Lesestand wie der Wert.
+        source_events:
+          type: integer
+          minimum: 0
+        snapshot_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+      required:
+      - metric_id
+      - definition_version
+      - state
+      - reason
+      - value
+      - numerator
+      - denominator
+      - coverage
+      - unit
+      - filter
+      - period
+      - as_of
+      - source_events
+      - snapshot_id
+    RejectionRow:
+      type: object
+      additionalProperties: false
+      description: Eine Zeile der Spalte „Ablehnungsgrund“.
+      properties:
+        code:
+          type: string
+        group:
+          type: string
+          enum:
+          - CAPACITY
+          - PERSONNEL
+          - EQUIPMENT
+          - AREA
+          - TIME_OPENING
+          - TIME_DEADLINE
+          - RULE
+          - TARIFF
+          - LIMIT
+          - PARTNER
+          - TECHNICAL
+        metric:
+          oneOf:
+          - type: string
+            enum:
+            - CAPACITY
+            - PERSONNEL
+            - EQUIPMENT
+            - AREA
+            - TIME_WINDOW
+            - PARTNER
+          - type: 'null'
+        text:
+          type: string
+          description: Normtext auf Deutsch.
+        texts:
+          type: object
+          additionalProperties:
+            type: string
+          description: Texte weiterer Sprachen (Schlüssel = Sprachcode).
+        primary_count:
+          type: integer
+          minimum: 0
+          description: Ablehnungen mit diesem Primärgrund.
+        secondary_count:
+          type: integer
+          minimum: 0
+          description: Nennungen als zusätzliches Label; keine zusätzlichen Ablehnungen.
+      required:
+      - code
+      - group
+      - metric
+      - text
+      - texts
+      - primary_count
+      - secondary_count
+    RejectionBreakdown:
+      type: object
+      additionalProperties: false
+      properties:
+        attempts:
+          type: integer
+          minimum: 0
+        rejections:
+          type: integer
+          minimum: 0
+          description: Summe der Primärgründe = Zahl der abgelehnten Versuche.
+        technical_errors:
+          type: integer
+          minimum: 0
+          description: Technische Anfragefehler, getrennt von den fachlichen Ablehnungen.
+        state:
+          type: string
+          enum:
+          - OK
+          - PROVISIONAL
+          - NOT_COMPUTABLE
+        coverage:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 1
+          - type: 'null'
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        source_events:
+          type: integer
+          minimum: 0
+        reason_code:
+          oneOf:
+          - type: string
+          - type: 'null'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/RejectionRow'
+      required:
+      - attempts
+      - rejections
+      - technical_errors
+      - state
+      - coverage
+      - as_of
+      - source_events
+      - reason_code
+      - rows
+    AnalyticsMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        definitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+        values:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/MetricValue'
+          - type: 'null'
+          description: Nur bei angegebenem Zeitraum.
+        rejections:
+          oneOf:
+          - $ref: '#/components/schemas/RejectionBreakdown'
+          - type: 'null'
+          description: Nur mit `breakdown=rejection_reason`.
+      required:
+      - definitions
+      - values
+      - rejections
     KmCategories:
       type: object
       additionalProperties: false

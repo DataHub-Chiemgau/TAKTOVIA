@@ -119,13 +119,24 @@ internal class JdbcResourceAvailability(
     }
 
     override fun usableVehicles(ctx: RequestContext, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>): AvailabilitySnapshot {
-        val rows = ctxTx.run(ctx, readOnly = true) { j -> query(j, serviceId, null, window, locations) }
-        val verdicts = rows.map { it.verdict() }
+        val verdicts = ctxTx.run(ctx, readOnly = true) { j ->
+            val base = query(j, serviceId, null, window, locations).map { it.verdict() }
+            // „Schichtende“ (WP-M4-49): Fahrzeuge ohne deckende Schicht, deren Fahrer-Schicht vor dem Fenster begann und im Fenster endet
+            val noShift = base.filterIsInstance<VehicleAvailability.NotUsable>().filter { it.reason == Unusable.NO_SHIFT }.map { it.vehicleId }
+            val ended = if (noShift.isEmpty()) emptySet() else shiftEnded(j, noShift, window)
+            base.map { v -> if (v is VehicleAvailability.NotUsable && v.vehicleId in ended) VehicleAvailability.NotUsable(v.vehicleId, Unusable.SHIFT_ENDED_IN_WINDOW) else v }
+        }
         return AvailabilitySnapshot(
             clock.instant(), if (staffing != null) SOURCE_PORT else SOURCE, serviceId, window,
             verdicts.filterIsInstance<VehicleAvailability.Usable>().map { it.resource }, verdicts.filterIsInstance<VehicleAvailability.NotUsable>(),
         )
     }
+
+    private fun shiftEnded(j: JdbcOperations, vehicleIds: List<UUID>, w: TimeWindow): Set<UUID> = j.query(
+        "SELECT DISTINCT sh.vehicle_id FROM taktovia.staff_shift sh WHERE sh.vehicle_id = ANY (CAST(? AS uuid[])) AND sh.driver_ref IS NOT NULL AND sh.state IN ('PUBLISHED', 'STARTED') " +
+            "AND sh.starts_at <= ? AND sh.ends_at > ? AND sh.ends_at < ?",
+        { rs, _ -> rs.getObject(1, UUID::class.java) }, "{" + vehicleIds.joinToString(",") + "}", Timestamp.from(w.from), Timestamp.from(w.from), Timestamp.from(w.to),
+    ).toSet()
 
     override fun check(ctx: RequestContext, vehicleId: UUID, serviceId: UUID, window: TimeWindow, locations: List<GeoPoint>): VehicleAvailability =
         ctxTx.run(ctx, readOnly = true) { j -> verdict(j, vehicleId, serviceId, window, locations, lock = false) }

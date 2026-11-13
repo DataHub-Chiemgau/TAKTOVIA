@@ -44,6 +44,12 @@
         "NO_STOP_IN_RANGE",
         "NO_ACCESSIBLE_STOP",
         "NO_STAFF",
+        "NO_TARIFF",
+        "MAX_WAIT_EXCEEDED",
+        "NO_VEHICLE",
+        "SHIFT_ENDED",
+        "MAX_DETOUR_EXCEEDED",
+        "PARTNER_UNAVAILABLE",
         "TECHNICAL"
       ],
       "description": "Primärgrund der Ablehnung (Katalog `rejection_reason`, WP-M2-13; Kategorien nach Anhang K.1, Prioritätsregel in `RejectionCode`). `EQUIPMENT_MISSING` und `NO_ACCESSIBLE_STOP` zählen in `Ausstattungsablehnungen`."
@@ -91,6 +97,12 @@
           "NO_STOP_IN_RANGE",
           "NO_ACCESSIBLE_STOP",
           "NO_STAFF",
+          "NO_TARIFF",
+          "MAX_WAIT_EXCEEDED",
+          "NO_VEHICLE",
+          "SHIFT_ENDED",
+          "MAX_DETOUR_EXCEEDED",
+          "PARTNER_UNAVAILABLE",
           "TECHNICAL"
         ]
       },
@@ -104,6 +116,10 @@
         "APP",
         "API"
       ]
+    },
+    "is_test": {
+      "type": "boolean",
+      "description": "Testanfrage (WP-M4-47, Arbeitsannahme): wird aus den Kennzahlen ausgeschlossen; fehlt das Feld, ist es keine Testanfrage."
     }
   },
   "examples": [

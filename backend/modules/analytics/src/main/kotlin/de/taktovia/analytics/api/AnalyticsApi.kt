@@ -20,6 +20,9 @@ interface AnalyticsApi {
     /** Klassifikation der Fahrzeugkilometer (WP-M4-42). */
     val km: KmClassification
 
+    /** Kennzahlregister, Versuchs- und Ablehnungskennzahlen mit Datenstand (WP-M4-46 bis -50, `/v1/analytics/metrics`). */
+    val metrics: Metrics
+
     companion object {
         /**
          * [downloadSecret] signiert die kurzlebigen Abruflinks (HMAC-SHA256, mindestens 32 Byte, nie im Repository); [checklist] ist die Freigabecheckliste des PBefG-Exports
@@ -27,14 +30,20 @@ interface AnalyticsApi {
          */
         fun create(
             ctxTx: ContextTransactions, tx: TenantTransactions, audit: AuditPort, downloadSecret: ByteArray, clock: Clock = Clock.systemUTC(),
-            downloadTtl: Duration = Duration.ofMinutes(5), checklist: List<String> = ExportCategories.DEFAULT_PBEFG_CHECKLIST,
-        ): AnalyticsApi = AnalyticsServicesFactory.create(ctxTx, tx, audit, downloadSecret, clock, downloadTtl, checklist)
+            downloadTtl: Duration = Duration.ofMinutes(5), checklist: List<String> = ExportCategories.DEFAULT_PBEFG_CHECKLIST, smallGroupThreshold: Int = DEFAULT_SMALL_GROUP_THRESHOLD,
+        ): AnalyticsApi = AnalyticsServicesFactory.create(ctxTx, tx, audit, downloadSecret, clock, downloadTtl, checklist, smallGroupThreshold)
 
         /** Nur die Faktenbasis (Projektionsworker und Tests ohne Exportaufträge). */
         fun createFacts(tx: TenantTransactions, clock: Clock = Clock.systemUTC()): FactBase = AnalyticsServicesFactory.createFacts(tx, clock)
 
         /** Nur die Kilometerklassifikation (Tests und Klassifikationsworker ohne Exportaufträge). */
         fun createKm(ctxTx: ContextTransactions, tx: TenantTransactions, clock: Clock = Clock.systemUTC()): KmClassification = AnalyticsServicesFactory.createKm(ctxTx, tx, clock)
+
+        /** Nur das Kennzahlregister (Tests und Leseknoten ohne Exportaufträge); [smallGroupThreshold]: Testwert bis zum Beschluss. */
+        fun createMetrics(tx: TenantTransactions, smallGroupThreshold: Int = DEFAULT_SMALL_GROUP_THRESHOLD): Metrics = AnalyticsServicesFactory.createMetrics(tx, smallGroupThreshold)
+
+        /** Schwelle für kleine Gruppen (freigegebener Wert fehlt, WP-M4-46 Offene Punkte): Testwert 3. */
+        const val DEFAULT_SMALL_GROUP_THRESHOLD = 3
     }
 }
 
@@ -55,6 +64,8 @@ enum class ConsumeOutcome {
     REJECTED_SCHEMA,
     /** Ereignistyp ohne Faktenbezug: ignoriert. */
     UNSUPPORTED_EVENT,
+    /** Ablehnungsgrund nicht im Katalog (oder nicht gültig zum Anfragezeitpunkt), kein fachlicher Grund, Nebengründe ohne Primärgrund oder Ablehnung ohne Primärgrund (WP-M4-48): nicht gespeichert. */
+    REJECTED_REASON,
 }
 
 enum class Completeness { COMPLETE, INCOMPLETE }
@@ -81,4 +92,7 @@ interface FactBase {
 
     /** Datenstand je Quelle (nur Quellen mit mindestens einem Ereignis). */
     fun watermarks(tenant: TenantId): List<Watermark>
+
+    /** Abgleich der Versuche (`travel_attempt`) gegen die Fakten aus dem Ereignisprotokoll (WP-M4-47): meldet Abweichungen, ändert nichts. */
+    fun reconcileAttempts(tenant: TenantId): AttemptReconciliation
 }

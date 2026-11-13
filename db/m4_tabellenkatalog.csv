@@ -25,7 +25,7 @@ journal;documents-finance;VERAENDERLICH;;WP-M4-33;Kernschema, gebuchte Journale 
 journal_line;documents-finance;VERAENDERLICH;;WP-M4-33;Kernschema
 settlement_line;documents-finance;VERAENDERLICH;;WP-M5;Kernschema
 metric_definition_revision;analytics;FREIGABE_UNVERAENDERLICH;;WP-M4-46;freigegebene Definition unveränderlich
-aggregate_snapshot;analytics;VERAENDERLICH;;WP-M4-45;Faktenbasis
+aggregate_snapshot;analytics;APPEND_ONLY;;WP-M4-46;gespeicherter Kennzahlwert mit Definitionsversion und Datenstand, nur anhängen
 dataset_watermark;analytics;VERAENDERLICH;;WP-M4-45;Datenstand
 eta_model_revision;analytics;FREIGABE_UNVERAENDERLICH;;WP-M4-62;freigegebene Modellrevision unveränderlich
 document_settings;documents-finance;VERAENDERLICH;;WP-M4-22;Beleg-Einstellungen je Mandant

@@ -1,5 +1,6 @@
 package de.taktovia.analytics.internal
 
+import de.taktovia.analytics.api.AttemptReconciliation
 import de.taktovia.analytics.api.Completeness
 import de.taktovia.analytics.api.ConsumeOutcome
 import de.taktovia.analytics.api.FactBase
@@ -50,6 +51,8 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
 
     private fun process(j: JdbcOperations, e: EventEnvelope, source: Source, payload: JsonNode): ConsumeOutcome {
         val hash = EventEnvelope.sha256(payload)
+        // Ablehnungsgründe gegen den Katalog prüfen, bevor etwas gespeichert wird (ein unbekannter Grund des Buchungskerns erreicht weder Eingang noch Fakten)
+        if (source == Source.ATTEMPT && !reasonsValid(j, payload)) return ConsumeOutcome.REJECTED_REASON
         // Sperren in fester Reihenfolge: zuerst das Ereignis, dann der Fakt (Buchung bzw. Aggregat)
         lock(j, "event:${e.eventId}")
         j.query("SELECT payload_sha256 FROM taktovia.analytics_event_inbox WHERE event_id = ?", { rs, _ -> rs.getString(1) }, e.eventId).firstOrNull()?.let {
@@ -66,6 +69,32 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
         updateWatermark(j, source)
         return ConsumeOutcome.PROCESSED
     }
+
+    /**
+     * Ablehnung (WP-M4-48): genau dann `REJECTED`, wenn ein Primärgrund vorliegt; Primär- und Nebengründe sind gültige, fachlich zählende Katalogcodes (technische Fehler nie), Nebengründe ohne Wiederholung,
+     * nicht der Primärgrund und nur mit Primärgrund. Dieselben Regeln erzwingt die Datenbank an `fact_attempt` als zweite Verteidigungslinie.
+     */
+    private fun reasonsValid(j: JdbcOperations, p: JsonNode): Boolean {
+        val primary = text(p, "primary_reason")
+        val secondary = strings(p, "secondary_reasons")
+        if ((text(p, "outcome") == "REJECTED") != (primary != null)) return false
+        if (secondary.isNotEmpty() && primary == null) return false
+        if (secondary.distinct().size != secondary.size || (primary != null && primary in secondary)) return false
+        val codes = listOfNotNull(primary) + secondary
+        if (codes.isEmpty()) return true
+        if (codes.any { !CODE.matches(it) }) return false
+        val at = ts(p, "requested_at") ?: return false
+        val known = j.query("SELECT code FROM taktovia.rejection_reason WHERE code = ANY (CAST(? AS text[])) AND counts_as_rejection AND valid_from <= ? AND (valid_to IS NULL OR valid_to > ?)",
+            { rs, _ -> rs.getString(1) }, pgArray(codes), at, at).toSet()
+        return known.containsAll(codes)
+    }
+
+    private fun strings(p: JsonNode, k: String): List<String> {
+        val n = p.get(k)
+        return if (n == null || !n.isArray) emptyList() else (0 until n.size()).map { n.get(it).asString() }
+    }
+
+    private fun pgArray(values: List<String>): String = values.joinToString(",", "{", "}")
 
     private fun lock(j: JdbcOperations, key: String) {
         j.query("SELECT pg_advisory_xact_lock(hashtextextended(taktovia.current_tenant()::text || ':analytics:' || ?, 0))", { _, _ -> 0 }, key)
@@ -95,12 +124,14 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
 
     private fun attempt(j: JdbcOperations, id: UUID) {
         val p = rows(j, Source.ATTEMPT, id).lastOrNull()?.p ?: return    // höchste Revision gewinnt
-        j.update("INSERT INTO taktovia.fact_attempt(tenant_id, attempt_id, service_id, outcome, primary_reason, time_mode, requested_at, passengers, wheelchair, coarse_origin, coarse_destination, channel) " +
-            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, attempt_id) DO UPDATE SET service_id = EXCLUDED.service_id, outcome = EXCLUDED.outcome, primary_reason = EXCLUDED.primary_reason, " +
+        val secondary = strings(p, "secondary_reasons")
+        j.update("INSERT INTO taktovia.fact_attempt(tenant_id, attempt_id, service_id, outcome, primary_reason, secondary_reasons, is_test, time_mode, requested_at, passengers, wheelchair, coarse_origin, coarse_destination, channel) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS text[]), ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, attempt_id) DO UPDATE SET service_id = EXCLUDED.service_id, outcome = EXCLUDED.outcome, " +
+            "primary_reason = EXCLUDED.primary_reason, secondary_reasons = EXCLUDED.secondary_reasons, is_test = EXCLUDED.is_test, " +
             "time_mode = EXCLUDED.time_mode, requested_at = EXCLUDED.requested_at, passengers = EXCLUDED.passengers, wheelchair = EXCLUDED.wheelchair, coarse_origin = EXCLUDED.coarse_origin, " +
             "coarse_destination = EXCLUDED.coarse_destination, channel = EXCLUDED.channel",
-            id, uuid(p, "service_id"), text(p, "outcome"), text(p, "primary_reason"), text(p, "time_mode"), ts(p, "requested_at"), p.get("passengers")?.asInt() ?: 0, p.get("wheelchair")?.asInt(),
-            text(p, "coarse_origin"), text(p, "coarse_destination"), text(p, "channel"))
+            id, uuid(p, "service_id"), text(p, "outcome"), text(p, "primary_reason"), pgArray(secondary), p.get("is_test")?.asBoolean() ?: false, text(p, "time_mode"), ts(p, "requested_at"), p.get("passengers")?.asInt() ?: 0,
+            p.get("wheelchair")?.asInt(), text(p, "coarse_origin"), text(p, "coarse_destination"), text(p, "channel"))
     }
 
     private fun offer(j: JdbcOperations, id: UUID) {
@@ -187,5 +218,29 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
     override fun watermarks(tenant: TenantId): List<Watermark> = tx.run(tenant, readOnly = true) { j ->
         j.query("SELECT source, processed_until, completeness, gap_count, event_count, updated_at FROM taktovia.dataset_watermark ORDER BY source",
             { rs, _ -> Watermark(FactSource.valueOf(rs.getString(1)), rs.getTimestamp(2)?.toInstant(), Completeness.valueOf(rs.getString(3)), rs.getInt(4), rs.getLong(5), rs.getTimestamp(6).toInstant()) })
+    }
+
+    override fun reconcileAttempts(tenant: TenantId): AttemptReconciliation = tx.run(tenant, readOnly = true) { j ->
+        val missingFacts = mutableListOf<UUID>(); val missingSource = mutableListOf<UUID>(); val mismatched = mutableListOf<UUID>()
+        j.query(RECONCILE, { rs, _ ->
+            val id = rs.getObject("id", UUID::class.java)
+            when (rs.getString("kind")) { "MISSING_IN_FACTS" -> missingFacts += id; "MISSING_IN_SOURCE" -> missingSource += id; else -> mismatched += id }
+        })
+        val counts = j.queryForObject(RECONCILE_COUNTS, { rs, _ -> rs.getLong(1) to rs.getLong(2) })!!
+        AttemptReconciliation(counts.first, counts.second, missingFacts, missingSource, mismatched)
+    }
+
+    private companion object {
+        val CODE = Regex("^[A-Z][A-Z0-9_]{1,39}$")
+
+        /** Versuche der Quelle gegen die Fakten: fehlende Fakten, fehlende Quellen, abweichendes Ergebnis oder Primärgrund (Ergebnis `OFFERED` entspricht dem Faktenergebnis `RECORDED`). */
+        const val RECONCILE = """
+            SELECT coalesce(t.id, f.attempt_id) AS id,
+                   CASE WHEN f.attempt_id IS NULL THEN 'MISSING_IN_FACTS' WHEN t.id IS NULL THEN 'MISSING_IN_SOURCE' ELSE 'MISMATCH' END AS kind
+            FROM taktovia.travel_attempt t FULL OUTER JOIN taktovia.fact_attempt f ON f.tenant_id = t.tenant_id AND f.attempt_id = t.id
+            WHERE f.attempt_id IS NULL OR t.id IS NULL
+               OR (CASE t.outcome WHEN 'OFFERED' THEN 'RECORDED' ELSE t.outcome END) IS DISTINCT FROM f.outcome OR t.primary_rejection IS DISTINCT FROM f.primary_reason
+            ORDER BY 1"""
+        const val RECONCILE_COUNTS = "SELECT (SELECT count(*) FROM taktovia.travel_attempt), (SELECT count(*) FROM taktovia.fact_attempt)"
     }
 }

@@ -1,0 +1,3 @@
+tabelle;aggregat;loeschklasse;bemerkung
+metric_definition_revision;Kennzahldefinition (WP-M4-46);LK_BETRIEB;freigegebene Version unveränderlich, keine Fahrgastdaten
+aggregate_snapshot;Kennzahl-Snapshot (WP-M4-46);LK_BETRIEB;nur Zähler und Nenner, keine Fahrgastdaten, Aufbewahrung D-11 offen

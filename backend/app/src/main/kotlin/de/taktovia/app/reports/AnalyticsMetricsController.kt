@@ -16,13 +16,13 @@ import java.time.format.DateTimeParseException
 import java.util.UUID
 
 /**
- * Kennzahlen-Datenbasis `GET /v1/analytics/metrics` (WP-M4-42, Kap. 05 §5.7, Modul `analytics`): Fahrzeugkilometer je Kategorie, nicht zuordenbare Kilometer separat. Recht `analytics:read` aus der
+ * Kennzahlen-Datenbasis `GET /v1/analytics/vehicle-km` (WP-M4-42, Kap. 05 §5.7, Modul `analytics`): Fahrzeugkilometer je Kategorie, nicht zuordenbare Kilometer separat. Recht `analytics:read` aus der
  * Rechtematrix im Filter und im Dienst. `metric`, `from` und `to` sind Pflicht (422 statt 400); der Mandant steht nie in der Anfrage.
  */
 @RestController
 class AnalyticsMetricsController(private val analytics: AnalyticsApi) {
 
-    @GetMapping("/v1/analytics/metrics")
+    @GetMapping("/v1/analytics/vehicle-km")
     fun metrics(@RequestParam(required = false) metric: String?, @RequestParam(required = false) from: String?, @RequestParam(required = false) to: String?,
         @RequestParam(name = "vehicle_id", required = false) vehicleId: String?, request: HttpServletRequest): Map<String, Any?> {
         val ctx = RequestContexts.require(request)

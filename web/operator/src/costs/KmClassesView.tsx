@@ -25,7 +25,7 @@ export function formatKm(thousandths: number): string {
 
 /**
  * Kilometerklassen je Fahrzeug und Zeitraum (WP-M4-42, FCO-005; Baustein der Kostenübersicht UI-15 aus WP-M4-44 und des Kennzahlenteils): Kilometer je Kategorie mit **separater Zeile „nicht zuordenbar“**
- * (nie auf andere Kategorien verteilt), Gesamtkilometer, Datenstand und Vollständigkeit aus `getAnalyticsMetrics`. Ohne Fahrten im Zeitraum erscheint „keine Fahrten im Zeitraum“. Es werden keine
+ * (nie auf andere Kategorien verteilt), Gesamtkilometer, Datenstand und Vollständigkeit aus `getVehicleKmClasses`. Ohne Fahrten im Zeitraum erscheint „keine Fahrten im Zeitraum“. Es werden keine
  * Fahrerbezüge angezeigt. Die Anzeige ist keine Rechtequelle: der Server prüft `analytics:read` bei jeder Anfrage.
  */
 export function KmClassesView() {
@@ -53,7 +53,7 @@ export function KmClassesView() {
     };
     if (vehicle.trim() !== '') query.vehicle_id = vehicle.trim();
     api
-      .call('getAnalyticsMetrics', { query })
+      .call('getVehicleKmClasses', { query })
       .then((data) => setResult({ status: 'ready', data }))
       .catch((e: unknown) =>
         setResult({ status: 'error', error: e instanceof ApiError ? e : { status: 0 } }),

@@ -28,12 +28,13 @@ class ReportsConfiguration {
     @Bean fun analyticsApi(
         ctxTx: ContextTransactions, tx: TenantTransactions, audit: AuditPort, tenants: ObjectProvider<TenantSource>, env: Environment,
         @Value("\${taktovia.reports.download-secret:}") secret: String, @Value("\${taktovia.reports.download-ttl-seconds:300}") ttlSeconds: Long,
+        @Value("\${taktovia.analytics.small-group-threshold:3}") smallGroupThreshold: Int,
     ): AnalyticsApi {
         val key = if (secret.length >= 32) secret.toByteArray(Charsets.UTF_8) else {
             log.warn("taktovia.reports.download-secret fehlt oder ist kürzer als 32 Zeichen: zufälliger Schlüssel dieser Instanz, Abruflinks gelten nur hier")
             ByteArray(32).also { SecureRandom().nextBytes(it) }
         }
-        val api = AnalyticsApi.create(ctxTx, tx, audit, key, downloadTtl = Duration.ofSeconds(ttlSeconds))
+        val api = AnalyticsApi.create(ctxTx, tx, audit, key, downloadTtl = Duration.ofSeconds(ttlSeconds), smallGroupThreshold = smallGroupThreshold)
         val source = tenants.getIfAvailable()
         if (source != null && env.getProperty("taktovia.reports.worker-enabled", Boolean::class.java, false)) {
             val poll = env.getProperty("taktovia.reports.poll-seconds", Long::class.java, 5)

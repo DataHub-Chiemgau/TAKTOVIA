@@ -345,6 +345,21 @@ export const texte = {
   'rej.noStaff.next': 'Wählen Sie eine andere Zeit.',
   'rej.noCapacity.text': 'Zur gewünschten Zeit ist kein Platz mehr frei.',
   'rej.noCapacity.next': 'Wählen Sie eine andere Zeit oder verringern Sie die Personenzahl.',
+  'rej.noTariff.text': 'Für die gewünschte Verbindung ist kein gültiger Tarif hinterlegt.',
+  'rej.noTariff.next': 'Wählen Sie eine andere Verbindung oder kontaktieren Sie den Betreiber.',
+  'rej.maxWaitExceeded.text':
+    'Die Wartezeit bis zur Abholung würde die zulässige Maximalwartezeit überschreiten.',
+  'rej.maxWaitExceeded.next': 'Wählen Sie eine spätere Abfahrtszeit.',
+  'rej.noVehicle.text': 'Zur gewünschten Zeit steht im Bediengebiet kein Fahrzeug zur Verfügung.',
+  'rej.noVehicle.next': 'Wählen Sie eine andere Zeit.',
+  'rej.shiftEnded.text':
+    'Die Schicht des verfügbaren Fahrpersonals endet vor der gewünschten Fahrt.',
+  'rej.shiftEnded.next': 'Wählen Sie eine frühere Zeit.',
+  'rej.maxDetourExceeded.text': 'Die Fahrt würde die zulässige Umweggrenze überschreiten.',
+  'rej.maxDetourExceeded.next': 'Wählen Sie eine andere Zeit oder ein anderes Ziel.',
+  'rej.partnerUnavailable.text': 'Der Partnerbetrieb für diese Verbindung ist nicht erreichbar.',
+  'rej.partnerUnavailable.next':
+    'Versuchen Sie es später erneut oder wählen Sie eine andere Verbindung.',
 } as const;
 
 export type TextKey = keyof typeof texte;

@@ -76,11 +76,11 @@ function fill() {
 
 describe('Kilometerklassen (WP-M4-42)', () => {
   it('zeigt_nicht_zuordenbar_als_eigene_zeile', async () => {
-    const { calls, container } = setup(['analytics:read'], { getAnalyticsMetrics: () => MUSTER });
+    const { calls, container } = setup(['analytics:read'], { getVehicleKmClasses: () => MUSTER });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     const table = await screen.findByRole('table', { name: 'Kilometer je Kategorie' });
-    expect(calls.find((c) => c.id === 'getAnalyticsMetrics')?.args).toMatchObject({
+    expect(calls.find((c) => c.id === 'getVehicleKmClasses')?.args).toMatchObject({
       query: { metric: 'VEHICLE_KM_CLASSES', from: '2026-06-01', to: '2026-06-01' },
     });
     const row = (name: string) => within(table).getByRole('row', { name: new RegExp(`^${name}`) });
@@ -107,14 +107,14 @@ describe('Kilometerklassen (WP-M4-42)', () => {
       unassigned_km_thousandths: 0,
       days: [],
     };
-    const a = setup(['analytics:read'], { getAnalyticsMetrics: () => empty });
+    const a = setup(['analytics:read'], { getVehicleKmClasses: () => empty });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     expect(await screen.findByText('Keine Fahrten im Zeitraum')).toBeInTheDocument();
     a.unmount();
 
     const b = setup(['analytics:read'], {
-      getAnalyticsMetrics: () => ({ ...MUSTER, completeness: 'INCOMPLETE' }),
+      getVehicleKmClasses: () => ({ ...MUSTER, completeness: 'INCOMPLETE' }),
     });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
@@ -122,16 +122,16 @@ describe('Kilometerklassen (WP-M4-42)', () => {
     expect(screen.getByText(/Fahrerereignisse sind unvollständig/)).toBeInTheDocument();
     b.unmount();
 
-    const c = setup(['analytics:read'], { getAnalyticsMetrics: () => new ApiError(503) });
+    const c = setup(['analytics:read'], { getVehicleKmClasses: () => new ApiError(503) });
     await screen.findByRole('button', { name: 'Auswerten' });
     fill();
     expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     c.unmount();
 
-    const d = setup([], { getAnalyticsMetrics: () => MUSTER });
+    const d = setup([], { getVehicleKmClasses: () => MUSTER });
     expect(await screen.findByText(/nicht freigeschaltet/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Auswerten' })).toBeDisabled();
-    expect(d.calls.some((x) => x.id === 'getAnalyticsMetrics')).toBe(false);
+    expect(d.calls.some((x) => x.id === 'getVehicleKmClasses')).toBe(false);
   });
 
   it('formatiert_ganzzahlige_tausendstel_ohne_rundungsfehler', () => {

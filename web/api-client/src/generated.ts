@@ -1282,6 +1282,80 @@ export interface AlertPage {
   as_of: string;
 }
 
+export interface MetricDefinition {
+  metric_id: string;
+  version: number;
+  name: string;
+  value_kind: 'COUNT' | 'RATIO' | 'MEAN' | 'SUM';
+  unit: string;
+  numerator: string;
+  denominator: string;
+  exclusions: string;
+  time_basis: string;
+  period_basis: 'BUSINESS_DAY_LOCAL' | 'INSTANT';
+  filter_dimensions: ('service_id' | 'channel')[];
+  executable: boolean;
+  not_executable_reason: 'NOT_EXECUTABLE_IN_THIS_RELEASE' | 'NO_PARTNERS_IN_P1' | null;
+}
+
+export interface MetricFilterUsed {
+  service_id?: UUID;
+  channel?: 'WEB' | 'APP' | 'API';
+}
+
+export interface MetricPeriod {
+  from: string;
+  to: string;
+  timezone: string;
+  from_instant: string;
+  to_instant: string;
+}
+
+export interface MetricValue {
+  metric_id: string;
+  definition_version: number;
+  state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE' | 'SUPPRESSED';
+  reason: 'ZERO_DENOMINATOR' | 'MISSING_DENOMINATOR' | 'NO_DATA' | 'NOT_EXECUTABLE_IN_THIS_RELEASE' | 'NO_PARTNERS_IN_P1' | 'SMALL_GROUP' | null;
+  value: number | null;
+  numerator: number | null;
+  denominator: number | null;
+  coverage: number | null;
+  unit: string;
+  filter: MetricFilterUsed;
+  period: MetricPeriod;
+  as_of: string | null;
+  source_events: number;
+  snapshot_id: UUID | null;
+}
+
+export interface RejectionRow {
+  code: string;
+  group: 'CAPACITY' | 'PERSONNEL' | 'EQUIPMENT' | 'AREA' | 'TIME_OPENING' | 'TIME_DEADLINE' | 'RULE' | 'TARIFF' | 'LIMIT' | 'PARTNER' | 'TECHNICAL';
+  metric: 'CAPACITY' | 'PERSONNEL' | 'EQUIPMENT' | 'AREA' | 'TIME_WINDOW' | 'PARTNER' | null;
+  text: string;
+  texts: Record<string, unknown>;
+  primary_count: number;
+  secondary_count: number;
+}
+
+export interface RejectionBreakdown {
+  attempts: number;
+  rejections: number;
+  technical_errors: number;
+  state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE';
+  coverage: number | null;
+  as_of: string | null;
+  source_events: number;
+  reason_code: string | null;
+  rows: RejectionRow[];
+}
+
+export interface AnalyticsMetrics {
+  definitions: MetricDefinition[];
+  values: MetricValue[] | null;
+  rejections: RejectionBreakdown | null;
+}
+
 export interface KmCategories {
   PASSENGER: number;
   EMPTY: number;
@@ -1373,7 +1447,7 @@ export interface RideOfferStop {
   revision_id: UUID;
 }
 
-export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY';
+export type RideRejectionCode = 'LEAD_TIME' | 'HORIZON' | 'WINDOW_NOT_FEASIBLE' | 'OUTSIDE_HOURS' | 'OUTSIDE_AREA' | 'RULE_FORBIDDEN' | 'NO_STOP_IN_RANGE' | 'NO_ACCESSIBLE_STOP' | 'NO_ROUTE' | 'EQUIPMENT_MISSING' | 'NO_STAFF' | 'NO_CAPACITY' | 'NO_TARIFF' | 'NO_VEHICLE' | 'SHIFT_ENDED' | 'MAX_WAIT_EXCEEDED' | 'MAX_DETOUR_EXCEEDED' | 'PARTNER_UNAVAILABLE';
 
 export interface RideRejection {
   code: RideRejectionCode;
@@ -4683,6 +4757,13 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; breakdown?: 'rejection_reason'; reason_code?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: AnalyticsMetrics;
+  };
+  getVehicleKmClasses: {
+    path: Record<string, never>;
     query: { metric?: 'VEHICLE_KM_CLASSES'; from?: string; to?: string; vehicle_id?: UUID };
     headers: { traceparent?: string };
     body: undefined;
@@ -6259,7 +6340,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorAlerts: { method: 'GET', path: '/v1/operator/alerts', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getVehicleKmClasses: { method: 'GET', path: '/v1/analytics/vehicle-km', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   holdRideOffer: { method: 'POST', path: '/v1/ride-offers/{ride_offer_id}/hold', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },

@@ -16,6 +16,12 @@ export const REJECTION_CODES: readonly RideRejectionCode[] = [
   'EQUIPMENT_MISSING',
   'NO_STAFF',
   'NO_CAPACITY',
+  'NO_TARIFF',
+  'MAX_WAIT_EXCEEDED',
+  'NO_VEHICLE',
+  'SHIFT_ENDED',
+  'MAX_DETOUR_EXCEEDED',
+  'PARTNER_UNAVAILABLE',
 ];
 
 /** `LEAD_TIME` -> `leadTime` (Schlüssel des Textkatalogs sind camelCase). */

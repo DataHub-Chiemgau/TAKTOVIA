@@ -25,6 +25,8 @@ enum class Unusable {
     VEHICLE_BLOCKED,
     /** Keine veröffentlichte Schicht, die das ganze Fenster deckt. */
     NO_SHIFT,
+    /** Wie [NO_SHIFT], aber eine veröffentlichte Schicht mit Fahrer begann vor dem Fenster und endet **im** Fenster (WP-M4-49 „Schichtende“); nur in [ResourceAvailability.usableVehicles] unterschieden. */
+    SHIFT_ENDED_IN_WINDOW,
     /** Keine gültige Einsatzfreigabe: fehlt, widerrufen, vor Fensterende abgelaufen oder gegen eine veraltete `safety_revision` ausgestellt. Ohne Freigabe nie einsetzbar. */
     NO_VALID_RELEASE,
     /**
