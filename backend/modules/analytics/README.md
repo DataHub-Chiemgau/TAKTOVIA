@@ -15,3 +15,7 @@ hängt im Gradle-Build nur von `platform` ab.
 
 `AnalyticsApi.reportJobs` (`/v1/reports/jobs`, `api/reports.yaml`): asynchrone, mandantengebundene Exportaufträge mit Idempotenzschlüssel, Datenstand (`as_of`), Nachweisen (SHA-256, Größe, Kategorien mit Status) und kurzlebigem, signiertem Abruflink; Tabelle `export_job` (V50190). Gelesen werden Prüf-, Schaden-, Zeit- und Dienstplantabellen der führenden Module nur lesend und in einem Statement; geschrieben wird nur `export_job`. Vertrag, Annahmen und offene Punkte: [m4-cluster-wave12-c7.md](../../../docs/umsetzungsplan/vertraege/m4-cluster-wave12-c7.md).
 
+
+## Zeitfakten (WP-M4-52)
+
+`AnalyticsApi.timeFacts` ([TimeFacts](src/main/kotlin/de/taktovia/analytics/api/TimeFacts.kt)): geplante, angekündigte, zugesagte, prognostizierte und tatsächliche Abhol- und Ankunftszeiten je Fahrgastfahrt, append-only in `time_fact` (V40520). Verspätung = Ist minus Zielzeit der gebundenen (höchsten) Zusageversion, `null` mit Grund bei fehlender Ist-Zeit oder Zusage. `announced` ist bis zur Festlegung von OP 28 nur mit Testwert belegbar. Vertrag: [LH-I.6-KPI-006.md](../../../docs/umsetzungsplan/vertraege/LH-I.6-KPI-006.md).

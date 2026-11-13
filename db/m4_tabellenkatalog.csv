@@ -55,3 +55,4 @@ odometer_reading;documents-finance;APPEND_ONLY;;WP-M4-41;Kilometerstand mit Herk
 odometer_conflict;documents-finance;APPEND_ONLY;;WP-M4-41;erkannter Kilometerstandskonflikt, nie geändert
 odometer_conflict_resolution;documents-finance;APPEND_ONLY;;WP-M4-41;protokollierte Auflösung eines Konflikts
 odometer_policy;documents-finance;VERAENDERLICH;;WP-M4-41;Konflikttoleranz und Zeitfenster je Mandant
+time_fact;analytics;APPEND_ONLY;;WP-M4-52;Zeitfakten je Fahrt und Stopp, nur anhängen

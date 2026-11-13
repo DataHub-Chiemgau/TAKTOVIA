@@ -112,3 +112,7 @@ export TAKTOVIA_DB_NAME=taktovia_test TAKTOVIA_DB_ADMIN_USER=postgres TAKTOVIA_D
 ## Kostenklassifikation und Fahrzeugkosten (WP-M4-39, -40)
 
 `V40390` legt den Kostenartenkatalog `cost_category` je Mandant an (Standardverhalten fix/variabel/gemischt und direkt/umgelegt, Fahrzeugkostengruppe; Seed der Standardkostenarten per `seed_cost_categories()` im Kontext des Mandanten, wiederholbar, Anwendung ruft ihn beim ersten Zugriff), verlangt für `economic_event` beide Klassifikationsachsen gemeinsam oder gar nicht, ergänzt den Standardindex `(tenant_id, legal_entity_id, booked_at)`, den Direktbezug `cost_object_id` und `reclassified_from_id` (höchstens eine Neubuchung je Ursprung, Unique-Index; Umklassifikation nur als Gegenereignis plus Neubuchung, das Ereignis selbst bleibt unveränderlich). `V40400` legt das manuelle Fahrzeugkostenereignis `manual_cost_event` (Inhalt unveränderlich, Zustandsautomat per Trigger, Ursprungsschlüssel eindeutig je Rechtsträger) und seine Freigabeschritte `manual_cost_event_step` (append-only, Rollentrennung per Trigger wie `approval_step`) an. Rechte: `R__runtime_grants_m4_39.sql`; Tests: `test_cost_classification.py`, `test_cost_category.py`.
+
+## Zeitfakten (WP-M4-52)
+
+`V40520` legt `time_fact` an (Modul `analytics`, append-only per Trigger, Runtime nur SELECT/INSERT; je Fahrt, Stopp, Zeitart und Versionsschlüssel genau eine Zeile) und die Funktion `time_fact_delay(booking)` (Verspätung gegen die höchste Zusageversion, `NULL` mit Grund statt 0). Rechte: `R__runtime_grants_m4_52.sql`; Test: `db/tests/test_zeitfakten.py`.

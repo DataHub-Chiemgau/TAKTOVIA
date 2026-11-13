@@ -17,6 +17,9 @@ interface AnalyticsApi {
     /** Exportaufträge mit Empfängerrechten und Datenstand (WP-M5-19). */
     val reportJobs: ReportJobs
 
+    /** Zeitfakten je Fahrgastfahrt und Stopp: geplant, angekündigt, zugesagt, prognostiziert, tatsächlich (WP-M4-52). */
+    val timeFacts: TimeFacts
+
     companion object {
         /**
          * [downloadSecret] signiert die kurzlebigen Abruflinks (HMAC-SHA256, mindestens 32 Byte, nie im Repository); [checklist] ist die Freigabecheckliste des PBefG-Exports
@@ -29,6 +32,9 @@ interface AnalyticsApi {
 
         /** Nur die Faktenbasis (Projektionsworker und Tests ohne Exportaufträge). */
         fun createFacts(tx: TenantTransactions, clock: Clock = Clock.systemUTC()): FactBase = AnalyticsServicesFactory.createFacts(tx, clock)
+
+        /** Nur die Zeitfakten (WP-M4-52). */
+        fun createTimeFacts(tx: TenantTransactions): TimeFacts = AnalyticsServicesFactory.createTimeFacts(tx)
     }
 }
 
