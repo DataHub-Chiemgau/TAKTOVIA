@@ -25,6 +25,7 @@ Bearbeitbare Quelle der API-Verträge (OpenAPI 3.1), aufgeteilt nach Bereichen. 
 | `time-events.yaml` | Ist-Arbeitszeit als Zeitereignisse: Selbsterfassung, Nacherfassung der Personalrolle, Lesen, abgeleitete Intervalle (WP-M4-08) | `staff-time` |
 | `receipts.yaml` | Uploadticket, Quarantäne und Malware-Prüfung für Beleg-Originale (`/v1/expenses/receipts`, WP-M4-21) | `documents-finance` |
 | `reports.yaml` | Exportaufträge `/v1/reports/jobs` (Auftrag, Status, kurzlebiger Abruf; WP-M5-19) | `analytics` |
+| `analytics.yaml` | Kennzahlregister und Kennzahlwerte `/v1/analytics/metrics` mit Definitionsversion, Nenner, Datenstand und Ablehnungsstatistik (WP-M4-46 bis -50) | `analytics` |
 | `contract-pending.txt` | dokumentierte, noch nicht gebaute Operationen; kann nur schrumpfen (siehe unten) | – |
 | `events/` | Ereignisschemas, siehe dortige README | – |
 

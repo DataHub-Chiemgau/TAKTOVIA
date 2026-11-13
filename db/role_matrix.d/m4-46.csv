@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+metric_definition_revision;SELECT,INSERT,UPDATE;WP-M4-46: Kennzahldefinition je Version; Freigabe per UPDATE, danach unveraenderlich (Trigger), kein DELETE
+aggregate_snapshot;SELECT,INSERT;WP-M4-46: gespeicherter Kennzahlwert mit Definitionsversion und Datenstand, nur anhaengen (Trigger)
