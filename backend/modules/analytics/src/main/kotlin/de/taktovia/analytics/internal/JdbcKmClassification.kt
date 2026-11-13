@@ -35,7 +35,7 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
     override fun classify(tenant: TenantId, vehicleId: UUID, serviceDay: LocalDate): KmRunView = tx.run(tenant) { j -> doClassify(j, vehicleId, serviceDay) }
 
     override fun classifyDay(tenant: TenantId, serviceDay: LocalDate): List<KmRunView> {
-        val start = Timestamp.from(serviceDay.atStartOfDay().toInstant(ZoneOffset.UTC)); val end = Timestamp.from(serviceDay.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC))
+        val start = Timestamp.from(serviceDay.atStartOfDay(ZoneOffset.UTC).toInstant()); val end = Timestamp.from(serviceDay.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
         val vehicles = tx.run(tenant, readOnly = true) { j -> j.query("SELECT DISTINCT vehicle_id FROM taktovia.position_sample WHERE measured_at >= ? AND measured_at < ? ORDER BY vehicle_id", { rs, _ -> rs.getObject(1, UUID::class.java) }, start, end) }
         return vehicles.map { classify(tenant, it, serviceDay) }
     }
@@ -43,7 +43,7 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
     private fun doClassify(j: JdbcOperations, vehicleId: UUID, day: LocalDate): KmRunView {
         if (j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, vehicleId) == 0) throw ProblemException.notFound()
         j.query("SELECT pg_advisory_xact_lock(hashtextextended(taktovia.current_tenant()::text || ':km:' || ? || ':' || ?, 0))", { _, _ -> 0 }, vehicleId.toString(), day.toString())
-        val dayStart = day.atStartOfDay().toInstant(ZoneOffset.UTC); val dayEnd = dayStart.plus(1, ChronoUnit.DAYS)
+        val dayStart = day.atStartOfDay(ZoneOffset.UTC).toInstant(); val dayEnd = dayStart.plus(1, ChronoUnit.DAYS)
         val ts0 = Timestamp.from(dayStart); val ts1 = Timestamp.from(dayEnd)
 
         val points = j.query(
