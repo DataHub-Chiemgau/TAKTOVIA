@@ -311,6 +311,23 @@ components:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
           description: Optionaler Bezug auf die eigene geplante Schicht.
+        location:
+          type: object
+          additionalProperties: false
+          description: 'Standort, den ein Client trotz deaktivierter Geozone (`clock_in_geofence_enabled`, in P1 immer aus) mitsendet. Der Server **verwirft** ihn: er wird nicht gespeichert, nicht in Antwort, Ereignis, Audit oder Logs übernommen (Datenminimierung, AT-59). Die App soll für das Stempeln keinen Standort erheben; der Block ist nur Toleranz gegenüber fehlerhaften Clients, damit ein Stempel (und seine Offline-Wiederholung) nicht an Koordinaten scheitert.'
+          properties:
+            latitude:
+              type: number
+              minimum: -90
+              maximum: 90
+            longitude:
+              type: number
+              minimum: -180
+              maximum: 180
+            accuracy_m:
+              type: number
+              minimum: 0
+              maximum: 100000
       required:
       - event_id
       - kind

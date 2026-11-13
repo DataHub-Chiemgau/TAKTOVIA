@@ -1148,6 +1148,67 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/expenses/{expense_id}/view:
+    get:
+      summary: Belegansicht ohne Bildmetadaten abrufen
+      operationId: getExpenseDeliveryView
+      security:
+      - oidc:
+        - receipts:read
+      description: 'Liefert die Ansichtsfassung des Belegs (WP-M5-20, AT-59, Standortminimierung). Bilder (JPEG, PNG) sind von EXIF, GPS-Standort, Gerätekennung, eingebetteter Vorschau, XMP und Kommentaren befreit (nur Pixel, Ausrichtung eingerechnet); PDF wird unverändert geliefert (`X-Metadata-Minimized: false`). Das Original bleibt mit seinem Hash unverändert im geschützten Originalbestand (Entscheidung OP-15) und ist über `getExpenseOriginal` nur für Besitzer und Finanzrolle abrufbar; die Ansicht trägt einen eigenen Hash (`X-Content-SHA256`) und verweist auf den Originalhash (`X-Original-SHA256`, base64url ohne Auffüllung). Vor der Auslieferung wird die Integrität des Originals geprüft (409 `DOCUMENT_INTEGRITY_VIOLATION`); Quarantäne und fremde Mandanten: 404; ein nicht dekodierbares Bild wird nie unbereinigt geliefert (422).'
+      parameters:
+      - $ref: common.yaml#/components/parameters/expense_id
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          headers:
+            X-Content-SHA256:
+              description: SHA-256 der gelieferten Fassung, base64url ohne Auffüllung.
+              schema:
+                type: string
+                maxLength: 64
+            X-Original-SHA256:
+              description: SHA-256 des unveränderten Originals, base64url ohne Auffüllung.
+              schema:
+                type: string
+                maxLength: 64
+            X-Metadata-Minimized:
+              description: '`true`, wenn Bildmetadaten entfernt wurden; `false` bei PDF (unverändert).'
+              schema:
+                type: string
+                enum:
+                - 'true'
+                - 'false'
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
     ExpenseVatAmount:

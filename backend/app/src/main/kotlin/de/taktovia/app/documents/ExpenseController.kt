@@ -223,6 +223,17 @@ class ExpenseController(private val expenses: Expenses, private val costs: CostA
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(mime)).cacheControl(CacheControl.noStore()).header("Content-Disposition", "inline; filename=\"beleg-$id\"").body(bytes)
     }
 
+    /**
+     * Ansichtsfassung des Belegs ohne Bildmetadaten (WP-M5-20, AT-59, OP-15): Bilder sind von EXIF, GPS, Gerätekennung, Vorschau und Kommentaren befreit; die Antwort nennt den Hash der gelieferten
+     * Fassung (`X-Content-SHA256`) und den Hash des unveränderten Originals (`X-Original-SHA256`, base64url ohne Auffüllung wie `sha256` im Beleg).
+     */
+    @GetMapping("/v1/expenses/{expense_id}/view")
+    fun deliveryView(@PathVariable("expense_id") id: UUID, request: HttpServletRequest): ResponseEntity<ByteArray> {
+        val v = expenses.deliveryVersion(RequestContexts.require(request), id)
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(v.mime)).cacheControl(CacheControl.noStore()).header("Content-Disposition", "inline; filename=\"beleg-$id\"")
+            .header("X-Content-SHA256", toB64(v.sha256)).header("X-Original-SHA256", toB64(v.originalSha256)).header("X-Metadata-Minimized", v.minimized.toString()).body(v.bytes)
+    }
+
     private fun resource(e: ExpenseView): ExpenseResource {
         val d = e.document
         return ExpenseResource(linkedMapOf(

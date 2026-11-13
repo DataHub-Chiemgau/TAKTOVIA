@@ -2,6 +2,7 @@ package de.taktovia.documentsfinance.internal
 
 import de.taktovia.documentsfinance.api.CorrectExpense
 import de.taktovia.documentsfinance.api.DocumentKind
+import de.taktovia.documentsfinance.api.DeliveryVersion
 import de.taktovia.documentsfinance.api.DocumentState
 import de.taktovia.documentsfinance.api.EditedViewContent
 import de.taktovia.documentsfinance.api.ExpenseFields
@@ -97,6 +98,8 @@ internal class JdbcExpenses(
     }
 
     override fun original(ctx: RequestContext, id: UUID): ByteArray = uploads.openOriginal(ctx, id)
+
+    override fun deliveryVersion(ctx: RequestContext, id: UUID): DeliveryVersion = uploads.openDeliveryVersion(ctx, id)
 
     override fun editedView(ctx: RequestContext, id: UUID): EditedViewContent {
         require(ctx, SCOPE_READ)

@@ -3935,6 +3935,11 @@ export interface TimeEventCreate {
   origin?: TimeEventOrigin;
   person_ref?: string;
   shift_id?: UUID | null;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    accuracy_m?: number;
+  };
 }
 
 export type TimeEventOrigin = 'ONLINE' | 'OFFLINE';
@@ -4297,6 +4302,13 @@ export interface Operations {
     response: Expense;
   };
   getExpenseOriginal: {
+    path: { expense_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: undefined;
+  };
+  getExpenseDeliveryView: {
     path: { expense_id: UUID };
     query: Record<string, never>;
     headers: { traceparent?: string };
@@ -6076,6 +6088,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   reviewExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/review', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:review'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   rejectExpense: { method: 'POST', path: '/v1/expenses/{expense_id}/reject', pathParams: ['expense_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getExpenseOriginal: { method: 'GET', path: '/v1/expenses/{expense_id}/original', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 429, 503] },
+  getExpenseDeliveryView: { method: 'GET', path: '/v1/expenses/{expense_id}/view', pathParams: ['expense_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['receipts:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   publishConfig: { method: 'POST', path: '/v1/config/revisions/{revision_id}/publish', pathParams: ['revision_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['config:publish'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listRosterShifts: { method: 'GET', path: '/v1/rosters/shifts', pathParams: [], query: ['roster_id', 'view', 'open', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['rosters:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createRosterShift: { method: 'POST', path: '/v1/rosters/shifts', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rosters:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },

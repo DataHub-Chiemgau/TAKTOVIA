@@ -130,12 +130,22 @@ interface Uploads {
     fun openOriginal(ctx: RequestContext, documentId: UUID): ByteArray
 
     /**
+     * Ausgelieferte Ansichtsfassung (WP-M5-20, AT-59, Entscheidung OP-15): das Original bleibt mit seinem Hash geschützt im Originalbestand (Integritätsprüfung wie bei [openOriginal]);
+     * Bilder (JPEG, PNG) werden **ohne** EXIF, GPS, Gerätekennung, Vorschau, XMP und Kommentare neu kodiert, die Fassung trägt ihren eigenen Hash und verweist auf den Hash des Originals.
+     * Ein nicht dekodierbares Bild wird nie unbereinigt ausgeliefert (422). PDF wird unverändert geliefert (PDF-Metadaten sind nicht Teil dieser Regel, [DeliveryVersion.minimized] = false).
+     */
+    fun openDeliveryVersion(ctx: RequestContext, documentId: UUID): DeliveryVersion
+
+    /**
      * Gemeinsamer Anlagebefehl für serverseitige Kanäle (E-Mail-Eingang, Rechnungsimport; WP-M4-22): legt das Ticket an, schreibt die Bytes in die Quarantäne und schließt ab, mit
      * serverseitig berechnetem Hash und demselben Ablauf wie der Upload per Ticket. Der Kontext darf ein Dienstkonto sein (Scope `receipts:write`). Dieselbe `sourceRef` im selben Kanal
      * erzeugt nie einen zweiten Beleg ([IngestResult.Duplicate]).
      */
     fun ingest(ctx: RequestContext, cmd: IngestFile): IngestResult
 }
+
+/** Ausgelieferte Fassung eines Dokuments: [sha256] ist der Hash der gelieferten Bytes, [originalSha256] der des unveränderten Originals (Nachweiskette). */
+class DeliveryVersion(val bytes: ByteArray, val mime: String, val sha256: String, val originalSha256: String, val minimized: Boolean)
 
 class ReceiptRegistration(val ticket: UploadTicketView, val created: Boolean)
 class CompletedReceipt(val document: StoredDocumentView, val created: Boolean)

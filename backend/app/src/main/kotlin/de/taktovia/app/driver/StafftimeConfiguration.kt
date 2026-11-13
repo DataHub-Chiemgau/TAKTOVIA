@@ -47,6 +47,8 @@ class StafftimeConfiguration {
     )
 
     /** ImpactProvider „Schichten“ (WP-M4-17, Zusage an WP-M1-23): wird von `ConfigApi` für die Wirkungsanalyse vor Publikation gesammelt. */
+    /** Geozone beim Stempeln nur mit dokumentierter Freigabe (WP-M5-20): läuft bei Validierung und Publikation jeder Mandantenrevision. */
+    @Bean fun geofenceReleaseRevisionValidator(): de.taktovia.config.api.RevisionValidator = StafftimeApi.geofenceReleaseValidator()
     @Bean fun shiftImpactProvider(): de.taktovia.config.api.ImpactProvider = StafftimeApi.impactProvider()
 
     /** Leseport „Schichtbesetzung“ für Disposition und Einsatzfreigabe (WP-M4-17); die Disposition wertet ihn statt der Schicht-Fixture aus (WP-M4-65). */

@@ -357,6 +357,16 @@
 <li>429: <code>RATE_LIMITED</code></li>
 <li>503: <code>SERVICE_UNAVAILABLE</code></li>
 </ul></dd></dl></article>
+<article id="getExpenseDeliveryView"><h3><span class="m">GET</span> <code>/v1/expenses/{expense_id}/view</code></h3><p>Belegansicht ohne Bildmetadaten abrufen</p><dl><dt>operationId</dt><dd><code>getExpenseDeliveryView</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>receipts:read</code></dd><dt>Fehlercodes</dt><dd><ul>
+<li>400: <code>BAD_REQUEST</code></li>
+<li>401: <code>UNAUTHENTICATED</code></li>
+<li>403: <code>FORBIDDEN</code></li>
+<li>404: <code>NOT_FOUND</code></li>
+<li>409: <code>CONFLICT</code>, <code>CANCEL_DEADLINE_EXPIRED</code>, <code>IMMUTABLE_RECORD</code>, <code>DOCUMENT_INTEGRITY_VIOLATION</code>, <code>DUPLICATE_REVIEW_REQUIRED</code>, <code>DUPLICATE_EVIDENCE_LINKED</code>, <code>INVALID_STATE_TRANSITION</code>, <code>PERIOD_CLOSED</code>, <code>ALREADY_ALLOCATED</code>, <code>ALREADY_REVERSED</code></li>
+<li>422: <code>VALIDATION_FAILED</code>, <code>UNCONFIRMED_FIELDS</code>, <code>FUEL_FIELDS_MISSING</code>, <code>HINT_NOT_ACKNOWLEDGED</code>, <code>COST_ASSIGNMENT_REQUIRED</code>, <code>SPLIT_INCOMPLETE</code>, <code>ALLOCATION_SUM_MISMATCH</code></li>
+<li>429: <code>RATE_LIMITED</code></li>
+<li>503: <code>SERVICE_UNAVAILABLE</code></li>
+</ul></dd></dl></article>
 <h2 id="config">config.yaml</h2>
 <article id="publishConfig"><h3><span class="m">POST</span> <code>/v1/config/revisions/{revision_id}/publish</code></h3><p>Geprüfte Konfigurationsrevision veröffentlichen</p><dl><dt>operationId</dt><dd><code>publishConfig</code></dd><dt>Version</dt><dd>0.1.0 (/v1)</dd><dt>Sicherheits-Scopes</dt><dd><code>config:publish</code></dd><dt>Fehlercodes</dt><dd><ul>
 <li>400: <code>BAD_REQUEST</code></li>

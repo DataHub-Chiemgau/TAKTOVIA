@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/clock_in_geofence_release_ref.v1.schema.json",
+  "title": "clock_in_geofence_release_ref",
+  "description": "Verweis auf die dokumentierte Freigabe des standortgestützten Stempelns (Mitbestimmung, Zweckbindung)",
+  "type": "string",
+  "minLength": 3,
+  "maxLength": 200,
+  "x-unit": "TEXT",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.4-clock_in_geofence_enabled",
+  "x-catalog-range": "Planungsannahme WP-M5-20: Freigabenachweis als Verweis; Inhalt und Mitbestimmungsverfahren offen (D-10/D-11)"
+}
