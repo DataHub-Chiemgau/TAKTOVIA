@@ -43,7 +43,7 @@ internal object DefectJson {
         "id" to d.id.toString(), "case_number" to d.caseNumber, "vehicle_id" to d.vehicleId.toString(), "reported_by" to d.reportedBy.toString(),
         "reported_at" to d.reportedAt.toString(), "occurred_at" to d.occurredAt.toString(), "category_code" to d.categoryCode,
         "location_kind" to d.locationKind, "location_value" to d.locationValue, "kind" to d.kind, "vehicle_area" to d.vehicleArea, "observed_effect" to d.observedEffect,
-        "source_inspection_id" to d.sourceInspectionId?.toString(), "source_step_code" to d.sourceStepCode,
+        "source_inspection_id" to d.sourceInspectionId?.toString(), "source_step_code" to d.sourceStepCode, "source_incident_id" to d.sourceIncidentId?.toString(),
         "severity" to d.severity, "status" to d.status, "assignee_ref" to d.assigneeRef?.toString(), "blocks_vehicle" to d.blocksVehicle,
         "evidence_ids" to d.evidence.map { it.id.toString() }, "evidence_pending" to d.evidencePending, "content_version" to d.contentVersion,
         "description" to d.description, "revision" to d.revision,

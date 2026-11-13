@@ -21,7 +21,10 @@ import de.taktovia.platform.audit.AuditEntry
 import de.taktovia.platform.audit.AuditPort
 import de.taktovia.platform.audit.AuditRequired
 import de.taktovia.platform.audit.ObjectRef
+import de.taktovia.platform.authz.ScopedObject
+import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ActorType
+import de.taktovia.platform.context.Purpose
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
 import de.taktovia.platform.outbox.Outbox
@@ -74,9 +77,13 @@ internal class JdbcDefects(
         try {
             return ctxTx.run(ctx) { j -> doReport(j, ctx, actor, subject, role, cmd) }
         } catch (e: DataIntegrityViolationException) {
-            // Gleichzeitige Wiederholung derselben Geräteereignis-ID: die zweite Transaktion scheitert an UNIQUE und liefert die erste Akte
-            if (sqlState(e) == "23505" && cmd.deviceEventId != null) {
-                val existing = ctxTx.run(ctx, readOnly = true) { j -> findByDeviceEvent(j, ctx, cmd.deviceEventId) } ?: throw e
+            // Gleichzeitige Wiederholung (zwei Geräte, Zeitüberschreitung): die zweite Transaktion scheitert an UNIQUE und liefert die erste Akte, entweder über die Herkunft Prüfschritt
+            // (je Mandant, Prüflauf und Prüfschritt höchstens eine Akte, WP-M3-20) oder über dieselbe Geräteereignis-ID
+            if (sqlState(e) == "23505") {
+                val existing = ctxTx.run(ctx, readOnly = true) { j ->
+                    (if (cmd.sourceInspectionId != null && cmd.sourceStepCode != null) findByOrigin(j, ctx, cmd.sourceInspectionId, cmd.sourceStepCode) else null)
+                        ?: cmd.deviceEventId?.let { findByDeviceEvent(j, ctx, it) }
+                } ?: throw e
                 return ReportedDefect(existing, created = false)
             }
             if (sqlState(e) == "23514") throw ProblemException.invalid(Violation("/occurred_at", ViolationCode.INVALID_VALUE))   // Ereigniszeit in der Zukunft (Trigger)
@@ -96,15 +103,14 @@ internal class JdbcDefects(
         // Fahrzeug im eigenen Mandanten (RLS): fremd oder unbekannt = 404; ein Fahrer braucht zusätzlich den Bezug, ohne Hinweis auf die Existenz
         if (j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, cmd.vehicleId) != 1) throw ProblemException.notFound()
         if (DefectRoles.driverOnly(ctx) && !relation.hasRelation(j, ctx.actor.subject, cmd.vehicleId, now)) throw ProblemException.notFound()
+        // Herkunft (WP-M3-20): Prüfschritt (negativ beantwortet, höchstens eine Akte je Schritt) oder Störung (Incident); eine Wiederholung für denselben Schritt liefert dieselbe Akte
+        cmd.sourceInspectionId?.let { inspection -> checkInspectionOrigin(j, ctx, cmd, inspection)?.let { return ReportedDefect(it, created = false) } }
+        cmd.sourceIncidentId?.let { checkIncidentOrigin(j, ctx, cmd, it) }
         // Bekannter Schaden: Fahrer sehen offene Fälle des Fahrzeugs vor der Neuanlage (CHK-012); ohne ausdrückliche Bestätigung wird nicht still neu angelegt
         if (DefectRoles.driverOnly(ctx) && !cmd.confirmNewDespiteKnown) {
             val open = j.query("SELECT case_number FROM taktovia.defect_case WHERE vehicle_id = ? AND status NOT IN ('CLOSED', 'DISMISSED') ORDER BY case_number LIMIT 5", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
             if (open.isNotEmpty()) throw ProblemException(ErrorCode.CONFLICT, "${de.taktovia.fleetsafety.api.KnownDefectCatalog.OPEN_DEFECTS_PENDING}: Für dieses Fahrzeug sind offene Fälle bekannt (${open.joinToString(", ")}); " +
                 "sie sind vor der Neuanlage anzuzeigen, die Neuanlage ist mit confirm_new_despite_known=true möglich.")
-        }
-        cmd.sourceInspectionId?.let {
-            if (j.queryForObject("SELECT count(*) FROM taktovia.inspection_run WHERE id = ? AND vehicle_id = ?", Int::class.java, it, cmd.vehicleId) != 1)
-                throw ProblemException.invalid(Violation("/source_inspection_id", ViolationCode.INVALID_VALUE))
         }
         val id = UUID.randomUUID()
         val view = insertCase(j, id, actor, subject, cmd)
@@ -112,21 +118,59 @@ internal class JdbcDefects(
         audit.record(j, AuditEntry(actor, AuditActions.DEFECT_REPORTED, ObjectRef("defect", id), ctx.correlationId, buildMap {
             put("case_number", view.caseNumber); put("vehicle_id", cmd.vehicleId.toString()); put("category_code", cmd.categoryCode); put("reporter_role", role)
             put("capture_mode", cmd.captureMode.name); put("evidence_count", cmd.evidenceIds.size); cmd.severityHint?.let { put("severity_hint", it) }
+            cmd.sourceInspectionId?.let { put("source_inspection_id", it.toString()) }; cmd.sourceStepCode?.let { put("source_step_code", it) }; cmd.sourceIncidentId?.let { put("source_incident_id", it.toString()) }
         }))
         outbox.append(j, OutboxEvent(id, view.revision, "defect.reported",
-            mapOf("defect_id" to id.toString(), "case_number" to view.caseNumber, "vehicle_id" to cmd.vehicleId.toString(), "category_code" to cmd.categoryCode, "reporter_role" to role,
-                "evidence_ids" to cmd.evidenceIds.map { it.toString() }),
+            buildMap {
+                put("defect_id", id.toString()); put("case_number", view.caseNumber); put("vehicle_id", cmd.vehicleId.toString()); put("category_code", cmd.categoryCode); put("reporter_role", role)
+                put("evidence_ids", cmd.evidenceIds.map { it.toString() })
+                // Herkunft nur als Kennungen (WP-M3-20), nie mit Text
+                cmd.sourceInspectionId?.let { put("source_inspection_id", it.toString()) }; cmd.sourceStepCode?.let { put("source_step_code", it) }; cmd.sourceIncidentId?.let { put("source_incident_id", it.toString()) }
+            },
             clock.instant(), correlationId = ctx.correlationId))
         return ReportedDefect(loadOrNull(j, ctx, id)!!, created = true)
+    }
+
+    /**
+     * Herkunft Prüfschritt (CHK-011, DMG-003). Der Prüflauf muss im Mandanten liegen (fremd oder unbekannt: 404), ein Fahrer nur den Lauf einer eigenen Schicht (sonst 404 ohne Hinweis); das Fahrzeug der Akte
+     * ist das des Laufs (422). Existiert für den Schritt schon eine Akte, ist sie das Ergebnis (Wiederholung, auch von einem zweiten Gerät). Sonst muss der Schritt negativ beantwortet sein (Antwort
+     * `DEFECT` oder ein Nachtrag auf `DEFECT`, gleich ob der Schritt sicherheitskritisch ist), sonst 422 am Feld `/source_step_code`. Schreibt nichts: die Antwort und der Lauf bleiben unverändert.
+     */
+    private fun checkInspectionOrigin(j: JdbcOperations, ctx: RequestContext, cmd: ReportDefect, inspection: UUID): DefectView? {
+        val step = cmd.sourceStepCode ?: throw ProblemException.invalid(Violation("/source_step_code", ViolationCode.REQUIRED))
+        val vehicle = (if (DefectRoles.driverOnly(ctx))
+            j.query("SELECT i.vehicle_id FROM taktovia.inspection_run i WHERE i.id = ? AND EXISTS (SELECT 1 FROM taktovia.staff_shift s WHERE s.id = i.shift_id AND $OWN_SHIFT)",
+                { rs, _ -> rs.getObject(1, UUID::class.java) }, inspection, *ShiftScope.args(ctx.actor.issuer, ctx.actor.subject))
+        else j.query("SELECT i.vehicle_id FROM taktovia.inspection_run i WHERE i.id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, inspection)).firstOrNull() ?: throw ProblemException.notFound()
+        if (vehicle != cmd.vehicleId) throw ProblemException.invalid(Violation("/source_inspection_id", ViolationCode.INVALID_VALUE))
+        findByOrigin(j, ctx, inspection, step)?.let { return it }
+        val answer = j.query("SELECT answer FROM taktovia.inspection_answer WHERE inspection_id = ? AND step_code = ?", { rs, _ -> rs.getString(1) }, inspection, step).firstOrNull()
+        val amended = j.query("SELECT new_answer FROM taktovia.inspection_amendment WHERE inspection_id = ? AND step_code = ? ORDER BY created_at DESC, id DESC LIMIT 1", { rs, _ -> rs.getString(1) }, inspection, step).firstOrNull()
+        if ((amended ?: answer) != "DEFECT") throw ProblemException.invalid(Violation("/source_step_code", ViolationCode.INVALID_VALUE))
+        return null
+    }
+
+    /** Die Akte zum Prüfschritt, falls es sie gibt (höchstens eine je Mandant, Prüflauf und Prüfschritt). */
+    private fun findByOrigin(j: JdbcOperations, ctx: RequestContext, inspection: UUID, step: String): DefectView? =
+        j.query("SELECT d.id FROM taktovia.defect_case d WHERE d.source_inspection_id = ? AND d.source_step_code = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, inspection, step).firstOrNull()?.let { loadOrNull(j, ctx, it) }
+
+    /**
+     * Herkunft Störung (DMG-003): der Incident muss im Mandanten und im Dienstscope des Aufrufers liegen (sonst 404); ein Fahrer kennt keine Incidents (404); das Fahrzeug der Akte ist das des Incidents (422).
+     */
+    private fun checkIncidentOrigin(j: JdbcOperations, ctx: RequestContext, cmd: ReportDefect, incident: UUID) {
+        if (DefectRoles.driverOnly(ctx)) throw ProblemException.notFound()
+        val row = j.query("SELECT vehicle_id, service_id FROM taktovia.incident WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, incident).firstOrNull() ?: throw ProblemException.notFound()
+        if (!ServiceScopeAuthorizer.canRead(j, ctx, ScopedObject("incident", incident, ctx.tenant, row.second), Purpose.OPERATIONS)) throw ProblemException.notFound()
+        if (row.first != null && row.first != cmd.vehicleId) throw ProblemException.invalid(Violation("/source_incident_id", ViolationCode.INVALID_VALUE))
     }
 
     private fun insertCase(j: JdbcOperations, id: UUID, actor: ActorRef, subject: UUID, cmd: ReportDefect): DefectView =
         j.query(
             "INSERT INTO taktovia.defect_case AS d (tenant_id, id, case_number, vehicle_id, reported_by, occurred_at, location_kind, location_value, category_code, kind, vehicle_area, observed_effect, " +
-                "description, source_inspection_id, source_step_code, device_event_id, created_by) " +
-                "VALUES (taktovia.current_tenant(), ?, taktovia.next_defect_case_number(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING $COLUMNS",
+                "description, source_inspection_id, source_step_code, source_incident_id, device_event_id, created_by) " +
+                "VALUES (taktovia.current_tenant(), ?, taktovia.next_defect_case_number(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING $COLUMNS",
             MAPPER, id, cmd.vehicleId, subject, Timestamp.from(cmd.occurredAt), cmd.locationKind, cmd.locationValue, cmd.categoryCode, cmd.kind, cmd.vehicleArea, cmd.observedEffect,
-            cmd.description, cmd.sourceInspectionId, cmd.sourceStepCode, cmd.deviceEventId, actor.value,
+            cmd.description, cmd.sourceInspectionId, cmd.sourceStepCode, cmd.sourceIncidentId, cmd.deviceEventId, actor.value,
         ).single()
 
     /** Erweiterungspunkt der folgenden Arbeitspakete (Statushistorie, Revision 1, Evidenzanbindung) innerhalb derselben Transaktion. */
@@ -135,6 +179,8 @@ internal class JdbcDefects(
             UUID.randomUUID(), id, actor.value, view.revision)
         insertRevision(j, id, 1, actor, "Erstmeldung", view)
         evidence.attach(j, id, cmd.evidenceIds, actor, 1)
+        // Herkunft Störung: die Akte ist vom Incident aus erreichbar (Verknüpfung am Incident, einmalig)
+        cmd.sourceIncidentId?.let { j.update("INSERT INTO taktovia.incident_link(tenant_id, id, incident_id, link_kind, object_id, created_by) VALUES (taktovia.current_tenant(), ?, ?, 'DEFECT', ?, ?) ON CONFLICT DO NOTHING", UUID.randomUUID(), it, id, actor.value) }
     }
 
     override fun get(ctx: RequestContext, id: UUID): DefectView = ctxTx.run(ctx, readOnly = true) { j ->
@@ -380,8 +426,9 @@ internal class JdbcDefects(
         const val PROVEN_ORDERS = "SELECT count(*) FROM taktovia.repair_order WHERE defect_id = ? AND status = 'PROOF_RECORDED'"
         const val RELEASE_DECISIONS = "SELECT count(*) FROM taktovia.vehicle_release_decision d JOIN taktovia.repair_order r ON r.tenant_id = d.tenant_id AND r.id = d.repair_order_id " +
             "WHERE r.defect_id = ? AND d.decision = 'RELEASED'"
+        const val OWN_SHIFT = ShiftScope.OWN
         const val COLUMNS = "d.id, d.case_number, d.vehicle_id, d.reported_by, d.reported_at, d.occurred_at, d.location_kind, d.location_value, d.category_code, d.kind, d.vehicle_area, " +
-            "d.observed_effect, d.description, d.severity, d.status, d.assignee_ref, d.source_inspection_id, d.source_step_code, d.content_version, d.revision, d.updated_at, d.created_at"
+            "d.observed_effect, d.description, d.severity, d.status, d.assignee_ref, d.source_inspection_id, d.source_step_code, d.content_version, d.revision, d.updated_at, d.created_at, d.source_incident_id"
         val MAPPER = RowMapper { rs, _ ->
             DefectView(
                 rs.getObject("id", UUID::class.java), rs.getString("case_number"), rs.getObject("vehicle_id", UUID::class.java), rs.getObject("reported_by", UUID::class.java),
@@ -389,6 +436,7 @@ internal class JdbcDefects(
                 rs.getString("category_code"), rs.getString("kind"), rs.getString("vehicle_area"), rs.getString("observed_effect"), rs.getString("description"), rs.getString("severity"),
                 rs.getString("status"), rs.getObject("assignee_ref", UUID::class.java), rs.getObject("source_inspection_id", UUID::class.java), rs.getString("source_step_code"),
                 rs.getInt("content_version"), rs.getLong("revision"), rs.getTimestamp("updated_at").toInstant(), rs.getTimestamp("created_at").toInstant(),
+                sourceIncidentId = rs.getObject("source_incident_id", UUID::class.java),
             )
         }
     }

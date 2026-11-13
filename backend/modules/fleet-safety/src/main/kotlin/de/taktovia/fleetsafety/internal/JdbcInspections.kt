@@ -21,6 +21,7 @@ import de.taktovia.fleetsafety.api.ReleaseBlocker
 import de.taktovia.fleetsafety.api.ReleaseOutcome
 import de.taktovia.fleetsafety.api.SubmitInspection
 import de.taktovia.fleetsafety.api.InspectionAnswerView
+import de.taktovia.fleetsafety.api.InspectionDefectRef
 import de.taktovia.fleetsafety.api.InspectionCatalog
 import de.taktovia.fleetsafety.api.InspectionReleaseView
 import de.taktovia.fleetsafety.api.InspectionTemplateView
@@ -424,7 +425,16 @@ internal class JdbcInspections(
             row.status == "IN_PROGRESS" -> listOf(ReleaseBlocker.INSPECTION_OPEN)
             else -> readiness.missing(j, row.vehicleId, row.shiftId, row.id).ifEmpty { listOf(ReleaseBlocker.NO_INSPECTION) }
         }
-        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing)
+        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing, defectRefs(j, ctx, row.id))
+    }
+
+    /**
+     * Gegenreferenz Prüfschritt -> Schadenakte (WP-M3-20): aus der Herkunft der Akten dieses Laufs. Ein Fahrer sieht nur Akten, die er selbst gemeldet hat (DMG-011); Disposition und Werkstatt alle.
+     */
+    private fun defectRefs(j: JdbcOperations, ctx: RequestContext, inspectionId: UUID): List<InspectionDefectRef> {
+        val own = if (InspectionRoles.driverOnly(ctx)) runCatching { UUID.fromString(ctx.actor.subject) }.getOrNull() ?: return emptyList() else null
+        return j.query("SELECT source_step_code, id, case_number FROM taktovia.defect_case WHERE source_inspection_id = ? AND source_step_code IS NOT NULL AND (CAST(? AS uuid) IS NULL OR reported_by = CAST(? AS uuid)) ORDER BY source_step_code, created_at",
+            { rs, _ -> InspectionDefectRef(rs.getString(1), rs.getObject(2, UUID::class.java), rs.getString(3)) }, inspectionId, own, own)
     }
 
     private class Shift(val id: UUID, val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)

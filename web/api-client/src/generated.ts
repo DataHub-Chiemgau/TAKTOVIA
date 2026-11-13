@@ -2244,6 +2244,11 @@ export interface Inspection {
   outcome: 'PASSED' | 'PASSED_RESTRICTED' | 'BLOCKED' | 'CLARIFICATION_REQUIRED' | null;
   missing_requirements: MissingRequirement[];
   completed_by?: string | null;
+  defect_refs?: ({
+    step_code: string;
+    defect_id: UUID;
+    case_number: string;
+  })[];
   amendments?: InspectionAmendment[];
   answers: InspectionAnswer[];
   release: {
@@ -2291,6 +2296,7 @@ export interface DefectCreate {
   description: string;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
+  source_incident_id?: UUID | null;
   evidence_ids?: UUID[];
   device_event_id?: UUID;
   severity_hint?: DefectSeverity;
@@ -2330,6 +2336,7 @@ export interface Defect {
   observed_effect?: DefectEffect | null;
   source_inspection_id?: UUID | null;
   source_step_code?: string | null;
+  source_incident_id?: UUID | null;
   evidence_pending?: number;
   content_version?: number;
 }
@@ -2397,7 +2404,24 @@ export interface Incident {
   defect_ids?: UUID[];
   service_id?: UUID | null;
   closed_at?: string | null;
+  workflow_log?: WorkflowLogEntry[];
   revision: number;
+}
+
+export interface WorkflowLogEntry {
+  seq: number;
+  at: string;
+  event_id: UUID;
+  event_type: string | null;
+  rule_revision_id: UUID | null;
+  rule_revision_no: number | null;
+  action: string;
+  outcome: string;
+  decision: string | null;
+  actor: string;
+  correlation_id: UUID | null;
+  ref: string | null;
+  reason_code: string | null;
 }
 
 export interface IncidentPage {
