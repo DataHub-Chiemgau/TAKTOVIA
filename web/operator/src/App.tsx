@@ -39,6 +39,7 @@ import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Schichtzuweisung } from './flotte/Schichtzuweisung';
 import { Schadenakte } from './flotte/Schadenakte';
 import { Arbeitsliste } from './alarm/Arbeitsliste';
+import { VehicleList } from './vehicles/VehicleList';
 import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
@@ -217,6 +218,14 @@ export function App() {
             element={
               <RequireRight right="fleet">
                 <Fahrzeugstamm />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/leitstelle/fahrzeuge"
+            element={
+              <RequireRight right="livebetrieb">
+                <VehicleList />
               </RequireRight>
             }
           />

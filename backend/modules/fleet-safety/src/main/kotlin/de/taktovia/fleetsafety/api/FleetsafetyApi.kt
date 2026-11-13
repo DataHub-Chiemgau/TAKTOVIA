@@ -47,6 +47,9 @@ interface FleetsafetyApi {
     /** Alarm-Grundlage: Alarm, Dedupe, Quittierung, Eskalation, Richtlinienrevisionen (WP-M3-52). */
     val alerts: Alerts
 
+    /** Leitstellenprojektion der Fahrzeuge des berechtigten Dienstes (WP-M3-36). */
+    val operatorVehicles: OperatorVehicles
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,

@@ -33,7 +33,7 @@ class InspectionResource(@get:JsonValue val data: Map<String, Any?>, override va
  * Mandant und Fahrer aus dem Kontext, nie aus dem Body.
  */
 @RestController
-class InspectionController(private val fleet: FleetsafetyApi) {
+class InspectionController(private val fleet: FleetsafetyApi, private val config: de.taktovia.config.api.ConfigApi) {
 
     @PostMapping("/v1/inspections")
     fun create(@RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<InspectionResource> {
@@ -79,6 +79,16 @@ class InspectionController(private val fleet: FleetsafetyApi) {
 
     private fun resource(v: InspectionView) = InspectionResource(json(v), v.revision)
 
+    /**
+     * Kontakt zur Leitstelle für die Sperranzeige der App (CHK-004): die Telefonnummer des Unternehmensprofils des Mandanten (Planungsannahme: eine eigene Leitstellennummer gibt es im Profil noch nicht,
+     * OP-27); `null`, solange kein Profil oder keine Nummer gepflegt ist. Gelesen im Kontext der Anfrage, nur wenn der Lauf gesperrt ist.
+     */
+    private fun dispatchContact(block: de.taktovia.fleetsafety.api.InspectionBlock?): String? {
+        if (block == null) return null
+        val request = (org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes() as org.springframework.web.context.request.ServletRequestAttributes).request
+        return try { config.companyProfile.get(RequestContexts.require(request)).input.contactPhone } catch (e: de.taktovia.platform.problem.ProblemException) { null }
+    }
+
     private fun json(v: InspectionView): Map<String, Any?> = linkedMapOf(
         "id" to v.id.toString(), "shift_id" to v.shiftId.toString(), "vehicle_id" to v.vehicleId.toString(), "driver_ref" to v.driverRef.toString(),
         "template_revision_id" to v.templateRevisionId.toString(), "kind" to v.kind, "status" to v.status, "outcome" to v.outcome,
@@ -86,6 +96,8 @@ class InspectionController(private val fleet: FleetsafetyApi) {
         "missing_requirements" to v.missing.map { m ->
             linkedMapOf("code" to m.name, "inspection_id" to v.id.toString(), "step_codes" to if (m == de.taktovia.fleetsafety.api.ReleaseBlocker.INSPECTION_OPEN) v.template.steps.filter { it.mandatory }.map { it.code } else emptyList<String>())
         },
+        "restriction" to v.restriction?.let { linkedMapOf("unavailable_dimensions" to it.unavailableDimensions.sorted(), "step_codes" to it.stepCodes) },
+        "block" to v.block?.let { linkedMapOf("block_kind" to it.kind.name, "case_number" to it.caseNumber, "step_codes" to it.stepCodes, "dispatch_contact" to dispatchContact(v.block)) },
         "completed_by" to v.completedBy,
         "amendments" to v.amendments.map { amendment(it) },
         "answers" to v.answers.map { a ->
@@ -101,7 +113,8 @@ class InspectionController(private val fleet: FleetsafetyApi) {
             "steps" to v.template.steps.mapIndexed { i, s ->
                 linkedMapOf("step_code" to s.code, "position" to i + 1, "title" to s.title, "mandatory" to s.mandatory, "safety_critical" to s.safetyCritical, "answer_kind" to s.kind.code,
                     "photo_required_on_defect" to s.photoRequiredOnDefect, "help_text" to s.helpText, "na_requires_reason" to s.naRequiresReason, "number_min" to s.numberMin,
-                    "number_max" to s.numberMax, "number_unit" to s.numberUnit, "has_example_image" to (s.exampleImageName != null))
+                    "number_max" to s.numberMax, "number_unit" to s.numberUnit, "has_example_image" to (s.exampleImageName != null),
+                    "equipment_condition" to s.equipmentCondition, "restricts_dimension" to s.restrictsDimension, "block_kind" to s.blockKind)
             },
         ),
     )

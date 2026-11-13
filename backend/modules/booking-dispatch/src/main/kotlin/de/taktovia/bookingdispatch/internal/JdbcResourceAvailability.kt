@@ -30,6 +30,8 @@ internal class JdbcResourceAvailability(
     private class Row(
         val vehicleId: UUID, val inPool: Boolean, val areaOk: Boolean, val capacity: String, val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean,
         val shiftId: UUID?, val shiftStart: java.time.Instant?, val shiftEnd: java.time.Instant?, val releaseId: UUID?, val releaseUntil: java.time.Instant?, val serviceStatus: String?,
+        /** `inspection_run.restriction` der Prüfung, auf die die Freigabe verweist (WP-M3-12), als JSON-Text. */
+        val restriction: String? = null,
     ) {
         fun verdict(): VehicleAvailability = when {
             !inPool -> VehicleAvailability.NotUsable(vehicleId, Unusable.NOT_IN_POOL)
@@ -39,7 +41,7 @@ internal class JdbcResourceAvailability(
             shiftId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_SHIFT)
             releaseId == null -> VehicleAvailability.NotUsable(vehicleId, Unusable.NO_VALID_RELEASE)
             serviceStatus != null && serviceStatus !in DISPATCHABLE_STATUS -> VehicleAvailability.NotUsable(vehicleId, Unusable.SERVICE_STATUS_NOT_DISPATCHABLE)
-            else -> VehicleAvailability.Usable(VehicleResource(vehicleId, capacity, safetyRevision, shiftId, shiftStart!!, shiftEnd!!, releaseId, releaseUntil!!))
+            else -> ResourceRestriction.apply(capacity, restriction).let { (reduced, dims) -> VehicleAvailability.Usable(VehicleResource(vehicleId, capacity, safetyRevision, shiftId, shiftStart!!, shiftEnd!!, releaseId, releaseUntil!!, dims, reduced)) }
         }
     }
 
@@ -47,7 +49,7 @@ internal class JdbcResourceAvailability(
         Row(
             rs.getObject("id", UUID::class.java), rs.getBoolean("in_pool"), rs.getBoolean("area_ok"), rs.getString("capacity_config"), rs.getBoolean("active_block"), rs.getLong("safety_revision"), rs.getBoolean("active"),
             rs.getObject("shift_id", UUID::class.java), rs.getTimestamp("starts_at")?.toInstant(), rs.getTimestamp("ends_at")?.toInstant(),
-            rs.getObject("release_id", UUID::class.java), rs.getTimestamp("valid_until")?.toInstant(), rs.getString("service_status"),
+            rs.getObject("release_id", UUID::class.java), rs.getTimestamp("valid_until")?.toInstant(), rs.getString("service_status"), rs.getString("restriction"),
         )
     }
 
@@ -61,16 +63,17 @@ internal class JdbcResourceAvailability(
         val from = Timestamp.from(w.from); val to = Timestamp.from(w.to)
         return j.query(
             "SELECT v.id, (p.id IS NOT NULL) AS in_pool, ($AREA_OK) AS area_ok, v.capacity_config::text AS capacity_config, v.active_block, v.safety_revision, v.active, " +
-                "s.id AS shift_id, s.starts_at, s.ends_at, r.id AS release_id, r.valid_until, st.status AS service_status " +
+                "s.id AS shift_id, s.starts_at, s.ends_at, r.id AS release_id, r.valid_until, st.status AS service_status, ir.restriction::text AS restriction " +
                 "FROM taktovia.vehicle v " +
                 "LEFT JOIN taktovia.vehicle_pool_assignment p ON p.tenant_id = v.tenant_id AND p.vehicle_id = v.id AND p.service_id = ? " +
                 "AND p.valid_from <= ? AND (p.valid_to IS NULL OR p.valid_to > ?) " +
                 "LEFT JOIN LATERAL (SELECT sh.id, sh.starts_at, sh.ends_at FROM taktovia.staff_shift sh WHERE sh.tenant_id = v.tenant_id AND sh.vehicle_id = v.id " +
                 "AND sh.state IN ($SHIFT_USABLE) AND sh.starts_at <= ? AND sh.ends_at >= ? ORDER BY sh.starts_at, sh.id LIMIT 1) s ON true " +
-                "LEFT JOIN LATERAL (SELECT rr.id, rr.valid_until FROM taktovia.resource_release rr WHERE rr.tenant_id = v.tenant_id AND rr.vehicle_id = v.id " +
+                "LEFT JOIN LATERAL (SELECT rr.id, rr.valid_until, rr.inspection_ref FROM taktovia.resource_release rr WHERE rr.tenant_id = v.tenant_id AND rr.vehicle_id = v.id " +
                 "AND rr.shift_id = s.id AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision " +
                 "ORDER BY rr.valid_until DESC, rr.id LIMIT 1) r ON true " +
                 "LEFT JOIN taktovia.vehicle_service_status st ON st.tenant_id = v.tenant_id AND st.shift_id = s.id " +
+                "LEFT JOIN taktovia.inspection_run ir ON ir.tenant_id = v.tenant_id AND ir.id = r.inspection_ref " +
                 "WHERE (CAST(? AS uuid) IS NULL AND p.id IS NOT NULL) OR v.id = CAST(? AS uuid) ORDER BY v.id",
             mapper, GeoPoint.toJsonArray(locations), from, from, serviceId, from, from, from, to, to, vehicleId, vehicleId,
         )
@@ -96,10 +99,11 @@ internal class JdbcResourceAvailability(
         val candidates = base.filter { it.inPool && it.areaOk && it.active && !it.activeBlock }
         val staffed = port.staffing(j, candidates.map { it.vehicleId }, w.from, w.to, lock).filterValues { it.staffed }
         val releases = if (staffed.isEmpty()) emptyMap() else j.query(
-            "SELECT DISTINCT ON (rr.shift_id) rr.shift_id, rr.id, rr.valid_until FROM taktovia.resource_release rr JOIN taktovia.vehicle v ON v.tenant_id = rr.tenant_id AND v.id = rr.vehicle_id " +
+            "SELECT DISTINCT ON (rr.shift_id) rr.shift_id, rr.id, rr.valid_until, (SELECT ir.restriction::text FROM taktovia.inspection_run ir WHERE ir.tenant_id = rr.tenant_id AND ir.id = rr.inspection_ref) " +
+                "FROM taktovia.resource_release rr JOIN taktovia.vehicle v ON v.tenant_id = rr.tenant_id AND v.id = rr.vehicle_id " +
                 "WHERE rr.shift_id = ANY (CAST(? AS uuid[])) AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision AND rr.vehicle_id = ANY (CAST(? AS uuid[])) " +
                 "ORDER BY rr.shift_id, rr.valid_until DESC, rr.id",
-            { rs, _ -> rs.getObject(1, UUID::class.java) to (rs.getObject(2, UUID::class.java) to rs.getTimestamp(3).toInstant()) },
+            { rs, _ -> rs.getObject(1, UUID::class.java) to Triple(rs.getObject(2, UUID::class.java), rs.getTimestamp(3).toInstant(), rs.getString(4)) },
             "{" + staffed.values.joinToString(",") { it.shiftId.toString() } + "}", Timestamp.from(w.to), "{" + staffed.keys.joinToString(",") + "}",
         ).toMap()
         // Dienststatus der besetzten Schichten (WP-M3-31); ohne Statuszeile gilt der Status als unbekannt und blockiert nicht (wie im direkten Pfad)
@@ -110,7 +114,7 @@ internal class JdbcResourceAvailability(
         return base.map { r ->
             val s = staffed[r.vehicleId] ?: return@map r
             val rel = releases[s.shiftId]
-            Row(r.vehicleId, r.inPool, r.areaOk, r.capacity, r.activeBlock, r.safetyRevision, r.active, s.shiftId, s.startsAt, s.endsAt, rel?.first, rel?.second, statuses[s.shiftId])
+            Row(r.vehicleId, r.inPool, r.areaOk, r.capacity, r.activeBlock, r.safetyRevision, r.active, s.shiftId, s.startsAt, s.endsAt, rel?.first, rel?.second, statuses[s.shiftId], rel?.third)
         }
     }
 
@@ -148,6 +152,15 @@ internal class JdbcResourceAvailability(
                 "WHERE st.vehicle_id = ? AND sh.starts_at <= ? AND sh.ends_at >= ? AND st.status NOT IN ($DISPATCHABLE_STATUS_SQL)",
             Int::class.java, vehicleId, ts, ts,
         )!! == 0
+    }
+
+    override fun unavailableDimensions(jdbc: JdbcOperations, vehicleId: UUID, at: java.time.Instant): Set<String> {
+        val ts = Timestamp.from(at)
+        return jdbc.query(
+            "SELECT ir.restriction::text FROM taktovia.resource_release rr JOIN taktovia.vehicle v ON v.tenant_id = rr.tenant_id AND v.id = rr.vehicle_id " +
+                "JOIN taktovia.staff_shift sh ON sh.tenant_id = rr.tenant_id AND sh.id = rr.shift_id JOIN taktovia.inspection_run ir ON ir.tenant_id = rr.tenant_id AND ir.id = rr.inspection_ref " +
+                "WHERE rr.vehicle_id = ? AND rr.revoked_at IS NULL AND rr.valid_until >= ? AND rr.safety_revision = v.safety_revision AND sh.starts_at <= ? AND sh.ends_at >= ? AND ir.restriction IS NOT NULL",
+            { rs, _ -> ResourceRestriction.apply("{}", rs.getString(1)).second }, vehicleId, ts, ts, ts).flatten().toSet()
     }
 
     companion object {

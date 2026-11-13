@@ -97,7 +97,7 @@ class DriverPositionApiTest {
         val b = env.get("/v1/operator/vehicles", other.dispatcherToken); assertEquals(200, b.status); assertFalse(b.text.contains(w.vehicle.toString()))
         assertEquals(422, env.get("/v1/operator/vehicles?depot_id=${UUID.randomUUID()}", w.dispatcherToken).status, "kein Betriebshofbezug in M3")
         assertEquals(422, env.get("/v1/operator/vehicles?state=EGAL", w.dispatcherToken).status)
-        assertEquals("NOT_READY", w.operatorVehicle()["operational_state"].asString())
+        assertEquals("RELEASE_PENDING", w.operatorVehicle()["operational_state"].asString(), "angetretene Schicht ohne Einsatzfreigabe: Freigabe ausstehend (WP-M3-36), nicht bereit")
     }
 
     @Test

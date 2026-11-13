@@ -29,7 +29,7 @@
 - **Konkurrierend:** Submit mit kritischem Nein parallel zu neuer Zuweisung (PH-AT-020): keine Zusage auf das Fahrzeug; zwei gleichzeitige Submits desselben Laufs: genau ein Ergebnis, genau ein Alarm; Sperre und neue Zuweisung in zwei parallelen Transaktionen: in keiner Serialisierung entsteht eine Zusage auf das gesperrte Fahrzeug.
 - **Referenztests:** PH-AT-020
 
-Testfälle: PH-AT-020; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/CriticalDefectBlockTest.kt::kritisches_nein_sperrt_synchron_und_verweigert_freigabe; geplant:db/tests/test_inspection_block.py::test_sperre_und_ergebnis_in_einer_transaktion
+Testfälle: PH-AT-020; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/CriticalDefectBlockTest.kt::kritisches_nein_sperrt_synchron_und_verweigert_freigabe; db/tests/test_inspection_block.py::test_sperre_und_ergebnis_in_einer_transaktion; backend/app/src/test/kotlin/de/taktovia/app/fleet/CriticalDefectBlockApiTest.kt::kritisches_nein_ueber_die_schnittstelle_sperrt_zeigt_vorgangsnummer_und_kontakt; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/CriticalDefectBlockTest.kt::submit_mit_kritischem_nein_parallel_zur_dispositionspruefung_keine_zusage; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/CriticalDefectBlockTest.kt::zwei_gleichzeitige_submits_desselben_laufs_genau_ein_ergebnis_ein_alarm
 
 ## Reviews
 

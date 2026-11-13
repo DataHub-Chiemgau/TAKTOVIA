@@ -244,6 +244,7 @@ class CrossTenantIsolationTest {
             "listDriverQualifications" to Probe("GET", "/v1/drivers/{driver_id}/qualifications", role = "planner"),
             "createDriverQualification" to Probe("POST", "/v1/drivers/{driver_id}/qualifications", """{"qualification_code":"GEKAPERT","valid_from":"2026-01-01T00:00:00Z","decision":"APPROVED"}""", true, role = "planner"),
             "getVehicleMaster" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}", role = "dispatcher"),
+            "getOperatorVehicle" to Probe("GET", "/v1/operator/vehicles/{vehicle_id}", role = "dispatcher"),
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getChecklistTemplateRevision" to Probe("GET", "/v1/operator/checklist-templates/{checklist_revision_id}"),
             "updateChecklistTemplateDraft" to Probe("PUT", "/v1/operator/checklist-templates/{checklist_revision_id}", """{"name":"Gekapert","vehicle_class":"PKW","service_mode":"ONDEMAND","steps":[{"step_code":"BRAKES","title":"Gekapert","input_kind":"OK_DEFECT_NA","mandatory":true}]}""", true),

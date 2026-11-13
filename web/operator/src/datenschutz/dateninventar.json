@@ -986,6 +986,41 @@
       ]
     },
     {
+      "tabelle": "block_case_counter",
+      "aggregat": "Vorgangsnummernzähler der Sperren (WP-M3-16)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "Zähler je Mandant und Jahr, keine Personendaten",
+      "spalten": [
+        {
+          "spalte": "case_year",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "last_number",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "boarding_code",
       "aggregat": "Boarding-Code (nur Hash) (WP-M3-02)",
       "loeschklasse": "LK_BETRIEB",
@@ -2000,6 +2035,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "block_kind",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "created_at",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -2016,6 +2060,15 @@
           "schutzklasse": "SECURITY_AUDIT",
           "loeschklasse": "LK_STAMM",
           "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "equipment_condition",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         },
         {
           "spalte": "example_image_name",
@@ -2100,6 +2153,15 @@
         },
         {
           "spalte": "position",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "restricts_dimension",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
           "rechtsgrundlage": "",
@@ -9265,6 +9327,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "restriction",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "revision",
           "personenbezogen": "nein",
           "zweck": "FLOTTE_SICHERHEIT",
@@ -16001,6 +16072,149 @@
       ]
     },
     {
+      "tabelle": "shift_block",
+      "aggregat": "Dienstsperre einer Schicht (WP-M3-16)",
+      "loeschklasse": "LK_BETRIEB",
+      "bemerkung": "",
+      "spalten": [
+        {
+          "spalte": "case_number",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "created_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "lifted_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "lifted_by",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason_code",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "reason_ref",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "revision",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "set_at",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "set_by",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "shift_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "source",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "status",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_id",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
       "tabelle": "staff_shift",
       "aggregat": "Schicht",
       "loeschklasse": "LK_BETRIEB",
@@ -17588,6 +17802,15 @@
       "loeschklasse": "LK_BETRIEB",
       "bemerkung": "",
       "spalten": [
+        {
+          "spalte": "case_number",
+          "personenbezogen": "nein",
+          "zweck": "FLOTTE_SICHERHEIT",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
         {
           "spalte": "created_at",
           "personenbezogen": "nein",

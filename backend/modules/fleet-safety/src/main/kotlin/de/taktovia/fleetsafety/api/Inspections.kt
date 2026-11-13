@@ -70,6 +70,12 @@ data class InspectionAnswerView(
 
 data class InspectionReleaseView(val releaseId: UUID, val validUntil: Instant, val safetyRevision: Long)
 
+/** Einschränkung des Ergebnisses `PASSED_RESTRICTED` (WP-M3-12): nicht verfügbare Ressourcendimensionen und die auslösenden Prüfelemente. */
+data class InspectionRestriction(val unavailableDimensions: Set<String>, val stepCodes: List<String>)
+
+/** Sperre aus einem Prüflauf mit kritischem Mangel (WP-M3-16): Sperrart, Vorgangsnummer und die auslösenden Prüfelemente; den Kontakt zur Leitstelle ergänzt die Anwendungsschicht. */
+data class InspectionBlock(val kind: BlockKind, val caseNumber: String, val stepCodes: List<String>)
+
 data class InspectionView(
     val id: UUID, val shiftId: UUID, val vehicleId: UUID, val driverRef: UUID, val templateRevisionId: UUID, val kind: String, val status: String, val outcome: String?,
     val startedAt: Instant, val completedAt: Instant?, val receivedAt: Instant?, val revision: Long, val template: InspectionTemplateView,
@@ -80,6 +86,10 @@ data class InspectionView(
     val amendments: List<InspectionAmendmentView> = emptyList(),
     /** Noch fehlende Voraussetzungen der Einsatzfreigabe (leer, wenn die Freigabe erteilt ist). */
     val missing: List<ReleaseBlocker> = emptyList(),
+    /** Einschränkung bei `PASSED_RESTRICTED` (WP-M3-12), sonst `null`. */
+    val restriction: InspectionRestriction? = null,
+    /** Sperre aus diesem Lauf bei kritischem Mangel (WP-M3-16), sonst `null`; die Sperrart bestimmt allein das Prüfelement. */
+    val block: InspectionBlock? = null,
 )
 
 /** Antwort im Entwurf oder im Abschluss, wie der Client sie liefert (Rohwerte; die Prüfung gegen die Vorlagenrevision macht der Server). */
@@ -168,7 +178,29 @@ object InspectionOutcomeRule {
         // Selbstauskunft „Einsatzbereitschaft“ (CHK-010): NEIN ergibt keine Freigabe (Planungsannahme: Ergebnis BLOCKED; das Verhalten bei „nicht einsatzbereit“ ist als Detailvertrag offen)
         val readiness = steps.filter { it.kind == ChecklistInputKind.READINESS_YES_NO }.map { it.code }.toSet()
         if (answers.any { it.answer == ChecklistAnswerStatus.NEIN && it.stepCode in readiness }) return InspectionOutcome.BLOCKED
-        return if (answers.any { it.answer == ChecklistAnswerStatus.DEFECT && it.stepCode in critical }) InspectionOutcome.BLOCKED else InspectionOutcome.PASSED
+        if (answers.any { it.answer == ChecklistAnswerStatus.DEFECT && it.stepCode in critical }) return InspectionOutcome.BLOCKED
+        // Ausstattungsprüfpunkte (WP-M3-12): ein nicht kritischer Mangel oder „Nicht prüfbar“ schränkt nur die Ressourcendimension ein, das Fahrzeug bleibt für andere Fahrten nutzbar
+        return if (restriction(steps, answers) != null) InspectionOutcome.PASSED_RESTRICTED else InspectionOutcome.PASSED
+    }
+
+    /**
+     * Einschränkung des Ergebnisses: die Dimensionen aller Ausstattungsprüfpunkte ([ChecklistStepView.restrictsDimension]) mit Mangel oder „Nicht prüfbar“, samt auslösenden Elementen in Vorlagenreihenfolge;
+     * `null` ohne Einschränkung. „Nicht prüfbar“ gilt nie als Ja. Bei einem kritischen Mangel (Ergebnis `BLOCKED`) ist die Einschränkung ohne Belang.
+     */
+    fun restriction(steps: List<ChecklistStepView>, answers: List<AnswerInput>): InspectionRestriction? {
+        val byCode = answers.associateBy { it.stepCode }
+        val hit = steps.filter { st -> st.restrictsDimension != null && byCode[st.code]?.answer.let { it == ChecklistAnswerStatus.DEFECT || it == ChecklistAnswerStatus.NOT_CHECKABLE } }
+        if (hit.isEmpty()) return null
+        return InspectionRestriction(hit.mapNotNull { it.restrictsDimension }.toSortedSet(), hit.map { it.code })
+    }
+
+    /**
+     * Auslösende Prüfelemente einer Sperre (WP-M3-16): jedes sicherheitskritische Element mit negativer Antwort (`DEFECT`), je mit der Sperrart des Elements ([ChecklistStepView.blockKind], ohne Angabe
+     * `VEHICLE`). Die Sperrart bestimmt allein das Prüfelement, nie Rolle oder Antwort des Fahrers.
+     */
+    fun blockingSteps(steps: List<ChecklistStepView>, answers: List<AnswerInput>): List<ChecklistStepView> {
+        val negative = answers.filter { it.answer == ChecklistAnswerStatus.DEFECT }.map { it.stepCode }.toSet()
+        return steps.filter { it.safetyCritical && it.code in negative }
     }
 }
 

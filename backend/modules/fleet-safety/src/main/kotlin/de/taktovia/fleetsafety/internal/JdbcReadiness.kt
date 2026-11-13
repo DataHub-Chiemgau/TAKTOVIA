@@ -8,6 +8,9 @@ import de.taktovia.fleetsafety.api.DispatchRefusal
 import de.taktovia.fleetsafety.api.DispatchVerdict
 import de.taktovia.fleetsafety.api.IssueRelease
 import de.taktovia.fleetsafety.api.LiftOutcome
+import de.taktovia.fleetsafety.api.MissingRequirement
+import de.taktovia.fleetsafety.api.ReleaseGate
+import de.taktovia.fleetsafety.api.ReleaseRequirements
 import de.taktovia.fleetsafety.api.Readiness
 import de.taktovia.fleetsafety.api.ReleaseBlocker
 import de.taktovia.fleetsafety.api.ReleaseOutcome
@@ -64,8 +67,8 @@ internal class JdbcReadiness(
         existingBlock(j, cmd)?.let { return BlockOutcome(it, created = false, safetyRevision = vehicle.safetyRevision, revokedReleaseIds = emptyList()) }
         val id = UUID.randomUUID()
         j.update(
-            "INSERT INTO taktovia.vehicle_block (tenant_id, id, vehicle_id, source, reason_code, reason_ref, set_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?)",
-            id, cmd.vehicleId, cmd.source.name, cmd.reason.name, cmd.reasonRef, actor.value,
+            "INSERT INTO taktovia.vehicle_block (tenant_id, id, vehicle_id, source, reason_code, reason_ref, set_by, case_number) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?)",
+            id, cmd.vehicleId, cmd.source.name, cmd.reason.name, cmd.reasonRef, actor.value, cmd.caseNumber,
         )
         val revision = bump(j, cmd.vehicleId, blocked = true)
         val now = Timestamp.from(clock.instant())
@@ -87,6 +90,32 @@ internal class JdbcReadiness(
                 clock.instant(), correlationId = correlationId))
         }
         return BlockOutcome(view, created = true, safetyRevision = revision, revokedReleaseIds = revoked.map { it.first })
+    }
+
+    /** Ergebnis einer Dienstsperre: [created] = `false` bei Wiederholung derselben Sperre (kein zweiter Grund, kein zweiter Alarm). */
+    class ShiftBlockOutcome(val id: UUID, val caseNumber: String, val created: Boolean, val revokedReleaseIds: List<UUID>)
+
+    /**
+     * Dienstsperre einer Schicht aus einer Prüfung mit kritischem Mangel (WP-M3-16, Sperrart `SERVICE`): in der laufenden Transaktion des Prüfabschlusses, unter der Fahrzeugsperre (Reihenfolge wie bei
+     * der Fahrzeugsperre). Die Sperre verhindert die Einsatzfreigabe genau dieser Schicht und widerruft deren gültige Freigaben; das Fahrzeug bleibt für andere Schichten nutzbar, `safety_revision`
+     * ändert sich nicht. Dieselbe Sperre (Schicht, Quellbezug) ist höchstens einmal aktiv.
+     */
+    @AuditRequired
+    fun setShiftBlockIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, vehicleId: UUID, shiftId: UUID, reasonRef: String, caseNumber: String): ShiftBlockOutcome {
+        lockVehicle(j, vehicleId, exclusive = true) ?: throw ProblemException.notFound()
+        j.query("SELECT id, case_number FROM taktovia.shift_block WHERE shift_id = ? AND reason_ref = ? AND status = 'ACTIVE'", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getString(2) }, shiftId, reasonRef).firstOrNull()
+            ?.let { return ShiftBlockOutcome(it.first, it.second, created = false, revokedReleaseIds = emptyList()) }
+        val id = UUID.randomUUID(); val now = Timestamp.from(clock.instant())
+        j.update("INSERT INTO taktovia.shift_block (tenant_id, id, shift_id, vehicle_id, reason_ref, case_number, set_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?)", id, shiftId, vehicleId, reasonRef, caseNumber, actor.value)
+        val revoked = j.query("UPDATE taktovia.resource_release SET revoked_at = ?, revoked_by = ?, revoke_reason = 'BLOCK_SET' WHERE shift_id = ? AND revoked_at IS NULL AND valid_until > ? RETURNING id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, now, actor.value, shiftId, now)
+        audit.record(j, AuditEntry(actor, AuditActions.SHIFT_BLOCKED, ObjectRef("staff_shift", shiftId), correlationId, linkedMapOf(
+            "block_id" to id.toString(), "vehicle_id" to vehicleId.toString(), "reason_ref" to reasonRef, "case_number" to caseNumber, "revoked_releases" to revoked.size)))
+        outbox.append(j, OutboxEvent(id, 1, "fleet.shift_blocked", linkedMapOf("block_id" to id.toString(), "shift_id" to shiftId.toString(), "vehicle_id" to vehicleId.toString(), "source" to "SAFETY",
+            "reason_code" to "INSPECTION_FAILED", "case_number" to caseNumber), clock.instant(), correlationId = correlationId))
+        for (releaseId in revoked) audit.record(j, AuditEntry(actor, AuditActions.RELEASE_REVOKED, ObjectRef("resource_release", releaseId), correlationId, linkedMapOf(
+            "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "reason_code" to ReleaseRevokeReason.BLOCK_SET.name)))
+        return ShiftBlockOutcome(id, caseNumber, created = true, revokedReleaseIds = revoked)
     }
 
     override fun liftOperationalBlock(ctx: RequestContext, vehicleId: UUID, blockId: UUID): LiftOutcome {
@@ -163,6 +192,15 @@ internal class JdbcReadiness(
             "INSERT INTO taktovia.resource_release (tenant_id, id, vehicle_id, shift_id, safety_revision, inspection_ref, qualification_revision, valid_until, created_at, issued_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id, cmd.vehicleId, cmd.shiftId, vehicle.safetyRevision, cmd.inspectionId, qualification, Timestamp.from(validUntil), Timestamp.from(now), actor.value,
         )
+        // nur die jüngste Prüfung der Schicht bestimmt Freigabe und Einschränkung (WP-M3-12): ältere, noch gültige Freigaben derselben Schicht werden ersetzt (unter der Fahrzeugsperre, in derselben Transaktion)
+        val superseded = j.query("UPDATE taktovia.resource_release SET revoked_at = ?, revoked_by = ?, revoke_reason = 'SUPERSEDED' WHERE shift_id = ? AND id <> ? AND revoked_at IS NULL AND valid_until > ? RETURNING id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, Timestamp.from(now), actor.value, cmd.shiftId, id, Timestamp.from(now))
+        superseded.forEach { old ->
+            audit.record(j, AuditEntry(actor, AuditActions.RELEASE_REVOKED, ObjectRef("resource_release", old), correlationId, linkedMapOf(
+                "vehicle_id" to cmd.vehicleId.toString(), "shift_id" to cmd.shiftId.toString(), "reason_code" to ReleaseRevokeReason.SUPERSEDED.name, "superseded_by" to id.toString())))
+            outbox.append(j, OutboxEvent(old, 2, "fleet.release_revoked", linkedMapOf(
+                "release_id" to old.toString(), "vehicle_id" to cmd.vehicleId.toString(), "shift_id" to cmd.shiftId.toString(), "reason_code" to ReleaseRevokeReason.SUPERSEDED.name), clock.instant(), correlationId = correlationId))
+        }
         // die Freigabe löscht den abgeleiteten Sperrzustand des Fahrzeugs (V1-Vorgabe true = „nicht freigegeben“); es besteht keine aktive Sperre (oben geprüft)
         j.update("UPDATE taktovia.vehicle SET active_block = false WHERE id = ? AND active_block", cmd.vehicleId)
         val view = release(j, id)!!
@@ -203,7 +241,7 @@ internal class JdbcReadiness(
         }
         if (qualification(j, shift.driverRef, now, lock = lock) == null) missing += ReleaseBlocker.QUALIFICATION_MISSING
         val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
-        if (blocks.any { it == "SAFETY" }) missing += ReleaseBlocker.DEFECT_BLOCK
+        if (blocks.any { it == "SAFETY" } || shiftBlocked(j, cmd.shiftId)) missing += ReleaseBlocker.DEFECT_BLOCK
         if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += ReleaseBlocker.OPERATIONAL_BLOCK
         return missing
     }
@@ -250,18 +288,79 @@ internal class JdbcReadiness(
         if (expected != null && expected != vehicle.safetyRevision) reasons += DispatchRefusal.STALE_SAFETY_REVISION
         val shift = shift(j, shiftId)
         if (shift == null || shift.vehicleId != vehicleId || shift.state !in USABLE_SHIFT || !at.isBefore(shift.endsAt)) reasons += DispatchRefusal.NO_VALID_SHIFT
-        var releaseId: UUID? = null; var validUntil: Instant? = null
+        if (shift != null && shiftBlocked(j, shiftId)) reasons += DispatchRefusal.SHIFT_BLOCKED
+        var releaseId: UUID? = null; var validUntil: Instant? = null; var unavailable: Set<String> = emptySet()
         val rel = j.query("$RELEASE_SELECT WHERE r.vehicle_id = ? AND r.shift_id = ? ORDER BY (r.revoked_at IS NULL) DESC, r.valid_until DESC, r.id LIMIT 1", RELEASE_ROW(clock.instant()), vehicleId, shiftId).firstOrNull()
         when {
             rel == null -> reasons += DispatchRefusal.NO_RELEASE
             rel.revokedAt != null -> reasons += DispatchRefusal.RELEASE_REVOKED
             !rel.validUntil.isAfter(at) -> reasons += DispatchRefusal.RELEASE_EXPIRED
             rel.safetyRevision != vehicle.safetyRevision -> reasons += DispatchRefusal.RELEASE_STALE
-            else -> { releaseId = rel.id; validUntil = rel.validUntil }
+            else -> { releaseId = rel.id; validUntil = rel.validUntil; unavailable = unavailableDimensions(j, rel.inspectionId) }
         }
         if (shift != null && qualification(j, shift.driverRef, at, lock = lock) == null) reasons += DispatchRefusal.QUALIFICATION_MISSING
-        return if (reasons.isEmpty()) DispatchVerdict.Dispatchable(releaseId!!, vehicle.safetyRevision, validUntil!!) else DispatchVerdict.Refused(reasons.toList())
+        return if (reasons.isEmpty()) DispatchVerdict.Dispatchable(releaseId!!, vehicle.safetyRevision, validUntil!!, unavailable) else DispatchVerdict.Refused(reasons.toList())
     }
+
+    // ------------------------------------------------------------------------------------------------ Fehlende Voraussetzungen (WP-M3-09)
+
+    override fun requirements(ctx: RequestContext, vehicleId: UUID, shiftId: UUID): ReleaseRequirements = ctxTx.run(ctx, readOnly = true) { j ->
+        if (j.query("SELECT 1 FROM taktovia.vehicle WHERE id = ?", { _, _ -> 1 }, vehicleId).isEmpty() || shift(j, shiftId) == null) throw ProblemException.notFound()
+        requirementsIn(j, vehicleId, shiftId, clock.instant())
+    }
+
+    /**
+     * Die eine Regel „fehlende Voraussetzungen“ (CHK-001) ohne Sperre und ohne Schreiben: Schicht gültig und zum Fahrzeug passend, keine aktive Sperre (Fahrzeug, Betrieb, Dienst), Qualifikation, und eine
+     * gültige, nicht widerrufene, zur aktuellen `safety_revision` ausgestellte Freigabe dieser Kombination. Fehlt die Freigabe, nennt die Antwort den Zustand des jüngsten Prüflaufs; bei offenem Lauf
+     * die noch unbeantworteten Pflichtschritte. Eine Freigabe einer anderen Schicht, eines anderen Fahrzeugs oder Fahrers erfüllt die Bedingung nie, weil nur Freigaben dieser Kombination gelesen werden.
+     */
+    fun requirementsIn(j: JdbcOperations, vehicleId: UUID, shiftId: UUID, now: Instant): ReleaseRequirements {
+        val vehicle = lockVehicle(j, vehicleId, exclusive = false, lock = false) ?: return ReleaseRequirements(ReleaseGate.NOT_RELEASED, listOf(MissingRequirement(ReleaseBlocker.NO_INSPECTION)), null, null)
+        val missing = mutableListOf<MissingRequirement>()
+        val shift = shift(j, shiftId)
+        if (shift == null || shift.vehicleId != vehicleId || shift.state !in USABLE_SHIFT || !now.isBefore(shift.endsAt)) missing += MissingRequirement(ReleaseBlocker.VEHICLE_CHANGED)
+        val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, vehicleId)
+        if (blocks.any { it == "SAFETY" } || shiftBlocked(j, shiftId)) missing += MissingRequirement(ReleaseBlocker.DEFECT_BLOCK)
+        if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += MissingRequirement(ReleaseBlocker.OPERATIONAL_BLOCK)
+        if (shift != null && qualification(j, shift.driverRef, now, lock = false) == null) missing += MissingRequirement(ReleaseBlocker.QUALIFICATION_MISSING)
+        val rel = j.query("$RELEASE_SELECT WHERE r.vehicle_id = ? AND r.shift_id = ? ORDER BY (r.revoked_at IS NULL) DESC, r.valid_until DESC, r.id LIMIT 1", RELEASE_ROW(now), vehicleId, shiftId).firstOrNull()
+        val valid = rel != null && rel.revokedAt == null && rel.validUntil.isAfter(now) && rel.safetyRevision == vehicle.safetyRevision
+        var dims: Set<String> = emptySet()
+        if (valid) dims = unavailableDimensions(j, rel!!.inspectionId)
+        else {
+            val run = j.query("SELECT id, status, outcome FROM taktovia.inspection_run WHERE shift_id = ? AND vehicle_id = ? AND kind <> 'PRE_BOARDING' ORDER BY started_at DESC, id LIMIT 1",
+                { rs, _ -> Triple(rs.getObject(1, UUID::class.java), rs.getString(2), rs.getString(3)) }, shiftId, vehicleId).firstOrNull()
+            val open = run?.takeIf { it.second == "IN_PROGRESS" }
+            when {
+                open != null -> missing += MissingRequirement(ReleaseBlocker.INSPECTION_OPEN, open.first, openMandatorySteps(j, open.first))
+                rel != null && rel.revokedAt != null -> missing += MissingRequirement(ReleaseBlocker.RELEASE_REVOKED, rel.inspectionId)
+                rel != null && !rel.validUntil.isAfter(now) -> missing += MissingRequirement(ReleaseBlocker.INSPECTION_EXPIRED, rel.inspectionId)
+                rel != null -> missing += MissingRequirement(ReleaseBlocker.SAFETY_REVISION_CHANGED, rel.inspectionId)
+                run == null -> missing += MissingRequirement(ReleaseBlocker.NO_INSPECTION)
+                run.second == "COMPLETED" -> missing += MissingRequirement(ReleaseBlocker.NO_INSPECTION, run.first)
+                else -> missing += MissingRequirement(ReleaseBlocker.INSPECTION_EXPIRED, run.first)
+            }
+        }
+        val blocked = missing.any { it.code == ReleaseBlocker.DEFECT_BLOCK || it.code == ReleaseBlocker.OPERATIONAL_BLOCK }
+        val gate = if (missing.isEmpty()) ReleaseGate.RELEASED else if (blocked) ReleaseGate.BLOCKED else ReleaseGate.NOT_RELEASED
+        return ReleaseRequirements(gate, missing, if (valid) rel!!.id else null, if (valid) rel!!.validUntil else null, if (gate == ReleaseGate.RELEASED) dims else emptySet())
+    }
+
+    /** Pflichtschritte der Vorlage eines offenen Laufs, die noch keine Antwort haben (Anzeige „offene Prüfschritte“). */
+    private fun openMandatorySteps(j: JdbcOperations, inspectionId: UUID): List<String> = j.query(
+        "SELECT s.step_code FROM taktovia.inspection_run r JOIN taktovia.checklist_step s ON s.tenant_id = r.tenant_id AND s.template_revision_id = r.template_revision_id " +
+            "WHERE r.id = ? AND s.mandatory AND NOT EXISTS (SELECT 1 FROM taktovia.inspection_answer a WHERE a.tenant_id = r.tenant_id AND a.inspection_id = r.id AND a.step_code = s.step_code) " +
+            "AND (s.equipment_condition IS NULL OR EXISTS (SELECT 1 FROM taktovia.vehicle v WHERE v.tenant_id = r.tenant_id AND v.id = r.vehicle_id AND $SQL_VEHICLE_HAS_RAMP_OR_LIFT)) " +
+            "ORDER BY s.position LIMIT 100", { rs, _ -> rs.getString(1) }, inspectionId)
+
+    /** Aktive Dienstsperre dieser Schicht (WP-M3-16). */
+    private fun shiftBlocked(j: JdbcOperations, shiftId: UUID): Boolean =
+        j.queryForObject("SELECT count(*) FROM taktovia.shift_block WHERE shift_id = ? AND status = 'ACTIVE'", Int::class.java, shiftId)!! > 0
+
+    /** Durch die Prüfung entfallene Ressourcendimensionen der Freigabe (WP-M3-12): aus `inspection_run.restriction` des Prüflaufs, auf den die Freigabe verweist. */
+    private fun unavailableDimensions(j: JdbcOperations, inspectionId: UUID): Set<String> = j.query(
+        "SELECT d FROM taktovia.inspection_run r, jsonb_array_elements_text(r.restriction -> 'unavailable_dimensions') AS d WHERE r.id = ? AND r.restriction IS NOT NULL",
+        { rs, _ -> rs.getString(1) }, inspectionId).toSet()
 
     // ------------------------------------------------------------------------------------------------ Hilfen
 

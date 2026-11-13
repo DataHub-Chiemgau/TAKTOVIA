@@ -7,6 +7,14 @@ import de.taktovia.fleetsafety.api.JustifyInspectionAnswer
 import de.taktovia.fleetsafety.api.Plausibility
 import de.taktovia.fleetsafety.api.StartValueRules
 import de.taktovia.fleetsafety.api.AnswerInput
+import de.taktovia.fleetsafety.api.AlertKinds
+import de.taktovia.fleetsafety.api.BlockKind
+import de.taktovia.fleetsafety.api.BlockReason
+import de.taktovia.fleetsafety.api.BlockSource
+import de.taktovia.fleetsafety.api.ChecklistStepView
+import de.taktovia.fleetsafety.api.InspectionBlock
+import de.taktovia.fleetsafety.api.InspectionRestriction
+import de.taktovia.fleetsafety.api.SetBlock
 import de.taktovia.fleetsafety.api.CreateInspectionAmendment
 import de.taktovia.fleetsafety.api.InspectionAmendmentView
 import de.taktovia.fleetsafety.api.SaveInspectionDraft
@@ -28,6 +36,8 @@ import de.taktovia.fleetsafety.api.InspectionView
 import de.taktovia.fleetsafety.api.Inspections
 import de.taktovia.fleetsafety.api.StartInspection
 import de.taktovia.fleetsafety.api.StartedInspection
+import de.taktovia.platform.alert.BusinessAlertPort
+import de.taktovia.platform.alert.BusinessAlertRequest
 import de.taktovia.platform.audit.ActorRef
 import de.taktovia.platform.audit.AuditActions
 import de.taktovia.platform.audit.AuditEntry
@@ -58,8 +68,10 @@ import java.util.UUID
  */
 internal class JdbcInspections(
     private val ctxTx: ContextTransactions, private val audit: AuditPort, private val outbox: Outbox, private val checklists: ChecklistTemplates, private val clock: Clock,
-    private val readiness: JdbcReadiness,
+    private val readiness: JdbcReadiness, private val alerts: BusinessAlertPort,
 ) : Inspections {
+    private val json = tools.jackson.databind.json.JsonMapper.builder().build()
+
 
     private sealed interface Attempt {
         class Done(val result: StartedInspection) : Attempt
@@ -170,7 +182,7 @@ internal class JdbcInspections(
         // Sperrreihenfolge: Lauf, dann Fahrzeugzeile (die Freigabe und die Sperre desselben Fahrzeugs entscheiden sich nacheinander)
         val safetyRevision = j.query("SELECT safety_revision FROM taktovia.vehicle WHERE id = ? FOR UPDATE", { rs, _ -> rs.getLong(1) }, run.vehicleId).firstOrNull() ?: throw ProblemException.notFound()
 
-        val steps = checklists.steps(j, run.templateRevisionId)
+        val steps = stepsFor(j, run.templateRevisionId, run.vehicleId)
         val stepIds = j.query("SELECT step_code, id FROM taktovia.checklist_step WHERE template_revision_id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, run.templateRevisionId).toMap()
         // Entwurf und Abschlussantworten zusammen: die Abschlussantwort gewinnt, ein gespeicherter Entwurf geht nie still verloren
         val drafts = j.query("SELECT step_code, answer, number_value, note, answered_at, text_value FROM taktovia.inspection_answer WHERE inspection_id = ?",
@@ -188,6 +200,7 @@ internal class JdbcInspections(
             if (open > 0) throw ProblemException(ErrorCode.CONFLICT, "KNOWN_DEFECTS_UNACKNOWLEDGED: Offene Altschäden des Fahrzeugs sind nicht quittiert.")
         }
         val outcome = InspectionOutcomeRule.evaluate(steps, merged)
+        val restriction = if (outcome == InspectionOutcome.PASSED_RESTRICTED) InspectionOutcomeRule.restriction(steps, merged) else null
         val actor = actor(ctx)
         // Schichtstartwerte (CHK-008) gegen den Stand des Fahrzeugs unter der Fahrzeugsperre: ein unplausibler Wert ohne begründete Freigabe hält den Abschluss auf (422)
         val evaluated = evaluate(j, run.vehicleId, id, steps, merged)
@@ -195,8 +208,8 @@ internal class JdbcInspections(
         upsert(j, id, toWrite, stepIds, actor.value)
         // Ergebnis, Zeitstempel (Gerät: completed_at, Server: received_at) und Prüfer in einem Update; Abschluss ist ab hier unveränderlich (Wächter)
         val updated = j.update(
-            "UPDATE taktovia.inspection_run SET status = 'COMPLETED', outcome = ?, completed_at = ?, received_at = clock_timestamp(), safety_revision = ?, completed_by = ?, revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'",
-            outcome.name, Timestamp.from(cmd.clientSubmittedAt), safetyRevision, actor.value, id, expected,
+            "UPDATE taktovia.inspection_run SET status = 'COMPLETED', outcome = ?, restriction = CAST(? AS jsonb), completed_at = ?, received_at = clock_timestamp(), safety_revision = ?, completed_by = ?, revision = revision + 1 WHERE id = ? AND revision = ? AND status = 'IN_PROGRESS'",
+            outcome.name, restriction?.let { json.writeValueAsString(linkedMapOf("unavailable_dimensions" to it.unavailableDimensions.toList(), "step_codes" to it.stepCodes)) }, Timestamp.from(cmd.clientSubmittedAt), safetyRevision, actor.value, id, expected,
         )
         if (updated != 1) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         // letzter bestätigter Kilometerstand: nur steigend, bedingtes UPDATE unter der Fahrzeugsperre (ein später abgeschlossener Lauf mit kleinerem, begründet freigegebenem Wert senkt ihn nie)
@@ -205,6 +218,8 @@ internal class JdbcInspections(
         // Kilometerstand der Prüfung für das Kilometerstandsregister (WP-M4-41): höchster bestätigter Wert dieses Laufs, Messzeit = Abschlusszeit des Geräts
         val odometerKm = evaluated.filter { it.input.answer == ChecklistAnswerStatus.OK && it.input.numberValue != null && steps.firstOrNull { st -> st.code == it.input.stepCode }?.kind == ChecklistInputKind.ODOMETER_KM }
             .maxOfOrNull { it.input.numberValue!!.toLong() }
+        // Kritischer Mangel (WP-M3-16): Sperre, Alarm und Ereignis im selben Commit wie das Prüfergebnis (kein Zeitpunkt „Mangel gespeichert, Fahrzeug disponierbar“); scheitert eines davon, scheitert alles
+        if (outcome == InspectionOutcome.BLOCKED) raiseBlocks(j, ctx, run.vehicleId, run.shiftId, id, steps, merged, now)
         // Einsatzfreigabe im selben Commit, nur bei bestandener Prüfung (ein kritischer Mangel erteilt keine); fehlende Voraussetzungen bleiben als Liste der Antwort sichtbar
         var releaseId: UUID? = null
         if (run.kind != "PRE_BOARDING" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
@@ -226,6 +241,50 @@ internal class JdbcInspections(
         return load(j, ctx, id)!!
     }
 
+    /**
+     * Prüfelemente der festen Vorlagenrevision, soweit sie zum Fahrzeug passen (WP-M3-12): Ausstattungsprüfpunkte gehören nur zu Läufen von Fahrzeugen mit Rampe oder Lift; die Ausstattung kommt immer aus dem
+     * Fahrzeugstamm, nie vom Client.
+     */
+    private fun stepsFor(j: JdbcOperations, revisionId: UUID, vehicleId: UUID): List<ChecklistStepView> {
+        val all = checklists.steps(j, revisionId)
+        if (all.none { it.equipmentCondition != null }) return all
+        val rampOrLift = j.queryForObject("SELECT $SQL_VEHICLE_HAS_RAMP_OR_LIFT FROM taktovia.vehicle v WHERE v.id = ?", Boolean::class.java, vehicleId) == true
+        return all.filter { EquipmentSteps.applies(it.equipmentCondition, rampOrLift) }
+    }
+
+    /**
+     * Sperren aus den kritischen Mängeln des Laufs (WP-M3-16), in der Transaktion des Abschlusses: je Sperrart genau eine Sperre mit Vorgangsnummer, Quellbezug `<Lauf>:<erstes Element>` und genau einem Alarm an die
+     * Leitstelle (Quellereignis = Sperre, Dedupe `(Art, Ereignis, Empfänger)`). Die Art bestimmt allein das Prüfelement: gehört ein Element zur Fahrzeugsperre, gilt sie für alle Schichten und schließt die Dienstsperre ein;
+     * sonst sperrt eine Dienstsperre nur diese Schicht. Die Fahrzeugsperre widerruft jede gültige Einsatzfreigabe des Fahrzeugs und erhöht die `safety_revision` (Sperrkern WP-M3-08); die Dienstsperre widerruft die
+     * Freigaben der Schicht. Der Fahrer hat keinen Weg zum Aufheben (Aufheben: WP-M3-51).
+     */
+    private fun raiseBlocks(j: JdbcOperations, ctx: RequestContext, vehicleId: UUID, shiftId: UUID, inspectionId: UUID, steps: List<ChecklistStepView>, answers: List<AnswerInput>, now: Instant) {
+        val blocking = InspectionOutcomeRule.blockingSteps(steps, answers)
+        if (blocking.isEmpty()) return   // BLOCKED aus der Selbstauskunft „nicht einsatzbereit“: keine Freigabe, aber keine Fahrzeugsperre
+        val system = ActorRef("system:inspection")
+        val vehicleSteps = blocking.filter { (it.blockKind ?: "VEHICLE") == "VEHICLE" }
+        val serviceSteps = blocking - vehicleSteps.toSet()
+        val kind = if (vehicleSteps.isNotEmpty()) BlockKind.VEHICLE else BlockKind.SERVICE
+        val group = if (kind == BlockKind.VEHICLE) vehicleSteps else serviceSteps
+        val reasonRef = "$inspectionId:${group.first().code}".take(120)
+        val caseNumber = j.queryForObject("SELECT taktovia.next_block_case_number()", String::class.java)!!
+        val blockId: UUID; val created: Boolean; val usedCase: String
+        if (kind == BlockKind.VEHICLE) {
+            val out = readiness.setBlockIn(j, system, ctx.correlationId, SetBlock(vehicleId, BlockSource.SAFETY, BlockReason.INSPECTION_FAILED, reasonRef, caseNumber))
+            blockId = out.block.id; created = out.created
+            usedCase = j.queryForObject("SELECT case_number FROM taktovia.vehicle_block WHERE id = ?", String::class.java, blockId) ?: caseNumber
+        } else {
+            val out = readiness.setShiftBlockIn(j, system, ctx.correlationId, vehicleId, shiftId, reasonRef, caseNumber)
+            blockId = out.id; created = out.created; usedCase = out.caseNumber
+        }
+        if (created) {
+            alerts.raise(j, BusinessAlertRequest(AlertKinds.VEHICLE_BLOCK_CRITICAL, sourceEventId = blockId, vehicleId = vehicleId, refType = "inspection_run", refId = inspectionId, reasonCode = "INSPECTION_FAILED"))
+            outbox.append(j, OutboxEvent(blockId, 3, "inspection.critical_defect_blocked", linkedMapOf(
+                "inspection_id" to inspectionId.toString(), "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "block_id" to blockId.toString(), "block_kind" to kind.name,
+                "case_number" to usedCase, "step_codes" to group.map { it.code }), now, correlationId = ctx.correlationId))
+        }
+    }
+
     private class Locked(val shiftId: UUID, val vehicleId: UUID, val templateRevisionId: UUID, val kind: String, val status: String, val revision: Long, val startedAt: Instant)
 
     // ------------------------------------------------------------------------------------------------ Entwurf und Nachträge (WP-M3-15)
@@ -241,7 +300,7 @@ internal class JdbcInspections(
             if (run.status == "COMPLETED") ErrorCode.IMMUTABLE_RECORD else ErrorCode.INVALID_STATE_TRANSITION,
             if (run.status == "COMPLETED") "Der Prüfnachweis ist abgeschlossen; eine Änderung ist nur als Nachtrag möglich." else "Der Prüflauf ist nicht mehr offen (${run.status}).")
         if (run.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
-        val steps = checklists.steps(j, run.templateRevisionId)
+        val steps = stepsFor(j, run.templateRevisionId, run.vehicleId)
         ChecklistAnswerValidator.require(steps.map { it.rule() }, cmd.answers.map { ChecklistAnswer(it.stepCode, it.answer, it.numberValue, it.note, it.textValue) }, complete = false)
         val stepIds = j.query("SELECT step_code, id FROM taktovia.checklist_step WHERE template_revision_id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, run.templateRevisionId).toMap()
         val actor = actor(ctx)
@@ -319,7 +378,7 @@ internal class JdbcInspections(
         if (run.status != "IN_PROGRESS") throw ProblemException(
             if (run.status == "COMPLETED") ErrorCode.IMMUTABLE_RECORD else ErrorCode.INVALID_STATE_TRANSITION, "Der Prüflauf ist nicht mehr offen (${run.status}); ein Nachtrag ist der Weg nach dem Abschluss.")
         if (run.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Prüflauf wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
-        val step = checklists.steps(j, run.templateRevisionId).firstOrNull { it.code == stepCode } ?: throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
+        val step = stepsFor(j, run.templateRevisionId, run.vehicleId).firstOrNull { it.code == stepCode } ?: throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
         val facts = j.query("SELECT vehicle_label, last_confirmed_odometer_km FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getObject(2)?.let { (it as Number).toLong() } }, run.vehicleId).first()
         val previous: java.math.BigDecimal?
         when (step.kind) {
@@ -360,7 +419,7 @@ internal class JdbcInspections(
             { rs, _ -> Locked(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getLong(6), rs.getTimestamp(7).toInstant()) }, id).firstOrNull()
             ?: throw ProblemException.notFound()
         if (run.status != "COMPLETED") throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Ein Nachtrag setzt einen abgeschlossenen Prüflauf voraus; vorher wird der Entwurf bearbeitet.")
-        val steps = checklists.steps(j, run.templateRevisionId)
+        val steps = stepsFor(j, run.templateRevisionId, run.vehicleId)
         if (steps.none { it.code == cmd.stepCode }) throw ProblemException.invalid(Violation("/step_code", ViolationCode.NOT_IN_ENUM))
         // Die Selbstauskunft bleibt Ja oder Nein; eine Änderung ist nur eine neue Prüfung, nie ein Nachtrag (CHK-010)
         if (steps.single { it.code == cmd.stepCode }.kind == ChecklistInputKind.READINESS_YES_NO) throw ProblemException.invalid(Violation("/step_code", ViolationCode.INVALID_VALUE))
@@ -413,7 +472,7 @@ internal class JdbcInspections(
         else j.query("SELECT $RUN_COLUMNS FROM taktovia.inspection_run i WHERE i.id = ?", mapper, id)).firstOrNull() ?: return null
         val tpl = j.query("SELECT template_id, version, vehicle_class, service_mode FROM taktovia.checklist_template_revision WHERE id = ?",
             { rs, _ -> InspectionTemplateView(row.revisionId, rs.getObject(1, UUID::class.java), rs.getInt(2), rs.getString(3), rs.getString(4), emptyList()) }, row.revisionId).single()
-            .let { it.copy(steps = checklists.steps(j, row.revisionId)) }
+            .let { it.copy(steps = stepsFor(j, row.revisionId, row.vehicleId)) }
         val answers = j.query("SELECT step_code, answer, number_value, note, answered_at, text_value, plausibility, previous_value, justification_reason, justified_by, justified_at FROM taktovia.inspection_answer WHERE inspection_id = ? ORDER BY answered_at, step_code",
             { rs, _ -> InspectionAnswerView(rs.getString(1), rs.getString(2), rs.getBigDecimal(3), rs.getString(4), rs.getTimestamp(5).toInstant(), rs.getString(6), rs.getString(7)?.let { Plausibility.valueOf(it) }, rs.getBigDecimal(8),
                 rs.getString(9)?.let { AnswerJustification(it, rs.getString(10), rs.getTimestamp(11).toInstant()) }) }, id)
@@ -424,7 +483,21 @@ internal class JdbcInspections(
             row.status == "IN_PROGRESS" -> listOf(ReleaseBlocker.INSPECTION_OPEN)
             else -> readiness.missing(j, row.vehicleId, row.shiftId, row.id).ifEmpty { listOf(ReleaseBlocker.NO_INSPECTION) }
         }
-        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing)
+        val restriction = j.query("SELECT restriction::text FROM taktovia.inspection_run WHERE id = ? AND restriction IS NOT NULL", { rs, _ ->
+            json.readTree(rs.getString(1)).let { n -> InspectionRestriction((0 until n.get("unavailable_dimensions").size()).map { i -> n.get("unavailable_dimensions").get(i).asString() }.toSet(),
+                (0 until n.get("step_codes").size()).map { i -> n.get("step_codes").get(i).asString() }) } }, id).firstOrNull()
+        val block = if (row.outcome == "BLOCKED") blockOf(j, row.id) else null
+        return InspectionView(row.id, row.shiftId, row.vehicleId, row.driverRef, row.revisionId, row.kind, row.status, row.outcome, row.startedAt, row.completedAt, row.receivedAt, row.revision, tpl, answers, release, row.completedBy, amendments(j, row.id), missing, restriction, block)
+    }
+
+    /** Sperre aus diesem Lauf (Fahrzeug- oder Dienstsperre; Quellbezug beginnt mit der Lauf-ID): Art, Vorgangsnummer, auslösende Elemente (aus den kritischen Mängeln des Laufs). */
+    private fun blockOf(j: JdbcOperations, inspectionId: UUID): InspectionBlock? {
+        val pattern = "$inspectionId:%"
+        val b = j.query("SELECT 'VEHICLE', case_number FROM taktovia.vehicle_block WHERE reason_ref LIKE ? UNION ALL SELECT 'SERVICE', case_number FROM taktovia.shift_block WHERE reason_ref LIKE ? ORDER BY 1",
+            { rs, _ -> rs.getString(1) to rs.getString(2) }, pattern, pattern).firstOrNull() ?: return null
+        val codes = j.query("SELECT a.step_code FROM taktovia.inspection_answer a JOIN taktovia.inspection_run r ON r.tenant_id = a.tenant_id AND r.id = a.inspection_id JOIN taktovia.checklist_step s ON s.tenant_id = r.tenant_id AND s.template_revision_id = r.template_revision_id " +
+            "AND s.step_code = a.step_code WHERE a.inspection_id = ? AND a.answer = 'DEFECT' AND s.safety_critical ORDER BY s.position", { rs, _ -> rs.getString(1) }, inspectionId)
+        return InspectionBlock(BlockKind.valueOf(b.first), b.second ?: "", codes)
     }
 
     private class Shift(val id: UUID, val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)

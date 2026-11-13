@@ -101,6 +101,50 @@ describe('UI-11 Vorlageneditor', () => {
     ).not.toHaveLength(0);
   });
 
+  it('legt Sperrart, Ausstattungsbedingung und entfallende Dimension eines Prüfelements fest (WP-M3-12, WP-M3-16)', async () => {
+    const { calls } = setup(
+      (id) => {
+        if (id === 'listChecklistTemplateRevisions') return page([]);
+        if (id === 'createChecklistTemplate') return { ...DRAFT, revision: 1 };
+        return undefined;
+      },
+      ['me:read', 'checklists:read', 'checklists:write'],
+    );
+    await screen.findByText('Noch keine Checklistenvorlagen in diesem Mandanten');
+    // die Sperrart erscheint nur bei kritischen Elementen, die entfallende Dimension nur mit Ausstattungsbedingung
+    expect(screen.queryByLabelText('Sperrart bei Mangel')).toBeNull();
+    expect(screen.queryByLabelText(/Entfallende Dimension/)).toBeNull();
+    fireEvent.change(screen.getByLabelText('Schlüssel des Prüfelements'), {
+      target: { value: 'RAMPE_LIFT_FUNKTION' },
+    });
+    fireEvent.change(screen.getByLabelText('Titel'), { target: { value: 'Rampe funktionsfähig' } });
+    fireEvent.click(screen.getByLabelText(/Sicherheitskritisch/));
+    fireEvent.change(screen.getByLabelText('Sperrart bei Mangel'), {
+      target: { value: 'SERVICE' },
+    });
+    fireEvent.change(screen.getByLabelText('Ausstattungsbedingung'), {
+      target: { value: 'RAMP_OR_LIFT' },
+    });
+    fireEvent.change(screen.getByLabelText(/Entfallende Dimension/), {
+      target: { value: 'wheelchair' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Prüfelement übernehmen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entwurf anlegen' }));
+    await waitFor(() => expect(calls.some((c) => c.id === 'createChecklistTemplate')).toBe(true));
+    const body = calls.find((c) => c.id === 'createChecklistTemplate')?.args['body'] as {
+      steps: Record<string, unknown>[];
+    };
+    expect(body.steps).toMatchObject([
+      {
+        step_code: 'RAMPE_LIFT_FUNKTION',
+        safety_critical: true,
+        block_kind: 'SERVICE',
+        equipment_condition: 'RAMP_OR_LIFT',
+        restricts_dimension: 'wheelchair',
+      },
+    ]);
+  });
+
   it('gibt einen Entwurf mit der gelesenen Revision frei', async () => {
     const { calls, container } = setup(
       (id) => {

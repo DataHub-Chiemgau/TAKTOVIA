@@ -26,6 +26,12 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
   { id: 'personal', label: 'Personal', href: '/personal', requires: 'staff' },
   { id: 'ui13', label: 'Eigene Zeit und Abwesenheit', href: '/zeit', requires: 'time.own' },
   { id: 'ui12', label: 'Dienstplan', href: '/personal/dienstplan', requires: 'roster' },
+  {
+    id: 'ui07-fahrzeuge',
+    label: 'Livebetrieb: Fahrzeuge',
+    href: '/leitstelle/fahrzeuge',
+    requires: 'livebetrieb',
+  },
   { id: 'ui07', label: 'Offene Störungen', href: '/leitstelle/stoerungen', requires: 'alerts' },
   { id: 'ui11', label: 'Flotte und Werkstatt', href: '/flotte', requires: 'fleet' },
   {

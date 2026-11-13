@@ -71,9 +71,12 @@ object MandatoryChecklistPoints {
 /** Zustand einer Vorlagenrevision: Entwurf, freigegeben (wirksam), abgelöst. */
 enum class ChecklistTemplateState { DRAFT, PUBLISHED, RETIRED }
 
-/** Zulässige Antwortstatus je Prüfelement (LH-6.21-CHK-003). `NOT_CHECKABLE` ist durch OP-16 nur vorgehalten und wird bis zur Entscheidung abgewiesen. */
+/**
+ * Zulässige Antwortstatus je Prüfelement (LH-6.21-CHK-003). `NOT_CHECKABLE` ist durch OP-16 nur vorgehalten und wird bis zur Entscheidung abgewiesen, außer bei Ausstattungsprüfpunkten, die eine
+ * Ressourcendimension einschränken (WP-M3-12): dort gilt „Nicht prüfbar“ nie als Ja und führt zum Ergebnis „eingeschränkt“.
+ */
 object ChecklistAnswerStatus {
-    const val OK = "OK"; const val DEFECT = "DEFECT"; const val NOT_APPLICABLE = "NOT_APPLICABLE"
+    const val OK = "OK"; const val DEFECT = "DEFECT"; const val NOT_APPLICABLE = "NOT_APPLICABLE"; const val NOT_CHECKABLE = "NOT_CHECKABLE"
     val ALLOWED = setOf(OK, DEFECT, NOT_APPLICABLE)
     /** Antwortwerte der Selbstauskunft „Einsatzbereitschaft“ (nur für [ChecklistInputKind.READINESS_YES_NO], WP-M3-19). */
     const val JA = "JA"; const val NEIN = "NEIN"
@@ -86,13 +89,19 @@ object ChecklistLimits { const val MAX_STEPS = 60; const val MAX_TITLE = 200; co
 data class ChecklistStepInput(
     val code: String, val title: String, val helpText: String?, val kind: ChecklistInputKind, val mandatory: Boolean, val safetyCritical: Boolean,
     val naRequiresReason: Boolean, val photoRequiredOnDefect: Boolean, val numberMin: BigDecimal?, val numberMax: BigDecimal?, val numberUnit: String?,
+    /** Ausstattungsbedingung (`RAMP_OR_LIFT`): das Element gehört nur zu Läufen von Fahrzeugen mit dieser Ausstattung (WP-M3-12). */
+    val equipmentCondition: String? = null,
+    /** Ressourcendimension, die bei Mangel oder „Nicht prüfbar“ entfällt (`wheelchair`, nur mit Ausstattungsbedingung, WP-M3-12). */
+    val restrictsDimension: String? = null,
+    /** Sperrart bei negativer Antwort auf ein sicherheitskritisches Element (`VEHICLE`, `SERVICE`; WP-M3-16); nur bei kritischen Elementen, dort Standard `VEHICLE`. */
+    val blockKind: String? = null,
 )
 
 /** Eingabe einer Vorlage (Entwurf): Name, Fahrzeugklasse, Bedienart und mindestens ein Prüfelement. Die Reihenfolge der Liste ist die Anzeigereihenfolge. */
 data class ChecklistTemplateInput(val name: String, val vehicleClass: String, val serviceMode: String, val steps: List<ChecklistStepInput>, val templateType: ChecklistTemplateType = ChecklistTemplateType.GENERAL) {
     companion object {
         private val FIELDS = setOf("name", "vehicle_class", "service_mode", "steps", "template_type")
-        private val STEP_FIELDS = setOf("step_code", "title", "help_text", "input_kind", "mandatory", "safety_critical", "na_requires_reason", "photo_required_on_defect", "number_min", "number_max", "number_unit")
+        private val STEP_FIELDS = setOf("step_code", "title", "help_text", "input_kind", "mandatory", "safety_critical", "na_requires_reason", "photo_required_on_defect", "number_min", "number_max", "number_unit", "equipment_condition", "restricts_dimension", "block_kind")
         private val CLASS = Regex("^[A-Z][A-Z0-9_]{1,39}$")
         private val CODE = Regex("^[A-Z][A-Z0-9_]{1,59}$")
 
@@ -163,8 +172,19 @@ data class ChecklistTemplateInput(val name: String, val vehicleClass: String, va
                 listOf("number_min", "number_max", "number_unit").forEach { if (raw[it] != null) v.add("$p/$it", ViolationCode.INVALID_VALUE) }
             }
             if (min != null && max != null && min > max) v.add("$p/number_max", ViolationCode.INTERVAL_INVALID)
+            fun code(key: String, allowed: Set<String>): String? = when (val c = raw[key]) {
+                null -> null
+                is String -> if (c in allowed) c else { v.add("$p/$key", ViolationCode.NOT_IN_ENUM); null }
+                else -> { v.add("$p/$key", ViolationCode.TYPE_MISMATCH); null }
+            }
+            val condition = code("equipment_condition", setOf("RAMP_OR_LIFT"))
+            val dimension = code("restricts_dimension", setOf("wheelchair"))
+            val blockKind = code("block_kind", setOf("VEHICLE", "SERVICE"))
+            if (dimension != null && condition == null) v.add("$p/restricts_dimension", ViolationCode.INVALID_VALUE)   // eine einschränkende Dimension braucht die Ausstattungsbedingung
+            if (dimension != null && kind != null && kind != ChecklistInputKind.OK_DEFECT_NA) v.add("$p/restricts_dimension", ViolationCode.INVALID_VALUE)
+            if (blockKind != null && critical != true) v.add("$p/block_kind", ViolationCode.INVALID_VALUE)   // die Sperrart gehört nur zu sicherheitskritischen Elementen
             if (v.list.size > before) return null
-            return ChecklistStepInput(code!!, title!!, help?.takeIf { it.isNotEmpty() }, kind!!, mandatory!!, critical!!, na!!, photo!!, min, max, unit)
+            return ChecklistStepInput(code!!, title!!, help?.takeIf { it.isNotEmpty() }, kind!!, mandatory!!, critical!!, na!!, photo!!, min, max, unit, condition, dimension, if (critical) (blockKind ?: "VEHICLE") else null)
         }
 
         private fun decimal(raw: Map<*, *>, key: String, p: String, v: Violations): BigDecimal? = when (val n = raw[key]) {
@@ -182,8 +202,9 @@ data class ChecklistTemplateInput(val name: String, val vehicleClass: String, va
 data class ChecklistStepView(
     val code: String, val position: Int, val title: String, val helpText: String?, val kind: ChecklistInputKind, val mandatory: Boolean, val safetyCritical: Boolean,
     val naRequiresReason: Boolean, val photoRequiredOnDefect: Boolean, val numberMin: BigDecimal?, val numberMax: BigDecimal?, val numberUnit: String?, val exampleImageName: String?,
+    val equipmentCondition: String? = null, val restrictsDimension: String? = null, val blockKind: String? = null,
 ) {
-    fun rule() = ChecklistStepRule(code, kind, mandatory, naRequiresReason, numberMin, numberMax)
+    fun rule() = ChecklistStepRule(code, kind, mandatory, naRequiresReason, numberMin, numberMax, restrictsDimension != null)
 }
 
 data class ChecklistTemplateView(
@@ -224,7 +245,7 @@ interface ChecklistTemplates {
 }
 
 /** Regel eines Prüfelements für die Antwortvalidierung. */
-data class ChecklistStepRule(val code: String, val kind: ChecklistInputKind, val mandatory: Boolean, val naRequiresReason: Boolean, val numberMin: BigDecimal?, val numberMax: BigDecimal?)
+data class ChecklistStepRule(val code: String, val kind: ChecklistInputKind, val mandatory: Boolean, val naRequiresReason: Boolean, val numberMin: BigDecimal?, val numberMax: BigDecimal?, val restrictsDimension: Boolean = false)
 
 /** Antwort eines Fahrers auf ein Prüfelement (Rohwerte, noch ungeprüft). */
 data class ChecklistAnswer(val stepCode: String, val status: String?, val numberValue: BigDecimal?, val note: String?, val textValue: String? = null)
@@ -247,7 +268,9 @@ object ChecklistAnswerValidator {
             val status = a.status
             if (status == null) { out += Violation("$base/answer", ViolationCode.REQUIRED); continue }
             if (rule.kind == ChecklistInputKind.READINESS_YES_NO) { readiness(a, base, out); continue }
-            if (status !in ChecklistAnswerStatus.ALLOWED) { out += Violation("$base/answer", ViolationCode.NOT_IN_ENUM); continue }
+            // Ausstattungsprüfpunkte (WP-M3-12): OK, Mangel oder „Nicht prüfbar“; „Nicht anwendbar“ gibt es nicht (das Fahrzeug hat die Ausstattung), „Nicht prüfbar“ nur dort
+            val allowed = if (rule.restrictsDimension) setOf(ChecklistAnswerStatus.OK, ChecklistAnswerStatus.DEFECT, ChecklistAnswerStatus.NOT_CHECKABLE) else ChecklistAnswerStatus.ALLOWED
+            if (status !in allowed) { out += Violation("$base/answer", ViolationCode.NOT_IN_ENUM); continue }
             if (status == ChecklistAnswerStatus.NOT_APPLICABLE && rule.naRequiresReason && a.note.isNullOrBlank()) out += Violation("$base/note", ViolationCode.REQUIRED)
             if (a.note != null && a.note.length > 500) out += Violation("$base/note", ViolationCode.TOO_LONG)
             when (rule.kind) {

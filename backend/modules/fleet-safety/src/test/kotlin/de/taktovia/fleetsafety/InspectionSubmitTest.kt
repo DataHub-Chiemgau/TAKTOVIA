@@ -146,7 +146,8 @@ class InspectionSubmitTest {
         val hard = w.startedRun()   // STEP_1 ist sicherheitskritisch
         val blocked = w.submit(hard, listOf(w.answer("STEP_1", "DEFECT", note = "Bremsflüssigkeit"), w.answer("STEP_2"), w.answer("STEP_3")))
         assertEquals("BLOCKED", blocked.outcome); assertNull(blocked.release)
-        assertEquals(listOf(ReleaseBlocker.NO_INSPECTION), blocked.missing)
+        assertTrue(ReleaseBlocker.DEFECT_BLOCK in blocked.missing, "die Sperre aus dem kritischen Mangel steht als fehlende Voraussetzung da (WP-M3-16): ${blocked.missing}")
+        assertNotNull(blocked.block, "Sperre mit Vorgangsnummer in derselben Transaktion")
         assertEquals(0, fx.count("SELECT count(*) FROM taktovia.resource_release WHERE inspection_ref = ?", hard.id), "keine Einsatzfreigabe nach kritischem Nein")
         assertTrue(fx.fleet.readiness.assertDispatchable(w.ctx("dispatcher"), hard.vehicle, hard.shift, null, Instant.now()) is DispatchVerdict.Refused)
     }

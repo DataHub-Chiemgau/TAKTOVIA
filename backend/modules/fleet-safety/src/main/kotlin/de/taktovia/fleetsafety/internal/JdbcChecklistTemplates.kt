@@ -220,9 +220,9 @@ internal class JdbcChecklistTemplates(
         steps.forEachIndexed { i, s ->
             j.update(
                 "INSERT INTO taktovia.checklist_step (tenant_id, id, template_revision_id, step_code, position, title, help_text, example_image_name, mandatory, safety_critical, answer_kind, " +
-                    "na_requires_reason, photo_required_on_defect, number_min, number_max, number_unit, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "na_requires_reason, photo_required_on_defect, number_min, number_max, number_unit, equipment_condition, restricts_dimension, block_kind, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 UUID.randomUUID(), revisionId, s.code, i + 1, s.title, s.helpText, images[s.code], s.mandatory, s.safetyCritical, s.kind.code, s.naRequiresReason, s.photoRequiredOnDefect,
-                s.numberMin, s.numberMax, s.numberUnit, actor.value,
+                s.numberMin, s.numberMax, s.numberUnit, s.equipmentCondition, s.restrictsDimension, s.blockKind, actor.value,
             )
         }
     }
@@ -239,7 +239,7 @@ internal class JdbcChecklistTemplates(
         return out
     }
 
-    private fun ChecklistStepView.toInput() = ChecklistStepInput(code, title, helpText, kind, mandatory, safetyCritical, naRequiresReason, photoRequiredOnDefect, numberMin, numberMax, numberUnit)
+    private fun ChecklistStepView.toInput() = ChecklistStepInput(code, title, helpText, kind, mandatory, safetyCritical, naRequiresReason, photoRequiredOnDefect, numberMin, numberMax, numberUnit, equipmentCondition, restrictsDimension, blockKind)
 
     private fun load(j: JdbcOperations, id: UUID, lock: Boolean): ChecklistTemplateView? {
         val head = (if (lock) j.query(REVISION_LOCK, HEAD, id) else j.query(REVISION_ROW, HEAD, id)).firstOrNull() ?: return null
@@ -247,7 +247,8 @@ internal class JdbcChecklistTemplates(
     }
 
     private fun loadSteps(j: JdbcOperations, revisionId: UUID): List<ChecklistStepView> = j.query(
-        "SELECT step_code, position, title, help_text, example_image_name, mandatory, safety_critical, answer_kind, na_requires_reason, photo_required_on_defect, number_min, number_max, number_unit " +
+        "SELECT step_code, position, title, help_text, example_image_name, mandatory, safety_critical, answer_kind, na_requires_reason, photo_required_on_defect, number_min, number_max, number_unit, " +
+            "equipment_condition, restricts_dimension, block_kind " +
             "FROM taktovia.checklist_step WHERE template_revision_id = ? ORDER BY position", STEP, revisionId,
     )
 
@@ -279,7 +280,8 @@ internal class JdbcChecklistTemplates(
         val STEP = RowMapper { rs, _ ->
             ChecklistStepView(rs.getString("step_code"), rs.getInt("position"), rs.getString("title"), rs.getString("help_text"), ChecklistInputKind.parse(rs.getString("answer_kind"))!!,
                 rs.getBoolean("mandatory"), rs.getBoolean("safety_critical"), rs.getBoolean("na_requires_reason"), rs.getBoolean("photo_required_on_defect"),
-                rs.getBigDecimal("number_min"), rs.getBigDecimal("number_max"), rs.getString("number_unit"), rs.getString("example_image_name"))
+                rs.getBigDecimal("number_min"), rs.getBigDecimal("number_max"), rs.getString("number_unit"), rs.getString("example_image_name"),
+                rs.getString("equipment_condition"), rs.getString("restricts_dimension"), rs.getString("block_kind"))
         }
     }
 }

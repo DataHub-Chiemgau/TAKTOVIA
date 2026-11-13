@@ -116,7 +116,7 @@ class ChecklistTemplateController(private val fleet: FleetsafetyApi, private val
     private fun step(s: ChecklistStepView): Map<String, Any?> = linkedMapOf(
         "step_code" to s.code, "position" to s.position, "title" to s.title, "help_text" to s.helpText, "input_kind" to s.kind.code, "mandatory" to s.mandatory, "safety_critical" to s.safetyCritical,
         "na_requires_reason" to s.naRequiresReason, "photo_required_on_defect" to s.photoRequiredOnDefect, "number_min" to s.numberMin, "number_max" to s.numberMax, "number_unit" to s.numberUnit,
-        "has_example_image" to (s.exampleImageName != null),
+        "has_example_image" to (s.exampleImageName != null), "equipment_condition" to s.equipmentCondition, "restricts_dimension" to s.restrictsDimension, "block_kind" to s.blockKind,
     )
 
     /** Sicht der Fahrer-App auf eine freigegebene Revision (`ChecklistTemplate`). */
@@ -126,7 +126,8 @@ class ChecklistTemplateController(private val fleet: FleetsafetyApi, private val
         "steps" to v.steps.map {
             linkedMapOf("step_code" to it.code, "title" to it.title, "mandatory" to it.mandatory, "safety_critical" to it.safetyCritical, "answer_kind" to it.kind.code,
                 "photo_required_on_defect" to it.photoRequiredOnDefect, "help_text" to it.helpText, "na_requires_reason" to it.naRequiresReason, "number_min" to it.numberMin,
-                "number_max" to it.numberMax, "number_unit" to it.numberUnit, "has_example_image" to (it.exampleImageName != null))
+                "number_max" to it.numberMax, "number_unit" to it.numberUnit, "has_example_image" to (it.exampleImageName != null),
+                "equipment_condition" to it.equipmentCondition, "restricts_dimension" to it.restrictsDimension, "block_kind" to it.blockKind)
         },
     )
 }

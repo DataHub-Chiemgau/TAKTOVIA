@@ -34,6 +34,8 @@ internal object BookingServicesFactory {
     fun walkingRoutes(ctxTx: ContextTransactions, config: EffectiveConfig?, routing: RoutingPort?, stopKeys: de.taktovia.bookingdispatch.api.EtaStopKeys?, clock: Clock): de.taktovia.bookingdispatch.api.WalkingRoutes =
         JdbcWalkingRoutes(ctxTx, config, routing, stopKeys, clock)
 
+    fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = JdbcOperatorOrders(ctxTx)
+
     fun planChanges(ctxTx: ContextTransactions, clock: Clock): de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)
 
     fun bookingImpactProvider(): ImpactProvider = BookingImpactProvider()

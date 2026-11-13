@@ -29,7 +29,7 @@
 - **Konkurrierend:** Einschränkung parallel zu einem Hold mit Rollstuhlplatz: kein Commit auf die entfallene Dimension; zwei gleichzeitige Prüfabschlüsse des Fahrzeugs: genau ein wirksames Ergebnis; Submit „Rampe defekt“ parallel zu Dispositions-Commit mit Rollstuhlbedarf: in keiner Serialisierung entsteht eine Zusage auf die entfallene Dimension (Prüfung gegen `safety_revision`/Readiness im selben Commit, WP-M2-22/WP-M3-08).
 - **Referenztests:** keine Katalog-ID im WP genannt (inhaltlich verwandt: AT-04 Rollstuhltransport)
 
-Testfälle: geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/AccessibilityReadinessTest.kt::defekte_rampe_schliesst_rollstuhlfahrten_aus; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/AccessibilityReadinessTest.kt::fahrzeug_mit_rampe_erhaelt_vier_pruefpunkte_ohne_rampe_nicht; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/AccessibilityReadinessTest.kt::nicht_pruefbar_gilt_nicht_als_ja
+Testfälle: backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/AccessibilityReadinessTest.kt::defekte_rampe_schliesst_rollstuhlfahrten_aus; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/AccessibilityReadinessTest.kt::fahrzeug_mit_rampe_erhaelt_vier_pruefpunkte_ohne_rampe_nicht; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/AccessibilityReadinessTest.kt::nicht_pruefbar_gilt_nicht_als_ja; backend/app/src/test/kotlin/de/taktovia/app/fleet/AccessibilityHoldTest.kt::einschraenkung_parallel_zu_hold_mit_rollstuhlplatz_kein_commit_auf_die_entfallene_dimension
 
 ## Reviews
 

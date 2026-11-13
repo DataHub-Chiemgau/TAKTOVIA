@@ -26,7 +26,7 @@ internal object StafftimeServicesFactory {
         planAckSink: de.taktovia.stafftime.api.PlanAckOverdueSink = de.taktovia.stafftime.api.PlanAckOverdueSink.NONE): StafftimeApi {
         val devices = JdbcDriverDevices(ctxTx, audit)
         val codes = JdbcBoardingCodes(ctxTx, outbox, clock, settings)
-        val statusImpl = JdbcVehicleServiceStatuses(ctxTx, outbox, clock)
+        val statusImpl = JdbcVehicleServiceStatuses(ctxTx, audit, outbox, clock)
         val events = JdbcDriverEvents(ctxTx, outbox, clock, settings, effects, codes, statusImpl)
         val drivers = JdbcDrivers(ctxTx, audit)
         val shiftsImpl = JdbcShifts(ctxTx, audit)

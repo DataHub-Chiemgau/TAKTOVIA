@@ -143,6 +143,7 @@ registerDriverDevice;driver:devices;-;M3;N;J;N;N;N;N;N;N;N;N
 revokeDriverDevice;driver:devices;-;M3;N;J;N;N;N;N;N;N;N;N
 recordDriverPosition;driver:positions;-;M3;N;J;N;N;N;N;N;N;N;N
 listOperatorVehicles;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
+getOperatorVehicle;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
 listOperatorIncidents;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
 getOperatorIncident;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
 listRunRevisions;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J

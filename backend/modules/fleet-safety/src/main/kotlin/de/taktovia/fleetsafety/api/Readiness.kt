@@ -32,10 +32,11 @@ data class VehicleBlockView(
     val setBy: String, val setAt: Instant, val liftedBy: String?, val liftedAt: Instant?, val releaseDecisionId: UUID?, val revision: Long,
 )
 
-data class SetBlock(val vehicleId: UUID, val source: BlockSource, val reason: BlockReason, val reasonRef: String? = null) {
+data class SetBlock(val vehicleId: UUID, val source: BlockSource, val reason: BlockReason, val reasonRef: String? = null, val caseNumber: String? = null) {
     init {
         require(source in reason.source) { "Grund $reason ist für die Quelle $source nicht zulässig" }
         require(reasonRef == null || reasonRef.length in 1..120) { "reasonRef 1 bis 120 Zeichen" }
+        require(caseNumber == null || Regex("^SPE-[0-9]{4}-[0-9]{6,}$").matches(caseNumber)) { "Vorgangsnummer SPE-<Jahr>-<laufende Nummer>" }
     }
 }
 
@@ -50,7 +51,8 @@ data class LiftOutcome(val block: VehicleBlockView, val safetyRevision: Long, va
 
 enum class ReleaseState { ISSUED, REVOKED, EXPIRED }
 
-enum class ReleaseRevokeReason { BLOCK_SET, VEHICLE_CHANGED, QUALIFICATION_REVOKED, MANUAL }
+/** [SUPERSEDED]: die Freigabe wird durch die Freigabe einer neueren Prüfung derselben Schicht ersetzt (WP-M3-12: nur die jüngste Prüfung bestimmt Einschränkung und Freigabe). */
+enum class ReleaseRevokeReason { BLOCK_SET, VEHICLE_CHANGED, QUALIFICATION_REVOKED, MANUAL, SUPERSEDED }
 
 /** Einsatzfreigabe für genau (Fahrer der Schicht, Fahrzeug, Schicht); [state] wird aus `revoked_at` und `valid_until` abgeleitet, nie gespeichert. */
 data class ResourceReleaseView(
@@ -61,7 +63,21 @@ data class ResourceReleaseView(
 data class IssueRelease(val vehicleId: UUID, val shiftId: UUID, val inspectionId: UUID)
 
 /** Fehlende Voraussetzung der Einsatzfreigabe (Codes wie `MissingRequirement` im Vertrag `api/fleet-safety.yaml`); keine Diagnosetexte. */
-enum class ReleaseBlocker { NO_INSPECTION, INSPECTION_OPEN, INSPECTION_EXPIRED, DEFECT_BLOCK, OPERATIONAL_BLOCK, QUALIFICATION_MISSING, VEHICLE_CHANGED, RELEASE_REVOKED }
+enum class ReleaseBlocker { NO_INSPECTION, INSPECTION_OPEN, INSPECTION_EXPIRED, DEFECT_BLOCK, OPERATIONAL_BLOCK, QUALIFICATION_MISSING, VEHICLE_CHANGED, RELEASE_REVOKED, SAFETY_REVISION_CHANGED }
+
+/** Eine fehlende Voraussetzung mit Bezug: Prüflauf und offene Pflichtschritte (nur Codes und Kennungen, keine Diagnosetexte; Vertrag `MissingRequirement`, LH-6.21-CHK-001). */
+data class MissingRequirement(val code: ReleaseBlocker, val inspectionId: UUID? = null, val stepCodes: List<String> = emptyList())
+
+/** Freigabestand einer Schicht für die Anzeige: freigegeben, nicht freigegeben (Voraussetzung fehlt) oder gesperrt (aktive Sperre). */
+enum class ReleaseGate { RELEASED, NOT_RELEASED, BLOCKED }
+
+/**
+ * Antwort „fehlende Voraussetzungen“ (WP-M3-09): [missing] leer genau dann, wenn [gate] `RELEASED`. [unavailableDimensions] sind die durch die Freigabeprüfung entfallenen Ressourcendimensionen
+ * (WP-M3-12, z. B. `wheelchair`); sie sind nur bei `RELEASED` gefüllt. Reine Lesesicht: erteilt oder ändert nichts.
+ */
+data class ReleaseRequirements(
+    val gate: ReleaseGate, val missing: List<MissingRequirement>, val releaseId: UUID?, val validUntil: Instant?, val unavailableDimensions: Set<String> = emptySet(),
+)
 
 sealed interface ReleaseOutcome {
     /** [replayed] = die Freigabe für diesen Prüflauf bestand schon (Wiederholung, keine zweite Freigabe, kein zweiter Revisionsstand). */
@@ -71,11 +87,15 @@ sealed interface ReleaseOutcome {
 
 /** Warum ein Fahrzeug für Schicht und Zeitpunkt nicht disponierbar ist ([DispatchVerdict.Refused]). */
 enum class DispatchRefusal {
-    UNKNOWN_VEHICLE, VEHICLE_INACTIVE, VEHICLE_BLOCKED, STALE_SAFETY_REVISION, NO_VALID_SHIFT, NO_RELEASE, RELEASE_REVOKED, RELEASE_EXPIRED, RELEASE_STALE, QUALIFICATION_MISSING,
+    UNKNOWN_VEHICLE, VEHICLE_INACTIVE, VEHICLE_BLOCKED, SHIFT_BLOCKED, STALE_SAFETY_REVISION, NO_VALID_SHIFT, NO_RELEASE, RELEASE_REVOKED, RELEASE_EXPIRED, RELEASE_STALE, QUALIFICATION_MISSING,
 }
 
 sealed interface DispatchVerdict {
-    data class Dispatchable(val releaseId: UUID, val safetyRevision: Long, val validUntil: Instant) : DispatchVerdict
+    /**
+     * [unavailableDimensions]: durch die Freigabeprüfung entfallene Ressourcendimensionen (WP-M3-12, z. B. `wheelchair`): die Disposition darf auf sie keine Zusage geben; das Fahrzeug bleibt
+     * für alle anderen Fahrten nutzbar. Leer bei voller Freigabe.
+     */
+    data class Dispatchable(val releaseId: UUID, val safetyRevision: Long, val validUntil: Instant, val unavailableDimensions: Set<String> = emptySet()) : DispatchVerdict
     data class Refused(val reasons: List<DispatchRefusal>) : DispatchVerdict
 }
 
@@ -117,6 +137,12 @@ interface Readiness {
     fun revokeRelease(ctx: RequestContext, releaseId: UUID, reason: ReleaseRevokeReason): ResourceReleaseView
 
     fun release(ctx: RequestContext, releaseId: UUID): ResourceReleaseView
+
+    /**
+     * Fehlende Voraussetzungen der Einsatzfreigabe für (Fahrzeug, Schicht) jetzt (WP-M3-09, CHK-001): es gibt nur diese eine Regel; Bereitmeldung, Fahrerlauf und Leitstellenansicht fragen sie.
+     * Fremdes Fahrzeug oder fremder Mandant: 404.
+     */
+    fun requirements(ctx: RequestContext, vehicleId: UUID, shiftId: UUID): ReleaseRequirements
 
     /** Prüfung im Kontext der Anfrage (eigene lesende Transaktion; ohne Sperre, nur für Anzeige und Tests). */
     fun assertDispatchable(ctx: RequestContext, vehicleId: UUID, shiftId: UUID, expectedSafetyRevision: Long?, at: Instant): DispatchVerdict

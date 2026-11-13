@@ -28,6 +28,7 @@ export type Right =
   | 'defects.state'
   | 'defects.history'
   | 'alerts'
+  | 'livebetrieb'
   | 'alerts.ack'
   | 'admin.ui17'
   | 'admin.ui18'
@@ -66,8 +67,9 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   'defects:state': ['defects.state'],
   'defects:history': ['defects.history'],
   // UI-07 Leitstelle: Arbeitsliste „Offene Störungen“ (WP-M3-52): Lesen mit `operator:read`, Quittieren nur mit `operator:write`
-  'operator:read': ['alerts'],
-  'operator:write': ['alerts', 'alerts.ack'],
+  // UI-07 Livebetrieb Fahrzeuge (WP-M3-36): Lesen mit `operator:read`; die Fahrzeuge begrenzt der Server auf die berechtigten Dienste
+  'operator:read': ['alerts', 'livebetrieb'],
+  'operator:write': ['alerts', 'alerts.ack', 'livebetrieb'],
   'config:write': ['admin.ui17'],
   'memberships:read': ['admin.ui18'],
   'audit:read': ['admin.ui20'],
@@ -84,6 +86,7 @@ export const PROVISIONAL_ROLE_RIGHTS: Readonly<Record<string, readonly Right[]>>
   SUPPORT: ['callcenter', 'admin.ui20'],
   DISPATCHER: [
     'callcenter',
+    'livebetrieb',
     'fleet',
     'fleet.write',
     'drivers',
