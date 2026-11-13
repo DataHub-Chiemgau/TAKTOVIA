@@ -1,0 +1,11 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+repair_order;proof_evidence_id;nein;FLOTTE_SICHERHEIT;;;;Reparaturnachweis (freigegebene Evidenz der Akte), WP-M3-51
+repair_order;proof_recorded_at;nein;FLOTTE_SICHERHEIT;;;;Zeitpunkt der Nachweismeldung
+repair_order;proof_recorded_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Akteur der Nachweismeldung (Pseudonym user:<uuid>)
+repair_order;cancel_reason;nein;FLOTTE_SICHERHEIT;;;;Stornogrund (Freitext, begrenzt)
+vehicle_release_decision;defect_id;nein;FLOTTE_SICHERHEIT;;;;Schadenakte der Entscheidung
+vehicle_release_decision;decided_by_role;nein;FLOTTE_SICHERHEIT;;;;Rolle der Entscheidenden (Rollencode)
+vehicle_release_decision;second_approver_role;nein;FLOTTE_SICHERHEIT;;;;Rolle der zweiten Person (Rollencode)
+vehicle_release_decision;reason;nein;FLOTTE_SICHERHEIT;;;;Begründung der Entscheidung (Freitext, begrenzt)
+vehicle_release_decision;proof_evidence_id;nein;FLOTTE_SICHERHEIT;;;;Nachweis, auf den sich die Entscheidung stützt
+vehicle_release_decision;supersedes_decision_id;nein;FLOTTE_SICHERHEIT;;;;erste Entscheidung, die die zweite abschließt (Vieraugenpflicht)
