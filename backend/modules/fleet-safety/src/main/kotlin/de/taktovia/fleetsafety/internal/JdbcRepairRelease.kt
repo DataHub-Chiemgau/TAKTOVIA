@@ -55,6 +55,9 @@ internal class ReleaseAttempts(private val ctxTx: ContextTransactions, private v
     }
 }
 
+/** Akte unter Zeilensperre lesen (Sperrreihenfolge: Akte, Auftrag, Fahrzeug). */
+private const val DEFECT_ROW_LOCK = "SELECT ${JdbcDefects.COLUMNS} FROM taktovia.defect_case d WHERE d.id = ? FOR UPDATE"
+
 /** Reparaturaufträge (WP-M3-51), siehe [RepairOrders]. */
 internal class JdbcRepairOrders(
     private val ctxTx: ContextTransactions, private val audit: AuditPort, private val outbox: Outbox, private val clock: Clock, private val defects: JdbcDefects,
@@ -73,7 +76,7 @@ internal class JdbcRepairOrders(
     @AuditRequired
     private fun doCreate(j: JdbcOperations, ctx: RequestContext, actor: ActorRef, cmd: CreateRepairOrder): RepairOrderView {
         // Sperrreihenfolge wie die Triage: zuerst die Akte (Aktenstatus und Auftrag ändern sich gemeinsam), danach der Auftrag
-        val defect = j.query("SELECT ${JdbcDefects.COLUMNS} FROM taktovia.defect_case d WHERE d.id = ? FOR UPDATE", JdbcDefects.MAPPER, cmd.defectId).firstOrNull() ?: throw ProblemException.notFound()
+        val defect = j.query(DEFECT_ROW_LOCK, JdbcDefects.MAPPER, cmd.defectId).firstOrNull() ?: throw ProblemException.notFound()
         if (defect.status != DefectState.IN_PROGRESS.name) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Ein Reparaturauftrag ist nur zu einer Akte im Status IN_PROGRESS zulässig (aktuell ${defect.status}).")
         val id = UUID.randomUUID()
         val view = j.query(
@@ -113,7 +116,7 @@ internal class JdbcRepairOrders(
     @AuditRequired
     private fun doTransition(j: JdbcOperations, ctx: RequestContext, actor: ActorRef, id: UUID, expected: Long, cmd: RepairTransition): RepairOrderView {
         val defectId = j.query("SELECT defect_id FROM taktovia.repair_order WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, id).firstOrNull() ?: throw ProblemException.notFound()
-        val defect = j.query("SELECT ${JdbcDefects.COLUMNS} FROM taktovia.defect_case d WHERE d.id = ? FOR UPDATE", JdbcDefects.MAPPER, defectId).single()   // Akte zuerst, dann der Auftrag
+        val defect = j.query(DEFECT_ROW_LOCK, JdbcDefects.MAPPER, defectId).single()   // Akte zuerst, dann der Auftrag
         val before = j.query("SELECT $COLUMNS FROM taktovia.repair_order r WHERE r.id = ? FOR UPDATE", MAPPER, id).single()
         if (before.revision != expected) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Der Reparaturauftrag wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         val to = cmd.to
