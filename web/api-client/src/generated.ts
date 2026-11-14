@@ -4339,7 +4339,7 @@ export interface Operations {
   };
   listCostEvents: {
     path: Record<string, never>;
-    query: { as_of?: string; legal_entity_id?: UUID; limit?: number; cursor?: string };
+    query: { as_of?: string; legal_entity_id?: UUID; cost_object_id?: UUID; category?: string; cost_behavior?: 'FIXED' | 'VARIABLE' | 'MIXED' | 'UNCLASSIFIED'; attribution?: 'DIRECT' | 'ALLOCATED'; currency?: string; period_from?: string; period_to?: string; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: CostEventPage;
@@ -6301,7 +6301,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   cancelJourney: { method: 'POST', path: '/v1/federation/journeys/{journey_id}/cancel', pathParams: ['journey_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['journeys:cancel'], statuses: [202, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   receivePartnerEvent: { method: 'POST', path: '/v1/federation/partners/{partner_id}/events', pathParams: ['partner_id'], query: [], headers: ['X-Partner-Key-Id', 'X-Partner-Timestamp'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
-  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'cost_object_id', 'category', 'cost_behavior', 'attribution', 'currency', 'period_from', 'period_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createManualCostEvent: { method: 'POST', path: '/v1/cost-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listFiscalPeriods: { method: 'GET', path: '/v1/fiscal-periods', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['periods:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },

@@ -125,6 +125,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Finanzen',
           'Belege prüfen und freigeben',
           'Fahrzeugkosten je Monat',
+          'Kostenübersicht je Kostenobjekt',
           'Eigene Zeit und Abwesenheit',
         ],
       ],

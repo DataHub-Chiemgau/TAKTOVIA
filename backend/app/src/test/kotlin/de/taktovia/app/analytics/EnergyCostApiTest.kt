@@ -18,9 +18,9 @@ class EnergyCostApiTest {
 
     private class World(val env: IdentityEnv) {
         val tenant: TenantId = env.tenant("Energie-" + UUID.randomUUID()); val legalEntity: UUID = UUID.randomUUID(); val vehicle: UUID = UUID.randomUUID()
-        val dispatcher = UUID.randomUUID(); val finance = UUID.randomUUID()
-        init { env.grant(tenant, dispatcher, "dispatcher"); env.grant(tenant, finance, "finance") }
-        val token = env.token(dispatcher); val financeToken = env.token(finance)
+        val dispatcher = UUID.randomUUID(); val finance = UUID.randomUUID(); val driver = UUID.randomUUID()
+        init { env.grant(tenant, dispatcher, "dispatcher"); env.grant(tenant, finance, "finance"); env.grant(tenant, driver, "driver") }
+        val token = env.token(dispatcher); val financeToken = env.token(finance); val driverToken = env.token(driver)
     }
 
     private fun fuel(w: World, gross: Long, tax: Long, state: String = "POSTED"): UUID {
@@ -99,7 +99,8 @@ class EnergyCostApiTest {
         assertEquals(400, env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km&energy=GAS", w.token).status.let { if (it == 422) 400 else it }, "unbekannte Energieart")
         assertEquals(400, env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km&service_id=${UUID.randomUUID()}", w.token).status, "Dienst ist keine Dimension der Energiekosten")
         assertEquals(400, env.get("/v1/analytics/metrics?metric_id=energy_cost_per_100km&energy=FUEL", w.token).status, "Filter braucht einen Zeitraum")
-        assertEquals(403, env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km", w.financeToken).status)
+        assertEquals(403, env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km", w.driverToken).status, "ohne Kennzahlenrecht")
+        assertEquals(200, env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km&energy=FUEL", w.financeToken).status, "die Finanzrolle liest die Energiekosten (UI-15)")
         val own = env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km&energy=FUEL", w.token).json["values"].single()["numerator"].asInt()
         val foreignTenantsView = env.get("/v1/analytics/metrics?$q&metric_id=energy_cost_per_100km&energy=FUEL", other.token).json["values"].single()
         assertEquals(15000, own); assertEquals(15000, foreignTenantsView["numerator"].asInt(), "jeder Mandant sieht nur die eigenen Belege (je 15 000), nie die Summe 30 000")

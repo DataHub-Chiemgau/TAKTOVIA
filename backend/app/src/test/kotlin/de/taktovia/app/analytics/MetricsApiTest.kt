@@ -98,7 +98,8 @@ class MetricsApiTest {
         assertEquals(400, env.get("/v1/analytics/metrics?$q&breakdown=rejection_reason&reason_code=GIBT_ES_NICHT", t).status, "unbekannter Ablehnungscode")
         assertEquals(422, env.get("/v1/analytics/metrics?from=nicht-datum", t).status, "Formatfehler meldet die Schemaprüfung des Vertrags"); assertEquals(400, env.get("/v1/analytics/metrics?to=2026-12-01", t).status)
         assertEquals(400, env.get("/v1/analytics/metrics?breakdown=rejection_reason", t).status, "Aufschlüsselung braucht einen Zeitraum")
-        assertEquals(403, env.get("/v1/analytics/metrics?$q", w.driverToken).status); assertEquals(403, env.get("/v1/analytics/metrics?$q", w.financeToken).status)
+        assertEquals(403, env.get("/v1/analytics/metrics?$q", w.driverToken).status)
+        assertEquals(200, env.get("/v1/analytics/metrics?$q", w.financeToken).status, "die Finanzrolle liest Kennzahlen (UI-15, Energiekosten je 100 km; WP-M4-44)")
         assertEquals(401, env.get("/v1/analytics/metrics?$q", "kein-token").status)
         val own = env.get("/v1/analytics/metrics?$q&metric_id=requests", t).json["values"][0]["value"].asInt()
         val foreign = env.get("/v1/analytics/metrics?$q&metric_id=requests", other.tokens.getValue("dispatcher")).json["values"][0]
