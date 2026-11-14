@@ -56,10 +56,10 @@ class MetricRegisterTest {
         assertTrue(defs.map { it.metricId }.containsAll(p1))
         for (d in defs) {
             assertTrue(d.numerator.isNotBlank() && d.denominator.isNotBlank() && d.exclusions.isNotBlank() && d.timeBasis.isNotBlank(), d.metricId)
-            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(if (d.metricId in setOf("pickup_on_time", "mean_pickup_delay")) 2 else 1, d.version, "Abholkennzahlen: Version 2 (WP-M4-53)"); assertNotNull(d.approvedAt)
+            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(if (d.metricId in setOf("pickup_on_time", "mean_pickup_delay", "no_show_rate")) 2 else 1, d.version, "Abholkennzahlen: Version 2 (WP-M4-53), No-Show-Rate: Version 2 (WP-M4-55)"); assertNotNull(d.approvedAt)
             assertEquals(d.executable, d.notExecutableReason == null, d.metricId)
         }
-        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour", "pickup_on_time", "mean_pickup_delay"), defs.filter { it.executable }.map { it.metricId }.toSet())
+        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour", "pickup_on_time", "mean_pickup_delay", "no_show_rate"), defs.filter { it.executable }.map { it.metricId }.toSet())
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, defs.single { it.metricId == "technical_partner_rejections" }.notExecutableReason, "Technische Partnerablehnungen nur als Definition (keine Partner in P1)")
     }
 
@@ -97,8 +97,10 @@ class MetricRegisterTest {
         assertEquals(MetricState.NOT_COMPUTABLE, tech.state); assertEquals(MetricReason.ZERO_DENOMINATOR, tech.reason); assertNull(tech.value); assertEquals(BigDecimal.ZERO, tech.denominator)
         assertEquals(BigDecimal.ZERO, v.getValue("requests").value); assertEquals(MetricState.OK, v.getValue("requests").state)
         // nicht ausführbare Kennzahlen weisen keinen Wert aus, sondern ihren Grund
-        val offer = v.getValue("no_show_rate")
+        val offer = v.getValue("arrival_on_time")
         assertEquals(MetricState.NOT_COMPUTABLE, offer.state); assertEquals(MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, offer.reason); assertNull(offer.value); assertNull(offer.snapshotId)
+        // No-Show-Rate (WP-M4-55) ist ausführbar, hat aber ohne Buchungsdaten keinen Wert (nie 0 oder 100 %)
+        assertEquals(MetricState.NOT_COMPUTABLE, v.getValue("no_show_rate").state); assertEquals(MetricReason.NO_DATA, v.getValue("no_show_rate").reason)
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, v.getValue("technical_partner_rejections").reason)
     }
 

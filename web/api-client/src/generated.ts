@@ -1400,6 +1400,68 @@ export interface AnalyticsMetrics {
   values: MetricValue[] | null;
   rejections: RejectionBreakdown | null;
   funnel: FunnelBreakdown | null;
+  not_performed: NotPerformedBreakdown | null;
+}
+
+export interface NotPerformedBreakdown {
+  definition_version: number;
+  period?: Record<string, unknown>;
+  filter?: Record<string, unknown>;
+  total: number;
+  by_cause: ({
+    cause: string;
+    category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL';
+    label: string;
+    count: number;
+  })[];
+  by_category: Record<string, unknown>;
+  open_count: number;
+  conflict_count: number;
+  confirmed_pickups?: number;
+  confirmed_bookings?: number;
+  rates: Record<string, unknown>;
+  state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE' | 'SUPPRESSED';
+  coverage?: number | null;
+  as_of?: string | null;
+  source_events?: number;
+  items: NotPerformedTrip[];
+}
+
+export interface NotPerformedRate {
+  numerator: number;
+  denominator: number;
+  value: number | null;
+  reason: string | null;
+}
+
+export interface NotPerformedTrip {
+  booking_id: UUID;
+  service_id?: UUID | null;
+  confirmed_at: string;
+  not_performed_at: string;
+  cause_state: 'OPEN' | 'SET' | 'CORRECTED' | 'CONFLICT';
+  cause: string | null;
+  category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL' | null;
+  derived_cause?: string | null;
+  revision: number;
+  corrections: NotPerformedCorrection[];
+}
+
+export interface NotPerformedCorrection {
+  correction_no: number;
+  old_cause?: string | null;
+  old_category?: string | null;
+  new_cause: string;
+  new_category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL';
+  reason: string;
+  actor: string;
+  at: string;
+}
+
+export interface NotPerformedCorrectionRequest {
+  new_cause: string;
+  reason: string;
+  expected_revision?: number;
 }
 
 export interface KmCategories {
@@ -5079,10 +5141,17 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason' | 'funnel'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason' | 'funnel' | 'not_performed'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;
+  };
+  correctNotPerformedTrip: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: NotPerformedCorrectionRequest;
+    response: NotPerformedTrip;
   };
   getVehicleKmClasses: {
     path: Record<string, never>;
@@ -6727,6 +6796,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'vehicle_id', 'energy', 'currency', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  correctNotPerformedTrip: { method: 'POST', path: '/v1/analytics/not-performed/{booking_id}/corrections', pathParams: ['booking_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['analytics:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 429, 503] },
   getVehicleKmClasses: { method: 'GET', path: '/v1/analytics/vehicle-km', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

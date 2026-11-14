@@ -312,6 +312,8 @@ class CrossTenantIsolationTest {
             "rebookOutageBooking" to Probe("POST", "/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/rebook", """{"proposal_id":"${UUID.randomUUID()}","reason_code":"VEHICLE_OUTAGE"}""", true, role = "dispatcher"),
             "cancelOutageBooking" to Probe("POST", "/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/cancel", """{"reason_code":"VEHICLE_OUTAGE"}""", true, role = "dispatcher"),
             "informOutageBooking" to Probe("POST", "/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/inform", null, true, role = "dispatcher"),
+            // WP-M4-55 (Cluster wave15-c1): Korrektur der Ursache einer nicht durchgeführten Fahrt; die Fahrt eines fremden Mandanten ist 404 (RLS)
+            "correctNotPerformedTrip" to Probe("POST", "/v1/analytics/not-performed/{booking_id}/corrections", """{"new_cause":"EXTERNAL_EVENT","reason":"Fremdversuch"}""", false, role = "dispatcher"),
             "getStaffShift" to Probe("GET", "/v1/shifts/{shift_id}", role = "dispatcher"),
             "updateStaffShift" to Probe("PUT", "/v1/shifts/{shift_id}", """{"driver_id":"${UUID.randomUUID()}","vehicle_id":"${UUID.randomUUID()}","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin","withdrawn":true}""", true, role = "dispatcher"),
             // Belege: Aggregat, Revisionen, Original, Extraktion (WP-M4-22 bis -27)

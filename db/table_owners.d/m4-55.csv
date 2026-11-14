@@ -1,0 +1,4 @@
+table;owner;quelle
+not_performed_cause;analytics;WP-M4-55 (Ursachenkatalog je Mandant)
+not_performed_trip;analytics;WP-M4-55 (Fakt Fahrt nicht durchgefuehrt)
+not_performed_correction;analytics;WP-M4-55 (Korrekturvermerke)

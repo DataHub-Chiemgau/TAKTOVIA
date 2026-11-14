@@ -1,0 +1,4 @@
+tabelle;aggregat;loeschklasse;bemerkung
+not_performed_cause;Ursachenkatalog nicht durchgeführter Fahrten (WP-M4-55);LK_STAMM;Arbeitsvorschlag OP 30
+not_performed_trip;Fahrt nicht durchgeführt (WP-M4-55);LK_BETRIEB;keine Fahrgast-Klartextdaten
+not_performed_correction;Korrekturvermerk zur Ursache (WP-M4-55);LK_BETRIEB;Akteur als Kennung, kein Klartext
