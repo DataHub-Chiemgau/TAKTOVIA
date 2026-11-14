@@ -20,10 +20,10 @@ object AlertKinds {
     const val PLAN_ACK_OVERDUE = "PLAN_ACK_OVERDUE"
     const val TECH_PREFIX = "TECH_"
 
-    /** Standardregel je Art: Priorität; kritische Alarme umgehen die Eskalationsverzögerung. */
+    /** Standardregel je Art: Priorität; kritische Alarme umgehen die Eskalationsverzögerung. Das Technikereignis (WP-M3-18) ist niedrig (`NORMAL` ist die niedrigste Stufe der Alarmpriorität). */
     val DEFAULTS: List<AlertRule> = listOf(
         AlertRule(VEHICLE_BLOCK_CRITICAL, AlertPriority.CRITICAL, "dispatcher"),
-        AlertRule(TECHNICAL_EVENT, AlertPriority.HIGH, "dispatcher"),
+        AlertRule(TECHNICAL_EVENT, AlertPriority.NORMAL, "dispatcher"),
         AlertRule(OVERDUE, AlertPriority.HIGH, "dispatcher"),
         AlertRule(VEHICLE_OUTAGE, AlertPriority.HIGH, "dispatcher"),
         AlertRule(PLAN_ACK_OVERDUE, AlertPriority.NORMAL, "dispatcher"),

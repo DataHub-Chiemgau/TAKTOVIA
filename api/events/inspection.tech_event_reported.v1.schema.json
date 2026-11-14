@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/inspection.tech_event_reported.v1.schema.json",
+  "title": "Technikereignis gemeldet, Ereignistyp inspection.tech_event_reported (WP-M3-18, LH-6.21-CHK-009)",
+  "description": "Entsteht beim Abschluss eines Technikbereitschaftslaufs (Art TECH_READINESS) je Mangel-Antwort eines Technikpunktes (Fahrer-App, Mobilfunk, Navigation, dienstliches Zubehör), in derselben Transaktion wie der Alarm TECHNICAL_EVENT an die Leitstelle. Je Prüflauf und Schritt höchstens ein Ereignis (Eindeutigkeit in tech_event). `aggregate_id` der Hülle (platform.eventenvelope.v1) ist die Technikereignis-ID, `aggregate_revision` 1. Enthält nur Kennungen und den Schrittcode: keinen Antworttext, keine Fahrgastdaten, keine Diagnosen. Das Ereignis sperrt das Fahrzeug nicht. Ereignisname und Felder sind Vorschlag.",
+  "type": "object",
+  "required": ["tech_event_id", "inspection_id", "vehicle_id", "shift_id", "step_code"],
+  "additionalProperties": false,
+  "properties": {
+    "tech_event_id": {"type": "string", "format": "uuid"},
+    "inspection_id": {"type": "string", "format": "uuid"},
+    "vehicle_id": {"type": "string", "format": "uuid"},
+    "shift_id": {"type": "string", "format": "uuid"},
+    "step_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,59}$"}
+  },
+  "examples": [
+    {
+      "tech_event_id": "00000000-0000-4000-8000-0000000000f1",
+      "inspection_id": "00000000-0000-4000-8000-0000000000f2",
+      "vehicle_id": "00000000-0000-4000-8000-0000000000f3",
+      "shift_id": "00000000-0000-4000-8000-0000000000f4",
+      "step_code": "NAVIGATION"
+    }
+  ]
+}

@@ -76,7 +76,7 @@ class AlertFoundationTest {
         val t = tenant(); val c = ctx(t)
         val vehicle = fx.vehicle(t)
         val r = raise(t, AlertKinds.TECHNICAL_EVENT, vehicle = vehicle)
-        assertTrue(r.created); assertEquals(AlertPriority.HIGH, r.priority); assertEquals(1, r.policyRevisionNo)
+        assertTrue(r.created); assertEquals(AlertPriority.NORMAL, r.priority, "Technikereignis: niedrig (WP-M3-18)"); assertEquals(1, r.policyRevisionNo)
         val list = fleet.alerts.list(c, null, 50, null)
         assertEquals(1, list.size); val a = list.single()
         assertEquals(r.alertId, a.id); assertEquals(AlertState.OPEN, a.state); assertEquals(vehicle, a.vehicleId); assertEquals(1, a.policyRevisionNo); assertEquals(1L, a.revision); assertNull(a.acknowledgement)

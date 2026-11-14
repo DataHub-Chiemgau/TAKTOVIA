@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+tech_event;SELECT,INSERT;WP-M3-18: Technikereignis; unveränderlich (Trigger tech_event_immutable), Eindeutigkeit je Prüflauf und Schritt, kein UPDATE/DELETE

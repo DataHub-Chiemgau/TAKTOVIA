@@ -13,6 +13,7 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `inspection.completed` | `fleet-safety` | `inspection_run` / n | `submitInspection` bestätigt | Leitstelle (Prüfstatus), Schadenakte (Mangel zu Schaden) | `inspection_run` |
 | `inspection.template_unavailable` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Prüflauf-Start ohne eindeutig freigegebene Vorlage (WP-M3-13) | Leitstelle | – |
 | `inspection.release_withheld` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Prüfabschluss ohne gültige Qualifikation, keine Einsatzfreigabe (WP-M3-19, nur Kennungen und Code, ohne HR-Inhalte) | Leitstelle | – |
+| `inspection.tech_event_reported` | `fleet-safety` | Technikereignis (Aggregat-ID = Technikereignis) / 1 | Technikbereitschaft abgeschlossen, Mangel an Fahrer-App, Mobilfunk, Navigation oder Zubehör (WP-M3-18, nur Kennungen und Schrittcode) | Leitstelle | – |
 | `defect.reported` | `fleet-safety` | `defect_case` / 1 | Schaden gemeldet | Leitstelle, Alarm (WP-M3-46) | `defect_case` |
 | `defect.triaged` | `fleet-safety` | `defect_case` / n | Klasse gesetzt | Sperrkern, Alarm, Incident | `defect_case` |
 | `defect.state_changed` | `fleet-safety` | `defect_case` / n | Status gewechselt (WP-M3-47, auch Wiedereröffnung) | Leitstelle, Alarm | `defect_case` |

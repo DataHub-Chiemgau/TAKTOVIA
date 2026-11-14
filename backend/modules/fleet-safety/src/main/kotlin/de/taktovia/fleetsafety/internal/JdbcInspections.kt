@@ -143,11 +143,11 @@ internal class JdbcInspections(
      * erste Abfrage nach deren Ende leer, weil ihr Stichtag vor der neuen Revision lag; deshalb wird bei leerem Ergebnis mit neuem Stichtag wiederholt (höchstens [SELECT_ATTEMPTS] Versuche).
      */
     private fun selectPublished(j: JdbcOperations, vehicleClass: String, serviceMode: String?, kind: String): List<UUID> {
-        // Die Art bestimmt den Vorlagentyp: die Prüfung vor Fahrgastaufnahme nutzt die Vorlage des Fahrgastraums, alle anderen Arten die allgemeine oder die technische Vorlage (WP-M3-11)
-        val boarding = kind == "PRE_BOARDING"
+        // Die Art bestimmt den Vorlagentyp: die Prüfung vor Fahrgastaufnahme nutzt die Vorlage des Fahrgastraums, die Technikbereitschaft die Technikvorlage (WP-M3-18), alle anderen Arten die allgemeine oder die technische Vorlage (WP-M3-11)
+        val types = when (kind) { "PRE_BOARDING" -> listOf("PASSENGER_COMPARTMENT"); "TECH_READINESS" -> listOf("TECHNICAL_READINESS"); else -> listOf("GENERAL", "VEHICLE_TECHNICAL") }
         repeat(SELECT_ATTEMPTS) {
-            val found = j.query("SELECT r.id FROM taktovia.checklist_template_revision r WHERE r.state = 'PUBLISHED' AND r.vehicle_class = ? AND r.service_mode = ? AND (r.template_type = 'PASSENGER_COMPARTMENT') = ? ORDER BY r.id FOR SHARE OF r",
-                { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleClass, serviceMode, boarding)
+            val found = j.query("SELECT r.id FROM taktovia.checklist_template_revision r WHERE r.state = 'PUBLISHED' AND r.vehicle_class = ? AND r.service_mode = ? AND r.template_type = ANY (CAST(? AS text[])) ORDER BY r.id FOR SHARE OF r",
+                { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleClass, serviceMode, types.joinToString(",", "{", "}"))
             if (found.isNotEmpty()) return found
         }
         return emptyList()
@@ -221,9 +221,11 @@ internal class JdbcInspections(
             .maxOfOrNull { it.input.numberValue!!.toLong() }
         // Kritischer Mangel (WP-M3-16): Sperre, Alarm und Ereignis im selben Commit wie das Prüfergebnis (kein Zeitpunkt „Mangel gespeichert, Fahrzeug disponierbar“); scheitert eines davon, scheitert alles
         if (outcome == InspectionOutcome.BLOCKED) raiseBlocks(j, ctx, run.vehicleId, run.shiftId, id, steps, merged, now)
+        // Technikbereitschaft (WP-M3-18, CHK-009): je Mangel-Antwort eines Technikpunktes genau ein Technikereignis mit Alarm niedriger Priorität; sperrt nie
+        if (run.kind == "TECH_READINESS") raiseTechEvents(j, ctx, run.vehicleId, run.shiftId, id, merged, now)
         // Einsatzfreigabe im selben Commit, nur bei bestandener Prüfung (ein kritischer Mangel erteilt keine); fehlende Voraussetzungen bleiben als Liste der Antwort sichtbar
         var releaseId: UUID? = null
-        if (run.kind != "PRE_BOARDING" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
+        if (run.kind != "PRE_BOARDING" && run.kind != "TECH_READINESS" && (outcome == InspectionOutcome.PASSED || outcome == InspectionOutcome.PASSED_RESTRICTED)) {
             val r = readiness.issueReleaseIn(j, actor, ctx.correlationId, IssueRelease(run.vehicleId, run.shiftId, id))
             if (r is ReleaseOutcome.Issued) releaseId = r.release.id
             // Fehlende oder abgelaufene Qualifikation (CHK-010): keine Freigabe, Hinweis an die Leitstelle nur mit Kennungen und Code, ohne Personen- und HR-Inhalte
@@ -283,6 +285,34 @@ internal class JdbcInspections(
             outbox.append(j, OutboxEvent(blockId, 3, "inspection.critical_defect_blocked", linkedMapOf(
                 "inspection_id" to inspectionId.toString(), "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "block_id" to blockId.toString(), "block_kind" to kind.name,
                 "case_number" to usedCase, "step_codes" to group.map { it.code }), now, correlationId = ctx.correlationId))
+        }
+    }
+
+    /**
+     * Technikereignisse eines Technikbereitschaftslaufs (WP-M3-18) in der Transaktion des Abschlusses: je Mangel-Antwort ein Ereignis (`tech_event`, Eindeutigkeit über Prüflauf und Schritt,
+     * `ON CONFLICT DO NOTHING`: eine Wiederholung erzeugt nichts), ein Alarm `TECHNICAL_EVENT` an die Leitstelle (Quellereignis = Technikereignis; Dienstbezug nur, wenn das Fahrzeug genau einem Dienst
+     * zugeordnet ist, sonst mandantenweit) und ein Ereignis der Outbox. Alarm und Ereignis tragen nur Kennungen und Codes: keinen Antworttext, keine Fahrgastdaten, keine Diagnosen.
+     */
+    private fun raiseTechEvents(j: JdbcOperations, ctx: RequestContext, vehicleId: UUID, shiftId: UUID, inspectionId: UUID, answers: List<AnswerInput>, now: Instant) {
+        val defects = answers.filter { it.answer == ChecklistAnswerStatus.DEFECT }.map { it.stepCode }.sorted()
+        if (defects.isEmpty()) return
+        val ts = Timestamp.from(now)
+        val services = j.query("SELECT DISTINCT service_id FROM taktovia.vehicle_pool_assignment WHERE vehicle_id = ? AND valid_from <= ? AND (valid_to IS NULL OR valid_to > ?)",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, vehicleId, ts, ts)
+        val serviceId = services.singleOrNull()
+        val system = ActorRef("system:inspection")
+        for (step in defects) {
+            val eventId = UUID.randomUUID()
+            val inserted = j.update(
+                "INSERT INTO taktovia.tech_event (tenant_id, id, inspection_id, step_code, vehicle_id, shift_id, service_id, created_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?) " +
+                    "ON CONFLICT (tenant_id, inspection_id, step_code) DO NOTHING", eventId, inspectionId, step, vehicleId, shiftId, serviceId, system.value)
+            if (inserted == 0) continue   // dasselbe Ereignis besteht bereits: kein zweites Ereignis, kein zweiter Alarm
+            alerts.raise(j, BusinessAlertRequest(AlertKinds.TECHNICAL_EVENT, sourceEventId = eventId, vehicleId = vehicleId, serviceId = serviceId, refType = "inspection_run", refId = inspectionId,
+                reasonCode = "TECH_$step".take(60)))
+            audit.record(j, AuditEntry(system, AuditActions.INSPECTION_TECH_EVENT_REPORTED, ObjectRef("inspection", inspectionId), ctx.correlationId,
+                linkedMapOf("tech_event_id" to eventId.toString(), "step_code" to step, "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString())))
+            outbox.append(j, OutboxEvent(eventId, 1, "inspection.tech_event_reported", linkedMapOf(
+                "tech_event_id" to eventId.toString(), "inspection_id" to inspectionId.toString(), "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "step_code" to step), now, correlationId = ctx.correlationId))
         }
     }
 
@@ -480,7 +510,7 @@ internal class JdbcInspections(
         val release = j.query("SELECT id, valid_until, safety_revision FROM taktovia.resource_release WHERE inspection_ref = ? AND revoked_at IS NULL ORDER BY valid_until DESC LIMIT 1",
             { rs, _ -> InspectionReleaseView(rs.getObject(1, UUID::class.java), rs.getTimestamp(2).toInstant(), rs.getLong(3)) }, id).firstOrNull()
         val missing: List<ReleaseBlocker> = when {
-            release != null || row.kind == "PRE_BOARDING" -> emptyList()   // die Prüfung vor Fahrgastaufnahme erteilt keine Einsatzfreigabe
+            release != null || row.kind == "PRE_BOARDING" || row.kind == "TECH_READINESS" -> emptyList()   // die Prüfung vor Fahrgastaufnahme und die Technikbereitschaft erteilen keine Einsatzfreigabe
             row.status == "IN_PROGRESS" -> listOf(ReleaseBlocker.INSPECTION_OPEN)
             else -> readiness.missing(j, row.vehicleId, row.shiftId, row.id).ifEmpty { listOf(ReleaseBlocker.NO_INSPECTION) }
         }

@@ -25,7 +25,11 @@ enum class ChecklistInputKind(val code: String) {
  * Vorlagentyp (WP-M3-11): `GENERAL` ohne Pflichtpunkte; `VEHICLE_TECHNICAL` = technische Fahrzeugprüfung (LH-6.21-CHK-005) mit acht, `PASSENGER_COMPARTMENT` = Prüfung vor Fahrgastaufnahme
  * (LH-6.21-CHK-006) mit sechs Pflichtpunkten. Eine Revision dieser Typen lässt sich nur freigeben, wenn alle Pflichtpunkte als Pflichtschritte vorhanden sind.
  */
-enum class ChecklistTemplateType { GENERAL, VEHICLE_TECHNICAL, PASSENGER_COMPARTMENT }
+enum class ChecklistTemplateType {
+    GENERAL, VEHICLE_TECHNICAL, PASSENGER_COMPARTMENT,
+    /** Technikbereitschaft vor Schichtbeginn (WP-M3-18, LH-6.21-CHK-009): je ein Pflichtpunkt für Fahrer-App, Mobilfunkverbindung, Navigation und dienstliches Zubehör; Lauf-Art `TECH_READINESS`. */
+    TECHNICAL_READINESS,
+}
 
 /** Ein Pflichtpunkt mit stabilem Schlüssel (Großschreibung laut Schlüsselformat), Titel und Hilfetext der Standardvorlage. */
 data class MandatoryPoint(val key: String, val title: String, val help: String)
@@ -55,7 +59,16 @@ object MandatoryChecklistPoints {
         MandatoryPoint("SICHERHEITSAUSRUESTUNG", "Sicherheitsausrüstung", "Verbandkasten, Warndreieck, Warnweste und Feuerlöscher vorhanden und nicht abgelaufen"),
     )
 
+    /** Technikbereitschaft (CHK-009); die Schlüssel sind zugleich die Technikpunkte, deren Mangel ein Technikereignis erzeugt. */
+    val TECHNICAL_READINESS: List<MandatoryPoint> = listOf(
+        MandatoryPoint("FAHRER_APP", "Fahrer-App", "Fahrer-App startet, ist angemeldet und zeigt den aktuellen Dienst"),
+        MandatoryPoint("MOBILFUNK", "Mobilfunkverbindung", "Mobilfunkverbindung vorhanden und Daten werden übertragen"),
+        MandatoryPoint("NAVIGATION", "Navigation", "Navigation startet und zeigt die eigene Position"),
+        MandatoryPoint("DIENSTZUBEHOER", "Dienstliches Zubehör", "Dienstliches Zubehör (z. B. Halterung, Ladekabel, Kartenleser) vorhanden und funktionsfähig"),
+    )
+
     fun required(type: ChecklistTemplateType): List<MandatoryPoint> = when (type) {
+        ChecklistTemplateType.TECHNICAL_READINESS -> TECHNICAL_READINESS
         ChecklistTemplateType.VEHICLE_TECHNICAL -> VEHICLE_TECHNICAL
         ChecklistTemplateType.PASSENGER_COMPARTMENT -> PASSENGER_COMPARTMENT
         ChecklistTemplateType.GENERAL -> emptyList()

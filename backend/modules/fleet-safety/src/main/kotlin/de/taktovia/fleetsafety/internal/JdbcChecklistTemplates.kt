@@ -53,7 +53,7 @@ internal class JdbcChecklistTemplates(
         val points = MandatoryChecklistPoints.required(type)
         if (points.isEmpty()) throw ProblemException.invalid(Violation("/template_type", ViolationCode.NOT_IN_ENUM))
         val steps = points.map { ChecklistStepInput(it.key, it.title, it.help, ChecklistInputKind.OK_DEFECT_NA, mandatory = true, safetyCritical = false, naRequiresReason = false, photoRequiredOnDefect = false, numberMin = null, numberMax = null, numberUnit = null) }
-        val name = if (type == ChecklistTemplateType.VEHICLE_TECHNICAL) "Technische Fahrzeugprüfung" else "Prüfung vor Fahrgastaufnahme"
+        val name = when (type) { ChecklistTemplateType.VEHICLE_TECHNICAL -> "Technische Fahrzeugprüfung"; ChecklistTemplateType.TECHNICAL_READINESS -> "Technikbereitschaft"; else -> "Prüfung vor Fahrgastaufnahme" }
         val input = ChecklistTemplateInput.parse(linkedMapOf("name" to name, "vehicle_class" to vehicleClass, "service_mode" to serviceMode, "template_type" to type.name,
             "steps" to steps.map { linkedMapOf("step_code" to it.code, "title" to it.title, "help_text" to it.helpText, "input_kind" to it.kind.code, "mandatory" to true, "safety_critical" to false) }))
         return ctxTx.run(ctx) { j -> doCreate(j, ActorRef("system:standard-seed"), ctx.correlationId, input) }
