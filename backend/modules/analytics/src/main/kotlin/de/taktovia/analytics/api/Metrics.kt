@@ -94,6 +94,27 @@ data class AttemptReconciliation(
 ) { val consistent: Boolean get() = missingInFacts.isEmpty() && missingInSource.isEmpty() && mismatched.isEmpty() }
 
 /**
+ * Nachfragetrichter (WP-M4-51, KPI-005/ANA-001). Die **vier Zählgrößen** [requests], [offers], [confirmedBookings], [completedBookings] stehen getrennt nebeneinander und werden nie summiert (es gibt bewusst
+ * kein Summenfeld). Zeitbezug je Größe ihr eigenes Ereignis: Anfrage (`requested_at`), Angebot angezeigt (`booking.offer_created`, OP 27), Buchung bestätigt (`booking.confirmed`), Buchung abgeschlossen
+ * (Fahrtabschluss/Ausstieg, OP 27). Daneben die getrennten Endzustände: [requestRejected] (Anfrage abgelehnt), [requestTechnicalError], [offerNotBooked] (Angebot angezeigt, nicht gebucht),
+ * [paymentFailed], [cancelledByPassenger], [cancelledByOperator], [cancelledOther] (Fahrzeugausfall, No-Show, System). Eine Buchung zählt je Endzustand genau einmal: ein Storno nach Abschluss ändert die
+ * Stufe „abgeschlossen“ nicht, ein Zahlungsfehlschlag nie zusätzlich als Storno. [unlinkedBookings]: bestätigte Buchungen ohne Angebotsbezug (`offer_id` fehlt im Ereignis, M2-Erweiterung offen); solange es
+ * sie gibt, ist [offerNotBooked] nur [MetricState.PROVISIONAL] belastbar. [asOf]/[sourceEvents]/[coverage] stammen aus demselben Lesestand wie die Zahlen.
+ */
+data class FunnelReport(
+    val period: ReportingPeriod, val filter: MetricFilter,
+    val requests: Long, val offers: Long, val confirmedBookings: Long, val completedBookings: Long,
+    val requestRejected: Long, val requestTechnicalError: Long, val offerNotBooked: Long, val paymentFailed: Long, val cancelledByPassenger: Long, val cancelledByOperator: Long, val cancelledOther: Long,
+    val unlinkedBookings: Long, val state: MetricState, val coverage: BigDecimal?, val asOf: Instant?, val sourceEvents: Long,
+)
+
+/** Eine Stufe des Abgleichs: Zahl der Fakten gegen die aus dem Ereignisprotokoll neu gezählte Zahl. */
+data class FunnelStageDiff(val stage: String, val factCount: Long, val logCount: Long) { val difference: Long get() = factCount - logCount }
+
+/** Abgleichbericht Trichter gegen Ereignisprotokoll; [consistent] heißt: Differenz je Stufe 0. */
+data class FunnelReconciliation(val period: ReportingPeriod, val stages: List<FunnelStageDiff>) { val consistent: Boolean get() = stages.all { it.difference == 0L } }
+
+/**
  * Kennzahlregister (WP-M4-46) mit den ausführbaren Versuchskennzahlen (WP-M4-47 bis -50). Die Berechnung liest Werte und Datenstand in **einem** Statement (ein Lesestand): parallele Abfragen während
  * der Projektion liefern je Antwort einen in sich stimmigen Datenstand, und dieselbe Abfrage auf demselben Datenstand dieselben Werte, unabhängig vom Benutzer (Rechte prüft der Aufrufer).
  * Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Fehler: unbekannte Kennzahl oder Version [de.taktovia.platform.problem.ErrorCode.NOT_FOUND], nicht zulässige Filterdimension und unbekannter Code
@@ -117,6 +138,12 @@ interface Metrics {
 
     /** Gibt einen Entwurf frei (danach unveränderlich). Fehlt ein Pflichtfeld, scheitert die Freigabe mit 422. */
     fun approve(tenant: TenantId, metricId: String, version: Int, approvedBy: String)
+
+    /** Nachfragetrichter mit den vier getrennten Zählgrößen und den Endzuständen (WP-M4-51); nur der Filter `service_id` ist zulässig (Buchungen kennen keinen Kanal): `channel` ergibt 400. */
+    fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter()): FunnelReport
+
+    /** Abgleich der Trichterzahlen gegen das Ereignisprotokoll des Zeitraums (WP-M4-51): meldet Unterschiede, ändert nichts. */
+    fun reconcileFunnel(tenant: TenantId, period: ReportingPeriod): FunnelReconciliation
 
     /** Schwelle, unter der Gruppen nicht ausgewiesen werden (Testwert bis zum Beschluss, WP-M4-46 Offene Punkte). */
     val smallGroupThreshold: Int

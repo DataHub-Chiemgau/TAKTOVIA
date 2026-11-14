@@ -6,7 +6,7 @@ paths:
       security:
       - oidc:
         - analytics:read
-      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten.'
+      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Mit `breakdown=funnel` zusätzlich der Nachfragetrichter (WP-M4-51, KPI-005/ANA-001): die vier Zählgrößen Anfragen, Angebote (angezeigt), bestätigte und abgeschlossene Buchungen stehen getrennt in `funnel.counts` und werden nie als Summe ausgewiesen; `funnel.end_states` trennt Anfrage abgelehnt, Angebot angezeigt aber nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno und Betreiberstorno (Storno nach Abschluss ändert die Stufe „abgeschlossen“ nicht). Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten.'
       parameters:
       - name: metric_id
         in: query
@@ -59,7 +59,8 @@ paths:
           type: string
           enum:
           - rejection_reason
-        description: Zusätzlich die Ablehnungsstatistik nach Grund (erfordert `from`).
+          - funnel
+        description: 'Zusätzlich `rejection_reason`: die Ablehnungsstatistik nach Grund, oder `funnel`: der Nachfragetrichter (WP-M4-51) mit den vier getrennten Zählgrößen und den Endzuständen (erfordert `from`; `channel` ist für den Trichter nicht zulässig, 400).'
       - name: reason_code
         in: query
         required: false
@@ -444,6 +445,119 @@ components:
       - source_events
       - reason_code
       - rows
+    FunnelCounts:
+      type: object
+      additionalProperties: false
+      description: Die vier Zählgrößen des Trichters, getrennt und nie als Summe; jede zählt ihr eigenes Ereignis im Berichtszeitraum.
+      properties:
+        requests:
+          type: integer
+          minimum: 0
+          description: Anfragen (Versuche, `attempt_id`; technische Wiederholungen und Testanfragen zählen nicht).
+        offers:
+          type: integer
+          minimum: 0
+          description: Angebote angezeigt (Ereignis `booking.offer_created`, OP 27).
+        confirmed_bookings:
+          type: integer
+          minimum: 0
+          description: Bestätigte Buchungen (Ereignis `booking.confirmed`).
+        completed_bookings:
+          type: integer
+          minimum: 0
+          description: Abgeschlossene Buchungen (Fahrtabschluss/Ausstieg, OP 27); ein späteres Storno ändert sie nicht.
+      required:
+      - requests
+      - offers
+      - confirmed_bookings
+      - completed_bookings
+    FunnelEndStates:
+      type: object
+      additionalProperties: false
+      description: Getrennte Endzustände; eine Buchung zählt je Endzustand genau einmal.
+      properties:
+        request_rejected:
+          type: integer
+          minimum: 0
+          description: Anfrage abgelehnt (fachlicher Primärgrund).
+        request_technical_error:
+          type: integer
+          minimum: 0
+          description: Technischer Anfragefehler, keine fachliche Ablehnung.
+        offer_not_booked:
+          type: integer
+          minimum: 0
+          description: Angebot angezeigt, aber nicht gebucht (nur belastbar, wenn `unlinked_bookings` 0 ist).
+        payment_failed:
+          type: integer
+          minimum: 0
+          description: Zahlung fehlgeschlagen (Ereignis `payment.authorization_failed` oder Storno mit Grund `PAYMENT_FAILED`).
+        cancelled_by_passenger:
+          type: integer
+          minimum: 0
+          description: Fahrgaststorno (Verursacher FAHRGAST, Grund `PASSENGER_REQUEST`).
+        cancelled_by_operator:
+          type: integer
+          minimum: 0
+          description: Betreiberstorno (Verursacher BETREIBER).
+        cancelled_other:
+          type: integer
+          minimum: 0
+          description: Sonstige Stornos (Fahrzeugausfall, No-Show), weder Fahrgast- noch Betreiberstorno.
+      required:
+      - request_rejected
+      - request_technical_error
+      - offer_not_booked
+      - payment_failed
+      - cancelled_by_passenger
+      - cancelled_by_operator
+      - cancelled_other
+    FunnelBreakdown:
+      type: object
+      additionalProperties: false
+      properties:
+        period:
+          $ref: '#/components/schemas/MetricPeriod'
+        filter:
+          $ref: '#/components/schemas/MetricFilterUsed'
+        counts:
+          $ref: '#/components/schemas/FunnelCounts'
+        end_states:
+          $ref: '#/components/schemas/FunnelEndStates'
+        unlinked_bookings:
+          type: integer
+          minimum: 0
+          description: Bestätigte Buchungen ohne Angebotsbezug (`offer_id` fehlt); bei Werten über 0 ist der Zustand `PROVISIONAL`.
+        state:
+          type: string
+          enum:
+          - OK
+          - PROVISIONAL
+          - NOT_COMPUTABLE
+        coverage:
+          oneOf:
+          - type: number
+            minimum: 0
+            maximum: 1
+          - type: 'null'
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        source_events:
+          type: integer
+          minimum: 0
+      required:
+      - period
+      - filter
+      - counts
+      - end_states
+      - unlinked_bookings
+      - state
+      - coverage
+      - as_of
+      - source_events
     AnalyticsMetrics:
       type: object
       additionalProperties: false
@@ -464,10 +578,16 @@ components:
           - $ref: '#/components/schemas/RejectionBreakdown'
           - type: 'null'
           description: Nur mit `breakdown=rejection_reason`.
+        funnel:
+          oneOf:
+          - $ref: '#/components/schemas/FunnelBreakdown'
+          - type: 'null'
+          description: Nur mit `breakdown=funnel`.
       required:
       - definitions
       - values
       - rejections
+      - funnel
     KmCategories:
       type: object
       additionalProperties: false

@@ -25,6 +25,11 @@
       "type": "string",
       "format": "uuid"
     },
+    "offer_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional (WP-M4-51): Angebot, aus dem die Buchung entstand; Voraussetzung für die Zuordnung \"Angebot angezeigt, aber nicht gebucht\" im Nachfragetrichter. Fehlt es, bleibt diese Stufe vorläufig."
+    },
     "service_id": {
       "type": "string",
       "format": "uuid"

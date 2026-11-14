@@ -1,6 +1,7 @@
 package de.taktovia.app.analytics
 
 import de.taktovia.analytics.api.AnalyticsApi
+import de.taktovia.analytics.api.FunnelReport
 import de.taktovia.analytics.api.MetricDefinition
 import de.taktovia.analytics.api.MetricDimensions
 import de.taktovia.analytics.api.MetricFilter
@@ -57,8 +58,8 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         if (fromDay != null && ChronoUnit.DAYS.between(fromDay, toDay ?: fromDay) > MAX_DAYS) bad("to", ViolationCode.ABOVE_MAXIMUM)
         val service = serviceId?.let { s -> runCatching { UUID.fromString(s) }.getOrNull() ?: run { bad("service_id", ViolationCode.INVALID_FORMAT); null } }
         if (channel != null && channel !in MetricDimensions.CHANNELS) bad("channel", ViolationCode.NOT_IN_ENUM)
-        if (breakdown != null && breakdown != "rejection_reason") bad("breakdown", ViolationCode.NOT_IN_ENUM)
-        if (reasonCode != null && breakdown == null) bad("reason_code", ViolationCode.INVALID_VALUE)
+        if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel") bad("breakdown", ViolationCode.NOT_IN_ENUM)
+        if (reasonCode != null && breakdown != "rejection_reason") bad("reason_code", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && !CODE.matches(reasonCode)) bad("reason_code", ViolationCode.PATTERN_MISMATCH)
         if (from == null && (breakdown != null || serviceId != null || channel != null)) bad("from", ViolationCode.REQUIRED)
         if (v.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Mindestens ein Parameter ist ungültig.", v)
@@ -73,8 +74,9 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
             values = null
             definitions = if (metricId != null) listOf(analytics.metrics.definition(ctx.tenant, metricId, versionNo)) else analytics.metrics.definitions(ctx.tenant)
         }
-        val rejections = if (period != null && breakdown != null) analytics.metrics.rejections(ctx.tenant, period, filter, reasonCode) else null
-        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to values?.map(::valueJson), "rejections" to rejections?.let(::rejectionsJson))
+        val rejections = if (period != null && breakdown == "rejection_reason") analytics.metrics.rejections(ctx.tenant, period, filter, reasonCode) else null
+        val funnel = if (period != null && breakdown == "funnel") analytics.metrics.funnel(ctx.tenant, period, filter) else null
+        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to values?.map(::valueJson), "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson))
     }
 
     /** `reporting_timezone` des Mandanten (IANA-Zone); ohne wirksamen oder lesbaren Wert Europe/Berlin. */
@@ -103,6 +105,15 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
     private fun rejectionsJson(r: RejectionReport): Map<String, Any?> = linkedMapOf(
         "attempts" to r.attempts, "rejections" to r.rejections, "technical_errors" to r.technicalErrors, "state" to r.state.name, "coverage" to r.coverage, "as_of" to r.asOf?.toString(),
         "source_events" to r.sourceEvents, "reason_code" to r.reasonCode, "rows" to r.rows.map(::rowJson),
+    )
+
+    /** Vier getrennte Zählgrößen (`counts`, nie als Summe) und die getrennten Endzustände (`end_states`) des Nachfragetrichters. */
+    private fun funnelJson(f: FunnelReport): Map<String, Any?> = linkedMapOf(
+        "period" to periodJson(f.period), "filter" to f.filter.toMap(),
+        "counts" to linkedMapOf("requests" to f.requests, "offers" to f.offers, "confirmed_bookings" to f.confirmedBookings, "completed_bookings" to f.completedBookings),
+        "end_states" to linkedMapOf("request_rejected" to f.requestRejected, "request_technical_error" to f.requestTechnicalError, "offer_not_booked" to f.offerNotBooked, "payment_failed" to f.paymentFailed,
+            "cancelled_by_passenger" to f.cancelledByPassenger, "cancelled_by_operator" to f.cancelledByOperator, "cancelled_other" to f.cancelledOther),
+        "unlinked_bookings" to f.unlinkedBookings, "state" to f.state.name, "coverage" to f.coverage, "as_of" to f.asOf?.toString(), "source_events" to f.sourceEvents,
     )
 
     private companion object {

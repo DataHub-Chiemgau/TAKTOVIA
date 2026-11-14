@@ -1,0 +1,5 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+fact_booking;offer_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;cancel_initiator;nein;NACHFRAGEANALYSE;;;;
+fact_booking;payment_failed_at;nein;NACHFRAGEANALYSE;;;;
+fact_booking;payment_failure_code;nein;NACHFRAGEANALYSE;;;;

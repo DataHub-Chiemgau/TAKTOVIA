@@ -42,7 +42,8 @@ class Kennzahlregister(unittest.TestCase):
         with tx(A) as c:
             rows = c.execute("SELECT metric_id, version, state, executable FROM taktovia.metric_definition_revision").fetchall()
             self.assertTrue(P1_IDS <= {r[0] for r in rows}); self.assertTrue(all(r[1] == 1 and r[2] == 'APPROVED' for r in rows))
-            self.assertEqual({r[0] for r in rows if r[3]}, {'requests', 'technical_request_errors', 'capacity_rejections', 'personnel_rejections', 'equipment_rejections', 'area_rejections', 'time_window_rejections'})
+            self.assertEqual({r[0] for r in rows if r[3]}, {'requests', 'technical_request_errors', 'capacity_rejections', 'personnel_rejections', 'equipment_rejections', 'area_rejections', 'time_window_rejections',
+                                                'offer_rate', 'booking_conversion', 'cancellation_rate_passenger', 'cancellation_rate_operator'})
             self.assertEqual(c.execute('SELECT taktovia.seed_metric_definitions()').fetchone()[0], 0, 'Seed ist wiederholbar')
         # freigegebene Definition: UPDATE scheitert (Trigger), DELETE ist der Runtime-Rolle nicht erlaubt
         with tx(A) as c:

@@ -44,7 +44,7 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
         allowed.forEach { k -> e.payload.get(k)?.takeIf { !it.isNull }?.let { out.set(k, it) } }
         val keyField = when (e.eventType) { "booking.attempt_recorded" -> "attempt_id"; "booking.offer_created" -> "offer_id"; "driver.event_recorded" -> "event_id"; else -> null }
         if (keyField != null && !out.has(keyField)) return null
-        if (e.eventType.startsWith("booking.c") && !out.has("booking_id")) return null
+        if ((e.eventType.startsWith("booking.c") || e.eventType.startsWith("payment.")) && !out.has("booking_id")) return null
         if (e.eventType.startsWith("fleet.") && !out.has("vehicle_id")) return null
         return out
     }
@@ -101,7 +101,7 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
     }
 
     private fun bookingOf(eventType: String, payload: JsonNode): UUID? =
-        if (eventType.startsWith("booking.c") || eventType == "driver.event_recorded") payload.get("booking_id")?.asString()?.let(UUID::fromString) else null
+        if (eventType.startsWith("booking.c") || eventType == "driver.event_recorded" || eventType == "payment.authorization_failed") payload.get("booking_id")?.asString()?.let(UUID::fromString) else null
 
     // ---- Ableitung der Fakten aus der Menge der Eingangszeilen ---------------------------------------------------------------------------
 
@@ -168,16 +168,23 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
         val stops = j.query("SELECT event_type, effective_at, no_show_wait_seconds FROM taktovia.fact_stop_event WHERE booking_id = ? AND outcome = 'APPLIED' ORDER BY effective_at, event_id",
             { r, _ -> Stop(r.getString(1), r.getTimestamp(2), r.getObject(3) as Int?) }, bookingId)
         val boarded = stops.firstOrNull { it.type == "CHECK_IN" }?.at; val alighted = stops.firstOrNull { it.type == "CHECK_OUT" }?.at; val noShow = stops.firstOrNull { it.type == "NO_SHOW" }
-        if (confirmed == null && cancelled == null && stops.isEmpty()) return
+        // Zahlungsfehlschlag (WP-M4-51): erstes Ereignis payment.authorization_failed der Buchung; ohne dieses Ereignis zählt ein Storno mit Grund PAYMENT_FAILED als Zahlungsfehlschlag zum Stornozeitpunkt
+        val failure = j.query("SELECT occurred_at, payload->>'failure_code' FROM taktovia.analytics_event_inbox WHERE event_type = 'payment.authorization_failed' AND payload->>'booking_id' = ? ORDER BY occurred_at, event_id",
+            { r, _ -> r.getTimestamp(1) to r.getString(2) }, bookingId.toString()).firstOrNull()
+            ?: cancelled?.takeIf { (text(it.p, "reason_code") ?: text(it.p, "reason")) == "PAYMENT_FAILED" }?.let { Timestamp.from(it.occurredAt) to null }
+        if (confirmed == null && cancelled == null && stops.isEmpty() && failure == null) return
         val state = when { noShow != null -> "NO_SHOW"; alighted != null -> "COMPLETED"; cancelled != null -> "CANCELED"; boarded != null -> "BOARDED"; confirmed != null -> "CONFIRMED"; else -> "UNKNOWN" }
         val c = confirmed?.p
-        j.update("INSERT INTO taktovia.fact_booking(tenant_id, booking_id, service_id, confirmed_at, pickup_earliest, pickup_latest, gross_minor, currency, cancelled_at, cancel_reason, cause_class, boarded_at, alighted_at, no_show_at, no_show_wait_seconds, state) " +
-            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id) DO UPDATE SET service_id = EXCLUDED.service_id, confirmed_at = EXCLUDED.confirmed_at, " +
+        j.update("INSERT INTO taktovia.fact_booking(tenant_id, booking_id, service_id, confirmed_at, pickup_earliest, pickup_latest, gross_minor, currency, cancelled_at, cancel_reason, cause_class, boarded_at, alighted_at, no_show_at, no_show_wait_seconds, state, " +
+            "offer_id, cancel_initiator, payment_failed_at, payment_failure_code) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id) DO UPDATE SET service_id = EXCLUDED.service_id, confirmed_at = EXCLUDED.confirmed_at, " +
             "pickup_earliest = EXCLUDED.pickup_earliest, pickup_latest = EXCLUDED.pickup_latest, gross_minor = EXCLUDED.gross_minor, currency = EXCLUDED.currency, cancelled_at = EXCLUDED.cancelled_at, " +
             "cancel_reason = EXCLUDED.cancel_reason, cause_class = EXCLUDED.cause_class, boarded_at = EXCLUDED.boarded_at, alighted_at = EXCLUDED.alighted_at, no_show_at = EXCLUDED.no_show_at, " +
-            "no_show_wait_seconds = EXCLUDED.no_show_wait_seconds, state = EXCLUDED.state",
+            "no_show_wait_seconds = EXCLUDED.no_show_wait_seconds, state = EXCLUDED.state, offer_id = EXCLUDED.offer_id, cancel_initiator = EXCLUDED.cancel_initiator, " +
+            "payment_failed_at = EXCLUDED.payment_failed_at, payment_failure_code = EXCLUDED.payment_failure_code",
             bookingId, c?.let { uuid(it, "service_id") }, confirmed?.let { Timestamp.from(it.occurredAt) }, c?.let { ts(it, "pickup_earliest") }, c?.let { ts(it, "pickup_latest") }, c?.get("gross_minor")?.asLong(), c?.let { text(it, "currency") },
-            cancelled?.let { Timestamp.from(it.occurredAt) }, cancelled?.let { text(it.p, "reason_code") ?: text(it.p, "reason") }, cancelled?.let { text(it.p, "cause_class") }, boarded, alighted, noShow?.at, noShow?.wait, state)
+            cancelled?.let { Timestamp.from(it.occurredAt) }, cancelled?.let { text(it.p, "reason_code") ?: text(it.p, "reason") }, cancelled?.let { text(it.p, "cause_class") }, boarded, alighted, noShow?.at, noShow?.wait, state,
+            c?.let { uuid(it, "offer_id") }, cancelled?.let { text(it.p, "initiator") }, failure?.first, failure?.second)
     }
 
     private fun uuid(p: JsonNode, k: String): UUID? = p.get(k)?.takeIf { !it.isNull }?.asString()?.let(UUID::fromString)

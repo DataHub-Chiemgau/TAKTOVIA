@@ -59,7 +59,8 @@ class MetricRegisterTest {
             assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel") }, d.metricId); assertEquals(1, d.version); assertNotNull(d.approvedAt)
             assertEquals(d.executable, d.notExecutableReason == null, d.metricId)
         }
-        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections"), defs.filter { it.executable }.map { it.metricId }.toSet())
+        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections",
+            "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator"), defs.filter { it.executable }.map { it.metricId }.toSet())
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, defs.single { it.metricId == "technical_partner_rejections" }.notExecutableReason, "Technische Partnerablehnungen nur als Definition (keine Partner in P1)")
     }
 
@@ -97,7 +98,7 @@ class MetricRegisterTest {
         assertEquals(MetricState.NOT_COMPUTABLE, tech.state); assertEquals(MetricReason.ZERO_DENOMINATOR, tech.reason); assertNull(tech.value); assertEquals(BigDecimal.ZERO, tech.denominator)
         assertEquals(BigDecimal.ZERO, v.getValue("requests").value); assertEquals(MetricState.OK, v.getValue("requests").state)
         // nicht ausführbare Kennzahlen weisen keinen Wert aus, sondern ihren Grund
-        val offer = v.getValue("offer_rate")
+        val offer = v.getValue("no_show_rate")
         assertEquals(MetricState.NOT_COMPUTABLE, offer.state); assertEquals(MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, offer.reason); assertNull(offer.value); assertNull(offer.snapshotId)
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, v.getValue("technical_partner_rejections").reason)
     }

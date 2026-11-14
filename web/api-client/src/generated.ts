@@ -1350,10 +1350,40 @@ export interface RejectionBreakdown {
   rows: RejectionRow[];
 }
 
+export interface FunnelCounts {
+  requests: number;
+  offers: number;
+  confirmed_bookings: number;
+  completed_bookings: number;
+}
+
+export interface FunnelEndStates {
+  request_rejected: number;
+  request_technical_error: number;
+  offer_not_booked: number;
+  payment_failed: number;
+  cancelled_by_passenger: number;
+  cancelled_by_operator: number;
+  cancelled_other: number;
+}
+
+export interface FunnelBreakdown {
+  period: MetricPeriod;
+  filter: MetricFilterUsed;
+  counts: FunnelCounts;
+  end_states: FunnelEndStates;
+  unlinked_bookings: number;
+  state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE';
+  coverage: number | null;
+  as_of: string | null;
+  source_events: number;
+}
+
 export interface AnalyticsMetrics {
   definitions: MetricDefinition[];
   values: MetricValue[] | null;
   rejections: RejectionBreakdown | null;
+  funnel: FunnelBreakdown | null;
 }
 
 export interface KmCategories {
@@ -4769,7 +4799,7 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; breakdown?: 'rejection_reason'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; breakdown?: 'rejection_reason' | 'funnel'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;

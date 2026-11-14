@@ -30,3 +30,8 @@ Vertragsstand: [LH-I.6-KPI-001/-002/-003/-004/-010](../../../docs/umsetzungsplan
 ## Zeitfakten (WP-M4-52)
 
 `AnalyticsApi.timeFacts` ([TimeFacts](src/main/kotlin/de/taktovia/analytics/api/TimeFacts.kt)): geplante, angekündigte, zugesagte, prognostizierte und tatsächliche Abhol- und Ankunftszeiten je Fahrgastfahrt, append-only in `time_fact` (V40520). Verspätung = Ist minus Zielzeit der gebundenen (höchsten) Zusageversion, `null` mit Grund bei fehlender Ist-Zeit oder Zusage. `announced` ist bis zur Festlegung von OP 28 nur mit Testwert belegbar. Vertrag: [LH-I.6-KPI-006.md](../../../docs/umsetzungsplan/vertraege/LH-I.6-KPI-006.md).
+
+
+## Nachfragetrichter (WP-M4-51)
+
+`Metrics.funnel` / `GET /v1/analytics/metrics?breakdown=funnel`: vier getrennte Zählgrößen (Anfragen, Angebote angezeigt, bestätigte, abgeschlossene Buchungen; nie eine Summe) und die Endzustände Anfrage abgelehnt, Angebot nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno, Betreiberstorno, sonstiges Storno. Alle Zahlen kommen aus einem Statement (`taktovia.funnel_counts`, V40510); `Metrics.reconcileFunnel` (`funnel_reconciliation`) zählt dieselben Stufen unabhängig aus `analytics_event_inbox` neu (Differenz muss 0 sein). `payment.authorization_failed` ist Teil der Quelle `BOOKING`. Annahmen und Lücken: [LH-I.6-KPI-005.md](../../../docs/umsetzungsplan/vertraege/LH-I.6-KPI-005.md).

@@ -14,8 +14,9 @@ internal enum class Source(val api: FactSource, val contiguous: Boolean, val eve
     ATTEMPT(FactSource.ATTEMPT, true, mapOf("booking.attempt_recorded" to setOf("attempt_id", "service_id", "outcome", "primary_reason", "time_mode", "requested_at", "passengers", "wheelchair", "coarse_origin", "coarse_destination", "channel", "secondary_reasons", "is_test"))),
     OFFER(FactSource.OFFER, true, mapOf("booking.offer_created" to setOf("offer_id", "attempt_id", "service_id", "expires_at", "pickup_earliest", "pickup_latest", "gross_minor", "currency"))),
     BOOKING(FactSource.BOOKING, false, mapOf(
-        "booking.confirmed" to setOf("booking_id", "service_id", "pickup_earliest", "pickup_latest", "gross_minor", "currency"),
+        "booking.confirmed" to setOf("booking_id", "offer_id", "service_id", "pickup_earliest", "pickup_latest", "gross_minor", "currency"),
         "booking.cancelled" to setOf("booking_id", "reason", "reason_code", "cause_class", "initiator"),
+        "payment.authorization_failed" to setOf("booking_id", "payment_id", "failure_code"),
     )),
     DRIVER_EVENT(FactSource.DRIVER_EVENT, true, mapOf("driver.event_recorded" to setOf("event_id", "shift_id", "vehicle_id", "event_type", "outcome", "route_stop_id", "booking_id", "reason_code", "effective_at",
         "offline_recorded", "no_show_wait_seconds", "no_show_grace_min"))),
