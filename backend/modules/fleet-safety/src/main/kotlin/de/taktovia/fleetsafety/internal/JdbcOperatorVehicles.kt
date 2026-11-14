@@ -6,10 +6,14 @@ import de.taktovia.fleetsafety.api.BlockSource
 import de.taktovia.fleetsafety.api.OperatorBlockView
 import de.taktovia.fleetsafety.api.OperatorVehicleFacts
 import de.taktovia.fleetsafety.api.OperatorVehicles
+import de.taktovia.fleetsafety.api.ReleaseBlocker
+import de.taktovia.fleetsafety.api.ReleaseGate
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.authz.ServiceScoped
 import de.taktovia.platform.context.ContextTransactions
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.inspection.InspectionStatusDerivation
+import de.taktovia.platform.inspection.InspectionStatusFacts
 import de.taktovia.platform.problem.ProblemException
 import org.springframework.jdbc.core.JdbcOperations
 import java.sql.Timestamp
@@ -78,13 +82,29 @@ internal class JdbcOperatorVehicles(private val ctxTx: ContextTransactions, priv
             { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, ids).toMap()
         val alerts = j.query("SELECT vehicle_id, count(*) FROM taktovia.business_alert WHERE vehicle_id = ANY(CAST(? AS uuid[])) AND state <> 'RESOLVED' GROUP BY vehicle_id",
             { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, ids).toMap()
+        val shiftIds = shifts.values.joinToString(",", "{", "}")   // nur UUIDs
+        // je Schicht: Summe der Laufrevisionen (Anteil der Statusrevision) und Ergebnis des zuletzt gestarteten Laufs (WP-M3-23)
+        val runs = j.query(
+            "SELECT shift_id, sum(revision), (array_agg(outcome ORDER BY started_at DESC, id) FILTER (WHERE kind <> 'PRE_BOARDING'))[1] FROM taktovia.inspection_run WHERE shift_id = ANY(CAST(? AS uuid[])) GROUP BY shift_id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to (rs.getLong(2) to rs.getString(3)) }, shiftIds).toMap()
+        // weitere Anteile der Statusrevision: Sperren (Revisionssumme je Fahrzeug bzw. Schicht) und Freigaben (Erteilung und Widerruf), damit jeder Wechsel die Revision streng erhöht
+        val vehicleBlockRev = j.query("SELECT vehicle_id, sum(revision) FROM taktovia.vehicle_block WHERE vehicle_id = ANY(CAST(? AS uuid[])) GROUP BY vehicle_id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getLong(2) }, ids).toMap()
+        val shiftRev = j.query(
+            "SELECT s, sum(n) FROM (SELECT shift_id AS s, revision AS n FROM taktovia.shift_block WHERE shift_id = ANY(CAST(? AS uuid[])) " +
+                "UNION ALL SELECT shift_id, 1 + (revoked_at IS NOT NULL)::int FROM taktovia.resource_release WHERE shift_id = ANY(CAST(? AS uuid[]))) x GROUP BY s",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getLong(2) }, shiftIds, shiftIds).toMap()
         return rows.map { r ->
             val shiftId = shifts[r.id]
             val req = shiftId?.let { readiness.requirementsIn(j, r.id, it, now) }
             // eine Dienstsperre gilt nur für ihre Schicht; sie steht in der Ansicht der Schicht, nicht an anderen Schichten des Fahrzeugs
             val blocks = vehicleBlocks.filter { it.vehicleId == r.id } + shiftBlocks.filter { it.vehicleId == r.id && it.shiftId == shiftId }
+            val run = shiftId?.let { runs[it] }
+            val status = InspectionStatusDerivation.derive(InspectionStatusFacts(
+                blocked = blocks.isNotEmpty() || req?.gate == ReleaseGate.BLOCKED, inspectionOpen = req?.missing.orEmpty().any { it.code == ReleaseBlocker.INSPECTION_OPEN },
+                released = req?.gate == ReleaseGate.RELEASED, restricted = req?.unavailableDimensions.orEmpty().isNotEmpty(), latestOutcome = run?.second))
             OperatorVehicleFacts(r.id, r.label, r.active, r.blocked, r.safetyRevision, r.revision, r.createdAt, services[r.id].orEmpty(), shiftId, blocks, req?.gate, req?.validUntil, req?.missing.orEmpty(),
-                req?.unavailableDimensions.orEmpty(), defects[r.id] ?: 0, alerts[r.id] ?: 0)
+                req?.unavailableDimensions.orEmpty(), defects[r.id] ?: 0, alerts[r.id] ?: 0, status, r.safetyRevision + (run?.first ?: 0L) + (vehicleBlockRev[r.id] ?: 0L) + (shiftId?.let { shiftRev[it] } ?: 0L))
         }
     }
 }

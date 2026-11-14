@@ -98,6 +98,7 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
         "position_received_at" to p?.receivedAt?.toString(), "position_age_seconds" to p?.ageSeconds, "position_stale" to (p?.stale ?: true),
         "open_defect_count" to f.openDefectCount, "current_run_id" to run?.runId?.toString(), "revision" to f.revision,
         "service_ids" to f.serviceIds.map { it.toString() }, "unavailable_dimensions" to f.unavailableDimensions.sorted(), "open_alert_count" to f.openAlertCount,
+        "inspection_status" to f.inspectionStatus.name, "inspection_status_revision" to f.inspectionStatusRevision,
         "orders" to run?.orders.orEmpty().map { o -> linkedMapOf("booking_id" to o.bookingId.toString(), "booking_no" to o.bookingNo, "state" to o.state, "planned_pickup_at" to o.plannedPickupAt.toString(), "phase" to o.phase.name) },
     )
 

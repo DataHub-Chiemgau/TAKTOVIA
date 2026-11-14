@@ -20,6 +20,8 @@ const vehicle = (n: number, state: VehicleOperationalState): OperatorVehicle => 
   open_defect_count: 0,
   current_run_id: null,
   revision: 1,
+  inspection_status: 'PENDING',
+  inspection_status_revision: 1,
 });
 
 type Handler = (id: OperationId, args: Record<string, unknown>) => unknown;

@@ -10,6 +10,12 @@ import type { ResourceState, StatusTone } from '@taktovia/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
 import { STATUS_LABELS } from '../fahrzeugstatus/VehicleStatus';
+import {
+  InspectionStatusBadge,
+  mergeInspectionStatus,
+  useAnnounceInspectionChanges,
+  useInspectionRefresh,
+} from '../inspection/InspectionStatus';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
 
 /** Sperrgründe der Leitstellenansicht (Katalog OP-01); keine Diagnosetexte. */
@@ -230,7 +236,11 @@ export function VehicleList() {
       api
         .call('listOperatorVehicles', { query: query(f, after) })
         .then((page) => {
-          const data = after && last.current ? [...last.current, ...page.items] : page.items;
+          // je Fahrzeug gilt die höhere Prüfstatus-Revision (WP-M3-23): eine ältere Antwort überschreibt nie einen neueren Stand
+          const data = mergeInspectionStatus(
+            last.current,
+            after && last.current ? [...last.current, ...page.items] : page.items,
+          );
           last.current = data;
           lastAsOf.current = page.as_of;
           setAsOf(page.as_of);
@@ -270,6 +280,8 @@ export function VehicleList() {
   };
 
   const live = useLiveChannel({ onMessage: () => load(filter), onResync: () => load(filter) });
+  useInspectionRefresh(() => load(filter));
+  useAnnounceInspectionChanges(rows.status === 'ready' ? rows.data : undefined);
 
   const detail = useMemo(
     () => (rows.status === 'ready' ? rows.data.find((v) => v.vehicle_id === selected) : undefined),
@@ -351,6 +363,7 @@ export function VehicleList() {
                 <tr>
                   <th scope="col">Fahrzeug</th>
                   <th scope="col">Zustand</th>
+                  <th scope="col">Prüfstatus</th>
                   <th scope="col">Letzte Position</th>
                   <th scope="col">Aufträge</th>
                   <th scope="col">Hinweise</th>
@@ -365,6 +378,9 @@ export function VehicleList() {
                       <StatusBadge tone={TONES[v.operational_state]}>
                         {STATUS_LABELS[v.operational_state]}
                       </StatusBadge>
+                    </td>
+                    <td>
+                      <InspectionStatusBadge status={v.inspection_status} stale={live.stale} />
                     </td>
                     <td data-stale={v.position_stale ? 'true' : 'false'}>{positionText(v)}</td>
                     <td>{(v.orders ?? []).length}</td>

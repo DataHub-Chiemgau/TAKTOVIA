@@ -116,6 +116,10 @@ data class DriverRunView(
     /** Revision der Vergleichsbasis (zuletzt bestätigt, sonst die erste Planrevision), gegen die [stops] und [removedStops] verglichen wurden. */
     val baseRevision: Long? = null,
     val removedStops: List<DriverRemovedStop> = emptyList(),
+    /** Prüfstatus der eigenen Schicht (WP-M3-23, CHK-016), Wert aus `de.taktovia.platform.inspection.InspectionStatus`; Ableitung serverseitig. */
+    val inspectionStatus: de.taktovia.platform.inspection.InspectionStatus = de.taktovia.platform.inspection.InspectionStatus.PENDING,
+    /** Monoton steigende Revision des Prüfstatus; der Client übernimmt nie einen Status mit kleinerer Revision. */
+    val inspectionStatusRevision: Long = 0,
 )
 
 /**

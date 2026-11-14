@@ -27,6 +27,8 @@ const vehicle = (n: number, over: Partial<OperatorVehicle> = {}): OperatorVehicl
   open_defect_count: 0,
   current_run_id: null,
   revision: 1,
+  inspection_status: 'PENDING',
+  inspection_status_revision: 1,
   service_ids: [SVC_A],
   unavailable_dimensions: [],
   open_alert_count: 0,
