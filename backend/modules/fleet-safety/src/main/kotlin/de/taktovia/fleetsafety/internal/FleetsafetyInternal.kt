@@ -31,6 +31,7 @@ internal object FleetServicesFactory {
         val defectService = JdbcDefects(ctxTx, audit, outbox, clock, driverRelation ?: ShiftDriverRelation(), evidenceService, criticalBlocker, defectSettings)
         val repairService = JdbcRepairOrders(ctxTx, audit, outbox, clock, defectService)
         val operatorVehicleService = JdbcOperatorVehicles(ctxTx, readinessService, clock)
+        val operatorBlockService = JdbcOperatorBlocks(ctxTx, readinessService, clock)
         val releaseService = JdbcVehicleReleases(ctxTx, audit, outbox, clock, readinessService, attempts)
         val inspectionService = JdbcInspections(ctxTx, audit, outbox, checklists, clock, readinessService, alertService.port)
         val knownDefectService = JdbcKnownDefects(ctxTx, audit, driverRelation ?: ShiftDriverRelation(), clock)
@@ -50,6 +51,7 @@ internal object FleetServicesFactory {
             override val readiness: de.taktovia.fleetsafety.api.Readiness = readinessService
             override val alerts: de.taktovia.fleetsafety.api.Alerts = alertService
             override val operatorVehicles: de.taktovia.fleetsafety.api.OperatorVehicles = operatorVehicleService
+            override val operatorBlocks: de.taktovia.fleetsafety.api.OperatorBlocks = operatorBlockService
             override val repairOrders: de.taktovia.fleetsafety.api.RepairOrders = repairService
             override val vehicleReleases: de.taktovia.fleetsafety.api.VehicleReleases = releaseService
             override val incidentWorkflow: de.taktovia.fleetsafety.api.IncidentWorkflow = workflowService

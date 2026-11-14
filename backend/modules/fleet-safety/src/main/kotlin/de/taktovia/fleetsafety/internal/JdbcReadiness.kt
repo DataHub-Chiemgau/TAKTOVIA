@@ -79,7 +79,8 @@ internal class JdbcReadiness(
         )
         val view = block(j, id)!!
         audit.record(j, AuditEntry(actor, AuditActions.VEHICLE_BLOCKED, ObjectRef("vehicle", cmd.vehicleId), correlationId, linkedMapOf(
-            "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "reason_ref" to cmd.reasonRef, "safety_revision" to revision, "revoked_releases" to revoked.size)))
+            "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "reason_ref" to cmd.reasonRef, "safety_revision" to revision, "revoked_releases" to revoked.size,
+            "comment" to cmd.comment)))
         outbox.append(j, OutboxEvent(id, 1, "fleet.vehicle_blocked", linkedMapOf(
             "vehicle_id" to cmd.vehicleId.toString(), "block_id" to id.toString(), "source" to cmd.source.name, "reason_code" to cmd.reason.name, "safety_revision" to revision,
             "reason_ref" to cmd.reasonRef),
@@ -137,7 +138,7 @@ internal class JdbcReadiness(
     }
 
     @AuditRequired
-    private fun liftIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, vehicleId: UUID, blockId: UUID, decisionId: UUID?): LiftOutcome {
+    internal fun liftIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, vehicleId: UUID, blockId: UUID, decisionId: UUID?, expectedBlockRevision: Long? = null, comment: String? = null): LiftOutcome {
         lockVehicle(j, vehicleId, exclusive = true) ?: throw ProblemException.notFound()
         val current = block(j, blockId)?.takeIf { it.vehicleId == vehicleId } ?: throw ProblemException.notFound()
         if (current.status != BlockStatus.ACTIVE) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Die Sperre ist bereits aufgehoben; eine neue Sperre ist eine neue Zeile.")
@@ -148,6 +149,7 @@ internal class JdbcReadiness(
             val ok = j.query("SELECT 1 FROM taktovia.vehicle_release_decision WHERE id = ? AND vehicle_id = ? AND decision = 'RELEASED'", { _, _ -> 1 }, decisionId, vehicleId).isNotEmpty()
             if (!ok) throw ProblemException(ErrorCode.CONFLICT, "Es liegt keine abgeschlossene Wiederfreigabeentscheidung (RELEASED) für dieses Fahrzeug vor.")
         }
+        if (expectedBlockRevision != null && current.revision != expectedBlockRevision) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Sperre wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         j.update("UPDATE taktovia.vehicle_block SET status = 'LIFTED', lifted_by = ?, lifted_at = ?, release_decision_id = ? WHERE id = ? AND status = 'ACTIVE'",
             actor.value, Timestamp.from(clock.instant()), decisionId, blockId)
         val stillBlocked = j.queryForObject("SELECT count(*) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", Int::class.java, vehicleId)!! > 0
@@ -155,12 +157,18 @@ internal class JdbcReadiness(
         val view = block(j, blockId)!!
         audit.record(j, AuditEntry(actor, AuditActions.VEHICLE_BLOCK_LIFTED, ObjectRef("vehicle", vehicleId), correlationId, linkedMapOf(
             "block_id" to blockId.toString(), "source" to current.source.name, "reason_code" to current.reason.name, "safety_revision" to revision, "still_blocked" to stillBlocked,
-            "release_decision_id" to decisionId?.toString())))
+            "release_decision_id" to decisionId?.toString(), "comment" to comment)))
         outbox.append(j, OutboxEvent(blockId, 2, "fleet.vehicle_block_lifted", linkedMapOf(
             "vehicle_id" to vehicleId.toString(), "block_id" to blockId.toString(), "source" to current.source.name, "safety_revision" to revision, "release_decision_id" to decisionId?.toString()),
             clock.instant(), correlationId = correlationId))
         return LiftOutcome(view, revision, stillBlocked)
     }
+
+    /** Fehlversuch (AT-51) einer Aufhebung ohne Werkstattnachweis in eigener Transaktion protokollieren (Weg der Leitstelle, WP-M3-41). */
+    internal fun recordRefusedLift(ctx: RequestContext, vehicleId: UUID) { attempts?.record(ctx, vehicleId, null, "SAFETY_BLOCK_NEEDS_RELEASE_DECISION", ErrorCode.INVALID_STATE_TRANSITION.status) }
+
+    internal fun requireOperator(ctx: RequestContext) = requireRole(ctx, OPERATORS)
+    internal fun actorOf(ctx: RequestContext): ActorRef = actor(ctx)
 
     /** `safety_revision` des Fahrzeugs unter der exklusiven Zeilensperre (Wiederfreigabe, WP-M3-51); `null` = unbekannt oder fremd. */
     fun lockedSafetyRevision(j: JdbcOperations, vehicleId: UUID): Long? = lockVehicle(j, vehicleId, exclusive = true)?.safetyRevision

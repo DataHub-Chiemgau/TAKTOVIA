@@ -1,4 +1,11 @@
-import { ApiError, useApi } from '@taktovia/api-client';
+import {
+  ApiError,
+  CommandKeys,
+  hasRight,
+  runCommand,
+  useApi,
+  useSession,
+} from '@taktovia/api-client';
 import type {
   MissingRequirement,
   OperatorVehicle,
@@ -8,6 +15,7 @@ import type {
 import { ResourceView, ScreenFrame, StatusBadge } from '@taktovia/design-system';
 import type { ResourceState, StatusTone } from '@taktovia/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useScreenContext } from '../ScreenContext';
 import { STATUS_LABELS } from '../fahrzeugstatus/VehicleStatus';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
@@ -145,7 +153,142 @@ function SchematicMap({
   );
 }
 
-function Detail({ v }: { v: OperatorVehicle }) {
+/** Sperrgrundkatalog der Leitstelle (OPS-005): `MANUAL` und `OTHER` verlangen eine Begründung. */
+const OPERATIONAL_REASONS: Readonly<Record<string, { label: string; commentRequired: boolean }>> = {
+  OPERATIONAL_DISRUPTION: { label: 'Betriebsstörung', commentRequired: false },
+  MANUAL: { label: 'manuelle Sperre', commentRequired: true },
+  OTHER: { label: 'sonstiger Grund', commentRequired: true },
+};
+
+/**
+ * Aktion „Fahrzeug sperren“ mit Pflichtgrund (WP-M3-41, LH-6.7-OPS-005): nimmt das Fahrzeug aus künftigen Zuweisungen; bereits zugesagte Fahrten bleiben ihm zugeordnet (Behandlung im Störungsablauf).
+ * Aufheben gibt es nur für Sperren der Leitstelle (Quelle OPERATIONS); eine Sicherheitssperre hebt allein die technische Wiederfreigabe auf. Sichtbar nur mit dem Recht; der Server prüft jede Anfrage.
+ */
+function BlockPanel({ v, onChanged }: { v: OperatorVehicle; onChanged: () => void }) {
+  const api = useApi();
+  const session = useSession();
+  const keys = useRef(new CommandKeys());
+  const [reason, setReason] = useState('');
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [done, setDone] = useState<string | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  if (session.status !== 'ready' || !hasRight(session.me, 'vehicles.block')) return null;
+  const needsComment = reason !== '' && OPERATIONAL_REASONS[reason]?.commentRequired === true;
+  const failure = (e: unknown): string => {
+    if (e instanceof ApiError && e.status === 412)
+      return 'Das Fahrzeug wurde zwischenzeitlich geändert. Die Ansicht wird aktualisiert; bitte erneut prüfen.';
+    if (e instanceof ApiError && e.status === 409)
+      return 'Die Sperre ist nicht aufhebbar (Sicherheitssperre oder bereits aufgehoben).';
+    if (e instanceof ApiError && e.status === 404) return 'Das Fahrzeug ist nicht verfügbar.';
+    if (e instanceof ApiError && e.status === 403) return 'Dafür fehlt die Berechtigung.';
+    return 'Die Aktion konnte nicht ausgeführt werden. Bitte erneut versuchen.';
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (reason === '' || (needsComment && comment.trim() === '')) {
+      setError(needsComment ? 'Bitte eine Begründung angeben.' : 'Bitte einen Grund wählen.');
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    runCommand(
+      api,
+      keys.current,
+      `block:${v.vehicle_id}:${reason}:${comment}`,
+      'createVehicleBlock',
+      {
+        path: { vehicle_id: v.vehicle_id },
+        headers: { 'If-Match': `"${v.revision}"`, 'Idempotency-Key': '' },
+        body: {
+          reason_code: reason as 'MANUAL',
+          ...(comment.trim() ? { comment: comment.trim() } : {}),
+        },
+      },
+    )
+      .then(() => {
+        setDone('Fahrzeug gesperrt. Es erhält keine neuen Zuweisungen.');
+        setReason('');
+        setComment('');
+        onChanged();
+      })
+      .catch((err: unknown) => {
+        setError(failure(err));
+        if (err instanceof ApiError && err.status === 412) onChanged();
+      })
+      .finally(() => setBusy(false));
+  };
+  const lift = (b: VehicleBlock) => {
+    setBusy(true);
+    setError(undefined);
+    runCommand(api, keys.current, `lift:${b.id}`, 'liftVehicleBlock', {
+      path: { vehicle_id: v.vehicle_id, block_id: b.id },
+      headers: { 'If-Match': `"${b.revision}"`, 'Idempotency-Key': '' },
+      body: {},
+    })
+      .then(() => {
+        setDone('Sperre aufgehoben. Eine neue Einsatzfreigabe verlangt eine neue Prüfung.');
+        onChanged();
+      })
+      .catch((err: unknown) => {
+        setError(failure(err));
+        if (err instanceof ApiError && err.status === 412) onChanged();
+      })
+      .finally(() => setBusy(false));
+  };
+  const liftable = v.active_blocks.filter((b) => b.source === 'OPERATIONS');
+  return (
+    <section aria-label="Fahrzeugsperre">
+      <h3>Fahrzeugsperre</h3>
+      <form onSubmit={submit} aria-label="Fahrzeug sperren">
+        <label>
+          Grund der Sperre (Pflicht)
+          <select value={reason} onChange={(e) => setReason(e.target.value)} required>
+            <option value="">Bitte wählen</option>
+            {Object.entries(OPERATIONAL_REASONS).map(([code, r]) => (
+              <option key={code} value={code}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </label>{' '}
+        <label>
+          Begründung{needsComment ? ' (Pflicht)' : ''}
+          <textarea
+            value={comment}
+            maxLength={500}
+            required={needsComment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </label>{' '}
+        <button type="submit" disabled={busy}>
+          Fahrzeug sperren
+        </button>
+      </form>
+      {liftable.length > 0 ? (
+        <ul aria-label="Sperren der Leitstelle">
+          {liftable.map((b) => (
+            <li key={b.id}>
+              {blockText(b)} · seit {clock(b.set_at)}
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`Sperre aufheben: ${BLOCK_REASONS[b.reason_code] ?? b.reason_code}`}
+                onClick={() => lift(b)}
+              >
+                Sperre aufheben
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {error ? <p role="alert">{error}</p> : null}
+      {done ? <p role="status">{done}</p> : null}
+    </section>
+  );
+}
+
+function Detail({ v, onChanged }: { v: OperatorVehicle; onChanged: () => void }) {
   const notes = notesOf(v);
   return (
     <aside aria-label={`Details zu ${v.vehicle_label}`}>
@@ -171,6 +314,7 @@ function Detail({ v }: { v: OperatorVehicle }) {
           ))}
         </ul>
       ) : null}
+      <BlockPanel v={v} onChanged={onChanged} />
       <h3>Aufträge</h3>
       {(v.orders ?? []).length === 0 ? (
         <p>Keine laufenden oder nächsten Aufträge.</p>
@@ -416,7 +560,7 @@ export function VehicleList() {
                 </>
               ) : null}
             </section>
-            {detail ? <Detail v={detail} /> : null}
+            {detail ? <Detail v={detail} onChanged={() => load(filter)} /> : null}
           </>
         )}
       </ResourceView>

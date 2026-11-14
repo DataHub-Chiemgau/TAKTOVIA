@@ -8,11 +8,9 @@ cancelJourney  # POST /v1/federation/journeys/{journey_id}/cancel
 confirmJourney  # POST /v1/federation/journeys/{journey_id}/confirm
 createDriverClearance  # POST /v1/driver-clearances
 createRunRevision  # POST /v1/runs/{run_id}/revisions
-createVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks
 getJourney  # GET /v1/federation/journeys/{journey_id}
 getOffer  # GET /v1/federation/offers/{offer_id}
 holdOffer  # POST /v1/federation/offers/{offer_id}/hold
-liftVehicleBlock  # POST /v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift
 listDriverClearances  # GET /v1/driver-clearances
 listRunRevisions  # GET /v1/runs/{run_id}/revisions
 planJourney  # POST /v1/federation/journeys/plan

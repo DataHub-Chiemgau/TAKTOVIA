@@ -36,15 +36,15 @@ const vehicle = (n: number, over: Partial<OperatorVehicle> = {}): OperatorVehicl
 
 type Handler = (id: OperationId, args: Record<string, unknown>) => unknown;
 
-function setup(handler: Handler) {
+function setup(
+  handler: Handler,
+  scopes: string[] = ['me:read', 'operator:read', 'operator:write'],
+) {
   const calls: { id: OperationId; args: Record<string, unknown> }[] = [];
   const client = {
     call: vi.fn((id: OperationId, args: Record<string, unknown>) => {
       calls.push({ id, args });
-      if (id === 'getMe')
-        return Promise.resolve(
-          sampleMe({ roles: ['dispatcher'], scopes: ['me:read', 'operator:read'] }),
-        );
+      if (id === 'getMe') return Promise.resolve(sampleMe({ roles: ['dispatcher'], scopes }));
       try {
         return Promise.resolve(handler(id, args));
       } catch (e) {
@@ -223,6 +223,93 @@ describe('UI-07 Livebetrieb Fahrzeuge (WP-M3-36, LH-6.7-OPS-001)', () => {
     setup(() => page([]));
     expect(await screen.findByText('Keine Fahrzeuge')).toBeTruthy();
     expect(screen.getByText(/keine aktiven Fahrzeuge zugeordnet/)).toBeTruthy();
+  });
+
+  it('fahrzeug_sperren_mit_pflichtgrund_und_aufheben_nur_fuer_operative_sperren', async () => {
+    const safetyBlock = {
+      id: '00000000-0000-4000-8000-0000000000b1',
+      vehicle_id: '00000000-0000-4000-8000-000000000001',
+      source: 'SAFETY' as const,
+      reason_code: 'DEFECT_CRITICAL' as const,
+      set_at: '2026-12-01T07:00:00Z',
+      set_by: 'service:defects',
+      lifted_at: null,
+      lifted_by: null,
+      revision: 1,
+      block_kind: 'VEHICLE' as const,
+      case_number: null,
+    };
+    const opsBlock = {
+      ...safetyBlock,
+      id: '00000000-0000-4000-8000-0000000000b2',
+      source: 'OPERATIONS' as const,
+      reason_code: 'MANUAL' as const,
+      set_by: 'user:d',
+      revision: 3,
+    };
+    let current = vehicle(1, { revision: 7 });
+    const { calls } = setup((id) => {
+      if (id === 'listOperatorVehicles') return page([current]);
+      if (id === 'createVehicleBlock') {
+        current = vehicle(1, {
+          revision: 8,
+          operational_state: 'BLOCKED',
+          active_blocks: [safetyBlock, opsBlock],
+        });
+        return { ...opsBlock, revision: 1 };
+      }
+      if (id === 'liftVehicleBlock') {
+        current = vehicle(1, {
+          revision: 9,
+          operational_state: 'BLOCKED',
+          active_blocks: [safetyBlock],
+        });
+        return { ...opsBlock, lifted_at: '2026-12-01T08:10:00Z', lifted_by: 'user:d', revision: 4 };
+      }
+      throw new ApiError(404, undefined);
+    });
+    await screen.findByRole('rowheader', { name: 'KA-101' });
+    fireEvent.click(screen.getByRole('button', { name: 'Details zu KA-101' }));
+    const form = await screen.findByRole('form', { name: 'Fahrzeug sperren' });
+    // ohne Grund und ohne Pflichtbegründung wird nichts gesendet
+    fireEvent.submit(form);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Grund wählen/);
+    fireEvent.change(within(form).getByLabelText(/Grund der Sperre/), {
+      target: { value: 'MANUAL' },
+    });
+    fireEvent.submit(form);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Begründung angeben/);
+    expect(calls.some((c) => c.id === 'createVehicleBlock')).toBe(false);
+    // mit Grund und Begründung: Aufruf mit If-Match = Revision der Fahrzeugsicht, Antwort sichtbar, Liste neu geladen
+    fireEvent.change(within(form).getByLabelText(/Begründung/), {
+      target: { value: 'Reifen platt' },
+    });
+    fireEvent.submit(form);
+    await screen.findByText(/Fahrzeug gesperrt\. Es erhält keine neuen Zuweisungen/);
+    const create = calls.find((c) => c.id === 'createVehicleBlock');
+    expect(create?.args).toMatchObject({
+      path: { vehicle_id: '00000000-0000-4000-8000-000000000001' },
+      headers: { 'If-Match': '"7"' },
+      body: { reason_code: 'MANUAL', comment: 'Reifen platt' },
+    });
+    // aufheben nur für die operative Sperre; die Sicherheitssperre hat keine Schaltfläche
+    const list = await screen.findByRole('list', { name: 'Sperren der Leitstelle' });
+    expect(within(list).getAllByRole('button')).toHaveLength(1);
+    fireEvent.click(within(list).getByRole('button', { name: /Sperre aufheben: manuelle Sperre/ }));
+    await screen.findByText(/Sperre aufgehoben/);
+    expect(calls.find((c) => c.id === 'liftVehicleBlock')?.args).toMatchObject({
+      path: { block_id: opsBlock.id },
+      headers: { 'If-Match': '"3"' },
+    });
+    expect(screen.queryByRole('list', { name: 'Sperren der Leitstelle' })).toBeNull();
+  });
+
+  it('ohne Schreibrecht gibt es keine Sperraktion', async () => {
+    setup(() => page([vehicle(1)]), ['me:read', 'operator:read']);
+    await screen.findByRole('rowheader', { name: 'KA-101' });
+    fireEvent.click(screen.getByRole('button', { name: 'Details zu KA-101' }));
+    await screen.findByRole('complementary', { name: 'Details zu KA-101' });
+    expect(screen.queryByRole('form', { name: 'Fahrzeug sperren' })).toBeNull();
   });
 
   it('hilfsfunktionen: Sperrtext, Positionstext und Hinweise folgen dem Vertrag', () => {

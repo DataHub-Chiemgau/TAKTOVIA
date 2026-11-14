@@ -114,8 +114,10 @@ paths:
         - operator:write
       description: 'Setzt eine Sperre der Quelle OPERATIONS und erhöht `safety_revision`
         im selben Commit; das Fahrzeug ist danach nicht mehr Kandidat neuer Zuweisungen
-        (OPS-005). If-Match: Revision des Fahrzeugs (`OperatorVehicle.revision`).
-        Fremdes Fahrzeug: 404. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+        (OPS-005). If-Match: Revision des Fahrzeugs (`OperatorVehicle.revision`; Sperre
+        und Aufheben erhöhen sie). `reason_code` stammt aus dem Leitstellenkatalog,
+        `MANUAL` und `OTHER` verlangen `comment`. Fremdes oder nicht berechtigtes Fahrzeug:
+        404. Wiederholter Schlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
       parameters:
       - name: vehicle_id
         in: path
@@ -127,6 +129,19 @@ paths:
       - $ref: common.yaml#/components/parameters/IfMatch
       - $ref: common.yaml#/components/parameters/Traceparent
       responses:
+        '200':
+          description: Der Sperrgrund ist für dieses Fahrzeug bereits aktiv; die bestehende
+            Sperre wird geliefert, es entsteht keine zweite.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleBlock'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Starke Ressourcenrevision.
         '201':
           description: Angelegt.
           content:
