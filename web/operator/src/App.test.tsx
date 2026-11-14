@@ -65,6 +65,7 @@ describe('operator Anwendungsrahmen', () => {
       'Finanzen',
       'Belege prüfen und freigeben',
       'Fahrzeugkosten je Monat',
+      'Kostenübersicht je Kostenobjekt',
     ]);
   });
 

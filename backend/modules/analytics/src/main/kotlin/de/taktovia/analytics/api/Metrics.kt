@@ -22,7 +22,11 @@ enum class MetricReason {
 object MetricDimensions {
     const val SERVICE_ID = "service_id"
     const val CHANNEL = "channel"
-    val ALL: Set<String> = setOf(SERVICE_ID, CHANNEL)
+    /** Dimensionen der Energiekosten-Kennzahlen (WP-M4-43). */
+    const val VEHICLE_ID = "vehicle_id"
+    const val ENERGY = "energy"
+    const val CURRENCY = "currency"
+    val ALL: Set<String> = setOf(SERVICE_ID, CHANNEL, VEHICLE_ID, ENERGY, CURRENCY)
     val CHANNELS: Set<String> = setOf("WEB", "APP", "API")
 }
 
@@ -35,13 +39,40 @@ data class MetricDefinition(
     val timeBasis: String, val periodBasis: String, val filterDimensions: List<String>, val source: FactSource?, val executable: Boolean, val notExecutableReason: MetricReason?, val approvedAt: Instant?,
 )
 
-/** Filter einer Abfrage. Jede gesetzte Dimension muss in der Definition der Kennzahl zulässig sein. */
-data class MetricFilter(val serviceId: UUID? = null, val channel: String? = null) {
-    init { require(channel == null || channel in MetricDimensions.CHANNELS) { "Kanal unbekannt: $channel" } }
-    fun dimensions(): Set<String> = buildSet { if (serviceId != null) add(MetricDimensions.SERVICE_ID); if (channel != null) add(MetricDimensions.CHANNEL) }
+/** Energieart der Energiekosten-Kennzahlen (WP-M4-43): Kraftstoff (Benzin, Diesel, Autogas; Einheit Liter) und Strom (kWh) werden nie zu einer Mengenkennzahl gemischt. */
+enum class EnergyKind { FUEL, ELECTRIC }
+
+/**
+ * Filter einer Abfrage. Jede gesetzte Dimension muss in der Definition der Kennzahl zulässig sein. [vehicleId], [energy] und [currency] gelten nur für die Energiekosten-Kennzahlen (WP-M4-43):
+ * ohne [energy] wird je Energieart ein eigener Wert ausgewiesen, ohne [currency] je vorkommender Währung.
+ */
+data class MetricFilter(val serviceId: UUID? = null, val channel: String? = null, val vehicleId: UUID? = null, val energy: EnergyKind? = null, val currency: String? = null) {
+    init {
+        require(channel == null || channel in MetricDimensions.CHANNELS) { "Kanal unbekannt: $channel" }
+        require(currency == null || CURRENCY.matches(currency)) { "Währung ungültig: $currency" }
+    }
+    fun dimensions(): Set<String> = buildSet {
+        if (serviceId != null) add(MetricDimensions.SERVICE_ID); if (channel != null) add(MetricDimensions.CHANNEL)
+        if (vehicleId != null) add(MetricDimensions.VEHICLE_ID); if (energy != null) add(MetricDimensions.ENERGY); if (currency != null) add(MetricDimensions.CURRENCY)
+    }
     /** Kanonische Form (sortierte Schlüssel) für Snapshot und Hash. */
-    fun toMap(): Map<String, String> = buildMap { channel?.let { put(MetricDimensions.CHANNEL, it) }; serviceId?.let { put(MetricDimensions.SERVICE_ID, it.toString()) } }
+    fun toMap(): Map<String, String> = buildMap {
+        channel?.let { put(MetricDimensions.CHANNEL, it) }; currency?.let { put(MetricDimensions.CURRENCY, it) }; energy?.let { put(MetricDimensions.ENERGY, it.name) }
+        serviceId?.let { put(MetricDimensions.SERVICE_ID, it.toString()) }; vehicleId?.let { put(MetricDimensions.VEHICLE_ID, it.toString()) }
+    }
+    private companion object { val CURRENCY = Regex("^[A-Z]{3}$") }
 }
+
+/** Grund, warum ein Tankvorgang nicht in eine Energiekosten-Kennzahl eingeht (WP-M4-43). [countsAgainstCoverage]: der Vorgang fehlt noch (senkt den Abdeckungsgrad), im Gegensatz zu storniert oder anderer Währung. */
+enum class ExclusionReason(val countsAgainstCoverage: Boolean) {
+    NOT_RELEASED(true), OPEN_HINT(true), MISSING_ENERGY_TYPE(true), MISSING_QUANTITY(true), MISSING_VEHICLE(true), MIXED_ENERGY_VEHICLE(true), REVERSED(false), OTHER_CURRENCY(false),
+}
+
+/** Ein nicht eingegangener Vorgang einer Energiekosten-Kennzahl: [documentId] des Tankbelegs, [vehicleId] (falls bekannt) und der [reason]. */
+data class MetricExclusion(val documentId: UUID, val vehicleId: UUID?, val reason: ExclusionReason)
+
+/** Kennzeichnung einer Näherung: [ACQUISITION_BASIS_P1] = Erwerbsnäherung ohne Bestandsführung und Ladeverluste (Kap. 03 §1.1). */
+enum class MetricApproximation { ACQUISITION_BASIS_P1 }
 
 /**
  * Berichtszeitraum als halboffenes Intervall [[from], [to]) in absoluten Zeitpunkten; entstanden aus Betriebstagen in der `reporting_timezone` ([zone]). Der Betriebstag ist lokal, Zeitpunkte sind absolut:
@@ -67,6 +98,8 @@ data class MetricQuery(val period: ReportingPeriod, val metricId: String? = null
 data class MetricValue(
     val definition: MetricDefinition, val state: MetricState, val reason: MetricReason?, val value: BigDecimal?, val numerator: BigDecimal?, val denominator: BigDecimal?, val coverage: BigDecimal?,
     val filter: MetricFilter, val period: ReportingPeriod, val asOf: Instant?, val sourceEvents: Long, val snapshotId: UUID?,
+    /** Nur Energiekosten-Kennzahlen (WP-M4-43): nicht eingegangene Vorgänge mit Grund und die Kennzeichnung der Näherung. */
+    val exclusions: List<MetricExclusion> = emptyList(), val approximation: MetricApproximation? = null,
 )
 
 /** Änderung einer Definition: nur die gesetzten Felder weichen von der jüngsten Version ab (neue Version im Entwurf, Freigabe getrennt). */

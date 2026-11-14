@@ -19,6 +19,60 @@ paths:
         required: false
         schema:
           $ref: common.yaml#/components/schemas/UUID
+      - name: cost_object_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Drilldown der Kostenübersicht (WP-M4-44) auf ein Kostenobjekt, mit denselben wirksamen Zeilen wie die Klassifikation (Umlage statt Original); ein Ereignis erscheint einmal.
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{0,39}$
+        description: Nur Ereignisse dieser Kostenart.
+      - name: cost_behavior
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - FIXED
+          - VARIABLE
+          - MIXED
+          - UNCLASSIFIED
+        description: Nur Ereignisse mit diesem Kostenverhalten; `UNCLASSIFIED` = nicht klassifiziert.
+      - name: attribution
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DIRECT
+          - ALLOCATED
+        description: Nur Ereignisse mit dieser Zurechnung.
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+        description: Nur Ereignisse dieser Währung.
+      - name: period_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Beginn der Periode nach Buchungsdatum des Journals (inklusive); nur zusammen mit `period_to`.
+      - name: period_to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Ende der Periode (exklusiv); nur zusammen mit `period_from`.
       - $ref: common.yaml#/components/parameters/Limit
       - $ref: common.yaml#/components/parameters/Cursor
       - $ref: common.yaml#/components/parameters/Traceparent

@@ -1,0 +1,3 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+aggregate_snapshot;exclusions;nein;NACHFRAGEANALYSE;;;;WP-M4-43: Ausschlussliste (Beleg-ID, Fahrzeug-ID und Grund), keine Belegtexte
+aggregate_snapshot;approximation;nein;NACHFRAGEANALYSE;;;;WP-M4-43: Kennzeichnung der P1-Erwerbsnäherung

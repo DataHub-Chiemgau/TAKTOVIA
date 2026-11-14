@@ -1298,7 +1298,7 @@ export interface MetricDefinition {
   exclusions: string;
   time_basis: string;
   period_basis: 'BUSINESS_DAY_LOCAL' | 'INSTANT';
-  filter_dimensions: ('service_id' | 'channel')[];
+  filter_dimensions: ('service_id' | 'channel' | 'vehicle_id' | 'energy' | 'currency')[];
   executable: boolean;
   not_executable_reason: 'NOT_EXECUTABLE_IN_THIS_RELEASE' | 'NO_PARTNERS_IN_P1' | null;
 }
@@ -1306,6 +1306,15 @@ export interface MetricDefinition {
 export interface MetricFilterUsed {
   service_id?: UUID;
   channel?: 'WEB' | 'APP' | 'API';
+  vehicle_id?: UUID;
+  energy?: 'FUEL' | 'ELECTRIC';
+  currency?: string;
+}
+
+export interface MetricExclusion {
+  document_id: UUID;
+  vehicle_id: UUID | null;
+  reason: 'NOT_RELEASED' | 'OPEN_HINT' | 'MISSING_ENERGY_TYPE' | 'MISSING_QUANTITY' | 'MISSING_VEHICLE' | 'MIXED_ENERGY_VEHICLE' | 'REVERSED' | 'OTHER_CURRENCY';
 }
 
 export interface MetricPeriod {
@@ -1331,6 +1340,8 @@ export interface MetricValue {
   as_of: string | null;
   source_events: number;
   snapshot_id: UUID | null;
+  exclusions: MetricExclusion[];
+  approximation: 'ACQUISITION_BASIS_P1' | null;
 }
 
 export interface RejectionRow {
@@ -4544,7 +4555,7 @@ export interface Operations {
   };
   listCostEvents: {
     path: Record<string, never>;
-    query: { as_of?: string; legal_entity_id?: UUID; limit?: number; cursor?: string };
+    query: { as_of?: string; legal_entity_id?: UUID; cost_object_id?: UUID; category?: string; cost_behavior?: 'FIXED' | 'VARIABLE' | 'MIXED' | 'UNCLASSIFIED'; attribution?: 'DIRECT' | 'ALLOCATED'; currency?: string; period_from?: string; period_to?: string; limit?: number; cursor?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: CostEventPage;
@@ -4985,7 +4996,7 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; breakdown?: 'rejection_reason'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;
@@ -6541,7 +6552,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   cancelJourney: { method: 'POST', path: '/v1/federation/journeys/{journey_id}/cancel', pathParams: ['journey_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['journeys:cancel'], statuses: [202, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   receivePartnerEvent: { method: 'POST', path: '/v1/federation/partners/{partner_id}/events', pathParams: ['partner_id'], query: [], headers: ['X-Partner-Key-Id', 'X-Partner-Timestamp'], hasBody: true, scopes: [], statuses: [202, 200, 400, 401, 403, 409, 422, 429, 503] },
   getOperation: { method: 'GET', path: '/v1/operations/{operation_id}', pathParams: ['operation_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operations:read'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
-  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listCostEvents: { method: 'GET', path: '/v1/cost-events', pathParams: [], query: ['as_of', 'legal_entity_id', 'cost_object_id', 'category', 'cost_behavior', 'attribution', 'currency', 'period_from', 'period_to', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createManualCostEvent: { method: 'POST', path: '/v1/cost-events', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['costs:write'], statuses: [201, 200, 400, 401, 403, 404, 409, 422, 429, 503] },
   allocateCost: { method: 'POST', path: '/v1/cost-events/{cost_event_id}/allocations', pathParams: ['cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['costs:allocate'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503, 412, 428] },
   listFiscalPeriods: { method: 'GET', path: '/v1/fiscal-periods', pathParams: [], query: ['legal_entity_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['periods:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -6604,7 +6615,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorAlerts: { method: 'GET', path: '/v1/operator/alerts', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'vehicle_id', 'energy', 'currency', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getVehicleKmClasses: { method: 'GET', path: '/v1/analytics/vehicle-km', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

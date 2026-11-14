@@ -1,6 +1,8 @@
 package de.taktovia.app.analytics
 
 import de.taktovia.analytics.api.AnalyticsApi
+import de.taktovia.analytics.api.EnergyKind
+import de.taktovia.analytics.api.MetricExclusion
 import de.taktovia.analytics.api.MetricDefinition
 import de.taktovia.analytics.api.MetricDimensions
 import de.taktovia.analytics.api.MetricFilter
@@ -41,6 +43,8 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         @RequestParam(name = "metric_id", required = false) metricId: String?, @RequestParam(name = "version", required = false) version: String?,
         @RequestParam(name = "from", required = false) from: String?, @RequestParam(name = "to", required = false) to: String?,
         @RequestParam(name = "service_id", required = false) serviceId: String?, @RequestParam(name = "channel", required = false) channel: String?,
+        @RequestParam(name = "vehicle_id", required = false) vehicleId: String?, @RequestParam(name = "energy", required = false) energyParam: String?,
+        @RequestParam(name = "currency", required = false) currency: String?,
         @RequestParam(name = "breakdown", required = false) breakdown: String?, @RequestParam(name = "reason_code", required = false) reasonCode: String?,
         request: HttpServletRequest,
     ): Map<String, Any?> {
@@ -57,13 +61,16 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         if (fromDay != null && ChronoUnit.DAYS.between(fromDay, toDay ?: fromDay) > MAX_DAYS) bad("to", ViolationCode.ABOVE_MAXIMUM)
         val service = serviceId?.let { s -> runCatching { UUID.fromString(s) }.getOrNull() ?: run { bad("service_id", ViolationCode.INVALID_FORMAT); null } }
         if (channel != null && channel !in MetricDimensions.CHANNELS) bad("channel", ViolationCode.NOT_IN_ENUM)
+        val vehicle = vehicleId?.let { s -> runCatching { UUID.fromString(s) }.getOrNull() ?: run { bad("vehicle_id", ViolationCode.INVALID_FORMAT); null } }
+        val energy = energyParam?.let { s -> EnergyKind.entries.firstOrNull { it.name == s } ?: run { bad("energy", ViolationCode.NOT_IN_ENUM); null } }
+        if (currency != null && !CURRENCY.matches(currency)) bad("currency", ViolationCode.PATTERN_MISMATCH)
         if (breakdown != null && breakdown != "rejection_reason") bad("breakdown", ViolationCode.NOT_IN_ENUM)
         if (reasonCode != null && breakdown == null) bad("reason_code", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && !CODE.matches(reasonCode)) bad("reason_code", ViolationCode.PATTERN_MISMATCH)
-        if (from == null && (breakdown != null || serviceId != null || channel != null)) bad("from", ViolationCode.REQUIRED)
+        if (from == null && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null)) bad("from", ViolationCode.REQUIRED)
         if (v.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Mindestens ein Parameter ist ungültig.", v)
 
-        val filter = MetricFilter(service, channel)
+        val filter = MetricFilter(service, channel, vehicle, energy, currency)
         val period = fromDay?.let { ReportingPeriod.ofDays(reportingZone(ctx), it, toDay ?: it) }
         val definitions: List<MetricDefinition>; val values: List<MetricValue>?
         if (period != null) {
@@ -95,8 +102,10 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
     private fun valueJson(m: MetricValue): Map<String, Any?> = linkedMapOf(
         "metric_id" to m.definition.metricId, "definition_version" to m.definition.version, "state" to m.state.name, "reason" to m.reason?.name, "value" to m.value, "numerator" to m.numerator,
         "denominator" to m.denominator, "coverage" to m.coverage, "unit" to m.definition.unit, "filter" to m.filter.toMap(), "period" to periodJson(m.period), "as_of" to m.asOf?.toString(),
-        "source_events" to m.sourceEvents, "snapshot_id" to m.snapshotId?.toString(),
+        "source_events" to m.sourceEvents, "snapshot_id" to m.snapshotId?.toString(), "exclusions" to m.exclusions.map(::exclusionJson), "approximation" to m.approximation?.name,
     )
+
+    private fun exclusionJson(e: MetricExclusion): Map<String, Any?> = linkedMapOf("document_id" to e.documentId.toString(), "vehicle_id" to e.vehicleId?.toString(), "reason" to e.reason.name)
 
     private fun rowJson(r: RejectionRow): Map<String, Any?> = linkedMapOf("code" to r.code, "group" to r.group, "metric" to r.metric, "text" to r.text, "texts" to r.texts, "primary_count" to r.primaryCount, "secondary_count" to r.secondaryCount)
 
@@ -108,6 +117,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
     private companion object {
         val METRIC_ID = Regex("^[a-z][a-z0-9_]{1,63}$")
         val CODE = Regex("^[A-Z][A-Z0-9_]{1,39}$")
+        val CURRENCY = Regex("^[A-Z]{3}$")
         val DEFAULT_ZONE: ZoneId = ZoneId.of("Europe/Berlin")
         const val MAX_DAYS = 366L
     }

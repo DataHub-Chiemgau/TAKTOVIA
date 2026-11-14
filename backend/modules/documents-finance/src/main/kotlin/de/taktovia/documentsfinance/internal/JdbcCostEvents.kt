@@ -1,5 +1,6 @@
 package de.taktovia.documentsfinance.internal
 
+import de.taktovia.documentsfinance.api.CostEventFilter
 import de.taktovia.documentsfinance.api.CostEventView
 import de.taktovia.documentsfinance.api.CostEvents
 import de.taktovia.documentsfinance.api.ExpenseFields
@@ -133,13 +134,40 @@ internal class JdbcCostEvents(
 
     // ---- Lesen (Ist-Bericht, Projektion) ----
 
-    override fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, asOf: Instant?, legalEntityId: UUID?): List<CostEventView> {
+    override fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, asOf: Instant?, legalEntityId: UUID?, filter: CostEventFilter): List<CostEventView> {
         require(ctx, SCOPE_READ)
         if (limit !in 1..200) throw ProblemException.invalid(Violation("/limit", ViolationCode.INVALID_VALUE))
+        if ((filter.periodFrom == null) != (filter.periodTo == null) || (filter.periodFrom != null && !filter.periodTo!!.isAfter(filter.periodFrom)))
+            throw ProblemException.invalid(Violation("/\$query/period_to", ViolationCode.INTERVAL_INVALID))
+        if (filter.costBehavior != null && filter.costBehavior !in setOf("FIXED", "VARIABLE", "MIXED", "UNCLASSIFIED")) throw ProblemException.invalid(Violation("/\$query/cost_behavior", ViolationCode.NOT_IN_ENUM))
+        if (filter.attribution != null && filter.attribution !in setOf("DIRECT", "ALLOCATED")) throw ProblemException.invalid(Violation("/\$query/attribution", ViolationCode.NOT_IN_ENUM))
+        if (!filter.isEmpty) return ctxTx.run(ctx, readOnly = true) { j -> filtered(j, limit, after, asOf, legalEntityId, filter) }
         return ctxTx.run(ctx, readOnly = true) { j ->
             j.query(LIST_SQL, EVENT_MAPPER, asOf?.let { Timestamp.from(it) }, asOf?.let { Timestamp.from(it) }, legalEntityId, legalEntityId,
                 after?.let { Timestamp.from(it.first) }, after?.let { Timestamp.from(it.first) }, after?.second, limit)
         }
+    }
+
+    /**
+     * Drilldown (WP-M4-44): dieselben wirksamen Zeilen wie die Klassifikation ([EffectiveLines]); ein Ereignis erscheint einmal, auch wenn es auf mehrere Kostenobjekte umgelegt ist. Alle Werte sind gebunden,
+     * die SQL-Fragmente sind Konstanten.
+     */
+    private fun filtered(j: JdbcOperations, limit: Int, after: Pair<Instant, UUID>?, asOf: Instant?, legalEntityId: UUID?, f: CostEventFilter): List<CostEventView> {
+        val args = mutableListOf<Any?>(); val cond = StringBuilder()
+        legalEntityId?.let { cond.append(" AND e.legal_entity_id = ?"); args += it }
+        asOf?.let { cond.append(" AND e.booked_at <= ?"); args += Timestamp.from(it) }
+        f.currency?.let { cond.append(" AND e.currency = ?"); args += it }
+        f.category?.let { cond.append(" AND e.category = ?"); args += it }
+        when (f.costBehavior) { null -> {}; "UNCLASSIFIED" -> cond.append(" AND e.cost_behavior IS NULL"); else -> { cond.append(" AND e.cost_behavior = ?"); args += f.costBehavior } }
+        f.attribution?.let { cond.append(" AND e.attribution = ?"); args += it }
+        if (f.periodFrom != null) { cond.append(" AND jn.accounting_date >= ? AND jn.accounting_date < ?"); args += java.sql.Date.valueOf(f.periodFrom); args += java.sql.Date.valueOf(f.periodTo!!) }
+        val objectFilter = if (f.costObjectId != null) " AND e.id IN (SELECT l.id FROM lines l WHERE l.obj = ?)" else ""
+        f.costObjectId?.let { args += it }
+        val keyset = if (after != null) " AND (e.booked_at, e.id) > (?, CAST(? AS uuid))" else ""
+        after?.let { args += Timestamp.from(it.first); args += it.second }
+        args += limit
+        return j.query(EffectiveLines.cte(cond.toString()) + "SELECT $EVENT_COLUMNS FROM taktovia.economic_event e WHERE e.id IN (SELECT id FROM ev)$objectFilter$keyset ORDER BY e.booked_at, e.id LIMIT ?",   // sql-lint: ok nur konstante Fragmente (Filterbedingungen), alle Werte als Parameter gebunden
+            EVENT_MAPPER, *args.toTypedArray())
     }
 
     override fun journal(ctx: RequestContext, eventId: UUID): JournalView {

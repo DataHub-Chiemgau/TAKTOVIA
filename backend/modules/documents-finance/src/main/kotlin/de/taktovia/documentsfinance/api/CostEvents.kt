@@ -32,6 +32,18 @@ data class JournalView(val id: UUID, val eventId: UUID, val state: String, val a
 data class PostingResult(val event: CostEventView, val journal: JournalView, val reused: Boolean)
 
 /**
+ * Zusätzliche Filter des Ist-Berichts für den Drilldown der Kostenübersicht (WP-M4-44): [costObjectId] = Ereignisse mit wirksamer Zeile auf diesem Kostenobjekt (wie in der Klassifikation, Umlage statt
+ * Original), [category], [costBehavior] (`FIXED`, `VARIABLE`, `MIXED` oder `UNCLASSIFIED`), [attribution] (`DIRECT`, `ALLOCATED`), [currency] und die Periode nach Buchungsdatum des Journals
+ * ([periodFrom] inklusive, [periodTo] exklusive; nur zusammen).
+ */
+data class CostEventFilter(
+    val costObjectId: UUID? = null, val category: String? = null, val costBehavior: String? = null, val attribution: String? = null, val currency: String? = null,
+    val periodFrom: LocalDate? = null, val periodTo: LocalDate? = null,
+) {
+    val isEmpty: Boolean get() = costObjectId == null && category == null && costBehavior == null && attribution == null && currency == null && periodFrom == null && periodTo == null
+}
+
+/**
  * Kostenereignis, Journal und einmaliges Posting (WP-M4-33). Eine Freigabe (WP-M4-34) ruft [postExpense] in ihrer Transaktion: unter Sperre (Beleg `FOR UPDATE`, Kostenobjekte, Buchungsperiode)
  * werden Zustand, Integrität, Kostenzuordnung, Kontierung, Periode und Summen erneut geprüft, dann entstehen in **einer** Transaktion Ereignis, Journal (erst `DRAFT` mit Zeilen, dann `POSTED`),
  * Belegzustand `POSTED`, Audit und Outbox-Ereignis `cost_event.posted`. Ereignis und gebuchtes Journal sind unveränderlich (Datenbank); Korrekturen sind Gegenereignisse (WP-M4-36).
@@ -49,7 +61,7 @@ interface CostEvents {
     fun postExpense(jdbc: JdbcOperations, ctx: RequestContext, documentId: UUID, cmd: PostExpense): PostingResult
 
     /** Ist-Bericht: Ereignisse des Szenarios `ACTUAL` **mit gebuchtem Journal**, aufsteigend nach `(booked_at, id)`; `asOf` begrenzt auf `booked_at <= asOf`. Scope `costs:read`. */
-    fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, asOf: Instant? = null, legalEntityId: UUID? = null): List<CostEventView>
+    fun list(ctx: RequestContext, limit: Int, after: Pair<Instant, UUID>?, asOf: Instant? = null, legalEntityId: UUID? = null, filter: CostEventFilter = CostEventFilter()): List<CostEventView>
 
     /** Journal zu einem Ereignis (Zeilen sortiert nach Konto und Seite); 404, wenn es keins gibt. Scope `costs:read`. */
     fun journal(ctx: RequestContext, eventId: UUID): JournalView

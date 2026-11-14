@@ -34,6 +34,7 @@ import java.util.UUID
  */
 internal class JdbcMetrics(private val tx: TenantTransactions, override val smallGroupThreshold: Int) : Metrics {
     private val mapper = JsonMapper.builder().build()
+    private val energy = JdbcEnergyCosts(mapper)
 
     // ---- Definitionen -------------------------------------------------------------------------------------------------------------------
 
@@ -41,7 +42,10 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     override fun definition(tenant: TenantId, metricId: String, version: Int?): MetricDefinition = tx.run(tenant) { j -> seed(j); one(j, metricId, version) }
 
-    private fun seed(j: JdbcOperations) { j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java) }
+    private fun seed(j: JdbcOperations) {
+        j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java)
+        j.queryForObject("SELECT taktovia.seed_energy_metric_definitions()", Int::class.java)   // Energiekosten-Kennzahlen (WP-M4-43)
+    }
 
     private fun latest(j: JdbcOperations): List<MetricDefinition> = j.query(DEF_LATEST, DEF_MAPPER)
 
@@ -57,8 +61,12 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
-            val c = counts(j, query.period, query.filter)
-            defs.map { d -> value(j, d, query, c) }
+            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val attemptDefs = defs - energyDefs.toSet()
+            // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
+            if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
+            val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
+            val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
+            (attemptValues + energyValues).sortedBy { it.definition.metricId }
         }
     }
 
@@ -176,6 +184,8 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     }
 
     private companion object {
+        /** Energiekosten-Kennzahlen (WP-M4-43): Rechnung in [JdbcEnergyCosts], nicht aus den Versuchsfakten. */
+        val ENERGY_IDS = setOf("energy_cost_per_100km", "energy_cost_per_operating_hour")
         const val DEF_COLUMNS = "SELECT d.metric_id, d.version, d.name, d.value_kind, d.unit, d.numerator_definition, d.denominator_definition, d.exclusions, d.time_basis, d.period_basis, " +
             "array_to_string(d.filter_dimensions, ',') AS dims, d.source, d.executable, d.not_executable_reason, d.approved_at"
         const val DEF_LATEST = DEF_COLUMNS + " FROM taktovia.metric_definition_revision d WHERE d.state = 'APPROVED' AND d.version = " +
