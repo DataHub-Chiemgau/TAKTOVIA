@@ -20,6 +20,7 @@
 - **Parameter und Kennzahlen:** Alarmpriorität „niedrig“ nach `alert_policy_revision` (WP-M3-52); keine neuen Parameter.
 - **Oberfläche:** UI-09: Technikschritte; UI-07: Hinweis am Fahrzeug und in der Arbeitsliste. Zustände: kein Ereignis (leer), Fehler, Rechte nach Dienst.
 - **Entscheidungen:** keine
+- **Umsetzung (WP-M3-18):** Eigene Lauf-Art `TECH_READINESS` mit Vorlagentyp `TECHNICAL_READINESS` (Pflichtpunkte `FAHRER_APP`, `MOBILFUNK`, `NAVIGATION`, `DIENSTZUBEHOER`; Migration `V30180`); Tabelle `tech_event` (UNIQUE über Prüflauf+Schritt, unveränderlich); je Mangel-Antwort beim Abschluss ein Technikereignis, ein Alarm `TECHNICAL_EVENT` (Priorität `NORMAL` = niedrigste Stufe der Alarmpriorität, Standardregel angepasst) und das Outbox-Ereignis `inspection.tech_event_reported`. Der Alarm erhält den Dienstbezug nur, wenn das Fahrzeug genau einem Dienst zugeordnet ist, sonst gilt er mandantenweit. Die Technikbereitschaft erteilt keine Einsatzfreigabe und zählt nicht als Fahrzeugprüfung.
 - **Offene Punkte:** Katalog der Technikpunkte und ihre Wirkung auf die Freigabe (WP „Detailverträge vorab“) offen; bis dahin gilt: Technikfehler erzeugt Ereignis und Hinweis, sperrt aber nicht. OP-16 (technisch ungeklärt).
 
 ## Tests
@@ -29,7 +30,7 @@
 - **Konkurrierend:** derselbe Prüfschritt wird parallel zweimal übermittelt: genau ein Technikereignis und ein Hinweis.
 - **Referenztests:** keine Katalog-ID im WP genannt
 
-Testfälle: geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/TechReadinessTest.kt::technikfehler_erzeugt_genau_ein_ereignis_und_leitstellenhinweis; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/TechReadinessTest.kt::hinweis_nur_fuer_berechtigten_dienst_und_mandanten_sichtbar; geplant:backend/inspection/src/test/kotlin/de/taktovia/inspection/TechReadinessTest.kt::parallele_uebermittlung_desselben_schritts_erzeugt_ein_ereignis; geplant:db/tests/test_inspection_tech_event.py::test_duplikat_erzeugt_kein_zweites_ereignis
+Testfälle: backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/TechReadinessTest.kt::technikfehler_erzeugt_genau_ein_ereignis_und_leitstellenhinweis; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/TechReadinessTest.kt::hinweis_nur_fuer_berechtigten_dienst_und_mandanten_sichtbar; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/TechReadinessTest.kt::parallele_uebermittlung_desselben_schritts_erzeugt_ein_ereignis; backend/modules/fleet-safety/src/test/kotlin/de/taktovia/fleetsafety/TechReadinessTest.kt::vorlage_enthaelt_je_einen_punkt_und_alles_funktionsfaehig_erzeugt_kein_ereignis; db/tests/test_inspection_tech_event.py::test_duplikat_erzeugt_kein_zweites_ereignis
 
 ## Reviews
 

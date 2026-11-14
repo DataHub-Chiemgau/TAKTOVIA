@@ -81,6 +81,8 @@ export function notesOf(v: OperatorVehicle): string[] {
   if (v.unavailable_dimensions?.includes('wheelchair'))
     notes.push('eingeschränkt: keine Rollstuhlfahrten (Prüfpunkt Rampe/Lift nicht freigegeben)');
   if (v.open_defect_count > 0) notes.push(`${v.open_defect_count} offene Schadenakte(n)`);
+  // Hinweis der Leitstelle am Fahrzeug (WP-M3-18: Technikereignis u. a.): offene Störungen aus der Alarm-Grundlage
+  if ((v.open_alert_count ?? 0) > 0) notes.push(`${v.open_alert_count} offene Störung(en)`);
   return notes;
 }
 

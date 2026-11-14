@@ -32,5 +32,5 @@ internal object ReleaseCheck {
 
     /** Ein offener Prüflauf (nicht die Prüfung vor Fahrgastaufnahme) dieser Kombination: „Prüfung nicht abgeschlossen“ statt „Prüfung fehlt“. */
     private fun openInspection(j: JdbcOperations, shiftId: UUID, vehicleId: UUID): Boolean =
-        j.queryForObject("SELECT count(*) FROM taktovia.inspection_run WHERE shift_id = ? AND vehicle_id = ? AND status = 'IN_PROGRESS' AND kind <> 'PRE_BOARDING'", Int::class.java, shiftId, vehicleId)!! > 0
+        j.queryForObject("SELECT count(*) FROM taktovia.inspection_run WHERE shift_id = ? AND vehicle_id = ? AND status = 'IN_PROGRESS' AND kind NOT IN ('PRE_BOARDING', 'TECH_READINESS')", Int::class.java, shiftId, vehicleId)!! > 0
 }

@@ -34,6 +34,14 @@ const CAUSES: ReadonlyArray<readonly [Cause, string]> = [
   ['OTHER', 'Sonstiges'],
 ];
 
+/** Technikpunkte des Technikereignisses (WP-M3-18, CHK-009); der Code `TECH_<Schritt>` nennt den Punkt, nie einen Text. */
+const TECH_POINT: Readonly<Record<string, string>> = {
+  TECH_FAHRER_APP: 'Fahrer-App',
+  TECH_MOBILFUNK: 'Mobilfunkverbindung',
+  TECH_NAVIGATION: 'Navigation',
+  TECH_DIENSTZUBEHOER: 'dienstliches Zubehör',
+};
+
 const kindLabel = (k: string): string =>
   KIND[k] ?? (k.startsWith('TECH_') ? `Technischer Alarm (${k.slice(5)})` : k);
 
@@ -162,7 +170,14 @@ export function Arbeitsliste({ now = () => Date.now() }: { now?: () => number } 
                   </StatusBadge>
                 ),
               },
-              { key: 'kind', header: 'Störung', render: (a) => kindLabel(a.kind) },
+              {
+                key: 'kind',
+                header: 'Störung',
+                render: (a) =>
+                  a.kind === 'TECHNICAL_EVENT' && a.reason_code && TECH_POINT[a.reason_code]
+                    ? `${kindLabel(a.kind)}: ${TECH_POINT[a.reason_code]}`
+                    : kindLabel(a.kind),
+              },
               {
                 key: 'age',
                 header: 'Alter',

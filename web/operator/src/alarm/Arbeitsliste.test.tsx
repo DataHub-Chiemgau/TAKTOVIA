@@ -58,6 +58,25 @@ function setup(handler: Handler, scopes = ['me:read', 'operator:read', 'operator
 const page = (items: Alert[]) => ({ items, next_cursor: null, as_of: '2026-12-01T08:05:00Z' });
 
 describe('UI-07 Arbeitsliste Offene Störungen', () => {
+  it('nennt beim Technikereignis den betroffenen Technikpunkt (WP-M3-18)', async () => {
+    setup((id) => {
+      if (id === 'listOperatorAlerts')
+        return page([
+          {
+            ...ALERT,
+            kind: 'TECHNICAL_EVENT',
+            priority: 'NORMAL',
+            escalation_level: 0,
+            escalated_at: null,
+            reason_code: 'TECH_NAVIGATION',
+          },
+        ]);
+      throw new ApiError(404);
+    });
+    expect(await screen.findByText('Technikereignis: Navigation')).toBeTruthy();
+    expect(screen.getByText('normal')).toBeTruthy();
+  });
+
   it('zeigt Priorität, Alter, Eskalation und quittiert mit Ursache', async () => {
     let list = [ALERT];
     const { calls } = setup((id) => {

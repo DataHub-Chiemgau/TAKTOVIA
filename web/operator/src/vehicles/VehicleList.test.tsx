@@ -248,5 +248,6 @@ describe('UI-07 Livebetrieb Fahrzeuge (WP-M3-36, LH-6.7-OPS-001)', () => {
     );
     expect(notesOf(vehicle(1))).toEqual([]);
     expect(notesOf(vehicle(1, { open_defect_count: 2 }))).toEqual(['2 offene Schadenakte(n)']);
+    expect(notesOf(vehicle(1, { open_alert_count: 1 }))).toEqual(['1 offene Störung(en)']);
   });
 });

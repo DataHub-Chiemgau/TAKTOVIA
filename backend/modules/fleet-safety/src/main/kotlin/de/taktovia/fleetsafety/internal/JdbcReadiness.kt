@@ -258,14 +258,14 @@ internal class JdbcReadiness(
         return list
     }
 
-    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at FROM taktovia.inspection_run WHERE id = ?",
-        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant()) }, id).firstOrNull()
+    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at, kind FROM taktovia.inspection_run WHERE id = ?",
+        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant(), rs.getString(7)) }, id).firstOrNull()
 
     private fun blockers(j: JdbcOperations, vehicle: Vehicle, shift: Shift, inspection: Insp?, cmd: IssueRelease, now: Instant, lock: Boolean): Set<ReleaseBlocker> {
         val missing = linkedSetOf<ReleaseBlocker>()
         if (shift.vehicleId != cmd.vehicleId || shift.state !in USABLE_SHIFT || !now.isBefore(shift.endsAt)) missing += ReleaseBlocker.VEHICLE_CHANGED
         when {
-            inspection == null || inspection.vehicleId != cmd.vehicleId || inspection.shiftId != cmd.shiftId || inspection.driverRef != shift.driverRef -> missing += ReleaseBlocker.NO_INSPECTION
+            inspection == null || inspection.kind == "TECH_READINESS" || inspection.vehicleId != cmd.vehicleId || inspection.shiftId != cmd.shiftId || inspection.driverRef != shift.driverRef -> missing += ReleaseBlocker.NO_INSPECTION
             inspection.status == "IN_PROGRESS" -> missing += ReleaseBlocker.INSPECTION_OPEN
             inspection.status != "COMPLETED" -> missing += ReleaseBlocker.INSPECTION_EXPIRED
             inspection.outcome != "PASSED" && inspection.outcome != "PASSED_RESTRICTED" -> missing += ReleaseBlocker.NO_INSPECTION
@@ -363,7 +363,7 @@ internal class JdbcReadiness(
         var dims: Set<String> = emptySet()
         if (valid) dims = unavailableDimensions(j, rel!!.inspectionId)
         else {
-            val run = j.query("SELECT id, status, outcome FROM taktovia.inspection_run WHERE shift_id = ? AND vehicle_id = ? AND kind <> 'PRE_BOARDING' ORDER BY started_at DESC, id LIMIT 1",
+            val run = j.query("SELECT id, status, outcome FROM taktovia.inspection_run WHERE shift_id = ? AND vehicle_id = ? AND kind NOT IN ('PRE_BOARDING', 'TECH_READINESS') ORDER BY started_at DESC, id LIMIT 1",
                 { rs, _ -> Triple(rs.getObject(1, UUID::class.java), rs.getString(2), rs.getString(3)) }, shiftId, vehicleId).firstOrNull()
             val open = run?.takeIf { it.second == "IN_PROGRESS" }
             when {
@@ -401,7 +401,7 @@ internal class JdbcReadiness(
 
     private class Vehicle(val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean)
     private class Shift(val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)
-    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?, val completedAt: Instant?)
+    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?, val completedAt: Instant?, val kind: String = "")
 
     /** Sperrreihenfolge: immer zuerst die Fahrzeugzeile. [exclusive] für Änderungen, sonst gemeinsam (Hold-Commit, Prüfung). */
     private fun lockVehicle(j: JdbcOperations, vehicleId: UUID, exclusive: Boolean, lock: Boolean = true): Vehicle? {
