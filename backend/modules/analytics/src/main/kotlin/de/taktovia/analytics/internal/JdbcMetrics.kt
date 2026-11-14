@@ -15,6 +15,7 @@ import de.taktovia.analytics.api.MetricValue
 import de.taktovia.analytics.api.MetricValueKind
 import de.taktovia.analytics.api.Metrics
 import de.taktovia.analytics.api.PickupToleranceSource
+import de.taktovia.analytics.api.ArrivalToleranceSource
 import de.taktovia.analytics.api.RejectionReport
 import de.taktovia.analytics.api.RejectionRow
 import de.taktovia.analytics.api.ReportingPeriod
@@ -40,6 +41,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     private val mapper = JsonMapper.builder().build()
     private val energy = JdbcEnergyCosts(mapper)
     private val pickup = JdbcPickupPunctuality()
+    private val arrival = JdbcArrivalPunctuality()
 
     // ---- Definitionen -------------------------------------------------------------------------------------------------------------------
 
@@ -51,6 +53,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java)
         j.queryForObject("SELECT taktovia.seed_energy_metric_definitions()", Int::class.java)   // Energiekosten-Kennzahlen (WP-M4-43)
         j.queryForObject("SELECT taktovia.seed_pickup_punctuality_definitions()", Int::class.java)   // WP-M4-53: Version 2 der Abholkennzahlen (ausführbar)
+        j.queryForObject("SELECT taktovia.seed_arrival_punctuality_definitions()", Int::class.java)   // WP-M4-54: Version 2 der Ankunftskennzahlen (ausführbar)
     }
 
     private fun latest(j: JdbcOperations): List<MetricDefinition> = j.query(DEF_LATEST, DEF_MAPPER)
@@ -61,22 +64,25 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     // ---- Auswertung ---------------------------------------------------------------------------------------------------------------------
 
-    override fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource): List<MetricValue> {
+    override fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource, arrivalTolerances: ArrivalToleranceSource): List<MetricValue> {
         if (query.metricId == null && query.version != null) throw ProblemException(ErrorCode.BAD_REQUEST, "Eine Version gehört zu einer Kennzahl.", listOf(Violation("/\$query/version", ViolationCode.INVALID_VALUE)))
         return tx.run(tenant) { j ->
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
-            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) }
+            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && (it.metricId in JdbcPickupPunctuality.METRICS || it.metricId in JdbcArrivalPunctuality.METRICS)) }
             // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
             if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
             val pickupDefs = defs.filter { it.executable && it.metricId in JdbcPickupPunctuality.METRICS }
             val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, query.period, query.filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
             val pickupValues = pickupDefs.map { d -> pickupValue(j, d, query, pc!!) }
+            val arrivalDefs = defs.filter { it.executable && it.metricId in JdbcArrivalPunctuality.METRICS }
+            val ac = if (arrivalDefs.isEmpty()) null else arrival.counts(j, tenant, query.period, query.filter, arrivalTolerances, bind = arrivalDefs.any { it.metricId == "arrival_on_time" })
+            val arrivalValues = arrivalDefs.map { d -> arrivalValue(j, d, query, ac!!) }
             val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
             val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, query.filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, query, fc) } }
             val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
-            (attemptValues + funnelValues + energyValues + pickupValues).sortedBy { it.definition.metricId }
+            (attemptValues + funnelValues + energyValues + pickupValues + arrivalValues).sortedBy { it.definition.metricId }
         }
     }
 
@@ -191,6 +197,33 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         if (group == 0L) return result(MetricState.NOT_COMPUTABLE, MetricReason.ZERO_DENOMINATOR, null, null, BigDecimal.ZERO)   // nie 0 oder 100 % an dessen Stelle
         val den = BigDecimal(group)
         // Abdeckung der Pünktlichkeit: Anteil der bewertbaren Abholungen mit gebundenem Grenzwert (abgerundet: eine Lücke ergibt nie 100 %); die mittlere Verspätung braucht keinen Grenzwert
+        val cov = if (onTime && c.assessable > c.bound) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(c.bound), BigDecimal(c.assessable), 4) else BigDecimal.ONE.setScale(4)
+        val state = if (cov < BigDecimal.ONE) MetricState.PROVISIONAL else MetricState.OK
+        return if (onTime) result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.onTime), den, 6), BigDecimal(c.onTime), den, cov)
+        else {
+            val minutes = de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.lateSeconds), BigDecimal(60), 4)
+            result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.lateSeconds), den.multiply(BigDecimal(60)), 4), minutes, den, cov)
+        }
+    }
+
+    /**
+     * Ankunftspünktlichkeit (WP-M4-54), getrennt von der Abholung: `arrival_on_time` = pünktlich / gebundene bewertbare Ankünfte, `mean_arrival_delay` = Summe der positiven Verspätungsminuten / bewertbare Ankünfte.
+     * Ankünfte ohne auflösbare Toleranz sind für die Pünktlichkeit nicht bewertbar (nicht im Nenner, mindern die Abdeckung, `PROVISIONAL`); Ankünfte ohne Zusage stehen gesondert in [MetricValue.withoutPromise].
+     */
+    private fun arrivalValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: JdbcArrivalPunctuality.Counts): MetricValue {
+        val onTime = d.metricId == "arrival_on_time"
+        val group = if (onTime) c.bound else c.assessable
+        val unfiltered = if (onTime) c.boundUnfiltered else c.assessableUnfiltered
+        val separate = if (q.filter.serviceId == null) c.withoutPromise else null
+        fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, cov: BigDecimal? = null): MetricValue {
+            val id = store(j, d, q, state, reason, value, num, den, cov, c.asOf, c.sourceEvents, if (state == MetricState.OK || state == MetricState.PROVISIONAL) c.versionsJson else null)
+            return MetricValue(d, state, reason, value, num, den, cov, q.filter, q.period, c.asOf?.toInstant(), c.sourceEvents, id, withoutPromise = separate)
+        }
+        if (!c.hasData) return result(MetricState.NOT_COMPUTABLE, MetricReason.NO_DATA, null, null, null)
+        if (q.filter.dimensions().isNotEmpty() && ((group in 1 until smallGroupThreshold) || ((unfiltered - group) in 1 until smallGroupThreshold)))
+            return result(MetricState.NOT_COMPUTABLE, MetricReason.SMALL_GROUP, null, null, null)
+        if (group == 0L) return result(MetricState.NOT_COMPUTABLE, MetricReason.ZERO_DENOMINATOR, null, null, BigDecimal.ZERO)   // nie 0 oder 100 % an dessen Stelle
+        val den = BigDecimal(group)
         val cov = if (onTime && c.assessable > c.bound) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(c.bound), BigDecimal(c.assessable), 4) else BigDecimal.ONE.setScale(4)
         val state = if (cov < BigDecimal.ONE) MetricState.PROVISIONAL else MetricState.OK
         return if (onTime) result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.onTime), den, 6), BigDecimal(c.onTime), den, cov)

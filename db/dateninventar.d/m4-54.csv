@@ -1,0 +1,16 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+arrival_tolerance_binding;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;promise_version;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;bound_at;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;tolerance_min;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;tolerance_level;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;tolerance_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;tolerance_revision;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;grace_min;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;grace_level;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;grace_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;grace_revision;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;applied_min;nein;BUCHUNGSABWICKLUNG;;;;
+arrival_tolerance_binding;recorded_at;nein;BUCHUNGSABWICKLUNG;;;;

@@ -76,7 +76,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         val period = fromDay?.let { ReportingPeriod.ofDays(reportingZone(ctx), it, toDay ?: it) }
         val definitions: List<MetricDefinition>; val values: List<MetricValue>?
         if (period != null) {
-            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter), ConfigPickupToleranceSource(config, ctx))
+            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter), ConfigPickupToleranceSource(config, ctx), ConfigArrivalToleranceSource(config, ctx))
             definitions = values.map { it.definition }
         } else {
             values = null
@@ -105,7 +105,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
     private fun valueJson(m: MetricValue): Map<String, Any?> = linkedMapOf(
         "metric_id" to m.definition.metricId, "definition_version" to m.definition.version, "state" to m.state.name, "reason" to m.reason?.name, "value" to m.value, "numerator" to m.numerator,
         "denominator" to m.denominator, "coverage" to m.coverage, "unit" to m.definition.unit, "filter" to m.filter.toMap(), "period" to periodJson(m.period), "as_of" to m.asOf?.toString(),
-        "source_events" to m.sourceEvents, "snapshot_id" to m.snapshotId?.toString(), "exclusions" to m.exclusions.map(::exclusionJson), "approximation" to m.approximation?.name,
+        "source_events" to m.sourceEvents, "snapshot_id" to m.snapshotId?.toString(), "exclusions" to m.exclusions.map(::exclusionJson), "approximation" to m.approximation?.name, "without_promise" to m.withoutPromise,
     )
 
     private fun exclusionJson(e: MetricExclusion): Map<String, Any?> = linkedMapOf("document_id" to e.documentId.toString(), "vehicle_id" to e.vehicleId?.toString(), "reason" to e.reason.name)

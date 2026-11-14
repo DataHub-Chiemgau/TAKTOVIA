@@ -100,6 +100,8 @@ data class MetricValue(
     val filter: MetricFilter, val period: ReportingPeriod, val asOf: Instant?, val sourceEvents: Long, val snapshotId: UUID?,
     /** Nur Energiekosten-Kennzahlen (WP-M4-43): nicht eingegangene Vorgänge mit Grund und die Kennzeichnung der Näherung. */
     val exclusions: List<MetricExclusion> = emptyList(), val approximation: MetricApproximation? = null,
+    /** Nur Ankunftskennzahlen (WP-M4-54): Ankünfte mit Ist-Zeit ohne zugesagte Ankunftszeit im Zeitraum, gesondert ausgewiesen und nicht im Nenner; `null` bei Dienstfilter (der Dienst ist ohne Zusage unbekannt) und bei anderen Kennzahlen. */
+    val withoutPromise: Long? = null,
 )
 
 /** Änderung einer Definition: nur die gesetzten Felder weichen von der jüngsten Version ab (neue Version im Entwurf, Freigabe getrennt). */
@@ -162,9 +164,9 @@ interface Metrics {
 
     /**
      * Werte der Kennzahl(en) für Zeitraum und Filter, nach Kennzahl-ID sortiert. [tolerances] löst den Grenzwert der Abholpünktlichkeit zum Vergleichsstichtag auf (WP-M4-53); ohne Quelle sind
-     * Abholungen für die Pünktlichkeit nicht bewertbar (Abdeckung statt geratener Wert).
+     * Abholungen für die Pünktlichkeit nicht bewertbar (Abdeckung statt geratener Wert). [arrivalTolerances] gilt ebenso für die Ankunftspünktlichkeit (WP-M4-54).
      */
-    fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource = PickupToleranceSource.NONE): List<MetricValue>
+    fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource = PickupToleranceSource.NONE, arrivalTolerances: ArrivalToleranceSource = ArrivalToleranceSource.NONE): List<MetricValue>
 
     /** Ablehnungen nach Grund und Gruppe: Primär getrennt von Sekundär; [reasonCode] filtert auf einen Katalogcode (unbekannt: 400). */
     fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter(), reasonCode: String? = null): RejectionReport

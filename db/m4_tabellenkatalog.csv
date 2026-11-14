@@ -59,3 +59,4 @@ vehicle_km_run;analytics;APPEND_ONLY;;WP-M4-42;Klassifikationslauf mit Datenstan
 vehicle_km_segment;analytics;APPEND_ONLY;;WP-M4-42;Kilometerabschnitt je Lauf und Kategorie, nie geaendert
 time_fact;analytics;APPEND_ONLY;;WP-M4-52;Zeitfakten je Fahrt und Stopp, nur anhängen
 pickup_tolerance_binding;analytics;APPEND_ONLY;;WP-M4-53;je Buchung und Zusageversion der zum Vergleichsstichtag wirksame Grenzwert der Abholpünktlichkeit, nur anhängen
+arrival_tolerance_binding;analytics;APPEND_ONLY;;WP-M4-54;je Buchung und Zusageversion die zum Vergleichsstichtag wirksame Ankunftstoleranz, nur anhängen
