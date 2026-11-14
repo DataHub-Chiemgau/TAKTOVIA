@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -39,7 +38,7 @@ internal object NotPerformedJson {
 class NotPerformedController(private val analytics: AnalyticsApi) {
 
     @PostMapping("/v1/analytics/not-performed/{booking_id}/corrections")
-    fun correct(@PathVariable("booking_id") bookingId: String, @RequestBody body: Map<String, Any?>, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): NotPerformedTripResource {
+    fun correct(@PathVariable("booking_id") bookingId: String, @RequestBody body: Map<String, Any?>, request: HttpServletRequest): NotPerformedTripResource {
         val ctx = RequestContexts.require(request)
         val id = runCatching { UUID.fromString(bookingId) }.getOrNull() ?: throw ProblemException.notFound()
         fun str(f: String): String = when (val v = body[f]) { null -> throw ProblemException.invalid(Violation("/$f", ViolationCode.REQUIRED)); is String -> v; else -> throw ProblemException.invalid(Violation("/$f", ViolationCode.TYPE_MISMATCH)) }

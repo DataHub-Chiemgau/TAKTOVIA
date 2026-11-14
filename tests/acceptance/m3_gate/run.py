@@ -28,6 +28,11 @@ E2E_CSV = REPO / "docs" / "pflichtenheft" / "e2e.csv"
 EVIDENCE_DIR = ACC / "evidence" / "m3"
 
 
+def backend_root() -> Path:
+    """Ablage der JUnit-Ergebnisse: `backend/` oder, mit TAKTOVIA_JUNIT_ROOT, gesicherte Ergebnisse eines vollständigen Laufs (Gradle ersetzt die Ergebnisse bei jedem Teillauf)."""
+    return Path(os.environ.get("TAKTOVIA_JUNIT_ROOT", str(REPO / "backend")))
+
+
 def build_id() -> str:
     def git(*a):
         return subprocess.run(["git", "-C", str(REPO), *a], capture_output=True, text=True).stdout.strip()
@@ -41,7 +46,7 @@ def run(db_name: str, out_dir: Path, only=None, allow_missing_backend: bool = Fa
     from taktovia_at import db as atdb
     from taktovia_at.scenario import execute
     os.environ["TAKTOVIA_BUILD_ID"] = build_id()
-    results = junit.load_backend(Path(os.environ.get("TAKTOVIA_JUNIT_ROOT", str(REPO / "backend"))))   # TAKTOVIA_JUNIT_ROOT: gesicherte Ergebnisse eines vollständigen Laufs
+    results = junit.load_backend(backend_root())
     m2.BACKEND_RESULTS["results"] = results or None
     if not results and not allow_missing_backend:
         print("Hinweis: keine JUnit-Ergebnisse unter backend/**/build/test-results (zuerst ./gradlew build); die Backend-Prüfungen werden rot.", file=sys.stderr)

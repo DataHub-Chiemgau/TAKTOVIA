@@ -60,13 +60,13 @@ class OutageController(private val outage: OutageReplacement) {
     }
 
     @PostMapping("/v1/operator/incidents/{incident_id}/outage/check")
-    fun check(@PathVariable("incident_id") incident: String, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): Map<String, Any?> =
+    fun check(@PathVariable("incident_id") incident: String, request: HttpServletRequest): Map<String, Any?> =
         OutageJson.of(outage.checkOptions(RequestContexts.require(request), id(incident)))
 
     @PostMapping("/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/rebook")
     fun rebook(
         @PathVariable("incident_id") incident: String, @PathVariable("booking_id") booking: String, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?,
-        @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest,
+        request: HttpServletRequest,
     ): OutageBookingResource {
         val ctx = RequestContexts.require(request)
         val proposal = (body["proposal_id"] as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
@@ -79,7 +79,7 @@ class OutageController(private val outage: OutageReplacement) {
     @PostMapping("/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/cancel")
     fun cancel(
         @PathVariable("incident_id") incident: String, @PathVariable("booking_id") booking: String, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?,
-        @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest,
+        request: HttpServletRequest,
     ): OutageBookingResource {
         val r = outage.cancel(RequestContexts.require(request), id(incident), id(booking), CancelOutageCommand(Etag.parseIfMatch(ifMatch), reason(body)))
         return OutageBookingResource(OutageJson.booking(r), r.revision)
@@ -88,7 +88,7 @@ class OutageController(private val outage: OutageReplacement) {
     @PostMapping("/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/inform")
     fun inform(
         @PathVariable("incident_id") incident: String, @PathVariable("booking_id") booking: String, @RequestHeader("If-Match", required = false) ifMatch: String?,
-        @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest,
+        request: HttpServletRequest,
     ): OutageBookingResource {
         val r = outage.inform(RequestContexts.require(request), id(incident), id(booking), Etag.parseIfMatch(ifMatch))
         return OutageBookingResource(OutageJson.booking(r), r.revision)

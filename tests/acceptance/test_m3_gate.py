@@ -111,7 +111,7 @@ class Gesamtlauf(unittest.TestCase):
     """Führt die Suite gegen eine eigene Datenbank aus (nur mit JUnit-Ergebnissen des Backends; ohne sie sind die Backend-Prüfungen rot, nie grün)."""
 
     def test_gesamtlauf_ist_gruen_wenn_backend_ergebnisse_vorliegen_und_erzeugt_evidenz_ohne_personendaten(self):
-        if not junit.load_backend():
+        if not junit.load_backend(gate_run.backend_root()):
             self.skipTest("keine JUnit-Ergebnisse (./gradlew build zuerst)")
         out = Path(tempfile.mkdtemp())
         try:
