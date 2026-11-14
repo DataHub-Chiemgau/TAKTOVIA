@@ -226,6 +226,7 @@ export const texte = {
   'reise.fahrzeug': 'Fahrzeug',
   'reise.fahrzeugKeins': 'Noch kein Fahrzeug zugewiesen',
   'reise.letzterStand': 'Letzter Stand',
+  'reise.offlineStand': 'Keine Echtzeitdaten: Angezeigt wird der zuletzt geladene Stand von',
   'reise.veraltet': 'Daten veraltet: Die Verbindung ist unterbrochen. Angezeigt wird der Stand von',
   'reise.etaGeaendert': 'Die geplante Abholzeit hat sich geändert:',
   'reise.etaGeaendertAnsage': 'Geplante Abholzeit geändert, neu',

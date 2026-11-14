@@ -45,3 +45,27 @@ export { SUPPORT_NEED_CODES, SupportNeedsSelect } from './components/SupportNeed
 export type { SupportNeedCode, SupportNeedsSelectProps } from './components/SupportNeedsSelect';
 export { ACCESS_PURPOSES, AccessPurposeSelect } from './components/AccessPurposeSelect';
 export type { AccessPurpose, AccessPurposeSelectProps } from './components/AccessPurposeSelect';
+export {
+  actionAvailability,
+  deriveConnectionState,
+  initialConnection,
+  isServerRestricted,
+  reduceConnection,
+  standHhmm,
+  stateTexts,
+} from './network/connection';
+export type {
+  ActionAvailability,
+  ConnectionEvent,
+  ConnectionModel,
+  ConnectionState,
+  NetworkAction,
+  StateText,
+} from './network/connection';
+export { ConnectionBanner, ConnectionProvider, useConnection } from './network/ConnectionProvider';
+export type {
+  ConnectionApi,
+  ConnectionBannerProps,
+  ConnectionProviderProps,
+  ConnectionSource,
+} from './network/ConnectionProvider';

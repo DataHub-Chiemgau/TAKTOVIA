@@ -108,6 +108,18 @@ class Strings {
     'inspection.status.synced': 'Synchronisiert, noch nicht freigegeben',
     'inspection.status.released': 'Freigegeben',
     'inspection.status.review': 'Vom Server nicht uebernommen: bitte die Leitstelle kontaktieren, die Pruefung ist neu durchzufuehren',
+    'connection.online': 'Online. Die Daten sind aktuell.',
+    'connection.limited': 'Eingeschraenkt. Die Verbindung ist instabil, angezeigte Daten koennen veraltet sein.',
+    'connection.offline': 'Offline. Keine Echtzeitdaten. Angezeigt wird der zuletzt bestaetigte Stand.',
+    'connection.syncing': 'Synchronisation laeuft. Der aktuelle Stand wird geladen, ausstehende Ereignisse werden uebertragen.',
+    'connection.conflict': 'Synchronisationskonflikt. Mindestens ein Ereignis wurde vom Server nicht uebernommen und wird geklaert.',
+    'connection.pending': '{count} Ereignisse werden uebertragen.',
+    'connection.noLive': 'Keine laufende ETA, keine Live-Position. Stand: {time}.',
+    'connection.conflict.checkInVsCancel': 'Klaerfall: Der Check-in wurde offline erfasst, der Halt wurde inzwischen storniert. Die Leitstelle entscheidet, nichts wird still ueberschrieben.',
+    'action.blocked.releaseVehicle': 'Die Einsatzfreigabe erteilt nur der Server. Naechster Schritt: Pruefung lokal abschliessen, die Freigabe erscheint nach der Uebertragung; bei Dringlichkeit die Leitstelle kontaktieren.',
+    'action.blocked.liftBlock': 'Eine Sperre hebt nur die berechtigte Stelle auf. Naechster Schritt: die Leitstelle kontaktieren.',
+    'action.blocked.bindBooking': 'Eine neue verbindliche Buchung braucht den Server. Naechster Schritt: warten, bis die Verbindung zurueck und der Stand geladen ist.',
+    'action.blocked.syncingPrefix': 'Der aktuelle Stand wird noch geladen. ',
     'action.unavailableOffline': 'Ohne Verbindung nicht verfuegbar. Die Freigabe erteilt nur der Server.',
   });
 

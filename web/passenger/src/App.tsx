@@ -33,7 +33,7 @@ import { Start } from './booking/Start';
 import { CheckoutScreen } from './booking/CheckoutScreen';
 import { ReiseDetailScreen, ReiseUebersichtScreen } from './booking/ReiseScreens';
 import { OfferScreen } from './booking/OfferScreen';
-import { OfflineBanner } from './netz/Offline';
+import { NetzAnbieter, NetzBanner } from './network/NetzAnbieter';
 import { tx } from './texte';
 
 const ZONE = 'Europe/Berlin';
@@ -178,61 +178,63 @@ export function App() {
       </main>
     );
   return (
-    <AppFrame
-      brand={tx('shell.brand')}
-      nav={visibleNav(NAV, rightsOf(session.me))}
-      currentHref={location.pathname}
-      linkAs={RouterLink}
-      headerEnd={<HeaderEnd />}
-    >
-      <Fragment key={session.me.tenant_id}>
-        <OfflineBanner />
-        <Routes>
-          <Route path="/" element={<Start />} />
-          <Route
-            path="/angebote"
-            element={
-              <RequirePassenger>
-                <OfferScreen />
-              </RequirePassenger>
-            }
-          />
-          <Route
-            path="/checkout/:offerId"
-            element={
-              <RequirePassenger>
-                <CheckoutScreen />
-              </RequirePassenger>
-            }
-          />
-          <Route
-            path="/reisen"
-            element={
-              <RequirePassenger>
-                <ReiseUebersichtScreen />
-              </RequirePassenger>
-            }
-          />
-          <Route
-            path="/reisen/:bookingId"
-            element={
-              <RequirePassenger>
-                <ReiseDetailScreen />
-              </RequirePassenger>
-            }
-          />
-          <Route
-            path="/konto"
-            element={
-              <RequirePassenger>
-                <Konto />
-              </RequirePassenger>
-            }
-          />
-          <Route path="/hilfe" element={<Hilfe />} />
-          <Route path="*" element={<StateView kind="notFound" level={1} />} />
-        </Routes>
-      </Fragment>
-    </AppFrame>
+    <NetzAnbieter>
+      <AppFrame
+        brand={tx('shell.brand')}
+        nav={visibleNav(NAV, rightsOf(session.me))}
+        currentHref={location.pathname}
+        linkAs={RouterLink}
+        headerEnd={<HeaderEnd />}
+      >
+        <Fragment key={session.me.tenant_id}>
+          <NetzBanner />
+          <Routes>
+            <Route path="/" element={<Start />} />
+            <Route
+              path="/angebote"
+              element={
+                <RequirePassenger>
+                  <OfferScreen />
+                </RequirePassenger>
+              }
+            />
+            <Route
+              path="/checkout/:offerId"
+              element={
+                <RequirePassenger>
+                  <CheckoutScreen />
+                </RequirePassenger>
+              }
+            />
+            <Route
+              path="/reisen"
+              element={
+                <RequirePassenger>
+                  <ReiseUebersichtScreen />
+                </RequirePassenger>
+              }
+            />
+            <Route
+              path="/reisen/:bookingId"
+              element={
+                <RequirePassenger>
+                  <ReiseDetailScreen />
+                </RequirePassenger>
+              }
+            />
+            <Route
+              path="/konto"
+              element={
+                <RequirePassenger>
+                  <Konto />
+                </RequirePassenger>
+              }
+            />
+            <Route path="/hilfe" element={<Hilfe />} />
+            <Route path="*" element={<StateView kind="notFound" level={1} />} />
+          </Routes>
+        </Fragment>
+      </AppFrame>
+    </NetzAnbieter>
   );
 }

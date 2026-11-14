@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, useApi } from '@taktovia/api-client';
 import type { RideBooking } from '@taktovia/api-client';
-import { ErrorState, useAnnounce } from '@taktovia/design-system';
+import { ErrorState, standHhmm, useAnnounce, useConnection } from '@taktovia/design-system';
 import { Link } from 'react-router-dom';
 import { zahlstatusText } from './Checkout';
 import { formatMoney } from './geld';
@@ -52,6 +52,8 @@ export function stateText(state: RideBooking['state']): string {
 export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: BookingDetailProps) {
   const api = useApi();
   const announce = useAnnounce();
+  const connection = useConnection();
+  const { serverStateLoaded, reportRequest } = connection;
   const [booking, setBooking] = useState<RideBooking | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [stale, setStale] = useState(false);
@@ -83,7 +85,8 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
     const b = await api.call('getBooking', { path: { booking_id: bookingId } });
     cursor.current = Math.max(cursor.current, snap.cursor);
     adopt(b, b.data_as_of ?? snap.as_of);
-  }, [api, bookingId, adopt]);
+    serverStateLoaded();
+  }, [api, bookingId, adopt, serverStateLoaded]);
 
   useEffect(() => {
     let alive = true;
@@ -128,8 +131,10 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
           }
           cursor.current = Math.max(cursor.current, feed.next_cursor);
         }
+        reportRequest(true);
       } catch {
         markStale(true);
+        reportRequest(false);
       }
       if (alive) timer = setTimeout(() => void tick(), pollMs);
     };
@@ -145,7 +150,7 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
       alive = false;
       if (timer) clearTimeout(timer);
     };
-  }, [api, bookingId, load, adopt, announce, pollMs, zone]);
+  }, [api, bookingId, load, adopt, announce, pollMs, zone, reportRequest]);
 
   const reload = useCallback(async () => {
     const b = await api.call('getBooking', { path: { booking_id: bookingId } });
@@ -158,6 +163,9 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
     );
   if (!booking) return <p aria-busy="true">{tx('reise.laedt')}</p>;
 
+  // Nicht live: Verbindung unterbrochen, Livestrom veraltet oder Serverstand nach Wiederverbindung noch nicht geladen. ETA und Fahrzeug erscheinen dann als „Stand hh:mm“, nie als Livewert.
+  const notLive = stale || connection.restricted;
+  const stand = lastUpdate ? standHhmm(lastUpdate, zone) : null;
   const p = booking.promise;
   const acc = booking.pickup_stop?.accessibility as Record<string, unknown> | undefined;
   return (
@@ -170,6 +178,11 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
       <h2 id="reise-h">
         {tx('reise.titel')} {booking.booking_number}
       </h2>
+      {notLive && !stale ? (
+        <p data-testid="daten-offline">
+          {tx('reise.offlineStand')} {lastUpdate ? ortszeit(lastUpdate, zone) : '–'}
+        </p>
+      ) : null}
       {stale ? (
         <p role="status" data-testid="daten-veraltet">
           {tx('reise.veraltet')} {lastUpdate ? ortszeit(lastUpdate, zone) : '–'}
@@ -213,7 +226,10 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
         <dd data-testid="eta">
           {booking.eta ? (
             <>
-              <time dateTime={booking.eta.pickup_at}>{ortszeit(booking.eta.pickup_at, zone)}</time>{' '}
+              {notLive && stand ? <span data-testid="eta-stand">{stand}: </span> : null}
+              <time dateTime={booking.eta.pickup_at}>
+                {ortszeit(booking.eta.pickup_at, zone)}
+              </time>{' '}
               ({tx('reise.etaQuelle')})
             </>
           ) : (
@@ -223,7 +239,7 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
         <dt>{tx('reise.fahrzeug')}</dt>
         <dd data-testid="fahrzeug">
           {booking.vehicle
-            ? `${booking.vehicle.label}${booking.vehicle.vehicle_class ? ` (${booking.vehicle.vehicle_class})` : ''}`
+            ? `${notLive && stand ? `${stand}: ` : ''}${booking.vehicle.label}${booking.vehicle.vehicle_class ? ` (${booking.vehicle.vehicle_class})` : ''}`
             : tx('reise.fahrzeugKeins')}
         </dd>
         <dt>{tx('angebot.preis')}</dt>
