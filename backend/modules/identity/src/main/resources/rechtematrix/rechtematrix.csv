@@ -150,6 +150,10 @@ listRunRevisions;operator:read;-;M3;N;N;J;J;J;J;N;N;N;J
 createVehicleBlock;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
 liftVehicleBlock;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
 transitionOperatorIncident;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
+checkOperatorIncidentOutage;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
+rebookOutageBooking;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
+cancelOutageBooking;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
+informOutageBooking;operator:write;-;M3;N;N;N;N;J;N;N;N;N;N
 createRunRevision;dispatch:write;-;M3;N;N;N;N;J;N;N;N;N;N
 getInspection;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J
 listChecklistTemplates;inspections:read;-;M3;N;J;N;N;J;N;N;N;N;J

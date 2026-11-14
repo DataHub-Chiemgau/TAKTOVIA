@@ -50,7 +50,7 @@ internal object IncidentJson {
  * und fremder Mandant sind 404. Schreibende Endpunkte gibt es nicht: Incidents entstehen aus Ereignissen durch den Workflow (Änderungsversuche per API gibt es nicht, `405`).
  */
 @RestController
-class IncidentController(private val fleet: FleetsafetyApi, private val codec: CursorCodec) {
+class IncidentController(private val fleet: FleetsafetyApi, private val codec: CursorCodec, private val outage: de.taktovia.bookingdispatch.api.OutageReplacement) {
 
     @GetMapping("/v1/operator/incidents")
     fun list(
@@ -67,5 +67,14 @@ class IncidentController(private val fleet: FleetsafetyApi, private val codec: C
     }
 
     @GetMapping("/v1/operator/incidents/{incident_id}")
-    fun get(@PathVariable("incident_id") id: UUID, request: HttpServletRequest): IncidentResource = IncidentJson.resource(fleet.incidents.get(RequestContexts.require(request), id))
+    fun get(@PathVariable("incident_id") id: UUID, request: HttpServletRequest): IncidentResource {
+        val ctx = RequestContexts.require(request)
+        val incident = fleet.incidents.get(ctx, id)   // Sichtbarkeit (404) und Rolle (403) zuerst
+        // Störungsablauf (WP-M3-54, DMG-010): betroffene Fahrten, Ersatzvorschläge, Fahrgastauswirkung und mögliche Aktionen am Incident; die Fahrten sind zugleich die betroffenen Umläufe
+        val o = outage.overview(ctx, id)
+        val data = IncidentJson.of(incident).toMutableMap()
+        data["affected_run_ids"] = (incident.affectedRunIds + o.bookings.map { it.runId }).distinct().map { it.toString() }
+        data["outage"] = de.taktovia.app.dispatch.OutageJson.of(o)
+        return IncidentResource(data, incident.revision)
+    }
 }

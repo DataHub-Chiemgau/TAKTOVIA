@@ -2763,7 +2763,60 @@ export interface Incident {
   service_id?: UUID | null;
   closed_at?: string | null;
   workflow_log?: WorkflowLogEntry[];
+  outage?: IncidentOutage;
   revision: number;
+}
+
+export interface IncidentOutage {
+  bookings: OutageBooking[];
+  boarded_booking_ids: UUID[];
+  open_count: number;
+}
+
+export interface OutageBooking {
+  id: UUID;
+  booking_id: UUID;
+  booking_number?: string | null;
+  run_id: UUID;
+  vehicle_id: UUID;
+  state: 'OPEN' | 'PROPOSED' | 'REBOOKED' | 'CANCELLED' | 'OPEN_ISSUE' | 'BOARDED' | 'ONBOARD_DONE';
+  issue_code?: string | null;
+  decision?: 'REBOOK' | 'CANCEL' | null;
+  decision_reason?: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  replacement_run_id?: UUID | null;
+  passenger_notice_requested?: boolean;
+  revision: number;
+  passengers?: number;
+  wheelchair_spaces?: number;
+  pickup_window?: {
+    earliest_at: string;
+    latest_at: string;
+  } | null;
+  proposals: OutageProposal[];
+  actions: ('CHECK_OPTIONS' | 'REBOOK' | 'CANCEL' | 'INFORM_PASSENGER')[];
+}
+
+export interface OutageProposal {
+  id: UUID;
+  vehicle_id: UUID;
+  run_id: UUID;
+  run_revision: number;
+  pickup_at: string;
+  dropoff_at: string;
+  window_effect: 'IN_WINDOW' | 'OUTSIDE_WINDOW';
+  window_violations: string[];
+}
+
+export interface OutageRebookRequest {
+  proposal_id: UUID;
+  reason_code: string;
+  accept_window_effect?: boolean;
+}
+
+export interface OutageCancelRequest {
+  reason_code: string;
 }
 
 export interface WorkflowLogEntry {
@@ -5577,6 +5630,34 @@ export interface Operations {
     body: IncidentTransition;
     response: Incident;
   };
+  checkOperatorIncidentOutage: {
+    path: { incident_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: undefined;
+    response: IncidentOutage;
+  };
+  rebookOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: OutageRebookRequest;
+    response: OutageBooking;
+  };
+  cancelOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: OutageCancelRequest;
+    response: OutageBooking;
+  };
+  informOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: OutageBooking;
+  };
   listVehicleMasters: {
     path: Record<string, never>;
     query: { active?: boolean; limit?: number; cursor?: string };
@@ -6724,6 +6805,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorIncidents: { method: 'GET', path: '/v1/operator/incidents', pathParams: [], query: ['status', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getOperatorIncident: { method: 'GET', path: '/v1/operator/incidents/{incident_id}', pathParams: ['incident_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  checkOperatorIncidentOutage: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/check', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: false, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  rebookOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/rebook', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  cancelOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/cancel', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  informOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/inform', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listVehicleMasters: { method: 'GET', path: '/v1/operator/vehicle-master', pathParams: [], query: ['active', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createVehicleMaster: { method: 'POST', path: '/v1/operator/vehicle-master', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getVehicleMaster: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/incident.closed.v1.schema.json",
+  "title": "Incident abgeschlossen (WP-M3-54)",
+  "description": "Payload von `incident.closed`. Aggregat: incident. Der Störungsfall ist abgearbeitet: `RESOLVED` (mindestens eine Buchung umgebucht oder kein Fahrgast betroffen) oder `CLOSED_NO_REPLACEMENT`. Nur Kennungen und Codes (Kap. 05 §5.1 Minimierung).",
+  "type": "object",
+  "required": [
+    "incident_id",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": [
+        "RESOLVED",
+        "CLOSED_NO_REPLACEMENT"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "incident_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "status": "RESOLVED"
+    }
+  ]
+}

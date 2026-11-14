@@ -100,24 +100,37 @@ internal class JdbcPlanCommit(
         if (v.isNotEmpty()) throw ProblemException.invalid(*v.toTypedArray())
     }
 
+    /** Löst die beteiligten Umläufe (Ziel und Quellen der übernommenen Stopps) auf; ungültiger Stopp 422. Rein lesend. */
+    private fun sourcesOf(j: JdbcOperations, runId: UUID, cmd: ReplanCommand): Pair<RunRow, LinkedHashMap<UUID, UUID>> {
+        val sourceRuns = LinkedHashMap<UUID, UUID>()   // Quell-Umlauf -> Fahrzeug
+        val target = run(j, runId, false)
+        cmd.changes.forEachIndexed { i, c ->
+            if (c.kind != StopChangeKind.INSERT) return@forEachIndexed
+            val src = j.query("SELECT r.id, r.vehicle_id FROM taktovia.route_stop s JOIN taktovia.vehicle_run r ON r.tenant_id = s.tenant_id AND r.id = s.run_id WHERE s.id = ?",
+                { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, c.routeStopId).firstOrNull()
+                ?: throw ProblemException.invalid(Violation("/changes/$i/route_stop_id", ViolationCode.INVALID_VALUE))
+            if (src.first == runId) throw ProblemException.invalid(Violation("/changes/$i/route_stop_id", ViolationCode.INVALID_VALUE, "Der Stopp gehört zum Ziel-Umlauf; Einfügen übernimmt Stopps anderer Umläufe."))
+            sourceRuns[src.first] = src.second
+        }
+        return target to sourceRuns
+    }
+
     override fun replan(ctx: RequestContext, runId: UUID, cmd: ReplanCommand, access: RunAccess): RunRevisionRecord {
         validateInput(cmd)
         // Vorlauf ohne Sperre: beteiligte Umläufe auflösen und die Dienstberechtigung je Fahrzeug prüfen, bevor etwas gesperrt oder geschrieben wird (nicht berechtigt = 404)
-        val sourceRuns = LinkedHashMap<UUID, UUID>()   // Quell-Umlauf -> Fahrzeug
-        val vehicles = ctxTx.run(ctx, readOnly = true) { j ->
-            val target = run(j, runId, false)
-            cmd.changes.forEachIndexed { i, c ->
-                if (c.kind != StopChangeKind.INSERT) return@forEachIndexed
-                val src = j.query("SELECT r.id, r.vehicle_id FROM taktovia.route_stop s JOIN taktovia.vehicle_run r ON r.tenant_id = s.tenant_id AND r.id = s.run_id WHERE s.id = ?",
-                    { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, c.routeStopId).firstOrNull()
-                    ?: throw ProblemException.invalid(Violation("/changes/$i/route_stop_id", ViolationCode.INVALID_VALUE))
-                if (src.first == runId) throw ProblemException.invalid(Violation("/changes/$i/route_stop_id", ViolationCode.INVALID_VALUE, "Der Stopp gehört zum Ziel-Umlauf; Einfügen übernimmt Stopps anderer Umläufe."))
-                sourceRuns[src.first] = src.second
-            }
-            listOf(target.vehicleId) + sourceRuns.values
-        }
-        vehicles.distinct().forEach { access.check(ctx, it) }
+        val (target, sourceRuns) = ctxTx.run(ctx, readOnly = true) { j -> sourcesOf(j, runId, cmd) }
+        (listOf(target.vehicleId) + sourceRuns.values).distinct().forEach { access.check(ctx, it) }
         return ctxTx.run(ctx) { j -> commit(j, ctx, runId, sourceRuns.keys.toList(), cmd) }
+    }
+
+    /**
+     * Wie [replan], aber **in der laufenden Mandantentransaktion** [j] des Aufrufers (Störungsablauf WP-M3-54: Umbuchung und Entscheidung der Leitstelle gelten gemeinsam oder gar nicht). Die Dienstberechtigung
+     * hat der Aufrufer (Incident im Dienstscope) bereits geprüft.
+     */
+    internal fun replanIn(j: JdbcOperations, ctx: RequestContext, runId: UUID, cmd: ReplanCommand): RunRevisionRecord {
+        validateInput(cmd)
+        val (_, sourceRuns) = sourcesOf(j, runId, cmd)
+        return commit(j, ctx, runId, sourceRuns.keys.toList(), cmd)
     }
 
     private fun commit(j: JdbcOperations, ctx: RequestContext, runId: UUID, sourceIds: List<UUID>, cmd: ReplanCommand): RunRevisionRecord {
@@ -271,6 +284,56 @@ internal class JdbcPlanCommit(
                 }
             }
         }
+    }
+
+    // ---- Ersatzvorschläge (Störungsablauf WP-M3-54) ------------------------------------------------------------------------------------
+
+    /** Ergebnis der Probe einer Übernahme: Zeiten der Buchung im Zielplan, verletzte Zusagefenster und die Änderungen, die den Befehl bilden. */
+    internal class Transfer(val targetRunId: UUID, val targetRevision: Long, val changes: List<StopChange>, val pickupAt: Instant, val dropoffAt: Instant, val violations: List<WindowViolationCode>)
+
+    /**
+     * Bildet die Änderungen, die die Buchung [bookingId] aus dem Plan des Quell-Umlaufs in den Zielplan [target] übernehmen (Einstieg und Ausstieg an der nach der Planzeit passenden Position). `null`, wenn die
+     * Buchung im Quellplan nicht mit Einstieg und Ausstieg steht.
+     */
+    internal fun transferChanges(sourceStops: List<PlanStop>, sourceStopIds: Map<Int, UUID>, targetStops: List<PlanStop>, bookingId: UUID): Triple<List<StopChange>, Instant, Instant>? {
+        val board = sourceStops.firstOrNull { s -> s.boardings.any { it.bookingId == bookingId } } ?: return null
+        val alight = sourceStops.firstOrNull { s -> s.alightings.any { it.bookingId == bookingId } } ?: return null
+        val pre = targetStops.count { !it.plannedAt.isAfter(board.plannedAt) }
+        val upToDropoff = targetStops.count { !it.plannedAt.isAfter(alight.plannedAt) }
+        val pos1 = pre + 1
+        val pos2 = maxOf(upToDropoff + 2, pos1 + 1)
+        return Triple(listOf(StopChange(StopChangeKind.INSERT, sourceStopIds.getValue(board.seq), pos1, bookingId), StopChange(StopChangeKind.INSERT, sourceStopIds.getValue(alight.seq), pos2, bookingId)),
+            board.plannedAt, alight.plannedAt)
+    }
+
+    /**
+     * Probe der Übernahme der Buchung [bookingId] vom Quell- in den Ziel-Umlauf, rein lesend und ohne Sperre, mit denselben Prüfungen wie der Commit (Routeninvarianten, Kapazität je Dimension, Einsetzbarkeit des
+     * Zielfahrzeugs inklusive Ressourcenvektor, geschützter Stopphorizont, Höchstzahl der Umbuchungen); verletzte Zusagefenster werden gemeldet, nicht abgewiesen. Mit [ctx] gelten die wirksamen Konfigurationswerte,
+     * ohne (Systemsuche) die Planungsdefaults; der Commit prüft ohnehin erneut mit den Werten zum Commit. Wirft [ProblemException], wenn die Übernahme unzulässig ist.
+     */
+    internal fun simulateTransfer(j: JdbcOperations, ctx: RequestContext?, targetRunId: UUID, sourceRunId: UUID, bookingId: UUID): Transfer {
+        val target = run(j, targetRunId, false); val source = run(j, sourceRunId, false)
+        if (target.state !in RunState.PLAN_CHANGEABLE || source.state !in RunState.PLAN_CHANGEABLE) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Im Zustand des Umlaufs ist keine Planänderung möglich.")
+        val oldTarget = stops(j, targetRunId, target.revision); val oldSource = stops(j, sourceRunId, source.revision)
+        val (changes, pickupAt, dropoffAt) = transferChanges(oldSource.map { it.stop }, oldSource.associate { it.stop.seq to it.routeStopId }, oldTarget.map { it.stop }, bookingId)
+            ?: throw ProblemException.invalid(Violation("/booking_id", ViolationCode.INVALID_VALUE, "Die Buchung steht nicht mit Einstieg und Ausstieg im Plan des Quellumlaufs."))
+        val outcome = ManualPlanEditor.apply(oldTarget.map { EditStop(it.routeStopId, it.stop) }, mapOf(sourceRunId to oldSource.map { EditStop(it.routeStopId, it.stop) }), changes)
+        checkInvariants(j, target.vehicleId, outcome.target)
+        checkInvariants(j, source.vehicleId, outcome.sources.getValue(sourceRunId))
+        checkTargetUsable(j, target, outcome.target, setOf(bookingId))
+        val now = clock.instant()
+        val booking = bookings(j, setOf(bookingId))
+        val params = if (ctx != null) parameters(j, ctx, booking[bookingId]?.serviceId, now) else Params(PlanCommit.DEFAULT_PROTECTED_STOP_HORIZON_MIN, PlanCommit.DEFAULT_MAX_REASSIGNMENTS)
+        val horizonEnd = now.plusSeconds(params.horizonMin * 60L)
+        if (!protectedPrefixIntact(oldTarget.map { it.stop }, outcome.target, horizonEnd) || !protectedPrefixIntact(oldSource.map { it.stop }, outcome.sources.getValue(sourceRunId), horizonEnd))
+            throw ProblemException(ErrorCode.PROTECTED_STOP_HORIZON, "Ein Stopp innerhalb der nächsten ${params.horizonMin} Minuten würde geändert.")
+        val done = j.queryForObject("SELECT count(*) FROM taktovia.booking_change WHERE booking_id = ? AND to_run_id IS NOT NULL", Long::class.javaObjectType, bookingId)!!
+        if (done + 1 > params.maxReassignments) throw ProblemException(ErrorCode.MAX_REASSIGNMENTS_EXCEEDED, "Die Buchung wurde bereits $done-mal umgebucht (Höchstzahl ${params.maxReassignments}).")
+        val newTarget = outcome.target
+        val boardAt = newTarget.first { s -> s.boardings.any { it.bookingId == bookingId } }.plannedAt
+        val alightAt = newTarget.first { s -> s.alightings.any { it.bookingId == bookingId } }.plannedAt
+        val violations = windowViolations(booking, newTarget).filter { it.first == bookingId }.map { it.second }.distinct()
+        return Transfer(targetRunId, target.revision, changes, boardAt, alightAt, violations)
     }
 
     // ---- Revisionen lesen ------------------------------------------------------------------------------------------------------------

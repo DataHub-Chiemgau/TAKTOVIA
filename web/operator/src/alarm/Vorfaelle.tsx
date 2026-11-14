@@ -1,4 +1,4 @@
-import { ApiError, useApi, useSession } from '@taktovia/api-client';
+import { ApiError, hasRight, useApi, useSession } from '@taktovia/api-client';
 import type { Incident, WorkflowLogEntry } from '@taktovia/api-client';
 import { DataTable, ResourceView, ScreenFrame, StatusBadge } from '@taktovia/design-system';
 import type { ResourceState, StatusTone } from '@taktovia/design-system';
@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
 import type { LiveMessage } from '../live/LiveChannel';
+import { Stoerungsansicht } from './Stoerungsansicht';
 
 const KIND: Readonly<Record<string, string>> = {
   VEHICLE_OUTAGE: 'Fahrzeugausfall',
@@ -98,9 +99,10 @@ export function Vorfaelle() {
   }, [api, asOf]);
 
   const show = useCallback(
-    (id: string) => {
+    (id: string, refresh = false) => {
       setOpenId(id);
-      setDetail({ status: 'loading' });
+      // beim Neuabruf bleibt die Ansicht stehen (Meldungen der Aktionen gehen nicht verloren), nur ein Wechsel des Vorfalls zeigt den Ladezustand
+      if (!refresh) setDetail({ status: 'loading' });
       api
         .call('getOperatorIncident', { path: { incident_id: id } })
         .then((i) => setDetail({ status: 'ready', data: i }))
@@ -121,7 +123,7 @@ export function Vorfaelle() {
     onMessage: (m: LiveMessage) => {
       if (m.topic === 'incident') {
         load();
-        if (openId) show(openId);
+        if (openId) show(openId, true);
       }
     },
     onResync: load,
@@ -192,6 +194,18 @@ export function Vorfaelle() {
       </ResourceView>
       {rows.status === 'ready' && asOf ? (
         <p>Datenstand der Liste: {new Date(asOf).toLocaleTimeString('de-DE')}</p>
+      ) : null}
+      {detail?.status === 'ready' && detail.data.outage ? (
+        <Stoerungsansicht
+          incidentId={detail.data.id}
+          outage={detail.data.outage}
+          mayDecide={hasRight(session.me, 'incidents.decide')}
+          schadenakten={detail.data.defect_ids}
+          onChanged={() => {
+            load();
+            if (openId) show(openId, true);
+          }}
+        />
       ) : null}
       {detail ? (
         <section aria-label="Zeitleiste des Vorfalls">

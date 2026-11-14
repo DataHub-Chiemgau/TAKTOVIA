@@ -33,6 +33,9 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `vehicle.service_status_changed` | `staff-time` | `vehicle_service_status` / n | Dienststatuswechsel | `booking-dispatch` (nicht neu disponieren), Leitstelle | `fahrzeug_dienststatus` |
 | `incident.opened` | `fleet-safety` | `incident` / 1 | Workflowregel (Fahrzeugausfall) | Leitstelle, `booking-dispatch` (Ersatzsuche) | `incident` |
 | `incident.replacement_search_started` | `fleet-safety` | `incident` / n | Ersatzfahrzeugsuche je Incident genau einmal gestartet (WP-M3-53) | Leitstelle, `booking-dispatch` (WP-M3-54) | `incident` |
+| `incident.closed` | `fleet-safety` | `incident` / n | Störungsfall abgearbeitet (WP-M3-54): `RESOLVED` oder `CLOSED_NO_REPLACEMENT` | Leitstelle | `incident` |
+| `outage.booking_rebooked` | `booking-dispatch` | `outage_booking` / n | Umbuchung einer vom Fahrzeugausfall betroffenen Buchung (WP-M3-54) | Leitstelle, Analytik | `stoerungsfall` |
+| `outage.passenger_notice_requested` | `booking-dispatch` | `outage_booking` / n | Fahrgastmitteilung zur Umbuchung angefordert, genau eine je Änderung (WP-M3-54, Vorlage OP-27 offen) | Benachrichtigung | `stoerungsfall` |
 | `alert.raised` | `fleet-safety` | `business_alert` / 1 | Alarmregel (WP-M3-52), technische Betriebsalarme (WP-M5-04) | Leitstelle, Betreiberkanal | – |
 | `alert.acknowledged` | `fleet-safety` | `business_alert` / n | Quittierung (WP-M3-52) | Leitstelle (Live-Kanal) | `alarm` |
 | `alert.escalated` | `fleet-safety` | `business_alert` / n | Eskalation nach `alert_escalation_delay_min` (WP-M3-52) | Leitstelle (Live-Kanal) | `alarm` |
