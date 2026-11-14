@@ -182,6 +182,7 @@ const metrics = (values: MetricValue[]): AnalyticsMetrics => ({
   definitions: [],
   values,
   rejections: null,
+  funnel: null,
 });
 
 const KM: KmMetrics = {

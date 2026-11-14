@@ -49,7 +49,6 @@ import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
 import { NetzAnbieter, NetzBanner } from './network/NetzAnbieter';
-import { NetzAnbieter, NetzBanner } from './network/NetzAnbieter';
 import { PlaceholderScreen, RequireRight } from './Screen';
 import { useScreenContext } from './ScreenContext';
 
@@ -158,292 +157,292 @@ export function App() {
   const nav = visibleNav(OPERATOR_NAV, rightsOf(session.me));
   return (
     <NetzAnbieter>
-    <AppFrame
-      brand="TAKTOVIA Operator"
-      nav={nav}
-      currentHref={location.pathname}
-      linkAs={RouterLink}
-      headerEnd={<HeaderEnd />}
-    >
-      <Fragment key={session.me.tenant_id}>
-        <NetzBanner />
-        <Routes>
-          <Route path="/" element={<Start />} />
-          <Route path="/konto" element={<Konto />} />
-          <Route
-            path="/callcenter"
-            element={
-              <RequireRight right="callcenter">
-                <PlaceholderScreen
-                  title="Callcenter"
-                  emptyTitle="Noch keine Inhalte"
-                  hint="Das Callcenter (UI-06) folgt in M2."
-                />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/finanzen"
-            element={
-              <RequireRight right="finance">
-                <PlaceholderScreen
-                  title="Finanzen"
-                  emptyTitle="Noch keine Inhalte"
-                  hint="Belege prüfen und freigeben (UI-14) finden Sie unter „Belege“; Clearing (UI-16) folgt in M6."
-                />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/finanzen/belege"
-            element={
-              <RequireRight right="finance">
-                <Belegpruefung />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/finanzen/fahrzeugkosten"
-            element={
-              <RequireRight right="finance">
-                <Fahrzeugkosten />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/finanzen/kostenuebersicht"
-            element={
-              <RequireRight right="finance">
-                <Kostenuebersicht />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/personal"
-            element={
-              <RequireRight right="staff">
-                <PlaceholderScreen
-                  title="Personal"
-                  emptyTitle="Noch keine Inhalte"
-                  hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
-                />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte"
-            element={
-              <RequireRight right="fleet">
-                <Fahrzeugstamm />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/leitstelle/fahrzeuge"
-            element={
-              <RequireRight right="livebetrieb">
-                <VehicleList />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/leitstelle/auftraege"
-            element={
-              <RequireRight right="livebetrieb">
-                <BookingList />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/leitstelle/hinweise"
-            element={
-              <RequireRight right="livebetrieb">
-                <OverdueFlags />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/leitstelle/stoerungen"
-            element={
-              <RequireRight right="alerts">
-                <Arbeitsliste />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/leitstelle/vorfaelle"
-            element={
-              <RequireRight right="alerts">
-                <Vorfaelle />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/schaeden"
-            element={
-              <RequireRight right="defects">
-                <Schadenakte />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/fahrzeugwechsel"
-            element={
-              <RequireRight right="shifts.write">
-                <FahrzeugWechsel />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/pruefungen"
-            element={
-              <RequireRight right="inspections">
-                <InspectionHistory />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/fahrer"
-            element={
-              <RequireRight right="drivers">
-                <Fahrerstamm />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/schichten"
-            element={
-              <RequireRight right="shifts">
-                <Schichtzuweisung />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/flotte/checklisten"
-            element={
-              <RequireRight right="checklists">
-                <Checklistenvorlagen />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/zeit"
-            element={
-              <RequireRight right="time.own">
-                <EigeneZeit />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/personal/dienstplan"
-            element={
-              <RequireRight right="roster">
-                <Dienstplan />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/personal/fahrerfreigabe"
-            element={
-              <RequireRight right="staff">
-                <Fahrerfreigabe />
-              </RequireRight>
-            }
-          />
-          <Route path="/admin" element={<AdminIndex />} />
-          <Route
-            path="/admin/gebiete"
-            element={
-              <RequireRight right="admin.ui17">
-                <ConfigRevisions />
-                <p>
-                  <Link to="/admin/struktur">Zur Organisationsstruktur (Regionen, Dienste)</Link>
-                  {' · '}
-                  <Link to="/admin/geodaten">Zu Gebieten, Haltepunkten und Betriebszeiten</Link>
-                  {' · '}
-                  <Link to="/admin/tarife">Zu den Tarifen</Link>
-                  {' · '}
-                  <Link to="/admin/konfiguration">Zur wirksamen Konfiguration</Link>
-                </p>
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/geodaten"
-            element={
-              <RequireRight right="admin.ui17">
-                <Geodaten />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/tarife"
-            element={
-              <RequireRight right="admin.ui17">
-                <Tarife />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/konfiguration"
-            element={
-              <RequireRight right="admin.ui17">
-                <ConfigEditor />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/dienstkonfiguration"
-            element={
-              <RequireRight right="admin.ui17">
-                <DienstKonfiguration />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/struktur"
-            element={
-              <RequireRight right="admin.ui17">
-                <Organisationsstruktur />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/unternehmensprofil"
-            element={
-              <RequireRight right="admin.ui18">
-                <CompanyProfileForm />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/organisationen"
-            element={
-              <RequireRight right="admin.ui18">
-                <OrganizationAdmin />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/kooperation"
-            element={
-              <RequireRight right="admin.ui18">
-                <MembershipAdmin />
-              </RequireRight>
-            }
-          />
-          <Route
-            path="/admin/datenschutz"
-            element={
-              <RequireRight right="admin.ui20">
-                <DatenschutzScreen />
-              </RequireRight>
-            }
-          />
-          <Route path="*" element={<StateView kind="notFound" level={1} />} />
-        </Routes>
-      </Fragment>
-    </AppFrame>
+      <AppFrame
+        brand="TAKTOVIA Operator"
+        nav={nav}
+        currentHref={location.pathname}
+        linkAs={RouterLink}
+        headerEnd={<HeaderEnd />}
+      >
+        <Fragment key={session.me.tenant_id}>
+          <NetzBanner />
+          <Routes>
+            <Route path="/" element={<Start />} />
+            <Route path="/konto" element={<Konto />} />
+            <Route
+              path="/callcenter"
+              element={
+                <RequireRight right="callcenter">
+                  <PlaceholderScreen
+                    title="Callcenter"
+                    emptyTitle="Noch keine Inhalte"
+                    hint="Das Callcenter (UI-06) folgt in M2."
+                  />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/finanzen"
+              element={
+                <RequireRight right="finance">
+                  <PlaceholderScreen
+                    title="Finanzen"
+                    emptyTitle="Noch keine Inhalte"
+                    hint="Belege prüfen und freigeben (UI-14) finden Sie unter „Belege“; Clearing (UI-16) folgt in M6."
+                  />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/finanzen/belege"
+              element={
+                <RequireRight right="finance">
+                  <Belegpruefung />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/finanzen/fahrzeugkosten"
+              element={
+                <RequireRight right="finance">
+                  <Fahrzeugkosten />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/finanzen/kostenuebersicht"
+              element={
+                <RequireRight right="finance">
+                  <Kostenuebersicht />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/personal"
+              element={
+                <RequireRight right="staff">
+                  <PlaceholderScreen
+                    title="Personal"
+                    emptyTitle="Noch keine Inhalte"
+                    hint="Dienstplan und Zeiten (UI-12, UI-13) folgen in M4."
+                  />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte"
+              element={
+                <RequireRight right="fleet">
+                  <Fahrzeugstamm />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/leitstelle/fahrzeuge"
+              element={
+                <RequireRight right="livebetrieb">
+                  <VehicleList />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/leitstelle/auftraege"
+              element={
+                <RequireRight right="livebetrieb">
+                  <BookingList />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/leitstelle/hinweise"
+              element={
+                <RequireRight right="livebetrieb">
+                  <OverdueFlags />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/leitstelle/stoerungen"
+              element={
+                <RequireRight right="alerts">
+                  <Arbeitsliste />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/leitstelle/vorfaelle"
+              element={
+                <RequireRight right="alerts">
+                  <Vorfaelle />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/schaeden"
+              element={
+                <RequireRight right="defects">
+                  <Schadenakte />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/fahrzeugwechsel"
+              element={
+                <RequireRight right="shifts.write">
+                  <FahrzeugWechsel />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/pruefungen"
+              element={
+                <RequireRight right="inspections">
+                  <InspectionHistory />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/fahrer"
+              element={
+                <RequireRight right="drivers">
+                  <Fahrerstamm />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/schichten"
+              element={
+                <RequireRight right="shifts">
+                  <Schichtzuweisung />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/flotte/checklisten"
+              element={
+                <RequireRight right="checklists">
+                  <Checklistenvorlagen />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/zeit"
+              element={
+                <RequireRight right="time.own">
+                  <EigeneZeit />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/personal/dienstplan"
+              element={
+                <RequireRight right="roster">
+                  <Dienstplan />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/personal/fahrerfreigabe"
+              element={
+                <RequireRight right="staff">
+                  <Fahrerfreigabe />
+                </RequireRight>
+              }
+            />
+            <Route path="/admin" element={<AdminIndex />} />
+            <Route
+              path="/admin/gebiete"
+              element={
+                <RequireRight right="admin.ui17">
+                  <ConfigRevisions />
+                  <p>
+                    <Link to="/admin/struktur">Zur Organisationsstruktur (Regionen, Dienste)</Link>
+                    {' · '}
+                    <Link to="/admin/geodaten">Zu Gebieten, Haltepunkten und Betriebszeiten</Link>
+                    {' · '}
+                    <Link to="/admin/tarife">Zu den Tarifen</Link>
+                    {' · '}
+                    <Link to="/admin/konfiguration">Zur wirksamen Konfiguration</Link>
+                  </p>
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/geodaten"
+              element={
+                <RequireRight right="admin.ui17">
+                  <Geodaten />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/tarife"
+              element={
+                <RequireRight right="admin.ui17">
+                  <Tarife />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/konfiguration"
+              element={
+                <RequireRight right="admin.ui17">
+                  <ConfigEditor />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/dienstkonfiguration"
+              element={
+                <RequireRight right="admin.ui17">
+                  <DienstKonfiguration />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/struktur"
+              element={
+                <RequireRight right="admin.ui17">
+                  <Organisationsstruktur />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/unternehmensprofil"
+              element={
+                <RequireRight right="admin.ui18">
+                  <CompanyProfileForm />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/organisationen"
+              element={
+                <RequireRight right="admin.ui18">
+                  <OrganizationAdmin />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/kooperation"
+              element={
+                <RequireRight right="admin.ui18">
+                  <MembershipAdmin />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/admin/datenschutz"
+              element={
+                <RequireRight right="admin.ui20">
+                  <DatenschutzScreen />
+                </RequireRight>
+              }
+            />
+            <Route path="*" element={<StateView kind="notFound" level={1} />} />
+          </Routes>
+        </Fragment>
+      </AppFrame>
     </NetzAnbieter>
   );
 }

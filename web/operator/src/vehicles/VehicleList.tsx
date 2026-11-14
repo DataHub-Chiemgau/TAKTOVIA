@@ -301,7 +301,15 @@ function BlockPanel({ v, onChanged }: { v: OperatorVehicle; onChanged: () => voi
   );
 }
 
-function Detail({ v, liveMessage, onChanged }: { v: OperatorVehicle; liveMessage: LiveMessage | undefined; onChanged: () => void }) {
+function Detail({
+  v,
+  liveMessage,
+  onChanged,
+}: {
+  v: OperatorVehicle;
+  liveMessage: LiveMessage | undefined;
+  onChanged: () => void;
+}) {
   const notes = notesOf(v);
   return (
     <aside aria-label={`Details zu ${v.vehicle_label}`}>
@@ -595,7 +603,9 @@ export function VehicleList() {
                 </>
               ) : null}
             </section>
-            {detail ? <Detail v={detail} liveMessage={liveMessage} onChanged={() => load(filter)} /> : null}
+            {detail ? (
+              <Detail v={detail} liveMessage={liveMessage} onChanged={() => load(filter)} />
+            ) : null}
           </>
         )}
       </ResourceView>

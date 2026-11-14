@@ -44,6 +44,8 @@ const vehicle: OperatorVehicle = {
   position_age_seconds: 4,
   position_stale: false,
   open_defect_count: 0,
+  inspection_status: 'PENDING',
+  inspection_status_revision: 1,
   current_run_id: null,
   revision: 1,
   service_ids: [SERVICE],

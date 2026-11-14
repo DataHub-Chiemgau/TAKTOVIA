@@ -252,6 +252,26 @@ describe('UI-07 Livebetrieb Fahrzeuge (WP-M3-36, LH-6.7-OPS-001)', () => {
     let current = vehicle(1, { revision: 7 });
     const { calls } = setup((id) => {
       if (id === 'listOperatorVehicles') return page([current]);
+      if (id === 'getOperatorVehicle')
+        return {
+          ...current,
+          plan: {
+            vehicle_id: '00000000-0000-4000-8000-000000000001',
+            run_id: null,
+            run_state: null,
+            plan_revision: 0,
+            as_of: '2026-12-01T08:00:00Z',
+            stops: [],
+            capacity: null,
+            occupancy: { seats: 0, wheelchair: 0 },
+            review_required: [],
+            forecast_source: 'PLAN_TIME',
+            forecast_data_stand: null,
+            forecast_fallback_reason: null,
+            forecast_model_version: null,
+            forecast_config_version: null,
+          },
+        };
       if (id === 'createVehicleBlock') {
         current = vehicle(1, {
           revision: 8,
