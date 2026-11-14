@@ -25,7 +25,7 @@ VERTRAEGE = ROOT / 'docs/umsetzungsplan/vertraege'
 EVENTS = ROOT / 'api/events'
 M3_FILES = {'inspection_run.md': 1, 'defect_case.md': 1, 'fahrzeug_dienststatus.md': 1, 'fahrzeug_sperre.md': 1, 'einsatzfreigabe.md': 1,
             'reparaturauftrag.md': 1, 'incident.md': 1}
-M3_EVENTS = ['fleet.vehicle_blocked', 'fleet.vehicle_block_lifted', 'fleet.release_issued', 'fleet.release_revoked', 'inspection.completed', 'defect.reported',
+M3_EVENTS = ['fleet.vehicle_blocked', 'fleet.vehicle_block_lifted', 'fleet.release_issued', 'fleet.release_revoked', 'fleet.vehicle_switched', 'inspection.completed', 'defect.reported',
              'defect.triaged', 'repair.order_created', 'driver.event_recorded', 'driver.run_acknowledged', 'vehicle.service_status_changed', 'incident.opened', 'alert.raised']
 FORBIDDEN_PAYLOAD_FIELDS = re.compile(r'(?i)(description|diagnos|note|text|name|email|phone|contact|address|photo|image|latitude|longitude|position|passenger|comment)')
 

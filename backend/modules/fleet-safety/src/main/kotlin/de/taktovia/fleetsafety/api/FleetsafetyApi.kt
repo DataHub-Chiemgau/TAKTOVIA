@@ -62,12 +62,15 @@ interface FleetsafetyApi {
     /** Lesesicht der Incidents mit Verknüpfungen und Ablaufprotokoll (WP-M3-53/-55). */
     val incidents: Incidents
 
+    /** Fahrzeugwechsel in laufender Schicht: Ersatzfahrzeug bleibt bis zur eigenen Prüfung gesperrt (WP-M3-22). */
+    val vehicleSwitches: VehicleSwitches
+
     companion object {
         /** [driverRelation]: Bezug eines Fahrers zum Fahrzeug für die Schadenmeldung; Standard = Schicht in `staff_shift` (nur lesend). */
         fun create(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore = InMemoryObjectStore(), clock: Clock = Clock.systemUTC(), driverRelation: DriverVehicleRelation? = null,
             evidence: DefectEvidenceWiring? = null, releasePolicy: ReleasePolicy = ReleasePolicy(), alertSettings: AlertSettings = AlertSettings(), defectSettings: DefectSettings = DefectSettings(),
-            replacementSearch: ReplacementSearchPort = ReplacementSearchPort.UNAVAILABLE,
-        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings, defectSettings, replacementSearch)
+            replacementSearch: ReplacementSearchPort = ReplacementSearchPort.UNAVAILABLE, shiftVehicles: ShiftVehiclePort? = null,
+        ): FleetsafetyApi = FleetServicesFactory.create(ctxTx, audit, outbox, store, clock, driverRelation, evidence, releasePolicy, alertSettings, defectSettings, replacementSearch, shiftVehicles)
     }
 }
 

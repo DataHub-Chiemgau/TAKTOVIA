@@ -2128,6 +2128,32 @@ export interface DriverClearancePage {
   as_of: string;
 }
 
+export interface ShiftVehicleSwitchCreate {
+  from_vehicle_id: UUID;
+  new_vehicle_id: UUID;
+  reason_code: ShiftVehicleSwitchReason;
+  note?: string;
+}
+
+export type ShiftVehicleSwitchReason = 'DEFECT' | 'BREAKDOWN' | 'SERVICE_NEED' | 'CAPACITY' | 'OTHER';
+
+export interface ShiftVehicleSwitch {
+  id: UUID;
+  shift_id: UUID;
+  from_vehicle_id: UUID;
+  to_vehicle_id: UUID;
+  reason_code: ShiftVehicleSwitchReason;
+  note?: string | null;
+  actor_role: 'DRIVER' | 'DISPATCH';
+  revoked_releases: number;
+  inspection_required: boolean;
+  created_at: string;
+}
+
+export interface ShiftVehicleSwitchList {
+  items: ShiftVehicleSwitch[];
+}
+
 export interface CommittedRide {
   booking_id: UUID;
   state: string;
@@ -5453,6 +5479,20 @@ export interface Operations {
     body: undefined;
     response: DefectAsOf;
   };
+  listShiftVehicleSwitches: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string };
+    body: undefined;
+    response: ShiftVehicleSwitchList;
+  };
+  createShiftVehicleSwitch: {
+    path: { shift_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: ShiftVehicleSwitchCreate;
+    response: ShiftVehicleSwitch;
+  };
   listServiceAreas: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string; service_id?: UUID; at?: Timestamp };
@@ -6451,6 +6491,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   amendDefect: { method: 'POST', path: '/v1/defects/{defect_id}/amendments', pathParams: ['defect_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['defects:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   listDefectHistory: { method: 'GET', path: '/v1/defects/{defect_id}/history', pathParams: ['defect_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getDefectAsOf: { method: 'GET', path: '/v1/defects/{defect_id}/as-of', pathParams: ['defect_id'], query: ['at'], headers: ['traceparent'], hasBody: false, scopes: ['defects:history'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  listShiftVehicleSwitches: { method: 'GET', path: '/v1/shifts/{shift_id}/vehicle-switches', pathParams: ['shift_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:switch'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  createShiftVehicleSwitch: { method: 'POST', path: '/v1/shifts/{shift_id}/vehicle-switches', pathParams: ['shift_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:switch'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   listServiceAreas: { method: 'GET', path: '/v1/service-areas', pathParams: [], query: ['limit', 'cursor', 'service_id', 'at'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createServiceArea: { method: 'POST', path: '/v1/service-areas', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['geo:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   getServiceArea: { method: 'GET', path: '/v1/service-areas/{area_id}', pathParams: ['area_id'], query: ['revision'], headers: ['traceparent'], hasBody: false, scopes: ['geo:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

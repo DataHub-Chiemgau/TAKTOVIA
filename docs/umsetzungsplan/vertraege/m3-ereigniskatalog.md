@@ -10,6 +10,7 @@ Outbox-Ereignisse der Module `fleet-safety` und `staff-time` (und die M3-Verbrau
 | `fleet.vehicle_block_lifted` | `fleet-safety` | `vehicle_block` / 2 | Sperre aufgehoben | `booking-dispatch`, Leitstelle | `fahrzeug_sperre` |
 | `fleet.release_issued` | `fleet-safety` | `resource_release` / 1 | Einsatzfreigabe nach Prüfabschluss | `staff-time` (Dienststatus, Auftragsauslieferung), Leitstelle | `einsatzfreigabe` |
 | `fleet.release_revoked` | `fleet-safety` | `resource_release` / 2 | Widerruf | `staff-time`, `booking-dispatch`, Leitstelle | `einsatzfreigabe` |
+| `fleet.vehicle_switched` | `fleet-safety` | `shift_vehicle_switch` / 1 | Fahrzeugwechsel in laufender Schicht (WP-M3-22); die Freigaben der Schicht sind widerrufen, das Ersatzfahrzeug wartet auf seine Prüfung; ohne Freitext | `booking-dispatch` (Umplanung, WP-M3-40/-54), `staff-time`, Leitstelle | `einsatzfreigabe` |
 | `inspection.completed` | `fleet-safety` | `inspection_run` / n | `submitInspection` bestätigt | Leitstelle (Prüfstatus), Schadenakte (Mangel zu Schaden) | `inspection_run` |
 | `inspection.template_unavailable` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Prüflauf-Start ohne eindeutig freigegebene Vorlage (WP-M3-13) | Leitstelle | – |
 | `inspection.release_withheld` | `fleet-safety` | Hinweis (je Ereignis neue Aggregat-ID) / 1 | Prüfabschluss ohne gültige Qualifikation, keine Einsatzfreigabe (WP-M3-19, nur Kennungen und Code, ohne HR-Inhalte) | Leitstelle | – |

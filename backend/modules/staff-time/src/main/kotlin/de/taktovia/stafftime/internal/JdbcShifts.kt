@@ -16,6 +16,7 @@ import de.taktovia.platform.problem.ViolationCode
 import de.taktovia.stafftime.api.ShiftInput
 import de.taktovia.stafftime.api.ShiftOverlapException
 import de.taktovia.stafftime.api.ShiftState
+import de.taktovia.stafftime.api.ShiftVehicleChange
 import de.taktovia.stafftime.api.ShiftView
 import de.taktovia.stafftime.api.Shifts
 import org.springframework.dao.DataAccessException
@@ -60,6 +61,26 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
     override fun update(ctx: RequestContext, shiftId: UUID, expectedRevision: Long, input: ShiftInput): ShiftView {
         guard(ctx, SCOPE_WRITE)
         return ctxTx.run(ctx) { j -> doUpdate(j, ctx, shiftId, expectedRevision, input) }
+    }
+
+    override fun changeVehicle(jdbc: JdbcOperations, ctx: RequestContext, shiftId: UUID, newVehicleId: UUID): ShiftVehicleChange = doChangeVehicle(jdbc, ctx, shiftId, newVehicleId)
+
+    @AuditRequired
+    private fun doChangeVehicle(j: JdbcOperations, ctx: RequestContext, shiftId: UUID, newVehicleId: UUID): ShiftVehicleChange {
+        val before = j.query("SELECT $COLUMNS FROM taktovia.staff_shift s WHERE s.id = ? FOR UPDATE", MAPPER, shiftId).firstOrNull() ?: throw ProblemException.notFound()
+        if (before.state !in CHANGEABLE || !Instant.now().isBefore(before.endsAt)) throw ProblemException(ErrorCode.INVALID_STATE_TRANSITION, "Die Schicht ist beendet, entzogen oder abgelaufen; das Fahrzeug ist nicht mehr wechselbar.")
+        val active = j.query("SELECT active FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getBoolean(1) }, newVehicleId).firstOrNull() ?: throw ProblemException.notFound()
+        if (!active) throw ProblemException.invalid(Violation("/vehicle_id", ViolationCode.INVALID_VALUE))
+        if (newVehicleId == before.vehicleId) throw ProblemException(ErrorCode.CONFLICT, "Die Schicht fährt bereits dieses Fahrzeug.")
+        j.queryForObject("SELECT taktovia.staff_shift_lock(taktovia.current_tenant(), ?, ?)::text", String::class.java, before.driverId, newVehicleId)
+        val clash = j.query("SELECT cause, shift_id FROM taktovia.staff_shift_clash(taktovia.current_tenant(), ?, ?, ?, ?, ?)", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) },
+            shiftId, before.driverId, newVehicleId, Timestamp.from(before.startsAt), Timestamp.from(before.endsAt)).firstOrNull { it.first == "VEHICLE" }
+        if (clash != null) throw conflict(clash.first, clash.second)
+        val view = try {
+            j.query("UPDATE taktovia.staff_shift AS s SET vehicle_id = ? WHERE s.id = ? RETURNING $COLUMNS", MAPPER, newVehicleId, shiftId).single()
+        } catch (e: DataAccessException) { throw translate(e) }
+        audit.record(j, entry(ctx, AuditActions.SHIFT_CHANGED, view, before))
+        return ShiftVehicleChange(view, before.vehicleId)
     }
 
     @AuditRequired
@@ -182,6 +203,8 @@ internal class JdbcShifts(private val ctxTx: ContextTransactions, private val au
     companion object {
         const val SCOPE_WRITE = "shifts:write"
         const val SCOPE_READ = "shifts:read"
+        /** Zustände, in denen das Fahrzeug einer Schicht wechselbar ist (Fahrzeugwechsel WP-M3-22; `PUBLISHED` ist der Zustand des Dienstplans). */
+        private val CHANGEABLE = setOf("PLANNED", "PUBLISHED", "STARTED")
         const val COLUMNS = "s.id, s.driver_ref, s.vehicle_id, s.starts_at, s.ends_at, s.timezone, s.state, s.revision, s.roster_revision, s.overlap_exception_by, s.overlap_exception_reason, " +
             "s.overlap_exception_at, s.started_at, s.ended_at"
         val MAPPER = RowMapper { rs, _ ->

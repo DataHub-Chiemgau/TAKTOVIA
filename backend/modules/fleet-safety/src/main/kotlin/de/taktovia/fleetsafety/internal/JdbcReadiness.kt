@@ -258,8 +258,8 @@ internal class JdbcReadiness(
         return list
     }
 
-    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at FROM taktovia.inspection_run WHERE id = ?",
-        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant()) }, id).firstOrNull()
+    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at, created_at FROM taktovia.inspection_run WHERE id = ?",
+        { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant(), rs.getTimestamp(7).toInstant()) }, id).firstOrNull()
 
     private fun blockers(j: JdbcOperations, vehicle: Vehicle, shift: Shift, inspection: Insp?, cmd: IssueRelease, now: Instant, lock: Boolean): Set<ReleaseBlocker> {
         val missing = linkedSetOf<ReleaseBlocker>()
@@ -277,8 +277,29 @@ internal class JdbcReadiness(
         val lastLift = j.query("SELECT max(lifted_at) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND source = 'SAFETY' AND status = 'LIFTED' AND release_decision_id IS NOT NULL",
             { rs, _ -> rs.getTimestamp(1)?.toInstant() }, cmd.vehicleId).firstOrNull()
         if (inspection?.completedAt != null && lastLift != null && inspection.completedAt.isBefore(lastLift)) missing += ReleaseBlocker.NO_INSPECTION
+        // Nach einem Fahrzeugwechsel der Schicht trägt nur ein Prüflauf, der **nach** dem jüngsten Wechsel angelegt wurde (WP-M3-22, CHK-015): die Prüfung des alten Fahrzeugs (und jede ältere des Ersatzfahrzeugs) gilt nicht
+        val lastSwitch = j.query("SELECT max(created_at) FROM taktovia.shift_vehicle_switch WHERE shift_id = ?", { rs, _ -> rs.getTimestamp(1)?.toInstant() }, cmd.shiftId).firstOrNull()
+        if (inspection != null && lastSwitch != null && inspection.createdAt.isBefore(lastSwitch)) missing += ReleaseBlocker.NO_INSPECTION
         if (blocks.any { it == "OPERATIONS" } || !vehicle.active) missing += ReleaseBlocker.OPERATIONAL_BLOCK
         return missing
+    }
+
+    /**
+     * Widerruft jede gültige Einsatzfreigabe der Schicht (Fahrzeugwechsel, WP-M3-22) in der laufenden Transaktion des Aufrufers, der die Fahrzeugzeilen bereits gesperrt hält. Ändert die `safety_revision`
+     * nicht (kein Sicherheitsereignis des Fahrzeugs); je Widerruf ein Audit und ein Ereignis.
+     */
+    @AuditRequired
+    fun revokeShiftReleasesIn(j: JdbcOperations, actor: ActorRef, correlationId: UUID, shiftId: UUID, reason: ReleaseRevokeReason): List<UUID> {
+        val now = Timestamp.from(clock.instant())
+        val revoked = j.query("UPDATE taktovia.resource_release SET revoked_at = ?, revoked_by = ?, revoke_reason = ? WHERE shift_id = ? AND revoked_at IS NULL AND valid_until > ? RETURNING id, vehicle_id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, now, actor.value, reason.name, shiftId, now)
+        for ((releaseId, vehicleId) in revoked) {
+            audit.record(j, AuditEntry(actor, AuditActions.RELEASE_REVOKED, ObjectRef("resource_release", releaseId), correlationId, linkedMapOf(
+                "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "reason_code" to reason.name)))
+            outbox.append(j, OutboxEvent(releaseId, 2, "fleet.release_revoked", linkedMapOf(
+                "release_id" to releaseId.toString(), "vehicle_id" to vehicleId.toString(), "shift_id" to shiftId.toString(), "reason_code" to reason.name), clock.instant(), correlationId = correlationId))
+        }
+        return revoked.map { it.first }
     }
 
     override fun revokeRelease(ctx: RequestContext, releaseId: UUID, reason: ReleaseRevokeReason): ResourceReleaseView {
@@ -401,7 +422,7 @@ internal class JdbcReadiness(
 
     private class Vehicle(val activeBlock: Boolean, val safetyRevision: Long, val active: Boolean)
     private class Shift(val vehicleId: UUID, val driverRef: UUID, val state: String, val endsAt: Instant)
-    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?, val completedAt: Instant?)
+    private class Insp(val vehicleId: UUID, val shiftId: UUID, val driverRef: UUID, val status: String, val outcome: String?, val completedAt: Instant?, val createdAt: Instant)
 
     /** Sperrreihenfolge: immer zuerst die Fahrzeugzeile. [exclusive] für Änderungen, sonst gemeinsam (Hold-Commit, Prüfung). */
     private fun lockVehicle(j: JdbcOperations, vehicleId: UUID, exclusive: Boolean, lock: Boolean = true): Vehicle? {
@@ -425,16 +446,16 @@ internal class JdbcReadiness(
      * Schichten mit einer Fahrerkennung ohne Fahrerstamm). Die Fahrerzeile wird gemeinsam gesperrt: ein gleichzeitiger Entzug (Fahrerzeile `FOR UPDATE` im Fahrerstamm) wird davor
      * oder danach entschieden, nie dazwischen.
      */
-    private fun qualification(j: JdbcOperations, driverRef: UUID, at: Instant, lock: Boolean = true): Long? {
+    internal fun qualification(j: JdbcOperations, driverRef: UUID, at: Instant, lock: Boolean = true, code: String? = null): Long? {
         // Erst sperren, dann in einer **neuen Anweisung** auswerten: bei einem Sperrwarten (READ COMMITTED) sähe eine einzige Anweisung die Zeile des Fahrers neu, die Qualifikationsrevisionen
         // aber noch im alten Stand und würde einen gleichzeitigen Entzug übersehen.
         if (lock) j.query("SELECT 1 FROM taktovia.driver WHERE id = ? FOR SHARE", { _, _ -> 1 }, driverRef)
         val ts = Timestamp.from(at)
         return j.query(
             "SELECT d.qualification_seq FROM taktovia.driver d WHERE d.id = ? AND d.status = 'ACTIVE' AND EXISTS (SELECT 1 FROM taktovia.qualification_revision q WHERE q.driver_id = d.id " +
-                "AND q.approval_status = 'APPROVED' AND q.valid_from <= ? AND (q.valid_to IS NULL OR q.valid_to > ?) AND q.revision = (SELECT max(x.revision) FROM taktovia.qualification_revision x " +
+                "AND q.approval_status = 'APPROVED' AND q.valid_from <= ? AND (q.valid_to IS NULL OR q.valid_to > ?) AND (CAST(? AS text) IS NULL OR q.qualification_code = ?) AND q.revision = (SELECT max(x.revision) FROM taktovia.qualification_revision x " +
                 "WHERE x.tenant_id = q.tenant_id AND x.driver_id = q.driver_id AND x.qualification_code = q.qualification_code AND x.approval_status <> 'PENDING'))",
-            { rs, _ -> rs.getLong(1) }, driverRef, ts, ts,
+            { rs, _ -> rs.getLong(1) }, driverRef, ts, ts, code, code,
         ).firstOrNull()
     }
 
