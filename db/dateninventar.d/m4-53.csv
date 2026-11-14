@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+pickup_tolerance_binding;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;booking_id;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;promise_version;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;bound_at;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;tolerance_min;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;config_level;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;config_revision_id;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;config_revision;nein;BUCHUNGSABWICKLUNG;;;;
+pickup_tolerance_binding;recorded_at;nein;BUCHUNGSABWICKLUNG;;;;
+time_fact;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+time_fact;promised_at;nein;BUCHUNGSABWICKLUNG;;;;
+aggregate_snapshot;parameter_versions;nein;NACHFRAGEANALYSE;;;;

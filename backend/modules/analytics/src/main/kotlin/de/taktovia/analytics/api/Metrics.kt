@@ -160,8 +160,11 @@ interface Metrics {
     /** Eine Definition in [version] (jüngste freigegebene, wenn `null`). */
     fun definition(tenant: TenantId, metricId: String, version: Int? = null): MetricDefinition
 
-    /** Werte der Kennzahl(en) für Zeitraum und Filter, nach Kennzahl-ID sortiert. */
-    fun evaluate(tenant: TenantId, query: MetricQuery): List<MetricValue>
+    /**
+     * Werte der Kennzahl(en) für Zeitraum und Filter, nach Kennzahl-ID sortiert. [tolerances] löst den Grenzwert der Abholpünktlichkeit zum Vergleichsstichtag auf (WP-M4-53); ohne Quelle sind
+     * Abholungen für die Pünktlichkeit nicht bewertbar (Abdeckung statt geratener Wert).
+     */
+    fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource = PickupToleranceSource.NONE): List<MetricValue>
 
     /** Ablehnungen nach Grund und Gruppe: Primär getrennt von Sekundär; [reasonCode] filtert auf einen Katalogcode (unbekannt: 400). */
     fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter(), reasonCode: String? = null): RejectionReport

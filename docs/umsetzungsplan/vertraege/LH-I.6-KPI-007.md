@@ -28,7 +28,7 @@
 - **Negativ:** Abholung ohne Ist-Zeit ist nicht bewertbar und nicht im Nenner; spätere Änderung des Grenzwerts verändert bereits gespeicherte Berichtstände nicht; unzulässiger Filter wird mit 400 abgewiesen; Fahrt eines fremden Mandanten geht weder in Zähler noch Nenner ein.
 - **Konkurrierend:** Grenzwertänderung (neue Konfigurationsrevision) während laufender Berechnung: Snapshot nennt eindeutig die verwendete Revision; parallele Abfragen liefern denselben Wert und Datenstand.
 - **Referenztests:** E2E-082.
-- Testfälle: E2E-082; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/PickupPunctualityTest.kt::drei_minuten_ueberschreitung_nach_gebietsgrenzwert; geplant:db/tests/test_pickup_punctuality.py::test_grenzwertaenderung_aendert_gespeicherten_stand_nicht
+- Testfälle: E2E-082; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/PickupPunctualityTest.kt::drei_minuten_ueberschreitung_nach_gebietsgrenzwert; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/PickupPunctualityTest.kt::zusage_0810_bis_0815_abholung_0822_ergibt_sieben_minuten_getrennt_von_der_ankunft_e2e_082; backend/app/src/test/kotlin/de/taktovia/app/analytics/ConfigPickupToleranceSourceTest.kt::zwei_gebiete_klassifizieren_dieselbe_drei_minuten_ueberschreitung_unterschiedlich_ende_zu_ende; db/tests/test_pickup_punctuality.py::test_grenzwertaenderung_aendert_gespeicherten_stand_nicht
 
 ## Reviews
 

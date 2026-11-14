@@ -56,10 +56,10 @@ class MetricRegisterTest {
         assertTrue(defs.map { it.metricId }.containsAll(p1))
         for (d in defs) {
             assertTrue(d.numerator.isNotBlank() && d.denominator.isNotBlank() && d.exclusions.isNotBlank() && d.timeBasis.isNotBlank(), d.metricId)
-            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(1, d.version); assertNotNull(d.approvedAt)
+            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(if (d.metricId in setOf("pickup_on_time", "mean_pickup_delay")) 2 else 1, d.version, "Abholkennzahlen: Version 2 (WP-M4-53)"); assertNotNull(d.approvedAt)
             assertEquals(d.executable, d.notExecutableReason == null, d.metricId)
         }
-        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour"), defs.filter { it.executable }.map { it.metricId }.toSet())
+        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour", "pickup_on_time", "mean_pickup_delay"), defs.filter { it.executable }.map { it.metricId }.toSet())
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, defs.single { it.metricId == "technical_partner_rejections" }.notExecutableReason, "Technische Partnerablehnungen nur als Definition (keine Partner in P1)")
     }
 
