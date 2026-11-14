@@ -2958,8 +2958,195 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/shifts/{shift_id}/vehicle-switches:
+    post:
+      summary: Fahrzeugwechsel in laufender Schicht
+      operationId: createShiftVehicleSwitch
+      security:
+      - oidc:
+        - fleet:switch
+      description: 'Wechsel der Schicht auf ein Ersatzfahrzeug (WP-M3-22, LH-6.21-CHK-015,
+        AT-30). Auslöser: der Fahrer der Schicht (nur eigene Schicht) oder die Leitstelle
+        (Disposition, Betriebsleitung); Planungsannahme zu OP-08: der Wechsel ändert
+        das Fahrzeug **derselben** Schicht. `from_vehicle_id` ist das Fahrzeug, das
+        der Auslöser als aktuell sieht: fährt die Schicht inzwischen ein anderes (auch
+        durch einen parallelen Wechsel), 409 CONFLICT; zwei gleichzeitige Wechsel
+        derselben Schicht ergeben genau ein Ersatzfahrzeug. Im selben Commit: jede
+        gültige Einsatzfreigabe der Schicht wird widerrufen (`revoke_reason` `VEHICLE_CHANGED`),
+        das Ersatzfahrzeug erhält **keine** Freigabe und ist nicht disponierbar, bis
+        ein nach dem Wechsel angelegter Prüflauf dieses Fahrzeugs bestanden ist (die
+        Prüfung des alten Fahrzeugs trägt nie); `GET /v1/driver/shifts/{shift_id}/run`
+        liefert danach das neue Fahrzeug, `release_state` `NOT_RELEASED` und die fehlende
+        Voraussetzung `NO_INSPECTION` (Prüfung erforderlich) und keine Aufträge.
+        Wechsel, Akteur, Begründung, altes und neues Fahrzeug stehen im `audit_event`;
+        die Prüfhistorie beider Fahrzeuge bleibt unverändert; Ereignis `fleet.vehicle_switched`
+        ohne Freitext. Abweisungen: gesperrtes Ersatzfahrzeug 409 (`detail` beginnt
+        mit `VEHICLE_BLOCKED`), fehlende Qualifikation für den Fahrzeugtyp 422 (neutrale
+        Meldung), inaktives Fahrzeug 422, beendete oder entzogene Schicht 409 INVALID_STATE_TRANSITION,
+        Überlappung mit einer anderen Schicht des Ersatzfahrzeugs 409, fremde Schicht,
+        fremder Mandant, unbekanntes Fahrzeug 404, andere Rollen oder Dienstkonten
+        403. Offene Stopps gehen nicht automatisch auf das Ersatzfahrzeug über (WP-M3-40).'
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftVehicleSwitchCreate'
+      responses:
+        '201':
+          description: Gewechselt; das Ersatzfahrzeug wartet auf seine Prüfung.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftVehicleSwitch'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+    get:
+      summary: Wechselhistorie der Schicht
+      operationId: listShiftVehicleSwitches
+      security:
+      - oidc:
+        - fleet:switch
+      description: Fahrzeugwechsel der Schicht, neueste zuerst (`items`). Der Fahrer
+        sieht nur seine eigene Schicht, die Leitstelle jede des Mandanten; fremde
+        Schicht und fremder Mandant 404.
+      parameters:
+      - name: shift_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Schicht-ID.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftVehicleSwitchList'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    ShiftVehicleSwitchCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - from_vehicle_id
+      - new_vehicle_id
+      - reason_code
+      properties:
+        from_vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        new_vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reason_code:
+          $ref: '#/components/schemas/ShiftVehicleSwitchReason'
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Begründungshinweis (Freitext, keine Personenangaben); bei `OTHER`
+            Pflicht.
+      description: Wechsel auf ein Ersatzfahrzeug (WP-M3-22); die Schicht steht im
+        Pfad, Mandant und Akteur im Kontext.
+    ShiftVehicleSwitchReason:
+      type: string
+      enum:
+      - DEFECT
+      - BREAKDOWN
+      - SERVICE_NEED
+      - CAPACITY
+      - OTHER
+      description: Begründungskatalog des Fahrzeugwechsels (Planungsannahme).
+    ShiftVehicleSwitch:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - shift_id
+      - from_vehicle_id
+      - to_vehicle_id
+      - reason_code
+      - actor_role
+      - revoked_releases
+      - inspection_required
+      - created_at
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        shift_id:
+          $ref: common.yaml#/components/schemas/UUID
+        from_vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        to_vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reason_code:
+          $ref: '#/components/schemas/ShiftVehicleSwitchReason'
+        note:
+          type:
+          - string
+          - 'null'
+        actor_role:
+          type: string
+          enum:
+          - DRIVER
+          - DISPATCH
+        revoked_releases:
+          type: integer
+          minimum: 0
+          description: Im selben Commit widerrufene gültige Einsatzfreigaben der Schicht.
+        inspection_required:
+          type: boolean
+          description: 'Immer wahr: das Ersatzfahrzeug braucht eine eigene, nach dem
+            Wechsel angelegte und bestandene Prüfung.'
+        created_at:
+          type: string
+          format: date-time
+    ShiftVehicleSwitchList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftVehicleSwitch'
     CommittedRide:
       type: object
       additionalProperties: false

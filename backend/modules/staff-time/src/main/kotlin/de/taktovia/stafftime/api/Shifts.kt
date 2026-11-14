@@ -99,4 +99,15 @@ interface Shifts {
     fun get(ctx: RequestContext, shiftId: UUID): ShiftView
     fun list(ctx: RequestContext, driverId: UUID?, vehicleId: UUID?, from: Instant?, to: Instant?, limit: Int, after: Pair<Instant, UUID>?): List<ShiftView>
     fun update(ctx: RequestContext, shiftId: UUID, expectedRevision: Long, input: ShiftInput): ShiftView
+
+    /**
+     * Fahrzeugwechsel einer geplanten, veröffentlichten oder laufenden Schicht (WP-M3-22, LH-6.21-CHK-015) **in der laufenden Mandantentransaktion des Aufrufers** (Modul `fleet-safety` führt Sperren,
+     * Widerruf der Freigaben und Wechselhistorie im selben Commit): sperrt die Schicht, prüft Fahrzeug (vorhanden, aktiv) und Überlappung je Fahrzeug über die Regel der Datenbank (Konflikt: 409) und setzt
+     * allein `vehicle_id`; Fahrer, Zeiten und Zustand bleiben. Ein `audit_event` der Schichtänderung entsteht hier. Die Berechtigung des Akteurs prüft der Aufrufer (Fahrer der Schicht oder Leitstelle).
+     * Beendete oder entzogene Schicht: 409 `INVALID_STATE_TRANSITION`; unbekannte Schicht oder Fahrzeug: 404.
+     */
+    fun changeVehicle(jdbc: org.springframework.jdbc.core.JdbcOperations, ctx: RequestContext, shiftId: UUID, newVehicleId: UUID): ShiftVehicleChange
 }
+
+/** Ergebnis von [Shifts.changeVehicle]: die Schicht nach dem Wechsel und das vorherige Fahrzeug. */
+data class ShiftVehicleChange(val shift: ShiftView, val previousVehicleId: UUID)

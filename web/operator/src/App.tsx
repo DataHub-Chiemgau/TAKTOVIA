@@ -41,6 +41,7 @@ import { Schadenakte } from './flotte/Schadenakte';
 import { Arbeitsliste } from './alarm/Arbeitsliste';
 import { VehicleList } from './vehicles/VehicleList';
 import { Vorfaelle } from './alarm/Vorfaelle';
+import { FahrzeugWechsel } from './fahrzeugwechsel/FahrzeugWechsel';
 import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
@@ -251,6 +252,14 @@ export function App() {
             element={
               <RequireRight right="defects">
                 <Schadenakte />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/flotte/fahrzeugwechsel"
+            element={
+              <RequireRight right="shifts.write">
+                <FahrzeugWechsel />
               </RequireRight>
             }
           />

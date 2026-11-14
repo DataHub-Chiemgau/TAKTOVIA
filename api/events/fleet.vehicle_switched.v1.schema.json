@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/fleet.vehicle_switched.v1.schema.json",
+  "title": "Fahrzeugwechsel in laufender Schicht (WP-M3-22)",
+  "description": "Payload von `fleet.vehicle_switched`. Aggregat: shift_vehicle_switch / 1. Nur Kennungen, Codes und Zähler: kein Freitext (der Begründungshinweis steht nur in Historie und Audit), keine Personen (Minimierungsregel, Kap. 05 §5.1). Katalog: docs/umsetzungsplan/vertraege/m3-ereigniskatalog.md.",
+  "type": "object",
+  "required": [
+    "switch_id",
+    "shift_id",
+    "from_vehicle_id",
+    "to_vehicle_id",
+    "reason_code",
+    "revoked_release_count"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "switch_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "shift_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "from_vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "to_vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason_code": {
+      "enum": [
+        "DEFECT",
+        "BREAKDOWN",
+        "SERVICE_NEED",
+        "CAPACITY",
+        "OTHER"
+      ]
+    },
+    "revoked_release_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "examples": [
+    {
+      "switch_id": "11111111-2222-4333-8444-555555555555",
+      "shift_id": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff",
+      "from_vehicle_id": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+      "to_vehicle_id": "77777777-8888-4999-8aaa-bbbbbbbbbbbb",
+      "reason_code": "BREAKDOWN",
+      "revoked_release_count": 1
+    }
+  ]
+}

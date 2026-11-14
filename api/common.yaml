@@ -93,6 +93,7 @@ components:
             inspections:write: inspections:write
             inspections:amend: inspections:amend
             inspections:justify: inspections:justify
+            fleet:switch: fleet:switch
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read
@@ -194,6 +195,7 @@ components:
             inspections:write: inspections:write
             inspections:amend: inspections:amend
             inspections:justify: inspections:justify
+            fleet:switch: fleet:switch
             checklists:read: checklists:read
             checklists:write: checklists:write
             defects:read: defects:read

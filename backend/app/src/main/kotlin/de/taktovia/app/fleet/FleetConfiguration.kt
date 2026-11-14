@@ -76,9 +76,16 @@ class FleetConfiguration {
      * bleibt offen und sichtbar, es wird kein Ergebnis vorgetäuscht.
      */
     @Bean fun fleetsafetyApi(ctxTx: ContextTransactions, audit: AuditPort, outbox: Outbox, store: TenantObjectStore, evidence: DefectEvidenceWiring, alertSettings: AlertSettings, defectSettings: DefectSettings,
-        search: org.springframework.beans.factory.ObjectProvider<de.taktovia.fleetsafety.api.ReplacementSearchPort>): FleetsafetyApi =
+        search: org.springframework.beans.factory.ObjectProvider<de.taktovia.fleetsafety.api.ReplacementSearchPort>, staff: org.springframework.beans.factory.ObjectProvider<de.taktovia.stafftime.api.StafftimeApi>): FleetsafetyApi =
         FleetsafetyApi.create(ctxTx, audit, outbox, store, evidence = evidence, alertSettings = alertSettings, defectSettings = defectSettings,
-            replacementSearch = search.getIfAvailable { de.taktovia.fleetsafety.api.ReplacementSearchPort.UNAVAILABLE })
+            replacementSearch = search.getIfAvailable { de.taktovia.fleetsafety.api.ReplacementSearchPort.UNAVAILABLE }, shiftVehicles = shiftVehiclePort(staff))
+
+    /**
+     * Fahrzeugwechsel (WP-M3-22): das Modul `fleet-safety` schreibt `staff_shift` nie selbst; die Schichtzuweisung gehört `staff-time` und läuft in der Transaktion des Wechsels (Sperren, Widerruf der
+     * Freigaben, Wechselhistorie und Ereignis im selben Commit).
+     */
+    fun shiftVehiclePort(staff: org.springframework.beans.factory.ObjectProvider<de.taktovia.stafftime.api.StafftimeApi>) =
+        de.taktovia.fleetsafety.api.ShiftVehiclePort { j, ctx, shiftId, newVehicleId -> staff.getObject().shifts.changeVehicle(j, ctx, shiftId, newVehicleId) }   // zur Laufzeit aufgelöst: `stafftimeApi` hängt (Alarmsenke) selbst an dieser Konfiguration
 
     /** Betriebsauftrag `REPLACEMENT_SEARCH` beim Operation-Runner (läuft nur mit `taktovia.operations.worker-enabled` und einer TenantSource des Betriebs, OP-06/OP-08). */
     @Bean fun replacementSearchHandler(fleet: FleetsafetyApi): de.taktovia.platform.operation.OperationHandler = fleet.incidentWorkflow.searchHandler
