@@ -100,6 +100,14 @@ class Strings {
     'worktime.release.granted': 'erteilt',
     'worktime.release.pending': 'noch nicht erteilt',
     'worktime.needSession': 'Bitte anmelden, um zu stempeln.',
+    'inspection.offline.noTemplate': 'Ohne Verbindung kann diese Pruefung nicht begonnen werden: Die Pruefvorlage liegt nicht auf dem Geraet. Bitte einmal mit Verbindung oeffnen.',
+    'inspection.offline.noKnownDefects': 'Ohne Verbindung kann diese Pruefung nicht begonnen werden: Die Liste der bekannten Schaeden fehlt. Bitte einmal mit Verbindung oeffnen.',
+    'inspection.offline.releasePending': 'Pruefung lokal abgeschlossen. Freigabe ausstehend: Das Fahrzeug ist erst nach der Bestaetigung durch den Server freigegeben.',
+    'inspection.offline.criticalNo': 'Kritischer Mangel. Bitte nicht fahren und die Leitstelle kontaktieren. Die Sperre wird bei der Uebertragung am Server gesetzt.',
+    'inspection.status.local': 'Lokal abgeschlossen, Freigabe ausstehend',
+    'inspection.status.synced': 'Synchronisiert, noch nicht freigegeben',
+    'inspection.status.released': 'Freigegeben',
+    'inspection.status.review': 'Vom Server nicht uebernommen: bitte die Leitstelle kontaktieren, die Pruefung ist neu durchzufuehren',
     'action.unavailableOffline': 'Ohne Verbindung nicht verfuegbar. Die Freigabe erteilt nur der Server.',
   });
 

@@ -9,6 +9,7 @@ enum DriverAction {
   recordTimeEvent,
   recordStopEvent,
   startInspectionDraft,
+  completeInspectionLocally,
   requestOperationalReadiness,
   submitInspectionForRelease,
   liftVehicleBlock,
@@ -32,6 +33,7 @@ class OfflinePolicy {
     DriverAction.recordTimeEvent,
     DriverAction.recordStopEvent,
     DriverAction.startInspectionDraft,
+    DriverAction.completeInspectionLocally,
   };
 
   /// Aktionen, die nie offline moeglich sind (Server entscheidet): Freigabe, Sperraufhebung, verbindliche Buchung.
@@ -49,7 +51,7 @@ class OfflinePolicy {
 
   /// Ereignistypen der Outbox, die ein Offline-Eintrag haben darf (Anbindung an die Servertypen von `recordDriverEvent`).
   static const Set<String> outboxTypes = <String>{
-    'arrived', 'departed', 'checkIn', 'checkOut', 'noShow', 'breakStart', 'breakEnd', 'disruption', 'shiftEnd', 'damageReport', 'receipt', 'timeEvent',
+    'arrived', 'departed', 'checkIn', 'checkOut', 'noShow', 'breakStart', 'breakEnd', 'disruption', 'shiftEnd', 'damageReport', 'receipt', 'timeEvent', 'inspectionSubmit',
   };
 
   void requireOutboxType(String type) {
