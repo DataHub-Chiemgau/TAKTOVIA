@@ -70,9 +70,14 @@ data class RideTimeWindow(val earliestAt: Instant, val latestAt: Instant) {
 data class RideOfferProposal(
     val serviceId: UUID, val bookingKind: RideBookingKind, val timeKind: RideTimeKind, val pickupWindow: RideTimeWindow, val arrivalWindow: RideTimeWindow,
     val arrivalGraceMin: Int, val directSeconds: Int,
+    /** Version des ETA-Grundmodells, aus der die Fenster stammen (WP-M4-66); `null` ohne angeschlossenes Grundmodell. */
+    val eta: OfferEtaVersion? = null,
     /** Das ausgestellte Angebotsobjekt (WP-M2-21) mit Preisstand; `null` nur, wenn die Angebotsbildung ohne Preisbildung betrieben wird (Tests der Anfrageerfassung, WP-M2-11). */
     val offer: IssuedOffer? = null,
 )
+
+/** Genau eine Modell-/Konfigurationsversion je Angebot, die Sicherheitsreserve im Fenster und (ohne Prognose) der Rückfallgrund; Fenster dann aus der Planungsannahme. */
+data class OfferEtaVersion(val modelVersion: Int?, val configVersion: String?, val bufferSeconds: Int, val fallbackReason: String?)
 
 /** Angebotsobjekt in der Antwort der Anfrage: ID, Ablauf, unveränderlicher Preisstand, Haltepunkte (Revision) und Planbindung. Es verspricht keine Kapazität. */
 data class IssuedOffer(
@@ -169,7 +174,9 @@ interface RideOfferRequests {
             travelTime: DirectTravelTime = HaversineTravelTime(), gate: CandidateGate = CandidateGate.PASS_THROUGH,
             /** Preisbildung (WP-M2-09): gesetzt = jedes Angebot erhält einen unveränderlichen `fare_quote` und ein Angebotsobjekt (WP-M2-21); `null` = nur Zeitfenster (Anfrageerfassung allein). */
             quotes: FareQuotes? = null, offerPolicy: OfferPolicy = OfferPolicy(), distance: DirectDistance = HaversineDistance(),
-        ): RideOfferRequests = RideOfferServicesFactory.create(ctxTx, outbox, geo, config, clock, travelTime, gate, quotes, offerPolicy, distance)
+            /** Angebotszeit aus dem ETA-Grundmodell (WP-M4-66, [EtaApi.offerTime]); `null` = Fenster aus der Planungsannahme [travelTime]. */
+            etaSource: OfferEtaSource? = null,
+        ): RideOfferRequests = RideOfferServicesFactory.create(ctxTx, outbox, geo, config, clock, travelTime, gate, quotes, offerPolicy, distance, etaSource)
     }
 }
 

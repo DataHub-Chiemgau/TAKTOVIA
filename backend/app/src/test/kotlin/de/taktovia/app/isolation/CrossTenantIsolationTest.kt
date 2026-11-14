@@ -86,6 +86,9 @@ class CrossTenantIsolationTest {
         val driverMaster = create("/v1/drivers", """{"membership_id":"${env.grant(b.tenant, UUID.randomUUID(), "driver")}","display_name":"Erika B","contact_channel":"PHONE","contact_value":"+49170000"}""", b.plannerToken).json["id"].asString()
         // WP-M3-07: Schichtzuweisung in B (Disposition von B weist Fahrer und Fahrzeug aus B zu)
         val shift = create("/v1/shifts", """{"driver_id":"$driverMaster","vehicle_id":"$vehicleMaster","starts_at":"2026-12-01T06:00:00Z","ends_at":"2026-12-01T14:00:00Z","timezone":"Europe/Berlin"}""", b.dispatcherToken).json["id"].asString()
+        // WP-M3-40: Umlauf in B (Direktanlage; die Umplanung eines fremden Umlaufs muss gleichartig 404 ergeben)
+        val run = UUID.randomUUID().toString()
+        env.exec("INSERT INTO taktovia.vehicle_run(tenant_id,id,vehicle_id,shift_id,revision,state) VALUES (?,?,?,?,1,'ACTIVE')", b.tenant.value, UUID.fromString(run), UUID.fromString(vehicleMaster), UUID.fromString(shift))
         // WP-M3-10: Checklistenvorlage in B (Werkstatt von B legt an)
         val checklist = create("/v1/operator/checklist-templates", """{"name":"Iso-B","vehicle_class":"PKW","service_mode":"ONDEMAND","steps":[{"step_code":"BRAKES","title":"Bremsen","input_kind":"OK_DEFECT_NA","mandatory":true}]}""", b.adminToken).json["id"].asString()
         // WP-M3-13: Prüflauf in B (Direktanlage mit der Entwurfsvorlage von B; der Startpfad prüft InspectionApiTest)
@@ -159,7 +162,7 @@ class CrossTenantIsolationTest {
         env.exec("INSERT INTO taktovia.export_job(tenant_id,id,kind,scope,requested_by,requester_scopes,requester_roles,idempotency_key,request_hash,as_of) VALUES (?,CAST(? AS uuid),'TIME_PROOF','{}'::jsonb,'user:fremd','{}','{}','iso-1',?,now())",
             b.tenant.value, exportJob, "a".repeat(64))
         return Ids(mapOf(
-            "job_id" to exportJob, "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
+            "job_id" to exportJob, "run_id" to run, "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
             "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(), "booking_id" to booking,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
@@ -251,6 +254,8 @@ class CrossTenantIsolationTest {
             "createDriverQualification" to Probe("POST", "/v1/drivers/{driver_id}/qualifications", """{"qualification_code":"GEKAPERT","valid_from":"2026-01-01T00:00:00Z","decision":"APPROVED"}""", true, role = "planner"),
             "getVehicleMaster" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}", role = "dispatcher"),
             "getOperatorVehicle" to Probe("GET", "/v1/operator/vehicles/{vehicle_id}", role = "dispatcher"),
+            "listRunRevisions" to Probe("GET", "/v1/runs/{run_id}/revisions", role = "dispatcher"),
+            "createRunRevision" to Probe("POST", "/v1/runs/{run_id}/revisions", """{"changes":[{"change":"MOVE","route_stop_id":"${UUID.randomUUID()}","new_sequence":1}],"reason":"Fremdversuch","base_plan_revision":1}""", true, role = "dispatcher"),
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
             "getChecklistTemplateRevision" to Probe("GET", "/v1/operator/checklist-templates/{checklist_revision_id}"),
             "updateChecklistTemplateDraft" to Probe("PUT", "/v1/operator/checklist-templates/{checklist_revision_id}", """{"name":"Gekapert","vehicle_class":"PKW","service_mode":"ONDEMAND","steps":[{"step_code":"BRAKES","title":"Gekapert","input_kind":"OK_DEFECT_NA","mandatory":true}]}""", true),

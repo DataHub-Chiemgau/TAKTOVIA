@@ -757,6 +757,8 @@ components:
           description: Angebotsrevision (ETag von `GET /v1/ride-offers/{id}`), Bedingung `If-Match` für Hold und Freigabe.
         walk:
           $ref: '#/components/schemas/RideWalkRoute'
+        eta:
+          $ref: '#/components/schemas/RideOfferEta'
       required:
       - service_id
       - booking_kind
@@ -772,6 +774,37 @@ components:
       - revision
       description: Angebot mit Zeitfenster, Ablauf (`expires_at`) und unveränderlichem Preisstand, aber ohne gesicherte Kapazität (Kap. 01 §1.4 Schritt 4); Hold und Bestätigung folgen. Ein abgelaufenes
         Angebot kann nicht gehalten werden (409 OFFER_EXPIRED).
+    RideOfferEta:
+      type: object
+      additionalProperties: false
+      description: 'Genau eine Modell-/Konfigurationsversion des ETA-Grundmodells, aus der die Fenster des Angebots stammen (WP-M4-66, ETA-001/-002 am echten Angebot). `buffer_seconds` ist die Sicherheitsreserve, die nur den späten Rand des Ankunftsfensters verlängert; `direct_seconds` enthält Haltezeit und Referenzfahrzeit. Mit `fallback_reason` konnte das Grundmodell keine regelkonforme Prognose liefern (kein Modell, Routingausfall, fehlende Geschwindigkeitsattribute): das Fenster beruht dann auf der Planungsannahme, ohne Modellversion.'
+      properties:
+        model_version:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+        config_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        buffer_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+        fallback_reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - model_version
+      - config_version
+      - buffer_seconds
+      - fallback_reason
     RideOfferStop:
       type: object
       additionalProperties: false
@@ -957,6 +990,8 @@ components:
           oneOf:
           - $ref: '#/components/schemas/RideHold'
           - type: 'null'
+        eta:
+          $ref: '#/components/schemas/RideOfferEta'
         revision:
           type: integer
           format: int64
@@ -1201,6 +1236,11 @@ components:
           type: string
           enum:
           - PLAN
+        forecast:
+          oneOf:
+          - $ref: '#/components/schemas/RideBookingEtaForecast'
+          - type: 'null'
+          description: Prognose des ETA-Grundmodells am Einstiegsstopp (WP-M4-66), getrennt von der verbindlichen Zusage `promise` und der Plan-ETA; fehlt ohne angeschlossenes Grundmodell.
       required:
       - pickup_at
       - dropoff_at
@@ -1209,6 +1249,49 @@ components:
       - plan_revision
       - data_as_of
       - source
+    RideBookingEtaForecast:
+      type: object
+      additionalProperties: false
+      description: 'Prognosefenster der Ankunft am Einstiegsstopp mit Datenstand (WP-M4-66). Bei Positionsdaten älter als `eta_max_data_age_sec` (oder ohne Position, ohne Modell) ist `fallback_reason` gesetzt und `basis` der Rückfall laut `eta_fallback_policy` (`PLAN_TIME` bzw. `REFERENCE_FORECAST`) statt einer scheinbar aktuellen Prognose; die Zusage bleibt unverändert.'
+      properties:
+        earliest_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        latest_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        basis:
+          type: string
+          enum:
+          - LIVE_POSITION
+          - PLAN_TIME
+          - REFERENCE_FORECAST
+        data_stand:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+          description: Messzeit der letzten Position.
+        fallback_reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+        model_version:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+        config_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - earliest_at
+      - latest_at
+      - basis
+      - data_stand
+      - fallback_reason
     RideVehicleIdentification:
       type: object
       additionalProperties: false

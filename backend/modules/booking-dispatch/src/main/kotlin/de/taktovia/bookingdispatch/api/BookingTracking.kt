@@ -54,7 +54,17 @@ data class TrackedStop(val stopId: UUID, val revisionId: UUID, val revision: Lon
  * Aktuelle ETA aus der Planrevision (Plan-ETA, WP-M2-43): [pickupAt] ist die geplante Ankunftszeit am Einstiegsstopp, [previousPickupAt] der Wert vor der letzten Änderung (nur bei einer
  * Zeitänderung), [planSequence] die Zahl der Planänderungen der Buchung, [dataAsOf] der Zeitpunkt der Planänderung, [source] `PLAN` (Prognose-ETA ist M4, WP-M4-62).
  */
-data class BookingEta(val pickupAt: Instant, val dropoffAt: Instant?, val previousPickupAt: Instant?, val planSequence: Long, val planRevision: Long, val dataAsOf: Instant, val source: String = "PLAN")
+data class BookingEta(
+    val pickupAt: Instant, val dropoffAt: Instant?, val previousPickupAt: Instant?, val planSequence: Long, val planRevision: Long, val dataAsOf: Instant, val source: String = "PLAN",
+    /** Prognose des ETA-Grundmodells am Einstiegsstopp (WP-M4-66), getrennt von der verbindlichen Zusage [pickupAt]; `null` ohne angeschlossenes Grundmodell oder ohne Prognose. */
+    val forecast: BookingEtaForecast? = null,
+)
+
+/**
+ * Prognosefenster [earliest]..[latest] der Ankunft am Einstiegsstopp mit [basis] (`LIVE_POSITION`, `REFERENCE_FORECAST` oder Rückfall `PLAN_TIME`), [dataStand] = Messzeit der letzten Position und
+ * [fallbackReason], wenn Positionsdaten fehlen oder älter als `eta_max_data_age_sec` sind (Rückfall laut `eta_fallback_policy` statt einer scheinbar aktuellen Prognose).
+ */
+data class BookingEtaForecast(val earliest: Instant, val latest: Instant, val basis: EtaBasis, val dataStand: Instant?, val fallbackReason: String?, val modelVersion: Int?, val configVersion: String?)
 
 /** Fahrzeugidentifikation für Fahrgäste (Arbeitsannahme zu Offener Punkt 35): Bezeichnung und Fahrzeugklasse, nie Halter, Fahrer oder Wartungsdaten. */
 data class VehicleIdentification(val label: String, val vehicleClass: String?)

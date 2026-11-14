@@ -18,6 +18,11 @@ const BASIS: Readonly<Record<string, string>> = {
 const FALLBACK: Readonly<Record<string, string>> = {
   POSITION_STALE: 'Positionsdaten veraltet',
   POSITION_MISSING: 'keine Position bekannt',
+  NO_APPROVED_MODEL: 'kein freigegebenes Prognosemodell',
+  ROUTING_UNAVAILABLE: 'Routing nicht verfügbar',
+  ROUTING_TIMEOUT: 'Routing antwortet nicht rechtzeitig',
+  SPEED_LIMIT_DATA_UNAVAILABLE: 'Straßendaten ohne Geschwindigkeitsattribute',
+  SPEED_LIMIT_MISSING: 'Geschwindigkeitsbegrenzung fehlt in den Routendaten',
 };
 
 /** Prognosezeit eines Stopps: nie erfunden; ohne Prognose steht „keine Prognose“. */

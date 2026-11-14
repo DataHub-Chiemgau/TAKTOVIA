@@ -33,12 +33,13 @@ class BookingConfiguration {
 
     @Bean fun fareQuotes(ctxTx: ContextTransactions, tariffs: Tariffs): FareQuotes = FareQuotes.create(ctxTx, tariffs)
 
-    @Bean fun rideOfferRequests(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: ConfigApi, quotes: FareQuotes): RideOfferRequests =
-        RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
+    /** Die Fensterbildung nutzt das ETA-Grundmodell (WP-M4-66): Haltezeit, Referenzfahrzeit und Sicherheitsreserve; ohne Prognose gilt die Planungsannahme und das Angebot weist den Grund aus. */
+    @Bean fun rideOfferRequests(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: ConfigApi, quotes: FareQuotes, eta: de.taktovia.bookingdispatch.api.EtaApi, keys: de.taktovia.bookingdispatch.api.EtaStopKeys): RideOfferRequests =
+        RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes, etaSource = eta.offerTime(keys))
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
-    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort): Bookings =
-        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing)   // Void/Erstattung nach Storno (WP-M2-31)
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort, eta: de.taktovia.bookingdispatch.api.EtaApi): Bookings =
+        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing, eta = eta.stopEta)   // Void/Erstattung nach Storno (WP-M2-31)
 
     /**
      * Fußweg zum Abholhaltepunkt (WP-M2-44). Der Routing-Worker ist in dieser Verdrahtung nicht angeschlossen (Haltepunktkatalog des Workers offen, D-09): ohne ihn liefert jeder Fußweg den

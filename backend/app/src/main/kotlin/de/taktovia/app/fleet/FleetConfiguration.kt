@@ -66,7 +66,7 @@ class FleetConfiguration {
     @Bean fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = de.taktovia.bookingdispatch.api.OperatorOrders.create(ctxTx)
 
     /** Fahrzeugplan der Leitstelle: Stoppreihenfolge, Soll-/Prognosezeit, Zusagefenster und Besetzung (WP-M3-38). */
-    @Bean fun vehiclePlans(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.VehiclePlans = de.taktovia.bookingdispatch.api.VehiclePlans.create(ctxTx)
+    @Bean fun vehiclePlans(ctxTx: ContextTransactions, eta: de.taktovia.bookingdispatch.api.EtaApi): de.taktovia.bookingdispatch.api.VehiclePlans = de.taktovia.bookingdispatch.api.VehiclePlans.create(ctxTx, eta.stopEta)
 
     /**
      * Schadenklassifikation (WP-M3-45): `taktovia.defects.workshop-auto-block-severity` (`workshop_auto_block_severity`, Planungsdefault `SAFETY_CRITICAL`) nennt die Klasse, ab der die Klassifikation

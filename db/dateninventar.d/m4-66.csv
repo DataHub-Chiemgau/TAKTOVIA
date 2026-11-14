@@ -1,0 +1,5 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+ride_offer;eta_model_version;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;eta_config_version;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;eta_buffer_seconds;nein;BUCHUNGSABWICKLUNG;;;;
+ride_offer;eta_fallback_reason;nein;BUCHUNGSABWICKLUNG;;;;

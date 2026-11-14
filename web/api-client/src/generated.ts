@@ -1109,6 +1109,9 @@ export interface DriverRun {
   acknowledgement_required: boolean;
   base_revision: number | null;
   removed_stops: DriverRemovedStop[];
+  forecast_source?: 'PLAN_TIME' | 'ETA_MODEL';
+  forecast_data_stand?: string | null;
+  forecast_fallback_reason?: string | null;
 }
 
 export interface DriverRemovedStop {
@@ -1440,6 +1443,14 @@ export interface RideOfferProposal {
   run_revision?: number;
   revision: number;
   walk?: RideWalkRoute;
+  eta?: RideOfferEta;
+}
+
+export interface RideOfferEta {
+  model_version: number | null;
+  config_version: string | null;
+  buffer_seconds: number;
+  fallback_reason: string | null;
 }
 
 export interface RideOfferStop {
@@ -1479,6 +1490,7 @@ export interface RideOffer {
   dropoff_stop: RideOfferStop;
   demand: RideResourceVector;
   hold: RideHold | null;
+  eta?: RideOfferEta;
   revision: number;
   walk?: RideWalkRoute;
 }
@@ -1543,6 +1555,17 @@ export interface RideBookingEta {
   plan_revision: number;
   data_as_of: Timestamp;
   source: 'PLAN';
+  forecast?: RideBookingEtaForecast | null;
+}
+
+export interface RideBookingEtaForecast {
+  earliest_at: Timestamp;
+  latest_at: Timestamp;
+  basis: 'LIVE_POSITION' | 'PLAN_TIME' | 'REFERENCE_FORECAST';
+  data_stand: Timestamp | null;
+  fallback_reason: string | null;
+  model_version?: number | null;
+  config_version?: string | null;
 }
 
 export interface RideVehicleIdentification {

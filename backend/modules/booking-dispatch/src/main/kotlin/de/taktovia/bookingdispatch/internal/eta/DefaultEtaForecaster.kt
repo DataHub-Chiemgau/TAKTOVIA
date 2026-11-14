@@ -34,8 +34,11 @@ internal class DefaultEtaForecaster(
     private val ctxTx: ContextTransactions, private val config: EffectiveConfig, private val reference: DefaultEtaReferenceModel, private val revisions: JdbcEtaModelRevisions,
 ) : EtaForecaster {
 
-    override fun snapshot(ctx: RequestContext, serviceId: UUID?, vehicleId: UUID?, at: Instant): EtaConfigSnapshot = ctxTx.run(ctx, readOnly = true) { j ->
-        val model = revisions.current(j) ?: throw EtaUnavailableException(EtaFallbackReason.NO_APPROVED_MODEL)
+    /** Die Ausnahme „kein Modell“ wird **nach** der Lesetransaktion geworfen: wird der Baustein innerhalb einer fremden Transaktion aufgerufen (Verbraucher in Anzeige und Auslösern), darf sie diese nie als rollback-only markieren. */
+    override fun snapshot(ctx: RequestContext, serviceId: UUID?, vehicleId: UUID?, at: Instant): EtaConfigSnapshot = readSnapshot(ctx, serviceId, vehicleId, at) ?: throw EtaUnavailableException(EtaFallbackReason.NO_APPROVED_MODEL)
+
+    private fun readSnapshot(ctx: RequestContext, serviceId: UUID?, vehicleId: UUID?, at: Instant): EtaConfigSnapshot? = ctxTx.run(ctx, readOnly = true) { j ->
+        val model = revisions.current(j) ?: return@run null
         val floor = j.queryForObject("SELECT minimum FROM taktovia.policy_system_floor() WHERE parameter = 'stop_dwell_sec'", BigDecimal::class.java)?.toInt() ?: 1
         val view = config.resolveInTransaction(j, ctx, EffectiveRequest(parameters = NAMES, serviceId = serviceId, vehicleId = vehicleId, at = at))
         val items = view.items.associateBy { it.parameter }

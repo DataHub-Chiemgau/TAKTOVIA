@@ -90,7 +90,10 @@ data class DriverRunStopView(
 )
 
 /** [runState] ist der Zustand des Umlaufs (`COMPLETED`/`CANCELED` schließen das Sichtbarkeitsfenster der Unterstützungsmerkmale); `null` = unbekannt (Quelle ohne Zustand). */
-data class DriverRunProjection(val planRevision: Long, val stops: List<DriverRunStopView>, val runState: String? = null)
+/** Herkunft der Prognosezeiten ([DriverRunStopView.forecastAt]): `PLAN_TIME` (Planzeit aus dem Routing) oder `ETA_MODEL` (Leseport „ETA je Stopp“, WP-M4-66) mit Datenstand und Rückfallgrund. */
+data class DriverForecastSource(val source: String, val dataStand: Instant?, val fallbackReason: String?)
+
+data class DriverRunProjection(val planRevision: Long, val stops: List<DriverRunStopView>, val runState: String? = null, val forecast: DriverForecastSource = DriverForecastSource("PLAN_TIME", null, null))
 
 /**
  * Quelle der Stoppliste (Run-Lesesicht über die Modul-API von `booking-dispatch`, WP-M3-26). Wird **nur** gefragt, wenn der Server die Schicht als gültig, angetreten und
@@ -116,6 +119,8 @@ data class DriverRunView(
     /** Revision der Vergleichsbasis (zuletzt bestätigt, sonst die erste Planrevision), gegen die [stops] und [removedStops] verglichen wurden. */
     val baseRevision: Long? = null,
     val removedStops: List<DriverRemovedStop> = emptyList(),
+    /** Herkunft und Datenstand der Prognosezeiten der Stopps (WP-M4-66). */
+    val forecast: DriverForecastSource = DriverForecastSource("PLAN_TIME", null, null),
 )
 
 /**

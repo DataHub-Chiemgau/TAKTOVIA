@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 class BookingDriverRunSource {
-    @Bean fun driverRunPlans(ctxTx: ContextTransactions): DriverRunPlans = DriverRunPlans.create(ctxTx)
+    @Bean fun driverRunPlans(ctxTx: ContextTransactions, eta: de.taktovia.bookingdispatch.api.EtaApi): DriverRunPlans = DriverRunPlans.create(ctxTx, eta.stopEta)
 
     @Bean fun driverRunSource(plans: DriverRunPlans): DriverRunSource = object : DriverRunSource {
         override fun projection(ctx: RequestContext, shiftId: UUID, vehicleId: UUID): DriverRunProjection? = plans.currentPlan(ctx, shiftId, vehicleId)?.let { project(it) }
@@ -38,5 +38,5 @@ class BookingDriverRunSource {
             s.assistance?.let { a -> DriverAssistance(a.wheelchairRequired, a.boardingAssist, a.alightingAssist) },
             s.boardingRefs.map { ExpectedPassenger(it.bookingId, it.bookingRef, it.persons) },
         )
-    }, plan.runState.name)
+    }, plan.runState.name, de.taktovia.stafftime.api.DriverForecastSource(plan.forecast.source, plan.forecast.dataStand, plan.forecast.fallbackReason))
 }

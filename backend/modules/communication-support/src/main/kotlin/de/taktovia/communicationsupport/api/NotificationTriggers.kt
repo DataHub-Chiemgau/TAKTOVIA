@@ -57,9 +57,21 @@ fun interface TransactionalNotificationTrigger {
  * Abholzeit um mindestens diese Dauer ist eine „relevante ETA-Änderung“ (Vorläuferwert 5 Minuten, kein Katalogparameter). [channelPreference]: Reihenfolge der Kanalwahl; gewählt wird
  * der erste Kanal mit verifiziertem Kontakt, ohne nutzbaren Kanal der erste der Liste (der Auftrag endet dann dokumentiert als Kanalfehler `NO_VERIFIED_CONTACT`).
  */
+/**
+ * Prognose der Abholzeit einer Buchung aus dem ETA-Grundmodell (WP-M4-66, Implementierung: `booking-dispatch` über die Anwendung). [fromModel] ist nur wahr, wenn die Zeit aus aktuellen Positionsdaten
+ * des Grundmodells stammt; im Rückfall (veraltete oder fehlende Positionsdaten, kein Modell) ist sie falsch, und der Auslöser bleibt bei der Plan-ETA.
+ */
+fun interface PickupEtaSource {
+    fun forecast(tenant: TenantId, bookingId: UUID): PickupEta?
+}
+
+data class PickupEta(val at: Instant, val fromModel: Boolean)
+
 data class TriggerSettings(
     val etaRelevanceThreshold: Duration = Duration.ofMinutes(5),
     val channelPreference: List<NotificationChannel> = listOf(NotificationChannel.PUSH, NotificationChannel.SMS, NotificationChannel.EMAIL),
+    /** Quelle der ETA-Änderung „relevant oberhalb der Schwelle“ (WP-M4-66); `null` = Plan-ETA der Planrevision (WP-M2-34). */
+    val pickupEta: PickupEtaSource? = null,
 ) {
     init {
         require(!etaRelevanceThreshold.isNegative && !etaRelevanceThreshold.isZero && etaRelevanceThreshold <= Duration.ofHours(6)) { "Relevanzschwelle außerhalb 1 s .. 6 h" }

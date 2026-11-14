@@ -63,14 +63,21 @@ internal class StandardTriggers(
         return listOf(notification(e, e.eventId, b, type))
     }
 
-    /** Relevante ETA-Änderung aus der Planrevision: je Buchung mit verschobener Abholzeit um mindestens die Schwelle; nur für aktive Buchungen (nie nach einem Storno). */
+    /**
+     * Relevante ETA-Änderung aus der Planrevision: je Buchung mit verschobener Abholzeit um mindestens die Schwelle; nur für aktive Buchungen (nie nach einem Storno). Mit angeschlossenem Grundmodell
+     * (WP-M4-66) entscheidet die **Prognosezeit** des Leseports „ETA je Stopp“ gegen die zuletzt bekannte Zeit: eine Änderung oberhalb der Schwelle löst die Nachricht aus (mit der Prognosezeit), eine darunter
+     * nicht; im Rückfall (keine aktuelle Prognose) gilt unverändert die Plan-ETA.
+     */
     private fun etaFromPlan(j: JdbcOperations, e: EventEnvelope): List<TriggeredNotification> {
         val changes = e.payload.get("booking_changes")?.takeIf { it.isArray } ?: return emptyList()
         return changes.values().toList().mapNotNull { c ->
             if (c.get("kind")?.asString() != "TIME_CHANGED") return@mapNotNull null
-            val before = instant(c, "pickup_before"); val after = instant(c, "pickup_after")
-            if (before == null || after == null || Duration.between(before, after).abs() < settings.etaRelevanceThreshold) return@mapNotNull null
+            val before = instant(c, "pickup_before"); val planAfter = instant(c, "pickup_after")
+            if (before == null || planAfter == null) return@mapNotNull null
             val id = uuid(c, "booking_id") ?: return@mapNotNull null
+            val model = settings.pickupEta?.let { src -> runCatching { src.forecast(TenantId(e.recipientTenantId ?: e.ownerTenantId), id) }.getOrNull() }?.takeIf { it.fromModel }
+            val after = model?.at ?: planAfter
+            if (Duration.between(before, after).abs() < settings.etaRelevanceThreshold) return@mapNotNull null
             val b = facts.booking(j, id) ?: return@mapNotNull null
             if (!b.active) { log.info("Planänderung ohne Nachricht: Buchung nicht aktiv (event={}, booking={})", e.eventId, id); return@mapNotNull null }
             notification(e, derived(e.eventId, id), b, NotificationEventTypes.ETA_CHANGED, eta = after)

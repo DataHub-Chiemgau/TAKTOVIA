@@ -59,6 +59,7 @@ internal class JdbcRideOfferRequests(
     private val ctxTx: ContextTransactions, private val outbox: Outbox, private val geo: ServicegeoApi, private val config: EffectiveConfig, private val clock: Clock,
     private val travelTime: DirectTravelTime, private val gate: CandidateGate, private val eligibility: EligibilityCheck,
     private val quotes: FareQuotes? = null, private val policy: OfferPolicy = OfferPolicy(), private val distance: DirectDistance = de.taktovia.bookingdispatch.api.HaversineDistance(),
+    private val etaSource: de.taktovia.bookingdispatch.api.OfferEtaSource? = null,
 ) : RideOfferRequests {
     private val log = LoggerFactory.getLogger("taktovia.booking.rideoffer")
 
@@ -72,17 +73,33 @@ internal class JdbcRideOfferRequests(
         val availability = geo.availability.at(ctx, cmd.serviceId, now)   // unbekannter oder fremder Dienst: 404
         val zone = ZoneId.of(availability.timezone)
         val params = parameters(ctx, cmd.serviceId, now)
-        val direct = travelTime.seconds(cmd.origin.point(), cmd.destination.point())
+        var direct = travelTime.seconds(cmd.origin.point(), cmd.destination.point())
+        var buffer = 0
+        var etaInfo: de.taktovia.bookingdispatch.api.OfferEta? = null
 
-        val time = RideTimeRules.evaluate(now, zone, cmd.timeKind, desired, params, direct)
-        val causes = mutableListOf<RejectionCode>()
-        val nominal = nominalWindows(cmd.timeKind, desired, params, direct)
-        val (pickup, arrival) = when (time) {
-            is TimeDecision.Ok -> time.pickup to time.arrival
-            is TimeDecision.Reject -> { causes += time.code; nominal }
+        /** Zeitfenster und Zulässigkeit für die Grundzeit [direct] (und die Sicherheitsreserve [buffer]) bilden; Ergebnis: Zeitentscheidung, Fenster, Ursachen, Prüfergebnis. */
+        class Stage(val time: TimeDecision, val pickup: RideTimeWindow, val arrival: RideTimeWindow, val causes: MutableList<RejectionCode>, val check: EligibilityResult)
+        fun stage(): Stage {
+            val t = RideTimeRules.evaluate(now, zone, cmd.timeKind, desired, params, direct, buffer)
+            val c = mutableListOf<RejectionCode>()
+            val (p, a) = when (t) {
+                is TimeDecision.Ok -> t.pickup to t.arrival
+                is TimeDecision.Reject -> { c += t.code; nominalWindows(cmd.timeKind, desired, params, direct, buffer) }
+            }
+            val e = eligibility.check(ctx, EligibilityRequest(cmd.serviceId, cmd.origin, cmd.destination, p, a, cmd.needsWheelchair(), params))
+            c += e.causes
+            return Stage(t, p, a, c, e)
         }
-        val check = eligibility.check(ctx, EligibilityRequest(cmd.serviceId, cmd.origin, cmd.destination, pickup, arrival, cmd.needsWheelchair(), params))
-        causes += check.causes
+        var st = stage()
+        // ETA-Grundmodell (WP-M4-66): steht der Weg (Abhol- und Zielhaltepunkt) nach der Vorprüfung fest, bildet die Disposition das Fenster mit der Grundzeit des Modells (Haltezeit, Referenzfahrzeit, Sicherheitsreserve)
+        // statt mit der Planungsannahme; jedes Angebot trägt genau eine Modell-/Konfigurationsversion. Ohne Prognose gilt die Planungsannahme und das Angebot weist den Grund aus.
+        val pickupRev = st.check.pickupStop?.revisionId; val dropoffRev = st.check.dropoffStop?.revisionId
+        if (etaSource != null && st.causes.isEmpty() && pickupRev != null && dropoffRev != null) {
+            val g = etaSource.ground(ctx, cmd.serviceId, pickupRev, dropoffRev, st.pickup.earliestAt)
+            etaInfo = g
+            if (g.directSeconds != null && (g.directSeconds != direct || g.bufferSeconds != buffer)) { direct = g.directSeconds; buffer = g.bufferSeconds; st = stage() }
+        }
+        val time = st.time; val pickup = st.pickup; val arrival = st.arrival; val causes = st.causes; val check = st.check
 
         var decision = RejectionCode.decide(causes)
         var outcome = if (decision == null) AttemptOutcome.OFFERED else AttemptOutcome.REJECTED
@@ -106,9 +123,9 @@ internal class JdbcRideOfferRequests(
                 outcome = AttemptOutcome.REJECTED
             }
         }
-        val kind = (time as? TimeDecision.Ok)?.bookingKind ?: RideTimeRules.bookingKind(now, cmd.timeKind, desired, params, direct)
+        val kind = (time as? TimeDecision.Ok)?.bookingKind ?: RideTimeRules.bookingKind(now, cmd.timeKind, desired, params, direct, buffer)
         val offers = if (outcome == AttemptOutcome.OFFERED)
-            listOf(RideOfferProposal(cmd.serviceId, kind, cmd.timeKind, pickup, arrival, params.arrivalGraceMin, direct)) else emptyList()
+            listOf(RideOfferProposal(cmd.serviceId, kind, cmd.timeKind, pickup, arrival, params.arrivalGraceMin, direct, eta = etaInfo?.let { de.taktovia.bookingdispatch.api.OfferEtaVersion(it.modelVersion, it.configVersion, buffer, it.fallbackReason?.name) })) else emptyList()
         val result = store(ctx, cmd, scope, fingerprint, desired, now, kind, outcome, decision, offers, check, assignment, params)
         if (result.outcome == AttemptOutcome.TECHNICAL_ERROR && outcome == AttemptOutcome.OFFERED) {
             // Preisbildung nicht möglich (kein wirksamer Tarif, Engine-Ablehnung): nie ein Angebot ohne Preis, nie als fachliche Ablehnung gezählt
@@ -158,10 +175,10 @@ internal class JdbcRideOfferRequests(
 
     // ---- Fenster ohne Fristprüfung (nur für die Zulässigkeit abgelehnter Anfragen) ---------------------------------------------------
 
-    private fun nominalWindows(kind: RideTimeKind, desired: Instant, p: RideOfferParameters, directSeconds: Int): Pair<RideTimeWindow, RideTimeWindow> {
-        val w = Duration.ofMinutes(p.pickupWindowMin.toLong()); val d = Duration.ofSeconds(directSeconds.toLong())
-        return if (kind == RideTimeKind.DEPARTURE) RideTimeWindow(desired, desired.plus(w)) to RideTimeWindow(desired.plus(d), desired.plus(w).plus(d))
-        else RideTimeWindow(desired.minus(w).minus(d), desired.minus(d)) to RideTimeWindow(desired.minus(w), desired)
+    private fun nominalWindows(kind: RideTimeKind, desired: Instant, p: RideOfferParameters, directSeconds: Int, bufferSeconds: Int = 0): Pair<RideTimeWindow, RideTimeWindow> {
+        val w = Duration.ofMinutes(p.pickupWindowMin.toLong()); val d = Duration.ofSeconds(directSeconds.toLong()); val b = Duration.ofSeconds(bufferSeconds.toLong())
+        return if (kind == RideTimeKind.DEPARTURE) RideTimeWindow(desired, desired.plus(w)) to RideTimeWindow(desired.plus(d), desired.plus(w).plus(d).plus(b))
+        else RideTimeWindow(desired.minus(w).minus(d).minus(b), desired.minus(d).minus(b)) to RideTimeWindow(desired.minus(w), desired)
     }
 
     private fun TimeDecision.bookingKindOrNull(): RideBookingKind? = (this as? TimeDecision.Ok)?.bookingKind
@@ -266,12 +283,14 @@ internal class JdbcRideOfferRequests(
         val pickup = check.pickupStop?.let { OfferStop(it.stopId, it.revisionId) }; val dropoff = check.dropoffStop?.let { OfferStop(it.stopId, it.revisionId) }
         j.update(
             "INSERT INTO taktovia.ride_offer(tenant_id, id, attempt_id, quote_id, service_id, actor_ref, booking_kind, time_kind, pickup_earliest, pickup_latest, arrival_earliest, arrival_latest, arrival_grace_min, " +
-                "direct_seconds, expires_at, cancellation_policy_ref, demand, pickup_stop_id, pickup_stop_revision_id, dropoff_stop_id, dropoff_stop_revision_id, run_id, plan_revision, interval_from, interval_to, created_at, updated_at) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "direct_seconds, expires_at, cancellation_policy_ref, demand, pickup_stop_id, pickup_stop_revision_id, dropoff_stop_id, dropoff_stop_revision_id, run_id, plan_revision, interval_from, interval_to, created_at, updated_at, " +
+                "eta_model_version, eta_config_version, eta_buffer_seconds, eta_fallback_reason) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             offerId, attemptId, quote.id, cmd.serviceId, FourEyes.refOf(ctx).value, proposal.bookingKind.name, proposal.timeKind.name,
             Timestamp.from(proposal.pickupWindow.earliestAt), Timestamp.from(proposal.pickupWindow.latestAt), Timestamp.from(proposal.arrivalWindow.earliestAt), Timestamp.from(proposal.arrivalWindow.latestAt),
             proposal.arrivalGraceMin, proposal.directSeconds, Timestamp.from(expires), policy.cancellationPolicyRef, cmd.demand().toJson(), pickup?.stopId, pickup?.revisionId, dropoff?.stopId, dropoff?.revisionId,
             assignment?.runId, assignment?.runRevision, assignment?.intervalFrom, assignment?.intervalTo, Timestamp.from(now), Timestamp.from(now),
+            proposal.eta?.modelVersion, proposal.eta?.configVersion, proposal.eta?.bufferSeconds ?: 0, proposal.eta?.fallbackReason,
         )
         outbox.append(j, OutboxEvent(offerId, 1, "booking.offer_created", linkedMapOf<String, Any?>(
             "offer_id" to offerId.toString(), "attempt_id" to attemptId.toString(), "service_id" to cmd.serviceId.toString(), "run_revision" to assignment?.runRevision, "expires_at" to expires.toString(),
@@ -315,7 +334,8 @@ internal class JdbcRideOfferRequests(
             return MAPPER.writeValueAsString(linkedMapOf(
                 "outcome" to outcome.name, "booking_kind" to kind?.name,
                 "offers" to offers.map { linkedMapOf("service_id" to it.serviceId.toString(), "booking_kind" to it.bookingKind.name, "time_kind" to it.timeKind.name, "pickup_window" to window(it.pickupWindow),
-                    "arrival_window" to window(it.arrivalWindow), "arrival_grace_min" to it.arrivalGraceMin, "direct_seconds" to it.directSeconds) },
+                    "arrival_window" to window(it.arrivalWindow), "arrival_grace_min" to it.arrivalGraceMin, "direct_seconds" to it.directSeconds,
+                    "eta" to it.eta?.let { e -> linkedMapOf("model_version" to e.modelVersion, "config_version" to e.configVersion, "buffer_seconds" to e.bufferSeconds, "fallback_reason" to e.fallbackReason) }) },
                 "rejection" to rejection?.let { linkedMapOf("primary" to it.primary.name, "secondary" to it.secondary.map { s -> s.name }) },
             ))
         }
@@ -325,7 +345,8 @@ internal class JdbcRideOfferRequests(
             fun win(x: JsonNode) = RideTimeWindow(Instant.parse(x.get("earliest_at").asString()), Instant.parse(x.get("latest_at").asString()))
             val offers = n.get("offers").values().map { o ->
                 RideOfferProposal(UUID.fromString(o.get("service_id").asString()), RideBookingKind.valueOf(o.get("booking_kind").asString()), RideTimeKind.valueOf(o.get("time_kind").asString()),
-                    win(o.get("pickup_window")), win(o.get("arrival_window")), o.get("arrival_grace_min").asInt(), o.get("direct_seconds").asInt())
+                    win(o.get("pickup_window")), win(o.get("arrival_window")), o.get("arrival_grace_min").asInt(), o.get("direct_seconds").asInt(),
+                    o.get("eta")?.takeIf { !it.isNull }?.let { e -> de.taktovia.bookingdispatch.api.OfferEtaVersion(e.get("model_version")?.takeIf { !it.isNull }?.asInt(), e.get("config_version")?.takeIf { !it.isNull }?.asString(), e.get("buffer_seconds").asInt(), e.get("fallback_reason")?.takeIf { !it.isNull }?.asString()) })
             }
             val rej = n.get("rejection")?.takeIf { !it.isNull }?.let { r -> RideRejection(RejectionCode.valueOf(r.get("primary").asString()), r.get("secondary").values().map { RejectionCode.valueOf(it.asString()) }) }
             val kind = n.get("booking_kind")?.takeIf { !it.isNull }?.let { RideBookingKind.valueOf(it.asString()) }

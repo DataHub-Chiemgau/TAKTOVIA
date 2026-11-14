@@ -1240,6 +1240,25 @@ components:
           items:
             $ref: '#/components/schemas/DriverRemovedStop'
           description: Gegenüber der Vergleichsbasis entfallene Stopps (nur Haltepunktname, Art, frühere Planzeit, Buchungsreferenzen).
+        forecast_source:
+          type: string
+          enum:
+          - PLAN_TIME
+          - ETA_MODEL
+          description: Herkunft von `forecast_at` der Stopps (WP-M4-66). `PLAN_TIME` = Planzeit aus dem Routing, `ETA_MODEL` = Leseport „ETA je Stopp“ des ETA-Grundmodells.
+        forecast_data_stand:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Messzeit der letzten Position, auf der die Prognose beruht; null ohne Positionsbezug.
+        forecast_fallback_reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          description: Gesetzt, wenn Positionsdaten fehlen oder älter als `eta_max_data_age_sec` sind (z. B. `POSITION_STALE`) oder kein Modell vorliegt; `forecast_at` ist dann der Rückfall laut `eta_fallback_policy`, nie eine scheinbar aktuelle Prognose. Die Zusage `planned_at` bleibt unverändert.
       required:
       - shift_id
       - vehicle_id

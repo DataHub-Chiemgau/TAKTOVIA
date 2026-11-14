@@ -1,6 +1,7 @@
 package de.taktovia.bookingdispatch.internal
 
 import de.taktovia.bookingdispatch.api.DriverPlanStop
+import de.taktovia.bookingdispatch.api.DriverForecastInfo
 import de.taktovia.bookingdispatch.api.DriverPlanView
 import de.taktovia.bookingdispatch.api.DriverRunPlans
 import de.taktovia.bookingdispatch.api.DriverStopKind
@@ -20,18 +21,35 @@ import java.util.UUID
  * Fahrerprojektion auf PostgreSQL (WP-M3-26/-32). Eine schreibgeschützte Transaktion: der Umlauf der Schicht liefert die Planrevision, die Stopps genau dieser Revision
  * (append-only, unveränderlich) folgen in `route_stop`-Reihenfolge; Revision und Inhalt passen damit immer zusammen, auch während ein Plan-Commit läuft.
  */
-internal class JdbcDriverRunPlans(private val ctxTx: ContextTransactions) : DriverRunPlans {
+internal class JdbcDriverRunPlans(private val ctxTx: ContextTransactions, private val eta: de.taktovia.bookingdispatch.api.EtaStopEtaPort? = null, private val profile: String = "car", private val clock: java.time.Clock = java.time.Clock.systemUTC()) : DriverRunPlans {
     private val json = JsonMapper.builder().build()
 
     private class Move(val bookingId: UUID, val vector: ResourceVector)
 
     override fun currentPlan(ctx: RequestContext, shiftId: UUID, vehicleId: UUID): DriverPlanView? {
         if ("driver" !in ctx.roles) throw ProblemException(ErrorCode.FORBIDDEN)
-        return ctxTx.run(ctx, readOnly = true) { j ->
+        val view = ctxTx.run(ctx, readOnly = true) { j ->
             val run = j.query("SELECT id, revision, state FROM taktovia.vehicle_run WHERE shift_id = ? AND vehicle_id = ?",
                 { rs, _ -> Triple(rs.getObject(1, UUID::class.java), rs.getLong(2), RunState.valueOf(rs.getString(3))) }, shiftId, vehicleId).firstOrNull() ?: return@run null
             DriverPlanView(run.first, shiftId, vehicleId, run.second, run.third, stops(j, run.first, run.second))
-        }
+        } ?: return null
+        return withEta(ctx, view)
+    }
+
+    /**
+     * Prognosezeit je Stopp aus dem Leseport „ETA je Stopp“ (WP-M4-66): [DriverPlanStop.forecastAt] ist die früheste prognostizierte Ankunft, die Zusage ([DriverPlanStop.plannedAt]) bleibt unverändert; bei
+     * veralteten oder fehlenden Positionsdaten weist [DriverPlanView.forecast] den Rückfall aus. Ein technischer Fehler des Ports lässt die Planzeit aus dem Routing stehen (nie eine erfundene Zeit).
+     */
+    private fun withEta(ctx: RequestContext, view: DriverPlanView): DriverPlanView {
+        val port = eta ?: return view
+        if (view.stops.size < 2) return view
+        val next = view.stops.indexOfFirst { !it.plannedAt.isBefore(clock.instant()) }.let { if (it < 0) view.stops.size - 2 else minOf(it, view.stops.size - 2) }
+        val report = try { port.etaPerStop(ctx, view.runId, profile, null, next) } catch (e: RuntimeException) { return view }
+        if (report.planRevision != view.planRevision) return view
+        val byStop = report.stops.associateBy { it.seq }
+        // nur eine Prognose des Grundmodells ersetzt die Zeit; im Rückfall auf die Planzeit bleibt die Regel „nur wo die Fahrzeit aus dem Routing stammt, sonst keine Prognose“ unverändert
+        val stops = view.stops.map { s -> if (s.seq < next) s else byStop[s.seq]?.takeIf { it.basis != de.taktovia.bookingdispatch.api.EtaBasis.PLAN_TIME }?.let { e -> s.copy(forecastAt = e.forecastEarliest) } ?: s }
+        return view.copy(stops = stops, forecast = DriverForecastInfo("ETA_MODEL", report.dataStand, report.fallbackReason?.name, report.modelVersion, report.configVersion))
     }
 
     override fun planAt(tenant: de.taktovia.platform.tenant.TenantId, shiftId: UUID, vehicleId: UUID, revision: Long): DriverPlanView? = ctxTx.runSystem(tenant, readOnly = true) { j ->

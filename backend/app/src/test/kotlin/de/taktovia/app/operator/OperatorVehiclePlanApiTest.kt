@@ -32,7 +32,9 @@ class OperatorVehiclePlanApiTest {
         // Soll, Prognose (Planzeit aus dem Routing, gekennzeichnet) und Zusagefenster sind getrennte Felder
         val first = pa["stops"][0]
         assertTrue(first.has("scheduled_at") && first.has("forecast") && first.has("promise_windows"))
-        assertEquals("PLAN_TIME", first["forecast"]["basis"].asString()); assertEquals("PLAN_TIME", pa["forecast_source"].asString())
+        assertEquals("PLAN_TIME", first["forecast"]["basis"].asString())
+        // Das ETA-Grundmodell ist angeschlossen (WP-M4-66), der Testmandant hat aber kein freigegebenes Modell: Quelle ETA, Rückfall ausgewiesen, Planzeit als Prognose nur wo sie aus dem Routing stammt
+        assertEquals("ETA_MODEL", pa["forecast_source"].asString()); assertEquals("NO_APPROVED_MODEL", pa["forecast_fallback_reason"].asString())
         assertEquals("PICKUP", first["promise_windows"][0]["kind"].asString())
         // Planänderung an A ändert den Plan von B nicht
         w.plan(a.d.run, listOf(a.booking), base = w.t0.plusSeconds(600))

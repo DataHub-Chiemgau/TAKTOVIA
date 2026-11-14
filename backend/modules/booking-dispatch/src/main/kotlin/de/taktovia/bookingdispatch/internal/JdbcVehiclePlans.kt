@@ -60,8 +60,11 @@ internal class JdbcVehiclePlans(private val ctxTx: ContextTransactions, private 
         val byStop = report?.stops?.associateBy { it.stopRevisionId to it.seq }
         val stops = read.stops.mapIndexed { i, s ->
             val routed = i == 0 || read.stops[i - 1].legDurationSec != null
+            // Eine Prognose des Grundmodells (Live-Position oder Referenzprognose) ersetzt die Planzeit; im Rückfall auf die Planzeit gilt unverändert die Regel „nur wo die Fahrzeit aus dem Routing stammt“,
+            // sonst „keine Prognose“ (nie eine erfundene Zeit)
+            val modelled = byStop?.get(s.stopRevisionId to s.seq)?.takeIf { it.basis != EtaBasis.PLAN_TIME }
             val forecast: PlanForecast? = when {
-                report != null -> byStop?.get(s.stopRevisionId to s.seq)?.let { PlanForecast(it.forecastEarliest, it.forecastLatest, it.basis) }
+                modelled != null -> PlanForecast(modelled.forecastEarliest, modelled.forecastLatest, modelled.basis)
                 routed -> PlanForecast(s.plannedAt, s.plannedAt, EtaBasis.PLAN_TIME)
                 else -> null
             }

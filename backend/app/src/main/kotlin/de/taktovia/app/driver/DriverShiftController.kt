@@ -103,6 +103,7 @@ class DriverShiftController(private val staff: StafftimeApi) {
         "missing_requirements" to r.missingRequirements.map { linkedMapOf("code" to it) }, "plan_revision" to r.planRevision, "plan_as_of" to r.planAsOf.toString(),
         "stops" to r.stops.map { json(it) }, "acknowledged_revision" to r.acknowledgedRevision, "revision_state" to r.revisionState.name, "acknowledgement_required" to r.acknowledgementRequired,
         "base_revision" to r.baseRevision,
+        "forecast_source" to r.forecast.source, "forecast_data_stand" to r.forecast.dataStand?.toString(), "forecast_fallback_reason" to r.forecast.fallbackReason,
         "removed_stops" to r.removedStops.map { linkedMapOf("stop_name" to it.stopName, "kind" to it.kind, "planned_at" to it.plannedAt.toString(), "booking_ids" to it.bookingIds.map { id -> id.toString() }) },
     )
 

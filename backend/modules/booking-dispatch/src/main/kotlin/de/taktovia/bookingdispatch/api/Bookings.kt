@@ -135,8 +135,10 @@ interface Bookings {
 
     companion object {
         fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null,
-            executionStates: ExecutionStateSource = ExecutionStateSource.NONE, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, executionStates, staffing)
+            executionStates: ExecutionStateSource = ExecutionStateSource.NONE, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null,
+            /** Prognose der Ankunft am Einstiegsstopp aus dem Leseport „ETA je Stopp“ (WP-M4-66); ohne gilt nur die Plan-ETA. */
+            eta: EtaStopEtaPort? = null): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, executionStates, staffing, eta)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()
