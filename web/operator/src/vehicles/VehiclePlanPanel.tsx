@@ -1,9 +1,10 @@
-import { ApiError, useApi } from '@taktovia/api-client';
+import { ApiError, hasRight, useApi, useSession } from '@taktovia/api-client';
 import type { VehiclePlan, VehiclePlanStop } from '@taktovia/api-client';
 import { ResourceView } from '@taktovia/design-system';
 import type { ResourceState } from '@taktovia/design-system';
 import { useEffect, useRef, useState } from 'react';
 import type { LiveMessage } from '../live/LiveChannel';
+import { RunReplanDialog } from './RunReplanDialog';
 
 const clock = (iso: string): string => new Date(iso).toLocaleTimeString('de-DE');
 
@@ -119,6 +120,9 @@ export function VehiclePlanPanel({
   liveMessage?: LiveMessage | undefined;
 }) {
   const api = useApi();
+  const session = useSession();
+  const mayReplan = session.status === 'ready' && hasRight(session.me, 'dispatch.replan');
+  const [replanning, setReplanning] = useState<VehiclePlan | undefined>(undefined);
   // Der Zustand trägt die Fahrzeug-ID, für die er gilt: gehört er nicht zum gewählten Fahrzeug, wird er nie gezeigt
   const [state, setState] = useState<{
     vehicleId: string;
@@ -186,7 +190,26 @@ export function VehiclePlanPanel({
           </button>
         }
       >
-        {(plan) => <PlanBody plan={plan} loadedAt={state.loadedAt ?? ''} />}
+        {(plan) => (
+          <>
+            <PlanBody plan={plan} loadedAt={state.loadedAt ?? ''} />
+            {mayReplan && replanning?.vehicle_id !== vehicleId ? (
+              <p>
+                <button type="button" onClick={() => setReplanning(plan)}>
+                  Umplanen
+                </button>
+              </p>
+            ) : null}
+            {replanning && replanning.vehicle_id === vehicleId ? (
+              <RunReplanDialog
+                plan={replanning}
+                currentRevision={plan.plan_revision}
+                onClose={() => setReplanning(undefined)}
+                onChanged={() => setTick((n) => n + 1)}
+              />
+            ) : null}
+          </>
+        )}
       </ResourceView>
     </section>
   );

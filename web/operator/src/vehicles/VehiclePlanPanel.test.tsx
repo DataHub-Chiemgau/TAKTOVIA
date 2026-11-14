@@ -131,7 +131,7 @@ describe('UI-07 Fahrzeugplan (WP-M3-38, LH-6.7-OPS-003)', () => {
       [VA]: planOf(VA, RUN_A),
       [VB]: planOf(VB, RUN_B, { occupancy: { seats: 0, wheelchair: 1 }, plan_revision: 7 }),
     };
-    const c = client((id, args) => {
+    const c = client((_id, args) => {
       const vid = (args.path as { vehicle_id: string }).vehicle_id;
       return Promise.resolve(vehicle(vid, plans[vid] ?? planOf(vid, null)));
     });
@@ -163,7 +163,7 @@ describe('UI-07 Fahrzeugplan (WP-M3-38, LH-6.7-OPS-003)', () => {
   });
 
   it('leerzustand_fahrzeug_ohne_fahrt_und_klaerfaelle', async () => {
-    const c = client((id, args) => {
+    const c = client((_id, args) => {
       const vid = (args.path as { vehicle_id: string }).vehicle_id;
       return Promise.resolve(
         vehicle(
@@ -205,7 +205,7 @@ describe('UI-07 Fahrzeugplan (WP-M3-38, LH-6.7-OPS-003)', () => {
       resolve(v);
     };
     const c = client(
-      (id, args) =>
+      (_id, args) =>
         new Promise((resolve) => {
           queue((args.path as { vehicle_id: string }).vehicle_id).push(resolve as never);
         }),

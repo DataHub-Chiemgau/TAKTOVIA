@@ -30,6 +30,9 @@ import java.util.UUID
  * Fahrtenplan auf PostgreSQL (WP-M2-16). Sperrreihenfolge wie bei Hold und Confirm (Spike (a)): zuerst die Zeile `vehicle_run`, danach die abhängigen Zeilen. Die Datenbank
  * sichert zusätzlich: ein Umlauf je Schicht, Revision nur +1, Stoppsequenz je Revision eindeutig, Planrevisionen unveränderlich.
  */
+/** Angaben einer manuellen Planrevision (WP-M3-40), die mit der Revision in `plan_change` gespeichert werden. */
+internal class PlanChangeMeta(val reason: String, val createdBy: String, val exceptionRules: List<String>?, val exceptionJustification: String?)
+
 internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val outbox: Outbox, private val clock: Clock) : RunPlans {
     private val json = JsonMapper.builder().build()
 
@@ -100,7 +103,7 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
         appendIn(j, ctx.correlationId, runId, expectedRevision, stops, cause, affectedBookingIds)
 
     /** Wie oben, mit der Korrelation statt des Kontexts (Systemaufträge ohne Personenkontext, WP-M2-30). */
-    internal fun appendIn(j: JdbcOperations, correlationId: UUID, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>): RunPlan {
+    internal fun appendIn(j: JdbcOperations, correlationId: UUID, runId: UUID, expectedRevision: Long, stops: List<PlanStop>, cause: RevisionCause, affectedBookingIds: List<UUID>, meta: PlanChangeMeta? = null): RunPlan {
         val run = load(j, runId, true)
         if (run.revision != expectedRevision) throw ProblemException(
             ErrorCode.REVISION_MISMATCH, "Der Fahrtenplan wurde zwischenzeitlich geändert; aktuelle Revision ${run.revision} lesen.", headers = mapOf("ETag" to Etag.format(run.revision)),
@@ -132,7 +135,11 @@ internal class JdbcRunPlans(private val ctxTx: ContextTransactions, private val 
         // Änderungsstrom (WP-M2-28): Planänderung und Änderung je Buchung in derselben Transaktion wie Revision und Ereignis
         val changes = PlanDiff.changes(before.stops, ordered, affectedBookingIds.toSet())
         val changeId = UUID.randomUUID()
-        j.update("INSERT INTO taktovia.plan_change(tenant_id, id, run_id, run_revision, previous_revision, cause) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?)", changeId, runId, next, run.revision, cause.name)
+        j.update(
+            "INSERT INTO taktovia.plan_change(tenant_id, id, run_id, run_revision, previous_revision, cause, created_via, reason, created_by, exception_rules, exception_justification) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS text[]), ?)",
+            changeId, runId, next, run.revision, cause.name, if (meta == null) "SYSTEM" else "MANUAL", meta?.reason, meta?.createdBy, meta?.exceptionRules?.joinToString(",", "{", "}"), meta?.exceptionJustification,   // Regelnamen aus Aufzählung
+        )
         val numbered = changes.map { c ->
             // fortlaufende Nummer der Änderungen einer Buchung; der Advisory-Lock hält zwei Umläufe, die dieselbe Buchung berühren, in Reihe
             j.query("SELECT pg_advisory_xact_lock(hashtextextended('plan_change_booking|' || taktovia.current_tenant()::text || '|' || ?, 0))", { _, _ -> 0 }, c.bookingId.toString())

@@ -260,6 +260,8 @@ internal class JdbcBookings(
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).first()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
         j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, holdId)
+        // Der Hold wandert bei einer manuellen Umbuchung (WP-M3-40) mit der Buchung: nach dem Sperren muss der gesperrte Umlauf noch der des Holds sein
+        if (j.queryForObject("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", UUID::class.java, holdId) != runId) throw ProblemException(ErrorCode.CONFLICT, "Der Umlauf der Buchung hat sich zwischenzeitlich geändert; erneut versuchen.")
         val cur = j.query("SELECT state, revision FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> rs.getString(1) to rs.getLong(2) }, bookingId).first()
         if (cur.second != cmd.ifMatch) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (cur.first != BookingState.CONFIRMED.name && cur.first != BookingState.CONFIRMING.name)
@@ -314,6 +316,7 @@ internal class JdbcBookings(
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, pre.holdId).first()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
         j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, pre.holdId)
+        if (j.queryForObject("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", UUID::class.java, pre.holdId) != runId) throw ProblemException(ErrorCode.CONFLICT, "Der Umlauf der Buchung hat sich zwischenzeitlich geändert; erneut versuchen.")
         val cur = j.query("SELECT state, revision, cancel_reason_code FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> Triple(rs.getString(1), rs.getLong(2), rs.getString(3)) }, bookingId).first()
         when {
             cur.first == BookingState.CONFIRMING.name -> {
