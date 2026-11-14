@@ -21,6 +21,7 @@
     "test": "npm run test --workspaces",
     "build": "npm run build --workspaces",
     "a11y:browser": "node tools/a11y-browser.mjs",
+    "a11y:selftest": "node tools/a11y-gate-selftest.mjs",
     "e2e:pwa": "node tools/pwa-browser.mjs",
     "dienstplan:browser": "node tools/dienstplan-browser.mjs"
   },

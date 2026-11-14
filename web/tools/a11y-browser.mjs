@@ -8,12 +8,9 @@
  * Aufruf (im Verzeichnis web/): npm run a11y:browser
  */
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { createServer } from 'vite';
 import { chromium } from 'playwright-core';
-
-const require = createRequire(import.meta.url);
-const axeSource = require.resolve('axe-core/axe.min.js');
+import { axeVerstoesse, fokusVerstoesse } from './a11y-regeln.mjs';
 
 const CHROME =
     process.env.CHROME_PATH ??
@@ -29,6 +26,40 @@ const ME = {
     tenant_id: '00000000-0000-4000-8000-000000000001',
     tenant_name: 'Verkehrsbetrieb Nord',
     roles: ['ADMIN', 'FINANCE', 'STAFF_PLANNING', 'CALLCENTER', 'PASSENGER'],
+    // Funktionsscopes öffnen die Bereiche UI-12/UI-13/UI-11 (Navigationsrechte, der Server prüft jede Anfrage erneut)
+    scopes: [
+        'journeys:book',
+        'passengers:read',
+        'costs:allocate',
+        'expenses:approve',
+        'time-events:read',
+        'rosters:read',
+        'rosters:write',
+        'rosters:publish',
+        'driver-releases:write',
+        'fleet:read',
+        'fleet:write',
+        'drivers:read',
+        'drivers:write',
+        'shifts:read',
+        'shifts:write',
+        'checklists:read',
+        'checklists:write',
+        'inspections:justify',
+        'inspections:amend',
+        'defects:triage',
+        'defects:write',
+        'defects:state',
+        'defects:history',
+        'repair:read',
+        'repair:write',
+        'fleet:release',
+        'operator:read',
+        'operator:write',
+        'config:write',
+        'memberships:read',
+        'audit:read',
+    ],
     service_scope: null,
     session_id: '00000000-0000-4000-8000-000000000002',
     mfa: true,
@@ -45,6 +76,20 @@ const ALL_APPS = [
             '/admin/gebiete',
             '/admin/kooperation',
             '/admin/datenschutz',
+            '/personal/dienstplan',
+            '/zeit',
+            '/flotte/pruefungen',
+            '/flotte',
+            '/flotte/fahrer',
+            '/flotte/schichten',
+            '/flotte/checklisten',
+            '/flotte/schaeden',
+            '/leitstelle/fahrzeuge',
+            '/leitstelle/stoerungen',
+            '/leitstelle/vorfaelle',
+            '/personal',
+            '/finanzen',
+            '/konto',
             '/gibt-es-nicht',
         ],
     },
@@ -69,6 +114,48 @@ const VIEWPORTS = [
     { label: 'Desktop 1280x800', width: 1280, height: 800 },
     { label: 'Mobil 320x568', width: 320, height: 568 },
 ];
+
+/**
+ * Anmeldung gegen einen simulierten OIDC-Anbieter (Authorization Code mit PKCE): die Seite fordert Anmeldung (WP-M1-44), also leitet die Simulation den Autorisierungsaufruf
+ * mit `code` und `state` zurück und beantwortet den Tokenaufruf. Tokens liegen nur im Tab, deshalb wird danach clientseitig navigiert (kein Neuladen).
+ */
+async function installOidcSimulation(page) {
+    await page.route('**/protocol/openid-connect/auth*', (route) => {
+        const u = new URL(route.request().url());
+        route.fulfill({
+            status: 302,
+            headers: {
+                location: `${u.searchParams.get('redirect_uri')}?code=sim&state=${u.searchParams.get('state')}`,
+            },
+        });
+    });
+    await page.route('**/protocol/openid-connect/token', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                access_token: 'sim-token',
+                refresh_token: 'sim-refresh',
+                expires_in: 3600,
+                token_type: 'Bearer',
+            }),
+        }),
+    );
+}
+
+async function openRoute(page, base, route, state) {
+    if (!state.signedIn) {
+        await page.goto(`${base}/`);
+        await page.getByRole('button', { name: 'Anmelden' }).click();
+        await page.waitForSelector('main h1, main [data-testid="state-view"]');
+        state.signedIn = true;
+    }
+    await page.evaluate((r) => {
+        history.pushState({}, '', r);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    }, route);
+    await page.evaluate(() => document.getElementById('a11y-textscale')?.remove());
+}
 
 const failures = [];
 const fail = (msg) => {
@@ -95,6 +182,8 @@ for (const app of APPS) {
             reducedMotion: 'reduce',
         });
         const page = await context.newPage();
+        const authState = { signedIn: false };
+        await installOidcSimulation(page);
         await page.route('**/v1/me', (route) =>
             route.fulfill({
                 status: 200,
@@ -105,10 +194,12 @@ for (const app of APPS) {
         for (const route of app.routes) {
             for (const textScale of [100, 200]) {
                 const where = `${app.name} ${route} ${vp.label} Text ${textScale} %`;
-                await page.goto(base + route);
+                await openRoute(page, base, route, authState);
                 await page.waitForSelector('main h1, main [data-testid="state-view"]');
                 await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'));
                 // Inhaltsprüfung: das Dateninventar muss geladen sein, sonst prüft axe nur den Ladezustand.
+                if (app.name === 'operator' && route === '/admin/datenschutz')
+                    await page.waitForSelector('table', { timeout: 5000 }).catch(() => undefined);
                 if (
                     app.name === 'operator' &&
                     route === '/admin/datenschutz' &&
@@ -116,10 +207,24 @@ for (const app of APPS) {
                 )
                     fail(`${where}: Dateninventar-Tabellen nicht gerendert`);
                 if (textScale !== 100)
-                    await page.addStyleTag({
-                        content: `html { font-size: ${textScale}% !important; }`,
-                    });
+                    await page
+                        .addStyleTag({
+                            content: `html { font-size: ${textScale}% !important; }`,
+                        })
+                        .then((h) => h.evaluate((el) => (el.id = 'a11y-textscale')));
                 checks += 1;
+                if (process.env.A11Y_TRACE)
+                    console.log(
+                        where,
+                        '->',
+                        (
+                            (await page
+                                .locator('main h1')
+                                .first()
+                                .textContent()
+                                .catch(() => '')) ?? ''
+                        ).slice(0, 50),
+                    );
 
                 // Reflow: kein horizontales Scrollen der Seite.
                 const overflow = await page.evaluate(
@@ -155,42 +260,12 @@ for (const app of APPS) {
                 );
                 for (const s of small) fail(`${where}: Touchfläche kleiner als 44x44: ${s}`);
 
-                // axe im echten Browser, einschließlich Farbkontrast.
-                await page.addScriptTag({ path: axeSource });
-                const violations = await page.evaluate(async () => {
-                    const r = await window.axe.run(document, {
-                        runOnly: {
-                            type: 'tag',
-                            values: [
-                                'wcag2a',
-                                'wcag2aa',
-                                'wcag21a',
-                                'wcag21aa',
-                                'wcag22aa',
-                                'best-practice',
-                            ],
-                        },
-                    });
-                    return r.violations.map(
-                        (v) =>
-                            `${v.id}: ${v.help} (${v.nodes.length}) ${v.nodes[0]?.html.slice(0, 120)}`,
-                    );
-                });
-                for (const v of violations) fail(`${where}: axe ${v}`);
+                // axe im echten Browser, einschließlich Farbkontrast (gemeinsame Regeln, `a11y-regeln.mjs`).
+                for (const v of await axeVerstoesse(page)) fail(`${where}: ${v}`);
 
                 if (textScale === 100) {
-                    // Sichtbarer Fokus: die ersten Tabulatorstopps tragen einen Fokusrahmen.
-                    for (let i = 0; i < 4; i += 1) {
-                        await page.keyboard.press('Tab');
-                        const outline = await page.evaluate(() => {
-                            const el = document.activeElement;
-                            if (!el || el === document.body) return null;
-                            const cs = getComputedStyle(el);
-                            return { style: cs.outlineStyle, width: parseFloat(cs.outlineWidth) };
-                        });
-                        if (outline && (outline.style === 'none' || outline.width < 2))
-                            fail(`${where}: Tabulatorstopp ${i + 1} ohne sichtbaren Fokus`);
-                    }
+                    // Fokusregeln: Rollen fokussierbar, kein positiver tabindex, sichtbarer Fokus an den Tabulatorstopps (gemeinsame Regeln).
+                    for (const v of await fokusVerstoesse(page, 4)) fail(`${where}: ${v}`);
                     // Reduzierte Bewegung: Übergänge und Animationen sind praktisch aufgehoben.
                     const motion = await page.evaluate(() => {
                         const cs = getComputedStyle(document.querySelector('main'));

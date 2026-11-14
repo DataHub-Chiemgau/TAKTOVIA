@@ -135,6 +135,14 @@ jobs:
         run: npm run a11y:browser
         working-directory: web
         env: { CHROME_PATH: /usr/bin/google-chrome }
+      - name: Selbsttest der Barrierefreiheitsprüfung (Probekomponenten ohne Namen, ohne Fokus, mit zu geringem Kontrast müssen fehlschlagen; WP-M5-18)
+        run: npm run a11y:selftest
+        working-directory: web
+        env: { CHROME_PATH: /usr/bin/google-chrome }
+      - name: Kernreise Planer UI-12 im Browser (Tastaturpfad, axe, Reflow; WP-M4-18/-19, WP-M5-18)
+        run: npm run dienstplan:browser
+        working-directory: web
+        env: { CHROME_PATH: /usr/bin/google-chrome }
 
   workers:
     name: Worker (WP-M0-07)
