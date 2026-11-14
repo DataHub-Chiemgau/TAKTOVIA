@@ -1416,6 +1416,12 @@ export interface RideOfferRequest {
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
   assistance_codes?: RideAssistanceCodes;
   channel?: 'WEB' | 'APP' | 'API';
+  booking_subject?: DispatchBookingSubject;
+}
+
+export interface DispatchBookingSubject {
+  kind: 'SELF' | 'DELEGATED';
+  passenger_id?: UUID;
 }
 
 export interface RideWindow {
@@ -1500,6 +1506,31 @@ export interface RideConfirmRequest {
   hold_id: UUID;
   max_gross: Money;
   payment_reference?: string;
+  reason_code?: DispatchReasonCode;
+  reason_text?: string;
+}
+
+export type DispatchReasonCode = 'PHONE_REQUEST' | 'COUNTER_REQUEST' | 'PASSENGER_REQUEST' | 'OPERATIONAL_NEED' | 'CORRECTION' | 'OTHER';
+
+export interface BookingChangeRequest {
+  new_hold_id: UUID;
+  offer_revision: number;
+  max_gross: Money;
+  reason_code: DispatchReasonCode;
+  reason_text?: string;
+  passenger_consent?: {
+    channel: 'PHONE' | 'COUNTER' | 'WRITTEN';
+    obtained_at: Timestamp;
+  };
+}
+
+export interface BookingChangeResult {
+  booking: RideBooking;
+  replaced: RideBooking;
+  change_id: UUID;
+  replayed: boolean;
+  price_changed: boolean;
+  time_changed: boolean;
 }
 
 export interface RideBooking {
@@ -1619,6 +1650,7 @@ export interface RidePromise {
 
 export interface RideCancelRequest {
   reason: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY' | 'VEHICLE_OUTAGE';
+  reason_text?: string;
 }
 
 export interface RideBookingHistoryEntry {
@@ -2238,6 +2270,7 @@ export interface OperatorVehicle {
   open_alert_count?: number;
   inspection_status: InspectionStatus;
   inspection_status_revision: number;
+  flags?: OperatorFlag[];
   orders?: OperatorOrder[];
 }
 
@@ -3423,6 +3456,61 @@ export interface ResolveOdometerConflictRequest {
   decision: 'CHOSEN' | 'DISCARDED';
   chosen_reading_id?: UUID;
   reason: string;
+}
+
+export interface OperatorFlagItem {
+  id: UUID;
+  kind: 'OVERDUE' | 'INFO_PENDING';
+  cause: 'PICKUP_OVERDUE' | 'POSITION_STALE' | 'PLAN_ACK_MISSING' | 'REVIEW_REQUIRED_OPEN';
+  state: 'OPEN' | 'RESOLVED';
+  service_id: UUID | null;
+  vehicle_id: UUID | null;
+  affected_count: number;
+  opened_at: Timestamp;
+  resolved_at: Timestamp | null;
+  threshold_min: number | null;
+  revision: number;
+}
+
+export interface OperatorFlagPage {
+  items: OperatorFlagItem[];
+  next_cursor: string | null;
+  as_of: string;
+}
+
+export type OperatorBookingState = 'CONFIRMING' | 'CONFIRMED' | 'RECONCILING' | 'COMPENSATING' | 'CANCEL_PENDING' | 'CANCELED' | 'COMPLETED' | 'FAILED';
+
+export interface OperatorFlag {
+  id: UUID;
+  kind: 'OVERDUE' | 'INFO_PENDING';
+  cause: 'PICKUP_OVERDUE' | 'POSITION_STALE' | 'PLAN_ACK_MISSING' | 'REVIEW_REQUIRED_OPEN';
+  affected_count: number;
+  opened_at: Timestamp;
+  threshold_min: number | null;
+}
+
+export interface OperatorBookingRow {
+  id: UUID;
+  booking_number: string;
+  service_id: UUID;
+  state: OperatorBookingState;
+  revision: number;
+  created_at: Timestamp;
+  pickup_window: RideWindow;
+  arrival_window: RideWindow;
+  passengers: number;
+  wheelchair_spaces: number;
+  vehicle_id: UUID | null;
+  vehicle_label: string | null;
+  passenger_ref?: UUID;
+  assistance_codes?: string[];
+  flags: OperatorFlag[];
+}
+
+export interface OperatorBookingPage {
+  items: OperatorBookingRow[];
+  next_cursor: string | null;
+  as_of: string;
 }
 
 export type ContactChannelCode = 'EMAIL' | 'PHONE';
@@ -4876,6 +4964,13 @@ export interface Operations {
     body: RideCancelRequest;
     response: RideBooking;
   };
+  changeBooking: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: BookingChangeRequest;
+    response: BookingChangeResult;
+  };
   listPlanChanges: {
     path: Record<string, never>;
     query: { after?: number; limit?: number };
@@ -5821,6 +5916,20 @@ export interface Operations {
     body: ResolveOdometerConflictRequest;
     response: OdometerConflict;
   };
+  searchOperatorBookings: {
+    path: Record<string, never>;
+    query: { booking_number?: string; from?: Timestamp; to?: Timestamp; passenger?: UUID; vehicle_id?: UUID; state?: OperatorBookingState; service_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OperatorBookingPage;
+  };
+  listOperatorFlags: {
+    path: Record<string, never>;
+    query: { state?: 'OPEN' | 'RESOLVED'; kind?: 'OVERDUE' | 'INFO_PENDING'; service_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OperatorFlagPage;
+  };
   listPassengers: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -6410,6 +6519,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['If-Match', 'traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 412, 404, 429, 503] },
   listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   cancelBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/cancel', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  changeBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/changes', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['dispatch:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listPlanChanges: { method: 'GET', path: '/v1/plan-changes', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getPlanChangesSnapshot: { method: 'GET', path: '/v1/plan-changes/snapshot', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref', 'actor_ref', 'action', 'from', 'to', 'purpose'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
@@ -6545,6 +6655,8 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   createOdometerReading: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/odometer', pathParams: ['vehicle_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['odometer:record'], statuses: [200, 201, 400, 401, 403, 404, 422, 429, 503] },
   listOdometerConflicts: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts', pathParams: ['vehicle_id'], query: ['status', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['odometer:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   resolveOdometerConflict: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts/{conflict_id}/resolution', pathParams: ['vehicle_id', 'conflict_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['odometer:resolve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
+  searchOperatorBookings: { method: 'GET', path: '/v1/operator/bookings', pathParams: [], query: ['booking_number', 'from', 'to', 'passenger', 'vehicle_id', 'state', 'service_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listOperatorFlags: { method: 'GET', path: '/v1/operator/flags', pathParams: [], query: ['state', 'kind', 'service_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

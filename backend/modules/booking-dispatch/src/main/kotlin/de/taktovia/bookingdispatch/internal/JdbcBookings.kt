@@ -39,6 +39,7 @@ import de.taktovia.bookingdispatch.api.PromiseCore
 import de.taktovia.bookingdispatch.api.ResourceVector
 import de.taktovia.farepayment.api.FareQuotes
 import de.taktovia.platform.approval.FourEyes
+import de.taktovia.platform.audit.AuditActions
 import de.taktovia.platform.authz.ObjectAuthorizer
 import de.taktovia.platform.authz.ScopedObject
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
@@ -68,15 +69,17 @@ internal class JdbcBookings(
     private val outbox: Outbox, private val config: EffectiveConfig?, private val clock: Clock,
     private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer, private val cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
     private val executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
+    audit: de.taktovia.platform.audit.AuditPort? = null,
 ) : Bookings {
+    internal val changes = BookingChanges(audit, clock)
     private val json = JsonMapper.builder().build()
 
-    private class OfferRow(
+    internal class OfferRow(
         val actorRef: String, val serviceId: UUID, val quoteId: UUID, val revision: Long, val pickupEarliest: Instant, val pickupLatest: Instant, val arrivalEarliest: Instant, val arrivalLatest: Instant,
         val cancellationPolicyRef: String, val demand: String, val pickupStopRevisionId: UUID?, val dropoffStopRevisionId: UUID?,
     )
 
-    private fun offerOfHold(j: JdbcOperations, holdId: UUID, lock: Boolean): OfferRow? =
+    internal fun offerOfHold(j: JdbcOperations, holdId: UUID, lock: Boolean): OfferRow? =
         if (lock) j.query("SELECT $OFFER_COLS FROM taktovia.ride_offer WHERE hold_id = ? FOR UPDATE", OFFER, holdId).firstOrNull()  // sql-lint: ok Spaltenliste aus Konstante, Wert gebunden
         else j.query("SELECT $OFFER_COLS FROM taktovia.ride_offer WHERE hold_id = ?", OFFER, holdId).firstOrNull()  // sql-lint: ok Spaltenliste aus Konstante, Wert gebunden
 
@@ -87,6 +90,14 @@ internal class JdbcBookings(
 
     override fun confirm(ctx: RequestContext, cmd: ConfirmBooking): ConfirmedBooking = ctxTx.run(ctx) { j ->
         val passengerId = passengerOf(j, ctx) ?: throw ProblemException(ErrorCode.FORBIDDEN, "Eine Buchung setzt ein Fahrgastkonto voraus.")
+        confirmIn(j, ctx, cmd, passengerId)
+    }
+
+    /**
+     * Bestätigung in der laufenden Transaktion für den Fahrgast [passengerId]: der Fahrgast bestätigt sein eigenes Angebot, die Disposition (WP-M3-39) das von ihr ausgestellte Angebot für den
+     * gebundenen Fahrgast; der Besitzer des Angebots ist in beiden Fällen der Akteur des Kontexts (fremder Hold: 404), der Akteur steht als Urheber der Buchung (`created_by`), nie der Fahrgast.
+     */
+    internal fun confirmIn(j: JdbcOperations, ctx: RequestContext, cmd: ConfirmBooking, passengerId: UUID): ConfirmedBooking = kotlin.run {
         // Hold und Angebot zuerst ohne Sperre lesen (Umlauf, Besitzer und Bezüge sind unveränderlich), dann Umlauf, dann Angebot, dann Hold sperren
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, cmd.holdId).firstOrNull() ?: throw ProblemException.notFound()
         val pre = offerOfHold(j, cmd.holdId, lock = false) ?: throw ProblemException.notFound()
@@ -98,7 +109,7 @@ internal class JdbcBookings(
         // Wiederholung: dieselbe Buchung (vor Ablauf-, ETag- und Preisprüfung); der Betrag muss dem bestätigten entsprechen
         j.query("SELECT id FROM taktovia.booking WHERE hold_id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, cmd.holdId).firstOrNull()?.let { existing ->
             if (quote.payAtPlatformMinor != cmd.maxGrossMinor || quote.currency != cmd.currency) throw ProblemException(ErrorCode.REQUOTE_REQUIRED, "Der Betrag weicht vom bestätigten Preis ab.")
-            return@run ConfirmedBooking(detail(j, ctx, existing, passengerOf = passengerId), replayed = true)
+            return ConfirmedBooking(detail(j, ctx, existing, passengerOf = passengerId), replayed = true)
         }
         when {
             hold.first == "HELD" && hold.second -> throw ProblemException(ErrorCode.HOLD_EXPIRED, "Die Reservierung ist abgelaufen.")
@@ -133,14 +144,17 @@ internal class JdbcBookings(
         BookingPaymentContext(r.id, r.serviceId, journeyId, quoteId, r.state, r.createdAt)
     }
 
-    private class Row(
+    internal class Row(
         val id: UUID, val bookingNo: String, val serviceId: UUID, val holdId: UUID, val state: String, val revision: Long, val createdAt: Instant, val snapshot: String, val passengerId: UUID?,
         val cancelReason: String?, val cancelCause: String?,
     )
 
-    private fun isPassengerView(ctx: RequestContext) = "passenger" in ctx.roles
+    /** Ausführungszustand des Fahrtsegments (`PLANNED`, `BOARDED`, …); `null` ohne Segment. */
+    internal fun legState(j: JdbcOperations, bookingId: UUID): String? = transitions.legExecutionState(j, bookingId)
 
-    private fun row(j: JdbcOperations, id: UUID): Row? = j.query("SELECT $COLS FROM taktovia.booking WHERE id = ? AND booking_no IS NOT NULL", ROW, id).firstOrNull()
+    internal fun isPassengerView(ctx: RequestContext) = "passenger" in ctx.roles
+
+    internal fun row(j: JdbcOperations, id: UUID): Row? = j.query("SELECT $COLS FROM taktovia.booking WHERE id = ? AND booking_no IS NOT NULL", ROW, id).firstOrNull()
 
     /** Berechtigung des Aufrufers auf die Buchung: Fahrgast nur eigene, Betrieb nur Dienste des Scopes; alles andere ist `404`. */
     private fun authorize(j: JdbcOperations, ctx: RequestContext, r: Row, passengerOf: UUID?) {
@@ -148,7 +162,7 @@ internal class JdbcBookings(
         else authorizer.requireRead(j, ctx, ScopedObject("BOOKING", r.id, ctx.tenant, r.serviceId))
     }
 
-    private fun detail(j: JdbcOperations, ctx: RequestContext, id: UUID, passengerOf: UUID?): BookingDetail {
+    internal fun detail(j: JdbcOperations, ctx: RequestContext, id: UUID, passengerOf: UUID?): BookingDetail {
         val r = row(j, id) ?: throw ProblemException.notFound()
         authorize(j, ctx, r, passengerOf)
         return view(j, ctx, r)
@@ -242,7 +256,14 @@ internal class JdbcBookings(
         return CancellationPolicy(deadline, reasons, defaulted)
     }
 
-    override fun cancel(ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult = ctxTx.run(ctx) { j ->
+    override fun cancel(ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult = ctxTx.run(ctx) { j -> cancelIn(j, ctx, bookingId, cmd) }
+
+    /**
+     * Storno in der laufenden Transaktion (siehe [cancel]). Storniert **Betriebspersonal** (Disposition, Callcenter), entsteht in derselben Transaktion der Änderungseintrag `booking_change`
+     * (Art `CANCEL`) mit Akteur, Zeitpunkt, Grundcode und optionalem Freitext sowie der Auditeintrag `dispatch.booking.cancelled` (WP-M3-39): Akteur und Grund fehlen nie, der Akteur ist getrennt vom
+     * Fahrgast. Ein Stornogrund ist hier ohnehin Pflicht (Katalog, 422 sonst).
+     */
+    internal fun cancelIn(j: JdbcOperations, ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult = kotlin.run {
         val passenger = isPassengerView(ctx)
         val own = if (passenger) passengerOf(j, ctx) else null
         val pre = row(j, bookingId) ?: throw ProblemException.notFound()
@@ -273,7 +294,12 @@ internal class JdbcBookings(
             if (clock.instant().isAfter(pickup.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))))
                 throw ProblemException(ErrorCode.CANCEL_DEADLINE_EXPIRED, "Die Stornofrist von ${policy.deadlineMin} Minuten vor der Abholung ist abgelaufen.")
         }
+        val oldPromise = pre.snapshot
         val done = cancelLocked(j, Caller.of(ctx), actor.name, bookingId, holdId, runId, cur.first == BookingState.CONFIRMED.name, cmd.reason, cmd.ifMatch)
+        if (!passenger && ctx.actor.type == ActorType.HUMAN) {
+            changes.record(j, ctx, bookingId, "CANCEL", cmd.reason.name, cmd.reasonText, oldPromise, null, null, null)
+            changes.audit(j, ctx, AuditActions.DISPATCH_BOOKING_CANCELLED, bookingId, mapOf("reason_code" to cmd.reason.name, "has_reason_text" to (cmd.reasonText != null)))
+        }
         CancelResult(detail(j, ctx, bookingId, passengerOf = own), holdId, done.first, done.second)
     }
 
@@ -281,7 +307,7 @@ internal class JdbcBookings(
      * Gemeinsamer Kern des Stornos unter den gehaltenen Sperren (Umlauf, Hold, Buchung): Übergang, Freigabe der Reservierung, Plan ohne die Buchung, Ereignis `booking.cancelled`. Liefert die neue
      * Planrevision. [initiator] ist `PASSENGER`, `OPERATOR` oder `SYSTEM`.
      */
-    private fun cancelLocked(j: JdbcOperations, caller: Caller, initiator: String, bookingId: UUID, holdId: UUID, runId: UUID, confirmed: Boolean, reason: BookingReason, revision: Long): Pair<Long?, de.taktovia.bookingdispatch.api.RefundHint?> {
+    internal fun cancelLocked(j: JdbcOperations, caller: Caller, initiator: String, bookingId: UUID, holdId: UUID, runId: UUID, confirmed: Boolean, reason: BookingReason, revision: Long): Pair<Long?, de.taktovia.bookingdispatch.api.RefundHint?> {
         transitions.apply(j, caller, bookingId, if (confirmed) BookingState.CANCEL_PENDING else BookingState.COMPENSATING, reason, revision)
         // Reservierung freigeben: die Kapazität zählt auf allen Abschnitten und Dimensionen wieder (Belegung = CONSUMED plus gültiges HELD)
         check(j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'CONSUMED'", holdId) == 1) { "Reservierung der Buchung nicht freigebbar" }

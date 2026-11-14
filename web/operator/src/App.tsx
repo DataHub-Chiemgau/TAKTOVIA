@@ -39,6 +39,8 @@ import { Fahrzeugstamm } from './flotte/Fahrzeugstamm';
 import { Schichtzuweisung } from './flotte/Schichtzuweisung';
 import { Schadenakte } from './flotte/Schadenakte';
 import { Arbeitsliste } from './alarm/Arbeitsliste';
+import { OverdueFlags } from './alerts/OverdueFlags';
+import { BookingList } from './bookings/BookingList';
 import { VehicleList } from './vehicles/VehicleList';
 import { Vorfaelle } from './alarm/Vorfaelle';
 import { FahrzeugWechsel } from './fahrzeugwechsel/FahrzeugWechsel';
@@ -232,6 +234,22 @@ export function App() {
             element={
               <RequireRight right="livebetrieb">
                 <VehicleList />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/leitstelle/auftraege"
+            element={
+              <RequireRight right="livebetrieb">
+                <BookingList />
+              </RequireRight>
+            }
+          />
+          <Route
+            path="/leitstelle/hinweise"
+            element={
+              <RequireRight right="livebetrieb">
+                <OverdueFlags />
               </RequireRight>
             }
           />

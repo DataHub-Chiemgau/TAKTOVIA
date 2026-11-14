@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+operator_flag;SELECT,INSERT,UPDATE;WP-M3-42: Hinweis Verspaetung/Information ausstehend; Kennung, Art, Ursache und Schwelle unveraenderlich (Trigger), nie geloescht

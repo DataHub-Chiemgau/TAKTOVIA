@@ -16,6 +16,7 @@ import {
   useAnnounceInspectionChanges,
   useInspectionRefresh,
 } from '../inspection/InspectionStatus';
+import { flagText } from '../bookings/BookingList';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
 
 /** Sperrgründe der Leitstellenansicht (Katalog OP-01); keine Diagnosetexte. */
@@ -89,6 +90,8 @@ export function notesOf(v: OperatorVehicle): string[] {
   if (v.open_defect_count > 0) notes.push(`${v.open_defect_count} offene Schadenakte(n)`);
   // Hinweis der Leitstelle am Fahrzeug (WP-M3-18: Technikereignis u. a.): offene Störungen aus der Alarm-Grundlage
   if ((v.open_alert_count ?? 0) > 0) notes.push(`${v.open_alert_count} offene Störung(en)`);
+  // Hinweise (WP-M3-42): Verspätung und ausstehende Information stehen getrennt, mit der Zahl der Betroffenen
+  notes.push(...(v.flags ?? []).map(flagText));
   return notes;
 }
 

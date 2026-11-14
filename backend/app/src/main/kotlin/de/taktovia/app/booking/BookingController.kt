@@ -45,17 +45,19 @@ class BookingResource(@get:JsonValue val data: Map<String, Any?>, override val r
  * `If-Match` ist die Angebotsrevision (ETag der Hold-Antwort): fehlt er 428, ist er veraltet 412. Der `Idempotency-Key` ist Pflicht (Filter): Wiederholung liefert das gespeicherte Ergebnis.
  */
 @RestController
-class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments, private val walking: de.taktovia.bookingdispatch.api.WalkingRoutes) {
+class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments, private val walking: de.taktovia.bookingdispatch.api.WalkingRoutes,
+                        private val operators: de.taktovia.bookingdispatch.api.OperatorBookings) {
 
     @PostMapping("/v1/bookings")
     @Suppress("UNCHECKED_CAST")
     fun confirm(@RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): ResponseEntity<BookingResource> {
         val expected = Etag.parseIfMatch(ifMatch)
         val max = body["max_gross"] as Map<String, Any?>
-        val r = bookings.confirm(
-            RequestContexts.require(request),
-            ConfirmBooking(UUID.fromString(body["hold_id"] as String), expected, (max["amount_minor"] as Number).toLong(), max["currency"] as String, body["payment_reference"] as String?),
-        )
+        val ctx = RequestContexts.require(request)
+        val cmd = ConfirmBooking(UUID.fromString(body["hold_id"] as String), expected, (max["amount_minor"] as Number).toLong(), max["currency"] as String, body["payment_reference"] as String?)
+        // Betriebspersonal bestätigt den Hold eines für einen Fahrgast gebundenen Leitstellenangebots (WP-M3-39): Grund ist Pflicht, Akteur und Grund stehen im Änderungsprotokoll
+        val r = if ("passenger" in ctx.roles) bookings.confirm(ctx, cmd)
+        else operators.create(ctx, cmd, dispatchReason(body["reason_code"] as String?), body["reason_text"] as String?)
         return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/bookings/${r.booking.id}")).body(BookingResource(render(r.booking), r.booking.revision))
     }
 
@@ -92,12 +94,36 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         val expected = Etag.parseIfMatch(ifMatch)
         val reason = BookingReason.parse(body["reason"] as String) ?: throw ProblemException.invalid(Violation("/reason", ViolationCode.NOT_IN_ENUM))
         val ctx = RequestContexts.require(request)
-        val r = bookings.cancel(ctx, id, CancelBooking(expected, reason))
+        val r = bookings.cancel(ctx, id, CancelBooking(expected, reason, body["reason_text"] as String?))
         // Erstattungshinweis (WP-M2-31): was beauftragt ist, nie „erstattet“ vor der PSP-Bestätigung; dazu der Zahlungsblock (Stand der Zahlung, getrennt vom Buchungsstatus)
         val body = withPayment(render(r.booking), payments.forBooking(ctx, id), r.booking.promise.exponent)
         val withHint = r.refundHint?.let { h -> LinkedHashMap(body).also { it["refund_hint"] = linkedMapOf("status" to h.status, "amount" to money(h.amountMinor, h.currency, r.booking.promise.exponent)) } } ?: body
         return BookingResource(withHint, r.booking.revision)
     }
+
+    /**
+     * `POST /v1/bookings/{id}/changes` (WP-M3-39, LH-6.7-OPS-004): Änderung durch die Disposition als atomarer Tausch auf einen bereits gehaltenen neuen Wunsch. `If-Match` = Revision der
+     * bisherigen Buchung (428/412), `Idempotency-Key` Pflicht (Filter). Grund ist Pflicht (422), bei Preis- oder Zeitänderung die Zustimmung des Fahrgasts.
+     */
+    @PostMapping("/v1/bookings/{booking_id}/changes")
+    @Suppress("UNCHECKED_CAST")
+    fun change(@PathVariable("booking_id") id: UUID, @RequestBody body: Map<String, Any?>, @RequestHeader("If-Match", required = false) ifMatch: String?, @RequestHeader("Idempotency-Key") key: String, request: HttpServletRequest): ResponseEntity<Map<String, Any?>> {
+        val expected = Etag.parseIfMatch(ifMatch)
+        val max = body["max_gross"] as Map<String, Any?>
+        val consent = (body["passenger_consent"] as Map<String, Any?>?)?.let { c ->
+            val at = de.taktovia.platform.time.Rfc3339.parse(c["obtained_at"] as String?, "/passenger_consent/obtained_at")
+            if (!at.ok) throw ProblemException.invalid(*at.violations.toTypedArray())
+            de.taktovia.bookingdispatch.api.PassengerConsent(c["channel"] as String, at.value!!.toInstant())
+        }
+        val ctx = RequestContexts.require(request)
+        val r = operators.change(ctx, id, de.taktovia.bookingdispatch.api.ChangeBooking(expected, UUID.fromString(body["new_hold_id"] as String), (body["offer_revision"] as Number).toLong(),
+            (max["amount_minor"] as Number).toLong(), max["currency"] as String, dispatchReason(body["reason_code"] as String?), body["reason_text"] as String?, consent))
+        val out = linkedMapOf<String, Any?>("booking" to render(r.booking), "replaced" to render(r.replaced), "change_id" to r.changeId.toString(), "replayed" to r.replayed, "price_changed" to r.priceChanged, "time_changed" to r.timeChanged)
+        return ResponseEntity.ok().header("ETag", Etag.format(r.booking.revision)).body(out)
+    }
+
+    private fun dispatchReason(code: String?): de.taktovia.bookingdispatch.api.DispatchReason =
+        de.taktovia.bookingdispatch.api.DispatchReason.parse(code) ?: throw ProblemException.invalid(Violation("/reason_code", if (code == null) ViolationCode.REQUIRED else ViolationCode.NOT_IN_ENUM))
 
     /**
      * `GET /v1/bookings/{id}/history` (WP-M2-25): Fahrgäste sehen die reduzierte Sicht ihrer eigenen Buchung, Betriebspersonal im Dienstscope und Prüfer standardmäßig die Prüfersicht;

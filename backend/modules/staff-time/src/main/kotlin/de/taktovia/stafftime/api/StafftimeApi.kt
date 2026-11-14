@@ -55,6 +55,9 @@ interface StafftimeApi {
 
     /** Planbestätigung des Fahrers und Hinweis bei ausbleibender Bestätigung (WP-M3-27). */
     val planAcks: DriverPlanAcks
+
+    /** Meldungen des Fahrerbetriebs für die Überfälligkeitsauswertung der Leitstelle: veralteter Standort, offener Klärfall (WP-M3-42). */
+    val signals: OperationalSignals
     /** Leseport „Schichtbesetzung“ für Disposition und Einsatzfreigabe (WP-M4-17). */
     val shiftStaffing: de.taktovia.platform.readports.ShiftStaffingReadPort
 

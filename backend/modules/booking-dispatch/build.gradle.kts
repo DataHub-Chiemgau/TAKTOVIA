@@ -9,6 +9,7 @@ dependencies {
     testImplementation(libs.postgresql)
     testImplementation("com.zaxxer:HikariCP")
     testImplementation(libs.json.schema.validator)
+    testImplementation("ch.qos.logback:logback-classic")   // Log-Scan der Auftragssuche (WP-M3-37): Suchbegriffe zu Personen stehen nicht im Log
     testImplementation(libs.archunit.junit5)   // EtaArchitectureTest (WP-M4-61): Grundmodell ohne Fahrerbezug
 }
 

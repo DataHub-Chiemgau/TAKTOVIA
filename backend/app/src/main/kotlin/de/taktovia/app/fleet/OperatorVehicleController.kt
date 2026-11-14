@@ -37,7 +37,7 @@ import java.util.UUID
  * (WP-M3-31), ohne Schicht und Meldung `NOT_READY` bei gesetztem Sperrkennzeichen und sonst `AVAILABLE`.
  */
 @RestController
-class OperatorVehicleController(private val fleet: FleetsafetyApi, private val staff: StafftimeApi, private val orders: OperatorOrders, private val codec: CursorCodec) {
+class OperatorVehicleController(private val fleet: FleetsafetyApi, private val staff: StafftimeApi, private val orders: OperatorOrders, private val codec: CursorCodec, private val flags: de.taktovia.bookingdispatch.api.OperatorFlags) {
 
     @GetMapping("/v1/operator/vehicles")
     fun list(
@@ -62,10 +62,10 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
             val rows = round.take(ROUND)
             if (rows.isEmpty()) break
             val ids = rows.map { it.id }
-            val positions = staff.positions.latest(ctx, ids); val statuses = staff.serviceStatus.latestForVehicles(ctx, ids); val runs = orders.forVehicles(ctx, ids)
+            val positions = staff.positions.latest(ctx, ids); val statuses = staff.serviceStatus.latestForVehicles(ctx, ids); val runs = orders.forVehicles(ctx, ids); val flagged = flags.forVehicles(ctx, ids)
             for (f in rows) {
                 if (kept.size > lim) break
-                val body = json(f, positions[f.id], statuses[f.id], runs[f.id])
+                val body = json(f, positions[f.id], statuses[f.id], runs[f.id], flagged[f.id].orEmpty())
                 lastScanned = f
                 if (state == null || body["operational_state"] == state) kept += f to body
             }
@@ -86,10 +86,10 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
         val ctx = RequestContexts.require(request)
         val id = runCatching { UUID.fromString(vehicleId) }.getOrNull() ?: throw ProblemException.notFound()
         val f = fleet.operatorVehicles.get(ctx, id)   // nicht sichtbar (fremder Mandant, nicht berechtigter Dienst) = 404
-        return json(f, staff.positions.latest(ctx, listOf(id))[id], staff.serviceStatus.latestForVehicles(ctx, listOf(id))[id], orders.forVehicles(ctx, listOf(id))[id])
+        return json(f, staff.positions.latest(ctx, listOf(id))[id], staff.serviceStatus.latestForVehicles(ctx, listOf(id))[id], orders.forVehicles(ctx, listOf(id))[id], flags.forVehicles(ctx, listOf(id))[id].orEmpty())
     }
 
-    private fun json(f: OperatorVehicleFacts, p: LatestPosition?, status: ServiceStatus?, run: OperatorRunSummary?): Map<String, Any?> = linkedMapOf(
+    private fun json(f: OperatorVehicleFacts, p: LatestPosition?, status: ServiceStatus?, run: OperatorRunSummary?, flags: List<de.taktovia.bookingdispatch.api.OperatorFlagView>): Map<String, Any?> = linkedMapOf(
         "vehicle_id" to f.id.toString(), "vehicle_label" to f.label, "operational_state" to operationalState(f, status), "safety_revision" to f.safetyRevision,
         "release_valid_until" to f.releaseValidUntil?.toString(),
         "missing_requirements" to f.missing.map { m -> linkedMapOf("code" to m.code.name, "inspection_id" to m.inspectionId?.toString(), "step_codes" to m.stepCodes) },
@@ -99,6 +99,7 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
         "open_defect_count" to f.openDefectCount, "current_run_id" to run?.runId?.toString(), "revision" to f.revision,
         "service_ids" to f.serviceIds.map { it.toString() }, "unavailable_dimensions" to f.unavailableDimensions.sorted(), "open_alert_count" to f.openAlertCount,
         "inspection_status" to f.inspectionStatus.name, "inspection_status_revision" to f.inspectionStatusRevision,
+        "flags" to flags.map { x -> linkedMapOf("id" to x.id.toString(), "kind" to x.kind, "cause" to x.cause, "affected_count" to x.affectedCount, "opened_at" to x.openedAt.toString(), "threshold_min" to x.thresholdMin) },
         "orders" to run?.orders.orEmpty().map { o -> linkedMapOf("booking_id" to o.bookingId.toString(), "booking_no" to o.bookingNo, "state" to o.state, "planned_pickup_at" to o.plannedPickupAt.toString(), "phase" to o.phase.name) },
     )
 

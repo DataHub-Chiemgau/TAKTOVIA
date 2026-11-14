@@ -1,0 +1,18 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+operator_flag;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;service_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;vehicle_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;run_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;kind;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;cause;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;dedupe_key;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;state;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;affected_bookings;nein;BUCHUNGSABWICKLUNG;;;;Kennungen betroffener Buchungen (Pseudonyme), keine Namen
+operator_flag;affected_count;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;threshold_min;nein;BUCHUNGSABWICKLUNG;;;;beim Auslösen wirksame Schwelle, unveränderlich
+operator_flag;alert_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;opened_at;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;last_evaluated_at;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;resolved_at;nein;BUCHUNGSABWICKLUNG;;;;
+operator_flag;revision;nein;BUCHUNGSABWICKLUNG;;;;

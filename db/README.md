@@ -127,3 +127,7 @@ Detailverträge: [m3-schadenakte.md](../docs/umsetzungsplan/vertraege/m3-schaden
 ## Zeitfakten (WP-M4-52)
 
 `V40520` legt `time_fact` an (Modul `analytics`, append-only per Trigger, Runtime nur SELECT/INSERT; je Fahrt, Stopp, Zeitart und Versionsschlüssel genau eine Zeile) und die Funktion `time_fact_delay(booking)` (Verspätung gegen die höchste Zusageversion, `NULL` mit Grund statt 0). Rechte: `R__runtime_grants_m4_52.sql`; Test: `db/tests/test_zeitfakten.py`.
+
+## Auftragsliste, Leitstellenbuchung, Hinweise (WP-M3-37, -39, -42)
+
+`V30370` legt nur Suchindizes mit führender `tenant_id` an (`booking_search_by_state`, `capacity_hold_by_run` für die Fahrzeugsuche). `V30390` ergänzt `booking_change` additiv um `reason_code`, `old_promise`, `new_promise`, `new_booking_id` (eindeutig je Folgebuchung) und `consent`, erweitert `change_kind` um `CREATE` und legt `operator_offer_subject` an (Bindung eines von der Leitstelle ausgestellten Angebots an den Fahrgast, `booking_subject = DELEGATED`; append-only). `V30420` legt `operator_flag` an (Hinweise `OVERDUE` und `INFO_PENDING`, genau ein offener Hinweis je Sachverhalt per Teilindex `operator_flag_one_open`; Identität, Ursache, Schwelle und Auslösezeit unveränderlich, ein erledigter Hinweis endgültig, nie gelöscht). Rechte: `R__runtime_grants_m3_39.sql`, `R__runtime_grants_m3_42.sql`; Detail: [m3-cluster-wave14-c5.md](../docs/umsetzungsplan/vertraege/m3-cluster-wave14-c5.md).

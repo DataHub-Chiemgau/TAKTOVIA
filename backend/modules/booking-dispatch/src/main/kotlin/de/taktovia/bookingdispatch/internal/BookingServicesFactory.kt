@@ -24,17 +24,31 @@ import java.time.Duration
 internal object BookingServicesFactory {
     fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
         executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
-        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): Bookings {
+        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null, audit: de.taktovia.platform.audit.AuditPort? = null): Bookings {
         val journeys = JourneyShells.create()
         val plans = JdbcRunPlans(ctxTx, outbox, clock)
         val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, plans, journeys)
-        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates)
+        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates, audit = audit)
+    }
+
+    fun operatorBookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, requests: de.taktovia.bookingdispatch.api.RideOfferRequests, offers: de.taktovia.bookingdispatch.api.RideOffers, clock: Clock,
+        config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener?, audit: de.taktovia.platform.audit.AuditPort?, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort?): de.taktovia.bookingdispatch.api.OperatorBookings {
+        val journeys = JourneyShells.create()
+        val plans = JdbcRunPlans(ctxTx, outbox, clock)
+        val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, plans, journeys)
+        val bookings = JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, audit = audit)
+        return JdbcOperatorBookings(ctxTx, bookings, holds, quotes, requests, offers, clock)
     }
 
     fun walkingRoutes(ctxTx: ContextTransactions, config: EffectiveConfig?, routing: RoutingPort?, stopKeys: de.taktovia.bookingdispatch.api.EtaStopKeys?, clock: Clock): de.taktovia.bookingdispatch.api.WalkingRoutes =
         JdbcWalkingRoutes(ctxTx, config, routing, stopKeys, clock)
 
     fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = JdbcOperatorOrders(ctxTx)
+
+    fun operatorFlags(ctxTx: ContextTransactions, clock: Clock, thresholds: de.taktovia.bookingdispatch.api.ThresholdSource, signals: de.taktovia.bookingdispatch.api.SignalSource, alerts: de.taktovia.platform.alert.BusinessAlertPort?): de.taktovia.bookingdispatch.api.OperatorFlags =
+        JdbcOperatorFlags(ctxTx, clock, thresholds, signals, alerts)
+
+    fun operatorBookingSearch(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorBookingSearch = JdbcOperatorBookingSearch(ctxTx)
 
     fun planChanges(ctxTx: ContextTransactions, clock: Clock): de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)
 

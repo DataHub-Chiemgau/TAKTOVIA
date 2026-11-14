@@ -3499,6 +3499,12 @@ components:
           maximum: 9007199254740991
           description: Monoton steigende Revision des Prüfstatus (WP-M3-23). Ein Client übernimmt nie einen Status
             mit kleinerer Revision als den bereits angezeigten (kein Überschreiben durch eine ältere Nachricht).
+        flags:
+          type: array
+          items:
+            $ref: operator-bookings.yaml#/components/schemas/OperatorFlag
+          description: 'Offene Hinweise zu diesem Fahrzeug (WP-M3-42, LH-6.7-OPS-006): Überfälligkeit (`OVERDUE`) und ausstehende Information (`INFO_PENDING`) als getrennte Arten mit der Zahl der
+            Betroffenen; nur Hinweise der Dienste im aktuellen Dienstscope.'
         orders:
           type: array
           maxItems: 5
