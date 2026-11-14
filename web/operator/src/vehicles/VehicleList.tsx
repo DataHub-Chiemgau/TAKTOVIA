@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
 import { STATUS_LABELS } from '../fahrzeugstatus/VehicleStatus';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
+import type { LiveMessage } from '../live/LiveChannel';
+import { VehiclePlanPanel } from './VehiclePlanPanel';
 
 /** Sperrgründe der Leitstellenansicht (Katalog OP-01); keine Diagnosetexte. */
 const BLOCK_REASONS: Readonly<Record<string, string>> = {
@@ -145,7 +147,7 @@ function SchematicMap({
   );
 }
 
-function Detail({ v }: { v: OperatorVehicle }) {
+function Detail({ v, liveMessage }: { v: OperatorVehicle; liveMessage: LiveMessage | undefined }) {
   const notes = notesOf(v);
   return (
     <aside aria-label={`Details zu ${v.vehicle_label}`}>
@@ -184,6 +186,11 @@ function Detail({ v }: { v: OperatorVehicle }) {
           ))}
         </ul>
       )}
+      <VehiclePlanPanel
+        vehicleId={v.vehicle_id}
+        vehicleLabel={v.vehicle_label}
+        liveMessage={liveMessage}
+      />
     </aside>
   );
 }
@@ -269,7 +276,14 @@ export function VehicleList() {
     load(next);
   };
 
-  const live = useLiveChannel({ onMessage: () => load(filter), onResync: () => load(filter) });
+  const [liveMessage, setLiveMessage] = useState<LiveMessage | undefined>(undefined);
+  const live = useLiveChannel({
+    onMessage: (m) => {
+      setLiveMessage(m);
+      load(filter);
+    },
+    onResync: () => load(filter),
+  });
 
   const detail = useMemo(
     () => (rows.status === 'ready' ? rows.data.find((v) => v.vehicle_id === selected) : undefined),
@@ -416,7 +430,7 @@ export function VehicleList() {
                 </>
               ) : null}
             </section>
-            {detail ? <Detail v={detail} /> : null}
+            {detail ? <Detail v={detail} liveMessage={liveMessage} /> : null}
           </>
         )}
       </ResourceView>

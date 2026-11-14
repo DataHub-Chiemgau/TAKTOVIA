@@ -2207,6 +2207,62 @@ export interface OperatorVehicle {
   unavailable_dimensions?: 'wheelchair'[];
   open_alert_count?: number;
   orders?: OperatorOrder[];
+  plan?: VehiclePlan | null;
+}
+
+export interface VehiclePlan {
+  vehicle_id: UUID;
+  run_id: UUID | null;
+  run_state: 'PLANNED' | 'ACTIVE' | 'LOCKED' | 'IN_PROGRESS' | null;
+  plan_revision: number | null;
+  as_of: string;
+  stops: VehiclePlanStop[];
+  capacity: DimensionCounts | null;
+  occupancy: DimensionCounts;
+  review_required: VehiclePlanReviewCase[];
+  forecast_source: 'NONE' | 'PLAN_TIME' | 'ETA_MODEL';
+  forecast_data_stand?: string | null;
+  forecast_fallback_reason?: string | null;
+  forecast_model_version?: number | null;
+  forecast_config_version?: string | null;
+}
+
+export interface DimensionCounts {
+  seats: number;
+  wheelchair: number;
+}
+
+export interface VehiclePlanStop {
+  route_stop_id: UUID;
+  sequence: number;
+  stop_name: string;
+  kind: 'PICKUP' | 'DROPOFF' | 'PICKUP_DROPOFF';
+  scheduled_at: string;
+  forecast: VehiclePlanForecast | null;
+  promise_windows: VehiclePlanPromiseWindow[];
+  boarding_booking_ids: UUID[];
+  alighting_booking_ids: UUID[];
+}
+
+export interface VehiclePlanForecast {
+  earliest: string;
+  latest: string;
+  basis: 'LIVE_POSITION' | 'PLAN_TIME' | 'REFERENCE_FORECAST';
+}
+
+export interface VehiclePlanPromiseWindow {
+  booking_id: UUID;
+  kind: 'PICKUP' | 'DROPOFF';
+  earliest: string;
+  latest: string;
+}
+
+export interface VehiclePlanReviewCase {
+  event_id: UUID;
+  event_type: string;
+  booking_id: UUID | null;
+  reason_code: string;
+  occurred_at: string;
 }
 
 export interface OperatorOrder {

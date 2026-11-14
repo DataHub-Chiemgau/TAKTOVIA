@@ -65,6 +65,9 @@ class FleetConfiguration {
     /** Aufträge je Fahrzeug aus dem Fahrtenplan für die Leitstellenansicht (WP-M3-36). */
     @Bean fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = de.taktovia.bookingdispatch.api.OperatorOrders.create(ctxTx)
 
+    /** Fahrzeugplan der Leitstelle: Stoppreihenfolge, Soll-/Prognosezeit, Zusagefenster und Besetzung (WP-M3-38). */
+    @Bean fun vehiclePlans(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.VehiclePlans = de.taktovia.bookingdispatch.api.VehiclePlans.create(ctxTx)
+
     /**
      * Schadenklassifikation (WP-M3-45): `taktovia.defects.workshop-auto-block-severity` (`workshop_auto_block_severity`, Planungsdefault `SAFETY_CRITICAL`) nennt die Klasse, ab der die Klassifikation
      * das Fahrzeug sperrt. Unzulässige Werte (auch solche, die sicherheitskritische Schäden von der Sperre ausnähmen) verhindern den Start; der Parameterkatalog ist eingefroren (wie bei den Alarmwerten).
