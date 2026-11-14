@@ -46,6 +46,9 @@ class BookingConfiguration {
      */
     @Bean fun walkingRoutes(ctxTx: ContextTransactions, config: ConfigApi): de.taktovia.bookingdispatch.api.WalkingRoutes = de.taktovia.bookingdispatch.api.WalkingRoutes.create(ctxTx, config.effective)
 
+    /** Auftragsliste mit Suche für die Leitstelle (WP-M3-37). */
+    @Bean fun operatorBookingSearch(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorBookingSearch = de.taktovia.bookingdispatch.api.OperatorBookingSearch.create(ctxTx)
+
     /** Änderungsstrom der Planrevisionen für Fahrgast und Fahrer (WP-M2-28). */
     @Bean fun planChanges(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.PlanChanges = de.taktovia.bookingdispatch.api.PlanChanges.create(ctxTx)
 

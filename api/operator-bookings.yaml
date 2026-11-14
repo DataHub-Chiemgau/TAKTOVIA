@@ -1,0 +1,219 @@
+paths:
+  /v1/operator/bookings:
+    get:
+      summary: Auftragsliste der Leitstelle mit Suche
+      operationId: searchOperatorBookings
+      security:
+      - oidc:
+        - operator:read
+      description: 'Auftragsliste für die Disposition (WP-M3-37, LH-6.7-OPS-002) in der Listenform {items,next_cursor,as_of} (Kap. 05 §5.1), stabil sortiert nach `(created_at, id)`.
+        Fünf Suchfelder: `booking_number` (exakt, Schreibweise egal), Zeitraum `from`/`to` (Arbeitsannahme: das Zusagefenster der Buchung schneidet `[from, to)`), `passenger`
+        (exakter Fahrgastverweis, Konto-ID; nur für Rollen mit Recht auf Fahrgastdaten, sonst 403; die Suche über Name oder Kontaktdaten ist offen, M3 OP-26), `vehicle_id` (Fahrzeug des Umlaufs)
+        und `state`. Mehrere Felder wirken als Schnittmenge, `service_id` schränkt zusätzlich ein. Sichtbar sind nur Buchungen der Dienste im **aktuellen** Dienstscope der Mitgliedschaft
+        (in jeder Abfrage, auch für die nächste Seite, frisch gelesen); ein Dienst außerhalb des Scopes und fremde Mandanten ergeben nie Treffer und keinen Hinweis auf ihre Existenz.
+        Keine Treffer: 200 mit leerer Liste und `as_of`, kein Fehler. `limit` 1 bis 100 (darüber 422), ein manipulierter oder zu einem anderen Filter gehörender Cursor ergibt 400
+        `INVALID_CURSOR`. Die Trefferzeile nennt nur Disponierendes; `assistance_codes` nur nach Feldfreigabe der Rolle, `passenger_ref` nur mit Recht auf Fahrgastdaten. Suchbegriffe zu
+        Personen stehen weder in Logs noch in Metrik-Labels. `flags` (Überfälligkeit, ausstehende Informationen) füllt WP-M3-42.'
+      parameters:
+      - name: booking_number
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 32
+        description: Exakte Buchungsnummer (`BK-<Jahr>-<laufende Nummer>`).
+      - name: from
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Beginn des Suchzeitraums (RFC 3339 mit Offset); gesucht wird im Zusagefenster der Buchung.
+      - name: to
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/Timestamp
+        description: Ende des Suchzeitraums (exklusiv); muss nach `from` liegen.
+      - name: passenger
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Exakter Fahrgastverweis (Konto-ID), nur für Rollen mit Recht auf Fahrgastdaten.
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Fahrzeug des Umlaufs, in dem die Buchung steht.
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/OperatorBookingState'
+        description: Buchungszustand.
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Buchungen dieses Dienstes (Schnittmenge mit dem Dienstscope).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorBookingPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+components:
+  schemas:
+    OperatorBookingState:
+      type: string
+      enum:
+      - CONFIRMING
+      - CONFIRMED
+      - RECONCILING
+      - COMPENSATING
+      - CANCEL_PENDING
+      - CANCELED
+      - COMPLETED
+      - FAILED
+    OperatorFlag:
+      type: object
+      additionalProperties: false
+      description: Kennzeichen an einem Auftrag oder Fahrzeug (WP-M3-42). `OVERDUE` = Überfälligkeit (Verspätung), `INFO_PENDING` = ausstehende Information; beide sind getrennte Zustände.
+        Keine Namen, keine Fahrgastdaten; `affected_count` zählt die betroffenen Buchungen des berechtigten Dienstes.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - OVERDUE
+          - INFO_PENDING
+        cause:
+          type: string
+          enum:
+          - PICKUP_OVERDUE
+          - POSITION_STALE
+          - PLAN_ACK_MISSING
+          - REVIEW_REQUIRED_OPEN
+        affected_count:
+          type: integer
+          minimum: 0
+        opened_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        threshold_min:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+          description: Die zum Auslösezeitpunkt wirksame Schwelle in Minuten (ändert sich nicht rückwirkend).
+      required:
+      - id
+      - kind
+      - cause
+      - affected_count
+      - opened_at
+      - threshold_min
+    OperatorBookingRow:
+      type: object
+      additionalProperties: false
+      description: Trefferzeile der Auftragsliste; nur für die Disposition nötige Felder.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_number:
+          type: string
+          pattern: ^BK-[0-9]{4}-[0-9]{6,}$
+        service_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          $ref: '#/components/schemas/OperatorBookingState'
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        pickup_window:
+          $ref: booking.yaml#/components/schemas/RideWindow
+        arrival_window:
+          $ref: booking.yaml#/components/schemas/RideWindow
+        passengers:
+          type: integer
+          minimum: 0
+        wheelchair_spaces:
+          type: integer
+          minimum: 0
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_label:
+          oneOf:
+          - type: string
+          - type: 'null'
+        passenger_ref:
+          $ref: common.yaml#/components/schemas/UUID
+          description: Pseudonymer Fahrgastverweis (Konto-ID); fehlt ohne Recht auf Fahrgastdaten.
+        assistance_codes:
+          type: array
+          items:
+            type: string
+          description: Unterstützungsmerkmale; fehlt ohne Feldfreigabe der Rolle (WP-M1-31).
+        flags:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatorFlag'
+      required:
+      - id
+      - booking_number
+      - service_id
+      - state
+      - revision
+      - created_at
+      - pickup_window
+      - arrival_window
+      - passengers
+      - wheelchair_spaces
+      - vehicle_id
+      - vehicle_label
+      - flags
+    OperatorBookingPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatorBookingRow'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
