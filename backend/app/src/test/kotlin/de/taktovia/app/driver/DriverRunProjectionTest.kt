@@ -125,7 +125,7 @@ class DriverRunProjectionTest {
             "boarding_count", "alighting_count", "resource_need", "assistance")
         s.forEach { st -> assertTrue(st.propertyNames().all { it in allowedStop }, "unerwartetes Feld: ${st.propertyNames()}") }
         assertEquals(setOf("shift_id", "vehicle_id", "shift_state", "shift_valid", "release_state", "missing_requirements", "plan_revision", "plan_as_of", "stops", "acknowledged_revision",
-            "revision_state", "acknowledgement_required", "base_revision", "removed_stops"), r.json.propertyNames().toSet())
+            "revision_state", "acknowledgement_required", "base_revision", "removed_stops", "inspection_status", "inspection_status_revision"), r.json.propertyNames().toSet())
         val text = r.text
         for (forbidden in listOf("contact", "email", "phone", "payment", "gross", "amount", "iban", "diagnos", "passenger_id", "booking_no")) assertFalse(text.contains(forbidden, ignoreCase = true), "Feld/Wert '$forbidden' in der Fahrerprojektion")
     }

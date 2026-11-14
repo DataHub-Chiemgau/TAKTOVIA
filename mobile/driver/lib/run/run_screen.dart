@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../pruefung/pruefstatus.dart';
 import '../ui/strings.dart';
 import 'driver_run.dart';
 import 'run_list.dart';
@@ -37,6 +38,16 @@ class RunListScreen extends StatelessWidget {
       case RunListView.list:
         if (stand != null) children.add(Text(_s.of('run.planStand', <String, String>{'revision': revision, 'time': stand}), key: const Key('run.stand')));
         children.addAll(_stops());
+    }
+    final DriverRun? shown = state.run;
+    if (shown != null && state.view != RunListView.loading) {
+      // Pruefstatus (WP-M3-23): Serverwert mit Datenstand; bei Verbindungsproblem als moeglicherweise veraltet gekennzeichnet
+      final bool stale = state.view == RunListView.offline || state.view == RunListView.error;
+      children.insert(0, PruefstatusAnzeige(
+        key: const Key('run.pruefstatus'),
+        stand: PruefstatusStand(status: Pruefstatus.fromCode(shown.inspectionStatus), revision: shown.inspectionStatusRevision, asOfUtc: state.fetchedAt ?? shown.planAsOf),
+        moeglicherweiseVeraltet: stale,
+      ));
     }
     return ListView(padding: const EdgeInsets.all(16), children: children);
   }

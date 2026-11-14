@@ -1240,7 +1240,17 @@ components:
           items:
             $ref: '#/components/schemas/DriverRemovedStop'
           description: Gegenüber der Vergleichsbasis entfallene Stopps (nur Haltepunktname, Art, frühere Planzeit, Buchungsreferenzen).
+        inspection_status:
+          $ref: fleet-safety.yaml#/components/schemas/InspectionStatus
+        inspection_status_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Monoton steigende Revision des Prüfstatus der eigenen Schicht (WP-M3-23); die App übernimmt nie einen Status mit kleinerer Revision.
       required:
+      - inspection_status
+      - inspection_status_revision
       - shift_id
       - vehicle_id
       - shift_state

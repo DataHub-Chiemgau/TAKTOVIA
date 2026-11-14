@@ -98,6 +98,8 @@ class DriverRun {
     this.acknowledgedRevision,
     this.baseRevision,
     this.removedStops = const <RemovedStop>[],
+    this.inspectionStatus = 'PENDING',
+    this.inspectionStatusRevision = 0,
   });
   final String shiftId;
   final int? planRevision;
@@ -113,6 +115,10 @@ class DriverRun {
   final int? baseRevision;
   final List<RemovedStop> removedStops;
 
+  /// Pruefstatus der Schicht (WP-M3-23, CHK-016): einer der sechs Serverwerte (`PENDING`, `IN_PROGRESS`, `PASSED`, `RESTRICTED`, `BLOCKED`, `UNCLEAR`) mit monoton steigender Revision; die App leitet ihn nie selbst ab.
+  final String inspectionStatus;
+  final int inspectionStatusRevision;
+
   /// Gueltige Stoppliste: angetretene, freigegebene Schicht mit mindestens einem Stopp (Serverentscheidung, nicht die der App).
   bool get hasValidList => shiftValid && releaseState == 'RELEASED' && stops.isNotEmpty;
 
@@ -127,6 +133,8 @@ class DriverRun {
         acknowledgementRequired: j['acknowledgement_required'] as bool? ?? false,
         acknowledgedRevision: j['acknowledged_revision'] as int?,
         baseRevision: j['base_revision'] as int?,
+        inspectionStatus: j['inspection_status'] as String? ?? 'PENDING',
+        inspectionStatusRevision: j['inspection_status_revision'] as int? ?? 0,
         removedStops: ((j['removed_stops'] as List<Object?>?) ?? const <Object?>[]).map((Object? e) => RemovedStop.fromJson((e! as Map<Object?, Object?>).cast<String, Object?>())).toList(growable: false),
       );
 }

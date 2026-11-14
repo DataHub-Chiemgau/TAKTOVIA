@@ -1,6 +1,7 @@
 package de.taktovia.fleetsafety.api
 
 import de.taktovia.platform.context.RequestContext
+import de.taktovia.platform.inspection.InspectionStatus
 import java.time.Instant
 import java.util.UUID
 
@@ -22,6 +23,10 @@ data class OperatorVehicleFacts(
     val id: UUID, val label: String, val active: Boolean, val dispatchBlocked: Boolean, val safetyRevision: Long, val revision: Long, val createdAt: Instant,
     val serviceIds: List<UUID>, val shiftId: UUID?, val activeBlocks: List<OperatorBlockView>, val gate: ReleaseGate?, val releaseValidUntil: Instant?, val missing: List<MissingRequirement>,
     val unavailableDimensions: Set<String>, val openDefectCount: Int, val openAlertCount: Int,
+    /** Prüfstatus der aktuellen Schicht (WP-M3-23); ohne Schicht `PENDING`. */
+    val inspectionStatus: InspectionStatus = InspectionStatus.PENDING,
+    /** Monoton steigende Revision des Prüfstatus: `safety_revision` plus Summe der Laufrevisionen der Schicht; bei zwei Wechseln gilt die höhere (nie überschreibt eine ältere Nachricht). */
+    val inspectionStatusRevision: Long = safetyRevision,
 )
 
 /**

@@ -98,9 +98,10 @@ internal class JdbcDriverShifts(
             val valid = s.state == "STARTED" && !now.isBefore(s.startsAt) && now.isBefore(s.endsAt)
             val gate = releaseGate(j, s, now)
             val planRevision = j.query("SELECT max(revision) FROM taktovia.vehicle_run WHERE shift_id = ? AND vehicle_id = ?", { rs, _ -> rs.getObject(1) as Long? }, s.id, s.vehicleId).firstOrNull()
-            Triple(s, valid to gate, planRevision)
+            Triple(s, valid to gate, planRevision) to ReleaseCheck.inspectionStatus(j, s.id, s.vehicleId, now)
         }
-        val (s, vg, planRevision) = row
+        val (rowCore, inspection) = row
+        val (s, vg, planRevision) = rowCore
         val (valid, gate) = vg
         // Aufträge nur bei gültiger, angetretener Schicht UND bestehender Einsatzfreigabe; die Quelle wird sonst nicht einmal gefragt.
         val raw: DriverRunProjection? = if (valid && gate.state == RunReleaseState.RELEASED) source?.projection(ctx, s.id, s.vehicleId) else null
@@ -120,7 +121,7 @@ internal class JdbcDriverShifts(
         val shown = if (raw == null) null else revisionView(ctx, s.id, s.vehicleId, raw.planRevision, acked, atStart, stops)
         val effectiveStops = shown?.stops ?: stops
         return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, effectiveStops, acked,
-            shown?.state ?: PlanRevisionState.CURRENT, shown?.required ?: false, shown?.base, shown?.removed ?: emptyList())
+            shown?.state ?: PlanRevisionState.CURRENT, shown?.required ?: false, shown?.base, shown?.removed ?: emptyList(), inspection.first, inspection.second)
     }
 
     private class Shown(val stops: List<DriverRunStopView>, val state: PlanRevisionState, val required: Boolean, val base: Long?, val removed: List<DriverRemovedStop>)

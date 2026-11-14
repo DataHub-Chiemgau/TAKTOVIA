@@ -1109,6 +1109,8 @@ export interface DriverRun {
   acknowledgement_required: boolean;
   base_revision: number | null;
   removed_stops: DriverRemovedStop[];
+  inspection_status: InspectionStatus;
+  inspection_status_revision: number;
 }
 
 export interface DriverRemovedStop {
@@ -2213,6 +2215,8 @@ export interface VehicleBlock {
   shift_id?: UUID | null;
 }
 
+export type InspectionStatus = 'PENDING' | 'IN_PROGRESS' | 'PASSED' | 'RESTRICTED' | 'BLOCKED' | 'UNCLEAR';
+
 export interface OperatorVehicle {
   vehicle_id: UUID;
   vehicle_label: string;
@@ -2232,6 +2236,8 @@ export interface OperatorVehicle {
   service_ids?: UUID[];
   unavailable_dimensions?: 'wheelchair'[];
   open_alert_count?: number;
+  inspection_status: InspectionStatus;
+  inspection_status_revision: number;
   orders?: OperatorOrder[];
 }
 
