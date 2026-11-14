@@ -81,6 +81,13 @@ interface Positions {
 
     /** Letzte Position je Fahrzeug (nur Fahrzeuge mit mindestens einer Position), für die Leitstelle (`operator:read`). */
     fun latest(ctx: RequestContext, vehicleIds: Collection<UUID>): Map<UUID, LatestPosition>
+
+    /**
+     * Letzte Position **eines** Fahrzeugs für die interne Prognose des ETA-Grundmodells (WP-M4-66), ohne Funktionsscope des Aufrufers: Fahrgast-Buchungsdetail, Stoppliste des Fahrers und die
+     * Auslöser der Benachrichtigung brauchen den **Datenstand** (Messzeit), nie die Koordinate; der Port gibt sie deshalb nur an die Anwendung weiter, die sie ausschließlich an den Leseport der Prognose
+     * reicht. Mandantengebunden (RLS), nur lesend.
+     */
+    fun latestOfVehicle(tenant: de.taktovia.platform.tenant.TenantId, vehicleId: UUID): LatestPosition?
 }
 
 /** Löschziel der Rohpositionen (`LK_STANDORT`, nur Aktion DELETE); die Frist liefert die freigegebene Regel (D-11), nie ein Standardwert im Code. */

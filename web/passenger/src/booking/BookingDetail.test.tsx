@@ -41,6 +41,64 @@ describe('UI-04 Buchungsdetail mit Status und ETA ohne Neuladen (WP-M2-43)', () 
     expect(screen.queryByTestId('daten-veraltet')).toBeNull();
   });
 
+  it('prognose_des_grundmodells_mit_datenstand_getrennt_von_zusage_und_plan_eta', async () => {
+    const basis = basisBuchung();
+    const { client } = reiseWelt({
+      ...basis,
+      eta: {
+        ...(basis.eta as NonNullable<typeof basis.eta>),
+        forecast: {
+          earliest_at: '2026-11-21T08:01:00Z',
+          latest_at: '2026-11-21T08:06:00Z',
+          basis: 'LIVE_POSITION',
+          data_stand: '2026-11-21T07:58:30Z',
+          fallback_reason: null,
+          model_version: 1,
+          config_version: 'm1-c1',
+        },
+      },
+    });
+    zeige(client);
+    const prognose = await screen.findByTestId('prognose');
+    expect(prognose).toHaveTextContent('09:01 bis 09:06');
+    expect(prognose).toHaveTextContent('Positionsstand 21.11.2026, 08:58 Uhr');
+    // die verbindliche Zusage und die Plan-ETA bleiben daneben unverändert sichtbar
+    expect(screen.getByTestId('zusage-abholung')).toHaveTextContent('08:55 bis 09:10');
+    expect(screen.getByTestId('eta')).toHaveTextContent('21.11.2026, 09:00 Uhr');
+  });
+
+  it('veraltete_positionsdaten_zeigen_rueckfall_statt_scheinbar_aktueller_prognose', async () => {
+    const basis = basisBuchung();
+    const { client } = reiseWelt({
+      ...basis,
+      eta: {
+        ...(basis.eta as NonNullable<typeof basis.eta>),
+        forecast: {
+          earliest_at: '2026-11-21T08:00:00Z',
+          latest_at: '2026-11-21T08:00:00Z',
+          basis: 'PLAN_TIME',
+          data_stand: '2026-11-21T07:50:00Z',
+          fallback_reason: 'POSITION_STALE',
+          model_version: 1,
+          config_version: 'm1-c1',
+        },
+      },
+    });
+    zeige(client);
+    const prognose = await screen.findByTestId('prognose');
+    expect(prognose).toHaveTextContent('Keine aktuelle Prognose, es gilt die geplante Abholzeit');
+    expect(prognose).toHaveTextContent('Positionsdaten veraltet');
+    expect(prognose).not.toHaveTextContent('bis');
+    expect(screen.getByTestId('zusage-abholung')).toHaveTextContent('08:55 bis 09:10');
+  });
+
+  it('ohne_prognose_wird_keine_prognosezeile_gezeigt', async () => {
+    const { client } = reiseWelt();
+    zeige(client);
+    await screen.findByTestId('eta');
+    expect(screen.queryByTestId('prognose')).toBeNull();
+  });
+
   it('ohne_plan_noch_keine_eta_und_kein_fahrzeug_nie_geschaetzt', async () => {
     const { client } = reiseWelt(
       (() => {

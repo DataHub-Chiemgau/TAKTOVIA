@@ -40,6 +40,8 @@ data class RideOfferView(
     val id: UUID, val attemptId: UUID, val serviceId: UUID, val state: OfferState, val bookingKind: RideBookingKind, val timeKind: RideTimeKind,
     val pickupWindow: RideTimeWindow, val arrivalWindow: RideTimeWindow, val arrivalGraceMin: Int, val directSeconds: Int, val expiresAt: Instant, val runRevision: Long?,
     val quote: QuoteView, val cancellationPolicyRef: String, val demand: ResourceVector, val pickupStop: OfferStop?, val dropoffStop: OfferStop?, val hold: HoldSummary?, val revision: Long,
+    /** ETA-Grundmodell: genau eine Modell-/Konfigurationsversion, aus der die Fenster stammen (WP-M4-66); `null` für Angebote ohne angeschlossenes Grundmodell. */
+    val eta: OfferEtaVersion? = null,
 )
 
 /** Befehl „Kapazität halten“ auf einem Angebot: [ifMatch] = zuletzt gelesene Angebotsrevision (ETag), [maxGrossMinor] der höchste akzeptierte Betrag (Abweichung vom Preisstand: `REQUOTE_REQUIRED`). */

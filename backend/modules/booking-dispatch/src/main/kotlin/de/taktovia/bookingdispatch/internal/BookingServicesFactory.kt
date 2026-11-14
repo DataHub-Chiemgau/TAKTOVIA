@@ -24,11 +24,11 @@ import java.time.Duration
 internal object BookingServicesFactory {
     fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock, config: EffectiveConfig?, cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
         executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
-        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null, audit: de.taktovia.platform.audit.AuditPort? = null): Bookings {
+        staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null, audit: de.taktovia.platform.audit.AuditPort? = null, eta: de.taktovia.bookingdispatch.api.EtaStopEtaPort? = null): Bookings {
         val journeys = JourneyShells.create()
         val plans = JdbcRunPlans(ctxTx, outbox, clock)
         val holds = JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, plans, journeys)
-        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates, audit = audit)
+        return JdbcBookings(ctxTx, quotes, holds, BookingTransitions(outbox, clock, journeys), plans, outbox, config, clock, cancellation = cancellation, executionStates = executionStates, audit = audit, etaPort = eta)
     }
 
     fun operatorBookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, requests: de.taktovia.bookingdispatch.api.RideOfferRequests, offers: de.taktovia.bookingdispatch.api.RideOffers, clock: Clock,

@@ -121,7 +121,8 @@ internal class JdbcDriverShifts(
         val shown = if (raw == null) null else revisionView(ctx, s.id, s.vehicleId, raw.planRevision, acked, atStart, stops)
         val effectiveStops = shown?.stops ?: stops
         return DriverRunView(s.id, s.vehicleId, s.state, valid, if (valid) gate.state else RunReleaseState.NOT_RELEASED, missing, raw?.planRevision ?: planRevision, now, effectiveStops, acked,
-            shown?.state ?: PlanRevisionState.CURRENT, shown?.required ?: false, shown?.base, shown?.removed ?: emptyList(), inspection.first, inspection.second)
+            shown?.state ?: PlanRevisionState.CURRENT, shown?.required ?: false, shown?.base, shown?.removed ?: emptyList(), inspection.first, inspection.second,
+            raw?.forecast ?: de.taktovia.stafftime.api.DriverForecastSource("PLAN_TIME", null, null))
     }
 
     private class Shown(val stops: List<DriverRunStopView>, val state: PlanRevisionState, val required: Boolean, val base: Long?, val removed: List<DriverRemovedStop>)

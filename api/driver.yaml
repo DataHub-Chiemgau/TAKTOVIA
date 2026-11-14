@@ -1248,6 +1248,25 @@ components:
           minimum: 0
           maximum: 9007199254740991
           description: Monoton steigende Revision des Prüfstatus der eigenen Schicht (WP-M3-23); die App übernimmt nie einen Status mit kleinerer Revision.
+        forecast_source:
+          type: string
+          enum:
+          - PLAN_TIME
+          - ETA_MODEL
+          description: Herkunft von `forecast_at` der Stopps (WP-M4-66). `PLAN_TIME` = Planzeit aus dem Routing, `ETA_MODEL` = Leseport „ETA je Stopp“ des ETA-Grundmodells.
+        forecast_data_stand:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Messzeit der letzten Position, auf der die Prognose beruht; null ohne Positionsbezug.
+        forecast_fallback_reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          description: Gesetzt, wenn Positionsdaten fehlen oder älter als `eta_max_data_age_sec` sind (z. B. `POSITION_STALE`) oder kein Modell vorliegt; `forecast_at` ist dann der Rückfall laut `eta_fallback_policy`, nie eine scheinbar aktuelle Prognose. Die Zusage `planned_at` bleibt unverändert.
       required:
       - inspection_status
       - inspection_status_revision

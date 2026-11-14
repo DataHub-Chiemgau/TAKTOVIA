@@ -93,6 +93,9 @@ interface EtaApi {
     /** Leseport „ETA je Stopp“; nur mit Positionsquelle und Stopp-Schlüsseln. */
     val stopEta: EtaStopEtaPort?
 
+    /** Angebotszeit für die Fensterbildung der Disposition (WP-M4-66); [stopKeys] übersetzt Haltepunktrevisionen in Routing-Schlüssel. */
+    fun offerTime(stopKeys: EtaStopKeys, vehicleProfile: String = "car"): OfferEtaSource
+
     companion object {
         fun create(
             ctxTx: ContextTransactions, config: EffectiveConfig, roads: EtaRoadRouteSource, clock: Clock = Clock.systemUTC(),

@@ -3512,6 +3512,12 @@ components:
             $ref: '#/components/schemas/OperatorOrder'
           description: Laufende und nächste Aufträge des aktuellen Umlaufs (höchstens
             fünf, nach geplantem Einstieg); keine Fahrgastdaten.
+        plan:
+          oneOf:
+          - $ref: '#/components/schemas/VehiclePlan'
+          - type: 'null'
+          description: Fahrzeugplan (OPS-003) nur im Detail `GET /v1/operator/vehicles/{vehicle_id}`;
+            in der Liste fehlt das Feld.
       required:
       - inspection_status
       - inspection_status_revision
@@ -3540,6 +3546,244 @@ components:
         mit entfallener Ressourcendimension `RESTRICTED`; sonst der Dienststatus der
         Schicht (WP-M3-31), ohne Schicht und Meldung `NOT_READY` bei gesetztem Sperrkennzeichen
         und sonst `AVAILABLE`.
+    VehiclePlan:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+          description: Aktueller, nicht abgeschlossener Umlauf; null = Leerzustand
+            „Fahrzeug ohne Fahrt“.
+        run_state:
+          oneOf:
+          - type: string
+            enum:
+            - PLANNED
+            - ACTIVE
+            - LOCKED
+            - IN_PROGRESS
+          - type: 'null'
+        plan_revision:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 1
+            maximum: 9007199254740991
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+          description: Datenstand der Antwort (Serveruhr).
+        stops:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/VehiclePlanStop'
+          description: Stopps der aktuellen Planrevision in Planreihenfolge.
+        capacity:
+          oneOf:
+          - $ref: '#/components/schemas/DimensionCounts'
+          - type: 'null'
+        occupancy:
+          $ref: '#/components/schemas/DimensionCounts'
+        review_required:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/VehiclePlanReviewCase'
+          description: Klärfälle von Fahrerereignissen (`REVIEW_REQUIRED`); fließen
+            nicht in `occupancy` ein.
+        forecast_source:
+          type: string
+          enum:
+          - NONE
+          - PLAN_TIME
+          - ETA_MODEL
+          description: Herkunft der Prognosezeiten; `PLAN_TIME` = Planzeit aus dem
+            Routing (OP-20), `ETA_MODEL` = Leseport „ETA je Stopp“ (WP-M4-66).
+        forecast_data_stand:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Messzeit der letzten Position, auf der die Prognose beruht.
+        forecast_fallback_reason:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          description: Grund, aus dem die Prognose nicht aus aktuellen Positionsdaten
+            stammt (z. B. `POSITION_STALE`); der Rückfall folgt `eta_fallback_policy`.
+        forecast_model_version:
+          oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+        forecast_config_version:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+      required:
+      - vehicle_id
+      - run_id
+      - run_state
+      - plan_revision
+      - as_of
+      - stops
+      - capacity
+      - occupancy
+      - review_required
+      - forecast_source
+      description: Fahrzeugplan der Leitstelle (OPS-003). Sollzeit (`scheduled_at`),
+        Prognose (`forecast`) und Zusagefenster (`promise_windows`) sind getrennte
+        Felder. `occupancy` = Differenz bestätigter Ein- und Ausstiege je Dimension.
+    DimensionCounts:
+      type: object
+      additionalProperties: false
+      properties:
+        seats:
+          type: integer
+          minimum: 0
+          maximum: 99
+        wheelchair:
+          type: integer
+          minimum: 0
+          maximum: 20
+      required:
+      - seats
+      - wheelchair
+    VehiclePlanStop:
+      type: object
+      additionalProperties: false
+      properties:
+        route_stop_id:
+          $ref: common.yaml#/components/schemas/UUID
+        sequence:
+          type: integer
+          minimum: 1
+          maximum: 500
+        stop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          type: string
+          enum:
+          - PICKUP
+          - DROPOFF
+          - PICKUP_DROPOFF
+        scheduled_at:
+          type: string
+          format: date-time
+          description: Sollzeit der Planrevision.
+        forecast:
+          oneOf:
+          - $ref: '#/components/schemas/VehiclePlanForecast'
+          - type: 'null'
+          description: Prognose; null = keine Prognose (nie eine erfundene Zeit).
+        promise_windows:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/VehiclePlanPromiseWindow'
+        boarding_booking_ids:
+          type: array
+          maxItems: 20
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+        alighting_booking_ids:
+          type: array
+          maxItems: 20
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+      required:
+      - route_stop_id
+      - sequence
+      - stop_name
+      - kind
+      - scheduled_at
+      - forecast
+      - promise_windows
+      - boarding_booking_ids
+      - alighting_booking_ids
+    VehiclePlanForecast:
+      type: object
+      additionalProperties: false
+      properties:
+        earliest:
+          type: string
+          format: date-time
+        latest:
+          type: string
+          format: date-time
+        basis:
+          type: string
+          enum:
+          - LIVE_POSITION
+          - PLAN_TIME
+          - REFERENCE_FORECAST
+          description: '`PLAN_TIME` = Planzeit aus dem Routing (keine Prognose des
+            ETA-Grundmodells).'
+      required:
+      - earliest
+      - latest
+      - basis
+    VehiclePlanPromiseWindow:
+      type: object
+      additionalProperties: false
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - PICKUP
+          - DROPOFF
+        earliest:
+          type: string
+          format: date-time
+        latest:
+          type: string
+          format: date-time
+      required:
+      - booking_id
+      - kind
+      - earliest
+      - latest
+    VehiclePlanReviewCase:
+      type: object
+      additionalProperties: false
+      properties:
+        event_id:
+          $ref: common.yaml#/components/schemas/UUID
+        event_type:
+          type: string
+          minLength: 1
+          maxLength: 32
+        booking_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - event_id
+      - event_type
+      - booking_id
+      - reason_code
+      - occurred_at
     OperatorOrder:
       type: object
       additionalProperties: false

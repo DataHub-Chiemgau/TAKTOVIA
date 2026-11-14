@@ -73,7 +73,7 @@ export interface PublishedRevision {
   audit_event_id: UUID;
 }
 
-export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'PERIOD_CLOSED' | 'ALREADY_ALLOCATED' | 'ALREADY_REVERSED' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'ALLOCATION_SUM_MISMATCH' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
+export type ErrorCode = 'BAD_REQUEST' | 'INVALID_CURSOR' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'COOPERATION_NOT_ALLOWED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'NOT_ACCEPTABLE' | 'CONFLICT' | 'IDEMPOTENCY_CONFLICT' | 'OPERATION_IN_PROGRESS' | 'OFFER_EXPIRED' | 'HOLD_EXPIRED' | 'REQUOTE_REQUIRED' | 'CAPACITY_UNAVAILABLE' | 'CANCEL_DEADLINE_EXPIRED' | 'IMMUTABLE_RECORD' | 'DOCUMENT_INTEGRITY_VIOLATION' | 'DUPLICATE_REVIEW_REQUIRED' | 'DUPLICATE_EVIDENCE_LINKED' | 'INVALID_STATE_TRANSITION' | 'PERIOD_CLOSED' | 'ALREADY_ALLOCATED' | 'ALREADY_REVERSED' | 'PROTECTED_STOP_HORIZON' | 'MAX_REASSIGNMENTS_EXCEEDED' | 'PROMISE_WINDOW_VIOLATION' | 'REVISION_MISMATCH' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'VALIDATION_FAILED' | 'UNCONFIRMED_FIELDS' | 'FUEL_FIELDS_MISSING' | 'HINT_NOT_ACKNOWLEDGED' | 'COST_ASSIGNMENT_REQUIRED' | 'SPLIT_INCOMPLETE' | 'ALLOCATION_SUM_MISMATCH' | 'PRECONDITION_REQUIRED' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'PROVIDER_UNAVAILABLE';
 
 export type ViolationCode = 'REQUIRED' | 'UNKNOWN_FIELD' | 'TYPE_MISMATCH' | 'TOO_SHORT' | 'TOO_LONG' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM' | 'PATTERN_MISMATCH' | 'INVALID_FORMAT' | 'NOT_IN_ENUM' | 'TOO_FEW_ITEMS' | 'TOO_MANY_ITEMS' | 'NOT_UNIQUE' | 'INVALID_VALUE' | 'NESTING_TOO_DEEP' | 'MONEY_NOT_INTEGER' | 'MONEY_OUT_OF_RANGE' | 'MONEY_NEGATIVE' | 'CURRENCY_UNKNOWN' | 'EXPONENT_MISMATCH' | 'OFFSET_REQUIRED' | 'LOCAL_TIME_NONEXISTENT' | 'LOCAL_TIME_AMBIGUOUS' | 'ZONE_UNKNOWN' | 'ZONE_OFFSET_MISMATCH' | 'INTERVAL_INVALID' | 'TARGET_NOT_ALLOWED' | 'UNIT_MISMATCH' | 'SAFETY_INVARIANT_VIOLATED' | 'ROSTER_DOUBLE_BOOKING' | 'ROSTER_QUALIFICATION_MISSING' | 'ROSTER_ABSENCE_OVERLAP' | 'NO_SHOW_GRACE_NOT_ELAPSED' | 'BOARDING_CODE_INVALID' | 'BOARDING_CODE_USED' | 'BOARDING_CODE_LOCKED';
 
@@ -1111,6 +1111,9 @@ export interface DriverRun {
   removed_stops: DriverRemovedStop[];
   inspection_status: InspectionStatus;
   inspection_status_revision: number;
+  forecast_source?: 'PLAN_TIME' | 'ETA_MODEL';
+  forecast_data_stand?: string | null;
+  forecast_fallback_reason?: string | null;
 }
 
 export interface DriverRemovedStop {
@@ -1448,6 +1451,14 @@ export interface RideOfferProposal {
   run_revision?: number;
   revision: number;
   walk?: RideWalkRoute;
+  eta?: RideOfferEta;
+}
+
+export interface RideOfferEta {
+  model_version: number | null;
+  config_version: string | null;
+  buffer_seconds: number;
+  fallback_reason: string | null;
 }
 
 export interface RideOfferStop {
@@ -1487,6 +1498,7 @@ export interface RideOffer {
   dropoff_stop: RideOfferStop;
   demand: RideResourceVector;
   hold: RideHold | null;
+  eta?: RideOfferEta;
   revision: number;
   walk?: RideWalkRoute;
 }
@@ -1576,6 +1588,17 @@ export interface RideBookingEta {
   plan_revision: number;
   data_as_of: Timestamp;
   source: 'PLAN';
+  forecast?: RideBookingEtaForecast | null;
+}
+
+export interface RideBookingEtaForecast {
+  earliest_at: Timestamp;
+  latest_at: Timestamp;
+  basis: 'LIVE_POSITION' | 'PLAN_TIME' | 'REFERENCE_FORECAST';
+  data_stand: Timestamp | null;
+  fallback_reason: string | null;
+  model_version?: number | null;
+  config_version?: string | null;
 }
 
 export interface RideVehicleIdentification {
@@ -1984,6 +2007,10 @@ export interface RunRevisionCreate {
   reason: string;
   base_plan_revision: number;
   compare_only?: boolean;
+  exception?: {
+    rules: ('PROTECTED_STOP_HORIZON' | 'PROMISE_WINDOW' | 'MAX_REASSIGNMENTS')[];
+    justification: string;
+  };
 }
 
 export interface RunRevision {
@@ -2001,6 +2028,19 @@ export interface RunRevision {
     new_sequence: number | null;
   })[];
   committed: boolean;
+  impacts?: ({
+    booking_id: UUID;
+    kind: 'ADDED' | 'REMOVED' | 'TIME_CHANGED' | 'STOP_CHANGED' | 'TOUCHED';
+    pickup_before?: string | null;
+    pickup_after?: string | null;
+    dropoff_before?: string | null;
+    dropoff_after?: string | null;
+    window_violations?: string[];
+  })[];
+  exception?: {
+    rules: string[];
+    justification: string;
+  } | null;
 }
 
 export interface RunRevisionPage {
@@ -2272,6 +2312,62 @@ export interface OperatorVehicle {
   inspection_status_revision: number;
   flags?: OperatorFlag[];
   orders?: OperatorOrder[];
+  plan?: VehiclePlan | null;
+}
+
+export interface VehiclePlan {
+  vehicle_id: UUID;
+  run_id: UUID | null;
+  run_state: 'PLANNED' | 'ACTIVE' | 'LOCKED' | 'IN_PROGRESS' | null;
+  plan_revision: number | null;
+  as_of: string;
+  stops: VehiclePlanStop[];
+  capacity: DimensionCounts | null;
+  occupancy: DimensionCounts;
+  review_required: VehiclePlanReviewCase[];
+  forecast_source: 'NONE' | 'PLAN_TIME' | 'ETA_MODEL';
+  forecast_data_stand?: string | null;
+  forecast_fallback_reason?: string | null;
+  forecast_model_version?: number | null;
+  forecast_config_version?: string | null;
+}
+
+export interface DimensionCounts {
+  seats: number;
+  wheelchair: number;
+}
+
+export interface VehiclePlanStop {
+  route_stop_id: UUID;
+  sequence: number;
+  stop_name: string;
+  kind: 'PICKUP' | 'DROPOFF' | 'PICKUP_DROPOFF';
+  scheduled_at: string;
+  forecast: VehiclePlanForecast | null;
+  promise_windows: VehiclePlanPromiseWindow[];
+  boarding_booking_ids: UUID[];
+  alighting_booking_ids: UUID[];
+}
+
+export interface VehiclePlanForecast {
+  earliest: string;
+  latest: string;
+  basis: 'LIVE_POSITION' | 'PLAN_TIME' | 'REFERENCE_FORECAST';
+}
+
+export interface VehiclePlanPromiseWindow {
+  booking_id: UUID;
+  kind: 'PICKUP' | 'DROPOFF';
+  earliest: string;
+  latest: string;
+}
+
+export interface VehiclePlanReviewCase {
+  event_id: UUID;
+  event_type: string;
+  booking_id: UUID | null;
+  reason_code: string;
+  occurred_at: string;
 }
 
 export interface OperatorOrder {
@@ -6540,7 +6636,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   approveManualCostEvent: { method: 'POST', path: '/v1/manual-cost-events/{manual_cost_event_id}/approve', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   rejectManualCostEvent: { method: 'POST', path: '/v1/manual-cost-events/{manual_cost_event_id}/reject', pathParams: ['manual_cost_event_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['expenses:approve'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listRunRevisions: { method: 'GET', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
-  createRunRevision: { method: 'POST', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['dispatch:write'], statuses: [201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  createRunRevision: { method: 'POST', path: '/v1/runs/{run_id}/revisions', pathParams: ['run_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['dispatch:write'], statuses: [200, 201, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   createDriverRelease: { method: 'POST', path: '/v1/driver-releases', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['driver-releases:write'], statuses: [201, 400, 401, 403, 404, 409, 422, 429, 503] },
   revokeDriverRelease: { method: 'DELETE', path: '/v1/driver-releases/{release_id}', pathParams: ['release_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: false, scopes: ['driver-releases:write'], statuses: [204, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getDriverReleaseProjection: { method: 'GET', path: '/v1/driver-releases/{release_id}/projection', pathParams: ['release_id'], query: ['service_id'], headers: ['traceparent'], hasBody: false, scopes: ['driver-releases:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

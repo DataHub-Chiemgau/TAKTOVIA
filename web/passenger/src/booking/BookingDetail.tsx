@@ -11,6 +11,15 @@ import { fenster, ortszeit } from './Zeitanzeige';
 import { tx } from '../texte';
 import type { TextKey } from '../texte';
 
+/** Text der Rückfallgrund-Anzeige der Prognose (WP-M4-66): bekannte Gründe in Fahrgastsprache, sonst allgemein. */
+function prognoseGrund(
+  reason: string,
+): 'reise.prognoseGrundVeraltet' | 'reise.prognoseGrundKeinePosition' | 'reise.prognoseGrundSonst' {
+  if (reason === 'POSITION_STALE') return 'reise.prognoseGrundVeraltet';
+  if (reason === 'POSITION_MISSING') return 'reise.prognoseGrundKeinePosition';
+  return 'reise.prognoseGrundSonst';
+}
+
 export interface BookingDetailProps {
   bookingId: string;
   zone: string;
@@ -236,6 +245,36 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
             tx('reise.etaKeine')
           )}
         </dd>
+        {booking.eta?.forecast ? (
+          <>
+            <dt>{tx('reise.prognose')}</dt>
+            <dd data-testid="prognose">
+              {booking.eta.forecast.fallback_reason ? (
+                <>
+                  {tx('reise.prognoseRueckfall')} (
+                  {tx(prognoseGrund(booking.eta.forecast.fallback_reason))}
+                  {booking.eta.forecast.data_stand
+                    ? `, ${tx('reise.prognoseStand')} ${ortszeit(booking.eta.forecast.data_stand, zone)}`
+                    : ''}
+                  )
+                </>
+              ) : (
+                <>
+                  {fenster(
+                    {
+                      earliest_at: booking.eta.forecast.earliest_at,
+                      latest_at: booking.eta.forecast.latest_at,
+                    },
+                    zone,
+                  )}
+                  {booking.eta.forecast.data_stand
+                    ? ` (${tx('reise.prognoseStand')} ${ortszeit(booking.eta.forecast.data_stand, zone)})`
+                    : ''}
+                </>
+              )}
+            </dd>
+          </>
+        ) : null}
         <dt>{tx('reise.fahrzeug')}</dt>
         <dd data-testid="fahrzeug">
           {booking.vehicle

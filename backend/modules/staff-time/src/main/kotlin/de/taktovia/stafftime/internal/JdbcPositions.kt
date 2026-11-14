@@ -65,6 +65,21 @@ internal class JdbcPositions(private val ctxTx: ContextTransactions, private val
         return PositionResult(accepted, rejected, now)
     }
 
+    override fun latestOfVehicle(tenant: de.taktovia.platform.tenant.TenantId, vehicleId: UUID): LatestPosition? {
+        val now = clock.instant()
+        return ctxTx.runSystem(tenant, readOnly = true) { j ->
+            j.query(
+                "SELECT p.vehicle_id, ST_X(p.position::geometry), ST_Y(p.position::geometry), p.accuracy_m, p.measured_at, p.received_at FROM taktovia.position_sample p WHERE p.vehicle_id = ? " +
+                    "ORDER BY p.measured_at DESC, p.received_at DESC LIMIT 1",
+                { rs, _ ->
+                    val measured = rs.getTimestamp(5).toInstant()
+                    val age = maxOf(0L, Duration.between(measured, now).seconds)
+                    LatestPosition(rs.getObject(1, UUID::class.java), rs.getDouble(2), rs.getDouble(3), rs.getDouble(4), measured, rs.getTimestamp(6).toInstant(), age, age > settings.positionStaleAfter.seconds)
+                }, vehicleId,
+            ).firstOrNull()
+        }
+    }
+
     override fun latest(ctx: RequestContext, vehicleIds: Collection<UUID>): Map<UUID, LatestPosition> {
         if (ctx.actor.type != ActorType.HUMAN || !ctx.hasScope(SCOPE_READ)) throw ProblemException(ErrorCode.FORBIDDEN)
         if (vehicleIds.isEmpty()) return emptyMap()

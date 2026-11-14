@@ -20,8 +20,8 @@ import java.time.Duration
 internal object RideOfferServicesFactory {
     fun create(
         ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: EffectiveConfig, clock: Clock, travelTime: DirectTravelTime, gate: CandidateGate,
-        quotes: FareQuotes?, policy: OfferPolicy, distance: DirectDistance,
-    ): RideOfferRequests = JdbcRideOfferRequests(ctxTx, outbox, geo, config, clock, travelTime, gate, GeoEligibilityCheck(geo), quotes, policy, distance)
+        quotes: FareQuotes?, policy: OfferPolicy, distance: DirectDistance, etaSource: de.taktovia.bookingdispatch.api.OfferEtaSource? = null,
+    ): RideOfferRequests = JdbcRideOfferRequests(ctxTx, outbox, geo, config, clock, travelTime, gate, GeoEligibilityCheck(geo), quotes, policy, distance, etaSource)
 
     private fun holds(ctxTx: ContextTransactions, outbox: Outbox, clock: Clock, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null) =
         JdbcCapacityHolds(ctxTx, JdbcResourceAvailability(ctxTx, clock, staffing), outbox, clock, JdbcRunPlans(ctxTx, outbox, clock))

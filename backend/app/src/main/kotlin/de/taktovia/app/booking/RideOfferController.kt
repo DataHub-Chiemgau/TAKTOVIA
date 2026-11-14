@@ -98,6 +98,7 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
             "arrival_window" to window(o.arrivalWindow), "arrival_grace_min" to o.arrivalGraceMin, "direct_seconds" to o.directSeconds,
         )
         o.offer?.let { i -> offerBlock(i, m) }
+        o.eta?.let { m["eta"] = etaBlock(it) }
         walk?.let { m["walk"] = walkBlock(it) }
         return m
     }
@@ -164,8 +165,12 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
         m["gross"] = money(v.quote); m["fare_components"] = components(v.quote); m["tariff_revision"] = v.quote.tariffRevisionNo; m["cancellation_policy_ref"] = v.cancellationPolicyRef
         m["demand"] = vector(v.demand); m["hold"] = v.hold?.let { holdBlock(it) }; m["revision"] = v.revision
         v.pickupStop?.let { m["pickup_stop"] = stop(it) }; v.dropoffStop?.let { m["dropoff_stop"] = stop(it) }
+        v.eta?.let { m["eta"] = etaBlock(it) }
         return m
     }
+
+    /** Version des ETA-Grundmodells des Angebots (WP-M4-66): genau eine Modell-/Konfigurationsversion, Reserve, Rückfallgrund. */
+    private fun etaBlock(e: de.taktovia.bookingdispatch.api.OfferEtaVersion) = linkedMapOf("model_version" to e.modelVersion, "config_version" to e.configVersion, "buffer_seconds" to e.bufferSeconds, "fallback_reason" to e.fallbackReason)
 
     companion object {
         /** Fußwegblock (Schema `RideWalkRoute`) von Angebot und Buchung: Geometrie als Punktliste, nummerierte Wegschritte, Rückfallgrund. */

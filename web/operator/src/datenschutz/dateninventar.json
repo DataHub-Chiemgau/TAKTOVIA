@@ -1510,6 +1510,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "from_run_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
@@ -1574,6 +1583,15 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "to_run_id",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
           "rechtsgrundlage": "",
@@ -13728,6 +13746,42 @@
           "bemerkung": ""
         },
         {
+          "spalte": "created_by",
+          "personenbezogen": "ja",
+          "zweck": "SICHERHEITSPROTOKOLL",
+          "rechtsgrundlage": "ART6_1_F_BERECHTIGTES_INTERESSE",
+          "schutzklasse": "SECURITY_AUDIT",
+          "loeschklasse": "LK_STAMM",
+          "bemerkung": "Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse"
+        },
+        {
+          "spalte": "created_via",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "exception_justification",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "exception_rules",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "id",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
@@ -13744,6 +13798,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "reason",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "Begründung der Disposition, Freitext ohne Personenbezug (Pflicht bei manueller Umplanung)"
         },
         {
           "spalte": "recorded_at",
@@ -15378,6 +15441,42 @@
         },
         {
           "spalte": "dropoff_stop_revision_id",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "eta_buffer_seconds",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "eta_config_version",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "eta_fallback_reason",
+          "personenbezogen": "nein",
+          "zweck": "BUCHUNGSABWICKLUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "eta_model_version",
           "personenbezogen": "nein",
           "zweck": "BUCHUNGSABWICKLUNG",
           "rechtsgrundlage": "",

@@ -160,7 +160,9 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         t.pickupStop?.let { m["pickup_stop"] = stop(it) }; t.dropoffStop?.let { m["dropoff_stop"] = stop(it) }
         t.eta?.let { e ->
             m["eta"] = linkedMapOf("pickup_at" to e.pickupAt.toString(), "dropoff_at" to e.dropoffAt?.toString(), "previous_pickup_at" to e.previousPickupAt?.toString(), "plan_sequence" to e.planSequence,
-                "plan_revision" to e.planRevision, "data_as_of" to e.dataAsOf.toString(), "source" to e.source)
+                "plan_revision" to e.planRevision, "data_as_of" to e.dataAsOf.toString(), "source" to e.source,
+                "forecast" to e.forecast?.let { f -> linkedMapOf("earliest_at" to f.earliest.toString(), "latest_at" to f.latest.toString(), "basis" to f.basis.name, "data_stand" to f.dataStand?.toString(),
+                    "fallback_reason" to f.fallbackReason, "model_version" to f.modelVersion, "config_version" to f.configVersion) })
         }
         t.vehicle?.let { m["vehicle"] = linkedMapOf("label" to it.label, "vehicle_class" to it.vehicleClass) }
         t.cancellation?.let { c -> m["cancellation"] = linkedMapOf("allowed" to c.allowed, "deadline_at" to c.deadlineAt.toString(), "deadline_min" to c.deadlineMin, "deadline_defaulted" to c.deadlineDefaulted) }

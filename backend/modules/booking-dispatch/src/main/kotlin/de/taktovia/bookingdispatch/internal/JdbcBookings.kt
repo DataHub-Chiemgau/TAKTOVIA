@@ -70,6 +70,7 @@ internal class JdbcBookings(
     private val authorizer: ObjectAuthorizer = ServiceScopeAuthorizer, private val cancellation: de.taktovia.bookingdispatch.api.CancellationListener? = null,
     private val executionStates: de.taktovia.bookingdispatch.api.ExecutionStateSource = de.taktovia.bookingdispatch.api.ExecutionStateSource.NONE,
     audit: de.taktovia.platform.audit.AuditPort? = null,
+    private val etaPort: de.taktovia.bookingdispatch.api.EtaStopEtaPort? = null,
 ) : Bookings {
     internal val changes = BookingChanges(audit, clock)
     private val json = JsonMapper.builder().build()
@@ -209,7 +210,19 @@ internal class JdbcBookings(
         out.take(limit + 1)
     }
 
-    override fun tracking(ctx: RequestContext, bookingId: UUID): BookingTracking = ctxTx.run(ctx, readOnly = true) { j ->
+    override fun tracking(ctx: RequestContext, bookingId: UUID): BookingTracking {
+        val base = trackingBase(ctx, bookingId)
+        // Die Prognose läuft **außerhalb** der Lesetransaktion: der Leseport „ETA je Stopp“ nutzt eigene Transaktionen, und ein Fehler darin darf die Transaktion der Buchung nie als rollback-only markieren
+        val eta = base.tracking.eta ?: return base.tracking
+        return base.tracking.copy(eta = eta.copy(forecast = pickupForecast(ctx, base.pickup)))
+    }
+
+    private class TrackingBase(val tracking: BookingTracking, val pickup: PickupRef?)
+
+    /** Umlauf, Einstiegsposition und Planzeiten der Buchung für die Prognose (gelesen in der Transaktion der Buchung). */
+    private class PickupRef(val runId: UUID, val pickupSeq: Int, val serviceId: UUID, val stopTimes: List<Pair<Int, Instant>>)
+
+    private fun trackingBase(ctx: RequestContext, bookingId: UUID): TrackingBase = ctxTx.run(ctx, readOnly = true) { j ->
         val r = row(j, bookingId) ?: throw ProblemException.notFound()
         authorize(j, ctx, r, if (isPassengerView(ctx)) passengerOf(j, ctx) else null)
         val booking = view(j, ctx, r)
@@ -239,7 +252,33 @@ internal class JdbcBookings(
         val deadline = booking.promise.pickupEarliest.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))
         val cancellable = r.state == BookingState.CONFIRMED.name || r.state == BookingState.CONFIRMING.name
         val option = CancellationOption(cancellable && !clock.instant().isAfter(deadline) && BookingReason.PASSENGER_REQUEST in policy.reasons, deadline, policy.deadlineMin, "cancellation_deadline_min" in policy.defaulted)
-        BookingTracking(booking, stop(offer?.pickup), stop(offer?.dropoff), eta, vehicle, option, offer?.offerId, clock.instant())
+        TrackingBase(BookingTracking(booking, stop(offer?.pickup), stop(offer?.dropoff), eta, vehicle, option, offer?.offerId, clock.instant()), if (eta == null || etaPort == null) null else pickupRef(j, r.holdId, r.serviceId, bookingId))
+    }
+
+    private fun pickupRef(j: JdbcOperations, holdId: UUID, serviceId: UUID, bookingId: UUID): PickupRef? {
+        val loc = j.query(
+            "SELECT r.id, rs.seq FROM taktovia.capacity_hold h JOIN taktovia.vehicle_run r ON r.tenant_id = h.tenant_id AND r.id = h.run_id " +
+                "JOIN taktovia.route_stop rs ON rs.tenant_id = r.tenant_id AND rs.run_id = r.id AND rs.run_revision = r.revision AND rs.boardings @> CAST(? AS jsonb) WHERE h.id = ? ORDER BY rs.seq LIMIT 1",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getInt(2) }, """[{"booking_id": "$bookingId"}]""", holdId,
+        ).firstOrNull() ?: return null
+        val times = j.query("SELECT rs.seq, rs.planned_at FROM taktovia.route_stop rs JOIN taktovia.vehicle_run r ON r.tenant_id = rs.tenant_id AND r.id = rs.run_id AND r.revision = rs.run_revision WHERE rs.run_id = ? ORDER BY rs.seq",
+            { rs, _ -> rs.getInt(1) to rs.getTimestamp(2).toInstant() }, loc.first)
+        return PickupRef(loc.first, loc.second, serviceId, times)
+    }
+
+    /**
+     * Prognose der Ankunft am Einstiegsstopp aus dem Leseport „ETA je Stopp“ (WP-M4-66): der Umlauf ist der des Holds (wandert bei einer Umbuchung mit), die Prognose beginnt am nächsten noch nicht erreichten
+     * Stopp und läuft bis zum Einstieg; die verbindliche Zusage und die Plan-ETA bleiben daneben unverändert. Ein technischer Fehler des Ports ergibt keine Prognose (nie eine erfundene Zeit).
+     */
+    private fun pickupForecast(ctx: RequestContext, ref: PickupRef?): de.taktovia.bookingdispatch.api.BookingEtaForecast? {
+        val port = etaPort ?: return null
+        ref ?: return null
+        val now = clock.instant()
+        val next = ref.stopTimes.firstOrNull { !it.second.isBefore(now) }?.first ?: ref.pickupSeq
+        val from = minOf(next, ref.pickupSeq).coerceAtMost(ref.stopTimes.size - 2).coerceAtLeast(0)
+        val report = try { port.etaPerStop(ctx, ref.runId, "car", ref.serviceId, from) } catch (e: RuntimeException) { return null }
+        val stop = report.stops.firstOrNull { it.seq == ref.pickupSeq } ?: return null
+        return de.taktovia.bookingdispatch.api.BookingEtaForecast(stop.forecastEarliest, stop.forecastLatest, stop.basis, report.dataStand, report.fallbackReason?.name, report.modelVersion, report.configVersion)
     }
 
     // ---- Storno (WP-M2-26) -------------------------------------------------------------------------------------------------------------
@@ -281,6 +320,8 @@ internal class JdbcBookings(
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).first()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
         j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, holdId)
+        // Der Hold wandert bei einer manuellen Umbuchung (WP-M3-40) mit der Buchung: nach dem Sperren muss der gesperrte Umlauf noch der des Holds sein
+        if (j.queryForObject("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", UUID::class.java, holdId) != runId) throw ProblemException(ErrorCode.CONFLICT, "Der Umlauf der Buchung hat sich zwischenzeitlich geändert; erneut versuchen.")
         val cur = j.query("SELECT state, revision FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> rs.getString(1) to rs.getLong(2) }, bookingId).first()
         if (cur.second != cmd.ifMatch) throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung wurde zwischenzeitlich geändert; aktuelle Revision lesen.")
         if (cur.first != BookingState.CONFIRMED.name && cur.first != BookingState.CONFIRMING.name)
@@ -340,6 +381,7 @@ internal class JdbcBookings(
         val runId = j.query("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, pre.holdId).first()
         j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, runId)
         j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, pre.holdId)
+        if (j.queryForObject("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", UUID::class.java, pre.holdId) != runId) throw ProblemException(ErrorCode.CONFLICT, "Der Umlauf der Buchung hat sich zwischenzeitlich geändert; erneut versuchen.")
         val cur = j.query("SELECT state, revision, cancel_reason_code FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> Triple(rs.getString(1), rs.getLong(2), rs.getString(3)) }, bookingId).first()
         when {
             cur.first == BookingState.CONFIRMING.name -> {

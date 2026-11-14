@@ -3,6 +3,8 @@ package de.taktovia.app.fleet
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.bookingdispatch.api.OperatorOrders
 import de.taktovia.bookingdispatch.api.OperatorRunSummary
+import de.taktovia.bookingdispatch.api.VehiclePlan
+import de.taktovia.bookingdispatch.api.VehiclePlans
 import de.taktovia.fleetsafety.api.FleetsafetyApi
 import de.taktovia.fleetsafety.api.OperatorBlockView
 import de.taktovia.fleetsafety.api.OperatorVehicleFacts
@@ -37,7 +39,7 @@ import java.util.UUID
  * (WP-M3-31), ohne Schicht und Meldung `NOT_READY` bei gesetztem Sperrkennzeichen und sonst `AVAILABLE`.
  */
 @RestController
-class OperatorVehicleController(private val fleet: FleetsafetyApi, private val staff: StafftimeApi, private val orders: OperatorOrders, private val codec: CursorCodec, private val flags: de.taktovia.bookingdispatch.api.OperatorFlags) {
+class OperatorVehicleController(private val fleet: FleetsafetyApi, private val staff: StafftimeApi, private val orders: OperatorOrders, private val plans: VehiclePlans, private val codec: CursorCodec, private val flags: de.taktovia.bookingdispatch.api.OperatorFlags) {
 
     @GetMapping("/v1/operator/vehicles")
     fun list(
@@ -86,8 +88,26 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
         val ctx = RequestContexts.require(request)
         val id = runCatching { UUID.fromString(vehicleId) }.getOrNull() ?: throw ProblemException.notFound()
         val f = fleet.operatorVehicles.get(ctx, id)   // nicht sichtbar (fremder Mandant, nicht berechtigter Dienst) = 404
-        return json(f, staff.positions.latest(ctx, listOf(id))[id], staff.serviceStatus.latestForVehicles(ctx, listOf(id))[id], orders.forVehicles(ctx, listOf(id))[id], flags.forVehicles(ctx, listOf(id))[id].orEmpty())
+        // Fahrzeugplan (OPS-003) erst nach der Dienstprüfung: ein nicht berechtigtes Fahrzeug erreicht den Planport nie
+        val body = json(f, staff.positions.latest(ctx, listOf(id))[id], staff.serviceStatus.latestForVehicles(ctx, listOf(id))[id], orders.forVehicles(ctx, listOf(id))[id], flags.forVehicles(ctx, listOf(id))[id].orEmpty())
+        return LinkedHashMap(body).also { it["plan"] = planJson(plans.plan(ctx, id)) }
     }
+
+    private fun planJson(p: VehiclePlan): Map<String, Any?> = linkedMapOf(
+        "vehicle_id" to p.vehicleId.toString(), "run_id" to p.runId?.toString(), "run_state" to p.runState?.name, "plan_revision" to p.planRevision, "as_of" to p.asOf.toString(),
+        "stops" to p.stops.map { st ->
+            linkedMapOf(
+                "route_stop_id" to st.routeStopId.toString(), "sequence" to st.sequence, "stop_name" to st.stopName, "kind" to st.kind.name, "scheduled_at" to st.scheduledAt.toString(),
+                "forecast" to st.forecast?.let { linkedMapOf("earliest" to it.earliest.toString(), "latest" to it.latest.toString(), "basis" to it.basis.name) },
+                "promise_windows" to st.promiseWindows.map { w -> linkedMapOf("booking_id" to w.bookingId.toString(), "kind" to w.kind.name, "earliest" to w.earliest.toString(), "latest" to w.latest.toString()) },
+                "boarding_booking_ids" to st.boardingBookingIds.map { it.toString() }, "alighting_booking_ids" to st.alightingBookingIds.map { it.toString() },
+            )
+        },
+        "capacity" to p.capacity?.let { linkedMapOf("seats" to it.seats, "wheelchair" to it.wheelchair) }, "occupancy" to linkedMapOf("seats" to p.occupancy.seats, "wheelchair" to p.occupancy.wheelchair),
+        "review_required" to p.reviewRequired.map { r -> linkedMapOf("event_id" to r.eventId.toString(), "event_type" to r.eventType, "booking_id" to r.bookingId?.toString(), "reason_code" to r.reasonCode, "occurred_at" to r.occurredAt.toString()) },
+        "forecast_source" to p.forecastInfo.source, "forecast_data_stand" to p.forecastInfo.dataStand?.toString(), "forecast_fallback_reason" to p.forecastInfo.fallbackReason,
+        "forecast_model_version" to p.forecastInfo.modelVersion, "forecast_config_version" to p.forecastInfo.configVersion,
+    )
 
     private fun json(f: OperatorVehicleFacts, p: LatestPosition?, status: ServiceStatus?, run: OperatorRunSummary?, flags: List<de.taktovia.bookingdispatch.api.OperatorFlagView>): Map<String, Any?> = linkedMapOf(
         "vehicle_id" to f.id.toString(), "vehicle_label" to f.label, "operational_state" to operationalState(f, status), "safety_revision" to f.safetyRevision,

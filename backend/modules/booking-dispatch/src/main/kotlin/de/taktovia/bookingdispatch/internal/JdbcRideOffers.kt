@@ -3,6 +3,7 @@ package de.taktovia.bookingdispatch.internal
 import de.taktovia.bookingdispatch.api.HoldOutcome
 import de.taktovia.bookingdispatch.api.HoldRideOffer
 import de.taktovia.bookingdispatch.api.HoldSummary
+import de.taktovia.bookingdispatch.api.OfferEtaVersion
 import de.taktovia.bookingdispatch.api.OfferState
 import de.taktovia.bookingdispatch.api.OfferStop
 import de.taktovia.bookingdispatch.api.PlaceHold
@@ -49,7 +50,10 @@ internal class JdbcRideOffers(
         val pickupEarliest: Instant, val pickupLatest: Instant, val arrivalEarliest: Instant, val arrivalLatest: Instant, val arrivalGraceMin: Int, val directSeconds: Int,
         val expiresAt: Instant, val cancellationPolicyRef: String, val demand: String, val pickupStopId: UUID?, val pickupStopRevisionId: UUID?, val dropoffStopId: UUID?,
         val dropoffStopRevisionId: UUID?, val runId: UUID?, val planRevision: Long?, val intervalFrom: Int?, val intervalTo: Int?, val holdId: UUID?, val holdScope: String?, val revision: Long,
-    )
+        val etaModelVersion: Int?, val etaConfigVersion: String?, val etaBufferSeconds: Int, val etaFallbackReason: String?,
+    ) {
+        val eta: OfferEtaVersion? get() = if (etaModelVersion != null || etaFallbackReason != null) OfferEtaVersion(etaModelVersion, etaConfigVersion, etaBufferSeconds, etaFallbackReason) else null
+    }
 
     private fun read(j: JdbcOperations, offerId: UUID, lock: Boolean): Row? =
         if (lock) j.query("SELECT $COLS FROM taktovia.ride_offer WHERE id = ? FOR UPDATE", ROW, offerId).firstOrNull() else j.query("SELECT $COLS FROM taktovia.ride_offer WHERE id = ?", ROW, offerId).firstOrNull()
@@ -84,7 +88,7 @@ internal class JdbcRideOffers(
         RideOfferView(
             row.id, row.attemptId, row.serviceId, state, RideBookingKind.valueOf(row.bookingKind), RideTimeKind.valueOf(row.timeKind),
             RideTimeWindow(row.pickupEarliest, row.pickupLatest), RideTimeWindow(row.arrivalEarliest, row.arrivalLatest), row.arrivalGraceMin, row.directSeconds, row.expiresAt,
-            row.planRevision, quote, row.cancellationPolicyRef, ResourceVector.parse(row.demand), stop(row.pickupStopId, row.pickupStopRevisionId), stop(row.dropoffStopId, row.dropoffStopRevisionId), hold, row.revision,
+            row.planRevision, quote, row.cancellationPolicyRef, ResourceVector.parse(row.demand), stop(row.pickupStopId, row.pickupStopRevisionId), stop(row.dropoffStopId, row.dropoffStopRevisionId), hold, row.revision, row.eta,
         )
     }
 
@@ -172,13 +176,13 @@ internal class JdbcRideOffers(
     private companion object {
         const val COLS = "id, attempt_id, quote_id, service_id, actor_ref, state, booking_kind, time_kind, pickup_earliest, pickup_latest, arrival_earliest, arrival_latest, arrival_grace_min, direct_seconds, " +
             "expires_at, cancellation_policy_ref, demand::text, pickup_stop_id, pickup_stop_revision_id, dropoff_stop_id, dropoff_stop_revision_id, run_id, plan_revision, interval_from, interval_to, " +
-            "hold_id, hold_scope, revision"
+            "hold_id, hold_scope, revision, eta_model_version, eta_config_version, eta_buffer_seconds, eta_fallback_reason"
         val ROW = org.springframework.jdbc.core.RowMapper { rs, _ ->
             Row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8),
                 rs.getTimestamp(9).toInstant(), rs.getTimestamp(10).toInstant(), rs.getTimestamp(11).toInstant(), rs.getTimestamp(12).toInstant(), rs.getInt(13), rs.getInt(14),
                 rs.getTimestamp(15).toInstant(), rs.getString(16), rs.getString(17), rs.getObject(18, UUID::class.java), rs.getObject(19, UUID::class.java), rs.getObject(20, UUID::class.java),
                 rs.getObject(21, UUID::class.java), rs.getObject(22, UUID::class.java), rs.getObject(23) as Long?, rs.getObject(24) as Int?, rs.getObject(25) as Int?,
-                rs.getObject(26, UUID::class.java), rs.getString(27)?.trim(), rs.getLong(28))
+                rs.getObject(26, UUID::class.java), rs.getString(27)?.trim(), rs.getLong(28), rs.getObject(29) as Int?, rs.getString(30), rs.getInt(31), rs.getString(32))
         }
     }
 }

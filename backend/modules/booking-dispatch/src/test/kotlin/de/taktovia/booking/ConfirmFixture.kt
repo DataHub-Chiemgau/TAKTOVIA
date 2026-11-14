@@ -50,6 +50,10 @@ class ConfirmFixture : AutoCloseable {
     fun operator(tenant: TenantId, services: Set<UUID>, roles: Set<String> = setOf("dispatcher")): RequestContext =
         RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/booking", "betrieb-" + UUID.randomUUID(), "sid-x", true), tenant, roles, setOf("rides:read", "rides:write"), services, UUID.randomUUID())
 
+    /** Kontext eines Fahrers (Rolle `driver`) im Mandanten [tenant] (eigener Aufbau des Clusters wave14-c6). */
+    fun driverCtx(tenant: TenantId): RequestContext =
+        RequestContext(Actor(ActorType.HUMAN, "https://idp.test/realms/booking", "fahrer-" + UUID.randomUUID(), "sid-d", true), tenant, setOf("driver"), setOf("driver:run"), emptySet(), UUID.randomUUID())
+
     /** Ein Angebot mit Hold: [offerRevision] ist die ETag-Revision der Hold-Antwort (`If-Match` des Confirm). */
     class Held(val passenger: Passenger, val offer: IssuedOffer, val holdId: UUID, val offerRevision: Long, val grossMinor: Long)
 

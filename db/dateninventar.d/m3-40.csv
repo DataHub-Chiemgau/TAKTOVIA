@@ -1,0 +1,8 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+plan_change;created_via;nein;BUCHUNGSABWICKLUNG;;;;
+plan_change;reason;nein;BUCHUNGSABWICKLUNG;;;;Begründung der Disposition, Freitext ohne Personenbezug (Pflicht bei manueller Umplanung)
+plan_change;created_by;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+plan_change;exception_rules;nein;BUCHUNGSABWICKLUNG;;;;
+plan_change;exception_justification;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;from_run_id;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;to_run_id;nein;BUCHUNGSABWICKLUNG;;;;

@@ -18,6 +18,8 @@ import {
 } from '../inspection/InspectionStatus';
 import { flagText } from '../bookings/BookingList';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
+import type { LiveMessage } from '../live/LiveChannel';
+import { VehiclePlanPanel } from './VehiclePlanPanel';
 
 /** Sperrgründe der Leitstellenansicht (Katalog OP-01); keine Diagnosetexte. */
 const BLOCK_REASONS: Readonly<Record<string, string>> = {
@@ -156,7 +158,7 @@ function SchematicMap({
   );
 }
 
-function Detail({ v }: { v: OperatorVehicle }) {
+function Detail({ v, liveMessage }: { v: OperatorVehicle; liveMessage: LiveMessage | undefined }) {
   const notes = notesOf(v);
   return (
     <aside aria-label={`Details zu ${v.vehicle_label}`}>
@@ -195,6 +197,11 @@ function Detail({ v }: { v: OperatorVehicle }) {
           ))}
         </ul>
       )}
+      <VehiclePlanPanel
+        vehicleId={v.vehicle_id}
+        vehicleLabel={v.vehicle_label}
+        liveMessage={liveMessage}
+      />
     </aside>
   );
 }
@@ -284,7 +291,14 @@ export function VehicleList() {
     load(next);
   };
 
-  const live = useLiveChannel({ onMessage: () => load(filter), onResync: () => load(filter) });
+  const [liveMessage, setLiveMessage] = useState<LiveMessage | undefined>(undefined);
+  const live = useLiveChannel({
+    onMessage: (m) => {
+      setLiveMessage(m);
+      load(filter);
+    },
+    onResync: () => load(filter),
+  });
   useInspectionRefresh(() => load(filter));
   useAnnounceInspectionChanges(rows.status === 'ready' ? rows.data : undefined);
 
@@ -437,7 +451,7 @@ export function VehicleList() {
                 </>
               ) : null}
             </section>
-            {detail ? <Detail v={detail} /> : null}
+            {detail ? <Detail v={detail} liveMessage={liveMessage} /> : null}
           </>
         )}
       </ResourceView>

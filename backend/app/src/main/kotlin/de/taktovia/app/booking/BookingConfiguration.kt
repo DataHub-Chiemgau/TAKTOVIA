@@ -33,13 +33,14 @@ class BookingConfiguration {
 
     @Bean fun fareQuotes(ctxTx: ContextTransactions, tariffs: Tariffs): FareQuotes = FareQuotes.create(ctxTx, tariffs)
 
-    @Bean fun rideOfferRequests(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: ConfigApi, quotes: FareQuotes): RideOfferRequests =
-        RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
+    /** Die Fensterbildung nutzt das ETA-Grundmodell (WP-M4-66): Haltezeit, Referenzfahrzeit und Sicherheitsreserve; ohne Prognose gilt die Planungsannahme und das Angebot weist den Grund aus. */
+    @Bean fun rideOfferRequests(ctxTx: ContextTransactions, outbox: Outbox, geo: ServicegeoApi, config: ConfigApi, quotes: FareQuotes, eta: de.taktovia.bookingdispatch.api.EtaApi, keys: de.taktovia.bookingdispatch.api.EtaStopKeys): RideOfferRequests =
+        RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes, etaSource = eta.offerTime(keys))
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
     @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort,
-        audit: de.taktovia.platform.audit.AuditPort): Bookings =
-        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing, audit = audit)   // Void/Erstattung nach Storno (WP-M2-31), Audit des Betriebsstornos (WP-M3-39)
+        audit: de.taktovia.platform.audit.AuditPort, eta: de.taktovia.bookingdispatch.api.EtaApi): Bookings =
+        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing, audit = audit, eta = eta.stopEta)   // Void/Erstattung nach Storno (WP-M2-31), Audit des Betriebsstornos (WP-M3-39)
 
     /** Buchung durch die Disposition: Angebot für den Fahrgast, Bestätigung, atomarer Tausch (WP-M3-39); derselbe Tarif-, Kapazitäts- und Sicherheitskern wie die Fahrgastbuchung. */
     @Bean fun operatorBookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort,

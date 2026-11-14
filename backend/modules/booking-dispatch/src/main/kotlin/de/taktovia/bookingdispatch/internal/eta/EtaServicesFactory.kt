@@ -7,6 +7,7 @@ import de.taktovia.bookingdispatch.api.EtaReferenceModel
 import de.taktovia.bookingdispatch.api.EtaRoadRouteSource
 import de.taktovia.bookingdispatch.api.EtaStopEtaPort
 import de.taktovia.bookingdispatch.api.EtaStopKeys
+import de.taktovia.bookingdispatch.api.OfferEtaSource
 import de.taktovia.bookingdispatch.api.RoutingPort
 import de.taktovia.bookingdispatch.api.RunPlans
 import de.taktovia.config.api.EffectiveConfig
@@ -26,6 +27,7 @@ internal object EtaServicesFactory {
             override val reference: EtaReferenceModel = reference
             override val forecast: EtaForecaster = forecaster
             override val stopEta: EtaStopEtaPort? = stopEta
+            override fun offerTime(stopKeys: EtaStopKeys, vehicleProfile: String): OfferEtaSource = EtaOfferSource(forecaster, stopKeys, vehicleProfile)
         }
     }
 
