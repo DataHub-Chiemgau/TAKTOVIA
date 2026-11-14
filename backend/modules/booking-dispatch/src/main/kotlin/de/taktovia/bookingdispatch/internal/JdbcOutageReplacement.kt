@@ -256,7 +256,7 @@ internal class JdbcOutageReplacement(
             if (p.third == OutageWindowEffect.OUTSIDE_WINDOW && !cmd.acceptWindowEffect)
                 throw ProblemException(ErrorCode.PROMISE_WINDOW_VIOLATION, "Der Vorschlag verletzt das Zusagefenster; die Übernahme verlangt die ausdrückliche Annahme der Leitstelle.")
             val source = runOf(j, bookingId) ?: throw ProblemException.notFound()
-            val tr = try { plans.simulateTransfer(j, ctx, p.first, source.first, bookingId) } catch (e: ProblemException) { throw e }
+            val tr = plans.simulateTransfer(j, ctx, p.first, source.first, bookingId)   // gleiche Prüfungen wie der Commit; unzulässig: ProblemException (nichts geschrieben)
             val exception = if (tr.violations.isNotEmpty() && cmd.acceptWindowEffect)
                 ReplanException(setOf(ReplanRule.PROMISE_WINDOW), "Fahrzeugausfall: Abweichung vom Zusagefenster von der Leitstelle angenommen (${cmd.reasonCode})") else null
             plans.replanIn(j, ctx, p.first, ReplanCommand(tr.changes, "Fahrzeugausfall, Umbuchung auf anderes Fahrzeug (${cmd.reasonCode})", tr.targetRevision, false, exception))
