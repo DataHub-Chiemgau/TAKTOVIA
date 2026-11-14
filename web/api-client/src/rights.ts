@@ -35,6 +35,7 @@ export type Right =
   | 'livebetrieb'
   | 'dispatch.replan'
   | 'alerts.ack'
+  | 'vehicles.block'
   | 'admin.ui17'
   | 'admin.ui18'
   | 'admin.ui20';
@@ -78,7 +79,8 @@ export const SCOPE_RIGHTS: Readonly<Record<string, readonly Right[]>> = {
   // UI-07 Leitstelle: Arbeitsliste „Offene Störungen“ (WP-M3-52): Lesen mit `operator:read`, Quittieren nur mit `operator:write`
   // UI-07 Livebetrieb Fahrzeuge (WP-M3-36): Lesen mit `operator:read`; die Fahrzeuge begrenzt der Server auf die berechtigten Dienste
   'operator:read': ['alerts', 'livebetrieb'],
-  'operator:write': ['alerts', 'alerts.ack', 'livebetrieb'],
+  // WP-M3-41: operative Fahrzeugsperre (Aktion in UI-07); die Rechtematrix lässt nur die Disposition zu, der Server prüft jede Anfrage
+  'operator:write': ['alerts', 'alerts.ack', 'livebetrieb', 'vehicles.block'],
   // UI-07 Umplanung (WP-M3-40): manuelle Planrevision; der Server prüft Scope, Dienst und jede Regel erneut
   'dispatch:write': ['dispatch.replan'],
   'config:write': ['admin.ui17'],

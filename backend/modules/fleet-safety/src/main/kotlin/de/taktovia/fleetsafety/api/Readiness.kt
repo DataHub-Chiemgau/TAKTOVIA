@@ -32,7 +32,8 @@ data class VehicleBlockView(
     val setBy: String, val setAt: Instant, val liftedBy: String?, val liftedAt: Instant?, val releaseDecisionId: UUID?, val revision: Long,
 )
 
-data class SetBlock(val vehicleId: UUID, val source: BlockSource, val reason: BlockReason, val reasonRef: String? = null, val caseNumber: String? = null) {
+data class SetBlock(val vehicleId: UUID, val source: BlockSource, val reason: BlockReason, val reasonRef: String? = null, val caseNumber: String? = null,
+    /** Begründung der Leitstelle (nur Audit, nicht im Ereignis). */ val comment: String? = null) {
     init {
         require(source in reason.source) { "Grund $reason ist für die Quelle $source nicht zulässig" }
         require(reasonRef == null || reasonRef.length in 1..120) { "reasonRef 1 bis 120 Zeichen" }

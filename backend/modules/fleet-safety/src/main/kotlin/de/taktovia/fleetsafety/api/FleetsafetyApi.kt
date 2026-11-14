@@ -50,6 +50,9 @@ interface FleetsafetyApi {
     /** Leitstellenprojektion der Fahrzeuge des berechtigten Dienstes (WP-M3-36). */
     val operatorVehicles: OperatorVehicles
 
+    /** Operative Fahrzeugsperre durch die Leitstelle (WP-M3-41). */
+    val operatorBlocks: OperatorBlocks
+
     /** Reparaturaufträge zu Schadenakten (WP-M3-51). */
     val repairOrders: RepairOrders
 
