@@ -28,7 +28,11 @@
 - **Negativ:** Storno nach Abschluss: Zuordnung nach der im Fixture festgelegten Ereignisdefinition (OP 27), der Versuch zählt in genau einer Stufe, nie doppelt; ein Betreiberstorno wird nicht als Fahrgaststorno gezählt (und umgekehrt); doppelte Ereigniszustellung verändert keine Zahl; Ereignis eines fremden Mandanten wird verworfen.
 - **Konkurrierend:** Zwei Worker verarbeiten dasselbe Ereignis parallel: genau eine Wirkung; Abfrage während laufender Projektion nennt konsistenten Datenstand.
 - **Referenztests:** Keine Katalog-IDs im WP-Dokument genannt; PH-AT-021 deckt Versuche und Ablehnungen mittelbar ab.
-- Testfälle: geplant:db/tests/test_funnel_fakten.py::test_vier_stufen_getrennt_und_ereignisabgleich; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/FunnelProjectionTest.kt::doppelte_zustellung_aendert_keine_zahl
+- Testfälle: db/tests/test_funnel_fakten.py::test_vier_stufen_getrennt_und_ereignisabgleich; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/FunnelProjectionTest.kt::doppelte_zustellung_aendert_keine_zahl; backend/app/src/test/kotlin/de/taktovia/app/analytics/FunnelApiTest.kt::trichter_weist_vier_zaehlgroessen_getrennt_und_endzustaende_aus; backend/app/src/test/kotlin/de/taktovia/app/analytics/FunnelApiTest.kt::mandanten_getrennt_kanalfilter_unzulaessig_und_recht
+
+## Bau-Stand (WP-M4-51)
+
+Umgesetzt in Migration `V40510` (Funktionen `funnel_counts`, `funnel_reconciliation`; Zusatzspalten an `fact_booking`), `Metrics.funnel`/`Metrics.reconcileFunnel` und `GET /v1/analytics/metrics?breakdown=funnel`. Angenommene Ereignisdefinition (OP 27): Angebot angezeigt = `booking.offer_created`, abgeschlossen = Ausstieg (`driver.event_recorded` CHECK_OUT). Bekannte Lücke: `booking.confirmed` trägt keinen Angebotsbezug; das Schema hat dafür das **optionale** Feld `offer_id` erhalten (der Produzent im Buchungskern sendet es noch nicht). Ohne es ist „Angebot angezeigt aber nicht gebucht“ und `Buchungskonversion` nur `PROVISIONAL` (`unlinked_bookings`). Eine Zahlung, die vor der Bestätigung scheitert, hat keinen Angebotsbezug und zählt daher zusätzlich als „Angebot nicht gebucht“. Die vier betroffenen Definitionen (`offer_rate`, `booking_conversion`, `cancellation_rate_passenger`, `cancellation_rate_operator`) sind im Seed ab diesem Paket ausführbar (bereits angelegte Mandantendefinitionen sind unveränderlich).
 
 ## Reviews
 

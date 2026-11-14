@@ -2,6 +2,9 @@ package de.taktovia.analytics.internal
 
 import de.taktovia.analytics.api.DefinitionChange
 import de.taktovia.analytics.api.FactSource
+import de.taktovia.analytics.api.FunnelReconciliation
+import de.taktovia.analytics.api.FunnelReport
+import de.taktovia.analytics.api.FunnelStageDiff
 import de.taktovia.analytics.api.MetricDefinition
 import de.taktovia.analytics.api.MetricDimensions
 import de.taktovia.analytics.api.MetricFilter
@@ -61,12 +64,13 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
-            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val attemptDefs = defs - energyDefs.toSet()
+            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs - energyDefs.toSet() - funnelDefs.toSet()
             // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
             if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
             val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
+            val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, query.filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, query, fc) } }
             val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
-            (attemptValues + energyValues).sortedBy { it.definition.metricId }
+            (attemptValues + funnelValues + energyValues).sortedBy { it.definition.metricId }
         }
     }
 
@@ -78,7 +82,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     private class Counts(
         val requests: Long, val technical: Long, val byMetric: Map<String, Long>, val unfiltered: Long, val factsTotal: Long,
-        val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val hasData: Boolean,
+        val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val hasData: Boolean, val linkCoverage: BigDecimal? = null,
     )
 
     private fun counts(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): Counts = j.query(COUNTS, { rs, _ ->
@@ -87,18 +91,20 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             rs.getTimestamp("processed_until"), rs.getString("completeness") == "INCOMPLETE", rs.getInt("gap_count"), rs.getLong("event_count"), rs.getBoolean("has_data"))
     }, Timestamp.from(p.from), Timestamp.from(p.to), f.serviceId?.toString(), f.serviceId?.toString(), f.channel, f.channel).single()
 
-    private fun coverage(c: Counts): BigDecimal? =
-        if (!c.incomplete) BigDecimal.ONE.setScale(4) else if (c.factsTotal <= 0) BigDecimal.ZERO.setScale(4)
+    private fun coverage(c: Counts): BigDecimal? {
+        val base = if (!c.incomplete) BigDecimal.ONE.setScale(4) else if (c.factsTotal <= 0) BigDecimal.ZERO.setScale(4)
         else de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(maxOf(0L, c.factsTotal - c.gaps)), BigDecimal(c.factsTotal), 4)   // abgerundet: eine Lücke ergibt nie 100 %
+        return c.linkCoverage?.let { minOf(base, it) } ?: base
+    }
 
-    private fun value(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: Counts): MetricValue {
+    private fun value(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: Counts, calcOverride: Calc? = null): MetricValue {
         fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, persist: Boolean = true): MetricValue {
             val cov = if (state == MetricState.OK || state == MetricState.PROVISIONAL) coverage(c) else null
             val asOf = c.asOf?.toInstant()
             val id = if (persist) store(j, d, q, state, reason, value, num, den, cov, c) else null
             return MetricValue(d, state, reason, value, num, den, cov, q.filter, q.period, asOf, c.events, id)
         }
-        val calc = calculation(d, c) ?: return result(MetricState.NOT_COMPUTABLE, d.notExecutableReason ?: MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, null, null, null, persist = false)
+        val calc = (if (d.executable) calcOverride else null) ?: calculation(d, c) ?: return result(MetricState.NOT_COMPUTABLE, d.notExecutableReason ?: MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, null, null, null, persist = false)
         if (!c.hasData) return result(MetricState.NOT_COMPUTABLE, MetricReason.NO_DATA, null, null, null)
         // kleine Gruppen: weder die Gruppe selbst noch ihr Komplement (Differenzbildung benachbarter Filter) darf unter der Schwelle liegen
         if (q.filter.dimensions().isNotEmpty()) {
@@ -113,6 +119,52 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             return result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(num, den, 6), num, den)
         }
         return result(state, null, num, num, den)
+    }
+
+    // ---- Nachfragetrichter (WP-M4-51) ------------------------------------------------------------------------------------------------------
+
+    private class FunnelRow(
+        val requests: Long, val technical: Long, val rejected: Long, val attemptsWithOffer: Long, val attemptsNonTechnical: Long, val requestsAll: Long, val offers: Long, val offersNotBooked: Long, val offersAll: Long,
+        val confirmed: Long, val confirmedAll: Long, val unlinked: Long, val completed: Long, val paymentFailed: Long, val cancelPassenger: Long, val cancelOperator: Long, val cancelOther: Long,
+        val confCancelPassenger: Long, val confCancelOperator: Long, val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val factsTotal: Long, val hasData: Boolean,
+    )
+
+    /** Alle Trichterzahlen und der Datenstand der Quellen ATTEMPT, OFFER, BOOKING in einem Statement (Funktion `funnel_counts`, ein Lesestand). */
+    private fun funnelRow(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): FunnelRow = j.query(FUNNEL, { rs, _ ->
+        FunnelRow(rs.getLong("requests"), rs.getLong("technical"), rs.getLong("rejected"), rs.getLong("attempts_with_offer"), rs.getLong("attempts_non_technical"), rs.getLong("requests_all"), rs.getLong("offers"),
+            rs.getLong("offers_not_booked"), rs.getLong("offers_all"), rs.getLong("confirmed"), rs.getLong("confirmed_all"), rs.getLong("unlinked_bookings"), rs.getLong("completed"), rs.getLong("payment_failed"),
+            rs.getLong("cancel_passenger"), rs.getLong("cancel_operator"), rs.getLong("cancel_other"), rs.getLong("conf_cancel_passenger"), rs.getLong("conf_cancel_operator"), rs.getTimestamp("processed_until"),
+            rs.getBoolean("incomplete"), rs.getInt("gap_count"), rs.getLong("event_count"), rs.getLong("facts_total"), rs.getBoolean("has_data"))
+    }, Timestamp.from(p.from), Timestamp.from(p.to), f.serviceId?.toString(), f.channel).single()
+
+    /** Kennzahl mit Stufenbezug: Zähler, Nenner und Kohorte (für kleine Gruppen) je Kennzahl aus dem einen Lesestand; Angebotsbezug fehlender Buchungen macht `Buchungskonversion` vorläufig. */
+    private fun funnelValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, r: FunnelRow): MetricValue {
+        val (calc, group, all) = when (d.metricId) {
+            "offer_rate" -> Triple(Calc(r.attemptsWithOffer, r.attemptsNonTechnical), r.requests, r.requestsAll)
+            "booking_conversion" -> Triple(Calc(r.offers - r.offersNotBooked, r.offers), r.offers, r.offersAll)
+            "cancellation_rate_passenger" -> Triple(Calc(r.confCancelPassenger, r.confirmed), r.confirmed, r.confirmedAll)
+            else -> Triple(Calc(r.confCancelOperator, r.confirmed), r.confirmed, r.confirmedAll)
+        }
+        val linkGap = d.metricId == "booking_conversion" && r.unlinked > 0
+        val link = if (linkGap) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(r.confirmed - r.unlinked), BigDecimal(r.confirmed), 4) else null
+        val c = Counts(group, 0, emptyMap(), all, r.factsTotal, r.asOf, r.incomplete || linkGap, r.gaps, r.events, r.hasData, link)
+        return value(j, d, q, c, calc)
+    }
+
+    override fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter): FunnelReport {
+        if (filter.channel != null) throw ProblemException(ErrorCode.BAD_REQUEST, "Filterdimension für den Nachfragetrichter nicht zulässig.", listOf(Violation("/\$query/channel", ViolationCode.NOT_IN_ENUM)))
+        return tx.run(tenant, readOnly = true) { j ->
+            val r = funnelRow(j, period, filter)
+            val link = if (r.unlinked > 0) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(r.confirmed - r.unlinked), BigDecimal(r.confirmed), 4) else null
+            val c = Counts(r.requests, r.technical, emptyMap(), r.requestsAll, r.factsTotal, r.asOf, r.incomplete || r.unlinked > 0, r.gaps, r.events, r.hasData, link)
+            val state = when { !r.hasData -> MetricState.NOT_COMPUTABLE; c.incomplete -> MetricState.PROVISIONAL; else -> MetricState.OK }
+            FunnelReport(period, filter, r.requests, r.offers, r.confirmed, r.completed, r.rejected, r.technical, r.offersNotBooked, r.paymentFailed, r.cancelPassenger, r.cancelOperator, r.cancelOther, r.unlinked,
+                state, if (r.hasData) coverage(c) else null, r.asOf?.toInstant(), r.events)
+        }
+    }
+
+    override fun reconcileFunnel(tenant: TenantId, period: ReportingPeriod): FunnelReconciliation = tx.run(tenant, readOnly = true) { j ->
+        FunnelReconciliation(period, j.query(FUNNEL_RECONCILIATION, { rs, _ -> FunnelStageDiff(rs.getString("stage"), rs.getLong("fact_count"), rs.getLong("log_count")) }, Timestamp.from(period.from), Timestamp.from(period.to)))
     }
 
     private class Calc(val numerator: Long, val denominator: Long?)
@@ -186,6 +238,10 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     private companion object {
         /** Energiekosten-Kennzahlen (WP-M4-43): Rechnung in [JdbcEnergyCosts], nicht aus den Versuchsfakten. */
         val ENERGY_IDS = setOf("energy_cost_per_100km", "energy_cost_per_operating_hour")
+        /** Kennzahlen, die aus dem Nachfragetrichter (`funnel_counts`) statt aus den Versuchszählern berechnet werden. */
+        val FUNNEL_METRICS = setOf("offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator")
+        const val FUNNEL = "SELECT * FROM taktovia.funnel_counts(?, ?, CAST(? AS uuid), CAST(? AS text))"
+        const val FUNNEL_RECONCILIATION = "SELECT stage, fact_count, log_count FROM taktovia.funnel_reconciliation(?, ?) ORDER BY stage"
         const val DEF_COLUMNS = "SELECT d.metric_id, d.version, d.name, d.value_kind, d.unit, d.numerator_definition, d.denominator_definition, d.exclusions, d.time_basis, d.period_basis, " +
             "array_to_string(d.filter_dimensions, ',') AS dims, d.source, d.executable, d.not_executable_reason, d.approved_at"
         const val DEF_LATEST = DEF_COLUMNS + " FROM taktovia.metric_definition_revision d WHERE d.state = 'APPROVED' AND d.version = " +

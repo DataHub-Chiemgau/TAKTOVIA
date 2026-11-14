@@ -7794,6 +7794,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "cancel_initiator",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "cancel_reason",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -7858,6 +7867,33 @@
         },
         {
           "spalte": "no_show_wait_seconds",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "offer_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "payment_failed_at",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "payment_failure_code",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
