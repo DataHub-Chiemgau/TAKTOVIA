@@ -20,6 +20,8 @@ data class TimeFactCommand(
     val windowEarliest: Instant? = null, val routeStopId: UUID? = null,
     val promiseVersion: Long? = null, val planRevision: Long? = null, val forecastVersion: Long? = null,
     val deviceTime: Instant? = null, val serverTime: Instant? = null, val offlineRecorded: Boolean = false,
+    /** Nur `PROMISED`: Dienst der Buchung und Zusagezeitpunkt (= Vergleichsstichtag der Abholpünktlichkeit, WP-M4-53). */
+    val serviceId: UUID? = null, val promisedAt: Instant? = null,
 ) {
     init {
         require(source.matches(Regex("^[A-Z][A-Z0-9_]*$"))) { "source: GROSSBUCHSTABEN_UNTERSTRICH" }
@@ -32,6 +34,7 @@ data class TimeFactCommand(
         }
         require(kind == TimeKind.ACTUAL || (deviceTime == null && serverTime == null && !offlineRecorded)) { "Geräte- und Serverzeit nur bei ACTUAL" }
         require(kind == TimeKind.PROMISED || windowEarliest == null) { "windowEarliest nur bei PROMISED" }
+        require(kind == TimeKind.PROMISED || (serviceId == null && promisedAt == null)) { "serviceId und promisedAt nur bei PROMISED" }
         require(windowEarliest == null || !windowEarliest.isAfter(value)) { "windowEarliest nach value" }
         require(promiseVersion == null || kind == TimeKind.PROMISED || kind == TimeKind.ANNOUNCED) { "promiseVersion nur bei PROMISED und ANNOUNCED" }
         require(planRevision == null || kind == TimeKind.PLANNED) { "planRevision nur bei PLANNED" }

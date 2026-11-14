@@ -11,6 +11,7 @@ import de.taktovia.analytics.api.MetricState
 import de.taktovia.analytics.api.MetricValue
 import de.taktovia.analytics.api.MetricValueKind
 import de.taktovia.analytics.api.Metrics
+import de.taktovia.analytics.api.PickupToleranceSource
 import de.taktovia.analytics.api.RejectionReport
 import de.taktovia.analytics.api.RejectionRow
 import de.taktovia.analytics.api.ReportingPeriod
@@ -34,6 +35,7 @@ import java.util.UUID
  */
 internal class JdbcMetrics(private val tx: TenantTransactions, override val smallGroupThreshold: Int) : Metrics {
     private val mapper = JsonMapper.builder().build()
+    private val pickup = JdbcPickupPunctuality()
 
     // ---- Definitionen -------------------------------------------------------------------------------------------------------------------
 
@@ -41,7 +43,10 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     override fun definition(tenant: TenantId, metricId: String, version: Int?): MetricDefinition = tx.run(tenant) { j -> seed(j); one(j, metricId, version) }
 
-    private fun seed(j: JdbcOperations) { j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java) }
+    private fun seed(j: JdbcOperations) {
+        j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java)
+        j.queryForObject("SELECT taktovia.seed_pickup_punctuality_definitions()", Int::class.java)   // WP-M4-53: Version 2 der Abholkennzahlen (ausführbar)
+    }
 
     private fun latest(j: JdbcOperations): List<MetricDefinition> = j.query(DEF_LATEST, DEF_MAPPER)
 
@@ -51,14 +56,16 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     // ---- Auswertung ---------------------------------------------------------------------------------------------------------------------
 
-    override fun evaluate(tenant: TenantId, query: MetricQuery): List<MetricValue> {
+    override fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource): List<MetricValue> {
         if (query.metricId == null && query.version != null) throw ProblemException(ErrorCode.BAD_REQUEST, "Eine Version gehört zu einer Kennzahl.", listOf(Violation("/\$query/version", ViolationCode.INVALID_VALUE)))
         return tx.run(tenant) { j ->
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
             val c = counts(j, query.period, query.filter)
-            defs.map { d -> value(j, d, query, c) }
+            val pickupDefs = defs.filter { it.executable && it.metricId in JdbcPickupPunctuality.METRICS }
+            val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, query.period, query.filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
+            defs.map { d -> if (pc != null && d in pickupDefs) pickupValue(j, d, query, pc) else value(j, d, query, c) }
         }
     }
 
@@ -87,7 +94,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, persist: Boolean = true): MetricValue {
             val cov = if (state == MetricState.OK || state == MetricState.PROVISIONAL) coverage(c) else null
             val asOf = c.asOf?.toInstant()
-            val id = if (persist) store(j, d, q, state, reason, value, num, den, cov, c) else null
+            val id = if (persist) store(j, d, q, state, reason, value, num, den, cov, c.asOf, c.events, null) else null
             return MetricValue(d, state, reason, value, num, den, cov, q.filter, q.period, asOf, c.events, id)
         }
         val calc = calculation(d, c) ?: return result(MetricState.NOT_COMPUTABLE, d.notExecutableReason ?: MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, null, null, null, persist = false)
@@ -105,6 +112,33 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             return result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(num, den, 6), num, den)
         }
         return result(state, null, num, num, den)
+    }
+
+    /**
+     * Abholpünktlichkeit (WP-M4-53): `pickup_on_time` = pünktlich / gebundene bewertbare Abholungen, `mean_pickup_delay` = Summe der positiven Verspätungsminuten / bewertbare Abholungen. Abholungen ohne auflösbaren
+     * Grenzwert sind für die Pünktlichkeit nicht bewertbar: sie stehen nicht im Nenner und mindern die Abdeckung (Wert `PROVISIONAL`). Das Snapshot hält die verwendeten Konfigurationsrevisionen fest.
+     */
+    private fun pickupValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: JdbcPickupPunctuality.Counts): MetricValue {
+        val onTime = d.metricId == "pickup_on_time"
+        val group = if (onTime) c.bound else c.assessable
+        val unfiltered = if (onTime) c.boundUnfiltered else c.assessableUnfiltered
+        fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, cov: BigDecimal? = null): MetricValue {
+            val id = store(j, d, q, state, reason, value, num, den, cov, c.asOf, c.sourceEvents, if (state == MetricState.OK || state == MetricState.PROVISIONAL) c.versionsJson else null)
+            return MetricValue(d, state, reason, value, num, den, cov, q.filter, q.period, c.asOf?.toInstant(), c.sourceEvents, id)
+        }
+        if (!c.hasData) return result(MetricState.NOT_COMPUTABLE, MetricReason.NO_DATA, null, null, null)
+        if (q.filter.dimensions().isNotEmpty() && ((group in 1 until smallGroupThreshold) || ((unfiltered - group) in 1 until smallGroupThreshold)))
+            return result(MetricState.NOT_COMPUTABLE, MetricReason.SMALL_GROUP, null, null, null)
+        if (group == 0L) return result(MetricState.NOT_COMPUTABLE, MetricReason.ZERO_DENOMINATOR, null, null, BigDecimal.ZERO)   // nie 0 oder 100 % an dessen Stelle
+        val den = BigDecimal(group)
+        // Abdeckung der Pünktlichkeit: Anteil der bewertbaren Abholungen mit gebundenem Grenzwert (abgerundet: eine Lücke ergibt nie 100 %); die mittlere Verspätung braucht keinen Grenzwert
+        val cov = if (onTime && c.assessable > c.bound) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(c.bound), BigDecimal(c.assessable), 4) else BigDecimal.ONE.setScale(4)
+        val state = if (cov < BigDecimal.ONE) MetricState.PROVISIONAL else MetricState.OK
+        return if (onTime) result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.onTime), den, 6), BigDecimal(c.onTime), den, cov)
+        else {
+            val minutes = de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.lateSeconds), BigDecimal(60), 4)
+            result(state, null, de.taktovia.platform.money.MoneyRounding.ratioHalfUp(BigDecimal(c.lateSeconds), den.multiply(BigDecimal(60)), 4), minutes, den, cov)
+        }
     }
 
     private class Calc(val numerator: Long, val denominator: Long?)
@@ -125,13 +159,13 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     }
 
     /** Hält die Auswertung als Snapshot mit Definitionsversion fest (derselbe Stand genau einmal; parallele Abfragen schreiben nicht doppelt). */
-    private fun store(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, cov: BigDecimal?, c: Counts): UUID {
+    private fun store(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, cov: BigDecimal?, asOf: Timestamp?, events: Long, versions: String?): UUID {
         val filterJson = mapper.writeValueAsString(q.filter.toMap()); val hash = sha256(filterJson)
         val dbState = if (state == MetricState.NOT_COMPUTABLE && reason == MetricReason.SMALL_GROUP) "SUPPRESSED" else state.name
-        val id = UUID.randomUUID(); val asOf = c.asOf
+        val id = UUID.randomUUID()
         val inserted = j.query(INSERT_SNAPSHOT, { rs, _ -> rs.getObject(1, UUID::class.java) }, id, d.metricId, d.version, d.valueKind.name, filterJson, hash, Timestamp.from(q.period.from), Timestamp.from(q.period.to),
-            q.period.zone.id, dbState, reason?.name, value, num, den, cov, asOf, c.events).firstOrNull()
-        return inserted ?: j.queryForObject(SELECT_SNAPSHOT, UUID::class.java, d.metricId, d.version, hash, Timestamp.from(q.period.from), Timestamp.from(q.period.to), q.period.zone.id, asOf, c.events)!!
+            q.period.zone.id, dbState, reason?.name, value, num, den, cov, asOf, events, versions).firstOrNull()
+        return inserted ?: j.queryForObject(SELECT_SNAPSHOT, UUID::class.java, d.metricId, d.version, hash, Timestamp.from(q.period.from), Timestamp.from(q.period.to), q.period.zone.id, asOf, events)!!
     }
 
     private fun sha256(s: String) = MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -220,8 +254,8 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
         const val INSERT_SNAPSHOT = """
             INSERT INTO taktovia.aggregate_snapshot(tenant_id, id, metric_id, definition_version, value_kind, filter, filter_hash, period_from, period_to, reporting_timezone, state, reason, value, numerator,
-                                                    denominator, coverage, data_as_of, source_events)
-            VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING RETURNING id"""
+                                                    denominator, coverage, data_as_of, source_events, parameter_versions)
+            VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb)) ON CONFLICT DO NOTHING RETURNING id"""
         const val SELECT_SNAPSHOT = """
             SELECT id FROM taktovia.aggregate_snapshot WHERE metric_id = ? AND definition_version = ? AND filter_hash = ? AND period_from = ? AND period_to = ? AND reporting_timezone = ?
               AND coalesce(data_as_of, '-infinity'::timestamptz) = coalesce(CAST(? AS timestamptz), '-infinity'::timestamptz) AND source_events = ?"""

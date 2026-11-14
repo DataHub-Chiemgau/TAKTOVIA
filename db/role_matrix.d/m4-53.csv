@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+pickup_tolerance_binding;SELECT,INSERT;WP-M4-53: je Buchung und Zusageversion der zum Vergleichsstichtag wirksame Grenzwert, nur anhaengen (Trigger)

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/on_time_pickup_tolerance_min.v1.schema.json",
+  "title": "on_time_pickup_tolerance_min",
+  "description": "Abholpünktlichkeit Grenzwert: Abholung gilt als pünktlich, wenn die Verspätung gegenüber dem Ende des zugesagten Abholfensters höchstens so viele Minuten beträgt",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 240,
+  "default": 0,
+  "x-unit": "MINUTES",
+  "x-levels": [
+    "TENANT",
+    "REGION",
+    "SERVICE"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.7-on_time_pickup_tolerance_min",
+  "x-catalog-range": "An historische SLA-Version gebunden; Grenzen und Standardwert Planungsannahme WP-M4-53 (SLA-Werte des Piloten D-05 offen, Testwerte)"
+}

@@ -54,9 +54,10 @@ internal class JdbcTimeFacts(private val tx: TenantTransactions) : TimeFacts {
         val pickupLatest = instant(p, "pickup_latest") ?: throw IllegalArgumentException("pickup_latest")
         val pickupEarliest = instant(p, "pickup_earliest") ?: throw IllegalArgumentException("pickup_earliest")
         val version = e.aggregateRevision
+        val service = uuid(p, "service_id")
         return listOfNotNull(
-            TimeFactCommand(booking, StopEvent.PICKUP, TimeKind.PROMISED, pickupLatest, "BOOKING_CONFIRMED", booking, windowEarliest = pickupEarliest, promiseVersion = version),
-            instant(p, "arrival_latest")?.let { TimeFactCommand(booking, StopEvent.ARRIVAL, TimeKind.PROMISED, it, "BOOKING_CONFIRMED", booking, promiseVersion = version) },
+            TimeFactCommand(booking, StopEvent.PICKUP, TimeKind.PROMISED, pickupLatest, "BOOKING_CONFIRMED", booking, windowEarliest = pickupEarliest, promiseVersion = version, serviceId = service, promisedAt = e.occurredAt),
+            instant(p, "arrival_latest")?.let { TimeFactCommand(booking, StopEvent.ARRIVAL, TimeKind.PROMISED, it, "BOOKING_CONFIRMED", booking, promiseVersion = version, serviceId = service, promisedAt = e.occurredAt) },
         )
     }
 
@@ -99,10 +100,10 @@ internal class JdbcTimeFacts(private val tx: TenantTransactions) : TimeFacts {
     private fun append(j: JdbcOperations, c: TimeFactCommand): RecordOutcome {
         val key = versionKey(c)
         val n = j.update(
-            "INSERT INTO taktovia.time_fact(tenant_id, booking_id, stop_event, time_kind, value_at, window_earliest, source, source_ref, route_stop_id, version_key, promise_version, plan_revision, forecast_version, device_time, server_time, offline_recorded) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id, stop_event, time_kind, version_key) DO NOTHING",
+            "INSERT INTO taktovia.time_fact(tenant_id, booking_id, stop_event, time_kind, value_at, window_earliest, source, source_ref, route_stop_id, version_key, promise_version, plan_revision, forecast_version, device_time, server_time, offline_recorded, service_id, promised_at) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id, stop_event, time_kind, version_key) DO NOTHING",
             c.bookingId, c.stopEvent.name, c.kind.name, ts(c.value), c.windowEarliest?.let(::ts), c.source, c.sourceRef, c.routeStopId, key, c.promiseVersion, c.planRevision, c.forecastVersion,
-            c.deviceTime?.let(::ts), c.serverTime?.let(::ts), c.offlineRecorded)
+            c.deviceTime?.let(::ts), c.serverTime?.let(::ts), c.offlineRecorded, c.serviceId, c.promisedAt?.let(::ts))
         if (n == 1) return RecordOutcome.CREATED
         val same = j.queryForObject(
             "SELECT count(*) FROM taktovia.time_fact WHERE booking_id = ? AND stop_event = ? AND time_kind = ? AND version_key = ? AND value_at = ? AND window_earliest IS NOT DISTINCT FROM ?",

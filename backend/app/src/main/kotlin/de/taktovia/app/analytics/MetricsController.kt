@@ -67,7 +67,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         val period = fromDay?.let { ReportingPeriod.ofDays(reportingZone(ctx), it, toDay ?: it) }
         val definitions: List<MetricDefinition>; val values: List<MetricValue>?
         if (period != null) {
-            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter))
+            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter), ConfigPickupToleranceSource(config, ctx))
             definitions = values.map { it.definition }
         } else {
             values = null
