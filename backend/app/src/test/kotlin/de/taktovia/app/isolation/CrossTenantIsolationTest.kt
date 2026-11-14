@@ -163,7 +163,7 @@ class CrossTenantIsolationTest {
             b.tenant.value, exportJob, "a".repeat(64))
         return Ids(mapOf(
             "job_id" to exportJob, "run_id" to run, "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "driver_id" to driverMaster, "notification_id" to notification,
-            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(), "booking_id" to booking,
+            "area_id" to area, "stop_id" to stop, "tariff_id" to tariff, "ride_offer_id" to rideOffer.toString(), "booking_id" to booking, "block_id" to UUID.randomUUID().toString(),
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "assignment_id" to assignment.toString(), "driver_id" to driverMaster, "notification_id" to notification,
             "release_id" to release, "device_id" to deviceId, "rule_id" to retentionRule, "vehicle_id" to vehicleMaster, "defect_id" to defect, "upload_id" to uploadId, "evidence_id" to uploadId,
             "tenant_id" to b.tenant.toString(), "object_name" to "defect-evidence-$uploadId", "driver_id" to driverMaster, "notification_id" to notification,
@@ -255,6 +255,8 @@ class CrossTenantIsolationTest {
             "createDriverQualification" to Probe("POST", "/v1/drivers/{driver_id}/qualifications", """{"qualification_code":"GEKAPERT","valid_from":"2026-01-01T00:00:00Z","decision":"APPROVED"}""", true, role = "planner"),
             "getVehicleMaster" to Probe("GET", "/v1/operator/vehicle-master/{vehicle_id}", role = "dispatcher"),
             "getOperatorVehicle" to Probe("GET", "/v1/operator/vehicles/{vehicle_id}", role = "dispatcher"),
+            "createVehicleBlock" to Probe("POST", "/v1/operator/vehicles/{vehicle_id}/blocks", """{"reason_code":"OPERATIONAL_DISRUPTION"}""", true, role = "dispatcher"),
+            "liftVehicleBlock" to Probe("POST", "/v1/operator/vehicles/{vehicle_id}/blocks/{block_id}/lift", """{"comment":"Fremdversuch"}""", true, role = "dispatcher"),
             "listRunRevisions" to Probe("GET", "/v1/runs/{run_id}/revisions", role = "dispatcher"),
             "createRunRevision" to Probe("POST", "/v1/runs/{run_id}/revisions", """{"changes":[{"change":"MOVE","route_stop_id":"${UUID.randomUUID()}","new_sequence":1}],"reason":"Fremdversuch","base_plan_revision":1}""", true, role = "dispatcher"),
             "updateVehicleMaster" to Probe("PUT", "/v1/operator/vehicle-master/{vehicle_id}", """{"vehicle_label":"Gekapert","vehicle_type":"PKW","operator_organization_id":"$aOp","capacity":{"seats":1,"wheelchair":0},"equipment":[],"active":false}""", true, role = "dispatcher"),
