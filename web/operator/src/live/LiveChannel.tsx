@@ -2,6 +2,7 @@ import { ApiError, useApi } from '@taktovia/api-client';
 import type { ApiClient } from '@taktovia/api-client';
 import { StatusBadge, useAnnounce } from '@taktovia/design-system';
 import { useEffect, useRef, useState } from 'react';
+import { useLiveConnection } from '../network/NetzAnbieter';
 import { createSseParser } from './sse';
 
 /** Nachricht des Kanals (Schema `LiveEvent`): nur Referenzen und Statusfelder, nie Personendaten. */
@@ -205,6 +206,7 @@ export function useLiveChannel(options: LiveChannelOptions): LiveChannelStatus {
 
 /** Datenstand und Veraltet-Kennzeichnung der Ansicht (Kap. 06 §6.1): Text und Symbol, nie nur Farbe. */
 export function LiveStatusBadge({ status }: { status: LiveChannelStatus }) {
+  useLiveConnection(status);
   const tone =
     status.state === 'live'
       ? 'ok'

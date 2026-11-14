@@ -45,6 +45,8 @@ import { FahrzeugWechsel } from './fahrzeugwechsel/FahrzeugWechsel';
 import { InspectionHistory } from './inspection/InspectionHistory';
 import { Organisationsstruktur } from './organisation/Organisationsstruktur';
 import { OPERATOR_NAV } from './navigation/navigation';
+import { NetzAnbieter, NetzBanner } from './network/NetzAnbieter';
+import { NetzAnbieter, NetzBanner } from './network/NetzAnbieter';
 import { PlaceholderScreen, RequireRight } from './Screen';
 import { useScreenContext } from './ScreenContext';
 
@@ -152,6 +154,7 @@ export function App() {
 
   const nav = visibleNav(OPERATOR_NAV, rightsOf(session.me));
   return (
+    <NetzAnbieter>
     <AppFrame
       brand="TAKTOVIA Operator"
       nav={nav}
@@ -160,6 +163,7 @@ export function App() {
       headerEnd={<HeaderEnd />}
     >
       <Fragment key={session.me.tenant_id}>
+        <NetzBanner />
         <Routes>
           <Route path="/" element={<Start />} />
           <Route path="/konto" element={<Konto />} />
@@ -413,5 +417,6 @@ export function App() {
         </Routes>
       </Fragment>
     </AppFrame>
+    </NetzAnbieter>
   );
 }

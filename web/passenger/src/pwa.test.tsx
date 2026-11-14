@@ -208,15 +208,21 @@ describe('Passenger-PWA Grundgerüst (WP-M2-35)', () => {
         </SessionProvider>
       </MemoryRouter>,
     );
-    expect(await screen.findByTestId('offline-banner')).toHaveTextContent('Offline');
-    expect(screen.getByTestId('offline-banner')).toHaveAttribute('role', 'status');
+    // Netzwerkzustand (WP-M5-09): Statusbereich mit Text und Symbol, nicht nur Farbe
+    await waitFor(() =>
+      expect(screen.getByTestId('connection-status')).toHaveAttribute('data-state', 'offline'),
+    );
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Offline');
+    expect(screen.getByTestId('connection-status')).toHaveAttribute('role', 'status');
     expect(screen.getByTestId('state-view')).toHaveAttribute('data-kind', 'offline');
     expect(within(screen.getByRole('main')).queryByRole('button')).toBeNull(); // keine Aktion, insbesondere keine Buchung
     expect(formatViolations(await runAxe(container))).toBe('');
-    // wieder online: Hinweis verschwindet
+    // wieder online: der Offlinezustand endet erst, wenn der Serverstand geladen ist
     setOnline(true);
     act(() => void window.dispatchEvent(new Event('online')));
-    await waitFor(() => expect(screen.queryByTestId('offline-banner')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByTestId('connection-status')).toHaveAttribute('data-state', 'online'),
+    );
   });
 
   it('Textkatalog: alle Schlüssel haben nicht leere deutsche Werte und folgen dem Schema bereich.name', () => {

@@ -217,7 +217,8 @@ internal class JdbcReadiness(
         if (missing.isNotEmpty()) return ReleaseOutcome.Refused(missing.toList())
 
         val qualification = qualification(j, shift.driverRef, now)!!
-        val validUntil = minOf(shift.endsAt, now.plus(policy.maxValidity))
+        // Die Gültigkeit zählt ab dem Prüfabschluss (WP-M3-33): eine offline abgeschlossene Prüfung erhält beim späten Empfang keine frische Höchstgültigkeit
+        val validUntil = minOf(shift.endsAt, (inspection?.completedAt ?: now).plus(policy.maxValidity))
         val id = UUID.randomUUID()
         j.update(
             "INSERT INTO taktovia.resource_release (tenant_id, id, vehicle_id, shift_id, safety_revision, inspection_ref, qualification_revision, valid_until, created_at, issued_by) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -258,7 +259,7 @@ internal class JdbcReadiness(
         return list
     }
 
-    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, completed_at, kind, created_at FROM taktovia.inspection_run WHERE id = ?",
+    private fun inspection(j: JdbcOperations, id: UUID): Insp? = j.query("SELECT vehicle_id, shift_id, driver_ref, status, outcome, least(completed_at, received_at), kind, created_at FROM taktovia.inspection_run WHERE id = ?",
         { rs, _ -> Insp(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), rs.getString(4), rs.getString(5), rs.getTimestamp(6)?.toInstant(), rs.getString(7), rs.getTimestamp(8).toInstant()) }, id).firstOrNull()
 
     private fun blockers(j: JdbcOperations, vehicle: Vehicle, shift: Shift, inspection: Insp?, cmd: IssueRelease, now: Instant, lock: Boolean): Set<ReleaseBlocker> {
@@ -269,6 +270,8 @@ internal class JdbcReadiness(
             inspection.status == "IN_PROGRESS" -> missing += ReleaseBlocker.INSPECTION_OPEN
             inspection.status != "COMPLETED" -> missing += ReleaseBlocker.INSPECTION_EXPIRED
             inspection.outcome != "PASSED" && inspection.outcome != "PASSED_RESTRICTED" -> missing += ReleaseBlocker.NO_INSPECTION
+            // Abgeschlossen, aber zu alt (später Empfang einer Offline-Prüfung): die Höchstgültigkeit ab Abschluss ist verstrichen (WP-M3-33)
+            inspection.completedAt != null && !inspection.completedAt.plus(policy.maxValidity).isAfter(now) -> missing += ReleaseBlocker.INSPECTION_EXPIRED
         }
         if (qualification(j, shift.driverRef, now, lock = lock) == null) missing += ReleaseBlocker.QUALIFICATION_MISSING
         val blocks = j.query("SELECT source FROM taktovia.vehicle_block WHERE vehicle_id = ? AND status = 'ACTIVE'", { rs, _ -> rs.getString(1) }, cmd.vehicleId)
@@ -276,7 +279,8 @@ internal class JdbcReadiness(
         // Nach einer Wiederfreigabeentscheidung ist eine **neue** Prüfung Voraussetzung (WP-M3-51, AT-60): eine vor der Aufhebung der Sicherheitssperre abgeschlossene Prüfung begründet keine Einsatzfreigabe
         val lastLift = j.query("SELECT max(lifted_at) FROM taktovia.vehicle_block WHERE vehicle_id = ? AND source = 'SAFETY' AND status = 'LIFTED' AND release_decision_id IS NOT NULL",
             { rs, _ -> rs.getTimestamp(1)?.toInstant() }, cmd.vehicleId).firstOrNull()
-        if (inspection?.completedAt != null && lastLift != null && inspection.completedAt.isBefore(lastLift)) missing += ReleaseBlocker.NO_INSPECTION
+        // maßgeblich ist der frühere von Abschluss- (Gerät), Empfangs- und Startzeitpunkt des Laufs (Server): eine vor der Entscheidung begonnene Prüfung ist nie die „neue“ Prüfung, auch wenn das Gerät eine spätere Abschlusszeit meldet (WP-M3-33)
+        if (inspection?.completedAt != null && lastLift != null && minOf(inspection.completedAt, inspection.createdAt).isBefore(lastLift)) missing += ReleaseBlocker.NO_INSPECTION
         // Nach einem Fahrzeugwechsel der Schicht trägt nur ein Prüflauf, der **nach** dem jüngsten Wechsel angelegt wurde (WP-M3-22, CHK-015): die Prüfung des alten Fahrzeugs (und jede ältere des Ersatzfahrzeugs) gilt nicht
         val lastSwitch = j.query("SELECT max(created_at) FROM taktovia.shift_vehicle_switch WHERE shift_id = ?", { rs, _ -> rs.getTimestamp(1)?.toInstant() }, cmd.shiftId).firstOrNull()
         if (inspection != null && lastSwitch != null && inspection.createdAt.isBefore(lastSwitch)) missing += ReleaseBlocker.NO_INSPECTION
