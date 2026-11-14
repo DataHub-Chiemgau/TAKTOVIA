@@ -447,6 +447,61 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/bookings/{booking_id}/changes:
+    post:
+      summary: Buchung durch die Disposition ändern (atomarer Tausch)
+      operationId: changeBooking
+      security:
+      - oidc:
+        - dispatch:write
+      description: 'Leitstellenkommando (WP-M3-39, LH-6.7-OPS-004): ändert die Buchung auf einen neuen, bereits gehaltenen Wunsch. Unter den Sperren beider Umläufe entsteht die Folgebuchung, die
+        bisherige wird storniert (Hold frei) und ein Änderungseintrag mit Akteur, Grund sowie alter und neuer Zusage geschrieben; scheitert ein Schritt, bleibt die bisherige Buchung samt Zusage
+        unverändert und der neue Hold wird freigegeben. `If-Match` = Revision der bisherigen Buchung (fehlt er: 428, veraltet: 412 `REVISION_MISMATCH`; zwei Disponenten: genau einer gewinnt).
+        Ohne Dispositionsrolle 403, ohne Recht am Dienst oder fremdes Objekt 404, fehlender Grund oder fehlende Zustimmung bei Preis- bzw. Zeitänderung 422, nicht (mehr) bedienbar 409
+        (`CAPACITY_UNAVAILABLE`, `HOLD_EXPIRED`, `REQUOTE_REQUIRED`, `INVALID_STATE_TRANSITION`). Wiederholung mit demselben `Idempotency-Key` erzeugt keine zweite Änderung.'
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Bisherige Buchung.
+      - $ref: common.yaml#/components/parameters/Traceparent
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingChangeRequest'
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingChangeResult'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/plan-changes:
     get:
       summary: Änderungsstrom der Planrevisionen (Fahrgastkanal)
@@ -649,6 +704,8 @@ components:
           - APP
           - API
           description: Kanal der Anfrage für die Nachfrageauswertung (Standard `WEB`).
+        booking_subject:
+          $ref: '#/components/schemas/DispatchBookingSubject'
       required:
       - service_id
       - origin
@@ -672,6 +729,23 @@ components:
           time_zone: Europe/Berlin
         passengers: 2
         wheelchair_spaces: 1
+    DispatchBookingSubject:
+      type: object
+      additionalProperties: false
+      description: 'Für wen gebucht wird (Kap. 05 §5.9, WP-M3-39). `SELF` (Standard) bindet den angemeldeten Fahrgast. `DELEGATED` bindet einen Fahrgast im Mandanten durch die Leitstelle
+        (Rolle Disposition oder Callcenter und Schreibrecht am Dienst, sonst 403 bzw. 404; der Fahrgast braucht ein aktives Konto, sonst 422): der Server bindet das Angebot an diesen Fahrgast
+        und prüft Rolle, Dienstscope und Konto bei Hold und Bestätigung erneut. Der Disponent bleibt als eigener Akteur im Audit. Ein Subjektwechsel verlangt ein neues Angebot. Mindestumfang
+        bis zur Entscheidung D-12/OP-30; Vertretung und Callcenter-Zustimmung (UI-06) folgen in M7.'
+      properties:
+        kind:
+          type: string
+          enum:
+          - SELF
+          - DELEGATED
+        passenger_id:
+          $ref: common.yaml#/components/schemas/UUID
+      required:
+      - kind
     RideWindow:
       type: object
       additionalProperties: false
@@ -1029,17 +1103,108 @@ components:
           type: string
           minLength: 1
           maxLength: 128
+        reason_code:
+          $ref: '#/components/schemas/DispatchReasonCode'
+        reason_text:
+          type: string
+          minLength: 1
+          maxLength: 500
       required:
       - hold_id
       - max_gross
       description: '`payment_reference` ist ein PSP-Referenzwert (nie rohe Zahlungsdaten). Wiederholte Bestätigung desselben Holds liefert
-        dieselbe Buchung.'
+        dieselbe Buchung. Bestätigt die Leitstelle den Hold eines für einen Fahrgast gebundenen Angebots (`booking_subject` `DELEGATED`), sind `reason_code` (Grundkatalog der Leitstelle) und bei
+        `OTHER` `reason_text` Pflicht (422 sonst); Akteur, Zeitpunkt und Grund stehen im Änderungsprotokoll und im Audit, die Buchung gehört dem Fahrgast (WP-M3-39).'
       examples:
       - hold_id: 00000000-0000-4000-8000-000000000009
         max_gross:
           amount_minor: 950
           currency: EUR
           exponent: 2
+    DispatchReasonCode:
+      type: string
+      enum:
+      - PHONE_REQUEST
+      - COUNTER_REQUEST
+      - PASSENGER_REQUEST
+      - OPERATIONAL_NEED
+      - CORRECTION
+      - OTHER
+      description: Grundkatalog der Leitstelle für Anlage und Änderung einer Buchung (Arbeitskatalog, WP-M3-39).
+    BookingChangeRequest:
+      type: object
+      additionalProperties: false
+      description: 'Änderung einer Buchung durch die Disposition als atomarer Tausch (WP-M3-39, Mindestumfang OP-30): `new_hold_id` ist der bereits gehaltene Hold des geänderten Wunsches (Angebot
+        und Hold über `POST /v1/ride-offers` und `.../hold` mit `booking_subject` `DELEGATED` auf denselben Fahrgast), `offer_revision` der ETag der Hold-Antwort, `max_gross` der akzeptierte Betrag.
+        `If-Match` ist die Revision der bestehenden Buchung. `reason_code` ist Pflicht, bei `OTHER` auch `reason_text`. Ändern sich Preis oder Beginn des Abholfensters, ist `passenger_consent`
+        (Kanal und Zeitpunkt der Zustimmung des Fahrgasts) Pflicht, sonst wird die Änderung nicht wirksam (422).'
+      properties:
+        new_hold_id:
+          $ref: common.yaml#/components/schemas/UUID
+        offer_revision:
+          type: integer
+          format: int64
+          minimum: 1
+        max_gross:
+          $ref: common.yaml#/components/schemas/Money
+        reason_code:
+          $ref: '#/components/schemas/DispatchReasonCode'
+        reason_text:
+          type: string
+          minLength: 1
+          maxLength: 500
+        passenger_consent:
+          type: object
+          additionalProperties: false
+          properties:
+            channel:
+              type: string
+              enum:
+              - PHONE
+              - COUNTER
+              - WRITTEN
+            obtained_at:
+              $ref: common.yaml#/components/schemas/Timestamp
+          required:
+          - channel
+          - obtained_at
+      required:
+      - new_hold_id
+      - offer_revision
+      - max_gross
+      - reason_code
+      examples:
+      - new_hold_id: 00000000-0000-4000-8000-000000000009
+        offer_revision: 2
+        max_gross:
+          amount_minor: 950
+          currency: EUR
+          exponent: 2
+        reason_code: PASSENGER_REQUEST
+    BookingChangeResult:
+      type: object
+      additionalProperties: false
+      description: Ergebnis des Tauschs. `booking` ist die Folgebuchung (neue Buchungsnummer), `replaced` die bisherige, nun stornierte Buchung. `replayed` zeigt die Wiederholung desselben Tauschs.
+      properties:
+        booking:
+          $ref: '#/components/schemas/RideBooking'
+        replaced:
+          $ref: '#/components/schemas/RideBooking'
+        change_id:
+          $ref: common.yaml#/components/schemas/UUID
+        replayed:
+          type: boolean
+        price_changed:
+          type: boolean
+        time_changed:
+          type: boolean
+      required:
+      - booking
+      - replaced
+      - change_id
+      - replayed
+      - price_changed
+      - time_changed
     RideBooking:
       type: object
       additionalProperties: false
@@ -1497,10 +1662,15 @@ components:
           - PAYMENT_FAILED
           - SAFETY
           - VEHICLE_OUTAGE
+        reason_text:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Freitext zum Grund; wird nur beim Storno durch Betriebspersonal im Änderungsprotokoll der Leitstelle gespeichert (WP-M3-39).
       required:
       - reason
       description: 'Einstufiges Storno (M2 OP-24, Annahme). Fahrgäste dürfen nur `PASSENGER_REQUEST` setzen (sonst 403) und nur innerhalb der Stornofrist des Dienstes
-        (`409 CANCEL_DEADLINE_EXPIRED`); Betrieb im Dienstscope setzt jeden für den Dienst zulässigen Grund (sonst 422), auch `VEHICLE_OUTAGE`. Antwort: die stornierte Buchung (Erstattungshinweis folgt mit WP-M2-31).'
+        (`409 CANCEL_DEADLINE_EXPIRED`); Betrieb im Dienstscope setzt jeden für den Dienst zulässigen Grund (sonst 422), auch `VEHICLE_OUTAGE`; ein Storno durch Betriebspersonal schreibt Akteur, Zeitpunkt, Grund und Freitext in das Änderungsprotokoll und das Audit (WP-M3-39). Antwort: die stornierte Buchung (Erstattungshinweis folgt mit WP-M2-31).'
       examples:
       - reason: PASSENGER_REQUEST
     RideBookingHistoryEntry:

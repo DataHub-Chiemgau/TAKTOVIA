@@ -52,3 +52,38 @@ class OperatorBookingFixture : AutoCloseable {
 
     companion object { const val ISSUER = "https://idp.test/realms/booking" }
 }
+
+/**
+ * Leitstellenfluss für WP-M3-39 (Angebot für den Fahrgast, Hold, Bestätigung, Änderung) auf dem echten Kern: [OperatorBookings] wird je Umlauf mit dem Tor gebaut, das Angebote an diesen
+ * Umlauf bindet. Die Uhr ist die der Fixture (steuerbar).
+ */
+class DispatchFlow(val f: OperatorBookingFixture) {
+    val audit = de.taktovia.platform.audit.JdbcAuditPort()
+
+    /** Buchungsdienst mit Auditport, wie ihn die Anwendung verdrahtet (die Fixture des Fahrgastkerns hat keinen). */
+    val bookings: de.taktovia.bookingdispatch.api.Bookings = de.taktovia.bookingdispatch.api.Bookings.create(f.fx.base.ctxTx, f.fx.base.outbox, f.fx.quotes, f.fx.clock, f.fx.base.config.effective, audit = audit)
+
+    fun opsFor(run: OfferObjectsFixture.Run, planRevision: Long = 1): de.taktovia.bookingdispatch.api.OperatorBookings =
+        de.taktovia.bookingdispatch.api.OperatorBookings.create(f.fx.base.ctxTx, f.fx.base.outbox, f.fx.quotes, f.fx.requests(f.fx.assigning(run, planRevision)), f.fx.offers, f.fx.clock, f.fx.base.config.effective, audit = audit)
+
+    /** Zeile der Leitstelle: Angebot für den Fahrgast ausgestellt und gehalten. */
+    class Held(val offerId: UUID, val holdId: UUID, val offerRevision: Long, val grossMinor: Long)
+
+    fun held(w: RideOfferFixture.World, run: OfferObjectsFixture.Run, op: OperatorBookingFixture.Operator, passenger: ConfirmFixture.Passenger, passengers: Int = 2, wheelchair: Int = 0, planRevision: Long = 1,
+             offers: de.taktovia.bookingdispatch.api.RideOffers = f.fx.offers): Held {
+        val ops = opsFor(run, planRevision)
+        val cmd = f.fx.base.command(w, "2026-11-02T10:00:00+01:00", passengers = passengers, wheelchair = wheelchair)
+        val offer = ops.issueOffer(op.ctx, passenger.accountId, cmd).offers.single().offer!!
+        ops.assertHoldAllowed(op.ctx, offer.id)
+        val gross = offer.quote.payAtPlatformMinor
+        val h = offers.hold(op.ctx, offer.id, HoldRideOffer(offer.revision, "hold-" + UUID.randomUUID(), gross, "EUR"))
+        return Held(offer.id, h.hold.id, h.offerRevision, gross)
+    }
+
+    fun create(run: OfferObjectsFixture.Run, op: OperatorBookingFixture.Operator, h: Held, reason: de.taktovia.bookingdispatch.api.DispatchReason = de.taktovia.bookingdispatch.api.DispatchReason.PHONE_REQUEST, text: String? = null) =
+        opsFor(run).create(op.ctx, de.taktovia.bookingdispatch.api.ConfirmBooking(h.holdId, h.offerRevision, h.grossMinor, "EUR"), reason, text)
+
+    fun change(run: OfferObjectsFixture.Run, op: OperatorBookingFixture.Operator, booking: BookingDetail, h: Held, reason: de.taktovia.bookingdispatch.api.DispatchReason = de.taktovia.bookingdispatch.api.DispatchReason.PASSENGER_REQUEST,
+               text: String? = null, ifMatch: Long = booking.revision, consent: de.taktovia.bookingdispatch.api.PassengerConsent? = null) =
+        opsFor(run).change(op.ctx, booking.id, de.taktovia.bookingdispatch.api.ChangeBooking(ifMatch, h.holdId, h.offerRevision, h.grossMinor, "EUR", reason, text, consent))
+}

@@ -4,6 +4,8 @@ import { ResourceView, ScreenFrame, StatusBadge } from '@taktovia/design-system'
 import type { ResourceState, StatusTone } from '@taktovia/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
+import { BookingEditor } from './BookingEditor';
+import type { EditorMode } from './BookingEditor';
 
 /** Zustände einer Buchung in der Sprache der Leitstelle (Automat `booking`, M2). */
 export const BOOKING_STATE_LABELS: Readonly<Record<OperatorBookingState, string>> = {
@@ -98,6 +100,10 @@ export function BookingList() {
   const [notice, setNotice] = useState<string | undefined>(undefined);
   const [sort, setSort] = useState<SortKey>('pickup');
   const [applied, setApplied] = useState<Search>(EMPTY);
+  const [editor, setEditor] = useState<{ mode: EditorMode; row?: OperatorBookingRow } | undefined>(
+    undefined,
+  );
+  const [done, setDone] = useState<string | undefined>(undefined);
   const active = useRef<Search>(EMPTY);
   const last = useRef<OperatorBookingRow[] | undefined>(undefined);
 
@@ -131,7 +137,9 @@ export function BookingList() {
             return;
           }
           if (e instanceof ApiError && e.status === 422) {
-            setNotice('Die Suchangaben sind ungültig. Bitte prüfen Sie Zeitraum, Fahrgast und Fahrzeug.');
+            setNotice(
+              'Die Suchangaben sind ungültig. Bitte prüfen Sie Zeitraum, Fahrgast und Fahrzeug.',
+            );
             setRows({ status: 'ready', data: [] });
             return;
           }
@@ -162,7 +170,8 @@ export function BookingList() {
     const copy = [...rows.data];
     if (sort === 'number') copy.sort((a, b) => a.booking_number.localeCompare(b.booking_number));
     else if (sort === 'state') copy.sort((a, b) => a.state.localeCompare(b.state));
-    else copy.sort((a, b) => a.pickup_window.earliest_at.localeCompare(b.pickup_window.earliest_at));
+    else
+      copy.sort((a, b) => a.pickup_window.earliest_at.localeCompare(b.pickup_window.earliest_at));
     return copy;
   }, [rows, sort]);
 
@@ -223,7 +232,10 @@ export function BookingList() {
         </label>
         <label>
           Status
-          <select value={draft.state} onChange={(e) => setDraft({ ...draft, state: e.target.value })}>
+          <select
+            value={draft.state}
+            onChange={(e) => setDraft({ ...draft, state: e.target.value })}
+          >
             <option value="">Alle Status</option>
             {STATES.map((s) => (
               <option key={s} value={s}>
@@ -254,6 +266,24 @@ export function BookingList() {
         </label>
       </p>
       {notice ? <p role="status">{notice}</p> : null}
+      {done ? <p role="status">{done}</p> : null}
+      <p>
+        <button type="button" onClick={() => setEditor({ mode: 'create' })}>
+          Buchung für Fahrgast anlegen
+        </button>
+      </p>
+      {editor ? (
+        <BookingEditor
+          key={`${editor.mode}:${editor.row?.id ?? 'neu'}`}
+          mode={editor.mode}
+          {...(editor.row ? { row: editor.row } : {})}
+          onDone={(m) => {
+            setEditor(undefined);
+            setDone(m);
+            run(active.current);
+          }}
+        />
+      ) : null}
       <ResourceView
         state={rows}
         isEmpty={(d) => d.length === 0}
@@ -281,6 +311,7 @@ export function BookingList() {
                   <th scope="col">Fahrzeug</th>
                   <th scope="col">Personen</th>
                   <th scope="col">Hinweise</th>
+                  <th scope="col">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +319,9 @@ export function BookingList() {
                   <tr key={b.id}>
                     <th scope="row">{b.booking_number}</th>
                     <td>
-                      <StatusBadge tone={TONES[b.state]}>{BOOKING_STATE_LABELS[b.state]}</StatusBadge>
+                      <StatusBadge tone={TONES[b.state]}>
+                        {BOOKING_STATE_LABELS[b.state]}
+                      </StatusBadge>
                     </td>
                     <td>
                       {timeOf(b.pickup_window.earliest_at)} bis {timeOf(b.pickup_window.latest_at)}
@@ -309,6 +342,28 @@ export function BookingList() {
                             </li>
                           ))}
                         </ul>
+                      )}
+                    </td>
+                    <td>
+                      {['CONFIRMING', 'CONFIRMED'].includes(b.state) ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-label={`${b.booking_number} ändern`}
+                            onClick={() => setEditor({ mode: 'change', row: b })}
+                          >
+                            Ändern
+                          </button>{' '}
+                          <button
+                            type="button"
+                            aria-label={`${b.booking_number} stornieren`}
+                            onClick={() => setEditor({ mode: 'cancel', row: b })}
+                          >
+                            Stornieren
+                          </button>
+                        </>
+                      ) : (
+                        '–'
                       )}
                     </td>
                   </tr>

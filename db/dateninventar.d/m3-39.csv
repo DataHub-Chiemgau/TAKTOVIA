@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+operator_offer_subject;tenant_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_offer_subject;offer_id;nein;BUCHUNGSABWICKLUNG;;;;
+operator_offer_subject;passenger_id;nein;BUCHUNGSABWICKLUNG;;;;Verweis auf das Fahrgastkonto (Pseudonym), kein Kontakt
+operator_offer_subject;actor_ref;ja;SICHERHEITSPROTOKOLL;ART6_1_F_BERECHTIGTES_INTERESSE;SECURITY_AUDIT;LK_STAMM;Urheber (Pseudonym user:<uuid>), nie Name oder Mailadresse
+operator_offer_subject;basis;nein;BUCHUNGSABWICKLUNG;;;;
+operator_offer_subject;created_at;nein;BUCHUNGSABWICKLUNG;;;;
+booking_change;reason_code;nein;BUCHUNGSABWICKLUNG;;;;WP-M3-39
+booking_change;old_promise;nein;BUCHUNGSABWICKLUNG;;;;WP-M3-39
+booking_change;new_promise;nein;BUCHUNGSABWICKLUNG;;;;WP-M3-39
+booking_change;new_booking_id;nein;BUCHUNGSABWICKLUNG;;;;WP-M3-39
+booking_change;consent;nein;BUCHUNGSABWICKLUNG;;;;WP-M3-39 (Kanal und Zeitpunkt der Fahrgastzustimmung, keine Gesprächsinhalte)

@@ -48,7 +48,7 @@ class RideOfferResource(@get:JsonValue val data: Map<String, Any?>, override val
  * dient zugleich als Wiederholungsschutz des Versuchs.
  */
 @RestController
-class RideOfferController(private val rides: RideOfferRequests, private val offers: RideOffers, private val walking: WalkingRoutes) {
+class RideOfferController(private val rides: RideOfferRequests, private val offers: RideOffers, private val walking: WalkingRoutes, private val operators: de.taktovia.bookingdispatch.api.OperatorBookings) {
 
     @PostMapping("/v1/ride-offers")
     @Suppress("UNCHECKED_CAST")
@@ -62,7 +62,14 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
             assistanceCodes = (body["assistance_codes"] as List<String>?).orEmpty().map { AssistanceCode.valueOf(it) }.toSet(), channel = body["channel"] as String? ?: "WEB",
         )
         val ctx = RequestContexts.require(request)
-        val r = rides.request(ctx, cmd)
+        // booking_subject (Kap. 05 §5.9): DELEGATED = die Leitstelle bucht für einen Fahrgast (WP-M3-39); der Server bindet den Fahrgast und prüft Rolle, Dienstscope und Konto
+        val subject = body["booking_subject"] as Map<String, Any?>?
+        val delegated = subject?.takeIf { it["kind"] == "DELEGATED" }
+        if (delegated != null && delegated["passenger_id"] == null)
+            throw de.taktovia.platform.problem.ProblemException.invalid(de.taktovia.platform.problem.Violation("/booking_subject/passenger_id", de.taktovia.platform.problem.ViolationCode.REQUIRED))
+        if (delegated == null && subject?.get("passenger_id") != null)
+            throw de.taktovia.platform.problem.ProblemException.invalid(de.taktovia.platform.problem.Violation("/booking_subject/passenger_id", de.taktovia.platform.problem.ViolationCode.INVALID_VALUE))
+        val r = if (delegated != null) operators.issueOffer(ctx, UUID.fromString(delegated["passenger_id"] as String), cmd) else rides.request(ctx, cmd)
         // Fußweg zum Abholhaltepunkt (WP-M2-44): Weg als Snapshot des Angebots; ein Weg über `stop_walk_max_m` wird nicht angeboten (das Angebot entfällt)
         val origin = WalkOrigin(cmd.origin.point(), cmd.origin.stopId)
         val walks = r.offers.mapNotNull { p -> p.offer?.takeIf { it.pickupStop != null }?.let { o -> walking.plan(ctx, o.id, origin)?.let { plan -> p to plan } } }.toMap()
@@ -132,7 +139,9 @@ class RideOfferController(private val rides: RideOfferRequests, private val offe
              @RequestBody body: Map<String, Any?>, request: HttpServletRequest): ResponseEntity<RideOfferResource> {
         val expected = Etag.parseIfMatch(ifMatch)
         val max = body["max_gross"] as Map<String, Any?>
-        val r = offers.hold(RequestContexts.require(request), id, HoldRideOffer(expected, key, (max["amount_minor"] as Number).toLong(), max["currency"] as String))
+        val ctx = RequestContexts.require(request)
+        operators.assertHoldAllowed(ctx, id)   // ein für einen Fahrgast gebundenes Leitstellenangebot: Rolle, Dienstscope und Konto bei jedem Hold erneut (WP-M3-39)
+        val r = offers.hold(ctx, id, HoldRideOffer(expected, key, (max["amount_minor"] as Number).toLong(), max["currency"] as String))
         return ResponseEntity.status(HttpStatus.CREATED).location(URI.create("/v1/ride-offers/$id")).body(RideOfferResource(holdBlock(r.hold), r.offerRevision))
     }
 

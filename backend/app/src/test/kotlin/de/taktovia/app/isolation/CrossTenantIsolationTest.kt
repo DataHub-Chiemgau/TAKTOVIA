@@ -230,6 +230,7 @@ class CrossTenantIsolationTest {
             "getBooking" to Probe("GET", "/v1/bookings/{booking_id}", role = "passenger"),
             "listBookingHistory" to Probe("GET", "/v1/bookings/{booking_id}/history", role = "passenger"),
             "cancelBooking" to Probe("POST", "/v1/bookings/{booking_id}/cancel", """{"reason":"PASSENGER_REQUEST"}""", true, role = "passenger"),
+            "changeBooking" to Probe("POST", "/v1/bookings/{booking_id}/changes", """{"new_hold_id":"${UUID.randomUUID()}","offer_revision":1,"max_gross":{"amount_minor":900,"currency":"EUR","exponent":2},"reason_code":"CORRECTION"}""", true, role = "dispatcher"),
             "startBookingPayment" to Probe("POST", "/v1/bookings/{booking_id}/payment", """{"payment_method_ref":"pm_ok","amount":{"amount_minor":950,"currency":"EUR","exponent":2}}""", true, role = "passenger"),
             "returnBookingPayment" to Probe("POST", "/v1/bookings/{booking_id}/payment/return", null, true, role = "passenger"),
             "getStop" to Probe("GET", "/v1/stops/{stop_id}"),

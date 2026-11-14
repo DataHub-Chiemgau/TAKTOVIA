@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+operator_offer_subject;SELECT,INSERT;WP-M3-39: Bindung eines Leitstellenangebots an den Fahrgast (booking_subject DELEGATED); unveraenderlich (Trigger), Schreibrecht nur booking-dispatch

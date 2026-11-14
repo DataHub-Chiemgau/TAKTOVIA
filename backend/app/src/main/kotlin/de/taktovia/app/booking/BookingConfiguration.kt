@@ -37,8 +37,14 @@ class BookingConfiguration {
         RideOfferRequests.create(ctxTx, outbox, geo, config.effective, gate = CandidateGate.PASS_THROUGH, quotes = quotes)
 
     /** Buchungsbestätigung und Lesesichten (WP-M2-23); der ImpactProvider „Buchungen“ wird von `ConfigApi` für die Wirkungsanalyse gesammelt. */
-    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort): Bookings =
-        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing)   // Void/Erstattung nach Storno (WP-M2-31)
+    @Bean fun bookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort,
+        audit: de.taktovia.platform.audit.AuditPort): Bookings =
+        Bookings.create(ctxTx, outbox, quotes, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), staffing = staffing, audit = audit)   // Void/Erstattung nach Storno (WP-M2-31), Audit des Betriebsstornos (WP-M3-39)
+
+    /** Buchung durch die Disposition: Angebot für den Fahrgast, Bestätigung, atomarer Tausch (WP-M3-39); derselbe Tarif-, Kapazitäts- und Sicherheitskern wie die Fahrgastbuchung. */
+    @Bean fun operatorBookings(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, config: ConfigApi, payments: de.taktovia.farepayment.api.Payments, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort,
+        audit: de.taktovia.platform.audit.AuditPort, requests: RideOfferRequests, offers: RideOffers): de.taktovia.bookingdispatch.api.OperatorBookings =
+        de.taktovia.bookingdispatch.api.OperatorBookings.create(ctxTx, outbox, quotes, requests, offers, config = config.effective, cancellation = de.taktovia.app.payment.PaymentCancellationListener(payments), audit = audit, staffing = staffing)
 
     /**
      * Fußweg zum Abholhaltepunkt (WP-M2-44). Der Routing-Worker ist in dieser Verdrahtung nicht angeschlossen (Haltepunktkatalog des Workers offen, D-09): ohne ihn liefert jeder Fußweg den

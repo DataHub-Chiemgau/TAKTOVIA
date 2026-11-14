@@ -46,8 +46,8 @@ data class ConfirmBooking(val holdId: UUID, val ifMatch: Long, val maxGrossMinor
 /** Ergebnis der Bestätigung; [replayed] = der Hold war bereits bestätigt, geliefert wird dieselbe Buchung. */
 data class ConfirmedBooking(val booking: BookingDetail, val replayed: Boolean)
 
-/** Storno-Befehl: [ifMatch] = Revision der Buchung (ETag), [reason] einer der Stornogründe des Katalogs (Art `CANCELLATION`). */
-data class CancelBooking(val ifMatch: Long, val reason: BookingReason)
+/** Storno-Befehl: [ifMatch] = Revision der Buchung (ETag), [reason] einer der Stornogründe des Katalogs (Art `CANCELLATION`), [reasonText] optionaler Freitext zum Grund (höchstens 500 Zeichen, nur Betriebspersonal protokolliert ihn). */
+data class CancelBooking(val ifMatch: Long, val reason: BookingReason, val reasonText: String? = null)
 
 /**
  * Ergebnis: die stornierte Buchung, die freigegebene Reservierung und die neue Planrevision des Umlaufs (`null`, wenn der Plan die Buchung nicht enthielt oder nicht änderbar war). [refundHint] ist der
@@ -135,8 +135,10 @@ interface Bookings {
 
     companion object {
         fun create(ctxTx: ContextTransactions, outbox: Outbox, quotes: FareQuotes, clock: Clock = Clock.systemUTC(), config: EffectiveConfig? = null, cancellation: CancellationListener? = null,
-            executionStates: ExecutionStateSource = ExecutionStateSource.NONE, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null): Bookings =
-            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, executionStates, staffing)
+            executionStates: ExecutionStateSource = ExecutionStateSource.NONE, staffing: de.taktovia.platform.readports.ShiftStaffingReadPort? = null,
+            /** Auditport für Betriebsstorno (WP-M3-39); ohne ihn entfällt nur der Auditeintrag, nie das Änderungsprotokoll. */
+            audit: de.taktovia.platform.audit.AuditPort? = null): Bookings =
+            BookingServicesFactory.bookings(ctxTx, outbox, quotes, clock, config, cancellation, executionStates, staffing, audit)
 
         /** ImpactProvider „Buchungen“ (von WP-M1-23 erwartet): bestätigte Buchungen eines Dienstes ab dem Wirksamkeitsbeginn einer Dienstkonfigurationsrevision. Nur Verweise, nie Personendaten. */
         fun impactProvider(): ImpactProvider = BookingServicesFactory.bookingImpactProvider()

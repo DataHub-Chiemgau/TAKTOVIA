@@ -1414,6 +1414,12 @@ export interface RideOfferRequest {
   equipment?: ('RAMP' | 'LIFT' | 'CHILD_SEAT' | 'BOOSTER_SEAT' | 'LUGGAGE_SPACE' | 'ASSISTANCE_DOG_SPACE' | 'STRETCHER_FIXING')[];
   assistance_codes?: RideAssistanceCodes;
   channel?: 'WEB' | 'APP' | 'API';
+  booking_subject?: DispatchBookingSubject;
+}
+
+export interface DispatchBookingSubject {
+  kind: 'SELF' | 'DELEGATED';
+  passenger_id?: UUID;
 }
 
 export interface RideWindow {
@@ -1498,6 +1504,31 @@ export interface RideConfirmRequest {
   hold_id: UUID;
   max_gross: Money;
   payment_reference?: string;
+  reason_code?: DispatchReasonCode;
+  reason_text?: string;
+}
+
+export type DispatchReasonCode = 'PHONE_REQUEST' | 'COUNTER_REQUEST' | 'PASSENGER_REQUEST' | 'OPERATIONAL_NEED' | 'CORRECTION' | 'OTHER';
+
+export interface BookingChangeRequest {
+  new_hold_id: UUID;
+  offer_revision: number;
+  max_gross: Money;
+  reason_code: DispatchReasonCode;
+  reason_text?: string;
+  passenger_consent?: {
+    channel: 'PHONE' | 'COUNTER' | 'WRITTEN';
+    obtained_at: Timestamp;
+  };
+}
+
+export interface BookingChangeResult {
+  booking: RideBooking;
+  replaced: RideBooking;
+  change_id: UUID;
+  replayed: boolean;
+  price_changed: boolean;
+  time_changed: boolean;
 }
 
 export interface RideBooking {
@@ -1617,6 +1648,7 @@ export interface RidePromise {
 
 export interface RideCancelRequest {
   reason: 'PASSENGER_REQUEST' | 'OPERATOR_CANCELLATION' | 'NO_SHOW' | 'PAYMENT_FAILED' | 'SAFETY' | 'VEHICLE_OUTAGE';
+  reason_text?: string;
 }
 
 export interface RideBookingHistoryEntry {
@@ -4879,6 +4911,13 @@ export interface Operations {
     body: RideCancelRequest;
     response: RideBooking;
   };
+  changeBooking: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { traceparent?: string; 'Idempotency-Key': string; 'If-Match': string };
+    body: BookingChangeRequest;
+    response: BookingChangeResult;
+  };
   listPlanChanges: {
     path: Record<string, never>;
     query: { after?: number; limit?: number };
@@ -6406,6 +6445,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getBooking: { method: 'GET', path: '/v1/bookings/{booking_id}', pathParams: ['booking_id'], query: [], headers: ['If-Match', 'traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 412, 404, 429, 503] },
   listBookingHistory: { method: 'GET', path: '/v1/bookings/{booking_id}/history', pathParams: ['booking_id'], query: ['view'], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   cancelBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/cancel', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  changeBooking: { method: 'POST', path: '/v1/bookings/{booking_id}/changes', pathParams: ['booking_id'], query: [], headers: ['traceparent', 'Idempotency-Key', 'If-Match'], hasBody: true, scopes: ['dispatch:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listPlanChanges: { method: 'GET', path: '/v1/plan-changes', pathParams: [], query: ['after', 'limit'], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getPlanChangesSnapshot: { method: 'GET', path: '/v1/plan-changes/snapshot', pathParams: [], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:updates'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listAuditEvents: { method: 'GET', path: '/v1/audit-events', pathParams: [], query: ['limit', 'cursor', 'object_ref', 'actor_ref', 'action', 'from', 'to', 'purpose'], headers: ['traceparent'], hasBody: false, scopes: ['audit:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
