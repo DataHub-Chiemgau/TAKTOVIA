@@ -81,8 +81,149 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/operator/flags:
+    get:
+      summary: Arbeitsliste offener Hinweise (Überfälligkeit, ausstehende Information)
+      operationId: listOperatorFlags
+      security:
+      - oidc:
+        - operator:read
+      description: 'Hinweise der Leitstellenansichten (WP-M3-42, LH-6.7-OPS-006) in der Listenform {items,next_cursor,as_of}, nach Auslösezeit aufsteigend, standardmäßig die offenen. `OVERDUE`
+        (Abholung überfällig) und `INFO_PENDING` (veralteter Standort, fehlende Fahrerbestätigung einer Planrevision, offener Klärfall) sind getrennte Arten; `affected_count` zählt die betroffenen
+        Buchungen des berechtigten Dienstes. Sichtbar sind nur Hinweise der Dienste im **aktuellen** Dienstscope (Hinweise ohne Dienstbezug mandantenweit); Fremdmandanten nie. Keine Namen, keine
+        Fahrgastdaten. `threshold_min` ist die beim Auslösen wirksame Schwelle und ändert sich nicht rückwirkend. Keine Hinweise: 200 mit leerer Liste. `limit` 1 bis 100, ein ungültiger Cursor 400.'
+      parameters:
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        description: Zustand des Hinweises (Standard `OPEN`).
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OVERDUE
+          - INFO_PENDING
+        description: Nur diese Art.
+      - name: service_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Nur Hinweise dieses Dienstes (Schnittmenge mit dem Dienstscope).
+      - $ref: common.yaml#/components/parameters/Limit
+      - $ref: common.yaml#/components/parameters/Cursor
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorFlagPage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
 components:
   schemas:
+    OperatorFlagItem:
+      type: object
+      additionalProperties: false
+      description: Hinweis der Arbeitsliste (WP-M3-42); nur Kennungen und Zahlen.
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        kind:
+          type: string
+          enum:
+          - OVERDUE
+          - INFO_PENDING
+        cause:
+          type: string
+          enum:
+          - PICKUP_OVERDUE
+          - POSITION_STALE
+          - PLAN_ACK_MISSING
+          - REVIEW_REQUIRED_OPEN
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        affected_count:
+          type: integer
+          minimum: 0
+        opened_at:
+          $ref: common.yaml#/components/schemas/Timestamp
+        resolved_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        threshold_min:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        revision:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - kind
+      - cause
+      - state
+      - service_id
+      - vehicle_id
+      - affected_count
+      - opened_at
+      - resolved_at
+      - threshold_min
+      - revision
+    OperatorFlagPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatorFlagItem'
+          maxItems: 100
+        next_cursor:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 512
+          - type: 'null'
+        as_of:
+          type: string
+          format: date-time
+      required:
+      - items
+      - next_cursor
+      - as_of
     OperatorBookingState:
       type: string
       enum:

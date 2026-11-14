@@ -3,6 +3,7 @@ package de.taktovia.bookingdispatch.internal
 import de.taktovia.bookingdispatch.api.BookingSearchFilter
 import de.taktovia.bookingdispatch.api.BookingSearchRow
 import de.taktovia.bookingdispatch.api.OperatorBookingSearch
+import de.taktovia.bookingdispatch.api.OperatorFlagView
 import de.taktovia.platform.authz.ServiceScopeAuthorizer
 import de.taktovia.platform.context.ActorType
 import de.taktovia.platform.context.ContextTransactions
@@ -61,18 +62,34 @@ internal class JdbcOperatorBookingSearch(private val ctxTx: ContextTransactions)
                 after?.let { Timestamp.from(it.first) }, after?.let { Timestamp.from(it.first) }, after?.second?.toString(), limit + 1,
             )
             val codes = if (assistance) assistanceCodes(j, rows.map { it.id }) else emptyMap()
-            rows.map { b -> row(b, passengerData, if (assistance) codes[b.id].orEmpty() else null) }
+            val flags = flagsOf(j, rows.map { it.id }, scope)
+            rows.map { b -> row(b, passengerData, if (assistance) codes[b.id].orEmpty() else null, flags[b.id].orEmpty()) }
         }
     }
 
     private class Base(val id: UUID, val no: String, val serviceId: UUID, val state: String, val revision: Long, val createdAt: Instant, val snapshot: String, val passengerId: UUID?, val vehicleId: UUID?, val vehicleLabel: String?)
 
-    private fun row(b: Base, passengerData: Boolean, codes: List<String>?): BookingSearchRow {
+    private fun row(b: Base, passengerData: Boolean, codes: List<String>?, flags: List<OperatorFlagView>): BookingSearchRow {
         val node = json.readTree(b.snapshot)
         fun at(f: String) = OffsetDateTime.parse(node[f].asString()).toInstant()
         val vector = node["resource_vector"]?.let { ResourceVectorLite.of(it.toString()) }
         return BookingSearchRow(b.id, b.no, b.serviceId, b.state, b.revision, b.createdAt, at("pickup_earliest"), at("pickup_latest"), at("arrival_earliest"), at("arrival_latest"),
-            vector?.first ?: 0, vector?.second ?: 0, b.vehicleId, b.vehicleLabel, if (passengerData) b.passengerId else null, codes)
+            vector?.first ?: 0, vector?.second ?: 0, b.vehicleId, b.vehicleLabel, if (passengerData) b.passengerId else null, codes, flags)
+    }
+
+    /** Offene Hinweise (Verspätung, ausstehende Information, WP-M3-42) je Buchung: nur Hinweise im Dienstscope; die Zeile nennt Art, Ursache und Betroffenenzahl, nie Namen. */
+    private fun flagsOf(j: JdbcOperations, ids: List<UUID>, scope: String): Map<UUID, List<OperatorFlagView>> {
+        if (ids.isEmpty()) return emptyMap()
+        class F(val view: OperatorFlagView, val bookings: List<UUID>)
+        val found = j.query(
+            "SELECT id, kind, cause, affected_count, opened_at, threshold_min, affected_bookings FROM taktovia.operator_flag WHERE state = 'OPEN' AND affected_bookings && CAST(? AS uuid[]) " +
+                "AND (service_id IS NULL OR service_id = ANY(CAST(? AS uuid[]))) ORDER BY opened_at, id",
+            { rs, _ -> F(OperatorFlagView(rs.getObject(1, UUID::class.java), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getTimestamp(5).toInstant(), rs.getObject(6) as Int?), (rs.getArray(7).array as Array<*>).map { it as UUID }) },
+            ids.joinToString(",", "{", "}"), scope,
+        )
+        val out = HashMap<UUID, MutableList<OperatorFlagView>>()
+        for (f in found) for (b in f.bookings) if (b in ids) out.getOrPut(b) { mutableListOf() }.add(f.view)
+        return out
     }
 
     /** Unterstützungsmerkmale je Buchung, Vereinigung über alle Fahrgastzeilen (nur für Rollen mit Feldfreigabe gelesen); ohne Eintrag eine leere Liste. */

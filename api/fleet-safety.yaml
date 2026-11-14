@@ -3292,6 +3292,12 @@ components:
           minimum: 0
           description: Offene Alarme der Arbeitsliste „Offene Störungen“ zu diesem
             Fahrzeug.
+        flags:
+          type: array
+          items:
+            $ref: operator-bookings.yaml#/components/schemas/OperatorFlag
+          description: 'Offene Hinweise zu diesem Fahrzeug (WP-M3-42, LH-6.7-OPS-006): Überfälligkeit (`OVERDUE`) und ausstehende Information (`INFO_PENDING`) als getrennte Arten mit der Zahl der
+            Betroffenen; nur Hinweise der Dienste im aktuellen Dienstscope.'
         orders:
           type: array
           maxItems: 5

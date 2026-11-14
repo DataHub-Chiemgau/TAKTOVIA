@@ -45,6 +45,9 @@ internal object BookingServicesFactory {
 
     fun operatorOrders(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorOrders = JdbcOperatorOrders(ctxTx)
 
+    fun operatorFlags(ctxTx: ContextTransactions, clock: Clock, thresholds: de.taktovia.bookingdispatch.api.ThresholdSource, signals: de.taktovia.bookingdispatch.api.SignalSource, alerts: de.taktovia.platform.alert.BusinessAlertPort?): de.taktovia.bookingdispatch.api.OperatorFlags =
+        JdbcOperatorFlags(ctxTx, clock, thresholds, signals, alerts)
+
     fun operatorBookingSearch(ctxTx: ContextTransactions): de.taktovia.bookingdispatch.api.OperatorBookingSearch = JdbcOperatorBookingSearch(ctxTx)
 
     fun planChanges(ctxTx: ContextTransactions, clock: Clock): de.taktovia.bookingdispatch.api.PlanChanges = JdbcPlanChanges(ctxTx, clock)

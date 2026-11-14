@@ -160,7 +160,9 @@ describe('UI-07 Eigene Buchung bearbeiten (WP-M3-39, LH-6.7-OPS-004)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'BK-2026-000001 ändern' }));
     const panel = screen.getByRole('region', { name: /ändern/ });
     expect(within(panel).getByText(/neue Buchung mit neuer Buchungsnummer/)).toBeTruthy();
-    expect((screen.getByLabelText('Fahrgast der Buchung (Verweis)') as HTMLInputElement).readOnly).toBe(true);
+    expect(
+      (screen.getByLabelText('Fahrgast der Buchung (Verweis)') as HTMLInputElement).readOnly,
+    ).toBe(true);
     pick('Abfahrtswunsch', '2026-12-01T10:00');
     fireEvent.click(screen.getByRole('button', { name: 'Angebot einholen' }));
     await screen.findByRole('region', { name: 'Angebot' });

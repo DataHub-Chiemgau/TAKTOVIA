@@ -24,6 +24,7 @@ const KIND: Readonly<Record<string, string>> = {
   OVERDUE: 'Überfälligkeit',
   VEHICLE_OUTAGE: 'Fahrzeugausfall',
   PLAN_ACK_OVERDUE: 'Planänderung nicht bestätigt',
+  INFO_PENDING: 'Information ausstehend',
 };
 const CAUSES: ReadonlyArray<readonly [Cause, string]> = [
   ['HANDLED', 'Bearbeitet'],

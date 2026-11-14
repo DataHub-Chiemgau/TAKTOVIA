@@ -2238,6 +2238,7 @@ export interface OperatorVehicle {
   service_ids?: UUID[];
   unavailable_dimensions?: 'wheelchair'[];
   open_alert_count?: number;
+  flags?: OperatorFlag[];
   orders?: OperatorOrder[];
 }
 
@@ -3423,6 +3424,26 @@ export interface ResolveOdometerConflictRequest {
   decision: 'CHOSEN' | 'DISCARDED';
   chosen_reading_id?: UUID;
   reason: string;
+}
+
+export interface OperatorFlagItem {
+  id: UUID;
+  kind: 'OVERDUE' | 'INFO_PENDING';
+  cause: 'PICKUP_OVERDUE' | 'POSITION_STALE' | 'PLAN_ACK_MISSING' | 'REVIEW_REQUIRED_OPEN';
+  state: 'OPEN' | 'RESOLVED';
+  service_id: UUID | null;
+  vehicle_id: UUID | null;
+  affected_count: number;
+  opened_at: Timestamp;
+  resolved_at: Timestamp | null;
+  threshold_min: number | null;
+  revision: number;
+}
+
+export interface OperatorFlagPage {
+  items: OperatorFlagItem[];
+  next_cursor: string | null;
+  as_of: string;
 }
 
 export type OperatorBookingState = 'CONFIRMING' | 'CONFIRMED' | 'RECONCILING' | 'COMPENSATING' | 'CANCEL_PENDING' | 'CANCELED' | 'COMPLETED' | 'FAILED';
@@ -5856,6 +5877,13 @@ export interface Operations {
     body: undefined;
     response: OperatorBookingPage;
   };
+  listOperatorFlags: {
+    path: Record<string, never>;
+    query: { state?: 'OPEN' | 'RESOLVED'; kind?: 'OVERDUE' | 'INFO_PENDING'; service_id?: UUID; limit?: number; cursor?: string };
+    headers: { traceparent?: string };
+    body: undefined;
+    response: OperatorFlagPage;
+  };
   listPassengers: {
     path: Record<string, never>;
     query: { limit?: number; cursor?: string };
@@ -6580,6 +6608,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOdometerConflicts: { method: 'GET', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts', pathParams: ['vehicle_id'], query: ['status', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['odometer:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   resolveOdometerConflict: { method: 'POST', path: '/v1/vehicles/{vehicle_id}/odometer/conflicts/{conflict_id}/resolution', pathParams: ['vehicle_id', 'conflict_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['odometer:resolve'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   searchOperatorBookings: { method: 'GET', path: '/v1/operator/bookings', pathParams: [], query: ['booking_number', 'from', 'to', 'passenger', 'vehicle_id', 'state', 'service_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
+  listOperatorFlags: { method: 'GET', path: '/v1/operator/flags', pathParams: [], query: ['state', 'kind', 'service_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   listPassengers: { method: 'GET', path: '/v1/passengers', pathParams: [], query: ['limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['passengers:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   registerPassenger: { method: 'POST', path: '/v1/passengers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['passengers:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getPassengerSupportNeeds: { method: 'GET', path: '/v1/passengers/{passenger_id}/support-needs', pathParams: ['passenger_id'], query: [], headers: ['X-Access-Purpose', 'traceparent'], hasBody: false, scopes: ['passengers:support:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },

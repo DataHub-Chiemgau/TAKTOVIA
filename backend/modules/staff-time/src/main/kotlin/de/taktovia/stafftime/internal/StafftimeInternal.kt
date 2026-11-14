@@ -46,6 +46,7 @@ internal object StafftimeServicesFactory {
             override val driverShifts: DriverShifts = driverShiftsImpl
             override val positions: Positions = positionsImpl
             override val planAcks: de.taktovia.stafftime.api.DriverPlanAcks = planAcksImpl
+            override val signals: de.taktovia.stafftime.api.OperationalSignals = JdbcOperationalSignals(ctxTx, clock)
             override val absences: Absences = absence
             override val timeEvents: TimeEvents = timeEv
             override val rosterShifts: de.taktovia.stafftime.api.RosterShifts = JdbcRosterShifts(ctxTx, audit, conflictChecker)

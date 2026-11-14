@@ -47,6 +47,14 @@ internal object W14C5ContractCases {
                 ContractRequest("GET", "/v1/operator/bookings?booking_number=${b["booking_number"].asString()}", null, headers(s, s.operator(listOf(UUID.fromString(b["service_id"].asString())))))
             },
             403, { val s = BookingHttpSupport(); ContractRequest("GET", "/v1/operator/bookings", null, headers(s, s.newAccount().token)) }, server = { IdentityEnv.server }),
+        ContractCase("listOperatorFlags",
+            200, {
+                val s = BookingHttpSupport(); val h = s.held(); val b = s.confirm(h).json; val service = UUID.fromString(b["service_id"].asString())
+                s.env.exec("INSERT INTO taktovia.operator_flag(tenant_id, id, service_id, kind, cause, dedupe_key, affected_bookings, affected_count, threshold_min) VALUES (?, ?, ?, 'OVERDUE', 'PICKUP_OVERDUE', ?, CAST(? AS uuid[]), 1, 5)",
+                    s.tenant.value, UUID.randomUUID(), service, "ct-" + UUID.randomUUID(), "{" + b["id"].asString() + "}")
+                ContractRequest("GET", "/v1/operator/flags", null, headers(s, s.operator(listOf(service))))
+            },
+            403, { val s = BookingHttpSupport(); ContractRequest("GET", "/v1/operator/flags", null, headers(s, s.newAccount().token)) }, server = { IdentityEnv.server }),
         ContractCase("changeBooking",
             200, { val b = booked(); val f = held(b.s, b.op, b.passengerId); ContractRequest("POST", "/v1/bookings/${b.id}/changes", changeBody(f), headers(b.s, b.op, mapOf("Idempotency-Key" to "ct-" + UUID.randomUUID(), "If-Match" to "\"${b.revision}\""))) },
             428, { val b = booked(); val f = held(b.s, b.op, b.passengerId); ContractRequest("POST", "/v1/bookings/${b.id}/changes", changeBody(f), headers(b.s, b.op, mapOf("Idempotency-Key" to "ct-" + UUID.randomUUID()))) }, server = { IdentityEnv.server }),

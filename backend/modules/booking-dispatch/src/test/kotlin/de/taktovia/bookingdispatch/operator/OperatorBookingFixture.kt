@@ -48,6 +48,25 @@ class OperatorBookingFixture : AutoCloseable {
         return booking
     }
 
+    /**
+     * Fahrt im Plan: [count] bestätigte Buchungen (je eine Person) im Umlauf [run], alle mit dem geplanten Einstieg [plannedAt] im aktuellen Plan (Revision 2). Grundlage der Überfälligkeit (WP-M3-42):
+     * `route_stop.planned_at` ist die Planzeit, die Buchungen sind `CONFIRMED` und noch nicht eingestiegen.
+     */
+    fun planned(w: RideOfferFixture.World, run: OfferObjectsFixture.Run, op: Operator, count: Int, plannedAt: java.time.Instant): List<BookingDetail> {
+        val helds = (1..count).map { cf.held(w, run, passengers = 1) }
+        val bookings = helds.map { h ->
+            val b = cf.confirm(h).booking
+            cf.bookings.transition(op.ctx, b.id, de.taktovia.platform.statemachine.BookingState.CONFIRMED, de.taktovia.bookingdispatch.api.BookingReason.PAYMENT_AUTHORIZED, 1)
+            cf.bookings.get(op.ctx, b.id)
+        }
+        val mvs = bookings.map { de.taktovia.bookingdispatch.api.StopMovement(it.id, de.taktovia.bookingdispatch.api.ResourceVector(1, 0)) }
+        cf.runs.appendRevision(op.ctx, run.runId, 1, listOf(
+            de.taktovia.bookingdispatch.api.PlanStop(0, helds[0].offer.pickupStop!!.revisionId, plannedAt, boardings = mvs, legDurationSec = 600, legDistanceM = 5000),
+            de.taktovia.bookingdispatch.api.PlanStop(1, helds[0].offer.dropoffStop!!.revisionId, plannedAt.plusSeconds(600), alightings = mvs),
+        ), de.taktovia.bookingdispatch.api.RevisionCause.MANUAL_CHANGE, bookings.map { it.id })
+        return bookings
+    }
+
     override fun close() = cf.close()
 
     companion object { const val ISSUER = "https://idp.test/realms/booking" }

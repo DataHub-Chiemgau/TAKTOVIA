@@ -10,6 +10,7 @@ import type { ResourceState, StatusTone } from '@taktovia/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScreenContext } from '../ScreenContext';
 import { STATUS_LABELS } from '../fahrzeugstatus/VehicleStatus';
+import { flagText } from '../bookings/BookingList';
 import { LiveStatusBadge, useLiveChannel } from '../live/LiveChannel';
 
 /** Sperrgründe der Leitstellenansicht (Katalog OP-01); keine Diagnosetexte. */
@@ -81,6 +82,8 @@ export function notesOf(v: OperatorVehicle): string[] {
   if (v.unavailable_dimensions?.includes('wheelchair'))
     notes.push('eingeschränkt: keine Rollstuhlfahrten (Prüfpunkt Rampe/Lift nicht freigegeben)');
   if (v.open_defect_count > 0) notes.push(`${v.open_defect_count} offene Schadenakte(n)`);
+  // Hinweise (WP-M3-42): Verspätung und ausstehende Information stehen getrennt, mit der Zahl der Betroffenen
+  notes.push(...(v.flags ?? []).map(flagText));
   return notes;
 }
 

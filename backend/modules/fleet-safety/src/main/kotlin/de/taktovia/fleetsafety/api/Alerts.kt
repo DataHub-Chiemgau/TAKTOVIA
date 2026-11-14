@@ -18,6 +18,8 @@ object AlertKinds {
     const val OVERDUE = "OVERDUE"
     const val VEHICLE_OUTAGE = "VEHICLE_OUTAGE"
     const val PLAN_ACK_OVERDUE = "PLAN_ACK_OVERDUE"
+    /** Ausstehende Information der Leitstellenansichten (WP-M3-42): veralteter Standort, fehlende Planbestätigung, offener Klärfall; getrennt von der Verspätung [OVERDUE]. */
+    const val INFO_PENDING = "INFO_PENDING"
     const val TECH_PREFIX = "TECH_"
 
     /** Standardregel je Art: Priorität; kritische Alarme umgehen die Eskalationsverzögerung. */
@@ -27,6 +29,7 @@ object AlertKinds {
         AlertRule(OVERDUE, AlertPriority.HIGH, "dispatcher"),
         AlertRule(VEHICLE_OUTAGE, AlertPriority.HIGH, "dispatcher"),
         AlertRule(PLAN_ACK_OVERDUE, AlertPriority.NORMAL, "dispatcher"),
+        AlertRule(INFO_PENDING, AlertPriority.NORMAL, "dispatcher"),
     )
     val FALLBACK = AlertRule("*", AlertPriority.NORMAL, "dispatcher")
 }
