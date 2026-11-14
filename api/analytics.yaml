@@ -6,7 +6,7 @@ paths:
       security:
       - oidc:
         - analytics:read
-      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten.'
+      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Energiekosten (WP-M4-43, `energy_cost_per_100km` und `energy_cost_per_operating_hour`): nur freigegebene, gebuchte Tankvorgänge gehen ein (Kostenbasis in Minor Units, je Energieart und Währung getrennt, nie gemischt oder addiert); nicht eingegangene Vorgänge stehen mit Grund in `exclusions`, fehlende Energiedaten senken den Abdeckungsgrad (`PROVISIONAL`) und ergeben nie 0 Kosten; `approximation` kennzeichnet die P1-Erwerbsnäherung. Ein unbekanntes oder fremdes Fahrzeug (`vehicle_id`) ist 404.'
       parameters:
       - name: metric_id
         in: query
@@ -52,6 +52,28 @@ paths:
           - APP
           - API
         description: Filterdimension Kanal (nur für Kennzahlen, deren Definition sie zulässt).
+      - name: vehicle_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Filterdimension Fahrzeug (nur Energiekosten-Kennzahlen); ein unbekanntes oder fremdes Fahrzeug ist 404.
+      - name: energy
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - FUEL
+          - ELECTRIC
+        description: Filterdimension Energieart (nur Energiekosten-Kennzahlen); ohne Angabe je Energieart ein eigener Wert (Kraftstoff in Liter, Strom in kWh, nie gemischt).
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+        description: Filterdimension Währung (nur Energiekosten-Kennzahlen); ohne Angabe je vorkommender Währung ein eigener Wert, Währungen werden nie addiert.
       - name: breakdown
         in: query
         required: false
@@ -193,6 +215,9 @@ components:
             enum:
             - service_id
             - channel
+            - vehicle_id
+            - energy
+            - currency
         executable:
           type: boolean
           description: In diesem Stand berechenbar.
@@ -229,6 +254,42 @@ components:
           - WEB
           - APP
           - API
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        energy:
+          type: string
+          enum:
+          - FUEL
+          - ELECTRIC
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+    MetricExclusion:
+      type: object
+      additionalProperties: false
+      description: Ein nicht eingegangener Tankvorgang einer Energiekosten-Kennzahl (WP-M4-43) mit Beleg und Grund.
+      properties:
+        document_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        reason:
+          type: string
+          enum:
+          - NOT_RELEASED
+          - OPEN_HINT
+          - MISSING_ENERGY_TYPE
+          - MISSING_QUANTITY
+          - MISSING_VEHICLE
+          - MIXED_ENERGY_VEHICLE
+          - REVERSED
+          - OTHER_CURRENCY
+      required:
+      - document_id
+      - vehicle_id
+      - reason
     MetricPeriod:
       type: object
       additionalProperties: false
@@ -320,6 +381,18 @@ components:
           oneOf:
           - $ref: common.yaml#/components/schemas/UUID
           - type: 'null'
+        exclusions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricExclusion'
+          description: 'Nur Energiekosten-Kennzahlen (WP-M4-43): nicht eingegangene Vorgänge mit Grund; sonst leer.'
+        approximation:
+          oneOf:
+          - type: string
+            enum:
+            - ACQUISITION_BASIS_P1
+          - type: 'null'
+          description: Kennzeichnung einer Näherung; `ACQUISITION_BASIS_P1` = Erwerbsnäherung ohne Bestandsführung und Ladeverluste (Kap. 03 §1.1).
       required:
       - metric_id
       - definition_version
@@ -335,6 +408,8 @@ components:
       - as_of
       - source_events
       - snapshot_id
+      - exclusions
+      - approximation
     RejectionRow:
       type: object
       additionalProperties: false

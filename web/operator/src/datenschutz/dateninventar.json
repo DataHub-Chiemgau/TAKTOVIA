@@ -343,6 +343,15 @@
       "bemerkung": "nur Zähler und Nenner, keine Fahrgastdaten, Aufbewahrung D-11 offen",
       "spalten": [
         {
+          "spalte": "approximation",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-43: Kennzeichnung der P1-Erwerbsnäherung"
+        },
+        {
           "spalte": "computed_at",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -386,6 +395,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "exclusions",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": "WP-M4-43: Ausschlussliste (Beleg-ID, Fahrzeug-ID und Grund), keine Belegtexte"
         },
         {
           "spalte": "filter",

@@ -67,7 +67,7 @@ class MetricsApiTest {
         val w = World(env)
         val r = env.get("/v1/analytics/metrics", w.tokens.getValue("planner"))
         assertEquals(200, r.status, r.text); assertTrue(r.json["values"].isNull)
-        val defs = r.json["definitions"]; assertEquals(22, defs.size())
+        val defs = r.json["definitions"]; assertEquals(24, defs.size())
         for (d in defs) {
             for (k in listOf("numerator", "denominator", "exclusions", "time_basis")) assertTrue(d[k].asString().isNotBlank(), "${d["metric_id"].asString()}.$k")
             assertTrue(d["filter_dimensions"].isArray); assertEquals(1, d["version"].asInt())
