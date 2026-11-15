@@ -133,7 +133,7 @@ class LiveDashboardTest {
             assertEquals(1L, t.value)
             assertEquals(LiveState.STALE, t.state)
             assertTrue(t.ageSeconds!! >= 600, "Datenalter ${t.ageSeconds}")
-            assertEquals(last.truncatedTo(java.time.temporal.ChronoUnit.MICROS), t.asOf)
+            assertTrue(Duration.between(last, t.asOf).abs() <= Duration.ofNanos(1_000), "Datenstand ${t.asOf} statt $last")   // PostgreSQL speichert Mikrosekunden (gerundet)
             // ohne jedes Ereignis der Quelle: kein Wert (nie 0), Zustand NO_DATA
             val other = fx.world()
             val none = fx.metrics.live(other.tenant, Instant.now(), settings)
