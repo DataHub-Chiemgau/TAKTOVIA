@@ -114,6 +114,10 @@ jobs:
         run: |
           python tools/lint_sql.py
           python -m unittest discover -s tests/acceptance/security -t . -p 'test_*.py'
+      - name: Sicherheitsabnahme (WP-M5-17) - Authentisierungsangriffe auf alle Endpunkte, Feldzugriffsmatrix, Penetrationstest-Register (Selbsttest; der unabhängige Test steht aus)
+        run: |
+          pip install cryptography
+          python -m unittest discover -s tests/acceptance/m5_sicherheit -p 'test_*.py' -v
       - name: JUnit-Ergebnisse für das Release-Gate einsammeln (WP-M5-22)
         if: always()
         run: |
