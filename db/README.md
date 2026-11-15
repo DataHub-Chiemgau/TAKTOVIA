@@ -135,3 +135,5 @@ Detailverträge: [m3-schadenakte.md](../docs/umsetzungsplan/vertraege/m3-schaden
 ## Ankunftspünktlichkeit (WP-M4-54)
 
 `V40540` legt `arrival_tolerance_binding` an (Modul `analytics`, append-only per Trigger, Runtime nur SELECT/INSERT; je Buchung und Zusageversion die zum Zusagezeitpunkt wirksame Toleranz mit Konfigurationsrevision beider Parameter, `applied_min` = größerer Wert), den Parameter `on_time_arrival_tolerance_min` im Katalog und die ausführbaren Definitionen (Version 2) von `arrival_on_time` und `mean_arrival_delay`. Rechte: `R__runtime_grants_m4_54.sql`; Test: `db/tests/test_arrival_punctuality.py`.
+
+`V40600` legt die Lesefunktion `live_dashboard(now, allowed, tolerance_min, alert_min)` an (Modul `analytics`, WP-M4-60, KPI-014; läuft als Aufrufer, RLS gilt, keine neue Tabelle): offene Anfragen, verfügbare Kapazität, kritische Verspätungen und Fahrzeugausfälle mit je eigenem Datenstand aus `dataset_watermark`. Rechte: `R__runtime_grants_m4_60.sql`; Test: `LiveDashboardTest` (Backend, echte Datenbank).

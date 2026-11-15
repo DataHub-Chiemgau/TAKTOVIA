@@ -89,6 +89,18 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
     requires: 'shifts.write',
   },
   { id: 'ui11-schaeden', label: 'Schadenakten', href: '/flotte/schaeden', requires: 'defects' },
+  {
+    id: 'ui19-kennzahlen',
+    label: 'Kennzahlen',
+    href: '/auswertung/kennzahlen',
+    requires: 'analytics',
+  },
+  {
+    id: 'ui07-live',
+    label: 'Live-Betrieb',
+    href: '/auswertung/live',
+    requires: 'analytics',
+  },
   { id: 'ui17', label: 'Gebiete, Stops, Tarife', href: '/admin/gebiete', requires: 'admin.ui17' },
   {
     id: 'ui18',

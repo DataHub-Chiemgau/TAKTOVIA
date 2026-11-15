@@ -21,6 +21,8 @@ GATE_IDS = ["PH-AT-001", "PH-AT-011", "PH-AT-017", "PH-AT-018", "AT-18", "AT-24"
 M2_GATE_IDS = ["AT-01", "AT-02", "AT-03", "AT-04", "AT-05", "AT-07", "AT-13", "AT-15", "AT-19"]
 # Gate-Suite M3 (WP-M3-56): Katalogtests mit eigener Zeile in e2e.csv; Evidenz unter evidence/m3
 M3_GATE_IDS = ["AT-08", "AT-09", "AT-10", "AT-11", "AT-26", "AT-27", "AT-28", "AT-29", "AT-30", "AT-31", "AT-32", "AT-33", "AT-34", "AT-35", "AT-36", "AT-50", "AT-51", "AT-60"]
+# Gate-Suite M4 (WP-M4-63): Katalogtests mit eigener Zeile in e2e.csv (PH-AT-Tests und COST-Szenarien haben keine Zeile); Evidenz unter evidence/m4
+M4_GATE_IDS = ["AT-37", "AT-39", "AT-40", "AT-41", "AT-45", "AT-47", "AT-48", "E2E-064", "E2E-065", "E2E-066", "E2E-067", "E2E-068", "E2E-072", "E2E-073", "E2E-080", "E2E-081", "E2E-082", "E2E-083", "E2E-084"]
 # Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py; WP-M5-15: AT-23, tests/acceptance/m5_at23/run.py)
 M5_GATE_IDS = ["AT-59", "AT-23"]
 GREEN = {"Umgesetzt", "Abgenommen"}
@@ -74,12 +76,14 @@ def check(root: Path = REPO, strict: bool = False) -> tuple[list[str], dict]:
             suite, ev_dir = "m2", "m2"
         elif tid in M3_GATE_IDS:
             suite, ev_dir = "m3", "m3"
+        elif tid in M4_GATE_IDS:
+            suite, ev_dir = "m4", "m4"
         elif tid in M5_GATE_IDS:
             suite, ev_dir = "m5", "m5"
         else:
             errors.append(f"R3 {tid}: Status '{status}' ohne Lauf der M1-Gate-Suite")
             continue
-        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/(m1|m2|m3|m5)/[\w.-]+\.json)$", r["nachweis"])
+        m = re.match(r"(run-[0-9a-f]{16}); (tests/acceptance/evidence/(m1|m2|m3|m4|m5)/[\w.-]+\.json)$", r["nachweis"])
         if not r["build"] or not m:
             errors.append(f"R3 {tid}: Build oder Nachweis (Lauf-ID; Evidenzdatei) fehlt")
             continue

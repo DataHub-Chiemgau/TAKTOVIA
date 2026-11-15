@@ -6,6 +6,7 @@ import de.taktovia.analytics.api.MetricExclusion
 import de.taktovia.analytics.api.FunnelReport
 import de.taktovia.analytics.api.MetricDefinition
 import de.taktovia.analytics.api.MetricDimensions
+import de.taktovia.analytics.api.LiveSettings
 import de.taktovia.analytics.api.MetricFilter
 import de.taktovia.analytics.api.MetricQuery
 import de.taktovia.analytics.api.MetricValue
@@ -39,7 +40,13 @@ import java.util.UUID
  * bis zur Anbindung der Mandantenkonfiguration), nie aus festen 24 Stunden. Ungültige Parameter sind 400, eine unbekannte Kennzahl oder Version 404.
  */
 @RestController
-class MetricsController(private val analytics: AnalyticsApi, private val config: ConfigApi) {
+class MetricsController(
+    private val analytics: AnalyticsApi, private val config: ConfigApi, private val alerts: de.taktovia.fleetsafety.api.AlertSettings, env: org.springframework.core.env.Environment,
+) {
+    /** Live-Dashboard (WP-M4-60): Aktualisierungsfrist 30 s und Veraltung nach 120 s sind Planungsannahmen bis D-05 (OP 32), konfigurierbar (`taktovia.analytics.live.refresh-seconds`, `…stale-after-seconds`). */
+    private val liveRefresh = env.getProperty("taktovia.analytics.live.refresh-seconds", Int::class.java, 30).coerceAtLeast(1)
+    private val liveStale = env.getProperty("taktovia.analytics.live.stale-after-seconds", Int::class.java, 120).coerceAtLeast(liveRefresh)
+
 
     @GetMapping("/v1/analytics/metrics")
     fun get(
@@ -77,13 +84,18 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         val day = dayParam?.let { s -> runCatching { LocalDate.parse(s) }.getOrNull() ?: run { bad("day", ViolationCode.INVALID_FORMAT); null } }
         val hour = hourParam?.let { s -> s.toIntOrNull()?.takeIf { it in 0..23 } ?: run { bad("hour", ViolationCode.INVALID_VALUE); null } }
 
-        if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel" && breakdown != "not_performed") bad("breakdown", ViolationCode.NOT_IN_ENUM)
+        if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel" && breakdown != "not_performed" && breakdown != "live") bad("breakdown", ViolationCode.NOT_IN_ENUM)
+        // Live-Dashboard (WP-M4-60): kein Zeitraum, keine Filterdimension (die Dienstberechtigung gilt immer)
+        val live = breakdown == "live"
+        if (live && (from != null || to != null || metricId != null || version != null || reasonCode != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null ||
+                operatorId != null || regionId != null || serviceAreaId != null || vehicleType != null || dayParam != null || hourParam != null)) bad("breakdown", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && breakdown != "rejection_reason") bad("reason_code", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && !CODE.matches(reasonCode)) bad("reason_code", ViolationCode.PATTERN_MISMATCH)
-        if (from == null && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null || operatorId != null || regionId != null ||
+        if (from == null && !live && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null || operatorId != null || regionId != null ||
                 serviceAreaId != null || vehicleType != null || dayParam != null || hourParam != null)) bad("from", ViolationCode.REQUIRED)
         if (v.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Mindestens ein Parameter ist ungültig.", v)
 
+        if (live) return liveJson(ctx)
         val filter = MetricFilter(service, channel, vehicle, energy, currency, operator, region, area, vehicleType, hour, day)
         val period = fromDay?.let { ReportingPeriod.ofDays(reportingZone(ctx), it, toDay ?: it) }
         val scope = ReportScope(ctx, minGroupSize(ctx))
@@ -101,7 +113,24 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         // Listenhülle der Plattform: `items` (die Kennzahlwerte, leer ohne Zeitraum), `next_cursor` (die Menge ist durch das Kennzahlregister begrenzt, es gibt keine Folgeseite) und `as_of` (ältester Datenstand der Werte)
         val valueItems = values?.map(::valueJson)
         return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to valueItems, "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson), "not_performed" to notPerformed,
-            "items" to (valueItems ?: emptyList()), "next_cursor" to null, "as_of" to values?.mapNotNull { it.asOf }?.minOrNull()?.toString())
+            "items" to (valueItems ?: emptyList()), "next_cursor" to null, "as_of" to values?.mapNotNull { it.asOf }?.minOrNull()?.toString(), "live" to null)
+    }
+
+    /** Live-Dashboard (WP-M4-60): Schwellen aus den wirksamen Parametern des Mandanten (`on_time_pickup_tolerance_min`, `vehicle_unavailability_alert_min`), sonst Planungsdefaults. */
+    private fun liveJson(ctx: RequestContext): Map<String, Any?> {
+        fun param(name: String): Int? {
+            // ein Parameter, der im Katalog nicht (mehr) steht (`vehicle_unavailability_alert_min` ist ein Planungsdefault, Katalog eingefroren), ergibt den Standardwert statt eines Fehlers
+            val item = try { config.effective.resolve(ctx, EffectiveRequest(parameter = name)).items.firstOrNull() } catch (e: ProblemException) { null }
+            return (item?.takeIf { it.status == EffectiveStatus.EFFECTIVE }?.value as? Number)?.toInt()?.takeIf { it >= 0 }
+        }
+        val s = LiveSettings(param("on_time_pickup_tolerance_min") ?: 5, param("vehicle_unavailability_alert_min") ?: alerts.vehicleUnavailabilityAlert.toMinutes().toInt(), liveRefresh, liveStale)
+        val d = analytics.metrics.live(ctx.tenant, java.time.Instant.now(), s, ReportScope(ctx, minGroupSize(ctx)))
+        val live = linkedMapOf<String, Any?>(
+            "evaluated_at" to d.evaluatedAt.toString(), "as_of" to d.asOf?.toString(), "refresh_seconds" to s.refreshSeconds, "stale_after_seconds" to s.staleAfterSeconds, "tolerance_min" to s.toleranceMin,
+            "alert_min" to s.alertMin, "scope" to d.scope,
+            "tiles" to d.tiles.map { linkedMapOf("id" to it.id, "value" to it.value, "as_of" to it.asOf?.toString(), "age_seconds" to it.ageSeconds, "state" to it.state.name, "details" to it.details) },
+        )
+        return linkedMapOf("definitions" to emptyList<Any>(), "values" to null, "rejections" to null, "funnel" to null, "not_performed" to null, "items" to emptyList<Any>(), "next_cursor" to null, "as_of" to d.asOf?.toString(), "live" to live)
     }
 
     /** Wirksamer Parameter `kpi_aggregation_min_n` des Mandanten; ohne gültigen Wert gilt die Schwelle des Registers. */

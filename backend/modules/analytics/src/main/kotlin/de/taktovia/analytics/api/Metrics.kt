@@ -215,6 +215,28 @@ data class FunnelStageDiff(val stage: String, val factCount: Long, val logCount:
 data class FunnelReconciliation(val period: ReportingPeriod, val stages: List<FunnelStageDiff>) { val consistent: Boolean get() = stages.all { it.difference == 0L } }
 
 /**
+ * Einstellungen des Live-Dashboards (WP-M4-60, LH-I.6-KPI-014). Planungsannahmen bis zum Beschluss D-05 (OP 32): [refreshSeconds] ist die definierte Aktualisierungsfrist (Abfrageintervall des Web und
+ * Obergrenze, bis eine Statusänderung sichtbar ist), [staleAfterSeconds] das Datenalter, ab dem ein Wert als veraltet gilt, [toleranceMin] (`on_time_pickup_tolerance_min`) die Schwelle „kritisch“ für eine
+ * Verspätung, [alertMin] (`vehicle_unavailability_alert_min`) die Dauer, ab der ein Fahrzeugausfall als lang gilt.
+ */
+data class LiveSettings(val toleranceMin: Int = 5, val alertMin: Int = 15, val refreshSeconds: Int = 30, val staleAfterSeconds: Int = 120) {
+    init { require(toleranceMin >= 0 && alertMin >= 0 && refreshSeconds >= 1 && staleAfterSeconds >= refreshSeconds) { "ungültige Live-Einstellungen" } }
+}
+
+/**
+ * Eine Kachel des Live-Dashboards: [value] ist `null` ohne Datenstand ([asOf] `null`, [state] `NO_DATA`), nie 0. [ageSeconds] = Alter des Datenstands zur Auswertungszeit; ab [LiveSettings.staleAfterSeconds]
+ * ist [state] `STALE` (der Wert ist dann der letzte bekannte, nie ein scheinbar aktueller). [details] trägt Teilwerte (z. B. Sitzplätze, lange Ausfälle).
+ */
+data class LiveTile(val id: String, val value: Long?, val asOf: Instant?, val ageSeconds: Long?, val state: LiveState, val details: Map<String, Long?>)
+
+enum class LiveState { FRESH, STALE, NO_DATA }
+
+/** Live-Werte: vier getrennte Kacheln (offene Anfragen, verfügbare Kapazität, kritische Verspätungen, Fahrzeugausfälle) zur Auswertungszeit [evaluatedAt]; [asOf] = ältester Datenstand der Kacheln. */
+data class LiveDashboard(val evaluatedAt: Instant, val settings: LiveSettings, val tiles: List<LiveTile>, val asOf: Instant?, val scope: String) {
+    fun tile(id: String): LiveTile = tiles.first { it.id == id }
+}
+
+/**
  * Kennzahlregister (WP-M4-46) mit den ausführbaren Versuchskennzahlen (WP-M4-47 bis -50). Die Berechnung liest Werte und Datenstand in **einem** Statement (ein Lesestand): parallele Abfragen während
  * der Projektion liefern je Antwort einen in sich stimmigen Datenstand, und dieselbe Abfrage auf demselben Datenstand dieselben Werte, unabhängig vom Benutzer (Rechte prüft der Aufrufer).
  * Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Fehler: unbekannte Kennzahl oder Version [de.taktovia.platform.problem.ErrorCode.NOT_FOUND], nicht zulässige Filterdimension und unbekannter Code
@@ -247,6 +269,12 @@ interface Metrics {
 
     /** Abgleich der Trichterzahlen gegen das Ereignisprotokoll des Zeitraums (WP-M4-51): meldet Unterschiede, ändert nichts. */
     fun reconcileFunnel(tenant: TenantId, period: ReportingPeriod): FunnelReconciliation
+
+    /**
+     * Live-Dashboard (WP-M4-60, KPI-014): vier getrennte Werte mit eigenem Datenstand zur Zeit [now]; berücksichtigt nur den aktiven Mandanten (RLS) und die berechtigten Dienste ([scope], Schnittmenge wie die Berichte).
+     * Ein Wert ohne Ereignisse seiner Quelle ist `null` mit Zustand `NO_DATA`, ein Datenstand älter als [LiveSettings.staleAfterSeconds] ergibt `STALE`.
+     */
+    fun live(tenant: TenantId, now: Instant, settings: LiveSettings = LiveSettings(), scope: ReportScope = ReportScope.TENANT_WIDE): LiveDashboard
 
     /** Schwelle, unter der Gruppen nicht ausgewiesen werden (Testwert bis zum Beschluss, WP-M4-46 Offene Punkte). */
     val smallGroupThreshold: Int

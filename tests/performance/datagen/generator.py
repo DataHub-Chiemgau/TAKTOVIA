@@ -90,7 +90,7 @@ def provision_tenants(admin_conn, seed: int, count: int = 2) -> list[str]:
 # Spalten je Tabelle (Reihenfolge = COPY-Reihenfolge = Abhängigkeitsreihenfolge)
 TABLES = ['legal_entity', 'organization', 'region', 'depot', 'config_revision', 'service', 'service_area', 'stop_revision', 'tariff_revision', 'membership', 'driver',
           'qualification_revision', 'vehicle', 'vehicle_pool_assignment', 'roster_revision', 'staff_shift', 'vehicle_run', 'resource_release', 'passenger_private',
-          'travel_attempt', 'fare_quote', 'journey', 'capacity_hold', 'booking', 'payment_intent', 'position_sample']
+          'travel_attempt', 'fare_quote', 'journey', 'capacity_hold', 'booking', 'booking_status_history', 'payment_intent', 'position_sample']
 
 
 def _ts(d: dt.datetime) -> str:
@@ -223,8 +223,13 @@ def fill_tenant(conn, tenant: str, seed: int, scale: Scale, index: int = 1) -> R
                 pick = base_t + dt.timedelta(days=d_i, hours=3, minutes=(k * 7) % 540)
                 snap = {'schema_version': '1.0', 'pickup_earliest': pick.isoformat(), 'pickup_latest': (pick + dt.timedelta(minutes=10)).isoformat(), 'arrival_earliest': (pick + dt.timedelta(minutes=15)).isoformat(),
                         'arrival_latest': (pick + dt.timedelta(minutes=30)).isoformat(), 'passengers': 1}
-                yield (tenant, g('booking', b), g('hold', b), services[b % scale.services], f'fed-booking-{index}-{b:08d}', 'CONFIRMED', json.dumps(snap), 1)
-        _copy(conn, 'booking', ['tenant_id', 'id', 'hold_id', 'service_id', 'federation_ref', 'state', 'promise_snapshot', 'revision'], booking_rows(), digest, report)
+                # WP-M5-11: Buchungsnummer, Fahrgast, Reise und Anlagezeitpunkt, damit Auftragsübersicht und Lesen auf dem Bestand etwas finden (ohne `booking_no` listet die API keine Buchung)
+                yield (tenant, g('booking', b), g('hold', b), services[b % scale.services], f'fed-booking-{index}-{b:08d}', 'CONFIRMED', json.dumps(snap), 1,
+                       pax[b % scale.passengers], g('journey', b), f'BK-2026-{b + 1:06d}', _ts(base_t + dt.timedelta(days=d_i, seconds=k)))
+        _copy(conn, 'booking', ['tenant_id', 'id', 'hold_id', 'service_id', 'federation_ref', 'state', 'promise_snapshot', 'revision', 'passenger_id', 'journey_id', 'booking_no', 'created_at'], booking_rows(), digest, report)
+        # Statushistorie: eine nummerierte Buchung braucht je Revision genau einen Eintrag (aufgeschobener Trigger `booking_history_complete`)
+        _copy(conn, 'booking_status_history', ['tenant_id', 'id', 'booking_id', 'from_state', 'to_state', 'reason_code', 'actor_ref', 'actor_kind', 'occurred_at', 'booking_revision'],
+              ((tenant, g('bhist', b), g('booking', b), None, 'CONFIRMED', 'HOLD_CONFIRMED', 'system:synthetic', 'SYSTEM', _ts(base_t + dt.timedelta(days=b // scale.bookings_per_day, seconds=b % scale.bookings_per_day)), 1) for b in range(total)), digest, report)
         _copy(conn, 'payment_intent', ['tenant_id', 'id', 'journey_id', 'provider', 'provider_ref', 'state', 'currency', 'authorized_minor'],
               ((tenant, g('pay', b), g('journey', b), 'simulator', f'sim-{index}-{b:08d}', 'AUTHORIZED', 'EUR', 250 + (b % 17) * 10) for b in range(total)), digest, report)
     # Positionsproben: je Fahrzeug und Betriebstag im Raster der Schicht

@@ -146,6 +146,9 @@ def sync_table_owners(c):
             c.execute('INSERT INTO taktovia_meta.table_owner(tabelle, modul) VALUES (%s,%s)', (t, o))
 
 
+NO_TRANSACTION = re.compile(r'^-- taktovia:no-transaction\s*$', re.M)
+
+
 def migrate():
     files = sorted((p for p in MIG.glob('V*__*.sql')), key=lambda p: int(re.match(r'V(\d+)__', p.name).group(1)))
     files += sorted(MIG.glob('R__*.sql'))
@@ -165,10 +168,20 @@ def migrate():
                     sys.exit(f'Prüfsummenfehler: {p.name} wurde nach Auslieferung geändert')
                 if applied[p.name] == cs:
                     continue
-            with c.transaction():
-                c.execute(p.read_text())
+            text = p.read_text()
+            if NO_TRANSACTION.search(text):
+                # WP-M5-11: Migrationen mit `CREATE INDEX CONCURRENTLY` laufen ohne Transaktion (eine Anweisung je Ausführung, nur einfache Anweisungen ohne Semikolon in Zeichenketten);
+                # die Datei ist idempotent (`IF NOT EXISTS`), ein Abbruch mittendrin wird durch erneutes Migrieren fortgesetzt.
+                for stmt in (x.strip() for x in re.split(r';[ \t]*\n', text)):
+                    if stmt and not all(line.lstrip().startswith('--') or not line.strip() for line in stmt.splitlines()):
+                        c.execute(stmt)
                 c.execute('INSERT INTO taktovia_meta.schema_history(script,checksum) VALUES (%s,%s) '
                           'ON CONFLICT (script) DO UPDATE SET checksum=EXCLUDED.checksum, installed_on=now()', (p.name, cs))
+            else:
+                with c.transaction():
+                    c.execute(text)
+                    c.execute('INSERT INTO taktovia_meta.schema_history(script,checksum) VALUES (%s,%s) '
+                              'ON CONFLICT (script) DO UPDATE SET checksum=EXCLUDED.checksum, installed_on=now()', (p.name, cs))
             done.append(p.name)
     mark_environment()
     print('migriert:', ', '.join(done) if done else 'nichts zu tun')

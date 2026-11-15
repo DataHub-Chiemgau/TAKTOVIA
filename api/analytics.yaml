@@ -123,7 +123,8 @@ paths:
           - rejection_reason
           - funnel
           - not_performed
-        description: 'Zusätzlich `not_performed`: die nicht durchgeführten Fahrten nach Ursache und Verursachungskategorie (WP-M4-55, KPI-009; erfordert `from`), mit „Ursache offen“ und Konflikten sichtbar, den Quoten No-Show-Rate und Betreiberstorno (Fahrzeugausfall getrennt) samt Nenner und den Korrekturvermerken; `rejection_reason`: die Ablehnungsstatistik nach Grund, oder `funnel`: der Nachfragetrichter (WP-M4-51) mit den vier getrennten Zählgrößen und den Endzuständen (erfordert `from`; `channel` ist für den Trichter nicht zulässig, 400).'
+          - live
+        description: 'Zusätzlich `live` (WP-M4-60, KPI-014): das Live-Dashboard mit den vier getrennten Werten offene Anfragen, verfügbare Kapazität, kritische Verspätungen und Fahrzeugausfälle, je mit eigenem Datenstand (`as_of`) und Datenalter; kein Zeitraum nötig (`from` entfällt, Filter sind für `live` nicht zulässig, 400). Abfragekanal ist Polling im Abstand `refresh_seconds`; ein Datenstand älter als `stale_after_seconds` ergibt `STALE` (der letzte bekannte Wert, nie ein scheinbar aktueller), ohne Ereignisse `NO_DATA` mit Wert `null`. Nur der aktive Mandant und die berechtigten Dienste. Zusätzlich `not_performed`: die nicht durchgeführten Fahrten nach Ursache und Verursachungskategorie (WP-M4-55, KPI-009; erfordert `from`), mit „Ursache offen“ und Konflikten sichtbar, den Quoten No-Show-Rate und Betreiberstorno (Fahrzeugausfall getrennt) samt Nenner und den Korrekturvermerken; `rejection_reason`: die Ablehnungsstatistik nach Grund, oder `funnel`: der Nachfragetrichter (WP-M4-51) mit den vier getrennten Zählgrößen und den Endzuständen (erfordert `from`; `channel` ist für den Trichter nicht zulässig, 400).'
       - name: reason_code
         in: query
         required: false
@@ -844,6 +845,11 @@ components:
           - $ref: '#/components/schemas/NotPerformedBreakdown'
           - type: 'null'
           description: Nur mit `breakdown=not_performed` (WP-M4-55).
+        live:
+          oneOf:
+          - $ref: '#/components/schemas/LiveDashboard'
+          - type: 'null'
+          description: Nur mit `breakdown=live` (WP-M4-60).
         items:
           type: array
           items:
@@ -864,6 +870,96 @@ components:
       - rejections
       - funnel
       - not_performed
+    LiveTile:
+      type: object
+      additionalProperties: false
+      description: Eine Kachel des Live-Dashboards (WP-M4-60). `value` ist `null` ohne Datenstand (`NO_DATA`), nie 0.
+      properties:
+        id:
+          type: string
+          enum:
+          - open_requests
+          - available_capacity
+          - critical_delays
+          - vehicle_outages
+        value:
+          type:
+          - integer
+          - 'null'
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Datenstand der speisenden Quellen (jüngste verarbeitete Ereigniszeit, bei mehreren Quellen das Minimum).
+        age_seconds:
+          type:
+          - integer
+          - 'null'
+          description: Alter des Datenstands zur Auswertungszeit.
+        state:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - NO_DATA
+        details:
+          type: object
+          description: 'Teilwerte: `seats`, `wheelchair_spaces` (verfügbare Kapazität), `long_outages` (Fahrzeugausfälle ab `vehicle_unavailability_alert_min`).'
+          additionalProperties:
+            type:
+            - integer
+            - 'null'
+      required:
+      - id
+      - value
+      - as_of
+      - age_seconds
+      - state
+      - details
+    LiveDashboard:
+      type: object
+      additionalProperties: false
+      description: 'Live-Werte (WP-M4-60, KPI-014). Planungsannahmen bis D-05/OP 32: offene Anfrage = nicht abgelaufenes, ungebuchtes Angebot; verfügbare Kapazität = Sitz- und Rollstuhlplätze nicht gesperrter Fahrzeuge in laufender Schicht; kritische Verspätung = bestätigte, nicht eingestiegene Buchung, deren zugesagter spätester Abholzeitpunkt plus `on_time_pickup_tolerance_min` überschritten ist; Fahrzeugausfall = Fahrzeug mit offener Sperre.'
+      properties:
+        evaluated_at:
+          type: string
+          format: date-time
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ältester Datenstand der Kacheln.
+        refresh_seconds:
+          type: integer
+          description: Definierte Aktualisierungsfrist (Abfrageintervall).
+        stale_after_seconds:
+          type: integer
+        tolerance_min:
+          type: integer
+          description: Wirksamer Wert `on_time_pickup_tolerance_min` (Schwelle „kritisch“).
+        alert_min:
+          type: integer
+          description: Wirksamer Wert `vehicle_unavailability_alert_min`.
+        scope:
+          type: string
+          enum:
+          - TENANT
+          - SERVICES
+        tiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveTile'
+      required:
+      - evaluated_at
+      - as_of
+      - refresh_seconds
+      - stale_after_seconds
+      - tolerance_min
+      - alert_min
+      - scope
+      - tiles
     NotPerformedBreakdown:
       type: object
       additionalProperties: false
