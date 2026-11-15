@@ -155,6 +155,10 @@ jobs:
         run: npm run dienstplan:browser
         working-directory: web
         env: { CHROME_PATH: /usr/bin/google-chrome }
+      - name: Kernreisen Leitstelle, Flotte, Belege, Verwaltung, Fahrgast im Browser (Tastaturdurchlauf, Mandantenwechsel mit zwei Tabs; WP-M5-30)
+        run: npm run kernreisen:browser
+        working-directory: web
+        env: { CHROME_PATH: /usr/bin/google-chrome }
 
   workers:
     name: Worker (WP-M0-07)
