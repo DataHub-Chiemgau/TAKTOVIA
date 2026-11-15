@@ -28,6 +28,7 @@ import { MembershipAdmin } from './identity/MembershipAdmin';
 import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Belegpruefung } from './belege/Belegpruefung';
 import { Fahrzeugkosten } from './kosten/Fahrzeugkosten';
+import { Kennzahlen } from './kennzahlen/Kennzahlen';
 import { Kostenuebersicht } from './kosten/Kostenuebersicht';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { EigeneZeit } from './zeit/EigeneZeit';
@@ -214,6 +215,14 @@ export function App() {
               element={
                 <RequireRight right="finance">
                   <Kostenuebersicht />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/auswertung/kennzahlen"
+              element={
+                <RequireRight right="analytics">
+                  <Kennzahlen />
                 </RequireRight>
               }
             />
