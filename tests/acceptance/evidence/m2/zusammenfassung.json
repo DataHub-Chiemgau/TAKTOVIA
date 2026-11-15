@@ -1,0 +1,175 @@
+{
+  "build": "8e5d65b",
+  "tests": [
+    {
+      "checks": 19,
+      "evidence": "PH-AT-004-run-efead0453f58f6b0.json",
+      "failed": [],
+      "id": "PH-AT-004",
+      "name": "Letzter Platz unter Konkurrenz (M2-Umfang)",
+      "offen": [
+        "offen (nicht geprüft): PH-AT-004 unter Referenzlast: tests/performance/test_referenzprofil.py::test_100_parallele_bestaetigungen_letzter_platz_unter_grundlast (eigener Lauf mit bootJar)"
+      ],
+      "result": "PASSED",
+      "run_id": "run-efead0453f58f6b0"
+    },
+    {
+      "checks": 11,
+      "evidence": "AT-01-run-a6e8f5d63aadd593.json",
+      "failed": [],
+      "id": "AT-01",
+      "name": "Sofortfahrt ohne Pooling (M2-Teil)",
+      "offen": [
+        "offen (nicht geprüft): Fahrerzuweisung in der Driver-App, Check-in und Fahrtende: Driver-App, Check-in und Ausführungszustände liefert M3 (WP-M3-25, WP-M3-29, WP-M3-30); Offener Punkt 1"
+      ],
+      "result": "PASSED",
+      "run_id": "run-a6e8f5d63aadd593"
+    },
+    {
+      "checks": 11,
+      "evidence": "AT-02-run-37b78441be1f9817.json",
+      "failed": [],
+      "id": "AT-02",
+      "name": "Zwei gepoolte Fahrten (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-37b78441be1f9817"
+    },
+    {
+      "checks": 9,
+      "evidence": "AT-03-run-b67721300949008a.json",
+      "failed": [],
+      "id": "AT-03",
+      "name": "Kapazitätsrennen (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-b67721300949008a"
+    },
+    {
+      "checks": 11,
+      "evidence": "AT-04-run-85e216bc59b72771.json",
+      "failed": [],
+      "id": "AT-04",
+      "name": "Rollstuhltransport (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-85e216bc59b72771"
+    },
+    {
+      "checks": 10,
+      "evidence": "AT-05-run-096999d1bcd649e9.json",
+      "failed": [],
+      "id": "AT-05",
+      "name": "Vorausbuchung (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-096999d1bcd649e9"
+    },
+    {
+      "checks": 14,
+      "evidence": "AT-07-run-cca73f1bf0bd5d25.json",
+      "failed": [],
+      "id": "AT-07",
+      "name": "Storno nach Disposition (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-cca73f1bf0bd5d25"
+    },
+    {
+      "checks": 10,
+      "evidence": "AT-13-run-760a2986f705b438.json",
+      "failed": [],
+      "id": "AT-13",
+      "name": "Parallelfahrtenverbot: Regelverbot am Plattformbaustein (M2-Umfang)",
+      "offen": [
+        "offen (nicht geprüft): Sperrregel gegen bestehende ÖPNV-Alternative, angebotene Alternative und Ausnahme: erst mit WP-M6a-26 (Fahrplandaten), WP-M6a-29 (Parallelfahrtenregel), WP-M7a-30 (Durchsetzung mit Ausnahmen); Offene Punkte 2 und 49"
+      ],
+      "result": "PASSED",
+      "run_id": "run-760a2986f705b438"
+    },
+    {
+      "checks": 11,
+      "evidence": "AT-15-run-76f8bb9dcbee0c9d.json",
+      "failed": [],
+      "id": "AT-15",
+      "name": "Zahlungsfehler und Retry (M2-Umfang)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-76f8bb9dcbee0c9d"
+    },
+    {
+      "checks": 5,
+      "evidence": "AT-19-run-6fff77ad0dee6b04.json",
+      "failed": [],
+      "id": "AT-19",
+      "name": "Barrierefreier Buchungsweg (automatisierter Teil)",
+      "offen": [
+        "offen (nicht geprüft): AT-19 als manuelles Prüfprotokoll mit Screenreader (NVDA + Firefox, VoiceOver + Safari): docs/umsetzungsplan/nachweise/WP-M2-47-pruefprotokoll.md, keine Hilfstechnik in dieser Umgebung"
+      ],
+      "result": "PASSED",
+      "run_id": "run-6fff77ad0dee6b04"
+    },
+    {
+      "checks": 16,
+      "evidence": "PH-AT-001-run-ae53e0587138c855.json",
+      "failed": [],
+      "id": "PH-AT-001",
+      "name": "Isolation: M2-Anteil (RLS-Abdeckung, alle M2-Endpunkte, zwei Mandanten)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-ae53e0587138c855"
+    },
+    {
+      "checks": 9,
+      "evidence": "PH-AT-010-run-0f493bdc78ba61e5.json",
+      "failed": [],
+      "id": "PH-AT-010",
+      "name": "Hold läuft während Checkout aus (Einbetreiberzuschnitt)",
+      "offen": [
+        "offen (nicht geprüft): Föderationsanteil (Partner-Holds): P2, M6 (PH-AT-010 nur im Einbetreiberzuschnitt)"
+      ],
+      "result": "PASSED",
+      "run_id": "run-0f493bdc78ba61e5"
+    },
+    {
+      "checks": 9,
+      "evidence": "PH-AT-011-run-b092638ee9511515.json",
+      "failed": [],
+      "id": "PH-AT-011",
+      "name": "Unterschiedlicher Request bei gleichem Idempotenzschlüssel: Buchungs- und Zahlungsbefehle (M2-Anteil)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-b092638ee9511515"
+    },
+    {
+      "checks": 8,
+      "evidence": "PH-AT-018-run-a78aed9e7818868f.json",
+      "failed": [],
+      "id": "PH-AT-018",
+      "name": "DST-Anfrage, Zusage und Tarif nach Konfigurationswechsel unverändert (M2-Anteil)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-a78aed9e7818868f"
+    },
+    {
+      "checks": 6,
+      "evidence": "E2E-096-run-68acf8a4c721a2c1.json",
+      "failed": [],
+      "id": "E2E-096",
+      "name": "Geänderte Vorlaufzeit wirkt erst ab Wirksamkeit (M2-Anteil)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-68acf8a4c721a2c1"
+    },
+    {
+      "checks": 7,
+      "evidence": "E2E-098-run-11b40c87d97a14d7.json",
+      "failed": [],
+      "id": "E2E-098",
+      "name": "Rollback einer fehlerhaften Tarifversion als neue Revision (M2-Anteil)",
+      "offen": [],
+      "result": "PASSED",
+      "run_id": "run-11b40c87d97a14d7"
+    }
+  ]
+}

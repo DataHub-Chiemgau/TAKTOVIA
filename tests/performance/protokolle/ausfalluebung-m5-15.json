@@ -1,117 +1,117 @@
 {
  "abgleichbericht": {
   "abgleich_abgeschlossen": true,
-  "anzahl_vorgaenge": 848,
-  "betroffen_nicht_konsistent": 756,
+  "anzahl_vorgaenge": 735,
+  "betroffen_nicht_konsistent": 653,
   "blockierend": [],
   "fenster": {
-   "bis": "2026-11-15T02:28:20.837354+00:00",
-   "sekunden": 8.568,
-   "von": "2026-11-15T02:28:12.269633+00:00"
+   "bis": "2026-11-15T11:17:50.289126+00:00",
+   "sekunden": 8.216,
+   "von": "2026-11-15T11:17:42.073154+00:00"
   },
   "je_ergebnis": {
-   "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG": 375,
-   "KONSISTENT": 92,
-   "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG": 376,
+   "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG": 324,
+   "KONSISTENT": 82,
+   "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG": 324,
    "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT": 4,
    "UEBERNOMMEN": 1
   },
   "je_typ": {
-   "buchung": 420,
+   "buchung": 364,
    "sperre": 6,
-   "zahlung": 422
+   "zahlung": 365
   },
   "offene_holds_im_bestand": 0,
   "vorgaenge_beispiele": [
    {
     "detail": "CAPTURED",
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001951",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "u-5ccfa756-0001954",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "zahlung"
    },
    {
     "detail": "CAPTURED",
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001953",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "u-5ccfa756-0001956",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "zahlung"
    },
    {
     "detail": "CAPTURED",
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001955",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "u-5ccfa756-0001958",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
+    "typ": "zahlung"
+   },
+   {
+    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001994",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
+    "typ": "zahlung"
+   },
+   {
+    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001996",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
+    "typ": "zahlung"
+   },
+   {
+    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001999",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "zahlung"
    },
    {
     "detail": "lokal AUTHORIZED -> Anbieter CAPTURED (erfasst 950)",
     "ergebnis": "UEBERNOMMEN",
-    "id": "u-22a499c6-0001995",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
-    "typ": "zahlung"
-   },
-   {
-    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0001997",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
-    "typ": "zahlung"
-   },
-   {
-    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0001999",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
-    "typ": "zahlung"
-   },
-   {
-    "detail": "beim Anbieter CAPTURED (erfasst 950), lokal keine Zahlung: kein zweiter Einzug, Klärung Erstattung oder Neubuchung",
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002001",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "u-8698ada5-0001993",
+    "mandant": "8698ada5-5bc4-4ddf-b0a6-f0f161d11cb2",
     "typ": "zahlung"
    },
    {
     "detail": "Buchung und Hold fehlen lokal, Zahlung beim Anbieter CAPTURED: Kunde nicht als ungebucht markieren, bevor Erstattung oder Neubuchung entschieden ist",
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8b7e94c2-1443-47f1-80a8-87b9a25a16e9",
-    "mandant": "338e8627-64f5-42ee-a068-a389a5a91f92",
+    "id": "a50a2ff7-b594-4c0e-99a0-a3630079e208",
+    "mandant": "8698ada5-5bc4-4ddf-b0a6-f0f161d11cb2",
     "typ": "buchung"
    },
    {
     "detail": "Buchung und Hold fehlen lokal, Zahlung beim Anbieter CAPTURED: Kunde nicht als ungebucht markieren, bevor Erstattung oder Neubuchung entschieden ist",
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4150a666-b746-44da-aa39-5ba20a60f2d0",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "3d9be07b-d6bf-465c-b936-51cedf6b610f",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "buchung"
    },
    {
     "detail": "Buchung und Hold fehlen lokal, Zahlung beim Anbieter CAPTURED: Kunde nicht als ungebucht markieren, bevor Erstattung oder Neubuchung entschieden ist",
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "07eeda9e-5002-4ec1-9db3-a0dd34e4f594",
-    "mandant": "338e8627-64f5-42ee-a068-a389a5a91f92",
+    "id": "9802f8fa-6d5a-4586-b325-95ab9e5da885",
+    "mandant": "8698ada5-5bc4-4ddf-b0a6-f0f161d11cb2",
     "typ": "buchung"
    },
    {
     "detail": "Sperre lag im Verlustfenster; aus dem Ereignisstrom vor der Freigabe wieder gesetzt",
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "3d499284-896d-49ba-94d5-e363e6f17bd3",
-    "mandant": "338e8627-64f5-42ee-a068-a389a5a91f92",
+    "id": "6a8e8e79-75e0-436d-88b6-f785746f86ad",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "sperre"
    },
    {
     "detail": "Sperre lag im Verlustfenster; aus dem Ereignisstrom vor der Freigabe wieder gesetzt",
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "84dbcb9b-f327-4bd0-8a47-55867f04d59d",
-    "mandant": "22a499c6-9fee-4dca-902c-1f86abf85454",
+    "id": "d708a380-711f-4904-bf4d-d550b53e89a7",
+    "mandant": "8698ada5-5bc4-4ddf-b0a6-f0f161d11cb2",
     "typ": "sperre"
    },
    {
     "detail": "Sperre lag im Verlustfenster; aus dem Ereignisstrom vor der Freigabe wieder gesetzt",
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "d39d78d4-a573-457e-8e33-848a5341e5ff",
-    "mandant": "338e8627-64f5-42ee-a068-a389a5a91f92",
+    "id": "26e67a4c-6858-409f-b1aa-9b2c9c8a10ed",
+    "mandant": "5ccfa756-ccda-4d18-a22c-b6ce5398d944",
     "typ": "sperre"
    }
   ]
@@ -124,4259 +124,3694 @@
   "wal_level": "replica"
  },
  "basissicherung": {
-  "backup_id": "uebung-20261115T022725",
+  "backup_id": "uebung-20261115T111651",
   "start_wal_segment": "000000010000000000000004",
-  "taken_at": "2026-11-15T02:27:25.430902+00:00"
+  "taken_at": "2026-11-15T11:16:51.898580+00:00"
  },
  "drehbuch": {
   "abgleich_externe_vorgaenge": [
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001951",
+    "id": "u-5ccfa756-0001954",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001953",
+    "id": "u-5ccfa756-0001956",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001955",
+    "id": "u-5ccfa756-0001958",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001957",
+    "id": "u-5ccfa756-0001960",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001959",
+    "id": "u-5ccfa756-0001962",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001961",
+    "id": "u-5ccfa756-0001964",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001963",
+    "id": "u-5ccfa756-0001966",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001965",
+    "id": "u-5ccfa756-0001968",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001967",
+    "id": "u-5ccfa756-0001971",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001969",
+    "id": "u-5ccfa756-0001972",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001971",
+    "id": "u-5ccfa756-0001975",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001973",
+    "id": "u-5ccfa756-0001976",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001975",
+    "id": "u-5ccfa756-0001978",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001977",
+    "id": "u-5ccfa756-0001980",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001979",
+    "id": "u-5ccfa756-0001982",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001981",
+    "id": "u-5ccfa756-0001984",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001983",
+    "id": "u-5ccfa756-0001987",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001985",
+    "id": "u-5ccfa756-0001988",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001987",
+    "id": "u-5ccfa756-0001990",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001989",
+    "id": "u-5ccfa756-0001992",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001994",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001996",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0001999",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002000",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002003",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002004",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002007",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002008",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002011",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002012",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002015",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002017",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002019",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002021",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002023",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002025",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002027",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002029",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002031",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002033",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002035",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002037",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002039",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002041",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002043",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002044",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002047",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002048",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002051",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002052",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002055",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002056",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002059",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002060",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002063",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002064",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002067",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002068",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002071",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002072",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002075",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002076",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002078",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002080",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002082",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002084",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002086",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002088",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002089",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002092",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002093",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002096",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002098",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002100",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002102",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002104",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002106",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002108",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002110",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002112",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002114",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002116",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002118",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002120",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002122",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002124",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002126",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002128",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002130",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002132",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002134",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002136",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002138",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002140",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002141",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002144",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002145",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002148",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002149",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002151",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002153",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002156",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002157",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002160",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002161",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002164",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002165",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002168",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002169",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002172",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002173",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002176",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002177",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002180",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002181",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002184",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002185",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002188",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002189",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002192",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002193",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002196",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002197",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002200",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002201",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002204",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002205",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002208",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002209",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002212",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002213",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002216",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002217",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002220",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002221",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002223",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002225",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002227",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002229",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002232",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002233",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002236",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002237",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002239",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002241",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002243",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002245",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002247",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002249",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002252",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002254",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002256",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002258",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002260",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002262",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002264",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002266",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002268",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002270",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002272",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002274",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002276",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002278",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002279",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002282",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002283",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002286",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002287",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002290",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002291",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002294",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002295",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002298",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002299",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002302",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002303",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002306",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002308",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002310",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002312",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002314",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
+    "id": "u-5ccfa756-0002315",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001991",
+    "id": "u-8698ada5-0001953",
     "typ": "zahlung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "u-22a499c6-0001993",
+    "id": "u-8698ada5-0001955",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001957",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001959",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001961",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001963",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001965",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001967",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001969",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001970",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001973",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001974",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001977",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001979",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001981",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001983",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001985",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001986",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001989",
+    "typ": "zahlung"
+   },
+   {
+    "ergebnis": "KONSISTENT",
+    "id": "u-8698ada5-0001991",
     "typ": "zahlung"
    },
    {
     "ergebnis": "UEBERNOMMEN",
-    "id": "u-22a499c6-0001995",
+    "id": "u-8698ada5-0001993",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0001997",
+    "id": "u-8698ada5-0001995",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0001999",
+    "id": "u-8698ada5-0001997",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002001",
+    "id": "u-8698ada5-0001998",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002003",
+    "id": "u-8698ada5-0002001",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002005",
+    "id": "u-8698ada5-0002002",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002007",
+    "id": "u-8698ada5-0002005",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002009",
+    "id": "u-8698ada5-0002006",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002011",
+    "id": "u-8698ada5-0002009",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002013",
+    "id": "u-8698ada5-0002010",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002015",
+    "id": "u-8698ada5-0002013",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002017",
+    "id": "u-8698ada5-0002014",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002019",
+    "id": "u-8698ada5-0002016",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002021",
+    "id": "u-8698ada5-0002018",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002023",
+    "id": "u-8698ada5-0002020",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002025",
+    "id": "u-8698ada5-0002022",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002027",
+    "id": "u-8698ada5-0002024",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002029",
+    "id": "u-8698ada5-0002026",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002031",
+    "id": "u-8698ada5-0002028",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002033",
+    "id": "u-8698ada5-0002030",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002035",
+    "id": "u-8698ada5-0002032",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002036",
+    "id": "u-8698ada5-0002034",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002039",
+    "id": "u-8698ada5-0002036",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002041",
+    "id": "u-8698ada5-0002038",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002043",
+    "id": "u-8698ada5-0002040",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002045",
+    "id": "u-8698ada5-0002042",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002047",
+    "id": "u-8698ada5-0002045",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002049",
+    "id": "u-8698ada5-0002046",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002051",
+    "id": "u-8698ada5-0002049",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002053",
+    "id": "u-8698ada5-0002050",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002055",
+    "id": "u-8698ada5-0002053",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002057",
+    "id": "u-8698ada5-0002054",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002059",
+    "id": "u-8698ada5-0002057",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002061",
+    "id": "u-8698ada5-0002058",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002063",
+    "id": "u-8698ada5-0002061",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002066",
+    "id": "u-8698ada5-0002062",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002067",
+    "id": "u-8698ada5-0002065",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002070",
+    "id": "u-8698ada5-0002066",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002071",
+    "id": "u-8698ada5-0002069",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002074",
+    "id": "u-8698ada5-0002070",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002075",
+    "id": "u-8698ada5-0002073",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002078",
+    "id": "u-8698ada5-0002074",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002079",
+    "id": "u-8698ada5-0002077",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002082",
+    "id": "u-8698ada5-0002079",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002083",
+    "id": "u-8698ada5-0002081",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002086",
+    "id": "u-8698ada5-0002083",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002087",
+    "id": "u-8698ada5-0002085",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002090",
+    "id": "u-8698ada5-0002087",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002091",
+    "id": "u-8698ada5-0002090",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002094",
+    "id": "u-8698ada5-0002091",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002095",
+    "id": "u-8698ada5-0002094",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002098",
+    "id": "u-8698ada5-0002095",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002100",
+    "id": "u-8698ada5-0002097",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002102",
+    "id": "u-8698ada5-0002099",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002104",
+    "id": "u-8698ada5-0002101",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002106",
+    "id": "u-8698ada5-0002103",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002108",
+    "id": "u-8698ada5-0002105",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002110",
+    "id": "u-8698ada5-0002107",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002111",
+    "id": "u-8698ada5-0002109",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002114",
+    "id": "u-8698ada5-0002111",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002116",
+    "id": "u-8698ada5-0002113",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002118",
+    "id": "u-8698ada5-0002115",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002120",
+    "id": "u-8698ada5-0002117",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002122",
+    "id": "u-8698ada5-0002119",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002124",
+    "id": "u-8698ada5-0002121",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002126",
+    "id": "u-8698ada5-0002123",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002128",
+    "id": "u-8698ada5-0002125",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002130",
+    "id": "u-8698ada5-0002127",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002132",
+    "id": "u-8698ada5-0002129",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002134",
+    "id": "u-8698ada5-0002131",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002136",
+    "id": "u-8698ada5-0002133",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002138",
+    "id": "u-8698ada5-0002135",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002140",
+    "id": "u-8698ada5-0002137",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002142",
+    "id": "u-8698ada5-0002139",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002144",
+    "id": "u-8698ada5-0002142",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002146",
+    "id": "u-8698ada5-0002143",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002148",
+    "id": "u-8698ada5-0002146",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002150",
+    "id": "u-8698ada5-0002147",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002152",
+    "id": "u-8698ada5-0002150",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002154",
+    "id": "u-8698ada5-0002152",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002156",
+    "id": "u-8698ada5-0002154",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002158",
+    "id": "u-8698ada5-0002155",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002160",
+    "id": "u-8698ada5-0002158",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002162",
+    "id": "u-8698ada5-0002159",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002164",
+    "id": "u-8698ada5-0002162",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002166",
+    "id": "u-8698ada5-0002163",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002167",
+    "id": "u-8698ada5-0002166",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002170",
+    "id": "u-8698ada5-0002167",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002172",
+    "id": "u-8698ada5-0002170",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002174",
+    "id": "u-8698ada5-0002171",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002176",
+    "id": "u-8698ada5-0002174",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002178",
+    "id": "u-8698ada5-0002175",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002180",
+    "id": "u-8698ada5-0002178",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002182",
+    "id": "u-8698ada5-0002179",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002184",
+    "id": "u-8698ada5-0002182",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002186",
+    "id": "u-8698ada5-0002183",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002187",
+    "id": "u-8698ada5-0002186",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002190",
+    "id": "u-8698ada5-0002187",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002191",
+    "id": "u-8698ada5-0002190",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002194",
+    "id": "u-8698ada5-0002191",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002195",
+    "id": "u-8698ada5-0002194",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002198",
+    "id": "u-8698ada5-0002195",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002199",
+    "id": "u-8698ada5-0002198",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002202",
+    "id": "u-8698ada5-0002199",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002203",
+    "id": "u-8698ada5-0002202",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002206",
+    "id": "u-8698ada5-0002203",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002207",
+    "id": "u-8698ada5-0002206",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002210",
+    "id": "u-8698ada5-0002207",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002211",
+    "id": "u-8698ada5-0002210",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002214",
+    "id": "u-8698ada5-0002211",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002215",
+    "id": "u-8698ada5-0002214",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002218",
+    "id": "u-8698ada5-0002215",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002219",
+    "id": "u-8698ada5-0002218",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002222",
+    "id": "u-8698ada5-0002219",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002223",
+    "id": "u-8698ada5-0002222",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002226",
+    "id": "u-8698ada5-0002224",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002227",
+    "id": "u-8698ada5-0002226",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002230",
+    "id": "u-8698ada5-0002228",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002231",
+    "id": "u-8698ada5-0002230",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002234",
+    "id": "u-8698ada5-0002231",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002235",
+    "id": "u-8698ada5-0002234",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002238",
+    "id": "u-8698ada5-0002235",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002239",
+    "id": "u-8698ada5-0002238",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002242",
+    "id": "u-8698ada5-0002240",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002243",
+    "id": "u-8698ada5-0002242",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002245",
+    "id": "u-8698ada5-0002244",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002247",
+    "id": "u-8698ada5-0002246",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002250",
+    "id": "u-8698ada5-0002248",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002251",
+    "id": "u-8698ada5-0002250",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002254",
+    "id": "u-8698ada5-0002251",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002255",
+    "id": "u-8698ada5-0002253",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002258",
+    "id": "u-8698ada5-0002255",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002259",
+    "id": "u-8698ada5-0002257",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002262",
+    "id": "u-8698ada5-0002259",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002264",
+    "id": "u-8698ada5-0002261",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002266",
+    "id": "u-8698ada5-0002263",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002268",
+    "id": "u-8698ada5-0002265",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002270",
+    "id": "u-8698ada5-0002267",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002272",
+    "id": "u-8698ada5-0002269",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002274",
+    "id": "u-8698ada5-0002271",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002276",
+    "id": "u-8698ada5-0002273",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002277",
+    "id": "u-8698ada5-0002275",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002280",
+    "id": "u-8698ada5-0002277",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002281",
+    "id": "u-8698ada5-0002280",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002284",
+    "id": "u-8698ada5-0002281",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002285",
+    "id": "u-8698ada5-0002284",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002288",
+    "id": "u-8698ada5-0002285",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002289",
+    "id": "u-8698ada5-0002288",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002292",
+    "id": "u-8698ada5-0002289",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002293",
+    "id": "u-8698ada5-0002292",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002296",
+    "id": "u-8698ada5-0002293",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002297",
+    "id": "u-8698ada5-0002296",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002300",
+    "id": "u-8698ada5-0002297",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002301",
+    "id": "u-8698ada5-0002300",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002304",
+    "id": "u-8698ada5-0002301",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002305",
+    "id": "u-8698ada5-0002304",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002308",
+    "id": "u-8698ada5-0002305",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002310",
+    "id": "u-8698ada5-0002307",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002312",
+    "id": "u-8698ada5-0002309",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002314",
+    "id": "u-8698ada5-0002311",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002316",
+    "id": "u-8698ada5-0002313",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002318",
+    "id": "u-8698ada5-0002316",
     "typ": "zahlung"
    },
    {
     "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002320",
+    "id": "u-8698ada5-0002317",
     "typ": "zahlung"
    },
    {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002322",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002324",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002326",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002327",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002330",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002331",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002334",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002335",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002338",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002339",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002342",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002343",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002346",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002347",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002350",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002351",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002353",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002355",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002357",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002359",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002362",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002363",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002366",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002367",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002369",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-22a499c6-0002371",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001950",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001952",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001954",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001956",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001958",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001960",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001962",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001964",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001966",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001968",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001970",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001972",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001974",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001976",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001978",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001980",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001982",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001984",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001986",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001988",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001990",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001992",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "u-338e8627-0001994",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0001996",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0001998",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002000",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002002",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002004",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002006",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002008",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002010",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002012",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002014",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002016",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002018",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002020",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002022",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002024",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002026",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002028",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002030",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002032",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002034",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002037",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002038",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002040",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002042",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002044",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002046",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002048",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002050",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002052",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002054",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002056",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002058",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002060",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002062",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002064",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002065",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002068",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002069",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002072",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002073",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002076",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002077",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002080",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002081",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002084",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002085",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002088",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002089",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002092",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002093",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002096",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002097",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002099",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002101",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002103",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002105",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002107",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002109",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002112",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002113",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002115",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002117",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002119",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002121",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002123",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002125",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002127",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002129",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002131",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002133",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002135",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002137",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002139",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002141",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002143",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002145",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002147",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002149",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002151",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002153",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002155",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002157",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002159",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002161",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002163",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002165",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002168",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002169",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002171",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002173",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002175",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002177",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002179",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002181",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002183",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002185",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002188",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002189",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002192",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002193",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002196",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002197",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002200",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002201",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002204",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002205",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002208",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002209",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002212",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002213",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002216",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002217",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002220",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002221",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002224",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002225",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002228",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002229",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002232",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002233",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002236",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002237",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002240",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002241",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002244",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002246",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002248",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002249",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002252",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002253",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002256",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002257",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002260",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002261",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002263",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002265",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002267",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002269",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002271",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002273",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002275",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002278",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002279",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002282",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002283",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002286",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002287",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002290",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002291",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002294",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002295",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002298",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002299",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002302",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002303",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002306",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002307",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002309",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002311",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002313",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002315",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002317",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002319",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002321",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002323",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002325",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002328",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002329",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002332",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002333",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002336",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002337",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002340",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002341",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002344",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002345",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002348",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002349",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002352",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002354",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002356",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002358",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002360",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002361",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002364",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002365",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002368",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG",
-    "id": "u-338e8627-0002370",
-    "typ": "zahlung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "b34c8cee-58b8-4514-b27e-d8bf7efac762",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "7526d5fd-ad71-4140-adf9-1033262fadac",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "a4ccc431-8e95-4b68-b4fd-d97e5dc3c23e",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "b89dacbf-2c75-417d-8bad-c8cc8fd6778b",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "KONSISTENT",
-    "id": "7d5b8cd2-b424-41c7-9d6b-cff091c09273",
-    "typ": "buchung"
-   },
-   {
     "ergebnis": "KONSISTENT",
-    "id": "289c1e5d-b669-40cd-aab4-d46454fca15e",
+    "id": "6fb5b627-13e6-45a1-ba76-f628e5f20a6c",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "5f4ee23c-7537-4f57-be8b-78134ac5800c",
+    "id": "41c5f91e-390a-4c85-84de-c31cf2e1c9d8",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "7a82a6ff-eacf-4ede-aedf-b4d225b52e28",
+    "id": "34bf098a-df30-4128-91e0-0bb46744aa16",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "a2eb1acc-d751-4669-8151-3e7636f571e3",
+    "id": "fa3a6ffb-022b-431b-93bd-a7f12dfe9e26",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "eb9461f9-d5ab-40ee-8616-50317b27aa97",
+    "id": "28fa8e70-4b03-464f-b338-7294f31b5c28",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "24c104ab-d555-4acc-bb51-9d1151ae21d4",
+    "id": "9c1076cb-f1a0-4500-bf5a-da4f9a02388e",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "3892e067-a171-4b54-9819-2b8499581d16",
+    "id": "f5a6267f-b346-47ac-b981-b2a0c9cdaa93",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "aba11913-05a6-4ae4-b84e-3f9a02e1dba3",
+    "id": "4a78651a-07e9-488e-b556-0389b144558c",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "28931fc6-5655-47da-8b19-ce13c71a3e6c",
+    "id": "6fdbe616-5d8d-4a0f-ba9b-b496583f073d",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "74294b5e-e0d1-4f81-ac7b-8473c53f48b0",
+    "id": "1e7c1fc7-b4f1-453d-9141-1f55eaed7f22",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "c2757bff-5ccb-4890-8975-6e5af4277d3b",
+    "id": "c787dd33-5385-4142-bf00-01efd2c9703c",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "5b266faf-f299-40b9-bff6-b56c73fbbb31",
+    "id": "bd4af15c-4b38-4b0e-8bb2-347418fb85f0",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "560dbf9b-9485-4741-83d8-9365c83fd927",
+    "id": "421410d1-31e9-4a97-a5dc-cf1baf1592d3",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "74d28997-5a7d-4047-aceb-9269be3c1e88",
+    "id": "e25015a8-8f48-4778-9e69-4580f3303a26",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "ddf3220a-1a3d-41b6-8ce4-6f524ef65338",
+    "id": "055e6935-b53d-47d2-85f9-f67ad21cd0af",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "f86e0fcd-1d84-4f8b-9ca9-d3041aef33c9",
+    "id": "a8fe2d18-391d-434d-b034-463a786e6151",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "90a85f45-ed7b-4509-a9c6-b8e33205cf60",
+    "id": "e7801014-e81c-4bae-8c9a-1bbb4c7b015c",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "06ed4e51-09df-4b07-a40e-cad7d87812a1",
+    "id": "9ccf8cea-6fcb-41ec-8f93-0b2ab6626ecc",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "d9e5de64-fc1a-491e-99c7-24b73b0a79e0",
+    "id": "0e4ddcb7-e80f-437e-bb0b-10f623936983",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "1f01fdfa-ef76-4424-aad5-b92a55f21cee",
+    "id": "7ec51daa-21f1-402c-9c46-c8b28549cc30",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "add9b4ca-a009-4b90-92bd-e0090a86e921",
+    "id": "8c74a2af-c019-4fda-b8b4-8fd2816eccb1",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "fc75587d-a25e-408d-a460-0fe9eb6e7954",
+    "id": "8f67c071-7007-4841-8c9c-d8aaf7eb2732",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "f6e7033f-886a-48e0-b4c9-0a7943225fa6",
+    "id": "e2b22c7b-5038-4084-a2e8-49503fd5b701",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "f04dd167-9c7c-48b2-8b55-10aded549ede",
+    "id": "0fe7a9e0-0e9a-4f62-a087-7b0d1b84f8a2",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "7f0c5e0f-42cf-435c-be1d-7d31b8ca245b",
+    "id": "46acf3ca-50ec-40a0-b96b-9c398198ba10",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "b4801d90-d8e5-42a6-a8d8-ecc242d708f5",
+    "id": "8da1d0a4-e3f6-4b5c-a50b-5b3bfcf9f778",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "804a937f-8c36-45b7-9b53-cb48921d5c2f",
+    "id": "acd2d06f-ce06-4b27-88e8-dc497a314b62",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "9fe4371f-d59e-4899-8e7b-9c224af369f3",
+    "id": "d971e3a5-2b82-4d34-bc6c-bb8f40d8cbdb",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "d2970c45-84dd-4aa7-973d-bc6789ad08f1",
+    "id": "6566a97b-9f27-49d2-beae-743654cd174a",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "27e3cd52-3a33-408d-b56e-557286f286ff",
+    "id": "4ea3c220-18df-45e4-bbfe-954907c3c78a",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "86cf7547-8f0e-4960-a400-2ccf499f1e91",
+    "id": "4d6a635c-2805-48eb-80b2-5f866b4634f0",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "9e65192e-fb2d-422a-a16f-e7cd4cd11a01",
+    "id": "cc8578d9-db56-4936-b804-9d9d449f9793",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "98dffc4a-e62c-4fc5-8b57-0fc415be04a5",
+    "id": "baafb532-9aeb-42b8-880b-a9619054272c",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "19aa9ba6-96d5-404c-bd26-e681d8ac9fb4",
+    "id": "bbbb1634-a407-4285-80e1-dcb427cef8e4",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "bc768b19-0b5b-4fdc-b584-20eefe611af4",
+    "id": "7ebfdd16-8ef7-48dd-84a0-539a8a2ce547",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "9bd0d46f-9c9e-4cb0-a285-b78645433e97",
+    "id": "22fed59d-e514-47a2-9726-9cce8489473a",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "7fedfe7c-37e8-4df1-ab75-00c161fedbe2",
+    "id": "af12337d-a4a3-4720-8968-ff0b9e862fe7",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "b320c1a2-2fd5-4d46-b9c7-7971a05662eb",
+    "id": "69e521aa-c68b-42ff-aeea-0c49bed6b846",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "5030c2a3-012b-4e6a-a5ba-4848d5b5be72",
+    "id": "62c52741-5c35-4c04-be5a-74888ba07b5e",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "756a51c7-c71f-4cb0-872a-d2bedb11598c",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8b7e94c2-1443-47f1-80a8-87b9a25a16e9",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4150a666-b746-44da-aa39-5ba20a60f2d0",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "07eeda9e-5002-4ec1-9db3-a0dd34e4f594",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "cf22c395-a531-48c0-92a1-b0474b19ebe0",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "61469bff-fac3-4cb8-85a2-cb91f558fd39",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ddfa6881-030c-4192-a473-461ade716089",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "461b79de-14ef-4d58-9991-7b668c7679db",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7a0992d6-45e6-4fb9-9965-081763d09fda",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fbe1dffa-b1ae-484a-b674-0ba27d7f5a5a",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c0fc5012-6f16-42ff-9ec6-df304f37cba7",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9edb5adf-570a-4863-b206-28bbd994059c",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2c4a303d-1f96-425e-bf46-1e44c2cf3820",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9714911c-1f1d-4348-8122-6c817a7eed9f",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f3c1c4b4-53dc-44f8-b96f-1067564483a4",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5b7c7183-b98a-4c2d-b7e6-dcc770a746f9",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0c01d553-cde0-448b-ab50-0262c0a20834",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1294de41-4b7c-48c3-9834-46c796e15bab",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ec24e74e-bd21-4f78-b732-560570d74a26",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "eae3c30e-5ccc-47bc-b1cd-7bbc5b479462",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "93d3a6a8-5e61-4e03-9f79-b6cd037571ad",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a95cd173-fbc3-4c2b-af4a-2252e110029d",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "11194286-a6bf-4662-bf34-85b7171c17f2",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3f1c6f4c-b7fa-431a-b959-329bbca5d53b",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "766379a0-8499-4abb-80a1-7dbb1fcee830",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "deff3070-7174-4ccc-a00d-ad29d681ac80",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8acc9c10-1723-498a-b189-c599879bfa9d",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2db0c25a-caad-4d09-9fa5-90f1f5f3fd4f",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ed564ff9-2968-45fb-9720-0d93d9520dd7",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "26a4a17a-a5f7-47c3-87c3-3ca440d4b6c2",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1e560881-04b8-474a-9e77-482ef15d06c0",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1562fd1e-4e70-42c0-834a-1320f7bde87b",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "69c629be-5846-4dde-a05e-f743b1a420bc",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "72b8a805-68f6-4930-8ead-157216fae0e2",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a59bf5c6-3741-4ea6-acfc-55c99d7a143e",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d972ddeb-c44c-4926-a2b2-5a1aba9e6401",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8979f39c-1e76-4f5c-8e97-b4dc7126b37a",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5daf4544-5a01-4cc0-80bf-8e8017836138",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "75f2c761-1075-4a3f-b5fd-8edd84c4af71",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0182a45d-7b13-4929-a336-09510f8813ce",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a156ea24-a93d-4be3-a1e0-808be4cb5fe3",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1f91d6a2-9f98-435d-9766-e12c8e5a4522",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "85b859d4-ba83-43f6-a58b-2fdd2547603d",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6eb7e73a-2b65-4cf8-a547-49a68cba9ceb",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ffb46e2a-2919-41da-b7b5-6309d78a9cb5",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "21e2984f-2531-48da-bb1b-a6fc6c22135f",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "63bf261f-e61a-4b01-91e1-f2d4747fcebc",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "309dd133-941c-467c-919a-833039645847",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3c28d68b-e0c9-4ab0-8ac9-fb9f9b49066d",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5b518374-5b88-4308-a3a5-5760c041d205",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d9932680-a929-49df-aca5-c20ecda97b59",
-    "typ": "buchung"
-   },
-   {
-    "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "254b2dce-acef-4a38-a9bd-208d938eac41",
+    "id": "157c7ab6-a535-45c6-ae19-06c40732c928",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "66b78f64-3b21-4a58-9e28-194deb1d651a",
+    "id": "a50a2ff7-b594-4c0e-99a0-a3630079e208",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f202c2b7-3f21-4b2e-9dcf-839b11f17c13",
+    "id": "3d9be07b-d6bf-465c-b936-51cedf6b610f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "670652a9-b743-48e2-a8bd-50b2d853c102",
+    "id": "9802f8fa-6d5a-4586-b325-95ab9e5da885",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bc742953-9783-4203-9302-2f3ef6a0f04f",
+    "id": "1b9eacbf-5703-4f05-8c11-0316566ad25f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1a56b93c-b590-4148-94cf-059db160f8e9",
+    "id": "6551b0e4-a520-4e6f-92fe-773db0ceb16a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6e004c76-dd97-4b08-8b90-f999b56e998a",
+    "id": "14f03992-c11c-4bf9-8b9e-6c7c45d0b283",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "570bac81-4679-4e6c-90ab-44286fd5eddd",
+    "id": "92b0a0a1-b955-4ed7-a9bb-1eb3a420a45c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e9c9bd77-7b11-452f-a794-805601cb5f52",
+    "id": "3039a831-a380-4472-8bc1-3b92e7a0d676",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "54f61a88-9cca-4be9-ab6e-234c1c29f8aa",
+    "id": "09ff146c-67d3-41ed-a866-e7b8552751d9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "51d38c50-a5bc-4f53-95eb-0c0868f6b738",
+    "id": "def7caee-9664-4e73-83a5-8f619c9b369c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c0a8225a-e58e-4f8a-b9c9-d5a5180c453f",
+    "id": "4bf941f7-ca47-403c-89dd-eff4c181746d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b60ae1cb-0a2f-450f-8ed5-580198abfc7f",
+    "id": "12dc23ef-8188-4af6-87e7-83926aaa2de0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ed2478d2-ff41-4b02-9342-27684f734be6",
+    "id": "c5477814-8bc8-4a22-b388-2b553dcd9433",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7fc0cbb4-af90-4b6c-8d9e-b0e1ac13bdd9",
+    "id": "d890ec47-a8f2-4e5d-828d-0108efbfc6b2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c770878a-9124-487a-b605-98be9980937c",
+    "id": "7ee2ae4d-358b-4b13-b80d-da2c0854c62e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "263f92e7-4b4a-4d20-b0b4-0b0bd531f4a1",
+    "id": "837c0a56-f34b-4e81-8f30-8a70fdfe1cb6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d02b8a8d-aa49-4001-82df-ae1988957d52",
+    "id": "83117ee6-7b09-4061-b544-23a6efce8405",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c80d0ab4-3961-4982-b08c-404f416bd6e5",
+    "id": "7412e3fc-68e7-4472-82b3-400571acb556",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f6f6fcf8-fd59-4ffc-9914-e8e55a9492c5",
+    "id": "e1456266-69f1-48ac-a6fa-0c26ee6dc96f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c6272395-28c1-472a-bdaf-52fc9969a30d",
+    "id": "f14635ae-79a7-4dd0-96c7-2f7d9eefedc9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "925865b6-3b8d-4b52-bd86-a36970c7dd22",
+    "id": "29dbebb8-85f0-40d6-910d-68dcff6a9998",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fede9392-4a57-479e-bdf9-9006c8d28848",
+    "id": "95dc4dd3-e43d-4b27-bd9b-a6b32db6da42",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fff6b2c4-8512-4551-a1b4-0d9d43af79c8",
+    "id": "2de5f8fe-0943-4bbc-b807-50c868b769e4",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0500c651-cfa2-49eb-b0ba-7ba51f064f25",
+    "id": "f3729f64-8015-4ec4-96fd-afd3bb819dd1",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c654c6b0-7aae-4cd5-88c0-e9f1c88a84e2",
+    "id": "fe79ceee-4512-495f-9fc7-262c7c9dd7c9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b22c221f-3da7-47eb-b623-e9ffa4c3056a",
+    "id": "93f495a9-908b-48d4-98c7-fba75c325a74",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9dea85a3-e5df-401c-9300-43ad29fb3c94",
+    "id": "a1900a62-38b2-4acb-abd9-d260b05adb5e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a3ca36d2-7bb5-4178-b2e1-e39f7f52b3f9",
+    "id": "33bde46a-b30b-48a2-95a1-b75374a461ce",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bd458397-6106-440d-a022-be5497ac10f8",
+    "id": "6067eb74-d836-4b0e-983e-7f47ed48cb0b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "20d352e1-031f-4383-ac42-a61840484a8a",
+    "id": "431a3456-34eb-4a93-bb40-d1d115272f43",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0d3b042e-2d66-45c3-ae95-5e42f3382df7",
+    "id": "f1acc471-c77a-4ac8-8da3-d91ee5844f9d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "25e1fd2c-f404-4de9-827f-053e6cdaac79",
+    "id": "cf3deadd-ead8-4cdf-82cc-c1d30c958945",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "13f504fb-d07c-46eb-91c1-8420492c6c3a",
+    "id": "449a9edd-b1c4-4638-a312-803d61c989c8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e2f8663a-c601-4f88-b018-aeccaa4efe23",
+    "id": "e0eb1cf4-4f9e-42e3-b8f0-4c1bc277debc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "820fdfe9-628f-4b38-a41d-caee7af8db65",
+    "id": "14abc5d2-18aa-4359-8a28-4742aad659af",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0e55c2de-ac3b-4673-a5af-c27973485c76",
+    "id": "0ec0292f-769e-4c19-9b88-e6caafc55717",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ed73b7c6-0154-4f88-994e-2b15dd8d40d0",
+    "id": "a95d58f8-f340-43b7-a992-c61001a2db68",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5daa3511-da7e-4d9c-8142-f7372b67c2d0",
+    "id": "2f7f866c-cbea-453f-953c-39a6d2fc9475",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "178bae05-8430-4b10-bb5c-07ed18e37fea",
+    "id": "f32b2614-c29a-4d07-bf06-4f72397902cb",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b222e8c9-92e5-4196-b229-9884ab0f6b2b",
+    "id": "d9c05edf-ee6a-4cc6-8472-eabcfcce9832",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d69580df-ca1e-47db-9b9a-bdfd02d98c51",
+    "id": "03d6a59f-1362-413b-9c7b-a10a37db88c9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6c1fe01b-45d8-4fb3-9bc4-46a5d3d9f558",
+    "id": "7f2e35f3-bced-48df-823d-a2aa9b4a71e3",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2e266075-df07-4bc6-82ca-930bf22ab6c7",
+    "id": "092c3c27-9c37-4a3d-be61-d4a4cf366a07",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "13a6f6d8-d3ee-42f2-90bb-9bc31310c440",
+    "id": "1a4c6d2b-e181-4989-b44e-f985a795633d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6d6ab3d5-81e8-4eb5-8636-aa9d12acdf1d",
+    "id": "1b684cff-d6df-44f8-9257-252b044959ab",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "269f2270-8088-4697-8a85-6bf9aba2e89c",
+    "id": "c19a1645-1bc6-4b92-8553-25be03964c6e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "05f7bb05-d44c-48af-8c37-b3f2357e1cc1",
+    "id": "da2d3383-350e-4efa-abba-9d0467857d46",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d685bc61-6dc0-48e1-b36e-b2a1089a1710",
+    "id": "4de6d9a7-75bc-41ad-98b2-7dab39b9c4b5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9a5178c4-d571-4c29-a3ff-fbde6271f804",
+    "id": "1c251901-b0c9-4166-8f44-a0bc0223e4ea",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a9a4823a-fad6-485e-af72-452abdac4e95",
+    "id": "dac8f94e-8175-40c7-9af0-7108b48b8684",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ebf735ce-300d-4b9f-9bb4-858df300d8b3",
+    "id": "368dd360-2610-4407-ace0-86aff0dd817d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "76ebd2fc-809c-4bd7-a901-607f960895a3",
+    "id": "b628fed9-8ac3-4c2c-acab-41bfc0682bfb",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1b3a1ef8-55f2-46be-bf27-ae9282256eb7",
+    "id": "a1d3fb70-6a82-480d-90f5-4a6a02f4e7d9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "51861c26-e6b1-49d3-8f4f-a3abe75902f7",
+    "id": "edc379fa-d7ec-48fc-abf7-9742f74baa1b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9d5ccd3a-1510-4c1d-ad06-7817a2f09140",
+    "id": "e49754da-63c6-4690-9e1e-3238e6384f39",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8990286d-9647-47eb-b027-0d29351dfe33",
+    "id": "cfa87b85-eaba-4d6f-8ae2-289d57408269",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "23df35f5-7d51-4136-ba13-75ff2cfce42d",
+    "id": "d5ea6bad-cba1-447e-9c1f-415408fb4ffa",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "395ac673-62b1-4780-89c9-3427b5646da0",
+    "id": "436e8c3b-8a34-4ede-8e76-9a64e5c19a19",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "30fb80b4-3506-414b-81d0-04b9329308dc",
+    "id": "653be01f-1949-4481-977f-db77d30a7e83",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "caab5776-17f8-41a5-98b9-58ffd4422f2c",
+    "id": "e85dff73-58bc-4ab0-a810-c44d2be4ca35",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0892a4ed-7050-4159-b1cb-741810a2df70",
+    "id": "e29ea27c-cfe7-4a9c-9682-b60509ef0682",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "dcc0995a-3b14-4341-b6d8-7cf35d2a7ea0",
+    "id": "30f6ae72-6a95-4c84-9d19-55bdfa0b0697",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "671027d8-c9bd-4bdc-829c-978a3603a3ee",
+    "id": "de4d4e7e-c02c-4ddc-854a-4cb41b527744",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "916d0a17-d864-4d3a-9471-1c013eae4881",
+    "id": "19eb0d1b-41e7-4ef0-aeff-a8722c102746",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "001234ca-d468-4483-a9fb-1098153b20bb",
+    "id": "e274a10c-7776-4a54-baec-b12bc867edf2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "15ccd30d-b333-4aa9-bee6-48d92c81f59d",
+    "id": "0ff2a066-d9dd-44f2-b11a-ccb52cc5219b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7ffc2eca-f704-4aef-bb0e-b56928327cca",
+    "id": "12f76a1f-ac75-4938-a159-8bd6a3ae48c0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9774a150-6db5-4040-9b9d-87dc72f62b65",
+    "id": "fc0da895-210f-4ea1-82bd-434cb3acceec",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "cc7af39a-9eb2-48e8-ba7a-5d4dd7caeef1",
+    "id": "8d13fa80-b261-4c17-906b-a4e8aa5a053b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "95e7aa21-e059-4150-bac0-c5bba42a2aa7",
+    "id": "a4cc45fb-9e9b-4209-b215-335b39176847",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "738850e1-2bfc-4b03-a7be-5ce4c9e626e4",
+    "id": "9fa7164b-a2db-4ff8-afe1-1e87eb8bff66",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "42411772-d2c2-4c2e-8cc6-4dd2764805c8",
+    "id": "f64b0d4d-83a5-43f0-abf6-ad83fab5339d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4aeb206e-f62b-4ba7-ac14-10ae453858f1",
+    "id": "cffd15c1-15a0-452f-b934-1448245877a9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3011f226-44ad-4f88-836b-ed6542b20ca2",
+    "id": "c61df67c-5297-4779-be5e-76a09ab63502",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "741d502b-f7cd-4bc5-ad70-fab13ad8aa67",
+    "id": "e4aa5224-1a24-4d53-887f-0a29d5cf3da9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ccaa4aaf-6e41-46e4-9e95-d318c17fffd0",
+    "id": "7a7eba76-519c-4ff3-af3a-ace9cfc904c2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e7d158c3-fae9-4444-be03-3d2da3b46a06",
+    "id": "113fd635-a3d6-4cae-9ab1-8552271fa78b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f576114d-aec7-4637-a39c-0e6d14140faa",
+    "id": "89576433-a631-426e-885b-68390851626d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ea18322b-4f07-4ecd-a6a4-764e1e6faf8f",
+    "id": "d7018f9f-aa45-4e6e-ad15-7808fb26e118",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "357f2a5e-3711-43c6-95de-25916a5e0ec0",
+    "id": "892e542e-7d59-4ccf-9077-d73fe0e76ab1",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b8489a26-893b-4144-8e79-c6bd977f3ef6",
+    "id": "196ee1a2-854b-49ab-8a1e-8b79e84d982e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2df1137d-03bb-42f3-9432-bfb3ce451fd5",
+    "id": "70edb473-f0ee-47a4-9cec-5ed830155f54",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "480e0993-341a-46bb-b13b-13746ba66832",
+    "id": "71d376ee-eda3-42df-8c4c-fe9cdd706264",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7747f702-a5f5-42a2-8dcc-af1c0c86dcc8",
+    "id": "aa4597e2-3ded-4ac5-aa50-1b334e901b10",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7ece48d0-19bc-46fe-b7e3-bd37e8bbb34f",
+    "id": "1b96f379-6a41-4183-84bf-c257ab2ac325",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "12c3c286-33c7-41c6-bbfb-025cc9b730af",
+    "id": "c2ab3309-223d-4b25-b418-3a928a66ab34",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e833b34e-9e6f-4646-9784-69baae1a157b",
+    "id": "878d997b-26f1-4d88-bd6c-307399a0a3f2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5eef772b-0523-4fb8-8d4f-5f5677a7edbf",
+    "id": "374505f2-1637-4d11-9389-9d3137acbc47",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0c7fd996-c84f-4a07-b8c1-dbc79232c63a",
+    "id": "840a73bb-278c-4820-bec8-90b3b99005a1",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8971fff6-2afe-45f0-8ce2-20f41786a4d9",
+    "id": "3f262ae9-733c-4df2-8bf4-367b4df7318c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2fda9e76-561c-428e-87e9-272117ab6ec7",
+    "id": "8c712d96-c859-4c57-bc0c-f403f53aea8e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "05b64e91-4520-476f-846a-bfefae8c610e",
+    "id": "a410a311-5c71-4faa-8ec2-d3b5fc91f309",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f41b760c-2a66-4fe8-899b-c2cd3e6fc6fa",
+    "id": "c52c3761-94a1-4eb1-96bd-6c7d51fe3214",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e1c043c9-4ed3-44ee-a4cd-3a195e256aa3",
+    "id": "696a8126-130d-498b-980b-e33eab11c452",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c3956c3a-c8b7-4937-b7b1-732971a090c0",
+    "id": "26fa3559-b7e3-401e-b178-33052f293e9e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "00f156c0-19f4-4b46-9349-02e098fd6f98",
+    "id": "3644cc8f-189e-4845-860a-e9f5d8f5dda5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4f258db2-b161-445b-905e-21d6fdab9e79",
+    "id": "8afd6da7-b5b4-4d07-8bc4-4e328aadf0db",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "89364639-b254-409b-b9ae-eff7f837adc2",
+    "id": "735d472e-40e2-4758-9684-fe5ee77d3c00",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "340f9158-5a00-479c-8a92-7a02ba1ae42c",
+    "id": "91bbc982-04f4-4379-ba78-96dcc8e5e702",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "914e72d3-3dc6-438a-b89b-e2b6619b506c",
+    "id": "3c3c8048-19ba-40a7-b723-fe6abf8ad46d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "cba15918-73ed-4b3b-800e-e4a4925ca726",
+    "id": "936b2d23-613a-4e27-89ee-f63531484c0f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "dc5cd56c-168f-48a0-83e8-6725003337d6",
+    "id": "c5a1d84c-e1db-4519-8d38-4628501671c6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f02d2239-9c60-4339-9f9a-276271f5f881",
+    "id": "1e336ed9-bfe7-4ca8-9a99-5912b8b0e277",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bd83a6ab-9d22-47c9-926a-d6e058962b2a",
+    "id": "3414666a-d004-48da-86eb-a53547ef75f8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2356ae43-eb43-4394-991e-2af91317f5c3",
+    "id": "1b802f06-d4a2-402f-923c-6502f0f4eb75",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d39dee24-a1fb-4091-b07b-0fbb1c13bd4e",
+    "id": "d70acf01-3fbc-435b-b21d-5402852b1e12",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7b36e8c8-286e-4bcc-8e6b-da13b703b78e",
+    "id": "13a987f2-099e-4e41-9e61-5df80ef4aa17",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "98755bb1-b128-4b85-827e-952f9b123271",
+    "id": "99554b66-1eda-4038-8cbe-09df7b4d0a79",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "53f10902-3111-49db-90fe-7235199d129b",
+    "id": "bdd6be10-fb55-47c6-bb86-38aa6adec989",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c95c634a-380a-47ec-a520-96c7c4236889",
+    "id": "dd44d909-abfc-4776-b61c-b7dffb53713a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "05ed6b0f-3e86-4b5f-9807-21666cf5a4c9",
+    "id": "b90727ec-3fad-41ce-a862-f201a580c5dc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2ac229f6-cd94-46c0-b95d-ecce494833c8",
+    "id": "cc984412-1828-4078-ba98-2aa36529053d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6e7d7b40-aedb-41e4-97e6-48aad9986ae3",
+    "id": "9d556f08-fd9b-4d44-9bbf-b1b925cfc37a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "dc27d450-0584-4b06-a984-6cb9feee23a5",
+    "id": "5c1825cc-0c11-48e2-ab6a-808e751cd871",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f1bb21db-33d3-4ffc-bb84-0bc90ca72e8e",
+    "id": "5238177f-14b3-49e8-992f-748aa7a681d2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b68a6308-63a8-4b27-af1d-4fa65e3257dc",
+    "id": "d2614d7f-8071-487b-9558-bda2df0224eb",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d881b9f5-b213-4232-b3e0-47a896c2a39b",
+    "id": "8b160ecc-7992-46ce-9d34-0193f48e9f2e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d87f87e8-acbb-4309-9140-726f16327188",
+    "id": "850e51dd-71d9-43e5-a3ef-de9ff6569315",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ae8c29b3-dbb4-402a-a453-18bea7794a8d",
+    "id": "ba85ea0e-3f7d-4ffa-b39c-acdbd0f50645",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "abe63944-4eb2-401e-b5d9-1537253257e8",
+    "id": "4501b3a0-5f04-4ce0-8366-9aca906fb562",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7714798c-61cc-4f86-9047-21e576c36f63",
+    "id": "0b4c7afa-e922-43b8-ac68-d8e1ee55c371",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0e4c87fa-42a9-41de-8d6b-1273aef6e711",
+    "id": "e0fa9dd4-d3e7-4d68-a863-e723e80c6532",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "def4a9b9-8ce3-44bf-990d-f8a8cfeea911",
+    "id": "7e0dee80-264f-41e6-83d8-629a0b15621a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e019176a-04e1-48c0-8d1a-e6df5ec549d5",
+    "id": "d6a76347-b39b-4cd4-8d9b-52bf0da4d520",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c0496185-fb48-45d7-867b-69350a6d0362",
+    "id": "6da8af62-d1e5-46fe-9b8c-ad0cce047404",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6064980c-7566-4185-839c-10173ffe7656",
+    "id": "409d5268-d4cd-4b2d-ae7c-6a8bd8b6bc1e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "72e5e75d-2038-4df2-99d8-b0fd9e8c5928",
+    "id": "33582665-80a6-47d4-ae66-39649d5b3450",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1a530394-0c83-4148-b9a4-67be8140949b",
+    "id": "f5ee1339-70f7-4005-baa5-478e98c8b401",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6f18a824-fe2e-4a3d-9e66-19972f7de733",
+    "id": "52aa5160-07de-4f10-88f8-ea77ed38e33f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8531a062-898c-45ab-adf0-5ba2083be764",
+    "id": "b6ef8d1a-258a-4a37-b566-417f74537bf3",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d1164f40-7355-4fb3-ace5-b1fc19b9e97a",
+    "id": "7cb95a41-7fb0-4c21-b3de-f5564c5c32b7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3eafd6d8-03a1-4a76-9720-c9c733ebd854",
+    "id": "352c3bb6-5456-4d0c-89ed-bd7598e5c18c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "03ffbbce-5aed-41e6-b438-a6e0758cfe61",
+    "id": "8a1d38b5-79b0-45d0-a3a8-639a0c0321fe",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1a4a2007-6872-41bb-8878-eb3bf06681a3",
+    "id": "40b026fd-e725-415f-a60d-87dc68110588",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "79a9bc7f-542c-4c29-88dd-22bd537b44d9",
+    "id": "9e417938-fd43-445f-9559-227a9508a2f9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "636fe0d9-9e3f-4cfd-8d09-17c1b6905cf3",
+    "id": "79f37cd0-38c1-47ed-9645-5940b9f25b64",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d4621736-58b3-4da9-ab8e-5ff425a2c791",
+    "id": "4ef2f46a-fd0a-4071-8cfd-906a578cb1a0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d5aae6a5-b77c-4568-90ae-bc9b081dcfb9",
+    "id": "b9aff70c-1cd0-4869-bed4-0f575d3dee4d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8efa37a8-eab0-409b-ad1a-c5524b41f271",
+    "id": "08b61adb-d8d6-4c4a-b309-728347f49b27",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8532bd71-272c-4f35-9b1a-dfbc3542b7b2",
+    "id": "badd7ff7-43f7-4732-9875-971915aaf219",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "41eec5ea-acb6-49d9-a95e-5900024be1b8",
+    "id": "f48c0c55-597c-4dbf-a02e-478b71e9b07c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "211aecaf-dd37-4d3c-b9a2-d056fac1892e",
+    "id": "259973eb-4c11-451a-905f-025e2459bf60",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7de16a97-a854-44aa-a70a-c4c6ea46bc2d",
+    "id": "34d1d4a4-66b1-4e05-9869-ad3c6e88e45d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3f7f8673-5ed4-40e8-bc03-c3bb92dec565",
+    "id": "aaa707ab-70f9-4fcd-8862-9aa19b67e85d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e7b51f72-eca5-4c6a-8c9f-c8228a1f3093",
+    "id": "95370da0-e26f-49a6-9034-bf0c87071118",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "82a5609a-2864-48d1-b1b2-bd1365b2a73f",
+    "id": "2ea6c71f-a467-4726-bf93-cc74adf2ae4f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "94afd8d1-381c-4804-a43a-d8466da72ea2",
+    "id": "f63103c3-8911-4eb6-b9a8-04a4bf945295",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2ff80064-9002-4f7d-bce4-d159ddca9a04",
+    "id": "a9321840-bd90-4bb2-9c47-c2134cb06dbf",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5ce4d5f0-507a-43c9-8fcb-823a2bcc6400",
+    "id": "2d72ddc0-e3c3-478e-a0c5-6b0bb4ea2d35",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1f7cd11f-265e-4b1f-938b-104dcc4cc851",
+    "id": "74d3199c-aa8b-40f8-ad3e-27dadc8281d5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6671897c-1d68-4615-8749-29a029bc21e3",
+    "id": "e76ebf08-ef04-4889-a819-f472b2d65cd0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ba4551e0-c8aa-4b12-85b1-b625b0c580c4",
+    "id": "9f6f06de-e4c0-4e04-8a27-b3b6b31e62b3",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2ebcb932-aef5-4c1f-86ca-3f85927291b5",
+    "id": "f82cd834-1efc-46d4-8c30-4ce458fb8608",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5f380645-61e5-4472-b8b2-6f7cf4263587",
+    "id": "bb32ef98-7283-432a-8804-d4777cb65ced",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d3b45e2d-7560-463d-8897-0420102bf371",
+    "id": "eea7a0ce-e5ed-4568-b71e-f2337c24d750",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7396a2b9-e635-4616-aa9a-dfe09c332013",
+    "id": "737a9411-8eac-48e1-9e57-21993e2c9666",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "346f04d4-d1b4-43a8-8d6a-8b3b72c8d7ec",
+    "id": "e081b04a-e428-4682-83d7-737f907bb78d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "86192326-2312-4ef2-a935-4a4b16f33cf0",
+    "id": "3af82a9c-a164-4fbb-845f-9ea46668eab9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "52ece8e7-b133-4279-b64a-df5f318f86cc",
+    "id": "d88f49d0-4ae9-4074-b9f0-d435a471f6b5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "00fba062-81b1-4e2d-8e18-007e2ed29deb",
+    "id": "92cce685-80dc-4675-9165-d0a50969d03d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "011e1114-a975-4a81-ab7e-d049091c27a9",
+    "id": "04e8fb40-54cb-4888-9c62-9375cd949211",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "606a8bdd-e211-4da1-92b3-8269b40eb5fc",
+    "id": "ecb0428e-d711-4454-8cc3-54c11db8f735",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "049c2f0f-4c98-466d-b951-bfe2d628b27f",
+    "id": "e5160c5e-f348-4b47-aec1-8abf04d4d14e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "91af59c8-da88-4718-a373-70fe2e6a920e",
+    "id": "701b12ce-d214-4ee3-87f6-037d276946dc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "caf9947b-e195-418f-aef4-d2998355bb86",
+    "id": "93b0e0de-a8af-44df-a15b-cc64d394b952",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b48f31a9-bac5-4098-9ef5-d22b112ee9b1",
+    "id": "8ebf448e-b8c3-4faa-9e68-02835ae38189",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "67b647bc-d7c0-4fb0-8cd0-b8ad5186a6e8",
+    "id": "d206ac4e-f425-4072-9bd8-0dc02141218c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f62ce341-7da3-4af1-a53e-c175d83cd0b4",
+    "id": "9c64437c-1533-4c17-9898-898a50a671dc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "88387ef7-9c51-474f-8fc0-c8824cdb15ad",
+    "id": "14ce6ce7-c7a9-44e3-8bd1-708d41555a38",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "43f697f2-ddb9-4d9e-89fb-515ad082940d",
+    "id": "8e04a7b6-db5e-4f5f-8d8e-6c0e00bb0b60",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6f7d5839-cb79-40d2-a4f8-f89f1cfa3fb0",
+    "id": "26cb6c82-7954-4429-be95-28ca883ee2fb",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "84192a15-da1d-4b17-972c-7468e227e662",
+    "id": "91816474-a301-48fd-bd66-0696569c2ec0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d4d1f775-aa9a-481b-8b16-e0e587aaac2c",
+    "id": "943ba1bc-529c-4185-b980-1c7ab5886f7c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f9500c4e-180b-47f8-8b6b-dacc78b56a12",
+    "id": "aa20d88b-c99a-43f5-a893-fec61d8aa756",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1a8dd448-be5b-4efd-8d4d-d190fbab13f8",
+    "id": "5bba728d-3a64-48a8-84e8-998e3b1b8c8a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8d692fd5-3bf3-4b46-aa69-4713a0b88732",
+    "id": "6bf30888-f7e9-4f71-80aa-470b22ae8e31",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b30343b0-6adc-4985-9520-1521bbe9ab66",
+    "id": "effc580d-f2b1-4e4f-bfb3-c8987f7c22a9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "17e865c6-2de0-4a51-b4ce-1df713a35aa0",
+    "id": "0b19cbc6-969f-4121-bb0a-5457e0fa78da",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "903f650f-9fae-4b7f-86db-79dba53b3330",
+    "id": "58b44110-c871-4769-b06e-321fd637050e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "77a9db97-9123-45e2-9e91-f298de3331e0",
+    "id": "4ac47918-936e-40e0-81f5-e42e78f246f7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e8242e66-b570-4a79-a5e3-72e6eef02808",
+    "id": "610733f5-710a-4255-98cb-56ebb08223c0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "795b02db-6802-40c9-8918-806a2347d029",
+    "id": "75f8b5e8-d4a2-401c-8297-708c78b441e7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bb97b61b-9e87-46ee-9785-7d4ed82e30a6",
+    "id": "0545d541-b8f4-48ae-933e-c0fb64571f83",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b0039921-74c9-443e-ae3c-f312231a5842",
+    "id": "1fd15e38-eec0-4e38-ae0c-ff41a4c61120",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "52119796-68a6-4c4a-a0a7-bd686ced1f2f",
+    "id": "641bf249-a9db-41df-94ec-d67a6fee34ee",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d816c7e5-49c0-4db2-8fad-b274544eb5c5",
+    "id": "a233ad0d-75a9-4052-9634-5cd609b52a6d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c99e2a55-629a-483b-b05e-5ed74c24fa0b",
+    "id": "508e4613-55cd-473c-9463-4a716d612f30",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "720338f9-a075-4a5f-9ba5-fba3abd3692d",
+    "id": "fb77c4e8-7f7c-4eac-8bbc-2c79cd819ec7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "31cf9b3b-7374-47fd-abe9-9db1534195d4",
+    "id": "3a137630-f3aa-4624-8edd-302ea649ff3f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4e56a8c0-8723-4729-beaa-908efcbf6804",
+    "id": "a99e1a56-8871-48b8-b37a-bc5f1770f3cd",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "21594b2e-f8d3-4d24-80ee-b2afd4f05d56",
+    "id": "a0b47783-6b52-46f5-8fd4-c48a14745730",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6b334067-049c-4abb-bf02-5ed38b7b22b8",
+    "id": "aaa8cb44-7b7b-4e80-afdb-923c1838c7b7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5b28be9c-5567-46dd-8d1b-373c630cf7d5",
+    "id": "3c74980f-24f2-4407-be65-d389e290cf8c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0c5c3f19-37b6-4e21-bc0e-3e72199ddade",
+    "id": "e8335c43-c120-4d08-b244-41fe928875b8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c1b1a20c-37fe-4488-a34c-a19116ccbd6c",
+    "id": "f2ba75df-3fa3-4933-9c32-d901c00fc049",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c9fb01f2-aa82-428f-a3bd-5460d1a17729",
+    "id": "13e4c415-6b79-40ec-b57f-965d292d4e6b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e72b55b9-2fca-4868-8755-2b0c7f8a62f4",
+    "id": "dc42bf82-1f57-4acb-8b3d-f4e9e87e6d2d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b3dfaa85-cf60-4671-8973-d16d100faf09",
+    "id": "0a991b7e-0dd1-4edc-ad03-8bca8e0af06a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7adb1f73-45bf-4753-bc7b-141b0da23150",
+    "id": "db198d74-5b41-490c-a2f8-fe9462152c86",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fde4b061-5687-4448-8e81-ca644e626993",
+    "id": "535fde0a-a405-4c4f-b4ef-9eb74b5c4c5a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "01828f5e-bcfc-4dbf-97d5-d800b0c54601",
+    "id": "f3871d29-3842-47f8-a2ab-c6ce1e5d6d9f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bfd58b2b-a806-49ac-9683-8f6c38337686",
+    "id": "3a24017b-de54-4592-8c28-9d9f0d1ed015",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a7d68c66-ee69-4104-b370-222c6aa30838",
+    "id": "af77a4a0-2bb3-4a4c-bb19-cf525e9d44c0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "24629c0c-5641-4d17-8f6d-0cec64578892",
+    "id": "ed700eef-68b4-46e8-9eb0-454d4c7275cf",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a971b6ac-dbb8-43fd-91d8-3b29592e9a7e",
+    "id": "2c1d9cf0-cfe7-4d27-b4be-a1375b57904d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "559f0388-2b9c-49ba-b372-37a7bec1d43b",
+    "id": "db510617-a35d-4bf7-a8d8-770e1989bc21",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bbba6dae-c70e-4b1b-b770-a00cb0a82752",
+    "id": "32f332f0-6e4b-45ba-8df7-0a75f906baa7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "15d2ce88-14ba-4664-9a3e-53facdbb414c",
+    "id": "dd74ed84-2f43-4b06-8914-1cb4f9406f08",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "1cee657e-dea2-4f85-b854-5d07109517da",
+    "id": "41022f5e-029a-4a7a-b9ed-20bf7a7df9e9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "78155ce9-2b67-446c-946c-9a99ed727452",
+    "id": "dd94f47f-f91a-4f6c-808d-88de4273d123",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "addaa499-0344-400e-975d-c38fab30d5c7",
+    "id": "99b72f53-c299-45b1-ba2f-a5387aef3090",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a0b224af-c332-4202-b187-9f516ad62298",
+    "id": "794be831-5b8f-4be3-be2f-5f798aece790",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "45a481df-5d91-443c-a8e1-c63b10c7da97",
+    "id": "4a994cf9-fbc6-417b-ad64-f1e05053664a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "02462311-38cd-4733-8896-d20b7fc0e227",
+    "id": "98cea4f0-1d72-4c93-8555-24680a442910",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "23930143-19a8-44cb-974e-a5955ab89586",
+    "id": "a4f32b7c-e771-420d-9d26-fc3ff7d61e3c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5a7318ef-f3d1-45c8-9b96-887f20901d8c",
+    "id": "ef2c7475-397f-48b5-9684-7110e532a47e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "530ae7d9-dad0-424b-8fc9-e5cbab926a61",
+    "id": "d079f920-1fd4-4f15-8946-34f82f36a227",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "bb61a3d0-007f-4b7e-b317-510edd6155a2",
+    "id": "9e445a8d-1633-455b-9469-7ae406c62a19",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3923b896-455e-4fe5-9336-5af4af4e4881",
+    "id": "5b8074c9-76b5-4945-a6d7-7e00428f3978",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "44bb0a53-ca80-44bc-86fe-8fb4faa9d99b",
+    "id": "8830e5ca-ca9c-44b4-908e-9b441a91dc3f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ee10eae2-73a3-469f-b145-9a01c9eae17f",
+    "id": "e58f7312-1b24-4721-a893-7e55123e1537",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "cded6fe5-735c-4c76-9ba2-1dc4e6fc9073",
+    "id": "b7802cdd-9d00-4562-b006-28bc0df50e6a",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f904cbd5-435b-470f-b15a-2c3072549bf4",
+    "id": "08974208-e7f0-4d7e-9604-467565bff8d1",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a2921660-77ab-43da-b689-0eea1d563a34",
+    "id": "a6a7b039-d383-4374-a02a-7b4b413e433c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "a88b4053-1454-4fd2-923c-f819cba1b1f3",
+    "id": "c4feb834-7220-4a1a-a657-bfab1959351c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0045dc81-3810-4ed5-b01b-5187cd71b122",
+    "id": "76324821-1830-4028-a0b9-51ae5c7c1137",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "260cd95f-3536-4b99-a9cf-c9f94301e0e8",
+    "id": "f671b782-4c64-44b6-9ec9-094dc7ca1c81",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ef0f7322-52d0-400e-846b-523b4db2161e",
+    "id": "b6b39fa6-4db3-49f8-8b0a-2fadadc2a215",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "45acbddc-e2d2-40f0-ad6e-4de7db59e4ff",
+    "id": "ef38458c-79da-407a-b2e1-b59d745410b9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b996631b-4ca0-4767-a6be-3c3b2298e858",
+    "id": "1601d9a7-257c-4d65-9e62-2e1ae7225bdc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "aa520c0f-3818-4863-8cae-7b23b0315eac",
+    "id": "324ca325-87ae-4c4a-b150-111c7c66e47f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f93e8783-5ed7-42b8-a32b-fb56fc674d22",
+    "id": "4f0df7cb-a3cd-480c-9b9d-b05aa01b3d1e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "aeabfa8b-ef93-4ee0-ac52-68264a19902a",
+    "id": "855d8c10-072e-4621-b8bc-84ba8c19c27d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "087be338-a244-409e-bca0-e7bc8f86ded9",
+    "id": "0f36d7a4-e29a-4452-a5bb-21d822794c7f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "52408477-5b81-412d-8ae5-e669ad463209",
+    "id": "dba9147b-508d-4e43-b854-2927d5cad94d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6d3c78e3-ac0a-4ce2-ab44-fd471b08e750",
+    "id": "36bd032a-af8c-471c-9a43-dbe52b41903f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "383271ab-4cd0-440b-bd82-169de32e9ed0",
+    "id": "83d479f9-c335-405c-b555-0ce3a665ffc9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8c9d5254-72e5-483b-b9ff-7ce63e416ef3",
+    "id": "aed3ceb4-303f-407f-995f-922c690421c4",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3720590b-5a88-42d7-80a9-53c9865e7d9e",
+    "id": "8b2a8bd9-8431-4cd4-bfb5-71300a324e22",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "74a0a8b7-3665-4075-91f0-74a04fbaeaca",
+    "id": "edd9b61f-146f-446b-b806-f5519d0c2737",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fb556fa5-9ba6-49d5-9da7-53dcf73f7c72",
+    "id": "edcf2ef2-c2f0-426f-b297-c1d54cc9c9b2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c12af4fe-2381-4827-aadd-bf1c62ad389e",
+    "id": "b692c74c-e23a-4fa7-90cc-43a314583b99",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "74828c15-8d6d-452b-8e01-8a1ad95a6355",
+    "id": "b4bcb39f-546f-46c1-952d-6bdbbd899f10",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d657c205-daf0-450b-9289-30bdb48b692d",
+    "id": "7429f72f-aec5-4d3b-82a5-590fdc63f525",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fb52172f-78f1-47b1-a71a-1dda7e2ca82a",
+    "id": "33b2a49f-cd5e-4b85-b965-bb6e76ba495d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2950ae31-ee0f-404a-a236-f58bb42e9095",
+    "id": "433747bb-2bd0-4537-b27f-b614d19a29e8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "09aeefcd-ca13-4da0-ac3e-8d73574a93e8",
+    "id": "3ecd6726-522a-4f25-8aee-6deec8fd28c6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "acf25978-c460-485c-8496-6dc0eea520d9",
+    "id": "cc11da72-1b9e-4a88-90e1-b89c5eab9510",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7bf9a903-a6c0-4beb-bc8e-eb4e5958c2d3",
+    "id": "9ce95a43-d5ce-421a-962d-281090f1813e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4ca663d7-9455-49f7-a67f-f31dbc303882",
+    "id": "c94584d6-6702-4acd-98b4-d9bb4de41a77",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b578fa9c-b7ea-4415-946e-f6eb9d75bfe6",
+    "id": "903c4d9b-7605-4df5-95cf-4b1f7d2a9df4",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d9a5b9b0-140c-4ba4-9765-27216474ce2a",
+    "id": "4a400790-f5df-4749-ae37-ef5921863d7c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "de12de03-02a9-4644-80b9-68d71767c6c6",
+    "id": "e1195412-fce7-4ee4-b9d3-561f60516831",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "97422041-f451-435d-9c46-0d6af27424bf",
+    "id": "0025f267-cb5b-4b93-9cd9-4460540d473b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "087bd301-5878-40e1-b63e-ae6ef8621bf9",
+    "id": "58f6fca5-fb4a-43f5-8bb5-9d852082edb2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e0ec50e6-a60f-4344-a2fa-373edb045e1c",
+    "id": "0f548733-56dc-4012-94d3-7a62e84bf67e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "81a0e05c-4dba-4e0a-bba3-b1ca547c74d3",
+    "id": "8e6c74f7-91da-4a17-88cf-744152e94bae",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "27a0edaa-069c-434c-9d0a-af3cfa4b975d",
+    "id": "f39d0dc8-61c2-49d7-9e5f-e0c75f5cd15f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "64c6c515-34dc-4e3e-97a2-b85800014b58",
+    "id": "c1bd2b48-a94b-4835-980c-e62646f7229b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d92ceb27-1e1e-4eb2-9204-787b59422786",
+    "id": "15d8f46d-3bb4-4ab6-9469-63dafc6b6d6f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "0383071a-8e77-4d36-a073-94be1c8a851d",
+    "id": "6f4a5681-085d-470d-b527-77d0342d37ce",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3570e22b-80cf-458c-ba29-1f1726d1ec09",
+    "id": "56188a17-4e91-4870-a0db-750d80e5fbe2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5499ea05-84db-4d68-b6f7-be086b34b900",
+    "id": "84bd3949-290e-40a9-9ea4-5e6f6c5694c8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b601b49a-052c-41de-8989-e1644e048b20",
+    "id": "668b6845-290f-4071-bdad-c8b74613e9c5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6f8420eb-388a-4bbd-9385-586222ae9c8f",
+    "id": "c0312314-0f51-4d39-8d74-af5c152b84fa",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "513292d8-dbd1-4018-a755-8563c60b59f9",
+    "id": "3ef07206-e2ae-4e6e-9a0d-fc91ee37f87c",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "044f4b19-011e-42ac-a71e-a7fd0dfde183",
+    "id": "aa645ab8-2e61-403a-82de-229028bacfc9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5e6bc034-7e05-4540-b44f-b4b640f3d1bf",
+    "id": "07e1a20b-752d-4837-8cd7-2c9f5bbcf2d7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "eaeb4cdd-caf5-44f9-b84b-6b97e2166dce",
+    "id": "c6ec9d7d-88a1-4362-be6d-3e05356c9821",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "17c0b494-25eb-433b-9d94-007173f41591",
+    "id": "539b3043-cefe-4aa3-8991-3a22a891b567",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e3dd9229-08df-4822-971e-76a45a8fd7c6",
+    "id": "4ef4845b-8678-48d5-82c4-3202f79a0572",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fda03b3b-bc81-43d1-a120-9a52f005b088",
+    "id": "4e92cfe5-06ad-43b2-9e59-d0124a8fd8e7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "9a3c8014-92e3-4a0d-a3b1-11d36f60e079",
+    "id": "10340551-81b4-4d51-a2c0-fb4c3abe2e1e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "951c5cc1-78a5-4d58-95cf-db6cbbeeae45",
+    "id": "8d0c45fc-d1e4-457c-ad7a-e17b33977283",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4d8c5f3f-739f-4af2-8c01-2e3515a19be1",
+    "id": "da77455e-f827-4913-b47d-8043cc511dd6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6d9d1376-75ad-41e7-b53c-2b2c34863300",
+    "id": "5051fde1-f865-4214-86ad-ba3c30eadfd5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c0af22f2-8b3e-4d30-b97e-e0d1e3456176",
+    "id": "89a582d6-ffdc-4929-85ab-fa8935db146b",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2794a84e-c753-4d1d-9106-c80b64d62cde",
+    "id": "758cc812-0c7a-4044-81d1-f2d29cf9b789",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "07650c63-fb3e-4975-a689-3d90d9407e2e",
+    "id": "1ec492bc-3be7-4e68-a007-10899c05ff19",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "46215dcf-23d0-4115-9463-b7ccc790197f",
+    "id": "bc3de05b-db94-4d42-b45e-a61cd133e451",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f2ea289c-5b47-41a0-8f21-48074433fed7",
+    "id": "fc3cdeed-7fb4-455c-bc1d-3b960ade6269",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "788e8754-d35c-4d9f-863f-2e301afcf0ff",
+    "id": "22a2ab38-fa49-448a-bdf1-69f0ab1a84f6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "83b383ca-b32d-4654-a86b-0fa4dba6585a",
+    "id": "df61ba61-af20-4c4f-9dde-221c5de92290",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8146bfa2-481e-4311-bbcb-92237b658b11",
+    "id": "ac4af227-7e16-47bf-b658-c91267119683",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d710cca6-3c54-40ef-9d52-b3b7e968d7d2",
+    "id": "c167eb0f-ef0a-4194-8251-0ffeacb5aed9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "03ad53c7-82ce-40e2-98e6-dd567a1b7390",
+    "id": "71eecc6e-9e9b-46d6-82bc-1ca91c0da476",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "4bc20e61-f5f2-4094-8b2d-e453b79888c5",
+    "id": "7c533e91-10ba-49ef-815a-fc3083bc16b5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "6e573fd9-146b-43a6-8591-c3e439600084",
+    "id": "dad55d1a-af2d-4334-bfac-b69ec0aa6cf9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "52160c72-a888-4621-9d92-eda0f9a84c13",
+    "id": "154ee0ba-8708-464b-b643-a3e4aa4dd2b9",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "98dbb905-eb2c-4382-b788-f150007449d3",
+    "id": "965c098e-f932-4344-b498-159d3ecec8e8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "21317583-297c-42fb-856f-1a972dbfcd8c",
+    "id": "60bdfabb-107d-46b9-98f5-1e04f1f8fb93",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "abfda3d5-079f-4556-9e40-2ab22da93e1e",
+    "id": "62def4f0-c471-4a11-9672-0aee56792f57",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "095c6431-d1dc-4fc6-b9b3-6534f227934a",
+    "id": "030a00df-1203-45c0-aed7-adc5202395cc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "91b74535-12af-4ebf-b4bf-43d768fce034",
+    "id": "2b2c467f-dcee-4c8b-a7ca-15223baab024",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b440ed22-6d4a-499b-bb15-de5cd0290c11",
+    "id": "2fc305e4-1215-43da-a2a2-9b1555ebd5e0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c6ae32a5-96c4-4ed1-88f3-932f73c2945a",
+    "id": "5839f498-f120-4e00-868c-2963b6481666",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "54394d07-3640-451b-ad39-3411f611bef0",
+    "id": "bc80e474-ee56-4dbc-86c5-d31027e30e29",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "3e112791-c6fd-46e9-bd3a-3b535384fc07",
+    "id": "de4475e4-7dbb-4377-8717-941e2b171e3e",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "088ffce1-ba58-4502-a68b-6c939f29d8fa",
+    "id": "4592aec1-dfff-4c85-a9a0-be8d948cab31",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "07bb6727-c245-42f0-98dc-7df7f256e699",
+    "id": "5068c41d-f570-4b51-80d1-6df724a7212f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5fcb63d3-f31c-4793-ae9b-63c91cecfc53",
+    "id": "790902f0-b7cc-459f-9b2b-45928d82b2db",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d6d2a395-6309-4b4b-a0e6-c3f9ac622756",
+    "id": "4a80d9fc-1f85-4e11-ad77-2c13a0ff488d",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "c3faa8b2-322d-4e3e-a349-2b88d9831bec",
+    "id": "c6f8e0d6-bc51-48be-8a70-71f3f105d570",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "ac8a70cc-91e3-4ef9-939d-cc4c128986a3",
+    "id": "b23e8fe8-4d04-4c3a-a7bd-5c422c9a8eca",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "b14e0ace-7e43-4d65-8765-046cb8dbdd44",
+    "id": "c2b5cd79-1db2-4f20-9494-38636c6d5dd0",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "83cfffa7-1ba5-4448-bf19-fcdcbf4a422b",
+    "id": "c29181cf-d864-4c5b-a2c3-fd860ac1b7b7",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f2837c62-5937-4eec-be8c-5ad34172b6a6",
+    "id": "743cad61-8195-4127-abf1-8950984b0ed6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "8e264941-ac79-4561-947a-1bd32329e00a",
+    "id": "a31e3ef3-d2a9-4d4e-8298-e0bd5a401321",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "5b414ff8-1c33-41b2-8624-c80fb0f8b536",
+    "id": "a70807ea-fe05-4b21-9768-9e3008cdd161",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fcc7c9c9-0618-4467-98e8-658c07f9b465",
+    "id": "29c1d505-023a-4807-8c7b-d482ce1c4701",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "283555f3-2cb7-4be7-8034-011d6878b438",
+    "id": "8ce097e0-1bd3-4ea2-a335-7e13cf0dbba2",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "108168da-4193-428d-b268-709b7a385e37",
+    "id": "596b6dc2-2d50-4910-afd8-739395e7afed",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f6a4894b-f987-4410-9385-baa1e74f047d",
+    "id": "66a07ce4-feca-468a-9b78-6eb9db6cd025",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f65ab286-d5d0-4312-9383-5c49e07d6f42",
+    "id": "02a02d1f-c389-4282-853d-b3d7d684eab6",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7666b89e-0b04-42e4-b10a-82c767da071f",
+    "id": "913a3dbc-9dd0-49a1-a908-6f6df8bdbcde",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "42ccf7e1-2b36-4d08-be83-fab3be3e2806",
+    "id": "072a26fa-9a76-4efe-b40a-a62cd8e05fb1",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7c1176ba-767f-4e3d-8044-536190202f9f",
+    "id": "d0bd2a34-fa34-497f-ac7b-7b77c2df6588",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "fc4c286c-7209-423b-95a3-b2483a9182f2",
+    "id": "c339ff73-ea6b-4cfc-a7f6-f31c2a073c34",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "45357a6b-bc60-4b6e-b8db-bd5eac49729c",
+    "id": "d60c8cd0-ba3d-4225-879e-9dc45b33684f",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "2d85ffad-7d05-4480-9873-b8eb39bb69a7",
+    "id": "3c32d6e9-3fb3-45ca-9a34-b78199df22a8",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "e6296904-f499-4d26-97c9-621f4c9b7a64",
+    "id": "179a5093-92ad-444c-be9b-e8dd44d65843",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "f81e5ad8-c88c-43be-92e2-18a74053587a",
+    "id": "3bc1ac55-0d66-4477-95a9-7326512458bc",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "7e5ac2f0-1e87-45fa-a915-7f5a9073bccb",
+    "id": "fdaf9f06-a340-4e32-bc41-b2de495864a5",
     "typ": "buchung"
    },
    {
     "ergebnis": "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG",
-    "id": "d8263bc2-d9ce-4150-9eca-54a3235ccec5",
+    "id": "9a692925-d237-4c3b-a64c-8db498904aa4",
     "typ": "buchung"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "38735490-2657-4b82-8828-41550ad79617",
+    "id": "427eeb39-6032-4a31-a7d9-b4050af45277",
     "typ": "sperre"
    },
    {
     "ergebnis": "KONSISTENT",
-    "id": "7b753aa1-a268-47c1-8c1a-6268d2b69c7c",
+    "id": "7c63d0de-26b6-4e2e-8674-16390e2a8429",
     "typ": "sperre"
    },
    {
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "3d499284-896d-49ba-94d5-e363e6f17bd3",
+    "id": "6a8e8e79-75e0-436d-88b6-f785746f86ad",
     "typ": "sperre"
    },
    {
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "84dbcb9b-f327-4bd0-8a47-55867f04d59d",
+    "id": "d708a380-711f-4904-bf4d-d550b53e89a7",
     "typ": "sperre"
    },
    {
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "d39d78d4-a573-457e-8e33-848a5341e5ff",
+    "id": "26e67a4c-6858-409f-b1aa-9b2c9c8a10ed",
     "typ": "sperre"
    },
    {
     "ergebnis": "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT",
-    "id": "b79044a0-bf79-4d3c-93ee-397539e98903",
+    "id": "b4b453f0-0604-46c4-a595-93d4fb747b58",
     "typ": "sperre"
    }
   ],
-  "ausfallzeitpunkt": "2026-11-15T02:28:20.837354+00:00",
+  "ausfallzeitpunkt": "2026-11-15T11:17:50.289126+00:00",
   "bewertung": {
    "rpo_erfuellt": true,
-   "rpo_min_gemessen": 0.143,
+   "rpo_min_gemessen": 0.137,
    "rto_erfuellt": true,
-   "rto_h_gemessen": 0.00081
+   "rto_h_gemessen": 0.0009
   },
   "drehbuch_version": "m5-1.0",
   "konsistenz": {
@@ -4410,7 +3845,7 @@
      "severity": "block"
     },
     {
-     "count": 3989,
+     "count": 3984,
      "detail": "werden nach dem Wiederanlauf mindestens einmal veröffentlicht; Empfänger deduplizieren über die Inbox",
      "id": "outbox_unveroeffentlicht",
      "ok": true,
@@ -4505,8 +3940,8 @@
    "violations": []
   },
   "letzter_wiederherstellbarer_commit": {
-   "referenz": "uebung-20261115T022725",
-   "zeitpunkt": "2026-11-15T02:28:12.269633+00:00"
+   "referenz": "uebung-20261115T111651",
+   "zeitpunkt": "2026-11-15T11:17:42.073154+00:00"
   },
   "referenzziele": {
    "provisional": true,
@@ -4518,49 +3953,49 @@
     "ergebnis": "Primärdatenbank nicht verfügbar",
     "nr": 1,
     "schritt": "Ausfall feststellen und Zeitpunkt festhalten",
-    "zeitpunkt": "2026-11-15T02:28:21.203167+00:00"
+    "zeitpunkt": "2026-11-15T11:17:50.710589+00:00"
    },
    {
     "ergebnis": "Schreiber und Journalexport angehalten",
     "nr": 2,
     "schritt": "Schreibzugriffe stoppen, Ereignisstrom und Worker anhalten",
-    "zeitpunkt": "2026-11-15T02:28:21.203652+00:00"
+    "zeitpunkt": "2026-11-15T11:17:50.711117+00:00"
    },
    {
-    "ergebnis": "wiederhergestellt bis 2026-11-15T02:28:12.269633+00:00",
+    "ergebnis": "wiederhergestellt bis 2026-11-15T11:17:42.073154+00:00",
     "nr": 3,
     "schritt": "Datenbank aus Basissicherung und WAL auf den Zeitpunkt wiederherstellen; letzten wiederherstellbaren Commit bestimmen",
-    "zeitpunkt": "2026-11-15T02:28:22.338161+00:00"
+    "zeitpunkt": "2026-11-15T11:17:51.771864+00:00"
    },
    {
     "ergebnis": "Migrationsstand vollständig, Umgebungskennung development; Isolationsstichprobe bestanden",
     "nr": 4,
     "schritt": "Migrationsstand und Rollen/RLS prüfen",
-    "zeitpunkt": "2026-11-15T02:28:23.176758+00:00"
+    "zeitpunkt": "2026-11-15T11:17:52.771966+00:00"
    },
    {
     "ergebnis": "17 Prüfungen, keine blockierenden Befunde",
     "nr": 5,
     "schritt": "Lösch-/Sperrjournal wieder einspielen und Konsistenzprüfungen ausführen (blockiert die Freigabe)",
-    "zeitpunkt": "2026-11-15T02:28:23.276584+00:00"
+    "zeitpunkt": "2026-11-15T11:17:52.893687+00:00"
    },
    {
-    "ergebnis": "848 Vorgänge abgeglichen (Übungsautomat (Bestätigung durch die fachverantwortliche Person steht aus))",
+    "ergebnis": "735 Vorgänge abgeglichen (Übungsautomat (Bestätigung durch die fachverantwortliche Person steht aus))",
     "nr": 6,
     "schritt": "Externe Buchungen und Zahlungen mit Providerreferenzen abgleichen, bevor unsichere Schritte wiederholt werden",
-    "zeitpunkt": "2026-11-15T02:28:23.703962+00:00"
+    "zeitpunkt": "2026-11-15T11:17:53.450044+00:00"
    },
    {
     "ergebnis": "Worker und Ereignisstrom aktiv",
     "nr": 7,
     "schritt": "Freigabe: Worker und Ereignisstrom wieder aktivieren",
-    "zeitpunkt": "2026-11-15T02:28:23.758464+00:00"
+    "zeitpunkt": "2026-11-15T11:17:53.509400+00:00"
    },
    {
     "ergebnis": "Probe erfolgreich",
     "nr": 8,
     "schritt": "Funktionsfähige End-to-End-Probe (Buchungs- und Operatorprobe)",
-    "zeitpunkt": "2026-11-15T02:28:23.767535+00:00"
+    "zeitpunkt": "2026-11-15T11:17:53.520836+00:00"
    }
   ],
   "status": "ABGESCHLOSSEN",
@@ -4568,7 +4003,7 @@
    "name": "development",
    "verantwortlich": "Übungsautomat (WP-M5-15; Drehbuchausführung durch Dritte steht aus)"
   },
-  "zeitpunkt_e2e_probe": "2026-11-15T02:28:23.767521+00:00"
+  "zeitpunkt_e2e_probe": "2026-11-15T11:17:53.520793+00:00"
  },
  "e2e_probe": {
   "art": "ERSATZ ohne Anwendung: Datenbank-Probe unter der Runtime-Rolle",
@@ -4583,29 +4018,29 @@
    "tabelleneigentum": 0
   },
   "summary": [
-   "Ran 14 tests in 0.501s",
+   "Ran 14 tests in 0.595s",
    "OK"
   ],
   "tabellen_ohne_erzwungene_rls": 0,
   "tests": "db/tests/test_03_rls.py, db/tests/test_isolation_alle_tabellen.py (auf Kopie der wiederhergestellten Datenbank)"
  },
  "journal": {
-  "eintraege": 205,
-  "neu_angewendet": 31
+  "eintraege": 214,
+  "neu_angewendet": 30
  },
  "konsistenz_nach_abgleich": [],
  "last": {
-  "bestaetigte_commits": 9723,
+  "bestaetigte_commits": 9519,
   "fehler": [
    "Verbindungsabbruch (OperationalError) beim Ausfall"
   ],
   "journalexport_fehler": [],
-  "letzter_bestaetigter_commit": "2026-11-15T02:28:20.840139+00:00",
+  "letzter_bestaetigter_commit": "2026-11-15T11:17:50.294407+00:00",
   "zaehler": {
-   "buchungen": 2370,
-   "loeschungen": 205,
-   "sperren": 36,
-   "zahlungen_erfasst": 2370
+   "buchungen": 2316,
+   "loeschungen": 214,
+   "sperren": 38,
+   "zahlungen_erfasst": 2316
   }
  },
  "nachweise": {
@@ -4613,74 +4048,74 @@
   "anbieter": {
    "mit_mehr_als_einem_einzug": 0,
    "mit_mehr_als_einer_autorisierung": 0,
-   "referenzen": 2371,
+   "referenzen": 2318,
    "schreibende_aufrufe_nach_dem_ausfall": 0,
-   "statusabfragen_nach_dem_ausfall": 4787
+   "statusabfragen_nach_dem_ausfall": 4675
   },
   "kapazitaet": {
    "buchungen_ohne_verbrauchten_hold": 0
   },
   "loeschungen_sperren": {
-   "bestaetigte_loeschungen": 205,
-   "bestaetigte_sperren": 36,
+   "bestaetigte_loeschungen": 214,
+   "bestaetigte_sperren": 38,
    "sperren_fehlen_oder_aufgehoben": 0,
    "wiederauferstanden": 0
   },
   "verlustfenster": {
-   "bestaetigte_commits_nach_rpo_punkt": 1539,
+   "bestaetigte_commits_nach_rpo_punkt": 1332,
    "je_art": {
-    "booking.confirmed": 376,
-    "passenger.erased": 31,
-    "payment.authorized": 376,
-    "payment.captured": 376,
-    "payment.created": 376,
+    "booking.confirmed": 324,
+    "passenger.erased": 30,
+    "payment.authorized": 324,
+    "payment.captured": 325,
+    "payment.created": 325,
     "vehicle.blocked": 4
    }
   },
   "verspaetete_ereignisse": {
-   "captured_ereignisse_vorher": 1995,
-   "nachher": 1995,
-   "zahlungen": 1995,
+   "captured_ereignisse_vorher": 1993,
+   "nachher": 1993,
+   "zahlungen": 1993,
    "zahlungen_mit_mehr_als_einem_ereignis": 0,
    "zusaetzliche_wirkungen": 0
   },
   "zahlungen_beim_anbieter_erfasst_aber_lokal_abweichend": 0
  },
  "psp_vor_restore": {
-  "autorisierungen": 2371,
-  "erfasst": 2370,
-  "zahlungen": 2371
+  "autorisierungen": 2318,
+  "erfasst": 2316,
+  "zahlungen": 2318
  },
  "restore": {
-  "duration_s": 1.133,
-  "replay_timestamp": "2026-11-15T02:28:12.269633+00:00",
+  "duration_s": 1.059,
+  "replay_timestamp": "2026-11-15T11:17:42.073154+00:00",
   "result": "SUCCESS",
   "steps": [
    {
-    "at": "2026-11-15T02:28:21.205551+00:00",
+    "at": "2026-11-15T11:17:50.713226+00:00",
     "step": "manifest_verified",
-    "taken_at": "2026-11-15T02:27:25.430902+00:00"
+    "taken_at": "2026-11-15T11:16:51.898580+00:00"
    },
    {
-    "at": "2026-11-15T02:28:21.205566+00:00",
+    "at": "2026-11-15T11:17:50.713244+00:00",
     "environment": "development",
     "step": "environment_checked"
    },
    {
-    "at": "2026-11-15T02:28:21.220095+00:00",
+    "at": "2026-11-15T11:17:50.727192+00:00",
     "segments": 2,
     "step": "wal_chain_verified"
    },
    {
-    "at": "2026-11-15T02:28:21.498983+00:00",
+    "at": "2026-11-15T11:17:50.926210+00:00",
     "step": "base_extracted"
    },
    {
-    "at": "2026-11-15T02:28:21.516330+00:00",
+    "at": "2026-11-15T11:17:50.946251+00:00",
     "step": "recovery_configured"
    },
    {
-    "at": "2026-11-15T02:28:22.338084+00:00",
+    "at": "2026-11-15T11:17:51.771775+00:00",
     "step": "recovered_and_promoted"
    }
   ],
