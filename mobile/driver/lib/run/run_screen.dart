@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../pruefung/pruefstatus.dart';
 import '../ui/strings.dart';
+import 'display_probe.dart';
 import 'driver_run.dart';
 import 'run_list.dart';
 
@@ -9,7 +10,7 @@ import 'run_list.dart';
 /// Personenzahl und notwendiger Unterstuetzung; Leer-, Fehler- und Offline-Zustand sind unterscheidbar. NICHT AUSGEFUEHRT (Flutter war in der Erstellungsumgebung nicht verfuegbar).
 /// Hinweise zur Unterstuetzung werden nur angezeigt, wenn der Server sie liefert; ihre Werte stehen nie in Logs.
 class RunListScreen extends StatelessWidget {
-  const RunListScreen({super.key, required this.state, required this.formatTime, this.onStartNavigation});
+  const RunListScreen({super.key, required this.state, required this.formatTime, this.onStartNavigation, this.displayProbe});
 
   final RunListState state;
   final String Function(DateTime) formatTime;
@@ -17,11 +18,19 @@ class RunListScreen extends StatelessWidget {
   /// Aktion „Navigation starten“; null, wenn ohne gueltige Stoppliste nicht verfuegbar.
   final VoidCallback? onStartNavigation;
 
+  /// Testmodus-Messpunkt „Revision dargestellt“ (WP-M5-13): wird nach dem Frame gemeldet, der die Stoppliste dieser Planrevision gezeichnet hat; null in der Produktion.
+  final DisplayProbe? displayProbe;
+
   static const Strings _s = Strings.de;
 
   @override
   Widget build(BuildContext context) {
     final List<Widget> children = <Widget>[];
+    final DisplayProbe? probe = displayProbe;
+    if (probe != null && state.view == RunListView.list) {
+      final int? shownRevision = state.planRevision;
+      WidgetsBinding.instance.addPostFrameCallback((_) => probe.onFrameShown(shownRevision));
+    }
     final String? stand = state.fetchedAt == null ? null : formatTime(state.fetchedAt!);
     final String revision = state.planRevision?.toString() ?? '-';
     switch (state.view) {

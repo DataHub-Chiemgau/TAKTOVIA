@@ -62,6 +62,13 @@ im Testaufbau gesetzten Planbindung (SQL). Beides steht in jedem Bericht unter �
 ## Standard-API je Endpunktklasse (WP-M5-11)
 
 `test_standard_api_p95.py`, `refload/standardapi.py`: Messung der nicht-optimierenden Standard-API (`/v1/me`, Buchungen Lesen/Confirm/Storno, Dienste, Gebiete, Haltepunkte, Fahrzeuge, Fahrerereignisse und Umlauf, Schäden, Dienstpläne, Zeitereignisse, Konfiguration, Kennzahlen, 404-Pfade für Beleg, Operation und Prüfung) gegen die echte Anwendung (Runtime-Rolle, RLS) mit zwei Mandanten und dem Datenbestand aus WP-M5-02 (Skala `TAKTOVIA_PERF_STD_SCALE=mittel|small|reference`, Standard mittel: 250 Fahrzeuge, 4.500 Buchungen je Mandant). Dazu der Zeitseitenkanal (fremde gegen eigene unbekannte UUID) und die Cache-Probe (identische Pfade beider Mandanten parallel). Protokoll mit p50/p95/p99 je Klasse, Hardware, Datenvolumen, Build, Migrationsstand und Seed unter `out/standardapi/` (geprüfte Fassung und Befunde: `protokolle/standard-api-p95-m5-11*.md`). Aufruf: `TAKTOVIA_PERF_RUN=1 python -m unittest test_standard_api_p95` (Datenbankumgebung wie `db/db.py`, bootJar gebaut; eine eigene Datenbank empfohlen). Messpunkt ist die Clientzeit auf derselben Maschine, Zielwert vorläufig (D-05, OP-04).
+## Fahrer-Planrevision: Commit bis Darstellung (WP-M5-13)
+
+`refload/planrevision.py` (Auswertung, Gerätesimulation, Planschreiber), `refload/planrevision_run.py` (Lauf, Protokoll), `test_planrevision_p95.py` (Messlauf gegen die echte Anwendung, Opt-in `TAKTOVIA_PERF_RUN=1`),
+`test_planrevision_logik.py` (Auswertungslogik, läuft immer). 500 verbundene Geräte (2 Mandanten x 250, Live-Kanal offen) unter Grundlast der Positionsmeldungen; Phasen: Serie (p95-Nachweis), Konkurrenz (zwei Revisionen
+kurz nacheinander, Bestätigung mit alter Revision parallel zur Planänderung), kurze Verbindungsunterbrechung (getrennt ausgewiesen), angehaltener Verteilweg (Ausreißer). `TAKTOVIA_PERF_PLANREV_SCALE` skaliert die Serie
+(Standard 1,0). Messpunkt „dargestellt“ im Gerät: `mobile/driver/lib/run/display_probe.dart` (nicht ausgeführt, Flutter fehlt); die Simulation ersetzt das Zielgerät (OP-27). Der Relay ist in der Anwendung nicht
+verdrahtet, der Planschreiber bildet `JdbcRunPlans.appendIn` nach: beides und weitere Grenzen stehen im Protokoll `protokolle/planrevision-m5-13.md`. Zielwert 10 s vorläufig, D-05 offen: keine Abnahme.
 
 ## Verfügbarkeitsmessung (WP-M5-05)
 
