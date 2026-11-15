@@ -1,0 +1,15 @@
+fall;referenz;art;ort;name;token;bemerkung
+abgelaufener_hold;PH-AT-010;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt;abgelaufener_hold_ergibt_409_hold_expired;;
+abgelaufener_hold;PH-AT-010;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/HoldExpiryTest.kt;job_und_bestaetigung_am_ablaufzeitpunkt_hoechstens_ein_ausgang;;
+sca_laenger_als_hold;PH-AT-010;kotlin;backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt;sca_laenger_als_hold_kein_abgelaufener_platz_autorisierung_aufgehoben;;
+sca_laenger_als_hold;PH-AT-010;kotlin;backend/app/src/test/kotlin/de/taktovia/app/payment/PaymentSimulatorFlowTest.kt;sca_laenger_als_hold_kein_abgelaufener_platz_bestaetigt_autorisierung_aufgehoben;;Ende-zu-Ende gegen den PSP-Simulator
+confirm_timeout_spaet_positiv;PH-AT-007;kotlin;backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/PaymentAutomatonTest.kt;psp_timeout_unbestimmt_genau_eine_belastung;;P1-Umfang: Zahlungsbestätigung (PSP-Timeout, später positiver Abgleich, genau eine Wirkung). Die Partnervariante (Confirm-Timeout eines Fremdbetreibers) gehört zur Mehrbetreiberreise (M6/P2) und ist hier nicht gebaut.
+hundert_identische_webhooks;PH-AT-017;kotlin;backend/app/src/test/kotlin/de/taktovia/app/InboundWebhookHttpTest.kt;hundert_identische_eingaenge_ein_inbox_eintrag_99_already_received;;
+hundert_identische_webhooks;PH-AT-017;kotlin;backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/ProviderEventsTest.kt;hundert_identische_ereignisse_parallel_werden_einmal_fachlich_wirksam;;
+manipulation_tenant_id;PH-AT-001;kotlin;backend/app/src/test/kotlin/de/taktovia/app/isolation/CrossTenantIsolationTest.kt;manipulierte_mandantenangabe_wird_nicht_beachtet_und_sicherheitsereignis_enthaelt_keine_b_daten;;
+manipulation_tenant_id;PH-AT-001;kotlin;backend/modules/fare-payment/src/test/kotlin/de/taktovia/farepayment/ProviderEventsTest.kt;mandant_folgt_nur_aus_dem_schluessel_manipulierte_tenant_id_ist_wirkungslos;;
+unzulaessige_fremd_id;PH-AT-001;kotlin;backend/app/src/test/kotlin/de/taktovia/app/isolation/CrossTenantIsolationTest.kt;fremdes_objekt_ueber_alle_m1_endpunkte_gleichartig_abgewiesen;;
+unzulaessige_fremd_id;PH-AT-001;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingHttpApiTest.kt;if_match_betrag_und_fremde_ids;;
+offline_checkin_alte_planrevision;PH-AT-017;kotlin;backend/modules/staff-time/src/test/kotlin/de/taktovia/stafftime/DriverSyncTest.kt;veralteter_plan_ist_ein_klaerfall_und_statusereignisse_nicht;;
+ph_at_011_idempotenz_fingerprint;PH-AT-011;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingIdempotencyHttpTest.kt;fingerprint_abweichung_ergibt_409_ohne_ausfuehrung;;gleicher Idempotenzschlüssel mit abweichendem Request
+ph_at_011_idempotenz_fingerprint;PH-AT-011;kotlin;backend/platform/src/test/kotlin/de/taktovia/platform/idempotency/IdempotencyFilterTest.kt;gleicher_schluessel_anderer_fingerprint_409;;
