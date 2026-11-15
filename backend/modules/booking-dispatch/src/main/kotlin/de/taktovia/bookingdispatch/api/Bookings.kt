@@ -87,6 +87,9 @@ data class CancellationPolicy(val deadlineMin: Int, val reasons: Set<BookingReas
  * **Lesen:** Fahrgast nur eigene Buchungen (fremde ID `404`); Betriebspersonal nur Buchungen der Dienste seines Scopes (anderer Dienst oder Mandant `404`).
  */
 interface Bookings {
+    /** Aufräumschritte nach Nicht-Erscheinen für [BookingExecution.create] (WP-M5-24). */
+    fun noShowCleanup(): NoShowCleanup
+
     fun confirm(ctx: RequestContext, cmd: ConfirmBooking): ConfirmedBooking
     fun get(ctx: RequestContext, bookingId: UUID): BookingDetail
 

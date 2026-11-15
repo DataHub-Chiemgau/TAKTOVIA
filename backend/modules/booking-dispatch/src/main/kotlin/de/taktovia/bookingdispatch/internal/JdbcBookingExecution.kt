@@ -17,7 +17,7 @@ import java.util.UUID
  * Buchungszeile `FOR UPDATE` (dieselbe Sperrreihenfolge wie der Storno endet bei der Buchung: Umlauf, Hold, Buchung; hier wird nur die Buchung gesperrt, es gibt keinen Zyklus) und erst unter
  * der Sperre der Zustandsvergleich und der Übergang.
  */
-internal class JdbcBookingExecution(outbox: Outbox, clock: Clock, private val journeys: JourneyShells) : BookingExecution {
+internal class JdbcBookingExecution(outbox: Outbox, clock: Clock, private val journeys: JourneyShells, private val cleanup: de.taktovia.bookingdispatch.api.NoShowCleanup? = null) : BookingExecution {
     private val transitions = BookingTransitions(outbox, clock, journeys)
 
     private class Stop(val runRevision: Long, val boardings: Set<UUID>, val alightings: Set<UUID>)
@@ -35,6 +35,11 @@ internal class JdbcBookingExecution(outbox: Outbox, clock: Clock, private val jo
             "SELECT count(*) FROM taktovia.route_stop WHERE run_id = ? AND run_revision = ? AND (boardings @> CAST(? AS jsonb) OR alightings @> CAST(? AS jsonb))",
             Long::class.javaObjectType, run.first, run.second, ref(bookingId), ref(bookingId))!!
         if (inPlan == 0L) return ExecutionResult.NotFound
+        // Nicht-Erscheinen gibt Hold und Plan frei: dieselbe Sperrreihenfolge wie der Storno (Umlauf, Hold, Buchung), damit ein paralleler Storno keinen Zyklus bildet (WP-M5-24)
+        if (r.kind == ExecutionKind.NO_SHOW && cleanup != null) {
+            j.query("SELECT 1 FROM taktovia.vehicle_run WHERE id = ? FOR UPDATE", { rs, _ -> rs.getInt(1) }, run.first)
+            j.query("SELECT 1 FROM taktovia.capacity_hold WHERE id = (SELECT hold_id FROM taktovia.booking WHERE id = ?) FOR UPDATE", { rs, _ -> rs.getInt(1) }, bookingId)
+        }
         // Zeilensperre der Buchung: ab hier sieht diese Transaktion einen parallel committeten Storno
         val b = j.query("SELECT state, journey_id FROM taktovia.booking WHERE id = ? FOR UPDATE", { rs, _ -> rs.getString(1) to rs.getObject(2, UUID::class.java) }, bookingId).firstOrNull()
             ?: return ExecutionResult.NotFound
@@ -62,6 +67,7 @@ internal class JdbcBookingExecution(outbox: Outbox, clock: Clock, private val jo
                 journeys.setExecutionState(j, b.second, "NO_SHOW")
                 transitions.apply(j, caller, bookingId, BookingState.CANCEL_PENDING, BookingReason.NO_SHOW, null)
                 transitions.apply(j, caller, bookingId, BookingState.CANCELED, BookingReason.CANCEL_COMPLETED, null)
+                cleanup?.cleanup(j, r.eventId, bookingId)
                 ExecutionResult.Applied(BookingState.CANCELED.name, "NO_SHOW")
             }
             ExecutionKind.ARRIVAL -> ExecutionResult.Applied(null, null)

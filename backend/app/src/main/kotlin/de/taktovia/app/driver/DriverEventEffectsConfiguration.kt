@@ -29,7 +29,9 @@ import java.util.UUID
  */
 @Configuration
 class DriverEventEffectsConfiguration {
-    @Bean fun bookingExecution(outbox: Outbox): BookingExecution = BookingExecution.create(outbox, Clock.systemUTC())
+    /** Aufräumen nach Nicht-Erscheinen über `Bookings` (WP-M5-24); zur Laufzeit aufgelöst, weil `bookings` über die Schichtbesetzung selbst von den Fahrerereignissen abhängt (sonst Beanzyklus). */
+    @Bean fun bookingExecution(outbox: Outbox, bookings: ObjectProvider<de.taktovia.bookingdispatch.api.Bookings>): BookingExecution =
+        BookingExecution.create(outbox, Clock.systemUTC(), de.taktovia.bookingdispatch.api.NoShowCleanup { j, correlation, booking -> bookings.getObject().noShowCleanup().cleanup(j, correlation, booking) })
 
     @Bean fun driverEventEffects(execution: BookingExecution, config: ObjectProvider<ConfigApi>): DriverEventEffects = AppDriverEventEffects(execution) { config.getObject().effective }
 }

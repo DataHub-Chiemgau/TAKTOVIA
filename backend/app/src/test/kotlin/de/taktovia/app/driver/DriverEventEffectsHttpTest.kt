@@ -82,6 +82,9 @@ class DriverEventEffectsHttpTest {
         assertTrue(ev.contains("\"fee_booked\": false") || ev.contains("\"fee_booked\":false"), ev)
         assertEquals(0, env.count("SELECT count(*) FROM taktovia.refund_case WHERE tenant_id = ?", w.tenant.value), "dieses Paket bucht keine Gebühr und löst keine Erstattung aus")
         assertEquals(0, env.count("SELECT count(*) FROM taktovia.outbox WHERE event_type = 'booking.cancelled' AND aggregate_id = ?", r.booking.id), "kein Stornoereignis mit Zahlungsreaktion")
+        // Aufräumen (WP-M5-24): Kapazität freigegeben (Hold RELEASED)
+        assertEquals("RELEASED", env.string("SELECT h.state FROM taktovia.capacity_hold h JOIN taktovia.booking b ON b.hold_id = h.id WHERE b.id = ?", r.booking.id).single(), "Hold nach dem Nicht-Erscheinen freigegeben")
+        // der Fahrtenplan ohne die Buchung ist in diesem Testaufbau nicht prüfbar (der Plan der Schicht gehört zu einem anderen Umlauf als der Hold der Buchung); Nachweis: tests/acceptance/test_negative_e2e.py
     }
 
     @Test

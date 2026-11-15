@@ -95,6 +95,8 @@ class PaymentConfiguration {
     @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun authorizePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "AUTHORIZE_PAYMENT" }
     @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun capturePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "CAPTURE_PAYMENT" }
     @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun voidPaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "VOID_PAYMENT" }
+    // Erstattung nach Storno (WP-M2-31): ohne diesen Handler endete jede `REFUND_PAYMENT`-Operation als `MANUAL_REVIEW` (`NO_HANDLER`) und die Zahlung blieb dauerhaft `REFUND_PENDING` (Befund WP-M5-24)
+    @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun refundPaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "REFUND_PAYMENT" }
     @Bean @ConditionalOnProperty("taktovia.psp.base-url") fun reconcilePaymentHandler(payments: Payments, gateway: PaymentGateway): OperationHandler = payments.handlers(gateway).first { it.kind == "RECONCILE_PAYMENT" }
 
     @Bean
