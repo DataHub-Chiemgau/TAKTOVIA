@@ -65,3 +65,6 @@ Szenariokatalog (`alerting/katalog.yaml`), Alarmregeln als Code (`observability/
 
 ## Verfügbarkeitsmessung (WP-M5-05)
 [availability/README.md](availability/README.md): synthetische Proben für Kernbuchung und Operator von außen, Probenalarm, Wartungskalender, Berichtsgenerator „Monatsverfügbarkeit“ (Formel, Messpunkte, Wartungsfenster, Ausfallminuten, Rohdatenverweis) und Probemandant (`tenant.synthetic`). Ausgeführt: Berichtsrechnung, Probenklassifikation über HTTP gegen eine Attrappe, Proben gegen die lokal gestartete Anwendung mit künstlichem Ausfall (opt-in), Datenbanktests für Probemandant und Ausschluss aus den Kennzahlen; **nicht ausgeführt:** Betrieb auf einem Host außerhalb der Plattform (`availability/systemd/`), Proben gegen Staging und Keycloak, ein voller Produktivmonat (OP-02, D-05).
+
+## Produktionsumgebung und gestaffeltes Rollout (WP-M5-28)
+[rollout/README.md](rollout/README.md): Definition der Production-Umgebung (`rollout/produktion.json`), Rolloutplan mit Rauchproben und Stoppkriterien, Betriebszugriffskonzept, Prüfwerkzeuge für Artefakt, Zugangstrennung, Runtime-Rolle und Wächter „Tabelle ohne Policy“. `python3 infra/check_rollout.py` (auch in `check.py`); Nachweis: `tests/acceptance/rollout`. **Nicht ausgeführt:** Production beim Anbieter (D-05), Terraform, signierte Images; Lasttest mit zwei Instanzen desselben Jars.

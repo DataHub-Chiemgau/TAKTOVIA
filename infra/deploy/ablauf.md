@@ -23,3 +23,6 @@ Siehe `geheimnisse.csv`, `geheimnisse.md`, `umgebungsmatrix.csv`. Nur synthetisc
 
 ## Pipeline-Entwurf
 `pipeline-entwurf.yml.example` (nicht aktiv, nicht verifiziert) skizziert die Stufe; Übernahme nach `.github/` gehört zu WP-M0-14.
+
+## Production und gestaffeltes Rollout (WP-M5-28)
+Das Verfahren ist als ausführbarer Code umgesetzt: `infra/rollout/` (Plan, Betriebszugriff, `taktovia_rollout`). Die Abbruchregeln oben gelten unverändert; Schritt 4 wird je Stufe (5 %, 25 %, 100 %) mit den Rauchproben des Plans ausgeführt, bei Fehlern wird nur der Verkehrsanteil der neuen Version zurückgezogen (Vorwärtskorrektur). Weiterhin offen: Hostingkonto (D-05), Verdrahtung in die Pipeline.

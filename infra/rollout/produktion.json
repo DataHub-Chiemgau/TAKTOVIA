@@ -1,0 +1,24 @@
+{
+  "schema": "taktovia-produktion/1",
+  "status": "vorläufig, D-05 offen: Hostinganbieter, Region und Betriebsmodell sind nicht entschieden; die Produktionsumgebung ist als deklarative Definition und Bereitstellungsverfahren gebaut, NICHT bei einem Anbieter angelegt. D-03 (PSP) und D-11 (personenbezogene Produktivdaten) blockieren die Produktivschaltung.",
+  "umgebung": "production",
+  "uebernahmen": {
+    "telemetrie": {"wp": "WP-M5-03", "dateien": ["infra/observability/otel-collector-config.yaml", "infra/observability/prometheus.yml", "infra/observability/tempo.yaml", "infra/observability/loki.yaml"]},
+    "alarmregeln": {"wp": "WP-M5-04", "dateien": ["infra/alerting/katalog.yaml", "infra/alerting/alertmanager.yml", "infra/alerting/deadman.py", "infra/observability/alert-rules.d/kritische-szenarien.yml"]},
+    "synthetische_proben": {"wp": "WP-M5-05", "dateien": ["infra/availability/probe-config.beispiel.json", "infra/availability/messpunktvertrag.json", "infra/availability/systemd/taktovia-probe.timer"]},
+    "wartungskalender": {"wp": "WP-M5-05", "dateien": ["infra/availability/wartungskalender.json"]},
+    "maskierung": {"wp": "WP-M5-06", "dateien": ["tools/log_stichprobe.py"]},
+    "wal_archivierung_pitr": {"wp": "WP-M5-14", "dateien": ["infra/backup/postgresql-archive.conf", "infra/backup/backup-policy.json", "infra/backup/taktovia_backup/wal.py", "infra/backup/taktovia_backup/pitr.py"]},
+    "release_gate": {"wp": "WP-M5-22", "dateien": ["tools/release_gate/gate.py", "tools/release_gate/pflichtpruefungen.json"]},
+    "iac": {"wp": "WP-M0-11", "dateien": ["infra/terraform/envs/production/main.tf", "infra/terraform/envs/production/variables.tf", "infra/terraform/envs/production/terraform.tfvars.example"]},
+    "identitaet": {"wp": "WP-M1-04", "dateien": ["infra/keycloak/realm-taktovia-production.json"]},
+    "bereitstellung": {"wp": "WP-M5-28", "dateien": ["infra/rollout/rollout-plan.json", "infra/rollout/betriebszugriff.json", "infra/rollout/taktovia_rollout/bereitstellung.py"]}
+  },
+  "probemandant": {"kennzeichnung": "tenant.synthetic = true", "anzahl_max": 1, "status": "Zulässigkeit in Production vorläufig, OP-28 offen"},
+  "datenbank": {
+    "runtime_rolle": "taktovia_runtime",
+    "verboten_fuer_runtime": ["Superuser", "BYPASSRLS", "Tabelleneigentum"],
+    "waechter": "Tabelle ohne Policy (infra/rollout/taktovia_rollout/datenbank.py::tabellen_ohne_policy)",
+    "seed_und_testdaten": "keine; einzige Ausnahme der gekennzeichnete Probemandant"
+  }
+}
