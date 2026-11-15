@@ -53,13 +53,23 @@ data class PositionBatch(val shiftId: UUID, val vehicleId: UUID, val deviceId: U
     }
 }
 
-/** Grund, aus dem ein einzelner Messpunkt nicht gespeichert wurde: Messzeit in der Zukunft (Gerätezeit, mehr als die Toleranz) oder außerhalb des angetretenen Dienstes. */
+/**
+ * Qualitätsflag je gespeicherter Position (WP-M5-08, `position_sample.quality`, Wertebereich vorläufig bis OP-11): [GOOD] plausible Messzeit und Genauigkeit bis zur Schwelle, [LOW_ACCURACY] plausible
+ * Messzeit, Genauigkeit schlechter als die Schwelle (angezeigt, mit Hinweis), [UNUSABLE] nicht verwendbar: Messzeit in der Zukunft über die Toleranz hinaus (grobe Uhrenabweichung des Geräts). Nicht verwendbare
+ * Punkte bleiben als Nachweis gespeichert, werden aber nie als „letzte Position“ geliefert und nie als frisch angezeigt.
+ */
+enum class PositionQuality { GOOD, LOW_ACCURACY, UNUSABLE }
+
+/** Anzeigezustand der letzten Position gegen die Serveruhr: [FRESH] jünger als die Schwelle (30 s), [STALE] veraltet (nie fortgeschrieben). `nicht_verwendbar` (Vertrag) erscheint nie als Anzeigezustand: solche Punkte werden nicht geliefert. */
+enum class PositionState { FRESH, STALE }
+
+/** Grund, aus dem ein einzelner Messpunkt nicht gespeichert wurde: außerhalb des angetretenen Dienstes. [FUTURE_TIME] wird seit WP-M5-08 nicht mehr abgewiesen, sondern als `UNUSABLE` geführt (siehe [PositionResult.unusable]). */
 enum class PositionRejection { FUTURE_TIME, OUTSIDE_SERVICE }
 
 data class RejectedSample(val index: Int, val reason: PositionRejection)
 
-/** [accepted] zählt neu gespeicherte und bereits gespeicherte (erneute Sendung, idempotent) Punkte; [receivedAt] ist die Serverempfangszeit. */
-data class PositionResult(val accepted: Int, val rejected: List<RejectedSample>, val receivedAt: Instant)
+/** [accepted] zählt neu gespeicherte und bereits gespeicherte (erneute Sendung, idempotent) verwendbare Punkte; [unusable] nennt die Indizes der als nicht verwendbar gespeicherten Punkte (Messzeit in der Zukunft), [receivedAt] ist die Serverempfangszeit. */
+data class PositionResult(val accepted: Int, val rejected: List<RejectedSample>, val receivedAt: Instant, val unusable: List<Int> = emptyList())
 
 /**
  * Letzte Position eines Fahrzeugs für die Leitstelle. [ageSeconds] folgt aus der Messzeit und der Serveruhr; [stale] ist wahr ab Überschreiten der Schwelle
@@ -67,7 +77,10 @@ data class PositionResult(val accepted: Int, val rejected: List<RejectedSample>,
  */
 data class LatestPosition(
     val vehicleId: UUID, val longitude: Double, val latitude: Double, val accuracyMeters: Double, val measuredAt: Instant, val receivedAt: Instant, val ageSeconds: Long, val stale: Boolean,
-)
+    val quality: PositionQuality = PositionQuality.GOOD,
+) {
+    val state: PositionState get() = if (stale) PositionState.STALE else PositionState.FRESH
+}
 
 /**
  * Positionserfassung und Standortalter (WP-M3-34, Modul `staff-time`). Angenommen wird nur für die eigene, **angetretene** Schicht und ihr Fahrzeug (fremde Schicht oder fremdes

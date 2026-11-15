@@ -14379,6 +14379,15 @@
           "bemerkung": "Fahrzeugposition während des Dienstes; kurzlebige operative Rohdaten, Aufbewahrung OP-04"
         },
         {
+          "spalte": "quality",
+          "personenbezogen": "nein",
+          "zweck": "PERSONALEINSATZ",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "received_at",
           "personenbezogen": "nein",
           "zweck": "PERSONALEINSATZ",

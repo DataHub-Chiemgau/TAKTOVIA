@@ -24,6 +24,7 @@ class StafftimeConfiguration {
         @Value("\${taktovia.stafftime.shift-start-tolerance-minutes:30}") startToleranceMinutes: Long,
         @Value("\${taktovia.stafftime.position-stale-after-seconds:30}") positionStaleAfterSeconds: Long,
         @Value("\${taktovia.stafftime.position-future-tolerance-seconds:5}") positionFutureToleranceSeconds: Long,
+        @Value("\${taktovia.stafftime.position-low-accuracy-meters:100}") positionLowAccuracyMeters: Double,
         @Value("\${taktovia.environment:production}") environment: String,
         @Value("\${taktovia.stafftime.boarding-code-pepper:}") boardingCodePepper: String,
         @Value("\${taktovia.stafftime.plan-ack-time-shift-minutes:5}") planAckTimeShiftMinutes: Long,
@@ -33,7 +34,7 @@ class StafftimeConfiguration {
         ctxTx, audit, outbox, Clock.systemUTC(),
         StafftimeSettings(
             shiftStartTolerance = Duration.ofMinutes(startToleranceMinutes), positionStaleAfter = Duration.ofSeconds(positionStaleAfterSeconds),
-            positionFutureTolerance = Duration.ofSeconds(positionFutureToleranceSeconds),
+            positionFutureTolerance = Duration.ofSeconds(positionFutureToleranceSeconds), positionLowAccuracyMeters = positionLowAccuracyMeters,
             // In Produktion nur mit freigegebener Aufbewahrungsregel für Standortdaten (WP-M3-34 Kriterium 5, D-10, D-11); andere Umgebungen erfassen ohne Regel.
             positionRequiresRetentionRule = environment.trim() == "production",
             // Pfeffer des Boarding-Code-Hashs (WP-M3-30): aus der Umgebung (`TAKTOVIA_STAFFTIME_BOARDING_CODE_PEPPER`), nie im Repository; ohne Wert gilt nur das Salz (nur Entwicklung und Test)

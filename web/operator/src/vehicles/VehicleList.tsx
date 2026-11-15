@@ -81,9 +81,28 @@ export function blockText(b: VehicleBlock): string {
 export function positionText(v: OperatorVehicle): string {
   if (v.position === null || v.position_measured_at === null) return 'keine Position bekannt';
   const age = v.position_age_seconds === null ? '' : `, vor ${v.position_age_seconds} s`;
+  const quality = v.position_quality === 'LOW_ACCURACY' ? ' · geringe Genauigkeit' : '';
   return v.position_stale
-    ? `veraltet · letzter Stand ${clock(v.position_measured_at)}${age}`
-    : `aktuell · ${clock(v.position_measured_at)}${age}`;
+    ? `veraltet · letzter Stand ${clock(v.position_measured_at)}${age}${quality}`
+    : `aktuell · ${clock(v.position_measured_at)}${age}${quality}`;
+}
+
+/**
+ * Standort der Fahrzeugliste (WP-M5-08, NFR-005, Kap. 06 §6.1): die Veraltet-Kennzeichnung steht als **Text mit Symbol** (nicht nur Farbe) und gilt damit auch für Screenreader; der Text nennt die Zeit
+ * der letzten Position, es gibt keine Fortschreibung. Dieselbe Darstellung dient der Listenalternative zur Karte und dem Detail.
+ */
+export function StandortAnzeige({ v }: { v: OperatorVehicle }) {
+  const stale = v.position !== null && v.position_stale;
+  return (
+    <>
+      {stale ? (
+        <>
+          <StatusBadge tone="warning">Standort veraltet</StatusBadge>{' '}
+        </>
+      ) : null}
+      <span data-testid="standort-text">{positionText(v)}</span>
+    </>
+  );
 }
 
 const requirementText = (m: MissingRequirement): string =>
@@ -158,6 +177,7 @@ function SchematicMap({
             />
             <text x={x + 10} y={y + 4} fontSize="11" fill="currentColor">
               {v.vehicle_label}
+              {v.position_stale ? ' (veraltet)' : ''}
             </text>
           </g>
         );
@@ -318,7 +338,9 @@ function Detail({
         <dt>Zustand</dt>
         <dd>{STATUS_LABELS[v.operational_state]}</dd>
         <dt>Letzte Position</dt>
-        <dd>{positionText(v)}</dd>
+        <dd>
+          <StandortAnzeige v={v} />
+        </dd>
         <dt>Einsatzfreigabe</dt>
         <dd>
           {v.release_valid_until
@@ -553,7 +575,9 @@ export function VehicleList() {
                     <td>
                       <InspectionStatusBadge status={v.inspection_status} stale={live.stale} />
                     </td>
-                    <td data-stale={v.position_stale ? 'true' : 'false'}>{positionText(v)}</td>
+                    <td data-stale={v.position_stale ? 'true' : 'false'}>
+                      <StandortAnzeige v={v} />
+                    </td>
                     <td>{(v.orders ?? []).length}</td>
                     <td>
                       {notesOf(v).length === 0 ? (

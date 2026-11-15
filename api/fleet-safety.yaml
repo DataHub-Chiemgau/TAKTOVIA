@@ -3472,6 +3472,21 @@ components:
           - type: 'null'
         position_stale:
           type: boolean
+        position_state:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - UNKNOWN
+          description: 'Standortzustand gegen die Serveruhr (WP-M5-08, NFR-005): FRESH = jünger als die Schwelle (Planungsdefault 30 s), STALE = veraltet (letzte gemessene Position mit Zeit, nie fortgeschrieben), UNKNOWN = keine verwendbare Position bekannt. Nicht verwendbare Punkte (Qualitätsflag UNUSABLE, Messzeit in der Zukunft) werden nie geliefert.'
+        position_quality:
+          oneOf:
+          - type: string
+            enum:
+            - GOOD
+            - LOW_ACCURACY
+          - type: 'null'
+          description: Qualitätsflag der gelieferten Position (LOW_ACCURACY = Genauigkeit schlechter als die Schwelle, Planungsdefault 100 m); null ohne Position.
         open_defect_count:
           type: integer
           minimum: 0

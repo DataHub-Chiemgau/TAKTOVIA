@@ -70,7 +70,37 @@ class BookingDetailApiTest {
         assertEquals("Bus 12", d2.json["vehicle"]["label"].asString()); assertEquals("KLEINBUS", d2.json["vehicle"]["vehicle_class"].asString())
         // nie interne Felder der Fahrzeug- oder Personalakte
         for (forbidden in listOf("owner_org_ref", "driver_ref", "capacity_config", "safety_revision", "federation_ref")) assertFalse(d2.text.contains(forbidden), forbidden)
-        assertEquals(setOf("label", "vehicle_class"), d2.json["vehicle"].propertyNames().toSet())
+        assertEquals(setOf("label", "vehicle_class", "location"), d2.json["vehicle"].propertyNames().toSet())
+        assertEquals("UNKNOWN", d2.json["vehicle"]["location"]["state"].asString(), "noch keine Position gemeldet: nie eine erfundene Position"); assertTrue(d2.json["vehicle"]["location"]["position"].isNull)
+    }
+
+    /** WP-M5-08 (NFR-005, UI-04): Standort des Fahrzeugs nur bei frischer Position mit Koordinate; veraltet nur mit Zeit der letzten Position, nie als Live-Position; Datentrennung zwischen Fahrgästen. */
+    @Test
+    fun fahrzeugstandort_frisch_mit_position_veraltet_nur_mit_zeit_und_nie_fuer_fremde() {
+        val sc = Scene()
+        val vehicle = env.string("SELECT vehicle_id::text FROM taktovia.vehicle_run WHERE id = ?::uuid", sc.h.run.toString()).single()
+        env.exec("UPDATE taktovia.vehicle SET vehicle_label = 'Bus 7', vehicle_type = 'KLEINBUS' WHERE id = ?::uuid", vehicle)
+        sc.plan(1)
+        val shift = UUID.randomUUID()
+        env.exec("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?::uuid,now() - interval '1 hour', now() + interval '5 hours','Europe/Berlin',0,'STARTED')", s.tenant.value, shift, UUID.randomUUID(), vehicle)
+        fun position(ageSeconds: Long, lat: Double, quality: String = "GOOD") = env.exec(
+            "INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) VALUES (?,?,?::uuid,?,CAST(ST_SetSRID(ST_MakePoint(13.7,?),4326) AS geography),5,now() - make_interval(secs => ?),now(),?,'user:t')",
+            s.tenant.value, UUID.randomUUID(), vehicle, shift, lat, ageSeconds.toDouble(), quality)
+        // frisch: Koordinate und Alter
+        position(4, 51.05)
+        val fresh = sc.detail().json["vehicle"]["location"]
+        assertEquals("FRESH", fresh["state"].asString()); assertEquals(51.05, fresh["position"]["latitude"].asDouble(), 1e-6); assertTrue(fresh["age_seconds"].asLong() in 3L..29L)
+        // eine nicht verwendbare Zukunftsposition (grobe Uhrenabweichung) wird nie geliefert, auch wenn sie die „jüngste“ Messzeit trägt
+        position(-3600, 10.0, "UNUSABLE")
+        assertEquals(51.05, sc.detail().json["vehicle"]["location"]["position"]["latitude"].asDouble(), 1e-6)
+        // veraltet: nur die Zeit der letzten Position, keine Koordinate (keine Live-Position, keine Fortschreibung)
+        env.exec("DELETE FROM taktovia.position_sample WHERE vehicle_id = ?::uuid", vehicle)
+        position(120, 51.06)
+        val stale = sc.detail().json["vehicle"]["location"]
+        assertEquals("STALE", stale["state"].asString()); assertTrue(stale["position"].isNull); assertTrue(stale["age_seconds"].asLong() >= 119L); assertFalse(stale["measured_at"].asString().isBlank())
+        assertFalse(sc.detail().text.contains("51.06"), "keine Koordinate einer veralteten Position")
+        // ein anderer Fahrgast sieht weder Buchung noch Standort (404)
+        assertEquals(404, sc.detail(Scene().h.account.token).status)
     }
 
     @Test

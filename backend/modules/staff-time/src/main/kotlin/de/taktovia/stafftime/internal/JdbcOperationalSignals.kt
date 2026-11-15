@@ -18,7 +18,7 @@ internal class JdbcOperationalSignals(private val ctxTx: ContextTransactions, pr
         return ctxTx.runSystem(tenant, readOnly = true) { j ->
             j.query(
                 "SELECT s.vehicle_id, s.id, coalesce(max(p.measured_at), s.started_at) FROM taktovia.staff_shift s " +
-                    "LEFT JOIN taktovia.position_sample p ON p.tenant_id = s.tenant_id AND p.vehicle_id = s.vehicle_id AND p.shift_id = s.id " +
+                    "LEFT JOIN taktovia.position_sample p ON p.tenant_id = s.tenant_id AND p.vehicle_id = s.vehicle_id AND p.shift_id = s.id AND p.quality <> 'UNUSABLE' " +
                     "WHERE s.state = 'STARTED' AND s.started_at IS NOT NULL GROUP BY s.vehicle_id, s.id, s.started_at HAVING coalesce(max(p.measured_at), s.started_at) < ? ORDER BY 3, s.id",
                 { rs, _ -> StaleVehicle(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getTimestamp(3).toInstant()) }, cutoff,
             )

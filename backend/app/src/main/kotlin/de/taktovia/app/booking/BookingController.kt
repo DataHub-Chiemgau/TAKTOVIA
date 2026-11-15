@@ -46,7 +46,7 @@ class BookingResource(@get:JsonValue val data: Map<String, Any?>, override val r
  */
 @RestController
 class BookingController(private val bookings: Bookings, private val codec: CursorCodec, private val payments: Payments, private val walking: de.taktovia.bookingdispatch.api.WalkingRoutes,
-                        private val operators: de.taktovia.bookingdispatch.api.OperatorBookings) {
+                        private val operators: de.taktovia.bookingdispatch.api.OperatorBookings, private val staff: org.springframework.beans.factory.ObjectProvider<de.taktovia.stafftime.api.StafftimeApi>) {
 
     @PostMapping("/v1/bookings")
     @Suppress("UNCHECKED_CAST")
@@ -69,7 +69,7 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
         // Ein Client, der seinen Stand mitsendet, bekommt bei veralteter Revision 412 mit dem aktuellen ETag (WP-M2-28)
         if (ifMatch != null && Etag.parseIfMatch(ifMatch) != b.revision)
             throw ProblemException(ErrorCode.REVISION_MISMATCH, "Die Buchung hat die Revision ${b.revision}; ohne If-Match neu lesen.", headers = mapOf("ETag" to Etag.format(b.revision)))
-        val withWalk = LinkedHashMap(withTracking(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), t))
+        val withWalk = LinkedHashMap(withTracking(withPayment(render(b), payments.forBooking(ctx, id), b.promise.exponent), t, vehicleLocation(ctx.tenant, t)))
         t.offerId?.let { walking.forOffer(ctx, it) }?.let { withWalk["walk"] = RideOfferController.walkBlock(it) }
         return BookingResource(withWalk, b.revision)
     }
@@ -156,7 +156,23 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
     }
 
     /** Tracking-Felder von UI-04 (WP-M2-43/-46): Treffpunkt, Plan-ETA getrennt von der Zusage, Fahrzeugidentifikation, Stornoregel, Datenstand. */
-    private fun withTracking(booking: Map<String, Any?>, t: BookingTracking): Map<String, Any?> = LinkedHashMap(booking).also { m ->
+    /**
+     * Standort des zugewiesenen Fahrzeugs für UI-04 (WP-M5-08, NFR-005), nur für eine aktive Buchung (bevorstehend oder laufend, storniert und vergangen: kein Standort; der Zugriff auf die Buchung ist bereits auf den eigenen Fahrgast bzw. das
+     * Betriebspersonal im Dienstscope beschränkt). Der Server berechnet das Alter gegen seine Uhr: nur eine **frische** Position (jünger als die Schwelle) trägt Koordinaten; eine veraltete erscheint
+     * ausschließlich mit Zeit der letzten Position (`state` STALE, keine Koordinate, nie als Live-Position und nie als Grundlage einer laufenden ETA); ohne bekannte Position `UNKNOWN`.
+     */
+    private fun vehicleLocation(tenant: de.taktovia.platform.tenant.TenantId, t: BookingTracking): Map<String, Any?>? {
+        val vehicleId = t.vehicle?.vehicleId ?: return null
+        if (t.booking.area != BookingArea.UPCOMING && t.booking.area != BookingArea.RUNNING) return null
+        val p = staff.getObject().positions.latestOfVehicle(tenant, vehicleId)
+            ?: return linkedMapOf("state" to "UNKNOWN", "measured_at" to null, "age_seconds" to null, "position" to null)
+        return linkedMapOf(
+            "state" to p.state.name, "measured_at" to p.measuredAt.toString(), "age_seconds" to p.ageSeconds,
+            "position" to if (p.stale) null else linkedMapOf("latitude" to p.latitude, "longitude" to p.longitude),
+        )
+    }
+
+    private fun withTracking(booking: Map<String, Any?>, t: BookingTracking, location: Map<String, Any?>? = null): Map<String, Any?> = LinkedHashMap(booking).also { m ->
         t.pickupStop?.let { m["pickup_stop"] = stop(it) }; t.dropoffStop?.let { m["dropoff_stop"] = stop(it) }
         t.eta?.let { e ->
             m["eta"] = linkedMapOf("pickup_at" to e.pickupAt.toString(), "dropoff_at" to e.dropoffAt?.toString(), "previous_pickup_at" to e.previousPickupAt?.toString(), "plan_sequence" to e.planSequence,
@@ -164,7 +180,7 @@ class BookingController(private val bookings: Bookings, private val codec: Curso
                 "forecast" to e.forecast?.let { f -> linkedMapOf("earliest_at" to f.earliest.toString(), "latest_at" to f.latest.toString(), "basis" to f.basis.name, "data_stand" to f.dataStand?.toString(),
                     "fallback_reason" to f.fallbackReason, "model_version" to f.modelVersion, "config_version" to f.configVersion) })
         }
-        t.vehicle?.let { m["vehicle"] = linkedMapOf("label" to it.label, "vehicle_class" to it.vehicleClass) }
+        t.vehicle?.let { m["vehicle"] = linkedMapOf<String, Any?>("label" to it.label, "vehicle_class" to it.vehicleClass).also { v -> location?.let { l -> v["location"] = l } } }
         t.cancellation?.let { c -> m["cancellation"] = linkedMapOf("allowed" to c.allowed, "deadline_at" to c.deadlineAt.toString(), "deadline_min" to c.deadlineMin, "deadline_defaulted" to c.deadlineDefaulted) }
         m["data_as_of"] = t.dataAsOf.toString()
     }

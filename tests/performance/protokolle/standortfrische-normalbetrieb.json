@@ -1,0 +1,60 @@
+{
+ "protokoll_version": "1.0",
+ "norm": "LH-6.19-NFR-005",
+ "ziel": "frische Positionen jünger als 30 s im Normalbetrieb",
+ "status_zielwert": "vorläufig, D-05 offen",
+ "messpunkt": "Standortalter der Fahrzeugliste (UI-07), vom Server gegen seine Uhr berechnet; Erfassung = Messzeit des Geräts, Empfang = Serverempfangszeit",
+ "normalbetrieb": "Fahrzeuge mit laufendem Positionsstrom (Meldeintervall des Lastprofils, Standard 15 s); Planungsannahme bis D-05/OP-11",
+ "je_stufe": {
+  "Normalbetrieb": {
+   "faktor": 1.0,
+   "beobachtungen": 6223,
+   "ohne_position": 147,
+   "alter_p50_s": 7.0,
+   "alter_p95_s": 14.0,
+   "alter_max_s": 28.0,
+   "anteil_ueber_30s": 0.0,
+   "ueberschreitungen_ueber_30s": 0,
+   "erfassung_bis_empfang_p95_s": 0.121,
+   "als_veraltet_gekennzeichnet": 0
+  }
+ },
+ "luecken_im_normalbetrieb": {
+  "anzahl": 1,
+  "groesste_s": 30.1,
+  "definition": "Abstand aufeinanderfolgender Messzeiten eines Fahrzeugs > 30 s"
+ },
+ "unterbrochene_stroeme": {
+  "fahrzeuge": 10,
+  "beobachtet": 10,
+  "beobachtungen_ueber_schwelle": 80,
+  "davon_als_veraltet_gekennzeichnet": 80,
+  "fahrzeuge_mit_unveraenderter_messzeit": 10
+ },
+ "reihenfolge": {
+  "fahrzeuge_mit_verspaeteter_aelterer_meldung": 10,
+  "rueckgang_der_angezeigten_messzeit": 0
+ },
+ "datentrennung": {
+  "fremde_fahrzeuge_in_der_anzeige_je_mandant": {
+   "A": 0,
+   "B": 0
+  },
+  "fahrzeuge_je_mandant_beobachtet": {
+   "A": 250,
+   "B": 250
+  },
+  "fahrzeuge_mit_position_je_mandant": {
+   "A": 250,
+   "B": 250
+  }
+ },
+ "beobachtungen_gesamt": 7000,
+ "beobachtungen_nach_aufwaermen": 6500,
+ "referenzstufe": "Normalbetrieb",
+ "zaehler_negativproben": {
+  "pos_probe_fremdes_fahrzeug_404": 10,
+  "pos_probe_verspaetet_200": 50
+ },
+ "urteil": "erfüllt"
+}

@@ -79,7 +79,7 @@ class DriverPositionApiTest {
     fun zukunftszeit_fremdes_fahrzeug_fremde_schicht_rechte_und_tenant_id() {
         val w = World(env); val other = World(env); val s = w.shift(); val d = w.device(); assertEquals(200, w.start(s, d).status)
         val future = w.send(s, d, w.sample(0, at = Instant.now().plusSeconds(120)), w.sample(2))
-        assertEquals(200, future.status, future.text); assertEquals(1, future.json["accepted"].asInt()); assertEquals(1, future.json["rejected"].asInt()); assertEquals("FUTURE_TIME", future.json["rejections"][0]["reason"].asString()); assertEquals(0, future.json["rejections"][0]["index"].asInt())
+        assertEquals(200, future.status, future.text); assertEquals(1, future.json["accepted"].asInt()); assertEquals(0, future.json["rejected"].asInt()); assertEquals(1, future.json["unusable"].asInt()); assertEquals(0, future.json["unusable_indices"][0].asInt())
         assertEquals(404, w.send(s, d, w.sample(1), vehicleId = other.vehicle).status, "fremdes Fahrzeug")
         val foreignShift = other.shift()
         assertEquals(404, w.send(foreignShift, d, w.sample(1)).status, "Schicht eines anderen Mandanten")

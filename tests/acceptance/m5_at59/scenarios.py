@@ -42,7 +42,7 @@ def at_59(ctx):
         c.execute("SAVEPOINT s")
         outcome = "ANGENOMMEN"
         try:
-            c.execute("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,created_by) VALUES (%s,%s,%s,%s,ST_SetSRID(ST_MakePoint(13.7,51.05),4326)::geography,5,now(),'user:at59')",
+            c.execute("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,quality,created_by) VALUES (%s,%s,%s,%s,ST_SetSRID(ST_MakePoint(13.7,51.05),4326)::geography,5,now(),'GOOD','user:at59')",
                       (a, uuid.uuid4(), vehicle[0] if vehicle else uuid.uuid4(), uuid.uuid4()))
         except psycopg.errors.ForeignKeyViolation as e:
             outcome = "ABGEWIESEN (Fremdschlüssel Schicht)" if "shift" in str(e).lower() else f"ABGEWIESEN aus anderem Grund: {e}"

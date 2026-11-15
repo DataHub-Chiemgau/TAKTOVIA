@@ -1,0 +1,12 @@
+{
+  "name": "standortfrische-normalbetrieb",
+  "status": "vorläufig, D-05 offen",
+  "tenants": 2, "vehicles_per_tenant": 250, "passengers_per_tenant": 400,
+  "bookings_per_day": 10000, "peak_factor": 1.0, "sessions": 250, "sessions_scope": "pro_mandant", "session_think_s": 30,
+  "offers_per_booking": 2.0, "cancel_share": 0.1, "wheelchair_share": 0.05,
+  "operators_per_tenant": 5, "operator_think_s": 5, "driver_interval_s": 15,
+  "warmup_s": 10,
+  "stages": [
+    {"name": "Normalbetrieb", "factor": 1.0, "duration_s": 75}
+  ]
+}

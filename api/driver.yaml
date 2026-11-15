@@ -969,7 +969,18 @@ components:
             required:
             - index
             - reason
-          description: Einzeln abgewiesene Messpunkte. FUTURE_TIME = Messzeit mehr als die Toleranz (Planungsdefault 5 s) nach der Serverzeit; OUTSIDE_SERVICE = Messzeit vor dem Dienstantritt oder nach dem Dienstende.
+          description: Einzeln abgewiesene Messpunkte. OUTSIDE_SERVICE = Messzeit vor dem Dienstantritt oder nach dem Dienstende. FUTURE_TIME wird seit WP-M5-08 nicht mehr abgewiesen, sondern als nicht verwendbar gespeichert (`unusable`); der Wert bleibt im Wertebereich für ältere Clients.
+        unusable:
+          type: integer
+          minimum: 0
+          description: 'Anzahl der Messpunkte mit Messzeit mehr als die Toleranz (Planungsdefault 5 s) nach der Serverzeit (grobe Uhrenabweichung des Geräts, WP-M5-08, NFR-005): gespeichert mit dem Qualitätsflag `UNUSABLE`, nicht in `accepted` gezählt, nie als letzte Position geliefert und nie als frisch angezeigt. Fehlen Messzeit, Position oder Genauigkeit, wird die ganze Meldung mit 422 abgewiesen; das Qualitätsflag setzt der Server (Genauigkeit über 100 m: `LOW_ACCURACY`, sonst `GOOD`), nie das Gerät.'
+        unusable_indices:
+          type: array
+          maxItems: 100
+          items:
+            type: integer
+            minimum: 0
+          description: Indizes der als nicht verwendbar geführten Messpunkte.
       required:
       - accepted
       - rejected

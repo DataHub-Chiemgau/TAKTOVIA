@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import aload, invariants, runner
+from . import aload, invariants, runner, standortalter
 from . import world as W
 from .appproc import App
 from .idp import TestIdp
@@ -65,6 +65,7 @@ def execute_profile(p: runner.Profile, out_dir: Path, *, title: str, race_stage:
         rpt.validate(rep)
         import json
         (out_dir / "bericht.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+        (out_dir / "standortfrische.md").write_text(standortalter.render_md(rep["results"]["standortalter"], run["counters"], race_stage or "100 %"), encoding="utf-8")
         (out_dir / "bericht.md").write_text(rpt.render_markdown(rep) + _extra_md(rep), encoding="utf-8")
         return rep
     finally:
@@ -124,6 +125,11 @@ def _report(p, title, started, app, worlds, rigs, rec, run, samples, iso, inv, k
     ev.append({"criterion": "Referenzprofil erreicht (Buchungsrate, Sitzungen, Fahrzeuge, Mandanten)", "target": f"{p.bookings_per_day}/Tag je Mandant x Peakfaktor {p.peak_factor} = {target_rate:.2f} Buchungen/s gesamt; {sess_ok} Sitzungen; {p.vehicles_per_tenant} Fahrzeuge je Mandant; {len(worlds)} Mandanten",
                "measured": f"{per_stage[ref['name']]['buchungen'] / max(1, ref_dur):.2f} Buchungen/s in Stufe {ref['name']}; Fahrersitzungen {sum(len(v) for v in rigs.values())}; Lesesitzungen {sess_ok}; Mandanten {len(worlds)}; verworfene Ankünfte (Generatorgrenze) {run['counters'].get('arrivals_dropped_client_limit', 0)}",
                "verdict": "nicht bewertet"})
+    sa = standortalter.evaluate(run["standort_beobachtungen"], bounds, p.warmup_s, rigs, p.interrupted_vehicle_stride)
+    rsa = sa["je_stufe"][ref["name"]]
+    ev.append({"criterion": "Standortalter in der Anzeige im Normalbetrieb < 30 s (LH-6.19-NFR-005, vorläufig, D-05 offen)", "target": "p95 < 30 s",
+               "measured": f"p95 {rsa['alter_p95_s']} s, Anteil > 30 s {rsa['anteil_ueber_30s']}, {sa['luecken_im_normalbetrieb']['anzahl']} Lücken (n={rsa['beobachtungen']}, Stufe {ref['name']})",
+               "verdict": verdict(rsa["alter_p95_s"] is not None and rsa["alter_p95_s"] < 30)})
     sat = [s for s in samples if "error" not in s]
     return {
         "report_version": "1.0", "kind": "load-run", "title": title, "started_at": started.isoformat(),
@@ -142,7 +148,7 @@ def _report(p, title, started, app, worlds, rigs, rec, run, samples, iso, inv, k
         "results": {"overall": overall, "per_endpoint": per_ep, "throughput_rps": round(len(recs) / dur, 2), "peak_rps_1s_bucket": _peak(recs), "error_rate": overall.get("error_rate", 0), "error_count": overall.get("error_count", 0),
                     "per_tenant": per_tenant, "per_tenant_endpoint": per_tenant_ep,
                     "kalter_start": {"beschreibung": f"erste {p.warmup_s:g} s nach dem Start der Anwendung (JVM, Verbindungspools, Caches kalt), nicht in den Perzentilen der Stufen", "alle": aload.summarize([r for r in rec.recs if r.t < p.warmup_s]),
-                                     "angebote": aload.summarize([r for r in rec.recs if r.t < p.warmup_s and r.endpoint == offer_ep])}, "per_stage": per_stage, "zaehler": run["counters"], "wettlauf_letzter_platz": run["race"], "isolation": iso, "invarianten": inv, "kennzahlen_gegenprobe": kennz,
+                                     "angebote": aload.summarize([r for r in rec.recs if r.t < p.warmup_s and r.endpoint == offer_ep])}, "per_stage": per_stage, "standortalter": sa, "zaehler": run["counters"], "wettlauf_letzter_platz": run["race"], "isolation": iso, "invarianten": inv, "kennzahlen_gegenprobe": kennz,
                     "saettigung_gesamt": {"proben": len(sat), "app_cpu_pct_von_einem_kern_max": max((s["app_cpu_pct_of_one_core"] for s in sat), default=None), "maschine_cpu_pct_max": max((s["machine_cpu_pct"] for s in sat), default=None),
                                           "app_rss_mb_max": max((s["app_rss_mb"] for s in sat), default=None), "db_verbindungen_max": max((s["db_runtime_connections"] for s in sat), default=None),
                                           "sperrwartende_max": max((s["db_lock_waiting"] for s in sat), default=None), "outbox_wartend_max": max((s["outbox_pending"] for s in sat), default=None)},

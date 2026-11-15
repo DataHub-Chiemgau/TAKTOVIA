@@ -13,6 +13,8 @@ data class StafftimeSettings(
     val positionStaleAfter: Duration = Duration.ofSeconds(30),
     /** Toleranz für Messzeiten in der Zukunft (Uhrenabweichung des Geräts); weiter in der Zukunft liegende Messzeiten werden abgewiesen. */
     val positionFutureTolerance: Duration = Duration.ofSeconds(5),
+    /** Ab dieser Genauigkeit (Meter, Radius) trägt eine Position das Qualitätsflag `LOW_ACCURACY` (WP-M5-08, Planungsdefault 100 m, OP-11 offen). */
+    val positionLowAccuracyMeters: Double = 100.0,
     /** In Produktion wird nur erfasst, wenn für `LK_STANDORT` eine freigegebene Aufbewahrungsregel besteht (WP-M3-34 Kriterium 5, D-10, D-11). */
     val positionRequiresRetentionRule: Boolean = false,
     /** Zulässige Uhrabweichung zwischen Gerät und Server für Fahrerereignisse (WP-M3-29, Planungsannahme: das Pflichtenheft legt sie nicht fest; kein Katalogparameter). */
@@ -31,6 +33,7 @@ data class StafftimeSettings(
     init {
         require(!shiftStartTolerance.isNegative && shiftStartTolerance <= Duration.ofHours(12)) { "Antrittstoleranz außerhalb 0..12 h" }
         require(positionStaleAfter.seconds in 1..3600) { "Schwelle des Standortalters außerhalb 1..3600 s" }
+        require(positionLowAccuracyMeters > 0 && positionLowAccuracyMeters <= 100000) { "Genauigkeitsschwelle außerhalb 0..100000 m" }
         require(!positionFutureTolerance.isNegative && positionFutureTolerance <= Duration.ofMinutes(5)) { "Zukunftstoleranz außerhalb 0..5 min" }
         require(!clockSkewTolerance.isNegative && clockSkewTolerance <= Duration.ofMinutes(30)) { "Uhrabweichung außerhalb 0..30 min" }
         require(noShowGraceDefault.toMinutes() in 1..120) { "Wartefrist außerhalb 1..120 min" }

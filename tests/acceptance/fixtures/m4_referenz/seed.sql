@@ -89,9 +89,9 @@ BEGIN
        jsonb_build_array(jsonb_build_object('booking_id', md5('m4ref/a/bkg-1')::uuid, 'vector', jsonb_build_object('schema_version', '1.0', 'seats', 2, 'wheelchair', 0, 'equipment', jsonb_build_array()))), '[]', 1260, 8200),
     (tid, md5('m4ref/a/rs-2')::uuid, md5('m4ref/a/run-1')::uuid, 1, 2, md5('m4ref/a/stoprev-dropoff')::uuid, '2026-12-01T06:36:00Z', '[]',
        jsonb_build_array(jsonb_build_object('booking_id', md5('m4ref/a/bkg-1')::uuid, 'vector', jsonb_build_object('schema_version', '1.0', 'seats', 2, 'wheelchair', 0, 'equipment', jsonb_build_array()))), NULL, NULL) ON CONFLICT DO NOTHING;
-  INSERT INTO position_sample(tenant_id, id, vehicle_id, shift_id, position, accuracy_m, measured_at, created_by) VALUES
-    (tid, md5('m4ref/a/pos-1')::uuid, md5('m4ref/a/veh-1')::uuid, md5('m4ref/a/shift-day')::uuid, ST_SetSRID(ST_MakePoint(13.741, 51.049), 4326)::geography, 8.0, '2026-12-01T06:16:00Z', 'system:m4-referenz'),
-    (tid, md5('m4ref/a/pos-2')::uuid, md5('m4ref/a/veh-1')::uuid, md5('m4ref/a/shift-day')::uuid, ST_SetSRID(ST_MakePoint(13.799, 51.079), 4326)::geography, 9.5, '2026-12-01T06:37:00Z', 'system:m4-referenz') ON CONFLICT DO NOTHING;
+  INSERT INTO position_sample(tenant_id, id, vehicle_id, shift_id, position, accuracy_m, measured_at, quality, created_by) VALUES
+    (tid, md5('m4ref/a/pos-1')::uuid, md5('m4ref/a/veh-1')::uuid, md5('m4ref/a/shift-day')::uuid, ST_SetSRID(ST_MakePoint(13.741, 51.049), 4326)::geography, 8.0, '2026-12-01T06:16:00Z', 'GOOD', 'system:m4-referenz'),
+    (tid, md5('m4ref/a/pos-2')::uuid, md5('m4ref/a/veh-1')::uuid, md5('m4ref/a/shift-day')::uuid, ST_SetSRID(ST_MakePoint(13.799, 51.079), 4326)::geography, 9.5, '2026-12-01T06:37:00Z', 'GOOD', 'system:m4-referenz') ON CONFLICT DO NOTHING;
 
   -- travel_attempt für PH-AT-021: zehn Versuche, drei Ablehnungen (zwei mit Nebengründen), Mandant A
   PERFORM 1;

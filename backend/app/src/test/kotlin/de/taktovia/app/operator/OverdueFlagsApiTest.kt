@@ -74,7 +74,7 @@ class OverdueFlagsApiTest {
         evaluator.evaluate(s.tenant)
         assertEquals(1, env.count("SELECT count(*) FROM taktovia.business_alert WHERE tenant_id = ? AND alert_kind = 'INFO_PENDING' AND ref_id = ?::uuid", s.tenant.value, flag["id"].asString()))
         // Position trifft ein: Ursache weg, Hinweis erledigt, Alarm gelöst
-        env.exec("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,created_by) SELECT tenant_id, ?, vehicle_id, id, CAST(ST_SetSRID(ST_MakePoint(13.7,51.0),4326) AS geography), 5, now(), now(), 'user:t' FROM taktovia.staff_shift WHERE vehicle_id = ?::uuid AND tenant_id = ?",
+        env.exec("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) SELECT tenant_id, ?, vehicle_id, id, CAST(ST_SetSRID(ST_MakePoint(13.7,51.0),4326) AS geography), 5, now(), now(), 'GOOD', 'user:t' FROM taktovia.staff_shift WHERE vehicle_id = ?::uuid AND tenant_id = ?",
             UUID.randomUUID(), vehicle, s.tenant.value)
         assertEquals(1, evaluator.evaluate(s.tenant).resolved)
         assertEquals(0, env.get("/v1/operator/vehicles/$vehicle", op).json["flags"].size())

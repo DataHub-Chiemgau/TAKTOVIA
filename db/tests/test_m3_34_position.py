@@ -5,8 +5,8 @@ import psycopg
 from helpers import runtime, set_tenant, tx, uid, seed_tenant
 
 A, B = uid(), uid()
-INS = ("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,created_by) "
-       "VALUES (%s,%s,%s,%s,ST_GeogFromText('POINT(13.74 51.05)'),5,%s::timestamptz,%s::timestamptz,'user:t') ON CONFLICT (tenant_id, shift_id, measured_at) DO NOTHING")
+INS = ("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) "
+       "VALUES (%s,%s,%s,%s,ST_GeogFromText('POINT(13.74 51.05)'),5,%s::timestamptz,%s::timestamptz,'GOOD','user:t') ON CONFLICT (tenant_id, shift_id, measured_at) DO NOTHING")
 
 
 def fixture(tenant):

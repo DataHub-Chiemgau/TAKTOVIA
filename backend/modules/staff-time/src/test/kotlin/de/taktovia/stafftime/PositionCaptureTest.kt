@@ -6,7 +6,9 @@ import de.taktovia.platform.retention.ErasureEngine
 import de.taktovia.platform.retention.JobStatus
 import de.taktovia.platform.retention.RetentionAction
 import de.taktovia.stafftime.api.PositionBatch
+import de.taktovia.stafftime.api.PositionQuality
 import de.taktovia.stafftime.api.PositionRejection
+import de.taktovia.stafftime.api.PositionState
 import de.taktovia.stafftime.api.PositionRetention
 import de.taktovia.stafftime.api.StafftimeSettings
 import de.taktovia.stafftime.api.StartShiftCommand
@@ -132,11 +134,30 @@ class PositionCaptureTest {
     }
 
     @Test
+    fun qualitaetsflag_je_position_genauigkeit_und_nur_zukunft_ist_nicht_verwendbar() {
+        val sc = started(); at("2026-12-01T07:00:00Z")
+        send(w, sc, PositionBatch.parse(mapOf("shift_id" to sc.shift.toString(), "vehicle_id" to sc.vehicle.toString(), "device_id" to sc.device.toString(), "samples" to listOf(
+            mapOf("position" to mapOf("latitude" to 51.0, "longitude" to 13.0), "accuracy_meters" to 8.0, "measured_at" to "2026-12-01T07:00:00Z"),
+            mapOf("position" to mapOf("latitude" to 51.0, "longitude" to 13.0), "accuracy_meters" to 250.0, "measured_at" to "2026-12-01T06:59:50Z"),
+            mapOf("position" to mapOf("latitude" to 51.0, "longitude" to 13.0), "accuracy_meters" to 8.0, "measured_at" to "2026-12-01T07:10:00Z")))))
+        fun q(quality: String, at: String) = fx.count("SELECT count(*) FROM taktovia.position_sample WHERE tenant_id=? AND shift_id=? AND measured_at=?::timestamptz AND quality=?", w.tenant.value, sc.shift, at, quality)
+        assertEquals(1, q("GOOD", "2026-12-01T07:00:00Z")); assertEquals(1, q("LOW_ACCURACY", "2026-12-01T06:59:50Z")); assertEquals(1, q("UNUSABLE", "2026-12-01T07:10:00Z"))
+        // die geringe Genauigkeit bleibt eine angezeigte Messung; die Zukunftsposition steht in keiner Anzeige
+        val l = w.staff.positions.latestOfVehicle(w.tenant, sc.vehicle)!!
+        assertEquals(Instant.parse("2026-12-01T07:00:00Z"), l.measuredAt); assertEquals(PositionQuality.GOOD, l.quality)
+    }
+
+    @Test
     fun position_mit_zukunftszeit_und_fremdes_fahrzeug_oder_fremde_schicht_werden_abgewiesen() {
         val sc = started(); at("2026-12-01T07:00:00Z")
         val r = send(w, sc, batch(sc, Triple("2026-12-01T07:00:03Z", 51.0, 13.0), Triple("2026-12-01T07:00:10Z", 51.0, 13.0), Triple("2026-12-01T09:00:00Z", 51.0, 13.0)))
-        assertEquals(1, r.accepted); assertEquals(listOf(1 to PositionRejection.FUTURE_TIME, 2 to PositionRejection.FUTURE_TIME), r.rejected.map { it.index to it.reason }, "bis zur Toleranz (5 s) akzeptiert, darüber abgewiesen")
-        assertEquals(1, fx.count("SELECT count(*) FROM taktovia.position_sample WHERE tenant_id=? AND shift_id=?", w.tenant.value, sc.shift))
+        // WP-M5-08: Messzeit über die Toleranz hinaus in der Zukunft = grobe Uhrenabweichung: nicht abgewiesen, sondern als UNUSABLE geführt, nicht als angenommen gezählt
+        assertEquals(1, r.accepted); assertTrue(r.rejected.isEmpty()); assertEquals(listOf(1, 2), r.unusable, "bis zur Toleranz (5 s) verwendbar, darüber nicht verwendbar")
+        assertEquals(3, fx.count("SELECT count(*) FROM taktovia.position_sample WHERE tenant_id=? AND shift_id=?", w.tenant.value, sc.shift))
+        assertEquals(2, fx.count("SELECT count(*) FROM taktovia.position_sample WHERE tenant_id=? AND shift_id=? AND quality='UNUSABLE'", w.tenant.value, sc.shift))
+        val latest = w.staff.positions.latestOfVehicle(w.tenant, sc.vehicle)!!
+        assertEquals(Instant.parse("2026-12-01T07:00:03Z"), latest.measuredAt, "die nicht verwendbare Zukunftsposition wird nie als letzte Position geliefert")
+        assertFalse(latest.stale); assertEquals(PositionState.FRESH, latest.state)
         // fremdes Fahrzeug (Fahrzeug eines anderen Dienstes), unbekannte und fremde Schicht, Schicht eines anderen Mandanten
         val other = started()
         assertEquals(ErrorCode.NOT_FOUND, ShiftWorld.problem { send(w, sc, batch(sc, Triple("2026-12-01T07:00:00Z", 51.0, 13.0), vehicle = other.vehicle)) }.code)
@@ -204,7 +225,7 @@ class PositionCaptureTest {
         send(world, sc, batch(sc, Triple("2026-12-01T06:58:00Z", 51.0, 13.0)))
         // zwei alte Positionen (Empfang vor 40 bzw. 10 Tagen) direkt anlegen
         for ((days, minute) in listOf(40 to 1, 10 to 2)) fx.exec(
-            "INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,created_by) VALUES (?,?,?,?,ST_GeogFromText('POINT(13 51)'),5,?::timestamptz,now() - make_interval(days => ?),'system:test')",
+            "INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) VALUES (?,?,?,?,ST_GeogFromText('POINT(13 51)'),5,?::timestamptz,now() - make_interval(days => ?),'GOOD','system:test')",
             world.tenant.value, UUID.randomUUID(), sc.vehicle, sc.shift, "2026-12-01T06:0$minute:00Z", days)
         val target = PositionRetention.target()
         assertEquals("LK_STANDORT", target.dataClass); assertEquals(setOf(RetentionAction.DELETE), target.supportedActions)

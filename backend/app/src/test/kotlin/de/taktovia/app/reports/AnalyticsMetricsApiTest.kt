@@ -25,7 +25,7 @@ class AnalyticsMetricsApiTest {
                 j.update("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config,created_at) VALUES (?,?,'fixture','{}',now() - interval '1 day')", tenant.value, vehicle)
                 j.update("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?,TIMESTAMPTZ '2026-06-01T06:00:00Z',TIMESTAMPTZ '2026-06-01T14:00:00Z','Europe/Berlin',1,'PUBLISHED')", tenant.value, shift, driver, vehicle)
                 // vier Positionen im Minutentakt (etwa 111 m je Schritt) ohne Fahrtenplan: alles nicht zuordenbar
-                (0..3).forEach { i -> j.update("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,created_by) VALUES (?,?,?,?,ST_SetSRID(ST_MakePoint(9.0, 48.0 + ? / 1000.0),4326)::geography,5,TIMESTAMPTZ '2026-06-01T08:00:00Z' + ? * interval '1 minute','service:test')",
+                (0..3).forEach { i -> j.update("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,quality,created_by) VALUES (?,?,?,?,ST_SetSRID(ST_MakePoint(9.0, 48.0 + ? / 1000.0),4326)::geography,5,TIMESTAMPTZ '2026-06-01T08:00:00Z' + ? * interval '1 minute','GOOD','service:test')",
                     tenant.value, UUID.randomUUID(), vehicle, shift, i, i) }
             }
         }

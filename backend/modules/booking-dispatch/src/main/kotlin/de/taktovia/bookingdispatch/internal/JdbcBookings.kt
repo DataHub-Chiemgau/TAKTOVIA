@@ -244,9 +244,9 @@ internal class JdbcBookings(
         ).firstOrNull()
         // Fahrzeugidentifikation erst, wenn die Buchung im Plan steht (zugewiesen); nur Bezeichnung und Klasse
         val vehicle = if (eta == null) null else j.query(
-            "SELECT v.vehicle_label, v.vehicle_type FROM taktovia.capacity_hold h JOIN taktovia.vehicle_run vr ON vr.tenant_id = h.tenant_id AND vr.id = h.run_id " +
+            "SELECT v.vehicle_label, v.vehicle_type, v.id FROM taktovia.capacity_hold h JOIN taktovia.vehicle_run vr ON vr.tenant_id = h.tenant_id AND vr.id = h.run_id " +
                 "JOIN taktovia.vehicle v ON v.tenant_id = vr.tenant_id AND v.id = vr.vehicle_id WHERE h.id = ?",
-            { rs, _ -> rs.getString(1)?.let { VehicleIdentification(it, rs.getString(2)) } }, r.holdId,
+            { rs, _ -> rs.getString(1)?.let { VehicleIdentification(it, rs.getString(2), rs.getObject(3, UUID::class.java)) } }, r.holdId,
         ).firstOrNull()
         val policy = policy(j, ctx, r.serviceId)
         val deadline = booking.promise.pickupEarliest.minus(java.time.Duration.ofMinutes(policy.deadlineMin.toLong()))

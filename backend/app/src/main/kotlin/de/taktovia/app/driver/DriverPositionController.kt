@@ -21,6 +21,7 @@ class DriverPositionController(private val staff: StafftimeApi) {
         return linkedMapOf(
             "accepted" to r.accepted, "rejected" to r.rejected.size, "received_at" to r.receivedAt.toString(),
             "rejections" to r.rejected.map { linkedMapOf("index" to it.index, "reason" to it.reason.name) },
+            "unusable" to r.unusable.size, "unusable_indices" to r.unusable,
         )
     }
 }
