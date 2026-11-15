@@ -28,7 +28,7 @@
 - **Negativ:** Verbindung kurz unterbrochen zählt nicht zur Zielmenge, wird getrennt ausgewiesen; Relay gestoppt und wieder gestartet, Nachladen erscheint als Ausreißer; Fahrer erhält keine Revision eines fremden Fahrtenplans.
 - **Konkurrierend (Datentrennung):** zwei Planänderungen kurz nacheinander: dargestellt wird die höhere Revision; Planänderung parallel zu Fahrerereignis mit alter Revision führt zu definierter Konfliktantwort; zwei Mandanten parallel ohne Fremdzustellung.
 - **Referenztests:** kein Katalogtest benannt.
-- Testfälle: geplant:tests/performance/test_planrevision_p95.py::test_p95_commit_bis_darstellung_unter_referenzlast; geplant:tests/performance/test_planrevision_p95.py::test_hoehere_revision_wird_dargestellt_und_fremde_revision_nie_zugestellt; geplant:tests/performance/test_planrevision_p95.py::test_relay_neustart_nachladen_zaehlt_als_ausreisser; geplant:tests/performance/test_planrevision_p95.py::test_fahrerereignis_mit_alter_revision_liefert_konfliktantwort
+- Testfälle: tests/performance/test_planrevision_p95.py::test_p95_commit_bis_darstellung_unter_referenzlast; tests/performance/test_planrevision_p95.py::test_hoehere_revision_wird_dargestellt_und_fremde_revision_nie_zugestellt; tests/performance/test_planrevision_p95.py::test_relay_neustart_nachladen_zaehlt_als_ausreisser; tests/performance/test_planrevision_p95.py::test_fahrerereignis_mit_alter_revision_liefert_konfliktantwort; tests/performance/test_planrevision_logik.py::test_nachgeladene_zaehlen_als_ausreisser_nicht_als_erfolg
 
 ## Reviews
 

@@ -1,0 +1,731 @@
+{
+ "erstabruf_20_geraete": [
+  [
+   "200",
+   "RELEASED",
+   "1",
+   "2"
+  ]
+ ],
+ "verbunden_zu_beginn": {
+  "A": 250,
+  "B": 250
+ },
+ "serie_info": {
+  "commits": 600,
+  "rate_je_s": 6.0,
+  "dauer_s": 101.0
+ },
+ "konkurrenz_info": {
+  "doppelt": [
+   {
+    "run": "1cc34364-9cb0-4910-9fe9-7ce8bfd161c7",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   },
+   {
+    "run": "7ac7debf-5ca8-4480-b3d0-8816991b92da",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "377b34a7-10f7-45a5-bbd0-23a30641d313",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "491b4c0e-af67-4723-ba8b-92f947a1de51",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "05cd1efa-de90-464f-9f0a-fb7bca3f8de5",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "c12e9edc-7b79-4be5-8e59-ffbe8d26961a",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   },
+   {
+    "run": "1248d791-ca62-48f7-9911-e1cc13515884",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "df2c014b-4fda-4ea4-95d4-b3dbecb653bf",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "de4087c1-c203-4d37-90a2-8f97fb6465f0",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "487558aa-bf4c-4d45-b2aa-2cbaf1e43ad7",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "4c621018-a1c1-449b-9914-2c4fe827e823",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "0de3cf1b-9791-477e-8d66-6d680e2589b3",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "f6c75b66-3287-468d-9ded-b08b8baafe41",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "2cb40296-a151-4ec1-b8c3-6482910f493f",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "dabc2972-6c94-4afb-a69e-9a37fda15339",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   },
+   {
+    "run": "f634049b-8725-45ab-b71b-71ad93fc2c3b",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "794f3af1-5bb2-4bf4-85cc-64b2851aaaa9",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   },
+   {
+    "run": "a0ea285d-3568-49e2-b9e2-431c37e28a8b",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   },
+   {
+    "run": "fa60c27f-a2ea-43a0-a617-b1fa99984a4d",
+    "rev_a": 3,
+    "rev_b": 4,
+    "dargestellt": 4,
+    "rueckschritte": 0
+   },
+   {
+    "run": "cbbc784a-bff2-4deb-a61a-c17001bc51b6",
+    "rev_a": 4,
+    "rev_b": 5,
+    "dargestellt": 5,
+    "rueckschritte": 0
+   }
+  ],
+  "ack_parallel": [
+   {
+    "run": "00068bbd-23f5-4985-a85d-663d01eaede8",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "34622e20-4fcb-416d-8be7-88973d90cce0",
+    "vorab_status": 200,
+    "alte_revision": 3,
+    "neue_revision": 4,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"4\""
+   },
+   {
+    "run": "84069ea8-7b80-4f1d-bed8-b0dd26c47adb",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "81eab7e7-14d1-4e62-83c0-8541a0dd6145",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "058c12a2-5c0c-493c-ad4e-189d6ab6efda",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "cd05b6c8-f19f-423d-9353-c5cd12bc4d8b",
+    "vorab_status": 200,
+    "alte_revision": 3,
+    "neue_revision": 4,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"4\""
+   },
+   {
+    "run": "39c4344f-9032-4f77-a6a3-6ad73a371e69",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "70eb4455-95ff-4c7b-bf2d-97d237ec8a41",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "245c5563-7bfd-45ad-9d72-65b9b2d49c58",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "a0993ddd-f584-48a2-bfa4-e42e50eb776f",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "a523df11-cbc3-4300-837a-737d1be2b848",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "ee7022fe-c0c7-4876-b6d4-d8d9d95d35bc",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "cb78c00e-056b-4e90-a980-d93af50f6513",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "01c8ac37-845e-4c17-b972-c37b49ad1c92",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "e3eebcb4-5ed9-4e2c-821f-92e632c4c29b",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "be54791f-738f-4864-a31a-b924948a0c5e",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "c5b4f05a-9968-4468-a770-c846c4d411b0",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "fa43b59e-dd4f-4b60-8304-75c080f82ca7",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "ae3d18fa-40c4-49ca-a54c-58f61c8e8792",
+    "vorab_status": 200,
+    "alte_revision": 2,
+    "neue_revision": 3,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"3\""
+   },
+   {
+    "run": "5054233b-7769-4c69-b0f7-f09f723624fc",
+    "vorab_status": 200,
+    "alte_revision": 3,
+    "neue_revision": 4,
+    "parallel_status": 412,
+    "parallel_code": "REVISION_MISMATCH",
+    "nach_commit_status": 412,
+    "nach_commit_code": "REVISION_MISMATCH",
+    "etag_nach_commit": "\"4\""
+   }
+  ]
+ },
+ "unterbrochen_info": {
+  "geraete": 50,
+  "unterbrechung_s": 3.0
+ },
+ "stall_info": {
+  "haltedauer_s": 13.0,
+  "commits": 40
+ },
+ "phasen": {
+  "serie": {
+   "zielmenge_n": 594,
+   "latenz": {
+    "n": 594,
+    "min_s": 0.021,
+    "p50_s": 0.5554,
+    "p90_s": 0.9475,
+    "p95_s": 0.9908,
+    "p99_s": 1.0326,
+    "max_s": 1.3336,
+    "mean_s": 0.5497
+   },
+   "p95_zielmenge_inkl_ausreisser_s": 0.9908,
+   "anteil_innerhalb_ziel": 1.0,
+   "ueber_ziel": 0,
+   "verteilung": {
+    "0-0.25s": 122,
+    "0.25-0.5s": 135,
+    "0.5-1s": 313,
+    "1-2s": 24,
+    "2-5s": 0,
+    "5-10s": 0,
+    ">=10s": 0
+   },
+   "ausreisser_nachgeladen": 0,
+   "nicht_dargestellt": 0,
+   "unterbrochen_getrennt": {
+    "n": 6,
+    "nicht_dargestellt": 0,
+    "latenz": {
+     "n": 6,
+     "min_s": 0.2706,
+     "p50_s": 0.4041,
+     "p90_s": 0.9017,
+     "p95_s": 0.9017,
+     "p99_s": 0.9017,
+     "max_s": 0.9017,
+     "mean_s": 0.4977
+    }
+   },
+   "teilstrecken": {
+    "commit_bis_empfang": {
+     "n": 594,
+     "min_s": 0.0034,
+     "p50_s": 0.5268,
+     "p90_s": 0.9253,
+     "p95_s": 0.9661,
+     "p99_s": 1.0037,
+     "max_s": 1.029,
+     "mean_s": 0.52
+    },
+    "empfang_bis_darstellung": {
+     "n": 594,
+     "min_s": 0.0098,
+     "p50_s": 0.0199,
+     "p90_s": 0.0421,
+     "p95_s": 0.0576,
+     "p99_s": 0.2741,
+     "max_s": 0.7573,
+     "mean_s": 0.0297
+    }
+   },
+   "ziel_s": 10.0,
+   "ziel_erfuellt": true
+  },
+  "konkurrenz": {
+   "zielmenge_n": 60,
+   "latenz": {
+    "n": 60,
+    "min_s": 0.1162,
+    "p50_s": 0.6041,
+    "p90_s": 0.9974,
+    "p95_s": 1.0322,
+    "p99_s": 1.0941,
+    "max_s": 1.0941,
+    "mean_s": 0.6361
+   },
+   "p95_zielmenge_inkl_ausreisser_s": 1.0322,
+   "anteil_innerhalb_ziel": 1.0,
+   "ueber_ziel": 0,
+   "verteilung": {
+    "0-0.25s": 8,
+    "0.25-0.5s": 8,
+    "0.5-1s": 38,
+    "1-2s": 6,
+    "2-5s": 0,
+    "5-10s": 0,
+    ">=10s": 0
+   },
+   "ausreisser_nachgeladen": 0,
+   "nicht_dargestellt": 0,
+   "unterbrochen_getrennt": {
+    "n": 0,
+    "nicht_dargestellt": 0,
+    "latenz": {
+     "n": 0
+    }
+   },
+   "teilstrecken": {
+    "commit_bis_empfang": {
+     "n": 60,
+     "min_s": 0.0966,
+     "p50_s": 0.5962,
+     "p90_s": 0.9801,
+     "p95_s": 1.0158,
+     "p99_s": 1.0686,
+     "max_s": 1.0686,
+     "mean_s": 0.6198
+    },
+    "empfang_bis_darstellung": {
+     "n": 60,
+     "min_s": 0.0,
+     "p50_s": 0.0135,
+     "p90_s": 0.0362,
+     "p95_s": 0.0437,
+     "p99_s": 0.0907,
+     "max_s": 0.0907,
+     "mean_s": 0.0163
+    }
+   },
+   "ziel_s": 10.0,
+   "ziel_erfuellt": true
+  },
+  "unterbrochen": {
+   "zielmenge_n": 0,
+   "latenz": {
+    "n": 0
+   },
+   "p95_zielmenge_inkl_ausreisser_s": null,
+   "anteil_innerhalb_ziel": null,
+   "ueber_ziel": 0,
+   "verteilung": {
+    "0-0.25s": 0,
+    "0.25-0.5s": 0,
+    "0.5-1s": 0,
+    "1-2s": 0,
+    "2-5s": 0,
+    "5-10s": 0,
+    ">=10s": 0
+   },
+   "ausreisser_nachgeladen": 0,
+   "nicht_dargestellt": 0,
+   "unterbrochen_getrennt": {
+    "n": 50,
+    "nicht_dargestellt": 0,
+    "latenz": {
+     "n": 50,
+     "min_s": 2.333,
+     "p50_s": 2.5705,
+     "p90_s": 2.633,
+     "p95_s": 2.6405,
+     "p99_s": 2.6895,
+     "max_s": 2.6895,
+     "mean_s": 2.5612
+    }
+   },
+   "teilstrecken": {
+    "commit_bis_empfang": {
+     "n": 0
+    },
+    "empfang_bis_darstellung": {
+     "n": 0
+    }
+   },
+   "ziel_s": 10.0,
+   "ziel_erfuellt": false
+  },
+  "stall": {
+   "zielmenge_n": 40,
+   "latenz": {
+    "n": 24,
+    "min_s": 5.056,
+    "p50_s": 7.1067,
+    "p90_s": 9.1645,
+    "p95_s": 9.5861,
+    "p99_s": 9.7724,
+    "max_s": 9.7724,
+    "mean_s": 7.4093
+   },
+   "p95_zielmenge_inkl_ausreisser_s": "unendlich",
+   "anteil_innerhalb_ziel": 0.6,
+   "ueber_ziel": 0,
+   "verteilung": {
+    "0-0.25s": 0,
+    "0.25-0.5s": 0,
+    "0.5-1s": 0,
+    "1-2s": 0,
+    "2-5s": 0,
+    "5-10s": 24,
+    ">=10s": 0
+   },
+   "ausreisser_nachgeladen": 16,
+   "nicht_dargestellt": 0,
+   "unterbrochen_getrennt": {
+    "n": 0,
+    "nicht_dargestellt": 0,
+    "latenz": {
+     "n": 0
+    }
+   },
+   "teilstrecken": {
+    "commit_bis_empfang": {
+     "n": 24,
+     "min_s": 5.0287,
+     "p50_s": 7.0971,
+     "p90_s": 9.1396,
+     "p95_s": 9.5599,
+     "p99_s": 9.7523,
+     "max_s": 9.7523,
+     "mean_s": 7.3834
+    },
+    "empfang_bis_darstellung": {
+     "n": 24,
+     "min_s": 0.0096,
+     "p50_s": 0.0249,
+     "p90_s": 0.0415,
+     "p95_s": 0.044,
+     "p99_s": 0.0511,
+     "max_s": 0.0511,
+     "mean_s": 0.0258
+    }
+   },
+   "ziel_s": 10.0,
+   "ziel_erfuellt": false
+  }
+ },
+ "stichprobe": {
+  "serie": 600,
+  "konkurrenz": 60,
+  "unterbrochen": 50,
+  "stall": 40
+ },
+ "stichprobe_je_mandant": {
+  "B": 384,
+  "A": 366
+ },
+ "stall_latenz": {
+  "n": 40,
+  "min_s": 5.056,
+  "p50_s": 9.0525,
+  "p90_s": 12.6352,
+  "p95_s": 13.4079,
+  "p99_s": 13.8279,
+  "max_s": 13.8279,
+  "mean_s": 9.1678
+ },
+ "unterbrochen_latenz": {
+  "n": 50,
+  "min_s": 2.333,
+  "p50_s": 2.5705,
+  "p90_s": 2.633,
+  "p95_s": 2.6405,
+  "p99_s": 2.6895,
+  "max_s": 2.6895,
+  "mean_s": 2.5612
+ },
+ "fremdzustellung": {
+  "fremde_ereignisse_gesamt": 0,
+  "rueckschritte_gesamt": 0,
+  "ereignisse_gesamt": 750,
+  "geraete": 500,
+  "geraete_fehler": [],
+  "wiederverbindungen_gesamt": 1050,
+  "http_wiederholungen_veraltete_verbindung": 167
+ },
+ "hintergrundlast": {
+  "n": 4814,
+  "min_ms": 1.851,
+  "mean_ms": 24.928,
+  "p50_ms": 14.321,
+  "p90_ms": 35.412,
+  "p95_ms": 62.926,
+  "p99_ms": 245.69,
+  "max_ms": 845.054,
+  "error_count": 0,
+  "shed_429": 0,
+  "error_rate": 0.0,
+  "rps": 33.3
+ },
+ "negativ": {
+  "fremder_mandant": [
+   404,
+   404,
+   404,
+   404,
+   404
+  ],
+  "anderer_fahrer": [
+   404,
+   404,
+   404,
+   404,
+   404
+  ]
+ },
+ "chain_db": {
+  "ereignisse_run_revised": 750,
+  "outbox_bis_live_event_p95_s": 0.0006,
+  "outbox_bis_live_event_max_s": 0.1109,
+  "unveroeffentlicht": 786,
+  "aeltester_unveroeffentlichter_eintrag_s": 158.8,
+  "relay": "nicht verdrahtet: `published_at` bleibt leer, Relay-Verzug nicht messbar (die Zustellung an Fahrer läuft über `live_event`, geschrieben vom Trigger in der Commit-Transaktion)"
+ },
+ "saettigung": {
+  "proben": 73,
+  "app_cpu_pct_von_einem_kern_max": 169.0,
+  "maschine_cpu_pct_max": 99.0,
+  "app_rss_mb_max": 691,
+  "db_verbindungen_max": 22,
+  "sperrwartende_max": 0,
+  "outbox_wartend_max": 786
+ },
+ "uhrenabgleich": {
+  "anfang": {
+   "versatz_ms": 0.001,
+   "hin_rueck_ms": 0.025,
+   "runden": 25,
+   "bemerkung": "gleiche Maschine; Messzeiten stammen alle aus der Wanduhr des Messprozesses"
+  },
+  "ende": {
+   "versatz_ms": -0.0,
+   "hin_rueck_ms": 0.02,
+   "runden": 25,
+   "bemerkung": "gleiche Maschine; Messzeiten stammen alle aus der Wanduhr des Messprozesses"
+  }
+ },
+ "aufbau_s": 12.0,
+ "gestartet": "2026-11-15T04:23:07.221851+00:00",
+ "status_zielwert": "vorläufig, D-05 offen",
+ "parameter": {
+  "mandanten": 2,
+  "fahrzeuge_je_mandant": 250,
+  "geraete_gesamt": 500,
+  "hintergrundlast": "Positionsmeldung je Fahrer alle 15 s (POST /v1/driver/positions)",
+  "skala": 1.0
+ },
+ "urteil": "erfüllt"
+}

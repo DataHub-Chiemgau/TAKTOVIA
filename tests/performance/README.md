@@ -59,6 +59,14 @@ Aufruf (mit Opt-in, weil Minuten Laufzeit): `cd backend && ./gradlew :app:bootJa
 gelten für diese Umgebung und nicht als Abnahme (D-05 offen). Die Produktionsverdrahtung von `/v1/ride-offers` bindet Angebote noch nicht an Kandidatensuche und Solver (`CandidateGate.PASS_THROUGH`); Hold und Confirm laufen mit einer
 im Testaufbau gesetzten Planbindung (SQL). Beides steht in jedem Bericht unter „Grenzen“.
 
+## Fahrer-Planrevision: Commit bis Darstellung (WP-M5-13)
+
+`refload/planrevision.py` (Auswertung, Gerätesimulation, Planschreiber), `refload/planrevision_run.py` (Lauf, Protokoll), `test_planrevision_p95.py` (Messlauf gegen die echte Anwendung, Opt-in `TAKTOVIA_PERF_RUN=1`),
+`test_planrevision_logik.py` (Auswertungslogik, läuft immer). 500 verbundene Geräte (2 Mandanten x 250, Live-Kanal offen) unter Grundlast der Positionsmeldungen; Phasen: Serie (p95-Nachweis), Konkurrenz (zwei Revisionen
+kurz nacheinander, Bestätigung mit alter Revision parallel zur Planänderung), kurze Verbindungsunterbrechung (getrennt ausgewiesen), angehaltener Verteilweg (Ausreißer). `TAKTOVIA_PERF_PLANREV_SCALE` skaliert die Serie
+(Standard 1,0). Messpunkt „dargestellt“ im Gerät: `mobile/driver/lib/run/display_probe.dart` (nicht ausgeführt, Flutter fehlt); die Simulation ersetzt das Zielgerät (OP-27). Der Relay ist in der Anwendung nicht
+verdrahtet, der Planschreiber bildet `JdbcRunPlans.appendIn` nach: beides und weitere Grenzen stehen im Protokoll `protokolle/planrevision-m5-13.md`. Zielwert 10 s vorläufig, D-05 offen: keine Abnahme.
+
 ## Verfügbarkeitsmessung (WP-M5-05)
 
 `availability/`: Tests der synthetischen Proben, des Monatsberichts und des Probemandanten (Werkzeug: `infra/availability`); Nachweis gegen die Anwendung in `protokolle/m5-05/`.
