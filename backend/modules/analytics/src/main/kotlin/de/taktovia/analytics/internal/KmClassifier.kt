@@ -15,6 +15,9 @@ internal data class KmShift(val id: UUID, val from: Instant, val to: Instant, va
 /** Fahrgast an Bord (Einstieg bis Ausstieg einer Buchung); [to] `null` = nie ausgestiegen. */
 internal data class KmOccupancy(val bookingId: UUID, val from: Instant, val to: Instant?)
 
+/** Besetzung eines PASSENGER-Abschnitts: [passengers] Fahrgäste an Bord (mindestens 1) über [meters] Meter. */
+internal data class KmOccupancySliceOut(val from: Instant, val to: Instant, val passengers: Int, val meters: Long)
+
 internal data class KmSegmentOut(val from: Instant, val to: Instant, val category: KmCategory, val meters: Long)
 
 /**
@@ -39,6 +42,28 @@ internal object KmClassifier {
             val last = out.lastOrNull()
             if (last != null && last.category == cat && last.to == a.at) out[out.size - 1] = last.copy(to = p.at, meters = last.meters + meters)
             else out += KmSegmentOut(a.at, p.at, cat, meters)
+        }
+        return out
+    }
+
+    /**
+     * Besetzung (WP-M4-56): je Abschnitt zwischen zwei Positionen mit Kategorie `PASSENGER` die Zahl der Fahrgäste an Bord (Einstieg ≤ Mitte < Ausstieg, ein nie ausgestiegener Fahrgast bleibt bis zum
+     * Schichtende an Bord; ein Fahrgast je Buchung). Aufeinanderfolgende Abschnitte mit gleicher Zahl werden zusammengefasst; die Summe der Meter ist die der PASSENGER-Abschnitte von [classify].
+     */
+    fun occupancy(points: List<KmPoint>, shifts: List<KmShift>, occupancy: List<KmOccupancy>): List<KmOccupancySliceOut> {
+        val out = ArrayList<KmOccupancySliceOut>()
+        var prev: KmPoint? = null
+        for (p in points) {
+            val a = prev; prev = p
+            if (a == null || !p.at.isAfter(a.at)) continue
+            if (categoryOf(a.at, p.at, shifts, occupancy) != KmCategory.PASSENGER) continue
+            val mid = a.at.plus(Duration.between(a.at, p.at).dividedBy(2))
+            val shift = shifts.first { !mid.isBefore(it.from) && mid.isBefore(it.to) }
+            val n = occupancy.count { !mid.isBefore(it.from) && mid.isBefore(it.to ?: shift.to) }
+            val meters = p.distanceFromPrevM ?: 0L
+            val last = out.lastOrNull()
+            if (last != null && last.passengers == n && last.to == a.at) out[out.size - 1] = last.copy(to = p.at, meters = last.meters + meters)
+            else out += KmOccupancySliceOut(a.at, p.at, n, meters)
         }
         return out
     }

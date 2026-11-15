@@ -1,0 +1,2 @@
+tabelle;aggregat;loeschklasse;bemerkung
+vehicle_km_occupancy;Besetzung eines Kilometerabschnitts (WP-M4-56);LK_BETRIEB;nur Anzahl der Fahrgaeste, keine Personenbezuege, append-only

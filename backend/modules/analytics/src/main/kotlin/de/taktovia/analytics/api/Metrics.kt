@@ -102,6 +102,8 @@ data class MetricValue(
     val exclusions: List<MetricExclusion> = emptyList(), val approximation: MetricApproximation? = null,
     /** Nur Ankunftskennzahlen (WP-M4-54): Ankünfte mit Ist-Zeit ohne zugesagte Ankunftszeit im Zeitraum, gesondert ausgewiesen und nicht im Nenner; `null` bei Dienstfilter (der Dienst ist ohne Zusage unbekannt) und bei anderen Kennzahlen. */
     val withoutPromise: Long? = null,
+    /** Nur Kilometerkennzahlen (WP-M4-56/-57): Zerlegung des Werts, z. B. Kilometer je Kategorie der Kilometerklassifikation (Schlüssel `PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`, `UNASSIGNED`). */
+    val components: Map<String, BigDecimal> = emptyMap(),
 )
 
 /** Änderung einer Definition: nur die gesetzten Felder weichen von der jüngsten Version ab (neue Version im Entwurf, Freigabe getrennt). */

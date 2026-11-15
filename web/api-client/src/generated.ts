@@ -1343,6 +1343,7 @@ export interface MetricValue {
   exclusions: MetricExclusion[];
   approximation: 'ACQUISITION_BASIS_P1' | null;
   without_promise?: number | null;
+  components?: Record<string, unknown> | null;
 }
 
 export interface RejectionRow {

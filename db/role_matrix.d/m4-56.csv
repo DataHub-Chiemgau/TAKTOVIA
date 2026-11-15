@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+vehicle_km_occupancy;SELECT,INSERT;WP-M4-56: Besetzung (Fahrgaeste an Bord) je Abschnitt eines Klassifikationslaufs, nur anhaengen (Trigger)

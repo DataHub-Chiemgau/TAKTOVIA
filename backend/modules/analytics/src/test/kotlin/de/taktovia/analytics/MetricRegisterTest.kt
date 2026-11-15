@@ -49,17 +49,17 @@ class MetricRegisterTest {
     fun jede_registrierte_kennzahl_weist_zaehler_nenner_ausschluesse_zeitbezug_und_filterdimensionen_aus() {
         val t = fx.tenant()
         val defs = fx.metrics.definitions(t)
-        assertEquals(24, defs.size, "21 P1-Kennzahlen, die technischen Partnerablehnungen und die beiden Energiekosten-Kennzahlen (WP-M4-43)")
+        assertEquals(26, defs.size, "21 P1-Kennzahlen, die technischen Partnerablehnungen, die beiden Energiekosten-Kennzahlen (WP-M4-43) sowie Fahrzeugkilometer und Betriebsstunden (WP-M4-56)")
         val p1 = setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion",
             "cancellation_rate_passenger", "cancellation_rate_operator", "no_show_rate", "pickup_on_time", "arrival_on_time", "mean_pickup_delay", "mean_arrival_delay", "empty_km_rate", "productive_km",
             "capacity_utilization_distance_weighted", "seat_time_utilization", "passenger_km")
         assertTrue(defs.map { it.metricId }.containsAll(p1))
         for (d in defs) {
             assertTrue(d.numerator.isNotBlank() && d.denominator.isNotBlank() && d.exclusions.isNotBlank() && d.timeBasis.isNotBlank(), d.metricId)
-            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(if (d.metricId in setOf("pickup_on_time", "mean_pickup_delay", "no_show_rate", "arrival_on_time", "mean_arrival_delay")) 2 else 1, d.version, "Abholkennzahlen: Version 2 (WP-M4-53, WP-M4-54), No-Show-Rate: Version 2 (WP-M4-55)"); assertNotNull(d.approvedAt)
+            assertTrue(d.filterDimensions.all { it in setOf("service_id", "channel", "vehicle_id", "energy", "currency") }, d.metricId); assertEquals(if (d.metricId in setOf("pickup_on_time", "mean_pickup_delay", "no_show_rate", "arrival_on_time", "mean_arrival_delay", "empty_km_rate", "productive_km", "passenger_km", "seat_time_utilization", "capacity_utilization_distance_weighted")) 2 else 1, d.version, "Abholkennzahlen: Version 2 (WP-M4-53, WP-M4-54, -56, -57), No-Show-Rate: Version 2 (WP-M4-55)"); assertNotNull(d.approvedAt)
             assertEquals(d.executable, d.notExecutableReason == null, d.metricId)
         }
-        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour", "pickup_on_time", "mean_pickup_delay", "no_show_rate", "arrival_on_time", "mean_arrival_delay"), defs.filter { it.executable }.map { it.metricId }.toSet())
+        assertEquals(setOf("requests", "technical_request_errors", "capacity_rejections", "personnel_rejections", "equipment_rejections", "area_rejections", "time_window_rejections", "offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator", "energy_cost_per_100km", "energy_cost_per_operating_hour", "pickup_on_time", "mean_pickup_delay", "no_show_rate", "arrival_on_time", "mean_arrival_delay", "vehicle_km", "operating_hours", "empty_km_rate", "productive_km", "passenger_km", "seat_time_utilization", "capacity_utilization_distance_weighted"), defs.filter { it.executable }.map { it.metricId }.toSet())
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, defs.single { it.metricId == "technical_partner_rejections" }.notExecutableReason, "Technische Partnerablehnungen nur als Definition (keine Partner in P1)")
     }
 
