@@ -168,7 +168,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
                 "(SELECT count(*) > 0 FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS has_data",
             { rs, _ -> NoShowCounts(rs.getLong("denominator"), rs.getLong("numerator"), rs.getLong("denominator_all"), rs.getLong("facts_total"), rs.getTimestamp("processed_until"), rs.getBoolean("incomplete"), rs.getInt("gaps"), rs.getLong("events"), rs.getBoolean("has_data")) },
             from, to, svc, svc, from, to, from, to, svc, svc).single()
-        return Counts(r.requests, 0, emptyMap(), r.unfiltered, r.factsTotal, r.asOf, r.incomplete, r.gaps, r.events, r.hasData) to r.noShow
+        return Counts(r.requests, 0, emptyMap(), listOf(r.unfiltered), r.factsTotal, r.asOf, r.incomplete, r.gaps, r.events, r.hasData) to r.noShow
     }
 
     private fun coverage(c: Counts): BigDecimal? {
