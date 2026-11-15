@@ -11,6 +11,8 @@ import de.taktovia.analytics.api.MetricQuery
 import de.taktovia.analytics.api.MetricValue
 import de.taktovia.analytics.api.RejectionReport
 import de.taktovia.analytics.api.RejectionRow
+import de.taktovia.analytics.api.ReportDimensions
+import de.taktovia.analytics.api.ReportScope
 import de.taktovia.analytics.api.ReportingPeriod
 import de.taktovia.app.identity.RequestContexts
 import de.taktovia.config.api.ConfigApi
@@ -46,6 +48,9 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         @RequestParam(name = "service_id", required = false) serviceId: String?, @RequestParam(name = "channel", required = false) channel: String?,
         @RequestParam(name = "vehicle_id", required = false) vehicleId: String?, @RequestParam(name = "energy", required = false) energyParam: String?,
         @RequestParam(name = "currency", required = false) currency: String?,
+        @RequestParam(name = "operator_id", required = false) operatorId: String?, @RequestParam(name = "region_id", required = false) regionId: String?,
+        @RequestParam(name = "service_area_id", required = false) serviceAreaId: String?, @RequestParam(name = "vehicle_type", required = false) vehicleType: String?,
+        @RequestParam(name = "day", required = false) dayParam: String?, @RequestParam(name = "hour", required = false) hourParam: String?,
         @RequestParam(name = "breakdown", required = false) breakdown: String?, @RequestParam(name = "reason_code", required = false) reasonCode: String?,
         request: HttpServletRequest,
     ): Map<String, Any?> {
@@ -65,26 +70,43 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         val vehicle = vehicleId?.let { s -> runCatching { UUID.fromString(s) }.getOrNull() ?: run { bad("vehicle_id", ViolationCode.INVALID_FORMAT); null } }
         val energy = energyParam?.let { s -> EnergyKind.entries.firstOrNull { it.name == s } ?: run { bad("energy", ViolationCode.NOT_IN_ENUM); null } }
         if (currency != null && !CURRENCY.matches(currency)) bad("currency", ViolationCode.PATTERN_MISMATCH)
+        // Berichtsdimensionen (WP-M4-58). Ein `tenant_id` (Query oder Header) wird nie ausgewertet: der Mandant ergibt sich allein aus dem Token, ein abweichender Wert wird vom Anfragefilter mit 404 abgewiesen.
+        fun uuidParam(name: String, value: String?): UUID? = value?.let { s -> runCatching { UUID.fromString(s) }.getOrNull() ?: run { bad(name, ViolationCode.INVALID_FORMAT); null } }
+        val operator = uuidParam("operator_id", operatorId); val region = uuidParam("region_id", regionId); val area = uuidParam("service_area_id", serviceAreaId)
+        if (vehicleType != null && !VEHICLE_TYPE.matches(vehicleType)) bad("vehicle_type", ViolationCode.PATTERN_MISMATCH)
+        val day = dayParam?.let { s -> runCatching { LocalDate.parse(s) }.getOrNull() ?: run { bad("day", ViolationCode.INVALID_FORMAT); null } }
+        val hour = hourParam?.let { s -> s.toIntOrNull()?.takeIf { it in 0..23 } ?: run { bad("hour", ViolationCode.INVALID_VALUE); null } }
 
         if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel") bad("breakdown", ViolationCode.NOT_IN_ENUM)
         if (reasonCode != null && breakdown != "rejection_reason") bad("reason_code", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && !CODE.matches(reasonCode)) bad("reason_code", ViolationCode.PATTERN_MISMATCH)
-        if (from == null && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null)) bad("from", ViolationCode.REQUIRED)
+        if (from == null && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null || operatorId != null || regionId != null ||
+                serviceAreaId != null || vehicleType != null || dayParam != null || hourParam != null)) bad("from", ViolationCode.REQUIRED)
         if (v.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Mindestens ein Parameter ist ungültig.", v)
 
-        val filter = MetricFilter(service, channel, vehicle, energy, currency)
+        val filter = MetricFilter(service, channel, vehicle, energy, currency, operator, region, area, vehicleType, hour, day)
         val period = fromDay?.let { ReportingPeriod.ofDays(reportingZone(ctx), it, toDay ?: it) }
+        val scope = ReportScope(ctx, minGroupSize(ctx))
         val definitions: List<MetricDefinition>; val values: List<MetricValue>?
         if (period != null) {
-            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter), ConfigPickupToleranceSource(config, ctx))
+            values = analytics.metrics.evaluate(ctx.tenant, MetricQuery(period, metricId, versionNo, filter, scope), ConfigPickupToleranceSource(config, ctx))
             definitions = values.map { it.definition }
         } else {
             values = null
             definitions = if (metricId != null) listOf(analytics.metrics.definition(ctx.tenant, metricId, versionNo)) else analytics.metrics.definitions(ctx.tenant)
         }
-        val rejections = if (period != null && breakdown == "rejection_reason") analytics.metrics.rejections(ctx.tenant, period, filter, reasonCode) else null
-        val funnel = if (period != null && breakdown == "funnel") analytics.metrics.funnel(ctx.tenant, period, filter) else null
-        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to values?.map(::valueJson), "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson))
+        val rejections = if (period != null && breakdown == "rejection_reason") analytics.metrics.rejections(ctx.tenant, period, filter, reasonCode, scope) else null
+        val funnel = if (period != null && breakdown == "funnel") analytics.metrics.funnel(ctx.tenant, period, filter, scope) else null
+        // Listenhülle der Plattform: `items` (die Kennzahlwerte, leer ohne Zeitraum), `next_cursor` (die Menge ist durch das Kennzahlregister begrenzt, es gibt keine Folgeseite) und `as_of` (ältester Datenstand der Werte)
+        val valueItems = values?.map(::valueJson)
+        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to valueItems, "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson),
+            "items" to (valueItems ?: emptyList()), "next_cursor" to null, "as_of" to values?.mapNotNull { it.asOf }?.minOrNull()?.toString())
+    }
+
+    /** Wirksamer Parameter `kpi_aggregation_min_n` des Mandanten; ohne gültigen Wert gilt die Schwelle des Registers. */
+    private fun minGroupSize(ctx: RequestContext): Int? {
+        val item = config.effective.resolve(ctx, EffectiveRequest(parameter = "kpi_aggregation_min_n")).items.firstOrNull()
+        return (item?.takeIf { it.status == EffectiveStatus.EFFECTIVE }?.value as? Number)?.toInt()?.takeIf { it >= 2 }
     }
 
     /** `reporting_timezone` des Mandanten (IANA-Zone); ohne wirksamen oder lesbaren Wert Europe/Berlin. */
@@ -96,7 +118,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
 
     private fun definitionJson(d: MetricDefinition): Map<String, Any?> = linkedMapOf(
         "metric_id" to d.metricId, "version" to d.version, "name" to d.name, "value_kind" to d.valueKind.name, "unit" to d.unit, "numerator" to d.numerator, "denominator" to d.denominator,
-        "exclusions" to d.exclusions, "time_basis" to d.timeBasis, "period_basis" to d.periodBasis, "filter_dimensions" to d.filterDimensions, "executable" to d.executable,
+        "exclusions" to d.exclusions, "time_basis" to d.timeBasis, "period_basis" to d.periodBasis, "filter_dimensions" to d.filterDimensions, "report_dimensions" to ReportDimensions.extra(d.metricId).sorted(), "executable" to d.executable,
         "not_executable_reason" to d.notExecutableReason?.name,
     )
 
@@ -112,21 +134,25 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
 
     private fun rowJson(r: RejectionRow): Map<String, Any?> = linkedMapOf("code" to r.code, "group" to r.group, "metric" to r.metric, "text" to r.text, "texts" to r.texts, "primary_count" to r.primaryCount, "secondary_count" to r.secondaryCount)
 
+    /** Eine unterdrückte kleine Gruppe zeigt `suppressed: true` und keine Zahlen (null), nie 0. */
     private fun rejectionsJson(r: RejectionReport): Map<String, Any?> = linkedMapOf(
-        "attempts" to r.attempts, "rejections" to r.rejections, "technical_errors" to r.technicalErrors, "state" to r.state.name, "coverage" to r.coverage, "as_of" to r.asOf?.toString(),
-        "source_events" to r.sourceEvents, "reason_code" to r.reasonCode, "rows" to r.rows.map(::rowJson),
+        "attempts" to if (r.suppressed) null else r.attempts, "rejections" to if (r.suppressed) null else r.rejections, "technical_errors" to if (r.suppressed) null else r.technicalErrors, "state" to r.state.name,
+        "suppressed" to r.suppressed, "coverage" to r.coverage, "as_of" to r.asOf?.toString(), "source_events" to r.sourceEvents, "reason_code" to r.reasonCode, "rows" to r.rows.map(::rowJson),
     )
 
     /** Vier getrennte Zählgrößen (`counts`, nie als Summe) und die getrennten Endzustände (`end_states`) des Nachfragetrichters. */
     private fun funnelJson(f: FunnelReport): Map<String, Any?> = linkedMapOf(
         "period" to periodJson(f.period), "filter" to f.filter.toMap(),
-        "counts" to linkedMapOf("requests" to f.requests, "offers" to f.offers, "confirmed_bookings" to f.confirmedBookings, "completed_bookings" to f.completedBookings),
-        "end_states" to linkedMapOf("request_rejected" to f.requestRejected, "request_technical_error" to f.requestTechnicalError, "offer_not_booked" to f.offerNotBooked, "payment_failed" to f.paymentFailed,
-            "cancelled_by_passenger" to f.cancelledByPassenger, "cancelled_by_operator" to f.cancelledByOperator, "cancelled_other" to f.cancelledOther),
-        "unlinked_bookings" to f.unlinkedBookings, "state" to f.state.name, "coverage" to f.coverage, "as_of" to f.asOf?.toString(), "source_events" to f.sourceEvents,
+        "counts" to linkedMapOf("requests" to hide(f, f.requests), "offers" to hide(f, f.offers), "confirmed_bookings" to hide(f, f.confirmedBookings), "completed_bookings" to hide(f, f.completedBookings)),
+        "end_states" to linkedMapOf("request_rejected" to hide(f, f.requestRejected), "request_technical_error" to hide(f, f.requestTechnicalError), "offer_not_booked" to hide(f, f.offerNotBooked),
+            "payment_failed" to hide(f, f.paymentFailed), "cancelled_by_passenger" to hide(f, f.cancelledByPassenger), "cancelled_by_operator" to hide(f, f.cancelledByOperator), "cancelled_other" to hide(f, f.cancelledOther)),
+        "unlinked_bookings" to hide(f, f.unlinkedBookings), "suppressed" to f.suppressed, "state" to f.state.name, "coverage" to f.coverage, "as_of" to f.asOf?.toString(), "source_events" to f.sourceEvents,
     )
 
+    private fun hide(f: FunnelReport, n: Long): Long? = if (f.suppressed) null else n
+
     private companion object {
+        val VEHICLE_TYPE = Regex("^[A-Z][A-Z0-9_]{1,39}$")
         val METRIC_ID = Regex("^[a-z][a-z0-9_]{1,63}$")
         val CODE = Regex("^[A-Z][A-Z0-9_]{1,39}$")
         val CURRENCY = Regex("^[A-Z]{3}$")

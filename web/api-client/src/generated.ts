@@ -1299,6 +1299,7 @@ export interface MetricDefinition {
   time_basis: string;
   period_basis: 'BUSINESS_DAY_LOCAL' | 'INSTANT';
   filter_dimensions: ('service_id' | 'channel' | 'vehicle_id' | 'energy' | 'currency')[];
+  report_dimensions: ('operator_id' | 'region_id' | 'service_area_id' | 'vehicle_id' | 'vehicle_type' | 'hour' | 'day')[];
   executable: boolean;
   not_executable_reason: 'NOT_EXECUTABLE_IN_THIS_RELEASE' | 'NO_PARTNERS_IN_P1' | null;
 }
@@ -1309,6 +1310,13 @@ export interface MetricFilterUsed {
   vehicle_id?: UUID;
   energy?: 'FUEL' | 'ELECTRIC';
   currency?: string;
+  operator_id?: UUID;
+  region_id?: UUID;
+  service_area_id?: UUID;
+  vehicle_type?: string;
+  hour?: string;
+  day?: string;
+  scope?: string;
 }
 
 export interface MetricExclusion {
@@ -1355,32 +1363,33 @@ export interface RejectionRow {
 }
 
 export interface RejectionBreakdown {
-  attempts: number;
-  rejections: number;
-  technical_errors: number;
+  attempts: number | null;
+  rejections: number | null;
+  technical_errors: number | null;
   state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE';
+  suppressed: boolean;
   coverage: number | null;
   as_of: string | null;
-  source_events: number;
+  source_events: number | null;
   reason_code: string | null;
   rows: RejectionRow[];
 }
 
 export interface FunnelCounts {
-  requests: number;
-  offers: number;
-  confirmed_bookings: number;
-  completed_bookings: number;
+  requests: number | null;
+  offers: number | null;
+  confirmed_bookings: number | null;
+  completed_bookings: number | null;
 }
 
 export interface FunnelEndStates {
-  request_rejected: number;
-  request_technical_error: number;
-  offer_not_booked: number;
-  payment_failed: number;
-  cancelled_by_passenger: number;
-  cancelled_by_operator: number;
-  cancelled_other: number;
+  request_rejected: number | null;
+  request_technical_error: number | null;
+  offer_not_booked: number | null;
+  payment_failed: number | null;
+  cancelled_by_passenger: number | null;
+  cancelled_by_operator: number | null;
+  cancelled_other: number | null;
 }
 
 export interface FunnelBreakdown {
@@ -1388,8 +1397,9 @@ export interface FunnelBreakdown {
   filter: MetricFilterUsed;
   counts: FunnelCounts;
   end_states: FunnelEndStates;
-  unlinked_bookings: number;
+  unlinked_bookings: number | null;
   state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE';
+  suppressed: boolean;
   coverage: number | null;
   as_of: string | null;
   source_events: number;
@@ -1400,6 +1410,9 @@ export interface AnalyticsMetrics {
   values: MetricValue[] | null;
   rejections: RejectionBreakdown | null;
   funnel: FunnelBreakdown | null;
+  items?: MetricValue[];
+  next_cursor?: null;
+  as_of?: string | null;
 }
 
 export interface KmCategories {
@@ -5026,7 +5039,7 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason' | 'funnel'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; operator_id?: UUID; region_id?: UUID; service_area_id?: UUID; vehicle_type?: string; day?: string; hour?: number; breakdown?: 'rejection_reason' | 'funnel'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;
@@ -6645,7 +6658,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorAlerts: { method: 'GET', path: '/v1/operator/alerts', pathParams: [], query: ['state', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
-  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'vehicle_id', 'energy', 'currency', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'vehicle_id', 'energy', 'currency', 'operator_id', 'region_id', 'service_area_id', 'vehicle_type', 'day', 'hour', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
   getVehicleKmClasses: { method: 'GET', path: '/v1/analytics/vehicle-km', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

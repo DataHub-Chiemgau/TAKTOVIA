@@ -125,22 +125,26 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
     private fun attempt(j: JdbcOperations, id: UUID) {
         val p = rows(j, Source.ATTEMPT, id).lastOrNull()?.p ?: return    // höchste Revision gewinnt
         val secondary = strings(p, "secondary_reasons")
-        j.update("INSERT INTO taktovia.fact_attempt(tenant_id, attempt_id, service_id, outcome, primary_reason, secondary_reasons, is_test, time_mode, requested_at, passengers, wheelchair, coarse_origin, coarse_destination, channel) " +
-            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS text[]), ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, attempt_id) DO UPDATE SET service_id = EXCLUDED.service_id, outcome = EXCLUDED.outcome, " +
+        val d = dimensions(j, uuid(p, "service_id"), ts(p, "requested_at"), uuid(p, "service_area_id"))
+        j.update("INSERT INTO taktovia.fact_attempt(tenant_id, attempt_id, service_id, outcome, primary_reason, secondary_reasons, is_test, time_mode, requested_at, passengers, wheelchair, coarse_origin, coarse_destination, channel, " +
+            "operator_id, region_id, service_area_id) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS text[]), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, attempt_id) DO UPDATE SET service_id = EXCLUDED.service_id, outcome = EXCLUDED.outcome, " +
             "primary_reason = EXCLUDED.primary_reason, secondary_reasons = EXCLUDED.secondary_reasons, is_test = EXCLUDED.is_test, " +
             "time_mode = EXCLUDED.time_mode, requested_at = EXCLUDED.requested_at, passengers = EXCLUDED.passengers, wheelchair = EXCLUDED.wheelchair, coarse_origin = EXCLUDED.coarse_origin, " +
-            "coarse_destination = EXCLUDED.coarse_destination, channel = EXCLUDED.channel",
+            "coarse_destination = EXCLUDED.coarse_destination, channel = EXCLUDED.channel, operator_id = EXCLUDED.operator_id, region_id = EXCLUDED.region_id, service_area_id = EXCLUDED.service_area_id",
             id, uuid(p, "service_id"), text(p, "outcome"), text(p, "primary_reason"), pgArray(secondary), p.get("is_test")?.asBoolean() ?: false, text(p, "time_mode"), ts(p, "requested_at"), p.get("passengers")?.asInt() ?: 0,
-            p.get("wheelchair")?.asInt(), text(p, "coarse_origin"), text(p, "coarse_destination"), text(p, "channel"))
+            p.get("wheelchair")?.asInt(), text(p, "coarse_origin"), text(p, "coarse_destination"), text(p, "channel"), d.operator, d.region, d.area)
     }
 
     private fun offer(j: JdbcOperations, id: UUID) {
         val r = rows(j, Source.OFFER, id).lastOrNull() ?: return
         val p = r.p
-        j.update("INSERT INTO taktovia.fact_offer(tenant_id, offer_id, attempt_id, service_id, created_at, expires_at, pickup_earliest, pickup_latest, gross_minor, currency) " +
-            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, offer_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id, service_id = EXCLUDED.service_id, created_at = EXCLUDED.created_at, " +
-            "expires_at = EXCLUDED.expires_at, pickup_earliest = EXCLUDED.pickup_earliest, pickup_latest = EXCLUDED.pickup_latest, gross_minor = EXCLUDED.gross_minor, currency = EXCLUDED.currency",
-            id, uuid(p, "attempt_id"), uuid(p, "service_id"), Timestamp.from(r.occurredAt), ts(p, "expires_at"), ts(p, "pickup_earliest"), ts(p, "pickup_latest"), p.get("gross_minor").asLong(), text(p, "currency"))
+        val d = dimensions(j, uuid(p, "service_id"), Timestamp.from(r.occurredAt), uuid(p, "service_area_id"))
+        j.update("INSERT INTO taktovia.fact_offer(tenant_id, offer_id, attempt_id, service_id, created_at, expires_at, pickup_earliest, pickup_latest, gross_minor, currency, operator_id, region_id, service_area_id) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, offer_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id, service_id = EXCLUDED.service_id, created_at = EXCLUDED.created_at, " +
+            "expires_at = EXCLUDED.expires_at, pickup_earliest = EXCLUDED.pickup_earliest, pickup_latest = EXCLUDED.pickup_latest, gross_minor = EXCLUDED.gross_minor, currency = EXCLUDED.currency, " +
+            "operator_id = EXCLUDED.operator_id, region_id = EXCLUDED.region_id, service_area_id = EXCLUDED.service_area_id",
+            id, uuid(p, "attempt_id"), uuid(p, "service_id"), Timestamp.from(r.occurredAt), ts(p, "expires_at"), ts(p, "pickup_earliest"), ts(p, "pickup_latest"), p.get("gross_minor").asLong(), text(p, "currency"), d.operator, d.region, d.area)
     }
 
     private fun stopEvent(j: JdbcOperations, eventId: UUID, p: JsonNode) {
@@ -164,9 +168,9 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
     private fun booking(j: JdbcOperations, bookingId: UUID) {
         val rs = rows(j, Source.BOOKING, bookingId)
         val confirmed = rs.firstOrNull { it.eventType == "booking.confirmed" }; val cancelled = rs.firstOrNull { it.eventType == "booking.cancelled" }
-        data class Stop(val type: String, val at: Timestamp, val wait: Int?)
-        val stops = j.query("SELECT event_type, effective_at, no_show_wait_seconds FROM taktovia.fact_stop_event WHERE booking_id = ? AND outcome = 'APPLIED' ORDER BY effective_at, event_id",
-            { r, _ -> Stop(r.getString(1), r.getTimestamp(2), r.getObject(3) as Int?) }, bookingId)
+        data class Stop(val type: String, val at: Timestamp, val wait: Int?, val vehicle: UUID?)
+        val stops = j.query("SELECT event_type, effective_at, no_show_wait_seconds, vehicle_id FROM taktovia.fact_stop_event WHERE booking_id = ? AND outcome = 'APPLIED' ORDER BY effective_at, event_id",
+            { r, _ -> Stop(r.getString(1), r.getTimestamp(2), r.getObject(3) as Int?, r.getObject(4, UUID::class.java)) }, bookingId)
         val boarded = stops.firstOrNull { it.type == "CHECK_IN" }?.at; val alighted = stops.firstOrNull { it.type == "CHECK_OUT" }?.at; val noShow = stops.firstOrNull { it.type == "NO_SHOW" }
         // Zahlungsfehlschlag (WP-M4-51): erstes Ereignis payment.authorization_failed der Buchung; ohne dieses Ereignis zählt ein Storno mit Grund PAYMENT_FAILED als Zahlungsfehlschlag zum Stornozeitpunkt
         val failure = j.query("SELECT occurred_at, payload->>'failure_code' FROM taktovia.analytics_event_inbox WHERE event_type = 'payment.authorization_failed' AND payload->>'booking_id' = ? ORDER BY occurred_at, event_id",
@@ -175,17 +179,44 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
         if (confirmed == null && cancelled == null && stops.isEmpty() && failure == null) return
         val state = when { noShow != null -> "NO_SHOW"; alighted != null -> "COMPLETED"; cancelled != null -> "CANCELED"; boarded != null -> "BOARDED"; confirmed != null -> "CONFIRMED"; else -> "UNKNOWN" }
         val c = confirmed?.p
+        val d = dimensions(j, c?.let { uuid(it, "service_id") }, confirmed?.let { Timestamp.from(it.occurredAt) }, c?.let { uuid(it, "service_area_id") })
+        val vehicle = stops.firstOrNull { it.type == "CHECK_IN" && it.vehicle != null }?.vehicle   // das abholende Fahrzeug (Dimension Fahrzeug und Fahrzeugtyp)
         j.update("INSERT INTO taktovia.fact_booking(tenant_id, booking_id, service_id, confirmed_at, pickup_earliest, pickup_latest, gross_minor, currency, cancelled_at, cancel_reason, cause_class, boarded_at, alighted_at, no_show_at, no_show_wait_seconds, state, " +
-            "offer_id, cancel_initiator, payment_failed_at, payment_failure_code) " +
-            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id) DO UPDATE SET service_id = EXCLUDED.service_id, confirmed_at = EXCLUDED.confirmed_at, " +
+            "offer_id, cancel_initiator, payment_failed_at, payment_failure_code, operator_id, region_id, service_area_id, vehicle_id, vehicle_type) " +
+            "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, booking_id) DO UPDATE SET service_id = EXCLUDED.service_id, confirmed_at = EXCLUDED.confirmed_at, " +
             "pickup_earliest = EXCLUDED.pickup_earliest, pickup_latest = EXCLUDED.pickup_latest, gross_minor = EXCLUDED.gross_minor, currency = EXCLUDED.currency, cancelled_at = EXCLUDED.cancelled_at, " +
             "cancel_reason = EXCLUDED.cancel_reason, cause_class = EXCLUDED.cause_class, boarded_at = EXCLUDED.boarded_at, alighted_at = EXCLUDED.alighted_at, no_show_at = EXCLUDED.no_show_at, " +
             "no_show_wait_seconds = EXCLUDED.no_show_wait_seconds, state = EXCLUDED.state, offer_id = EXCLUDED.offer_id, cancel_initiator = EXCLUDED.cancel_initiator, " +
-            "payment_failed_at = EXCLUDED.payment_failed_at, payment_failure_code = EXCLUDED.payment_failure_code",
+            "payment_failed_at = EXCLUDED.payment_failed_at, payment_failure_code = EXCLUDED.payment_failure_code, operator_id = EXCLUDED.operator_id, region_id = EXCLUDED.region_id, " +
+            "service_area_id = EXCLUDED.service_area_id, vehicle_id = EXCLUDED.vehicle_id, vehicle_type = EXCLUDED.vehicle_type",
             bookingId, c?.let { uuid(it, "service_id") }, confirmed?.let { Timestamp.from(it.occurredAt) }, c?.let { ts(it, "pickup_earliest") }, c?.let { ts(it, "pickup_latest") }, c?.get("gross_minor")?.asLong(), c?.let { text(it, "currency") },
             cancelled?.let { Timestamp.from(it.occurredAt) }, cancelled?.let { text(it.p, "reason_code") ?: text(it.p, "reason") }, cancelled?.let { text(it.p, "cause_class") }, boarded, alighted, noShow?.at, noShow?.wait, state,
-            c?.let { uuid(it, "offer_id") }, cancelled?.let { text(it.p, "initiator") }, failure?.first, failure?.second)
+            c?.let { uuid(it, "offer_id") }, cancelled?.let { text(it.p, "initiator") }, failure?.first, failure?.second, d.operator, d.region, d.area, vehicle, vehicleType(j, vehicle))
     }
+
+    // ---- Berichtsdimensionen (WP-M4-58) ------------------------------------------------------------------------------------------------
+
+    /** Betreiber, Region und Bediengebiet eines Fakts. [area] ist das im Ereignis genannte Gebiet; fehlt es, gilt das zum Zeitpunkt [at] wirksame Gebiet des Dienstes (höchstens eines, Überlappungsverbot V2040). */
+    private class Dimensions(val operator: UUID?, val region: UUID?, val area: UUID?)
+
+    /**
+     * Liest die Dimensionen aus den Stammdaten des Mandanten (RLS), soweit die Rolle sie lesen darf: die Modulanmeldung `taktovia_mod_analytics` hat keinen Zugriff auf fremde Tabellen, dann bleiben die Spalten leer
+     * (unbekannt) und der Wiederaufbau mit der Runtime-Rolle füllt sie nach. Ein unbekannter Dienst ergibt leere Dimensionen, nie einen Fehler.
+     */
+    private fun dimensions(j: JdbcOperations, service: UUID?, at: Timestamp?, area: UUID?): Dimensions {
+        if (service == null) return Dimensions(null, null, area)
+        if (!may(j, "service")) return Dimensions(null, null, area)
+        val row = j.query("SELECT operator_id, region_id FROM taktovia.service WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, service).firstOrNull()
+            ?: return Dimensions(null, null, area)
+        val resolved = area ?: if (at != null && may(j, "service_area")) j.query("SELECT coalesce(area_key, id) FROM taktovia.service_area WHERE service_id = ? AND valid_from <= ? AND (valid_to IS NULL OR valid_to > ?) LIMIT 1",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, service, at, at).firstOrNull() else null
+        return Dimensions(row.first, row.second, resolved)
+    }
+
+    private fun vehicleType(j: JdbcOperations, vehicle: UUID?): String? =
+        if (vehicle == null || !may(j, "vehicle")) null else j.query("SELECT vehicle_type FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1) }, vehicle).firstOrNull()
+
+    private fun may(j: JdbcOperations, table: String): Boolean = j.queryForObject("SELECT has_table_privilege(?, 'SELECT')", Boolean::class.java, "taktovia.$table") == true
 
     private fun uuid(p: JsonNode, k: String): UUID? = p.get(k)?.takeIf { !it.isNull }?.asString()?.let(UUID::fromString)
     private fun text(p: JsonNode, k: String): String? = p.get(k)?.takeIf { !it.isNull }?.asString()

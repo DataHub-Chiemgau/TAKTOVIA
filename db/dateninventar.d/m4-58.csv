@@ -1,0 +1,12 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+fact_attempt;operator_id;nein;NACHFRAGEANALYSE;;;;
+fact_attempt;region_id;nein;NACHFRAGEANALYSE;;;;
+fact_attempt;service_area_id;nein;NACHFRAGEANALYSE;;;;
+fact_offer;operator_id;nein;NACHFRAGEANALYSE;;;;
+fact_offer;region_id;nein;NACHFRAGEANALYSE;;;;
+fact_offer;service_area_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;operator_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;region_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;service_area_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;vehicle_id;nein;NACHFRAGEANALYSE;;;;
+fact_booking;vehicle_type;nein;NACHFRAGEANALYSE;;;;

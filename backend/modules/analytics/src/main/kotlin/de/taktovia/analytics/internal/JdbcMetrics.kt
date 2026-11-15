@@ -17,6 +17,8 @@ import de.taktovia.analytics.api.Metrics
 import de.taktovia.analytics.api.PickupToleranceSource
 import de.taktovia.analytics.api.RejectionReport
 import de.taktovia.analytics.api.RejectionRow
+import de.taktovia.analytics.api.ReportDimensions
+import de.taktovia.analytics.api.ReportScope
 import de.taktovia.analytics.api.ReportingPeriod
 import de.taktovia.platform.problem.ErrorCode
 import de.taktovia.platform.problem.ProblemException
@@ -65,37 +67,76 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         if (query.metricId == null && query.version != null) throw ProblemException(ErrorCode.BAD_REQUEST, "Eine Version gehört zu einer Kennzahl.", listOf(Violation("/\$query/version", ViolationCode.INVALID_VALUE)))
         return tx.run(tenant) { j ->
             seed(j)
-            val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
-            defs.forEach { requireDimensions(it, query.filter) }
+            // mit `metric_id`: eine unzulässige Dimension ist ein Eingabefehler; ohne: nur Kennzahlen, die alle gesetzten Dimensionen kennen (die Auswahl ist sichtbar, kein Filter wird ignoriert)
+            val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)).also { l -> l.forEach { requireDimensions(it, query.filter) } }
+                       else latest(j).filter { d -> query.filter.dimensions().all { it in d.filterDimensions || it in ReportDimensions.extra(d.metricId) } }
+            // Berechtigungsgrenze und Berichtstag: der Filter schneidet nur ein, nie aus (der Dienstscope gilt in dieser Transaktion, ein vorher committeter Entzug wirkt)
+            val filter = query.filter.copy(allowedServices = allowedServices(j, query.scope)); val period = window(query.period, filter)
+            val minN = query.scope.minGroupSize ?: smallGroupThreshold
+            val q = MetricQuery(period, query.metricId, query.version, filter, query.scope)
             val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) }
             // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
-            if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
+            if (energyDefs.isNotEmpty() && filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, filter.vehicleId) == 0) throw ProblemException.notFound()
             val pickupDefs = defs.filter { it.executable && it.metricId in JdbcPickupPunctuality.METRICS }
-            val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, query.period, query.filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
-            val pickupValues = pickupDefs.map { d -> pickupValue(j, d, query, pc!!) }
-            val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
-            val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, query.filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, query, fc) } }
-            val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
+            val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, period, filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
+            // Gegenprobe gegen Differenzbildung: je gesetzter Dimension die Kohorte ohne diese Dimension (nur bei gesetzten Dimensionen nötig)
+            val pickupParents = if (pc == null || filter.dimensions().isEmpty()) emptyList() else filter.dimensions().map { d -> pickup.counts(j, tenant, window(query.period, filter.without(d)), filter.without(d), tolerances, bind = false) }
+            val pickupValues = pickupDefs.map { d -> pickupValue(j, d, q, pc!!, pickupParents, minN) }
+            val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, filter).let { c -> attemptDefs.map { d -> value(j, d, q, c, minN = minN) } }
+            val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, q, fc, filter.dimensions().map { dim -> funnelRow(j, query.period, filter.without(dim)) }, minN) } }
+            val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, period, filter) }
             (attemptValues + funnelValues + energyValues + pickupValues).sortedBy { it.definition.metricId }
         }
     }
 
+    /** Berichtszeitraum der Auswertung: mit Tagesfilter genau dieser Betriebstag (er muss im Zeitraum liegen, sonst 400). */
+    private fun window(p: ReportingPeriod, f: MetricFilter): ReportingPeriod {
+        val day = f.day ?: return p
+        if (day.isBefore(p.fromDay) || day.isAfter(p.toDayInclusive)) throw ProblemException(ErrorCode.BAD_REQUEST, "Der Tag liegt außerhalb des Berichtszeitraums.", listOf(Violation("/\$query/day", ViolationCode.INTERVAL_INVALID)))
+        return ReportingPeriod.ofDays(p.zone, day, day)
+    }
+
+    /**
+     * Berechtigungsgrenze des Aufrufers (Schnittmenge, nie Erweiterung): ohne Kontext der ganze Mandant (`null`); mit Kontext und leerem Kontextscope gilt der ganze Mandant (Arbeitsannahme für aggregierte
+     * Berichte, OP 33); sonst der **aktuelle** Dienstscope der Mitgliedschaften aus dieser Transaktion (leer = keine Dienste, fail-closed).
+     */
+    private fun allowedServices(j: JdbcOperations, scope: ReportScope): Set<UUID>? {
+        val ctx = scope.context ?: return null
+        if (ctx.services.isEmpty()) return null
+        return de.taktovia.platform.authz.ServiceScopeAuthorizer.currentServices(j, ctx)
+    }
+
     /** Eine unzulässige Filterdimension ist ein Eingabefehler (400), nie ein stillschweigend ignorierter Filter. */
     private fun requireDimensions(d: MetricDefinition, f: MetricFilter) {
-        val bad = f.dimensions().filter { it !in d.filterDimensions }
+        val allowed = d.filterDimensions.toSet() + ReportDimensions.extra(d.metricId)
+        val bad = f.dimensions().filter { it !in allowed }
         if (bad.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Filterdimension für die Kennzahl ${d.metricId} nicht zulässig.", bad.map { Violation("/\$query/$it", ViolationCode.NOT_IN_ENUM) })
     }
 
     private class Counts(
-        val requests: Long, val technical: Long, val byMetric: Map<String, Long>, val unfiltered: Long, val factsTotal: Long,
+        val requests: Long, val technical: Long, val byMetric: Map<String, Long>, val parents: List<Long>, val factsTotal: Long,
         val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val hasData: Boolean, val linkCoverage: BigDecimal? = null,
     )
 
-    private fun counts(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): Counts = j.query(COUNTS, { rs, _ ->
+    /** Zähler der Versuchskennzahlen für Zeitraum und Filter; [parents] sind die Gruppengrößen derselben Auswahl ohne je eine Dimension (Gegenprobe gegen Differenzbildung). */
+    private fun counts(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter, withParents: Boolean = true): Counts {
+        val c = one(j, p, f)
+        val parents = if (withParents) f.dimensions().map { d -> one(j, p, f.without(d)).requests } else emptyList()
+        return Counts(c.requests, c.technical, c.byMetric, parents, c.factsTotal, c.asOf, c.incomplete, c.gaps, c.events, c.hasData)
+    }
+
+    private fun one(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): Counts = j.query(COUNTS, { rs, _ ->
         Counts(rs.getLong("requests"), rs.getLong("technical"), mapOf("CAPACITY" to rs.getLong("capacity"), "PERSONNEL" to rs.getLong("personnel"), "EQUIPMENT" to rs.getLong("equipment"),
-            "AREA" to rs.getLong("area"), "TIME_WINDOW" to rs.getLong("time_window"), "PARTNER" to rs.getLong("partner")), rs.getLong("requests_unfiltered"), rs.getLong("facts_total"),
+            "AREA" to rs.getLong("area"), "TIME_WINDOW" to rs.getLong("time_window"), "PARTNER" to rs.getLong("partner")), emptyList(), rs.getLong("facts_total"),
             rs.getTimestamp("processed_until"), rs.getString("completeness") == "INCOMPLETE", rs.getInt("gap_count"), rs.getLong("event_count"), rs.getBoolean("has_data"))
-    }, Timestamp.from(p.from), Timestamp.from(p.to), f.serviceId?.toString(), f.serviceId?.toString(), f.channel, f.channel).single()
+    }, *ReportSql.args(window(p, f), f)).single()
+
+    /**
+     * Kleine Gruppen: weder die Gruppe selbst noch eines ihrer Komplemente (Gruppe der Auswahl ohne eine Dimension minus die Gruppe) darf zwischen 1 und der Schwelle `kpi_aggregation_min_n` liegen. Ohne die
+     * Gegenprobe ließe sich eine unterdrückte Gruppe aus zwei benachbarten Filtern berechnen (Gesamt minus Rest, Region ohne Stunde minus Region mit Stunde); mit ihr erscheint keine Zahl, aus der sich eine Gruppe
+     * unter der Schwelle durch eine einzige Differenz ergibt. Die Berechtigungsgrenze (Dienstscope) ist die oberste Ebene: darüber hinaus sieht der Aufrufer nichts.
+     */
+    private fun small(group: Long, parents: List<Long>, minN: Int): Boolean = (group in 1 until minN.toLong()) || parents.any { (it - group) in 1 until minN.toLong() }
 
     private fun coverage(c: Counts): BigDecimal? {
         val base = if (!c.incomplete) BigDecimal.ONE.setScale(4) else if (c.factsTotal <= 0) BigDecimal.ZERO.setScale(4)
@@ -103,7 +144,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         return c.linkCoverage?.let { minOf(base, it) } ?: base
     }
 
-    private fun value(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: Counts, calcOverride: Calc? = null): MetricValue {
+    private fun value(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: Counts, calcOverride: Calc? = null, minN: Int = smallGroupThreshold): MetricValue {
         fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, persist: Boolean = true): MetricValue {
             val cov = if (state == MetricState.OK || state == MetricState.PROVISIONAL) coverage(c) else null
             val asOf = c.asOf?.toInstant()
@@ -113,10 +154,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         val calc = (if (d.executable) calcOverride else null) ?: calculation(d, c) ?: return result(MetricState.NOT_COMPUTABLE, d.notExecutableReason ?: MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, null, null, null, persist = false)
         if (!c.hasData) return result(MetricState.NOT_COMPUTABLE, MetricReason.NO_DATA, null, null, null)
         // kleine Gruppen: weder die Gruppe selbst noch ihr Komplement (Differenzbildung benachbarter Filter) darf unter der Schwelle liegen
-        if (q.filter.dimensions().isNotEmpty()) {
-            val complement = c.unfiltered - c.requests
-            if ((c.requests in 1 until smallGroupThreshold) || (complement in 1 until smallGroupThreshold)) return result(MetricState.NOT_COMPUTABLE, MetricReason.SMALL_GROUP, null, null, null)
-        }
+        if (q.filter.dimensions().isNotEmpty() && small(c.requests, c.parents, minN)) return result(MetricState.NOT_COMPUTABLE, MetricReason.SMALL_GROUP, null, null, null)
         val num = BigDecimal(calc.numerator); val den = calc.denominator?.let { BigDecimal(it) }
         val state = if (c.incomplete) MetricState.PROVISIONAL else MetricState.OK
         if (d.valueKind == MetricValueKind.RATIO) {
@@ -135,36 +173,45 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         val confCancelPassenger: Long, val confCancelOperator: Long, val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val factsTotal: Long, val hasData: Boolean,
     )
 
-    /** Alle Trichterzahlen und der Datenstand der Quellen ATTEMPT, OFFER, BOOKING in einem Statement (Funktion `funnel_counts`, ein Lesestand). */
+    /** Alle Trichterzahlen und der Datenstand der Quellen ATTEMPT, OFFER, BOOKING in einem Statement (Funktion `funnel_counts_filtered`, ein Lesestand). */
     private fun funnelRow(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): FunnelRow = j.query(FUNNEL, { rs, _ ->
         FunnelRow(rs.getLong("requests"), rs.getLong("technical"), rs.getLong("rejected"), rs.getLong("attempts_with_offer"), rs.getLong("attempts_non_technical"), rs.getLong("requests_all"), rs.getLong("offers"),
             rs.getLong("offers_not_booked"), rs.getLong("offers_all"), rs.getLong("confirmed"), rs.getLong("confirmed_all"), rs.getLong("unlinked_bookings"), rs.getLong("completed"), rs.getLong("payment_failed"),
             rs.getLong("cancel_passenger"), rs.getLong("cancel_operator"), rs.getLong("cancel_other"), rs.getLong("conf_cancel_passenger"), rs.getLong("conf_cancel_operator"), rs.getTimestamp("processed_until"),
             rs.getBoolean("incomplete"), rs.getInt("gap_count"), rs.getLong("event_count"), rs.getLong("facts_total"), rs.getBoolean("has_data"))
-    }, Timestamp.from(p.from), Timestamp.from(p.to), f.serviceId?.toString(), f.channel).single()
+    }, *ReportSql.args(window(p, f), f)).single()
 
     /** Kennzahl mit Stufenbezug: Zähler, Nenner und Kohorte (für kleine Gruppen) je Kennzahl aus dem einen Lesestand; Angebotsbezug fehlender Buchungen macht `Buchungskonversion` vorläufig. */
-    private fun funnelValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, r: FunnelRow): MetricValue {
-        val (calc, group, all) = when (d.metricId) {
-            "offer_rate" -> Triple(Calc(r.attemptsWithOffer, r.attemptsNonTechnical), r.requests, r.requestsAll)
-            "booking_conversion" -> Triple(Calc(r.offers - r.offersNotBooked, r.offers), r.offers, r.offersAll)
-            "cancellation_rate_passenger" -> Triple(Calc(r.confCancelPassenger, r.confirmed), r.confirmed, r.confirmedAll)
-            else -> Triple(Calc(r.confCancelOperator, r.confirmed), r.confirmed, r.confirmedAll)
+    private fun funnelValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, r: FunnelRow, parents: List<FunnelRow>, minN: Int): MetricValue {
+        val cohort: (FunnelRow) -> Long = when (d.metricId) { "offer_rate" -> { x -> x.requests }; "booking_conversion" -> { x -> x.offers }; else -> { x -> x.confirmed } }
+        val calc = when (d.metricId) {
+            "offer_rate" -> Calc(r.attemptsWithOffer, r.attemptsNonTechnical)
+            "booking_conversion" -> Calc(r.offers - r.offersNotBooked, r.offers)
+            "cancellation_rate_passenger" -> Calc(r.confCancelPassenger, r.confirmed)
+            else -> Calc(r.confCancelOperator, r.confirmed)
         }
         val linkGap = d.metricId == "booking_conversion" && r.unlinked > 0
         val link = if (linkGap) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(r.confirmed - r.unlinked), BigDecimal(r.confirmed), 4) else null
-        val c = Counts(group, 0, emptyMap(), all, r.factsTotal, r.asOf, r.incomplete || linkGap, r.gaps, r.events, r.hasData, link)
-        return value(j, d, q, c, calc)
+        val c = Counts(cohort(r), 0, emptyMap(), parents.map(cohort), r.factsTotal, r.asOf, r.incomplete || linkGap, r.gaps, r.events, r.hasData, link)
+        return value(j, d, q, c, calc, minN)
     }
 
-    override fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter): FunnelReport {
+    override fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter, scope: ReportScope): FunnelReport {
         if (filter.channel != null) throw ProblemException(ErrorCode.BAD_REQUEST, "Filterdimension für den Nachfragetrichter nicht zulässig.", listOf(Violation("/\$query/channel", ViolationCode.NOT_IN_ENUM)))
+        val bad = filter.dimensions().filter { it !in FUNNEL_DIMENSIONS }
+        if (bad.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Filterdimension für den Nachfragetrichter nicht zulässig.", bad.map { Violation("/\$query/$it", ViolationCode.NOT_IN_ENUM) })
         return tx.run(tenant, readOnly = true) { j ->
-            val r = funnelRow(j, period, filter)
+            val f = filter.copy(allowedServices = allowedServices(j, scope)); val minN = scope.minGroupSize ?: smallGroupThreshold; val eff = window(period, f)
+            val r = funnelRow(j, period, f)
+            val parents = f.dimensions().map { d -> funnelRow(j, period, f.without(d)) }
+            // Kleingruppen: jede der vier Stufen (Anfragen, Angebote, bestätigte, abgeschlossene Buchungen) einzeln gegen Schwelle und Differenzbildung
+            val stages = listOf<(FunnelRow) -> Long>({ it.requests }, { it.offers }, { it.confirmed }, { it.completed })
+            val suppressed = f.dimensions().isNotEmpty() && stages.any { st -> small(st(r), parents.map(st), minN) }
             val link = if (r.unlinked > 0) de.taktovia.platform.money.MoneyRounding.ratioDown(BigDecimal(r.confirmed - r.unlinked), BigDecimal(r.confirmed), 4) else null
-            val c = Counts(r.requests, r.technical, emptyMap(), r.requestsAll, r.factsTotal, r.asOf, r.incomplete || r.unlinked > 0, r.gaps, r.events, r.hasData, link)
-            val state = when { !r.hasData -> MetricState.NOT_COMPUTABLE; c.incomplete -> MetricState.PROVISIONAL; else -> MetricState.OK }
-            FunnelReport(period, filter, r.requests, r.offers, r.confirmed, r.completed, r.rejected, r.technical, r.offersNotBooked, r.paymentFailed, r.cancelPassenger, r.cancelOperator, r.cancelOther, r.unlinked,
+            val c = Counts(r.requests, r.technical, emptyMap(), emptyList(), r.factsTotal, r.asOf, r.incomplete || r.unlinked > 0, r.gaps, r.events, r.hasData, link)
+            val state = when { !r.hasData -> MetricState.NOT_COMPUTABLE; suppressed -> MetricState.NOT_COMPUTABLE; c.incomplete -> MetricState.PROVISIONAL; else -> MetricState.OK }
+            if (suppressed) FunnelReport(eff, f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state, null, r.asOf?.toInstant(), r.events, suppressed = true)
+            else FunnelReport(eff, f, r.requests, r.offers, r.confirmed, r.completed, r.rejected, r.technical, r.offersNotBooked, r.paymentFailed, r.cancelPassenger, r.cancelOperator, r.cancelOther, r.unlinked,
                 state, if (r.hasData) coverage(c) else null, r.asOf?.toInstant(), r.events)
         }
     }
@@ -177,16 +224,16 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
      * Abholpünktlichkeit (WP-M4-53): `pickup_on_time` = pünktlich / gebundene bewertbare Abholungen, `mean_pickup_delay` = Summe der positiven Verspätungsminuten / bewertbare Abholungen. Abholungen ohne auflösbaren
      * Grenzwert sind für die Pünktlichkeit nicht bewertbar: sie stehen nicht im Nenner und mindern die Abdeckung (Wert `PROVISIONAL`). Das Snapshot hält die verwendeten Konfigurationsrevisionen fest.
      */
-    private fun pickupValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: JdbcPickupPunctuality.Counts): MetricValue {
+    private fun pickupValue(j: JdbcOperations, d: MetricDefinition, q: MetricQuery, c: JdbcPickupPunctuality.Counts, parents: List<JdbcPickupPunctuality.Counts>, minN: Int): MetricValue {
         val onTime = d.metricId == "pickup_on_time"
         val group = if (onTime) c.bound else c.assessable
-        val unfiltered = if (onTime) c.boundUnfiltered else c.assessableUnfiltered
+        val parentGroups = parents.map { if (onTime) it.bound else it.assessable }
         fun result(state: MetricState, reason: MetricReason?, value: BigDecimal?, num: BigDecimal?, den: BigDecimal?, cov: BigDecimal? = null): MetricValue {
             val id = store(j, d, q, state, reason, value, num, den, cov, c.asOf, c.sourceEvents, if (state == MetricState.OK || state == MetricState.PROVISIONAL) c.versionsJson else null)
             return MetricValue(d, state, reason, value, num, den, cov, q.filter, q.period, c.asOf?.toInstant(), c.sourceEvents, id)
         }
         if (!c.hasData) return result(MetricState.NOT_COMPUTABLE, MetricReason.NO_DATA, null, null, null)
-        if (q.filter.dimensions().isNotEmpty() && ((group in 1 until smallGroupThreshold) || ((unfiltered - group) in 1 until smallGroupThreshold)))
+        if (q.filter.dimensions().isNotEmpty() && small(group, parentGroups, minN))
             return result(MetricState.NOT_COMPUTABLE, MetricReason.SMALL_GROUP, null, null, null)
         if (group == 0L) return result(MetricState.NOT_COMPUTABLE, MetricReason.ZERO_DENOMINATOR, null, null, BigDecimal.ZERO)   // nie 0 oder 100 % an dessen Stelle
         val den = BigDecimal(group)
@@ -231,21 +278,27 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
     // ---- Ablehnungsstatistik -------------------------------------------------------------------------------------------------------------
 
-    override fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter, reasonCode: String?): RejectionReport = tx.run(tenant, readOnly = true) { j ->
+    override fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter, reasonCode: String?, scope: ReportScope): RejectionReport = tx.run(tenant, readOnly = true) { j ->
+        val bad = filter.dimensions().filter { it !in REJECTION_DIMENSIONS }
+        if (bad.isNotEmpty()) throw ProblemException(ErrorCode.BAD_REQUEST, "Filterdimension für die Ablehnungsstatistik nicht zulässig.", bad.map { Violation("/\$query/$it", ViolationCode.NOT_IN_ENUM) })
         if (reasonCode != null && j.queryForObject("SELECT count(*) FROM taktovia.rejection_reason WHERE code = ?", Int::class.java, reasonCode) == 0)
             throw ProblemException(ErrorCode.BAD_REQUEST, "Unbekannter Ablehnungsgrund.", listOf(Violation("/\$query/reason_code", ViolationCode.NOT_IN_ENUM)))
+        val f = filter.copy(allowedServices = allowedServices(j, scope)); val minN = scope.minGroupSize ?: smallGroupThreshold; val eff = window(period, f)
         class Row(val row: RejectionRow, val attempts: Long, val technical: Long, val factsTotal: Long, val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val hasData: Boolean)
         val rows = j.query(REJECTIONS, { rs, _ ->
             @Suppress("UNCHECKED_CAST") val texts = (mapper.readTree(rs.getString("texts")).properties().associate { it.key to it.value.asString() })
             Row(RejectionRow(rs.getString("code"), rs.getString("reason_group"), rs.getString("metric"), rs.getString("label"), texts, rs.getInt("priority"), rs.getLong("primary_count"), rs.getLong("secondary_count")),
                 rs.getLong("attempts"), rs.getLong("technical"), rs.getLong("facts_total"), rs.getTimestamp("processed_until"), rs.getString("completeness") == "INCOMPLETE", rs.getInt("gap_count"),
                 rs.getLong("event_count"), rs.getBoolean("has_data"))
-        }, Timestamp.from(period.from), Timestamp.from(period.to), filter.serviceId?.toString(), filter.serviceId?.toString(), filter.channel, filter.channel)
+        }, *ReportSql.args(eff, f))
         val head = rows.first()
+        // Kleingruppen (auch gegen Differenzbildung): die Ablehnungsstatistik zeigt dann weder Zeilen noch Zahlen
+        val suppressed = f.dimensions().isNotEmpty() && small(head.attempts, f.dimensions().map { d -> one(j, period, f.without(d)).requests }, minN)
         val shown = rows.map { it.row }.filter { (it.primaryCount > 0 || it.secondaryCount > 0) && (reasonCode == null || it.code == reasonCode) }
-        val c = Counts(head.attempts, head.technical, emptyMap(), head.attempts, head.factsTotal, head.asOf, head.incomplete, head.gaps, head.events, head.hasData)
-        val state = when { !head.hasData -> MetricState.NOT_COMPUTABLE; head.incomplete -> MetricState.PROVISIONAL; else -> MetricState.OK }
-        RejectionReport(period, filter, reasonCode, head.attempts, rows.sumOf { it.row.primaryCount }, head.technical, shown, state, if (head.hasData) coverage(c) else null, head.asOf?.toInstant(), head.events)
+        val c = Counts(head.attempts, head.technical, emptyMap(), emptyList(), head.factsTotal, head.asOf, head.incomplete, head.gaps, head.events, head.hasData)
+        val state = when { !head.hasData || suppressed -> MetricState.NOT_COMPUTABLE; head.incomplete -> MetricState.PROVISIONAL; else -> MetricState.OK }
+        if (suppressed) RejectionReport(eff, f, reasonCode, 0, 0, 0, emptyList(), state, null, head.asOf?.toInstant(), head.events, suppressed = true)
+        else RejectionReport(eff, f, reasonCode, head.attempts, rows.sumOf { it.row.primaryCount }, head.technical, shown, state, if (head.hasData) coverage(c) else null, head.asOf?.toInstant(), head.events)
     }
 
     // ---- Änderung von Definitionen ----------------------------------------------------------------------------------------------------------
@@ -272,8 +325,12 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         /** Energiekosten-Kennzahlen (WP-M4-43): Rechnung in [JdbcEnergyCosts], nicht aus den Versuchsfakten. */
         val ENERGY_IDS = setOf("energy_cost_per_100km", "energy_cost_per_operating_hour")
         /** Kennzahlen, die aus dem Nachfragetrichter (`funnel_counts`) statt aus den Versuchszählern berechnet werden. */
+        /** Dimensionen der Ablehnungsstatistik (Versuchsfakten): Dienst, Kanal, Betreiber, Region, Bediengebiet, Stunde, Tag. */
+        val REJECTION_DIMENSIONS = setOf(MetricDimensions.SERVICE_ID, MetricDimensions.CHANNEL, MetricDimensions.OPERATOR_ID, MetricDimensions.REGION_ID, MetricDimensions.SERVICE_AREA_ID, MetricDimensions.HOUR, MetricDimensions.DAY)
         val FUNNEL_METRICS = setOf("offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator")
-        const val FUNNEL = "SELECT * FROM taktovia.funnel_counts(?, ?, CAST(? AS uuid), CAST(? AS text))"
+        const val FUNNEL = "SELECT * FROM taktovia.funnel_counts_filtered(CAST(? AS timestamptz), CAST(? AS timestamptz), CAST(? AS uuid), CAST(? AS text), CAST(? AS uuid), CAST(? AS uuid), CAST(? AS uuid), CAST(? AS integer), CAST(? AS text), CAST(? AS uuid[]))"
+        /** Dimensionen des Nachfragetrichters (Buchungen kennen weder Kanal noch Fahrzeug). */
+        val FUNNEL_DIMENSIONS = setOf(MetricDimensions.SERVICE_ID, MetricDimensions.OPERATOR_ID, MetricDimensions.REGION_ID, MetricDimensions.SERVICE_AREA_ID, MetricDimensions.HOUR, MetricDimensions.DAY)
         const val FUNNEL_RECONCILIATION = "SELECT stage, fact_count, log_count FROM taktovia.funnel_reconciliation(?, ?) ORDER BY stage"
         const val DEF_COLUMNS = "SELECT d.metric_id, d.version, d.name, d.value_kind, d.unit, d.numerator_definition, d.denominator_definition, d.exclusions, d.time_basis, d.period_basis, " +
             "array_to_string(d.filter_dimensions, ',') AS dims, d.source, d.executable, d.not_executable_reason, d.approved_at"
@@ -289,9 +346,9 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
 
         /** Alle Zähler der Versuchskennzahlen und der Datenstand der Quelle ATTEMPT in einem Statement (ein Lesestand). `base` = Zeitraum ohne Dimensionsfilter, `a` = mit Filter. */
         const val COUNTS = """
-            WITH wm AS (SELECT processed_until, completeness, gap_count, event_count FROM taktovia.dataset_watermark WHERE source = 'ATTEMPT'),
-            base AS (SELECT f.service_id, f.channel, f.outcome, f.primary_reason FROM taktovia.fact_attempt f WHERE NOT f.is_test AND f.requested_at >= ? AND f.requested_at < ?),
-            a AS (SELECT b.* FROM base b WHERE (CAST(? AS uuid) IS NULL OR b.service_id = CAST(? AS uuid)) AND (CAST(? AS text) IS NULL OR b.channel = CAST(? AS text))),
+            WITH ${ReportSql.P},
+            wm AS (SELECT processed_until, completeness, gap_count, event_count FROM taktovia.dataset_watermark WHERE source = 'ATTEMPT'),
+            a AS (SELECT f.outcome, f.primary_reason FROM taktovia.fact_attempt f, p WHERE NOT f.is_test AND f.requested_at >= p.t_from AND f.requested_at < p.t_to AND ${ReportSql.ATTEMPT_MATCH}),
             cnt AS (SELECT count(*) AS requests,
                            count(*) FILTER (WHERE a.outcome = 'TECHNICAL_ERROR') AS technical,
                            count(*) FILTER (WHERE a.outcome = 'REJECTED' AND r.metric = 'CAPACITY') AS capacity,
@@ -301,15 +358,15 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
                            count(*) FILTER (WHERE a.outcome = 'REJECTED' AND r.metric = 'TIME_WINDOW') AS time_window,
                            count(*) FILTER (WHERE a.outcome = 'REJECTED' AND r.metric = 'PARTNER') AS partner
                     FROM a LEFT JOIN taktovia.rejection_reason r ON r.code = a.primary_reason)
-            SELECT cnt.*, (SELECT count(*) FROM base) AS requests_unfiltered, (SELECT count(*) FROM taktovia.fact_attempt) AS facts_total,
+            SELECT cnt.*, (SELECT count(*) FROM taktovia.fact_attempt) AS facts_total,
                    wm.processed_until, wm.completeness, coalesce(wm.gap_count, 0) AS gap_count, coalesce(wm.event_count, 0) AS event_count, (wm.event_count IS NOT NULL) AS has_data
             FROM cnt LEFT JOIN wm ON true"""
 
         /** Ablehnungen je Katalogcode: Primär- und Sekundärzähler, Versuchs- und Fehlerzahl, Datenstand; eine Zeile je Katalogcode im selben Lesestand. */
         const val REJECTIONS = """
-            WITH wm AS (SELECT processed_until, completeness, gap_count, event_count FROM taktovia.dataset_watermark WHERE source = 'ATTEMPT'),
-            a AS (SELECT f.outcome, f.primary_reason, f.secondary_reasons FROM taktovia.fact_attempt f WHERE NOT f.is_test AND f.requested_at >= ? AND f.requested_at < ?
-                  AND (CAST(? AS uuid) IS NULL OR f.service_id = CAST(? AS uuid)) AND (CAST(? AS text) IS NULL OR f.channel = CAST(? AS text))),
+            WITH ${ReportSql.P},
+            wm AS (SELECT processed_until, completeness, gap_count, event_count FROM taktovia.dataset_watermark WHERE source = 'ATTEMPT'),
+            a AS (SELECT f.outcome, f.primary_reason, f.secondary_reasons FROM taktovia.fact_attempt f, p WHERE NOT f.is_test AND f.requested_at >= p.t_from AND f.requested_at < p.t_to AND ${ReportSql.ATTEMPT_MATCH}),
             prim AS (SELECT primary_reason AS code, count(*) AS n FROM a WHERE outcome = 'REJECTED' AND primary_reason IS NOT NULL GROUP BY primary_reason),
             sec AS (SELECT s AS code, count(*) AS n FROM a CROSS JOIN LATERAL unnest(a.secondary_reasons) AS s WHERE a.outcome = 'REJECTED' GROUP BY s)
             SELECT r.code, r.reason_group, r.metric, r.label, r.texts::text AS texts, r.priority, coalesce(prim.n, 0) AS primary_count, coalesce(sec.n, 0) AS secondary_count,

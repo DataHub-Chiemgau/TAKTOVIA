@@ -45,7 +45,7 @@ internal class JdbcEnergyCosts(private val mapper: JsonMapper) {
 
     /** Je Energieart (nach [wanted], sonst beide) und Währung ein Wert; ohne Währung in den Daten ein Wert ohne Währung (`NO_DATA`). Schreibt je Wert einen Snapshot. */
     fun evaluate(j: JdbcOperations, d: MetricDefinition, period: ReportingPeriod, filter: MetricFilter): List<MetricValue> {
-        val read = read(j, period, filter.vehicleId)
+        val read = read(j, period, filter.vehicleId, filter.vehicleType)
         val kinds = filter.energy?.let { listOf(it) } ?: EnergyKind.entries
         return kinds.flatMap { kind -> forKind(j, d, period, filter, kind, read) }
     }
@@ -108,14 +108,14 @@ internal class JdbcEnergyCosts(private val mapper: JsonMapper) {
 
     // ---- Lesestand ---------------------------------------------------------------------------------------------------------------------------
 
-    private fun read(j: JdbcOperations, p: ReportingPeriod, vehicleId: UUID?): Read {
+    private fun read(j: JdbcOperations, p: ReportingPeriod, vehicleId: UUID?, vehicleType: String?): Read {
         val dayFrom = Date.valueOf(p.from.atOffset(ZoneOffset.UTC).toLocalDate().minusDays(1)); val dayTo = Date.valueOf(p.to.atOffset(ZoneOffset.UTC).toLocalDate().plusDays(1))
         val from = Timestamp.from(p.from); val to = Timestamp.from(p.to); val v = vehicleId?.toString()
         return j.query(READ, { rs, _ ->
             val docs = buildList { for (n in mapper.readTree(rs.getString("docs"))) add(doc(n)) }
             val km = buildList { for (n in mapper.readTree(rs.getString("km"))) add(km(n)) }.associateBy { it.vehicleId }
             Read(docs, km, rs.getTimestamp("as_of")?.toInstant(), rs.getLong("source_events"))
-        }, from, to, v, v, dayFrom, dayTo, from, to).single()
+        }, from, to, v, v, vehicleType, vehicleType, dayFrom, dayTo, from, to).single()
     }
 
     private fun doc(n: JsonNode) = DocRow(
@@ -154,7 +154,8 @@ internal class JdbcEnergyCosts(private val mapper: JsonMapper) {
                      CASE WHEN f.fuel_type IS NULL THEN NULL WHEN f.fuel_type = 'ELECTRIC' THEN 'ELECTRIC' ELSE 'FUEL' END AS energy
               FROM taktovia.fuel_transaction f JOIN taktovia.expense_document d ON d.tenant_id = f.tenant_id AND d.id = f.document_id
               WHERE coalesce(f.fueled_at, d.original_received_at) >= ? AND coalesce(f.fueled_at, d.original_received_at) < ?
-                AND (CAST(? AS uuid) IS NULL OR f.vehicle_id = CAST(? AS uuid))),
+                AND (CAST(? AS uuid) IS NULL OR f.vehicle_id = CAST(? AS uuid))
+                AND (CAST(? AS text) IS NULL OR f.vehicle_id IN (SELECT vh.id FROM taktovia.vehicle vh WHERE vh.vehicle_type = CAST(? AS text)))),
             docs AS (
               SELECT t.document_id, t.vehicle_id, t.energy, t.quantity_missing, t.state, t.tx_currency, t.recorded_at, ev.id AS event_id, ev.currency AS event_currency,
                      ev.cost_basis_minor + rv.basis AS cost, ev.booked_at, rv.n AS reversal_n, rv.booked_at AS reversed_at, (rv.n > 0 AND ev.cost_basis_minor + rv.basis = 0) AS reversed,
