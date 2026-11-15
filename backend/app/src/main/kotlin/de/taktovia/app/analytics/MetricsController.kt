@@ -66,7 +66,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         val energy = energyParam?.let { s -> EnergyKind.entries.firstOrNull { it.name == s } ?: run { bad("energy", ViolationCode.NOT_IN_ENUM); null } }
         if (currency != null && !CURRENCY.matches(currency)) bad("currency", ViolationCode.PATTERN_MISMATCH)
 
-        if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel") bad("breakdown", ViolationCode.NOT_IN_ENUM)
+        if (breakdown != null && breakdown != "rejection_reason" && breakdown != "funnel" && breakdown != "not_performed") bad("breakdown", ViolationCode.NOT_IN_ENUM)
         if (reasonCode != null && breakdown != "rejection_reason") bad("reason_code", ViolationCode.INVALID_VALUE)
         if (reasonCode != null && !CODE.matches(reasonCode)) bad("reason_code", ViolationCode.PATTERN_MISMATCH)
         if (from == null && (breakdown != null || serviceId != null || channel != null || vehicleId != null || energyParam != null || currency != null)) bad("from", ViolationCode.REQUIRED)
@@ -84,7 +84,9 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         }
         val rejections = if (period != null && breakdown == "rejection_reason") analytics.metrics.rejections(ctx.tenant, period, filter, reasonCode) else null
         val funnel = if (period != null && breakdown == "funnel") analytics.metrics.funnel(ctx.tenant, period, filter) else null
-        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to values?.map(::valueJson), "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson))
+        val notPerformed = if (period != null && breakdown == "not_performed") notPerformedJson(analytics.notPerformed, ctx.tenant, period, filter) else null
+        return linkedMapOf("definitions" to definitions.map(::definitionJson), "values" to values?.map(::valueJson), "rejections" to rejections?.let(::rejectionsJson), "funnel" to funnel?.let(::funnelJson),
+            "not_performed" to notPerformed)
     }
 
     /** `reporting_timezone` des Mandanten (IANA-Zone); ohne wirksamen oder lesbaren Wert Europe/Berlin. */
@@ -125,6 +127,23 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
             "cancelled_by_passenger" to f.cancelledByPassenger, "cancelled_by_operator" to f.cancelledByOperator, "cancelled_other" to f.cancelledOther),
         "unlinked_bookings" to f.unlinkedBookings, "state" to f.state.name, "coverage" to f.coverage, "as_of" to f.asOf?.toString(), "source_events" to f.sourceEvents,
     )
+
+    /**
+     * Auswertung nicht durchgeführter Fahrten (WP-M4-55, KPI-009) nach Ursache und Kategorie: „Ursache offen“ und Konflikte stehen sichtbar daneben (nie ausgeschlossen), die Quoten tragen Zähler und Nenner, die Fahrten
+     * ihre Korrekturvermerke. Keine Fahrerzuordnung, keine Personenbezüge.
+     */
+    private fun notPerformedJson(api: de.taktovia.analytics.api.NotPerformedTrips, tenant: de.taktovia.platform.tenant.TenantId, period: ReportingPeriod, filter: MetricFilter): Map<String, Any?> {
+        val r = api.report(tenant, period, filter)
+        fun rate(x: de.taktovia.analytics.api.Rate) = linkedMapOf("numerator" to x.numerator, "denominator" to x.denominator, "value" to x.value, "reason" to x.reason?.name)
+        return linkedMapOf(
+            "definition_version" to r.definitionVersion, "period" to periodJson(period), "filter" to filter.toMap(), "total" to r.total,
+            "by_cause" to r.byCause.map { linkedMapOf("cause" to it.cause, "category" to it.category.name, "label" to it.label, "count" to it.count) },
+            "by_category" to r.byCategory.mapKeys { it.key.name }, "open_count" to r.open, "conflict_count" to r.conflict, "confirmed_pickups" to r.confirmedPickups, "confirmed_bookings" to r.confirmedBookings,
+            "rates" to linkedMapOf("no_show_rate" to rate(r.noShowRate), "operator_cancellation_rate" to rate(r.operatorCancellationRate), "vehicle_outage_rate" to rate(r.vehicleOutageRate)),
+            "state" to r.state.name, "coverage" to r.coverage, "as_of" to r.asOf?.toString(), "source_events" to r.sourceEvents,
+            "items" to api.trips(tenant, period, filter).map { NotPerformedJson.trip(it) },
+        )
+    }
 
     private companion object {
         val METRIC_ID = Regex("^[a-z][a-z0-9_]{1,63}$")

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/outage.booking_rebooked.v1.schema.json",
+  "title": "Betroffene Buchung umgebucht (WP-M3-54)",
+  "description": "Payload von `outage.booking_rebooked`. Aggregat: outage_booking. Die Leitstelle hat die Buchung eines ausgefallenen Fahrzeugs auf den Umlauf eines anderen Fahrzeugs umgebucht (Plan-Revision, Hold-Wechsel). Keine Fahrgastdaten.",
+  "type": "object",
+  "required": [
+    "incident_id",
+    "booking_id",
+    "from_run_id",
+    "to_run_id",
+    "reason_code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "from_run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "to_run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason_code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,59}$"
+    }
+  },
+  "examples": [
+    {
+      "incident_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "from_run_id": "1a8b7c6d-1111-4222-8333-444455556666",
+      "to_run_id": "2a8b7c6d-1111-4222-8333-444455556666",
+      "reason_code": "VEHICLE_OUTAGE"
+    }
+  ]
+}

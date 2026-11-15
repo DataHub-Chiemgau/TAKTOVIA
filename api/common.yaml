@@ -118,6 +118,7 @@ components:
             reports:read: reports:read
             reports:write: reports:write
             analytics:read: analytics:read
+            analytics:write: analytics:write
         clientCredentials:
           tokenUrl: https://identity.taktovia.example/oauth2/token
           scopes:
@@ -220,6 +221,7 @@ components:
             reports:read: reports:read
             reports:write: reports:write
             analytics:read: analytics:read
+            analytics:write: analytics:write
     partnerSignature:
       type: apiKey
       in: header

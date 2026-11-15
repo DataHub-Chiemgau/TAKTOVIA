@@ -1931,6 +1931,227 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IncidentTransition'
+  /v1/operator/incidents/{incident_id}/outage/check:
+    post:
+      summary: Ersatzoptionen des Störungsfalls prüfen
+      operationId: checkOperatorIncidentOutage
+      security:
+      - oidc:
+        - operator:write
+      description: 'WP-M3-54 (DMG-010): berechnet die Ersatzvorschläge aller noch offenen betroffenen Buchungen neu (Prüfung wie bei der manuellen Umplanung: Sperre, Freigabe, Qualifikation, Ressourcenvektor, Kapazität) und liefert die Störungsansicht. Nichts wird umgebucht. Fremder Incident: 404; ohne Rolle Disposition: 403.'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentOutage'
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+  /v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/rebook:
+    post:
+      summary: Betroffene Buchung auf einen Vorschlag umbuchen
+      operationId: rebookOutageBooking
+      security:
+      - oidc:
+        - operator:write
+      description: 'WP-M3-54 (DMG-010): übernimmt die Buchung per Plan-Revision auf den Umlauf des Vorschlags (Plan-CAS und Sicherheitsprüfung im Commit, Hold-Wechsel, Umbuchungsprotokoll); die Ersatzfahrt gilt erst nach dieser Bestätigung als zugesagt. If-Match = Revision der betroffenen Buchung (412 REVISION_MISMATCH beim zweiten Disponenten, 428 ohne). Bereits entschieden: 409 INVALID_STATE_TRANSITION; eingestiegener Fahrgast: 409 CONFLICT; Vorschlag verletzt das Zusagefenster ohne accept_window_effect: 409 PROMISE_WINDOW_VIOLATION; Überbuchung 409 CAPACITY_UNAVAILABLE.'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID der betroffenen Buchung.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageBooking'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Revision der betroffenen Buchung im Störungsfall.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OutageRebookRequest'
+  /v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/cancel:
+    post:
+      summary: Betroffene Buchung wegen Fahrzeugausfall stornieren
+      operationId: cancelOutageBooking
+      security:
+      - oidc:
+        - operator:write
+      description: 'WP-M3-54 (DMG-010): Betreiberstorno mit Ursache VEHICLE_OUTAGE (WP-M2-27); Erstattung und Benachrichtigung laufen über die M2-Wege, eine Wiederholung erzeugt keine zweite Erstattung. If-Match = Revision der betroffenen Buchung. Bereits entschieden: 409 INVALID_STATE_TRANSITION; eingestiegener Fahrgast: 409 CONFLICT; gleicher Idempotenzschlüssel mit anderem Inhalt: 409 IDEMPOTENCY_CONFLICT.'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID der betroffenen Buchung.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageBooking'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Revision der betroffenen Buchung im Störungsfall.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OutageCancelRequest'
+  /v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/inform:
+    post:
+      summary: Fahrgast über die Umbuchung informieren
+      operationId: informOutageBooking
+      security:
+      - oidc:
+        - operator:write
+      description: 'WP-M3-54 (DMG-010): fordert die Fahrgastmitteilung zur Umbuchung genau einmal je Änderung an (Ereignis outage.passenger_notice_requested); eine Wiederholung ist wirkungslos. Vorlage und Kanal sind offen (OP-27). Nur für umgebuchte Buchungen (409 sonst).'
+      parameters:
+      - name: incident_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Incident-ID.
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID der betroffenen Buchung.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/IfMatch
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageBooking'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Revision der betroffenen Buchung im Störungsfall.
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '428':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
   /v1/operator/vehicle-master:
     get:
       summary: Fahrzeugstamm auflisten
@@ -5296,6 +5517,9 @@ components:
             $ref: '#/components/schemas/WorkflowLogEntry'
           description: Ablaufprotokoll (WP-M3-55, AUT-002), nur im Detail `getOperatorIncident`,
             in zeitlicher Reihenfolge (`seq`). Append-only, nur Codes und Kennungen.
+        outage:
+          $ref: '#/components/schemas/IncidentOutage'
+          description: Störungsansicht (WP-M3-54, DMG-010) nur im Detail `getOperatorIncident`.
         revision:
           type: integer
           format: int64
@@ -5315,6 +5539,210 @@ components:
       - revision
       description: Incident (AUT-001, OP-02). Je Dedupe-Schlüssel (Fahrzeug, Ursache,
         offener Zeitraum) höchstens ein offener Incident.
+    IncidentOutage:
+      type: object
+      additionalProperties: false
+      properties:
+        bookings:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/OutageBooking'
+        boarded_booking_ids:
+          type: array
+          maxItems: 500
+          items:
+            $ref: common.yaml#/components/schemas/UUID
+          description: Bereits eingestiegene Fahrgäste, gesondert ausgewiesen; sie werden nie automatisch umgebucht oder storniert.
+        open_count:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      required:
+      - bookings
+      - boarded_booking_ids
+      - open_count
+      description: Störungsansicht (WP-M3-54, DMG-010) am Incident eines Fahrzeugausfalls. Nur Kennungen, Codes und Zeiten, keine Fahrgastdaten.
+    OutageBooking:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        booking_number:
+          oneOf:
+          - type: string
+            minLength: 1
+            maxLength: 32
+          - type: 'null'
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        state:
+          type: string
+          enum:
+          - OPEN
+          - PROPOSED
+          - REBOOKED
+          - CANCELLED
+          - OPEN_ISSUE
+          - BOARDED
+          - ONBOARD_DONE
+        issue_code:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,59}$
+          - type: 'null'
+        decision:
+          oneOf:
+          - type: string
+            enum:
+            - REBOOK
+            - CANCEL
+          - type: 'null'
+        decision_reason:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,59}$
+          - type: 'null'
+        decided_by:
+          oneOf:
+          - type: string
+            maxLength: 130
+          - type: 'null'
+        decided_at:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        replacement_run_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        passenger_notice_requested:
+          type: boolean
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        passengers:
+          type: integer
+          minimum: 0
+          maximum: 99
+        wheelchair_spaces:
+          type: integer
+          minimum: 0
+          maximum: 20
+        pickup_window:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            properties:
+              earliest_at:
+                type: string
+                format: date-time
+              latest_at:
+                type: string
+                format: date-time
+            required:
+            - earliest_at
+            - latest_at
+          - type: 'null'
+        proposals:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/OutageProposal'
+        actions:
+          type: array
+          maxItems: 4
+          items:
+            type: string
+            enum:
+            - CHECK_OPTIONS
+            - REBOOK
+            - CANCEL
+            - INFORM_PASSENGER
+      required:
+      - id
+      - booking_id
+      - run_id
+      - vehicle_id
+      - state
+      - revision
+      - proposals
+      - actions
+      description: Betroffene Buchung im Störungsfall. `revision` ist das Ziel von `If-Match` der Aktionen.
+    OutageProposal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_id:
+          $ref: common.yaml#/components/schemas/UUID
+        run_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        pickup_at:
+          type: string
+          format: date-time
+        dropoff_at:
+          type: string
+          format: date-time
+        window_effect:
+          type: string
+          enum:
+          - IN_WINDOW
+          - OUTSIDE_WINDOW
+        window_violations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,59}$
+      required:
+      - id
+      - vehicle_id
+      - run_id
+      - run_revision
+      - pickup_at
+      - dropoff_at
+      - window_effect
+      - window_violations
+      description: Ersatzvorschlag mit Wirkung auf das Zusagefenster; nur freigegebene, geeignete Fahrzeuge (Qualifikation, Prüfung, Ressourcenvektor).
+    OutageRebookRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        proposal_id:
+          $ref: common.yaml#/components/schemas/UUID
+        reason_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+        accept_window_effect:
+          type: boolean
+          description: Ausdrückliche Annahme eines Vorschlags mit verletztem Zusagefenster (Ausnahmeweg der Umplanung).
+      required:
+      - proposal_id
+      - reason_code
+    OutageCancelRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason_code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+      required:
+      - reason_code
     WorkflowLogEntry:
       type: object
       additionalProperties: false

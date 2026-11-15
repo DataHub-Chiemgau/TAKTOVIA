@@ -4,6 +4,7 @@ import de.taktovia.analytics.api.AnalyticsApi
 import de.taktovia.analytics.api.FactBase
 import de.taktovia.analytics.api.KmClassification
 import de.taktovia.analytics.api.Metrics
+import de.taktovia.analytics.api.NotPerformedTrips
 import de.taktovia.analytics.api.ReportJobs
 import de.taktovia.analytics.api.TimeFacts
 import de.taktovia.platform.audit.AuditPort
@@ -25,6 +26,7 @@ internal object AnalyticsServicesFactory {
             override val metrics: Metrics = metricRegister
             override val reportJobs: ReportJobs = jobs
             override val timeFacts: TimeFacts = createTimeFacts(tx)
+            override val notPerformed: NotPerformedTrips = createNotPerformed(ctxTx, tx, audit, clock)
         }
     }
 
@@ -33,4 +35,5 @@ internal object AnalyticsServicesFactory {
     fun createKm(ctxTx: ContextTransactions, tx: TenantTransactions, clock: Clock): KmClassification = JdbcKmClassification(ctxTx, tx, clock)
     fun createMetrics(tx: TenantTransactions, smallGroupThreshold: Int): Metrics = JdbcMetrics(tx, smallGroupThreshold)
     fun createTimeFacts(tx: TenantTransactions): TimeFacts = JdbcTimeFacts(tx)
+    fun createNotPerformed(ctxTx: ContextTransactions, tx: TenantTransactions, audit: AuditPort, clock: Clock): NotPerformedTrips = JdbcNotPerformedTrips(tx, ctxTx, audit, clock)
 }

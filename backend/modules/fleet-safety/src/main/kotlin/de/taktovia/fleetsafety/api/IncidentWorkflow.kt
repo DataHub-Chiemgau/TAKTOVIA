@@ -155,6 +155,21 @@ interface IncidentWorkflow {
      */
     fun recordDecision(jdbc: JdbcOperations, ctx: RequestContext, incidentId: UUID, decision: String, reasonCode: String)
 
+    /**
+     * Störungsablauf (WP-M3-54, ruft `booking-dispatch` über die Anwendung in seiner Transaktion): Sichtbarkeit und Recht am Incident. Lesen: Rollen der Leitstelle mit `operator:read`; schreiben: Disposition und
+     * Betriebsleitung mit `operator:write` (403 sonst); fremder Mandant, fremder Dienst und unbekannte Kennung 404. Liefert den Stand des Incidents.
+     */
+    fun outageIncident(jdbc: JdbcOperations, ctx: RequestContext, incidentId: UUID, write: Boolean): OutageIncident
+
+    /** Systemzugriff (Ersatzsuche als Betriebsauftrag, ohne Personenkontext); `null` = unbekannt. */
+    fun outageIncidentSystem(jdbc: JdbcOperations, incidentId: UUID): OutageIncident?
+
+    /**
+     * Schließt den Incident nach der Abarbeitung des Störungsfalls: [resolved] = `RESOLVED` (über `REPLACEMENT_SEARCH`, falls noch `OPEN`), sonst `CLOSED_NO_REPLACEMENT`. Ein bereits abgeschlossener Incident bleibt
+     * unverändert. Läuft in der Transaktion [jdbc] des Aufrufers (der die Entscheidung der Leitstelle bereits geprüft hat).
+     */
+    fun concludeOutage(jdbc: JdbcOperations, incidentId: UUID, resolved: Boolean)
+
     /** Konsument für Ereignisse vom Bus über die Inbox; unbekannte Ereignisarten werden protokolliert und abgewiesen, nicht verarbeitet. */
     fun eventConsumer(processor: InboxProcessor): WorkflowEventConsumer
 
@@ -167,6 +182,9 @@ interface IncidentWorkflow {
     /** Betriebsauftrag der Ersatzfahrzeugsuche (`operation.kind = REPLACEMENT_SEARCH`); registriert beim Operation-Runner der Anwendung. */
     val searchHandler: OperationHandler
 }
+
+/** Incident aus Sicht des Störungsablaufs (WP-M3-54): Fahrzeug, Dienst, Zustand, Revision und Art. */
+data class OutageIncident(val id: UUID, val kind: String, val vehicleId: UUID?, val serviceId: UUID?, val status: IncidentStatus, val revision: Long)
 
 enum class IncidentStatus { OPEN, REPLACEMENT_SEARCH, RESOLVED, CLOSED_NO_REPLACEMENT;
     val isFinal get() = this == RESOLVED || this == CLOSED_NO_REPLACEMENT

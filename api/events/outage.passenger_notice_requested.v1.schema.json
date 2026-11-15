@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/outage.passenger_notice_requested.v1.schema.json",
+  "title": "Fahrgastmitteilung zur Umbuchung angefordert (WP-M3-54)",
+  "description": "Payload von `outage.passenger_notice_requested`. Aggregat: outage_booking; je Änderung (Revision) genau ein Ereignis. Verbraucher: Benachrichtigung (Vorlage und Kanal offen, OP-27); der Storno löst seine Mitteilung über `booking.cancelled` aus. Keine Fahrgastdaten.",
+  "type": "object",
+  "required": [
+    "incident_id",
+    "booking_id",
+    "change"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "change": {
+      "enum": [
+        "REBOOKED"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "incident_id": "9a8b7c6d-1111-4222-8333-444455556666",
+      "booking_id": "5f1d4a0e-1b0a-4c3b-8e0f-2a3b4c5d6e7f",
+      "change": "REBOOKED"
+    }
+  ]
+}

@@ -185,6 +185,8 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
             bookingId, c?.let { uuid(it, "service_id") }, confirmed?.let { Timestamp.from(it.occurredAt) }, c?.let { ts(it, "pickup_earliest") }, c?.let { ts(it, "pickup_latest") }, c?.get("gross_minor")?.asLong(), c?.let { text(it, "currency") },
             cancelled?.let { Timestamp.from(it.occurredAt) }, cancelled?.let { text(it.p, "reason_code") ?: text(it.p, "reason") }, cancelled?.let { text(it.p, "cause_class") }, boarded, alighted, noShow?.at, noShow?.wait, state,
             c?.let { uuid(it, "offer_id") }, cancelled?.let { text(it.p, "initiator") }, failure?.first, failure?.second)
+        // Fahrt nicht durchgeführt (WP-M4-55): Ursache und Kategorie aus dem Buchungsfakt ableiten; Korrekturvermerke bleiben erhalten
+        j.query("SELECT taktovia.not_performed_refresh(?)", { _, _ -> 0 }, bookingId)
     }
 
     private fun uuid(p: JsonNode, k: String): UUID? = p.get(k)?.takeIf { !it.isNull }?.asString()?.let(UUID::fromString)
@@ -208,7 +210,7 @@ internal class JdbcFactBase(private val tx: TenantTransactions, private val cloc
         tx.run(tenant) { j ->
             lock(j, "rebuild")
             j.update("DELETE FROM taktovia.fact_attempt"); j.update("DELETE FROM taktovia.fact_offer"); j.update("DELETE FROM taktovia.fact_booking"); j.update("DELETE FROM taktovia.fact_stop_event")
-            j.update("DELETE FROM taktovia.fact_vehicle_state"); j.update("DELETE FROM taktovia.dataset_watermark")
+            j.update("DELETE FROM taktovia.fact_vehicle_state"); j.update("DELETE FROM taktovia.dataset_watermark"); j.update("DELETE FROM taktovia.not_performed_trip")
             data class In(val source: Source, val eventType: String, val aggregateId: UUID, val eventId: UUID, val payload: JsonNode)
             val all = j.query("SELECT source, event_type, aggregate_id, event_id, payload::text FROM taktovia.analytics_event_inbox ORDER BY occurred_at, aggregate_revision, event_id",
                 { rs, _ -> In(Source.valueOf(rs.getString(1)), rs.getString(2), rs.getObject(3, UUID::class.java), rs.getObject(4, UUID::class.java), mapper.readTree(rs.getString(5))) })

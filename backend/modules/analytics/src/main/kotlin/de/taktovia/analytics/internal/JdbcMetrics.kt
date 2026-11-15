@@ -51,6 +51,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java)
         j.queryForObject("SELECT taktovia.seed_energy_metric_definitions()", Int::class.java)   // Energiekosten-Kennzahlen (WP-M4-43)
         j.queryForObject("SELECT taktovia.seed_pickup_punctuality_definitions()", Int::class.java)   // WP-M4-53: Version 2 der Abholkennzahlen (ausführbar)
+        j.queryForObject("SELECT taktovia.seed_not_performed_definitions()", Int::class.java)   // WP-M4-55: Version 2 der No-Show-Rate (ausführbar)
     }
 
     private fun latest(j: JdbcOperations): List<MetricDefinition> = j.query(DEF_LATEST, DEF_MAPPER)
@@ -67,16 +68,18 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
-            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) }
+            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) && !(it.executable && it.metricId == NO_SHOW_RATE) }
             // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
             if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
+            val noShowDefs = defs.filter { it.executable && it.metricId == NO_SHOW_RATE }
+            val noShowValues = if (noShowDefs.isEmpty()) emptyList() else noShowCounts(j, query.period, query.filter).let { (c, num) -> noShowDefs.map { d -> value(j, d, query, c, Calc(num, c.requests)) } }
             val pickupDefs = defs.filter { it.executable && it.metricId in JdbcPickupPunctuality.METRICS }
             val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, query.period, query.filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
             val pickupValues = pickupDefs.map { d -> pickupValue(j, d, query, pc!!) }
             val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
             val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, query.filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, query, fc) } }
             val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
-            (attemptValues + funnelValues + energyValues + pickupValues).sortedBy { it.definition.metricId }
+            (attemptValues + funnelValues + energyValues + pickupValues + noShowValues).sortedBy { it.definition.metricId }
         }
     }
 
@@ -96,6 +99,26 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             "AREA" to rs.getLong("area"), "TIME_WINDOW" to rs.getLong("time_window"), "PARTNER" to rs.getLong("partner")), rs.getLong("requests_unfiltered"), rs.getLong("facts_total"),
             rs.getTimestamp("processed_until"), rs.getString("completeness") == "INCOMPLETE", rs.getInt("gap_count"), rs.getLong("event_count"), rs.getBoolean("has_data"))
     }, Timestamp.from(p.from), Timestamp.from(p.to), f.serviceId?.toString(), f.serviceId?.toString(), f.channel, f.channel).single()
+
+    /** Zähler (No-Show-Fahrten) und Nenner (bestätigte, nicht stornierte Abholungen) der No-Show-Rate aus dem Fakt „Fahrt nicht durchgeführt“ und dem Buchungsfakt, mit dem Datenstand der Quellen BOOKING und DRIVER_EVENT (WP-M4-55). */
+    private class NoShowCounts(val requests: Long, val noShow: Long, val unfiltered: Long, val factsTotal: Long, val asOf: Timestamp?, val incomplete: Boolean, val gaps: Int, val events: Long, val hasData: Boolean)
+
+    private fun noShowCounts(j: JdbcOperations, p: ReportingPeriod, f: MetricFilter): Pair<Counts, Long> {
+        val svc = f.serviceId?.toString(); val from = Timestamp.from(p.from); val to = Timestamp.from(p.to)
+        val r = j.query(
+            "SELECT (SELECT count(*) FROM taktovia.fact_booking b WHERE b.confirmed_at IS NOT NULL AND b.state <> 'CANCELED' AND b.pickup_earliest >= ? AND b.pickup_earliest < ? AND (CAST(? AS uuid) IS NULL OR b.service_id = CAST(? AS uuid))) AS denominator, " +
+                "(SELECT count(*) FROM taktovia.fact_booking b WHERE b.confirmed_at IS NOT NULL AND b.state <> 'CANCELED' AND b.pickup_earliest >= ? AND b.pickup_earliest < ?) AS denominator_all, " +
+                "(SELECT count(*) FROM taktovia.not_performed_trip t WHERE t.cause = 'PASSENGER_NO_SHOW' AND t.pickup_earliest >= ? AND t.pickup_earliest < ? AND (CAST(? AS uuid) IS NULL OR t.service_id = CAST(? AS uuid))) AS numerator, " +
+                "(SELECT count(*) FROM taktovia.fact_booking) AS facts_total, " +
+                "(SELECT max(processed_until) FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS processed_until, " +
+                "(SELECT coalesce(bool_or(completeness = 'INCOMPLETE'), false) FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS incomplete, " +
+                "(SELECT coalesce(sum(gap_count), 0) FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS gaps, " +
+                "(SELECT coalesce(sum(event_count), 0) FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS events, " +
+                "(SELECT count(*) > 0 FROM taktovia.dataset_watermark WHERE source IN ('BOOKING', 'DRIVER_EVENT')) AS has_data",
+            { rs, _ -> NoShowCounts(rs.getLong("denominator"), rs.getLong("numerator"), rs.getLong("denominator_all"), rs.getLong("facts_total"), rs.getTimestamp("processed_until"), rs.getBoolean("incomplete"), rs.getInt("gaps"), rs.getLong("events"), rs.getBoolean("has_data")) },
+            from, to, svc, svc, from, to, from, to, svc, svc).single()
+        return Counts(r.requests, 0, emptyMap(), r.unfiltered, r.factsTotal, r.asOf, r.incomplete, r.gaps, r.events, r.hasData) to r.noShow
+    }
 
     private fun coverage(c: Counts): BigDecimal? {
         val base = if (!c.incomplete) BigDecimal.ONE.setScale(4) else if (c.factsTotal <= 0) BigDecimal.ZERO.setScale(4)
@@ -272,6 +295,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         /** Energiekosten-Kennzahlen (WP-M4-43): Rechnung in [JdbcEnergyCosts], nicht aus den Versuchsfakten. */
         val ENERGY_IDS = setOf("energy_cost_per_100km", "energy_cost_per_operating_hour")
         /** Kennzahlen, die aus dem Nachfragetrichter (`funnel_counts`) statt aus den Versuchszählern berechnet werden. */
+        const val NO_SHOW_RATE = "no_show_rate"
         val FUNNEL_METRICS = setOf("offer_rate", "booking_conversion", "cancellation_rate_passenger", "cancellation_rate_operator")
         const val FUNNEL = "SELECT * FROM taktovia.funnel_counts(?, ?, CAST(? AS uuid), CAST(? AS text))"
         const val FUNNEL_RECONCILIATION = "SELECT stage, fact_count, log_count FROM taktovia.funnel_reconciliation(?, ?) ORDER BY stage"

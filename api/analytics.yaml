@@ -82,7 +82,8 @@ paths:
           enum:
           - rejection_reason
           - funnel
-        description: 'Zusätzlich `rejection_reason`: die Ablehnungsstatistik nach Grund, oder `funnel`: der Nachfragetrichter (WP-M4-51) mit den vier getrennten Zählgrößen und den Endzuständen (erfordert `from`; `channel` ist für den Trichter nicht zulässig, 400).'
+          - not_performed
+        description: 'Zusätzlich `not_performed`: die nicht durchgeführten Fahrten nach Ursache und Verursachungskategorie (WP-M4-55, KPI-009; erfordert `from`), mit „Ursache offen“ und Konflikten sichtbar, den Quoten No-Show-Rate und Betreiberstorno (Fahrzeugausfall getrennt) samt Nenner und den Korrekturvermerken; `rejection_reason`: die Ablehnungsstatistik nach Grund, oder `funnel`: der Nachfragetrichter (WP-M4-51) mit den vier getrennten Zählgrößen und den Endzuständen (erfordert `from`; `channel` ist für den Trichter nicht zulässig, 400).'
       - name: reason_code
         in: query
         required: false
@@ -110,6 +111,60 @@ paths:
           $ref: common.yaml#/components/responses/Problem
         '503':
           $ref: common.yaml#/components/responses/Problem
+  /v1/analytics/not-performed/{booking_id}/corrections:
+    post:
+      summary: Ursache einer nicht durchgeführten Fahrt korrigieren
+      operationId: correctNotPerformedTrip
+      security:
+      - oidc:
+        - analytics:write
+      description: 'WP-M4-55 (KPI-009): ändert die wirksame Ursache einer nicht durchgeführten bestätigten Fahrt; der alte Wert bleibt als unveränderlicher Korrekturvermerk mit Akteur, Zeit, Grund, altem und neuem Wert. Rolle Disposition oder Administration (Arbeitsannahme bis zur Festlegung der Rollen, OP 30), sonst 403; ohne Grund 422; Fahrt eines fremden Mandanten oder keine nicht durchgeführte Fahrt: 404. `expected_revision` (optional) ist die Versionsprüfung: veraltet 412 `REVISION_MISMATCH`; ohne Angabe werden gleichzeitige Korrekturen der Reihe nach vermerkt, beide Vermerke bleiben und der letzte Stand ist eindeutig. Gleicher Idempotenzschlüssel mit anderem Inhalt: 409 `IDEMPOTENCY_CONFLICT`.'
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Buchungs-ID der nicht durchgeführten Fahrt.
+      - $ref: common.yaml#/components/parameters/IdempotencyKey
+      - $ref: common.yaml#/components/parameters/Traceparent
+      responses:
+        '200':
+          description: Erfolgreich.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotPerformedTrip'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[0-9]+"$
+              description: Revision der Fahrt (Ursache).
+        '400':
+          $ref: common.yaml#/components/responses/Problem
+        '401':
+          $ref: common.yaml#/components/responses/Problem
+        '403':
+          $ref: common.yaml#/components/responses/Problem
+        '404':
+          $ref: common.yaml#/components/responses/Problem
+        '409':
+          $ref: common.yaml#/components/responses/Problem
+        '412':
+          $ref: common.yaml#/components/responses/Problem
+        '422':
+          $ref: common.yaml#/components/responses/Problem
+        '429':
+          $ref: common.yaml#/components/responses/Problem
+        '503':
+          $ref: common.yaml#/components/responses/Problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotPerformedCorrectionRequest'
   /v1/analytics/vehicle-km:
     get:
       summary: Kennzahlen-Datenbasis lesen (Fahrzeugkilometer je Kategorie)
@@ -658,11 +713,277 @@ components:
           - $ref: '#/components/schemas/FunnelBreakdown'
           - type: 'null'
           description: Nur mit `breakdown=funnel`.
+        not_performed:
+          oneOf:
+          - $ref: '#/components/schemas/NotPerformedBreakdown'
+          - type: 'null'
+          description: Nur mit `breakdown=not_performed` (WP-M4-55).
       required:
       - definitions
       - values
       - rejections
       - funnel
+      - not_performed
+    NotPerformedBreakdown:
+      type: object
+      additionalProperties: false
+      description: Auswertung nicht durchgeführter Fahrten (WP-M4-55, KPI-009). „Ursache offen“ (`open_count`) und Konflikte (`conflict_count`) bleiben sichtbar und werden nie ausgeschlossen; keine Fahrerzuordnung.
+      properties:
+        definition_version:
+          type: integer
+          minimum: 1
+        period:
+          type: object
+          additionalProperties: true
+        filter:
+          type: object
+          additionalProperties: true
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        by_cause:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              cause:
+                type: string
+                pattern: ^[A-Z][A-Z0-9_]{1,59}$
+              category:
+                type: string
+                enum:
+                - OPERATOR
+                - PASSENGER
+                - EXTERNAL
+              label:
+                type: string
+                maxLength: 120
+              count:
+                type: integer
+                format: int64
+                minimum: 0
+            required:
+            - cause
+            - category
+            - label
+            - count
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+        open_count:
+          type: integer
+          format: int64
+          minimum: 0
+        conflict_count:
+          type: integer
+          format: int64
+          minimum: 0
+        confirmed_pickups:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Nenner der No-Show-Rate (bestätigte, nicht stornierte Abholungen mit geplanter Leistung).
+        confirmed_bookings:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Nenner der Betreiberstornoquote (alle bestätigten Buchungen).
+        rates:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/NotPerformedRate'
+          description: '`no_show_rate`, `operator_cancellation_rate` (Betreiberstorno ohne Fahrzeugausfall) und `vehicle_outage_rate` (Fahrzeugausfall getrennt).'
+        state:
+          type: string
+          enum:
+          - OK
+          - PROVISIONAL
+          - NOT_COMPUTABLE
+          - SUPPRESSED
+        coverage:
+          oneOf:
+          - type: number
+          - type: 'null'
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        source_events:
+          type: integer
+          format: int64
+          minimum: 0
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/NotPerformedTrip'
+      required:
+      - definition_version
+      - total
+      - by_cause
+      - by_category
+      - open_count
+      - conflict_count
+      - rates
+      - state
+      - items
+    NotPerformedRate:
+      type: object
+      additionalProperties: false
+      properties:
+        numerator:
+          type: integer
+          format: int64
+          minimum: 0
+        denominator:
+          type: integer
+          format: int64
+          minimum: 0
+        value:
+          oneOf:
+          - type: number
+          - type: 'null'
+        reason:
+          oneOf:
+          - type: string
+          - type: 'null'
+      required:
+      - numerator
+      - denominator
+      - value
+      - reason
+    NotPerformedTrip:
+      type: object
+      additionalProperties: false
+      description: Nicht durchgeführte bestätigte Fahrt mit wirksamer Ursache und Verursachungskategorie; `cause_state` OPEN = Ursache offen, CONFLICT = widersprüchliche Ereignisse (keine stille Wahl).
+      properties:
+        booking_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_id:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/UUID
+          - type: 'null'
+        confirmed_at:
+          type: string
+          format: date-time
+        not_performed_at:
+          type: string
+          format: date-time
+        cause_state:
+          type: string
+          enum:
+          - OPEN
+          - SET
+          - CORRECTED
+          - CONFLICT
+        cause:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,59}$
+          - type: 'null'
+        category:
+          oneOf:
+          - type: string
+            enum:
+            - OPERATOR
+            - PASSENGER
+            - EXTERNAL
+          - type: 'null'
+        derived_cause:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]{1,59}$
+          - type: 'null'
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        corrections:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/NotPerformedCorrection'
+      required:
+      - booking_id
+      - confirmed_at
+      - not_performed_at
+      - cause_state
+      - cause
+      - category
+      - revision
+      - corrections
+    NotPerformedCorrection:
+      type: object
+      additionalProperties: false
+      description: Unveränderlicher Korrekturvermerk (append-only).
+      properties:
+        correction_no:
+          type: integer
+          minimum: 1
+        old_cause:
+          oneOf:
+          - type: string
+          - type: 'null'
+        old_category:
+          oneOf:
+          - type: string
+          - type: 'null'
+        new_cause:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+        new_category:
+          type: string
+          enum:
+          - OPERATOR
+          - PASSENGER
+          - EXTERNAL
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+        actor:
+          type: string
+          maxLength: 130
+        at:
+          type: string
+          format: date-time
+      required:
+      - correction_no
+      - new_cause
+      - new_category
+      - reason
+      - actor
+      - at
+    NotPerformedCorrectionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        new_cause:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,59}$
+          description: Code aus dem Ursachenkatalog (z. B. VEHICLE_OUTAGE, PASSENGER_NO_SHOW, EXTERNAL_EVENT).
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+          description: Grund der Korrektur (Pflicht, keine Personendaten).
+        expected_revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Optionale Versionsprüfung (Revision der Fahrt).
+      required:
+      - new_cause
+      - reason
     KmCategories:
       type: object
       additionalProperties: false

@@ -1,0 +1,3 @@
+table;runtime_privileges;note
+outage_booking;SELECT,INSERT,UPDATE;WP-M3-54: betroffene Buchung eines Fahrzeugausfalls; Zustandswächter outage_booking_guard, kein DELETE
+outage_proposal;SELECT,INSERT;WP-M3-54: Ersatzvorschlag je betroffener Buchung, nur anhängen (Trigger)

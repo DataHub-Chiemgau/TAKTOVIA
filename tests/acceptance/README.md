@@ -56,3 +56,15 @@ PH-AT-004, AT-01 bis AT-19 (soweit M2) und die M2-Anteile von PH-AT-001/-010/-01
 Datenbank-, Web- und Browsertests werden im Szenario **ausgeführt**; Backend-Tests über ihre JUnit-Ergebnisse. Last- und Skalierungsläufe liegen in `tests/performance` (eigener Lauf). Die RLS-Abdeckungsprüfung aller M2-Tabellen: `db/tests/test_m2_48_rls_abdeckung.py`.
 
 - `test_stammdaten_migration.py` (WP-M5-25, LH-6.20-QAT-005): Einspielwerkzeug `tools/stammdaten_import` gegen die **echte Anwendung** (Spring-Boot-Jar als Prozess, lokaler JWT-Test-Issuer statt Keycloak, Testwelt `stammdaten_testwelt/`, Referenzdatensatz `fixtures/stammdaten_referenz/`); braucht `cd backend && ./gradlew :app:bootJar`, sonst werden die Tests übersprungen (mit `TAKTOVIA_REQUIRE_APP_JAR=true` schlagen sie fehl).
+
+## M3-Gate-Suite (WP-M3-56)
+
+```bash
+cd backend && ./gradlew build --continue        # JUnit-Ergebnisse
+cd web && npm ci                                  # Webtests (Vitest)
+python tests/acceptance/m3_gate/run.py [--write-e2e]   # 19 Szenarien + M2-Regression, Evidenz nach tests/acceptance/evidence/m3/
+```
+
+PH-AT-020, AT-08 bis AT-11, AT-26 bis AT-36, AT-50, AT-51, AT-60 unter der Runtime-Rolle mit beiden Mandanten, dazu die Regression PH-AT-004 und AT-01 bis AT-05 nach Ablösung der M2-Fixtures. Die Parallelitätsharness von PH-AT-020 ist
+`backend/app/src/test/kotlin/de/taktovia/app/fleet/PhAt020SafetyHarnessTest.kt` (120 Durchläufe, beide Reihenfolgen und Wettlauf, mit Negativkontrolle). Umfang, offene Teilschritte (OP-12, OP-13, OP-21, Flutter) und Zielmeilenstein
+je Test: [docs/m3-gate-umfang.md](docs/m3-gate-umfang.md). Die Abnahmeentscheidung bleibt `PENDING`/`Ausstehend`.

@@ -1,6 +1,8 @@
 package de.taktovia.fleetsafety.internal
 
+import de.taktovia.fleetsafety.api.IncidentStatus
 import de.taktovia.fleetsafety.api.IncidentWorkflow
+import de.taktovia.fleetsafety.api.OutageIncident
 import de.taktovia.fleetsafety.api.ReplacementSearchPort
 import de.taktovia.fleetsafety.api.ReplacementSearchResult
 import de.taktovia.fleetsafety.api.WorkflowAction
@@ -177,6 +179,44 @@ internal class JdbcIncidentWorkflow(
         val row = jdbc.query("SELECT service_id, rule_revision_id FROM taktovia.incident WHERE id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, UUID::class.java) }, incidentId).firstOrNull() ?: throw ProblemException.notFound()
         if (!ServiceScopeAuthorizer.canWrite(jdbc, ctx, ScopedObject("incident", incidentId, ctx.tenant, row.first), Purpose.OPERATIONS)) throw ProblemException.notFound()
         appendLog(jdbc, incidentId, UUID.randomUUID(), row.second, "DISPATCH_DECISION", decision, eventType = "DISPATCH", decision = "MANUAL_DECISION", correlation = ctx.correlationId, reason = reasonCode, actor = "user:" + ctx.actor.subject)
+    }
+
+    private class OutageRow(val kind: String, val vehicleId: UUID?, val serviceId: UUID?, val status: IncidentStatus, val revision: Long)
+
+    private fun outageRow(j: JdbcOperations, id: UUID, forUpdate: Boolean): OutageRow? {
+        val map = { rs: java.sql.ResultSet, _: Int -> OutageRow(rs.getString(1), rs.getObject(2, UUID::class.java), rs.getObject(3, UUID::class.java), IncidentStatus.valueOf(rs.getString(4)), rs.getLong(5)) }
+        return (if (forUpdate) j.query("SELECT kind, vehicle_id, service_id, status, revision FROM taktovia.incident WHERE id = ? FOR UPDATE", map, id)
+        else j.query("SELECT kind, vehicle_id, service_id, status, revision FROM taktovia.incident WHERE id = ?", map, id)).firstOrNull()
+    }
+
+    override fun outageIncident(jdbc: JdbcOperations, ctx: RequestContext, incidentId: UUID, write: Boolean): OutageIncident {
+        if (write) guard(ctx, "operator:write", PUBLISHERS) else guard(ctx, "operator:read", READERS)
+        val row = outageRow(jdbc, incidentId, false) ?: throw ProblemException.notFound()
+        val scoped = ScopedObject("incident", incidentId, ctx.tenant, row.serviceId)
+        val ok = if (write) ServiceScopeAuthorizer.canWrite(jdbc, ctx, scoped, Purpose.OPERATIONS) else ServiceScopeAuthorizer.canRead(jdbc, ctx, scoped, Purpose.OPERATIONS)
+        if (!ok) throw ProblemException.notFound()
+        return OutageIncident(incidentId, row.kind, row.vehicleId, row.serviceId, row.status, row.revision)
+    }
+
+    override fun outageIncidentSystem(jdbc: JdbcOperations, incidentId: UUID): OutageIncident? =
+        outageRow(jdbc, incidentId, false)?.let { OutageIncident(incidentId, it.kind, it.vehicleId, it.serviceId, it.status, it.revision) }
+
+    override fun concludeOutage(jdbc: JdbcOperations, incidentId: UUID, resolved: Boolean) {
+        val row = outageRow(jdbc, incidentId, true) ?: return
+        if (row.status.isFinal) return
+        val now = Timestamp.from(clock.instant())
+        var revision = row.revision
+        var status = row.status
+        val operation = jdbc.queryForObject("SELECT replacement_operation_id FROM taktovia.incident WHERE id = ?", UUID::class.java, incidentId)
+        val target = if (resolved && (status == IncidentStatus.REPLACEMENT_SEARCH || operation != null)) IncidentStatus.RESOLVED else IncidentStatus.CLOSED_NO_REPLACEMENT
+        if (target == IncidentStatus.RESOLVED && status == IncidentStatus.OPEN) {   // der Zustandsautomat führt über die Suche: OPEN -> REPLACEMENT_SEARCH -> RESOLVED
+            revision += 1
+            jdbc.update("UPDATE taktovia.incident SET status = 'REPLACEMENT_SEARCH', revision = ?, updated_at = ? WHERE id = ?", revision, now, incidentId)
+            status = IncidentStatus.REPLACEMENT_SEARCH
+        }
+        revision += 1
+        jdbc.update("UPDATE taktovia.incident SET status = ?, closed_at = ?, revision = ?, updated_at = ? WHERE id = ?", target.name, now, revision, now, incidentId)
+        outbox.append(jdbc, OutboxEvent(incidentId, revision, "incident.closed", linkedMapOf("incident_id" to incidentId.toString(), "status" to target.name), clock.instant()))
     }
 
     private fun lock(j: JdbcOperations, key: String) {

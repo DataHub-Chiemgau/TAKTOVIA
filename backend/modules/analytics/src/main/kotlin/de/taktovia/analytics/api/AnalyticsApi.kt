@@ -26,6 +26,9 @@ interface AnalyticsApi {
     /** Zeitfakten je Fahrgastfahrt und Stopp: geplant, angekündigt, zugesagt, prognostiziert, tatsächlich (WP-M4-52). */
     val timeFacts: TimeFacts
 
+    /** Nicht durchgeführte Fahrten mit Ursache und Verursachungskategorie, Korrekturvermerke (WP-M4-55). */
+    val notPerformed: NotPerformedTrips
+
     companion object {
         /**
          * [downloadSecret] signiert die kurzlebigen Abruflinks (HMAC-SHA256, mindestens 32 Byte, nie im Repository); [checklist] ist die Freigabecheckliste des PBefG-Exports
@@ -50,6 +53,9 @@ interface AnalyticsApi {
 
         /** Nur die Zeitfakten (WP-M4-52). */
         fun createTimeFacts(tx: TenantTransactions): TimeFacts = AnalyticsServicesFactory.createTimeFacts(tx)
+
+        /** Nur die nicht durchgeführten Fahrten (WP-M4-55). */
+        fun createNotPerformed(ctxTx: ContextTransactions, tx: TenantTransactions, audit: AuditPort, clock: Clock = Clock.systemUTC()): NotPerformedTrips = AnalyticsServicesFactory.createNotPerformed(ctxTx, tx, audit, clock)
     }
 }
 

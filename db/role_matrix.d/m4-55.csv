@@ -1,0 +1,4 @@
+table;runtime_privileges;note
+not_performed_cause;SELECT,INSERT;WP-M4-55: Ursachenkatalog je Mandant, nach dem Anlegen unveraenderlich (Trigger)
+not_performed_trip;SELECT,INSERT,UPDATE,DELETE;WP-M4-55: abgeleiteter Fakt Fahrt nicht durchgefuehrt, wiederaufbaubar aus fact_booking
+not_performed_correction;SELECT,INSERT;WP-M4-55: Korrekturvermerke, nur anhaengen (Trigger)

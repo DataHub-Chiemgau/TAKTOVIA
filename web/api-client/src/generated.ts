@@ -1400,6 +1400,68 @@ export interface AnalyticsMetrics {
   values: MetricValue[] | null;
   rejections: RejectionBreakdown | null;
   funnel: FunnelBreakdown | null;
+  not_performed: NotPerformedBreakdown | null;
+}
+
+export interface NotPerformedBreakdown {
+  definition_version: number;
+  period?: Record<string, unknown>;
+  filter?: Record<string, unknown>;
+  total: number;
+  by_cause: ({
+    cause: string;
+    category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL';
+    label: string;
+    count: number;
+  })[];
+  by_category: Record<string, unknown>;
+  open_count: number;
+  conflict_count: number;
+  confirmed_pickups?: number;
+  confirmed_bookings?: number;
+  rates: Record<string, unknown>;
+  state: 'OK' | 'PROVISIONAL' | 'NOT_COMPUTABLE' | 'SUPPRESSED';
+  coverage?: number | null;
+  as_of?: string | null;
+  source_events?: number;
+  items: NotPerformedTrip[];
+}
+
+export interface NotPerformedRate {
+  numerator: number;
+  denominator: number;
+  value: number | null;
+  reason: string | null;
+}
+
+export interface NotPerformedTrip {
+  booking_id: UUID;
+  service_id?: UUID | null;
+  confirmed_at: string;
+  not_performed_at: string;
+  cause_state: 'OPEN' | 'SET' | 'CORRECTED' | 'CONFLICT';
+  cause: string | null;
+  category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL' | null;
+  derived_cause?: string | null;
+  revision: number;
+  corrections: NotPerformedCorrection[];
+}
+
+export interface NotPerformedCorrection {
+  correction_no: number;
+  old_cause?: string | null;
+  old_category?: string | null;
+  new_cause: string;
+  new_category: 'OPERATOR' | 'PASSENGER' | 'EXTERNAL';
+  reason: string;
+  actor: string;
+  at: string;
+}
+
+export interface NotPerformedCorrectionRequest {
+  new_cause: string;
+  reason: string;
+  expected_revision?: number;
 }
 
 export interface KmCategories {
@@ -2763,7 +2825,60 @@ export interface Incident {
   service_id?: UUID | null;
   closed_at?: string | null;
   workflow_log?: WorkflowLogEntry[];
+  outage?: IncidentOutage;
   revision: number;
+}
+
+export interface IncidentOutage {
+  bookings: OutageBooking[];
+  boarded_booking_ids: UUID[];
+  open_count: number;
+}
+
+export interface OutageBooking {
+  id: UUID;
+  booking_id: UUID;
+  booking_number?: string | null;
+  run_id: UUID;
+  vehicle_id: UUID;
+  state: 'OPEN' | 'PROPOSED' | 'REBOOKED' | 'CANCELLED' | 'OPEN_ISSUE' | 'BOARDED' | 'ONBOARD_DONE';
+  issue_code?: string | null;
+  decision?: 'REBOOK' | 'CANCEL' | null;
+  decision_reason?: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  replacement_run_id?: UUID | null;
+  passenger_notice_requested?: boolean;
+  revision: number;
+  passengers?: number;
+  wheelchair_spaces?: number;
+  pickup_window?: {
+    earliest_at: string;
+    latest_at: string;
+  } | null;
+  proposals: OutageProposal[];
+  actions: ('CHECK_OPTIONS' | 'REBOOK' | 'CANCEL' | 'INFORM_PASSENGER')[];
+}
+
+export interface OutageProposal {
+  id: UUID;
+  vehicle_id: UUID;
+  run_id: UUID;
+  run_revision: number;
+  pickup_at: string;
+  dropoff_at: string;
+  window_effect: 'IN_WINDOW' | 'OUTSIDE_WINDOW';
+  window_violations: string[];
+}
+
+export interface OutageRebookRequest {
+  proposal_id: UUID;
+  reason_code: string;
+  accept_window_effect?: boolean;
+}
+
+export interface OutageCancelRequest {
+  reason_code: string;
 }
 
 export interface WorkflowLogEntry {
@@ -5026,10 +5141,17 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason' | 'funnel'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; breakdown?: 'rejection_reason' | 'funnel' | 'not_performed'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;
+  };
+  correctNotPerformedTrip: {
+    path: { booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: NotPerformedCorrectionRequest;
+    response: NotPerformedTrip;
   };
   getVehicleKmClasses: {
     path: Record<string, never>;
@@ -5576,6 +5698,34 @@ export interface Operations {
     headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
     body: IncidentTransition;
     response: Incident;
+  };
+  checkOperatorIncidentOutage: {
+    path: { incident_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; traceparent?: string };
+    body: undefined;
+    response: IncidentOutage;
+  };
+  rebookOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: OutageRebookRequest;
+    response: OutageBooking;
+  };
+  cancelOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: OutageCancelRequest;
+    response: OutageBooking;
+  };
+  informOutageBooking: {
+    path: { incident_id: UUID; booking_id: UUID };
+    query: Record<string, never>;
+    headers: { 'Idempotency-Key': string; 'If-Match': string; traceparent?: string };
+    body: undefined;
+    response: OutageBooking;
   };
   listVehicleMasters: {
     path: Record<string, never>;
@@ -6646,6 +6796,7 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   getOperatorAlert: { method: 'GET', path: '/v1/operator/alerts/{alert_id}', pathParams: ['alert_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   acknowledgeOperatorAlert: { method: 'POST', path: '/v1/operator/alerts/{alert_id}/acknowledgements', pathParams: ['alert_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   getAnalyticsMetrics: { method: 'GET', path: '/v1/analytics/metrics', pathParams: [], query: ['metric_id', 'version', 'from', 'to', 'service_id', 'channel', 'vehicle_id', 'energy', 'currency', 'breakdown', 'reason_code'], headers: ['traceparent'], hasBody: false, scopes: ['analytics:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
+  correctNotPerformedTrip: { method: 'POST', path: '/v1/analytics/not-performed/{booking_id}/corrections', pathParams: ['booking_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['analytics:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 429, 503] },
   getVehicleKmClasses: { method: 'GET', path: '/v1/analytics/vehicle-km', pathParams: [], query: ['metric', 'from', 'to', 'vehicle_id'], headers: ['traceparent'], hasBody: false, scopes: ['costs:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   createRideOffer: { method: 'POST', path: '/v1/ride-offers', pathParams: [], query: [], headers: ['traceparent', 'Idempotency-Key'], hasBody: true, scopes: ['rides:write'], statuses: [200, 400, 401, 403, 404, 409, 422, 429, 503] },
   getRideOffer: { method: 'GET', path: '/v1/ride-offers/{ride_offer_id}', pathParams: ['ride_offer_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['rides:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },
@@ -6724,6 +6875,10 @@ export const operationTable: Record<OperationId, OperationInfo> = {
   listOperatorIncidents: { method: 'GET', path: '/v1/operator/incidents', pathParams: [], query: ['status', 'vehicle_id', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   getOperatorIncident: { method: 'GET', path: '/v1/operator/incidents/{incident_id}', pathParams: ['incident_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['operator:read'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
   transitionOperatorIncident: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/transitions', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  checkOperatorIncidentOutage: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/check', pathParams: ['incident_id'], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: false, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 422, 429, 503] },
+  rebookOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/rebook', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  cancelOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/cancel', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: true, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
+  informOutageBooking: { method: 'POST', path: '/v1/operator/incidents/{incident_id}/outage/bookings/{booking_id}/inform', pathParams: ['incident_id', 'booking_id'], query: [], headers: ['Idempotency-Key', 'If-Match', 'traceparent'], hasBody: false, scopes: ['operator:write'], statuses: [200, 400, 401, 403, 404, 409, 412, 422, 428, 429, 503] },
   listVehicleMasters: { method: 'GET', path: '/v1/operator/vehicle-master', pathParams: [], query: ['active', 'limit', 'cursor'], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 422, 429, 503] },
   createVehicleMaster: { method: 'POST', path: '/v1/operator/vehicle-master', pathParams: [], query: [], headers: ['Idempotency-Key', 'traceparent'], hasBody: true, scopes: ['fleet:write'], statuses: [201, 400, 401, 403, 409, 422, 429, 503] },
   getVehicleMaster: { method: 'GET', path: '/v1/operator/vehicle-master/{vehicle_id}', pathParams: ['vehicle_id'], query: [], headers: ['traceparent'], hasBody: false, scopes: ['fleet:read'], statuses: [200, 400, 401, 403, 404, 429, 503] },

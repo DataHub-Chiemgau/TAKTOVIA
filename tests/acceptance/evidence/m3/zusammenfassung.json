@@ -1,0 +1,305 @@
+{
+  "build": "879fd9fcb4b040f268d2ce2c4c251ab0dd40022f+lokal",
+  "tests": [
+    {
+      "checks": 39,
+      "evidence": "PH-AT-020-run-425404004ba459b8.json",
+      "failed": [],
+      "id": "PH-AT-020",
+      "name": "Sichere Fahrzeugfreigabe vor und während Disposition",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-425404004ba459b8"
+    },
+    {
+      "checks": 14,
+      "evidence": "AT-08-run-b32ee162611cbcdd.json",
+      "failed": [],
+      "id": "AT-08",
+      "name": "Fahrer No-Show (M3-Umfang)",
+      "offen": [
+        "offen (nicht geprüft): Abrechnung regelkonform (Gebühr bzw. Erstattung bei No-Show): Zahlungs- und Gebührenregel für No-Show ist im Pflichtenheft nicht festgelegt (OP-12); in M3 abnehmbar sind Wartefrist, Grund, Wartezeit, Regelstand und Ursache/Kategorie (kein Gebühreneinzug, `ohne_gebuehr`)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-b32ee162611cbcdd"
+    },
+    {
+      "checks": 40,
+      "evidence": "AT-09-run-031808740ee5d7f1.json",
+      "failed": [],
+      "id": "AT-09",
+      "name": "Fahrzeugausfall: Sperrung, betroffene Buchungen, Ersatz-/Stornofluss",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-031808740ee5d7f1"
+    },
+    {
+      "checks": 13,
+      "evidence": "AT-10-run-a65ff592c0191584.json",
+      "failed": [],
+      "id": "AT-10",
+      "name": "GPS-Ausfall: veraltet gekennzeichnet, keine fiktive Liveposition",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-a65ff592c0191584"
+    },
+    {
+      "checks": 26,
+      "evidence": "AT-11-run-d38fa81b73e7064c.json",
+      "failed": [],
+      "id": "AT-11",
+      "name": "Offline Driver App: Netzverlust, Wiederverbindung, Events dedupliziert",
+      "offen": [
+        "offen (nicht geprüft): Letzte gültige Route sichtbar im Funkloch (Driver-App): Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-d38fa81b73e7064c"
+    },
+    {
+      "checks": 14,
+      "evidence": "AT-26-run-07d510c66a92aab9.json",
+      "failed": [],
+      "id": "AT-26",
+      "name": "Pflichtcheck vor Disposition",
+      "offen": [
+        "offen (nicht geprüft): Liste der fehlenden Prüfschritte im Driver-Prüfpfad: Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-07d510c66a92aab9"
+    },
+    {
+      "checks": 13,
+      "evidence": "AT-27-run-e8829dca15a1cfea.json",
+      "failed": [],
+      "id": "AT-27",
+      "name": "Bestandener Check: unveränderlicher Nachweis, Freigabe",
+      "offen": [
+        "offen (nicht geprüft): Prüfpfad mit Abschluss und Freigabeanzeige (Driver-App): Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-e8829dca15a1cfea"
+    },
+    {
+      "checks": 16,
+      "evidence": "AT-28-run-08f292f3b4c94404.json",
+      "failed": [],
+      "id": "AT-28",
+      "name": "Kritischer Schaden: Sperre, Alarm, Ersatzdisposition",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-08f292f3b4c94404"
+    },
+    {
+      "checks": 14,
+      "evidence": "AT-29-run-7c2bba9fe39e8f36.json",
+      "failed": [],
+      "id": "AT-29",
+      "name": "Bekanntschaden: Altfall referenziert, kein unbegründeter neuer Schadensfall",
+      "offen": [
+        "offen (nicht geprüft): Quittierung der Altschäden vor Schichtstart (Driver-App): Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-7c2bba9fe39e8f36"
+    },
+    {
+      "checks": 12,
+      "evidence": "AT-30-run-fb2cee469ec1792b.json",
+      "failed": [],
+      "id": "AT-30",
+      "name": "Fahrzeugwechsel: neue fahrzeugspezifische Prüfung, keine Vorabfreigabe",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-fb2cee469ec1792b"
+    },
+    {
+      "checks": 11,
+      "evidence": "AT-31-run-0c2da4f01195c441.json",
+      "failed": [],
+      "id": "AT-31",
+      "name": "Offline-Prüfung: später Sync, Abschluss einmalig, keine unbestätigte Freigabe",
+      "offen": [
+        "offen (nicht geprüft): Prüfung im Funkloch abschließen und synchronisieren (Driver-App, lokale Speicherung): Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-0c2da4f01195c441"
+    },
+    {
+      "checks": 13,
+      "evidence": "AT-32-run-e6e5ccf2540a2d44.json",
+      "failed": [],
+      "id": "AT-32",
+      "name": "Prüfversionen: Historie zeigt ursprüngliche Fragen und Antworten",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-e6e5ccf2540a2d44"
+    },
+    {
+      "checks": 16,
+      "evidence": "AT-33-run-d60e77a8beb95f97.json",
+      "failed": [],
+      "id": "AT-33",
+      "name": "Schadenfall mobil: Schadenakte mit Foto, Fallnummer, Medienprüfung (M3-Teil)",
+      "offen": [
+        "offen (nicht geprüft): Medienprüfung im vollen Umfang (Schadsoftware-Scan, Quarantäne, endgültige Freigabe): hängt von WP-M4-21 (Uploadticket, Quarantäne) ab; in M3 abnehmbar sind Typ-, Größen-, Hash- und Metadatenprüfung und die Sichtbarkeit erst nach bestandener Prüfung (OP-13)",
+        "offen (nicht geprüft): Schadenmeldung mit Foto und Fahrzeugbereich (Driver-App): Driver-App (Flutter, UI-09/UI-10 mit Offline-Sync und 412-Konflikt ohne stilles Überschreiben): Dart-Tests unter mobile/driver/test sind vorhanden, Flutter ist in dieser Umgebung nicht installiert (nicht ausgeführt)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-d60e77a8beb95f97"
+    },
+    {
+      "checks": 16,
+      "evidence": "AT-34-run-54a574fc3fe0f66b.json",
+      "failed": [],
+      "id": "AT-34",
+      "name": "Schadens-Triage: klassifizieren, sperren, zuweisen, Alarm nach Regelmatrix (M3-Teil)",
+      "offen": [
+        "offen (nicht geprüft): „Frist auslösen“: Fristen und Eskalationszeiten der Schadensbearbeitung sind im Pflichtenheft nicht festgelegt (OP-12); in M3 abnehmbar sind Klassifikation, Sperre, Zuweisung, Statushistorie und der Alarm nach der Regelmatrix"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-54a574fc3fe0f66b"
+    },
+    {
+      "checks": 12,
+      "evidence": "AT-35-run-effdeb900196548d.json",
+      "failed": [],
+      "id": "AT-35",
+      "name": "Reparaturfreigabe: Fahrzeug bleibt gesperrt bis zur berechtigten Freigabe",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-effdeb900196548d"
+    },
+    {
+      "checks": 12,
+      "evidence": "AT-36-run-7da3505d8d40ca23.json",
+      "failed": [],
+      "id": "AT-36",
+      "name": "Dublette und Beweise: Hinweis auf offene Fälle, Integritätsprüfung (M3-Teil)",
+      "offen": [
+        "offen (nicht geprüft): Dublettenhinweis über den Hinweis auf offene Fälle desselben Fahrzeugs hinaus (Ähnlichkeitserkennung, Zusammenführung): Regel und Schwellen sind im Pflichtenheft nicht festgelegt (OP-13, OP-21)"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-7da3505d8d40ca23"
+    },
+    {
+      "checks": 30,
+      "evidence": "AT-50-run-86bbde596b529eca.json",
+      "failed": [],
+      "id": "AT-50",
+      "name": "Ende-zu-Ende-Fahrzeugausfall: Ersatzfahrzeug, neuer Check, Rebooking, Fahrgastkommunikation",
+      "offen": [
+        "offen (nicht geprüft): Inhalt der Fahrgastnachricht zur Umbuchung (Vorlagen und Kanäle, OP-27): in M3 abnehmbar ist die Anforderung genau einer Mitteilung je Änderung (Ereignis `outage.passenger_notice_requested`) und die Stornomitteilung über den M2-Weg"
+      ],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-86bbde596b529eca"
+    },
+    {
+      "checks": 12,
+      "evidence": "AT-51-run-96f215de87f8f931.json",
+      "failed": [],
+      "id": "AT-51",
+      "name": "Sicherheitsfreigabe: Leitstelle kann kritische Sperre nicht ohne Werkstattnachweis entfernen",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-96f215de87f8f931"
+    },
+    {
+      "checks": 12,
+      "evidence": "AT-60-run-4901f4d471c4e105.json",
+      "failed": [],
+      "id": "AT-60",
+      "name": "Wiederinbetriebnahme: Disposition erst nach Reparatur, technischer Freigabe und neuer Checkliste",
+      "offen": [],
+      "regression_m2": false,
+      "result": "PASSED",
+      "run_id": "run-4901f4d471c4e105"
+    },
+    {
+      "checks": 19,
+      "evidence": "regression-m2/PH-AT-004-run-226c78dc8bc5a66a.json",
+      "failed": [],
+      "id": "PH-AT-004",
+      "name": "Letzter Platz unter Konkurrenz (M2-Umfang)",
+      "offen": [
+        "offen (nicht geprüft): PH-AT-004 unter Referenzlast: tests/performance/test_referenzprofil.py::test_100_parallele_bestaetigungen_letzter_platz_unter_grundlast (eigener Lauf mit bootJar)"
+      ],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-226c78dc8bc5a66a"
+    },
+    {
+      "checks": 11,
+      "evidence": "regression-m2/AT-01-run-45f8066afae0e015.json",
+      "failed": [],
+      "id": "AT-01",
+      "name": "Sofortfahrt ohne Pooling (M2-Teil)",
+      "offen": [
+        "offen (nicht geprüft): Fahrerzuweisung in der Driver-App, Check-in und Fahrtende: Driver-App, Check-in und Ausführungszustände liefert M3 (WP-M3-25, WP-M3-29, WP-M3-30); Offener Punkt 1"
+      ],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-45f8066afae0e015"
+    },
+    {
+      "checks": 11,
+      "evidence": "regression-m2/AT-02-run-ece47835b97abb50.json",
+      "failed": [],
+      "id": "AT-02",
+      "name": "Zwei gepoolte Fahrten (M2-Umfang)",
+      "offen": [],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-ece47835b97abb50"
+    },
+    {
+      "checks": 9,
+      "evidence": "regression-m2/AT-03-run-d048e9c5cf78d8c2.json",
+      "failed": [],
+      "id": "AT-03",
+      "name": "Kapazitätsrennen (M2-Umfang)",
+      "offen": [],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-d048e9c5cf78d8c2"
+    },
+    {
+      "checks": 11,
+      "evidence": "regression-m2/AT-04-run-771d836344aa553e.json",
+      "failed": [],
+      "id": "AT-04",
+      "name": "Rollstuhltransport (M2-Umfang)",
+      "offen": [],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-771d836344aa553e"
+    },
+    {
+      "checks": 10,
+      "evidence": "regression-m2/AT-05-run-f7b2ff16ad352950.json",
+      "failed": [],
+      "id": "AT-05",
+      "name": "Vorausbuchung (M2-Umfang)",
+      "offen": [],
+      "regression_m2": true,
+      "result": "PASSED",
+      "run_id": "run-f7b2ff16ad352950"
+    }
+  ]
+}
