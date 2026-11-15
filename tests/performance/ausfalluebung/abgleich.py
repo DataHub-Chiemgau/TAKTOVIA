@@ -20,6 +20,7 @@ UEBERNOMMEN = "UEBERNOMMEN"
 BEIM_PSP_NICHT_VORHANDEN = "UNVERAENDERT_OFFEN_BEIM_PSP_NICHT_VORHANDEN"
 LOKAL_VERLOREN = "LOKAL_VERLOREN_PSP_VORHANDEN_MANUELLE_KLAERUNG"
 ANOMALIE = "ANOMALIE_LOKAL_VOR_PSP"
+NICHT_UEBERNOMMEN = "ABWEICHUNG_NICHT_UEBERNOMMEN_MANUELLE_KLAERUNG"      # Anbieterstand weiter als lokal, aber nicht sicher übernehmbar: nie als konsistent ausweisen
 BUCHUNG_VERLOREN_MIT_ZAHLUNG = "BUCHUNG_VERLOREN_ZAHLUNG_VORHANDEN_KLAERUNG"
 BUCHUNG_VERLOREN_OHNE_ZAHLUNG = "BUCHUNG_VERLOREN_KEINE_ZAHLUNG_KUNDE_INFORMIEREN"
 SPERRE_WIEDERHERGESTELLT = "SPERRE_AUS_EREIGNISSTROM_WIEDERHERGESTELLT"
@@ -46,8 +47,23 @@ def adopt_provider_state(conn, tenant, merchant_ref: str, psp: dict) -> bool:
         return False
     pid, state, rev, _ = row
     target = psp["state"]
-    if target != "CAPTURED" or RANG.get(state, 99) >= RANG["CAPTURED"] or state not in ("AUTHORIZED", "CAPTURE_PENDING", "CAPTURE_UNKNOWN", "RECONCILING"):
-        return False          # in diesem Stand der Übung übernimmt der Abgleich nur den Einzug (CAPTURED); andere Zustände bleiben unverändert und werden gemeldet
+    if target not in ("AUTHORIZED", "CAPTURED") or RANG.get(state, 99) >= RANG[target]:
+        return False          # in diesem Stand der Übung übernimmt der Abgleich nur Autorisierung und Einzug; andere Zustände bleiben unverändert und werden gemeldet
+    if state == "CREATED":
+        # Verlustfenster zwischen Anlegen und lokal festgehaltener Autorisierung: der Anbieter hat bereits autorisiert (Wirkung beim Anbieter, lokal nicht mehr vorhanden). Übernahme der
+        # Anbieterkennung aus der Statusabfrage über die Händlerreferenz, dann Vorwärtsübergang CREATED -> AUTHORIZED (Automat `payment`), nie ein neuer PSP-Aufruf.
+        if not psp.get("provider_ref") or not psp.get("payment_id"):
+            return False
+        n = conn.execute("UPDATE taktovia.payment_intent SET state='AUTHORIZED', provider_ref=%s, psp_payment_id=%s, revision=revision+1, updated_at=clock_timestamp() "
+                         "WHERE tenant_id=%s AND id=%s AND revision=%s AND state='CREATED'", (psp["provider_ref"], psp["payment_id"], tenant, pid, rev)).rowcount
+        if n != 1:
+            return False
+        rev += 1
+        state = "AUTHORIZED"
+        if target == "AUTHORIZED":
+            return True
+    elif state not in ("AUTHORIZED", "CAPTURE_PENDING", "CAPTURE_UNKNOWN", "RECONCILING") or target != "CAPTURED":
+        return False
     if state == "AUTHORIZED":
         conn.execute("UPDATE taktovia.payment_intent SET state='CAPTURE_PENDING', revision=revision+1, updated_at=clock_timestamp() WHERE tenant_id=%s AND id=%s AND revision=%s", (tenant, pid, rev))
         rev += 1
@@ -105,7 +121,7 @@ def abgleichbericht(admin, runtime_conn_factory, psp: SimPsp, ereignisse: list[d
                     c.commit()
                 finally:
                     c.close()
-            add("zahlung", mref, UEBERNOMMEN if ok or not anwenden else K, f"lokal {lokal[0]} -> Anbieter {remote['state']} (erfasst {remote['captured_minor']})", tenant)
+            add("zahlung", mref, UEBERNOMMEN if ok or not anwenden else NICHT_UEBERNOMMEN, f"lokal {lokal[0]} -> Anbieter {remote['state']} (erfasst {remote['captured_minor']})", tenant)
         else:
             add("zahlung", mref, ANOMALIE, f"lokal {lokal[0]} weiter als Anbieter {remote['state']}", tenant)
     # --- Buchungen: bestätigte Buchungen aus dem Ereignisstrom, die im wiederhergestellten Bestand fehlen
