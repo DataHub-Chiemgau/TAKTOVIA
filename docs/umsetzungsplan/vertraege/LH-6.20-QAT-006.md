@@ -28,7 +28,7 @@
 - **Negativ:** Durchlauf eines Handbuchkapitels durch eine projektfremde Person deckt fehlende Schritte auf (Befunde werden behoben); Abgleich Handbuch gegen Build schlägt an, wenn eine beschriebene Oberfläche oder ein Schritt im Build fehlt; Prüfung auf echte Personendaten und offene Platzhalter in der Datenschutzdokumentation schlägt bei Treffer an.
 - **Konkurrierend:** nicht zutreffend (kein Geld-, Kapazitäts-, Sicherheits- oder Datentrennungsfall).
 - **Referenztests:** keine Katalog-ID im WP genannt (keine erfunden).
-- Testfälle: geplant:tests/acceptance/test_dokumentationspaket.py::test_handbuchschritte_und_oberflaechen_existieren_im_abnahme_build; geplant:tests/acceptance/test_dokumentationspaket.py::test_dokumente_versioniert_ohne_personendaten_und_platzhalter; geplant:tests/acceptance/test_dokumentationspaket.py::test_standardbetrieb_demonstration_mit_protokoll; geplant:tests/acceptance/test_dokumentationspaket.py::test_fahrerschulung_deckt_sicherheitsablaeufe_ab; geplant:tests/acceptance/test_dokumentationspaket.py::test_dokumente_zugaenglich_ueberschriften_alternativtexte
+- Testfälle: tests/acceptance/test_dokumentationspaket.py::test_handbuchschritte_und_oberflaechen_existieren_im_abnahme_build; tests/acceptance/test_dokumentationspaket.py::test_dokumente_versioniert_ohne_personendaten_und_platzhalter; tests/acceptance/test_dokumentationspaket.py::test_standardbetrieb_demonstration_mit_protokoll; tests/acceptance/test_dokumentationspaket.py::test_fahrerschulung_deckt_sicherheitsablaeufe_ab; tests/acceptance/test_dokumentationspaket.py::test_dokumente_zugaenglich_ueberschriften_alternativtexte
 
 ## Reviews
 

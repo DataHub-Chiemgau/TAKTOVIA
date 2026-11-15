@@ -88,3 +88,5 @@ Voraussetzung: `cd backend && ./gradlew :app:bootJar` und die Datenbankumgebung 
 Der Testaufbau (Planbindung des Angebots, Fahrzeugfreigabe, Schicht, Planstopps, Rückdatieren eines Holds, Fahrgastprofil) schreibt per Administratorzugang, weil die Einfügeheuristik, die Freigabeketten und die Registrierung in den
 Anwendungspaketen nicht an diese Pfade verdrahtet sind; der Wächter weist diese Schreibzugriffe getrennt aus. Backend-seitig gehören dazu die zuschaltbaren Zeitgeber ohne Betriebswerkzeug: `taktovia.workers.tenant-file`
 (Mandantenliste des Betriebs), `taktovia.events.local-loopback` und `taktovia.events.loopback-tenant-file` (Ereigniszustellung im Prozess).
+
+- `test_dokumentationspaket.py` (WP-M5-27, LH-6.20-QAT-006): Dokumentationspaket `docs/dokumentation/` gegen den Build (`tools/check_dokumentationspaket.py`: Versionierung, Oberflächen- und Schnittstellenabgleich, Personendaten, Platzhalter, Zugänglichkeit, Fahrerschulung, Standardbetrieb mit Protokollprüfung). Die Demonstration durch den Abnehmer ist **nicht** ausgeführt.
