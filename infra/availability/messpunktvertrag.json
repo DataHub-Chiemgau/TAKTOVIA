@@ -1,0 +1,24 @@
+{
+  "schema": "messpunktvertrag.v1",
+  "status": "Arbeitswerte, vorläufig (D-05 offen); WP-M5-01 liefert den abgestimmten Messpunktvertrag, bis dahin gelten diese Werte (Kap. 08 §8.6)",
+  "probenintervall_s": 60,
+  "timeout_s": 10,
+  "ziel_verfuegbarkeit_prozent": 99.9,
+  "mindestabdeckung_prozent": 90.0,
+  "messgrenze": "Gemessen wird von außerhalb der Plattform an der öffentlichen Schnittstelle (Gateway) und am Anmeldedienst. Antwortet die Plattform mit einem Fehler der Plattform (Verbindungsfehler, Zeitüberschreitung, 5xx ohne Providerbezug, falscher Inhalt), ist der Lauf `fehler_plattform`. Fehler eines Zahlungs- oder Kartenanbieters (Problem-Code mit Providerbezug) sind `fehler_provider`: sie werden getrennt ausgewiesen und nicht als Plattformausfall gezählt. Fällt die Probe selbst aus (ungültige Zugangsdaten, nicht erreichbarer Referenzpunkt, Ausnahme im Probenprozess), ist der Lauf `keine_messung`.",
+  "wartungsregel": "Wartungsfenster stehen vorab im Wartungskalender (wartungskalender.json, Eintrag vor Beginn des Fensters). Minuten innerhalb eines Fensters zählen weder als Ausfall noch im Nenner der Verfügbarkeit; sie werden im Bericht ausgewiesen. Ein nachträglich eingetragenes Fenster wird im Bericht als `nachtraeglich` gekennzeichnet und nicht herausgerechnet.",
+  "fehlende_proben": "Ein Intervall ohne Messwert (Probe ausgefallen, Lücke im Rohdatenbestand) ist `keine_messung`: es zählt weder als verfügbar noch als Ausfall. Unterschreitet die Abdeckung (Minuten mit Messwert / Minuten des Zeitraums außerhalb Wartung) die Mindestabdeckung, weist der Bericht `aussage: unzureichende_abdeckung` aus und kein Erreicht/Verfehlt.",
+  "providerfehler_im_ziel": "Provider-Fehlerminuten sind in den Messminuten, aber nicht in den Ausfallminuten der Plattform enthalten; der Bericht weist zusätzlich die Verfügbarkeit einschließlich Providerfehlern aus.",
+  "bereiche": {
+    "kernbuchung": {
+      "bezeichnung": "Kernbuchung",
+      "pfade": ["POST /v1/ride-offers", "POST /v1/ride-offers/{id}/hold", "POST /v1/bookings", "POST /v1/bookings/{id}/cancel"],
+      "erfolgskriterium": "Angebot erhalten (200 mit mindestens einem Angebot), Hold 201, Buchung bestätigt (201, Zustand bestätigt), Probebuchung storniert (200); Probemandant, eigener Dienst, eigenes Probefahrzeug."
+    },
+    "operator": {
+      "bezeichnung": "Operator",
+      "pfade": ["POST <Token-Endpunkt des Anmeldedienstes>", "GET /v1/me", "GET /v1/operator/vehicles"],
+      "erfolgskriterium": "Anmeldung liefert ein Zugriffstoken, /v1/me liefert 200 mit Mandantenbezug des Probemandanten, /v1/operator/vehicles liefert 200 und enthält das Probefahrzeug."
+    }
+  }
+}

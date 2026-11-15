@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/verfuegbarkeitsbericht.v1.schema.json",
+  "title": "Monatsverfügbarkeit (WP-M5-05, LH-6.19-NFR-001)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "erzeugt_am", "umgebung", "zeitraum", "formel", "messpunkte", "probenintervall_s", "messgrenze", "fehlende_proben", "wartungsregel", "status_zielwerte", "mindestabdeckung_prozent", "wartungsfenster", "bereiche", "rohdaten", "hinweise"],
+  "properties": {
+    "schema_version": {"const": "verfuegbarkeitsbericht.v1"},
+    "erzeugt_am": {"type": "string", "format": "date-time"},
+    "umgebung": {"type": "string", "minLength": 1},
+    "zeitraum": {"type": "object", "additionalProperties": false, "required": ["von", "bis", "kalendermonat"],
+      "properties": {"von": {"type": "string"}, "bis": {"type": "string"}, "kalendermonat": {"type": ["string", "null"], "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"}}},
+    "formel": {"type": "string"},
+    "messpunkte": {"type": "array", "minItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["bereich", "pfade", "erfolgskriterium"],
+      "properties": {"bereich": {"enum": ["kernbuchung", "operator"]}, "pfade": {"type": "array", "items": {"type": "string"}, "minItems": 1}, "erfolgskriterium": {"type": "string"}}}},
+    "probenintervall_s": {"type": "integer", "minimum": 1},
+    "messgrenze": {"type": "string"},
+    "fehlende_proben": {"type": "string"},
+    "wartungsregel": {"type": "string"},
+    "status_zielwerte": {"type": "string", "pattern": "^(vorläufig, D-05 offen|vom Auftraggeber bestätigt am [0-9]{4}-[0-9]{2}-[0-9]{2})$"},
+    "mindestabdeckung_prozent": {"type": "number", "minimum": 0, "maximum": 100},
+    "wartungsfenster": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+      "required": ["von", "bis", "grund", "eingetragen_am", "vorab_eingetragen", "minuten_im_zeitraum", "herausgerechnet"],
+      "properties": {"von": {"type": "string"}, "bis": {"type": "string"}, "grund": {"type": "string"}, "eingetragen_am": {"type": "string"}, "vorab_eingetragen": {"type": "boolean"},
+                     "minuten_im_zeitraum": {"type": "number", "minimum": 0}, "herausgerechnet": {"type": "boolean"}}}},
+    "bereiche": {"type": "object", "additionalProperties": false, "required": ["kernbuchung", "operator"],
+      "properties": {"kernbuchung": {"$ref": "#/$defs/bereich"}, "operator": {"$ref": "#/$defs/bereich"}}},
+    "rohdaten": {"type": "object", "additionalProperties": false, "required": ["verweis", "sha256", "saetze"],
+      "properties": {"verweis": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "saetze": {"type": "integer", "minimum": 0}}},
+    "hinweise": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "ereignis": {"type": "object", "additionalProperties": false, "required": ["von", "bis", "dauer_min", "davon_wartung_min", "zaehlt_min"],
+      "properties": {"von": {"type": "string"}, "bis": {"type": "string"}, "dauer_min": {"type": "number"}, "davon_wartung_min": {"type": "number"}, "zaehlt_min": {"type": "number"}}},
+    "bereich": {"type": "object", "additionalProperties": false,
+      "required": ["bezeichnung", "messminuten", "wartungsminuten", "ausfallminuten", "providerfehlerminuten", "keine_messung_minuten", "fehlende_intervalle", "rohdatensaetze_ausserhalb_zeitraum", "abdeckung_prozent",
+                   "verfuegbarkeit_prozent", "verfuegbarkeit_inkl_providerfehler_prozent", "ziel_prozent", "ziel_erreicht", "aussage", "ausfaelle", "providerfehler", "luecken"],
+      "properties": {
+        "bezeichnung": {"type": "string"},
+        "messminuten": {"type": "number", "minimum": 0}, "wartungsminuten": {"type": "number", "minimum": 0}, "ausfallminuten": {"type": "number", "minimum": 0},
+        "providerfehlerminuten": {"type": "number", "minimum": 0}, "keine_messung_minuten": {"type": "number", "minimum": 0},
+        "fehlende_intervalle": {"type": "integer", "minimum": 0}, "rohdatensaetze_ausserhalb_zeitraum": {"type": "integer", "minimum": 0},
+        "abdeckung_prozent": {"type": "number", "minimum": 0, "maximum": 100},
+        "verfuegbarkeit_prozent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "verfuegbarkeit_inkl_providerfehler_prozent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "ziel_prozent": {"type": "number"}, "ziel_erreicht": {"type": ["boolean", "null"]},
+        "aussage": {"enum": ["ziel_erreicht", "ziel_verfehlt", "unzureichende_abdeckung"]},
+        "ausfaelle": {"type": "array", "items": {"$ref": "#/$defs/ereignis"}}, "providerfehler": {"type": "array", "items": {"$ref": "#/$defs/ereignis"}}, "luecken": {"type": "array", "items": {"$ref": "#/$defs/ereignis"}}
+      }}
+  }
+}

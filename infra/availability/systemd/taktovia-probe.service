@@ -1,0 +1,11 @@
+# WP-M5-05: ein Probenlauf je Aufruf (Kernbuchung und Operator), Rohdaten werden angehängt. NICHT ausgeführt (keine Zielumgebung, D-05).
+# Läuft auf einem Host AUSSERHALB der Plattform (Messpunkt von außen), mit eigener Identität; Zugangsdaten nur aus dem Secret-Speicher (EnvironmentFile), nie aus dem Repository.
+[Unit]
+Description=TAKTOVIA synthetische Verfuegbarkeitsprobe
+
+[Service]
+Type=oneshot
+User=taktovia-probe
+EnvironmentFile=/etc/taktovia-probe/zugang.env
+WorkingDirectory=/opt/taktovia/infra/availability
+ExecStart=/usr/bin/python3 -m taktovia_availability probe --config /etc/taktovia-probe/probe-config.json --rohdaten /var/lib/taktovia-probe/rohdaten.jsonl --alarmdatei /var/lib/taktovia-probe/alarme.jsonl --metrikdatei /var/lib/node_exporter/textfile/taktovia_probe.prom

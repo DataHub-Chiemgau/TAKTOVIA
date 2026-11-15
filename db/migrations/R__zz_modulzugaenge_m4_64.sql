@@ -17,6 +17,8 @@ BEGIN
     EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA taktovia FROM %I', ro);
     EXECUTE format('GRANT USAGE ON SCHEMA taktovia TO %I', ro);
     EXECUTE format('GRANT EXECUTE ON FUNCTION taktovia.current_tenant() TO %I', ro);
+    -- WP-M5-05: Kennzeichnung des Probemandanten (V50050): der Trigger skip_synthetic_tenant_row liest sie mit den Rechten des Aufrufers; RLS own_tenant begrenzt auf den eigenen Mandanten
+    EXECUTE format('GRANT SELECT (id, synthetic) ON taktovia.tenant TO %I', ro);
   END LOOP;
   FOR r IN
     SELECT o.tabelle,

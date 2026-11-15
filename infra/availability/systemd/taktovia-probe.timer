@@ -1,0 +1,11 @@
+# Probenintervall 60 s (Arbeitswert aus messpunktvertrag.json, D-05 offen). NICHT ausgeführt.
+[Unit]
+Description=TAKTOVIA Verfuegbarkeitsprobe im Probenintervall
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

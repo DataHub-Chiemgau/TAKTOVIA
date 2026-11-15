@@ -56,7 +56,7 @@ class Modulzugaenge(unittest.TestCase):
                     got = {p for p in DML if c.execute('SELECT has_table_privilege(%s,%s,%s)', (role, q, p)).fetchone()[0]}
                     expect = runtime_privs if owners.get(t) == modul else set()
                     self.assertEqual(got, expect, f'{role} auf {t}')
-                    if owners.get(t) != modul:
+                    if owners.get(t) != modul and t != 'tenant':   # `tenant(id, synthetic)`: Kennzeichnung des Probemandanten (WP-M5-05), RLS own_tenant
                         self.assertFalse(c.execute('SELECT has_any_column_privilege(%s,%s,%s)', (role, q, 'SELECT')).fetchone()[0], f'{role}: Spaltenrecht auf {t}')
                     checked += 1
             self.assertGreater(checked, 100)
