@@ -28,7 +28,7 @@
 - **Negativ:** fremde Dienst-ID, fremde Fahrzeug-ID, manipulierter Mandantenheader/`tenant_id` liefern keine Fremddaten und keine Existenzdetails (gleichartige Antwort wie nicht vorhandenes Objekt); Filter außerhalb der eigenen Berechtigung erweitert diese nicht; Gruppe unter `kpi_aggregation_min_n` wird „unterdrückt“, auch bei Differenzbildung benachbarter Filter.
 - **Konkurrierend (Datentrennung):** parallele Abfragen zweier Mandanten über denselben Verbindungspool zeigen keine Vermischung (Isolationsharness analog PH-AT-001).
 - **Referenztests:** PH-AT-021, PH-AT-001.
-- Testfälle: PH-AT-021; PH-AT-001; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/MetricsFilterTest.kt::filter_region_und_stunde_stimmt_mit_referenz; geplant:db/tests/test_analytics_rls.py::test_filter_kein_fremder_mandant_bei_parallelen_abfragen
+- Testfälle: PH-AT-021; PH-AT-001; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/MetricsFilterTest.kt::filter_region_und_stunde_stimmt_mit_referenz; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/MetricsFilterTest.kt::dimensionen_einzeln_und_kombiniert_filterbar; backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/MetricsFilterTest.kt::fahrzeugtyp_und_fahrzeug_filtern_abholkennzahlen_gegen_referenz; backend/app/src/test/kotlin/de/taktovia/app/analytics/ReportFilterApiTest.kt::region_und_stunde_ueber_http_und_listenhuelle; db/tests/test_analytics_rls.py::test_filter_kein_fremder_mandant_bei_parallelen_abfragen
 
 ## Reviews
 

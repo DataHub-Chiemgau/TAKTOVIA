@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/kpi_aggregation_min_n.v1.schema.json",
+  "title": "kpi_aggregation_min_n",
+  "description": "Mindestgruppengröße der Berichte: Gruppen darunter werden unterdrückt (auch gegen Differenzbildung benachbarter Filter)",
+  "type": "integer",
+  "minimum": 2,
+  "maximum": 1000,
+  "default": 3,
+  "x-unit": "COUNT",
+  "x-levels": [
+    "TENANT"
+  ],
+  "x-security-class": "STANDARD",
+  "x-limit-source": "PLANUNGSANNAHME",
+  "x-catalog": "LH-J.7-kpi_aggregation_min_n",
+  "x-catalog-range": "Datenschutzanforderungen vorrangig; Wert und Grenzen nicht freigegeben (Offener Punkt 33), Testwert 3"
+}

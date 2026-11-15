@@ -6,7 +6,7 @@ paths:
       security:
       - oidc:
         - analytics:read
-      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Mit `breakdown=funnel` zusätzlich der Nachfragetrichter (WP-M4-51, KPI-005/ANA-001): die vier Zählgrößen Anfragen, Angebote (angezeigt), bestätigte und abgeschlossene Buchungen stehen getrennt in `funnel.counts` und werden nie als Summe ausgewiesen; `funnel.end_states` trennt Anfrage abgelehnt, Angebot angezeigt aber nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno und Betreiberstorno (Storno nach Abschluss ändert die Stufe „abgeschlossen“ nicht). Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Energiekosten (WP-M4-43, `energy_cost_per_100km` und `energy_cost_per_operating_hour`): nur freigegebene, gebuchte Tankvorgänge gehen ein (Kostenbasis in Minor Units, je Energieart und Währung getrennt, nie gemischt oder addiert); nicht eingegangene Vorgänge stehen mit Grund in `exclusions`, fehlende Energiedaten senken den Abdeckungsgrad (`PROVISIONAL`) und ergeben nie 0 Kosten; `approximation` kennzeichnet die P1-Erwerbsnäherung. Ein unbekanntes oder fremdes Fahrzeug (`vehicle_id`) ist 404. Ankunftspünktlichkeit (WP-M4-54, KPI-008, `arrival_on_time` und `mean_arrival_delay`): getrennt von der Abholung gegen die zugesagte späteste Ankunft (bei gewähltem Servicefenster dessen Ende); Verspätungsminuten nur positiv, pünktlich heißt höchstens die zum Zusagezeitpunkt wirksame Toleranz (größerer Wert aus `on_time_arrival_tolerance_min` und `arrival_grace_min`), die je Buchung und Zusageversion gebunden wird, sodass eine spätere Grenzwertänderung gespeicherte Stände nie ändert; Fahrten ohne Ankunftsereignis stehen nicht im Nenner, Ankünfte ohne Zusage stehen gesondert in `without_promise`. Kilometerkennzahlen (WP-M4-56, `vehicle_km`, `productive_km`, `empty_km_rate`, `passenger_km`, `operating_hours`; Kilometerklassifikation WP-M4-42): `components` zerlegt den Wert in Kilometer je Kategorie (`PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`, `UNASSIGNED`); Leer + produktiv + nicht zuordenbar = Fahrzeugkilometer im Betriebsdienst (Nenner der Leerkilometerquote), Überführung und Werkstattfahrt zählen nie als produktiv; nicht zuordenbare Kilometer (z. B. GPS-Lücke) senken `coverage` (`PROVISIONAL`) und werden nie verteilt. Formel, Erfassungsgrenze und Distanzquelle jeder Kennzahl stehen in ihrer Definition (`numerator`, `denominator`, `exclusions`, `time_basis`).'
+      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension (bei angegebener `metric_id`; ohne `metric_id` erscheinen nur die Kennzahlen, die alle gesetzten Dimensionen kennen), unbekannter Ablehnungscode oder unvollständige Parameter: 400. Mit `breakdown=funnel` zusätzlich der Nachfragetrichter (WP-M4-51, KPI-005/ANA-001): die vier Zählgrößen Anfragen, Angebote (angezeigt), bestätigte und abgeschlossene Buchungen stehen getrennt in `funnel.counts` und werden nie als Summe ausgewiesen; `funnel.end_states` trennt Anfrage abgelehnt, Angebot angezeigt aber nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno und Betreiberstorno (Storno nach Abschluss ändert die Stufe „abgeschlossen“ nicht). Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Energiekosten (WP-M4-43, `energy_cost_per_100km` und `energy_cost_per_operating_hour`): nur freigegebene, gebuchte Tankvorgänge gehen ein (Kostenbasis in Minor Units, je Energieart und Währung getrennt, nie gemischt oder addiert); nicht eingegangene Vorgänge stehen mit Grund in `exclusions`, fehlende Energiedaten senken den Abdeckungsgrad (`PROVISIONAL`) und ergeben nie 0 Kosten; `approximation` kennzeichnet die P1-Erwerbsnäherung. Ein unbekanntes oder fremdes Fahrzeug (`vehicle_id`) ist 404. Ankunftspünktlichkeit (WP-M4-54, KPI-008, `arrival_on_time` und `mean_arrival_delay`): getrennt von der Abholung gegen die zugesagte späteste Ankunft (bei gewähltem Servicefenster dessen Ende); Verspätungsminuten nur positiv, pünktlich heißt höchstens die zum Zusagezeitpunkt wirksame Toleranz (größerer Wert aus `on_time_arrival_tolerance_min` und `arrival_grace_min`), die je Buchung und Zusageversion gebunden wird, sodass eine spätere Grenzwertänderung gespeicherte Stände nie ändert; Fahrten ohne Ankunftsereignis stehen nicht im Nenner, Ankünfte ohne Zusage stehen gesondert in `without_promise`. Kilometerkennzahlen (WP-M4-56, `vehicle_km`, `productive_km`, `empty_km_rate`, `passenger_km`, `operating_hours`; Kilometerklassifikation WP-M4-42): `components` zerlegt den Wert in Kilometer je Kategorie (`PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`, `UNASSIGNED`); Leer + produktiv + nicht zuordenbar = Fahrzeugkilometer im Betriebsdienst (Nenner der Leerkilometerquote), Überführung und Werkstattfahrt zählen nie als produktiv; nicht zuordenbare Kilometer (z. B. GPS-Lücke) senken `coverage` (`PROVISIONAL`) und werden nie verteilt. Formel, Erfassungsgrenze und Distanzquelle jeder Kennzahl stehen in ihrer Definition (`numerator`, `denominator`, `exclusions`, `time_basis`). Berichtsdimensionen (WP-M4-58, ANA-003/KPI-011): Betreiber, Region, Bediengebiet, Dienst, Tag, Ortsstunde und Fahrzeugtyp lassen sich einzeln und kombiniert filtern; die Filter bilden mit dem Dienstscope der Mitgliedschaft (`membership.service_scope`, zum Auswertungszeitpunkt gelesen) die Schnittmenge und erweitern ihn nie, ein abweichender Mandantenbezug (`tenant_id` in Query oder Header) wird nie ausgewertet, der Anfragefilter antwortet 404 wie bei einem nicht vorhandenen Objekt (der Mandant kommt allein aus dem Token), fremde Kennungen liefern dieselbe leere Menge wie nie vergebene. Gruppen unter dem Parameter `kpi_aggregation_min_n` werden nicht ausgewiesen (`SUPPRESSED`/`suppressed`, Zahlen `null`), auch wenn sie sich aus zwei benachbarten Filtern durch Differenzbildung ergäben. Die Antwort trägt zusätzlich die Listenhülle `items`, `next_cursor` (immer `null`) und `as_of`.'
       parameters:
       - name: metric_id
         in: query
@@ -74,6 +74,46 @@ paths:
           type: string
           pattern: ^[A-Z]{3}$
         description: Filterdimension Währung (nur Energiekosten-Kennzahlen); ohne Angabe je vorkommender Währung ein eigener Wert, Währungen werden nie addiert.
+      - name: operator_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Berichtsdimension Betreiber (WP-M4-58, ANA-003/KPI-011). Eine fremde oder unbekannte Kennung ergibt dieselbe leere Menge, nie Daten eines anderen Mandanten.
+      - name: region_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Berichtsdimension Region (Region des Dienstes zum Ereigniszeitpunkt).
+      - name: service_area_id
+        in: query
+        required: false
+        schema:
+          $ref: common.yaml#/components/schemas/UUID
+        description: Berichtsdimension Bediengebiet (stabiler Gebietsschlüssel der Revisionskette).
+      - name: vehicle_type
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        description: Berichtsdimension Fahrzeugtyp (`vehicle.vehicle_type`); nur für Kennzahlen mit Fahrzeugbezug (Abholpünktlichkeit, Energiekosten), sonst 400.
+      - name: day
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Berichtsdimension Tag (Betriebstag in der `reporting_timezone`); muss im Zeitraum `from`/`to` liegen (sonst 400) und schränkt ihn auf diesen Tag ein.
+      - name: hour
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 23
+        description: Berichtsdimension Ortsstunde in der `reporting_timezone` (DST-sicher; am Herbstumstellungstag gehören beide Durchläufe der Stunde 2 zur Stunde 2).
       - name: breakdown
         in: query
         required: false
@@ -274,6 +314,19 @@ components:
             - vehicle_id
             - energy
             - currency
+        report_dimensions:
+          type: array
+          description: Berichtsdimensionen (WP-M4-58), die für diese Kennzahl zusätzlich zu `filter_dimensions` filterbar sind; sie sind Eigenschaft der Faktentabellen, nicht der Definitionsversion.
+          items:
+            type: string
+            enum:
+            - operator_id
+            - region_id
+            - service_area_id
+            - vehicle_id
+            - vehicle_type
+            - hour
+            - day
         executable:
           type: boolean
           description: In diesem Stand berechenbar.
@@ -296,6 +349,7 @@ components:
       - time_basis
       - period_basis
       - filter_dimensions
+      - report_dimensions
       - executable
       - not_executable_reason
     MetricFilterUsed:
@@ -320,6 +374,25 @@ components:
         currency:
           type: string
           pattern: ^[A-Z]{3}$
+        operator_id:
+          $ref: common.yaml#/components/schemas/UUID
+        region_id:
+          $ref: common.yaml#/components/schemas/UUID
+        service_area_id:
+          $ref: common.yaml#/components/schemas/UUID
+        vehicle_type:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,39}$
+        hour:
+          type: string
+          pattern: ^([0-9]|1[0-9]|2[0-3])$
+          description: Ortsstunde 0 bis 23 in der `reporting_timezone` (als Zeichenfolge im Filterschlüssel).
+        day:
+          type: string
+          format: date
+        scope:
+          type: string
+          description: Fingerabdruck des Dienstscopes, der die Auswertung begrenzte (nur bei dienstbeschränkter Mitgliedschaft); kein Filterwert des Aufrufers.
     MetricExclusion:
       type: object
       additionalProperties: false
@@ -540,14 +613,20 @@ components:
       additionalProperties: false
       properties:
         attempts:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
         rejections:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Summe der Primärgründe = Zahl der abgelehnten Versuche.
         technical_errors:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Technische Anfragefehler, getrennt von den fachlichen Ablehnungen.
         state:
@@ -556,6 +635,9 @@ components:
           - OK
           - PROVISIONAL
           - NOT_COMPUTABLE
+        suppressed:
+          type: boolean
+          description: Kleine Gruppe unter `kpi_aggregation_min_n` (WP-M4-58), die Zahlen sind `null`, nie 0.
         coverage:
           oneOf:
           - type: number
@@ -568,7 +650,9 @@ components:
             format: date-time
           - type: 'null'
         source_events:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
         reason_code:
           oneOf:
@@ -583,6 +667,7 @@ components:
       - rejections
       - technical_errors
       - state
+      - suppressed
       - coverage
       - as_of
       - source_events
@@ -594,19 +679,27 @@ components:
       description: Die vier Zählgrößen des Trichters, getrennt und nie als Summe; jede zählt ihr eigenes Ereignis im Berichtszeitraum.
       properties:
         requests:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Anfragen (Versuche, `attempt_id`; technische Wiederholungen und Testanfragen zählen nicht).
         offers:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Angebote angezeigt (Ereignis `booking.offer_created`, OP 27).
         confirmed_bookings:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Bestätigte Buchungen (Ereignis `booking.confirmed`).
         completed_bookings:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Abgeschlossene Buchungen (Fahrtabschluss/Ausstieg, OP 27); ein späteres Storno ändert sie nicht.
       required:
@@ -620,31 +713,45 @@ components:
       description: Getrennte Endzustände; eine Buchung zählt je Endzustand genau einmal.
       properties:
         request_rejected:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Anfrage abgelehnt (fachlicher Primärgrund).
         request_technical_error:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Technischer Anfragefehler, keine fachliche Ablehnung.
         offer_not_booked:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Angebot angezeigt, aber nicht gebucht (nur belastbar, wenn `unlinked_bookings` 0 ist).
         payment_failed:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Zahlung fehlgeschlagen (Ereignis `payment.authorization_failed` oder Storno mit Grund `PAYMENT_FAILED`).
         cancelled_by_passenger:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Fahrgaststorno (Verursacher FAHRGAST, Grund `PASSENGER_REQUEST`).
         cancelled_by_operator:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Betreiberstorno (Verursacher BETREIBER).
         cancelled_other:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Sonstige Stornos (Fahrzeugausfall, No-Show), weder Fahrgast- noch Betreiberstorno.
       required:
@@ -668,7 +775,9 @@ components:
         end_states:
           $ref: '#/components/schemas/FunnelEndStates'
         unlinked_bookings:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 0
           description: Bestätigte Buchungen ohne Angebotsbezug (`offer_id` fehlt); bei Werten über 0 ist der Zustand `PROVISIONAL`.
         state:
@@ -677,6 +786,9 @@ components:
           - OK
           - PROVISIONAL
           - NOT_COMPUTABLE
+        suppressed:
+          type: boolean
+          description: Kleine Gruppe unter `kpi_aggregation_min_n` (WP-M4-58), alle Zahlen sind `null`, nie 0.
         coverage:
           oneOf:
           - type: number
@@ -697,6 +809,7 @@ components:
       - counts
       - end_states
       - unlinked_bookings
+      - suppressed
       - state
       - coverage
       - as_of
@@ -731,6 +844,20 @@ components:
           - $ref: '#/components/schemas/NotPerformedBreakdown'
           - type: 'null'
           description: Nur mit `breakdown=not_performed` (WP-M4-55).
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricValue'
+          description: Listenhülle der Plattform (WP-M4-58), dieselben Kennzahlwerte wie `values` (leer ohne Zeitraum).
+        next_cursor:
+          type: 'null'
+          description: Immer `null`, die Menge ist durch das Kennzahlregister begrenzt, es gibt keine Folgeseite.
+        as_of:
+          oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Ältester Datenstand der ausgewiesenen Werte, ohne Zeitraum `null`.
       required:
       - definitions
       - values

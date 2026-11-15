@@ -11,10 +11,10 @@ internal object AnalyticsInternal
  * [allowed] sind die Nutzlastfelder, die in Eingang und Fakten gelangen: alles andere (auch versehentlich mitgesendete Namen oder Kontaktdaten) wird verworfen.
  */
 internal enum class Source(val api: FactSource, val contiguous: Boolean, val events: Map<String, Set<String>>) {
-    ATTEMPT(FactSource.ATTEMPT, true, mapOf("booking.attempt_recorded" to setOf("attempt_id", "service_id", "outcome", "primary_reason", "time_mode", "requested_at", "passengers", "wheelchair", "coarse_origin", "coarse_destination", "channel", "secondary_reasons", "is_test"))),
-    OFFER(FactSource.OFFER, true, mapOf("booking.offer_created" to setOf("offer_id", "attempt_id", "service_id", "expires_at", "pickup_earliest", "pickup_latest", "gross_minor", "currency"))),
+    ATTEMPT(FactSource.ATTEMPT, true, mapOf("booking.attempt_recorded" to setOf("attempt_id", "service_id", "outcome", "primary_reason", "time_mode", "requested_at", "passengers", "wheelchair", "coarse_origin", "coarse_destination", "channel", "secondary_reasons", "is_test", "service_area_id"))),
+    OFFER(FactSource.OFFER, true, mapOf("booking.offer_created" to setOf("offer_id", "attempt_id", "service_id", "service_area_id", "expires_at", "pickup_earliest", "pickup_latest", "gross_minor", "currency"))),
     BOOKING(FactSource.BOOKING, false, mapOf(
-        "booking.confirmed" to setOf("booking_id", "offer_id", "service_id", "pickup_earliest", "pickup_latest", "gross_minor", "currency"),
+        "booking.confirmed" to setOf("booking_id", "offer_id", "service_id", "service_area_id", "pickup_earliest", "pickup_latest", "gross_minor", "currency"),
         "booking.cancelled" to setOf("booking_id", "reason", "reason_code", "cause_class", "initiator"),
         "payment.authorization_failed" to setOf("booking_id", "payment_id", "failure_code"),
     )),

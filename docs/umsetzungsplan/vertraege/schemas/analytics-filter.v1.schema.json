@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taktovia.example/schemas/analytics-filter.v1.schema.json",
+  "title": "analytics-filter",
+  "description": "Filterschema der Berichte (WP-M4-58, ANA-003/KPI-011): Query-Parameter von GET /v1/analytics/metrics. Der Mandant ist keine Dimension (immer der aktive aus dem Token); Filter schränken die Berechtigung nur weiter ein.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "Erster Betriebstag (reporting_timezone)"
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "Letzter Betriebstag einschließlich"
+    },
+    "day": {
+      "type": "string",
+      "format": "date",
+      "description": "Betriebstag im Zeitraum"
+    },
+    "hour": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 23,
+      "description": "Ortsstunde in der reporting_timezone (DST-sicher)"
+    },
+    "service_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "operator_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "region_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "service_area_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,39}$"
+    },
+    "channel": {
+      "enum": [
+        "WEB",
+        "APP",
+        "API"
+      ]
+    }
+  },
+  "x-notes": [
+    "Unbekannte oder fremde Kennungen ergeben die leere Menge (nie Daten eines anderen Mandanten).",
+    "Gruppen unter kpi_aggregation_min_n werden unterdrückt, auch gegen Differenzbildung benachbarter Filter."
+  ]
+}

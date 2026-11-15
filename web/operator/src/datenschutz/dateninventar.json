@@ -7839,6 +7839,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operator_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "outcome",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -7866,6 +7875,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "region_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "requested_at",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -7876,6 +7894,15 @@
         },
         {
           "spalte": "secondary_reasons",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_area_id",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
@@ -8045,6 +8072,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operator_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "payment_failed_at",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -8081,6 +8117,24 @@
           "bemerkung": ""
         },
         {
+          "spalte": "region_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_area_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "service_id",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -8100,6 +8154,24 @@
         },
         {
           "spalte": "tenant_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "vehicle_type",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",
@@ -8170,6 +8242,15 @@
           "bemerkung": ""
         },
         {
+          "spalte": "operator_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
           "spalte": "pickup_earliest",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
@@ -8180,6 +8261,24 @@
         },
         {
           "spalte": "pickup_latest",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "region_id",
+          "personenbezogen": "nein",
+          "zweck": "NACHFRAGEANALYSE",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
+        },
+        {
+          "spalte": "service_area_id",
           "personenbezogen": "nein",
           "zweck": "NACHFRAGEANALYSE",
           "rechtsgrundlage": "",

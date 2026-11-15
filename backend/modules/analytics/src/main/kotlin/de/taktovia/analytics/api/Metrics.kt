@@ -26,8 +26,43 @@ object MetricDimensions {
     const val VEHICLE_ID = "vehicle_id"
     const val ENERGY = "energy"
     const val CURRENCY = "currency"
-    val ALL: Set<String> = setOf(SERVICE_ID, CHANNEL, VEHICLE_ID, ENERGY, CURRENCY)
+    /** Berichtsdimensionen (WP-M4-58, ANA-003/KPI-011): Betreiber, Region, Bediengebiet, Fahrzeugtyp, Stunde und Tag (in der `reporting_timezone`). Der Mandant ist keine Dimension, sondern immer der aktive. */
+    const val OPERATOR_ID = "operator_id"
+    const val REGION_ID = "region_id"
+    const val SERVICE_AREA_ID = "service_area_id"
+    const val VEHICLE_TYPE = "vehicle_type"
+    const val HOUR = "hour"
+    const val DAY = "day"
+    val ALL: Set<String> = setOf(SERVICE_ID, CHANNEL, VEHICLE_ID, ENERGY, CURRENCY, OPERATOR_ID, REGION_ID, SERVICE_AREA_ID, VEHICLE_TYPE, HOUR, DAY)
     val CHANNELS: Set<String> = setOf("WEB", "APP", "API")
+}
+
+/**
+ * Berichtsdimensionen, die zusätzlich zur Liste `filter_dimensions` der freigegebenen Definition je Kennzahlfamilie gelten (WP-M4-58). Eine Dimension ist eine Eigenschaft der Faktentabellen, nicht der Definitionsversion:
+ * sie ändert Zähler und Nenner der Definition nicht, nur die betrachtete Menge. Eine hier nicht genannte Dimension ist für die Kennzahl ein Eingabefehler (400), nie ein stillschweigend ignorierter Filter.
+ * Versuchs- und Trichterkennzahlen kennen Fahrzeuge nicht (die Anfrage hat noch keins), Energiekosten kennen keine Dienste.
+ */
+object ReportDimensions {
+    private val ATTEMPT_LIKE = setOf(MetricDimensions.OPERATOR_ID, MetricDimensions.REGION_ID, MetricDimensions.SERVICE_AREA_ID, MetricDimensions.HOUR, MetricDimensions.DAY)
+    private val PICKUP = ATTEMPT_LIKE + setOf(MetricDimensions.VEHICLE_ID, MetricDimensions.VEHICLE_TYPE)
+    private val ENERGY = setOf(MetricDimensions.VEHICLE_TYPE)
+    private val PICKUP_IDS = setOf("pickup_on_time", "mean_pickup_delay")
+    private val ENERGY_IDS = setOf("energy_cost_per_100km", "energy_cost_per_operating_hour")
+
+    /** Zusätzlich zulässige Dimensionen der Kennzahl [metricId]. */
+    fun extra(metricId: String): Set<String> = when (metricId) { in PICKUP_IDS -> PICKUP; in ENERGY_IDS -> ENERGY; else -> ATTEMPT_LIKE }
+}
+
+/**
+ * Berechtigungsrahmen einer Abfrage (WP-M4-58): die Filter der Abfrage bilden mit dem Dienstscope des Aufrufers die **Schnittmenge**, sie erweitern ihn nie. Mit [context] gilt der **aktuelle** Dienstscope der
+ * Mitgliedschaften (zu Beginn der Auswertungstransaktion gelesen: ein vorher committeter Scope-Entzug wirkt, ein späterer erst in der nächsten Abfrage); ein leerer Scope im Kontext bedeutet für Berichte
+ * „mandantenweit“ (Arbeitsannahme für aggregierte Berichte, Offener Punkt 33; Zeilen mit Dienstbezug einzelner Dienste liefern andere Module nur mit Dienstfreigabe), ein Scope, der im Kontext nicht leer war und
+ * inzwischen leer ist, bedeutet **keine** Daten (fail-closed). Ohne [context] (Tests, interne Auswertung) gilt der ganze Mandant. [minGroupSize] ist der wirksame Parameter `kpi_aggregation_min_n` des Mandanten
+ * (Gruppen darunter werden unterdrückt); ohne Angabe gilt die Schwelle des Registers.
+ */
+class ReportScope(val context: de.taktovia.platform.context.RequestContext? = null, val minGroupSize: Int? = null) {
+    init { require(minGroupSize == null || minGroupSize >= 2) { "kpi_aggregation_min_n mindestens 2" } }
+    companion object { val TENANT_WIDE = ReportScope(null) }
 }
 
 /**
@@ -46,21 +81,45 @@ enum class EnergyKind { FUEL, ELECTRIC }
  * Filter einer Abfrage. Jede gesetzte Dimension muss in der Definition der Kennzahl zulässig sein. [vehicleId], [energy] und [currency] gelten nur für die Energiekosten-Kennzahlen (WP-M4-43):
  * ohne [energy] wird je Energieart ein eigener Wert ausgewiesen, ohne [currency] je vorkommender Währung.
  */
-data class MetricFilter(val serviceId: UUID? = null, val channel: String? = null, val vehicleId: UUID? = null, val energy: EnergyKind? = null, val currency: String? = null) {
+data class MetricFilter(
+    val serviceId: UUID? = null, val channel: String? = null, val vehicleId: UUID? = null, val energy: EnergyKind? = null, val currency: String? = null,
+    /** Berichtsdimensionen (WP-M4-58): Betreiber, Region, Bediengebiet (stabiler Gebietsschlüssel), Fahrzeugtyp, Stunde 0..23 und Tag in der `reporting_timezone`. */
+    val operatorId: UUID? = null, val regionId: UUID? = null, val serviceAreaId: UUID? = null, val vehicleType: String? = null, val hour: Int? = null, val day: LocalDate? = null,
+    /**
+     * Von der Auswertung gesetzte Berechtigungsgrenze (Dienstscope, `null` = alle Dienste): gehört nicht zur Auswahl des Aufrufers, sondern schränkt jede Dimension weiter ein und geht in den Snapshot ein,
+     * damit zwei Aufrufer mit verschiedenem Scope nie denselben Snapshot teilen.
+     */
+    val allowedServices: Set<UUID>? = null,
+) {
     init {
         require(channel == null || channel in MetricDimensions.CHANNELS) { "Kanal unbekannt: $channel" }
         require(currency == null || CURRENCY.matches(currency)) { "Währung ungültig: $currency" }
+        require(hour == null || hour in 0..23) { "Stunde 0 bis 23: $hour" }
+        require(vehicleType == null || VEHICLE_TYPE.matches(vehicleType)) { "Fahrzeugtyp ungültig" }
     }
+    /** Dimensionen der Auswahl (ohne die Berechtigungsgrenze). */
     fun dimensions(): Set<String> = buildSet {
         if (serviceId != null) add(MetricDimensions.SERVICE_ID); if (channel != null) add(MetricDimensions.CHANNEL)
         if (vehicleId != null) add(MetricDimensions.VEHICLE_ID); if (energy != null) add(MetricDimensions.ENERGY); if (currency != null) add(MetricDimensions.CURRENCY)
+        if (operatorId != null) add(MetricDimensions.OPERATOR_ID); if (regionId != null) add(MetricDimensions.REGION_ID); if (serviceAreaId != null) add(MetricDimensions.SERVICE_AREA_ID)
+        if (vehicleType != null) add(MetricDimensions.VEHICLE_TYPE); if (hour != null) add(MetricDimensions.HOUR); if (day != null) add(MetricDimensions.DAY)
     }
-    /** Kanonische Form (sortierte Schlüssel) für Snapshot und Hash. */
+    /** Dieselbe Auswahl ohne die Dimension [dimension] (für die Gegenprobe gegen Differenzbildung benachbarter Filter). */
+    fun without(dimension: String): MetricFilter = when (dimension) {
+        MetricDimensions.SERVICE_ID -> copy(serviceId = null); MetricDimensions.CHANNEL -> copy(channel = null); MetricDimensions.VEHICLE_ID -> copy(vehicleId = null)
+        MetricDimensions.ENERGY -> copy(energy = null); MetricDimensions.CURRENCY -> copy(currency = null); MetricDimensions.OPERATOR_ID -> copy(operatorId = null)
+        MetricDimensions.REGION_ID -> copy(regionId = null); MetricDimensions.SERVICE_AREA_ID -> copy(serviceAreaId = null); MetricDimensions.VEHICLE_TYPE -> copy(vehicleType = null)
+        MetricDimensions.HOUR -> copy(hour = null); MetricDimensions.DAY -> copy(day = null); else -> this
+    }
+    /** Kanonische Form (sortierte Schlüssel) für Snapshot und Hash; der Dienstscope steht als Fingerabdruck (`scope`) darin. */
     fun toMap(): Map<String, String> = buildMap {
-        channel?.let { put(MetricDimensions.CHANNEL, it) }; currency?.let { put(MetricDimensions.CURRENCY, it) }; energy?.let { put(MetricDimensions.ENERGY, it.name) }
-        serviceId?.let { put(MetricDimensions.SERVICE_ID, it.toString()) }; vehicleId?.let { put(MetricDimensions.VEHICLE_ID, it.toString()) }
+        channel?.let { put(MetricDimensions.CHANNEL, it) }; currency?.let { put(MetricDimensions.CURRENCY, it) }; day?.let { put(MetricDimensions.DAY, it.toString()) }; energy?.let { put(MetricDimensions.ENERGY, it.name) }
+        hour?.let { put(MetricDimensions.HOUR, it.toString()) }; operatorId?.let { put(MetricDimensions.OPERATOR_ID, it.toString()) }; regionId?.let { put(MetricDimensions.REGION_ID, it.toString()) }
+        serviceAreaId?.let { put(MetricDimensions.SERVICE_AREA_ID, it.toString()) }
+        serviceId?.let { put(MetricDimensions.SERVICE_ID, it.toString()) }; vehicleId?.let { put(MetricDimensions.VEHICLE_ID, it.toString()) }; vehicleType?.let { put(MetricDimensions.VEHICLE_TYPE, it) }
+        allowedServices?.let { put("scope", de.taktovia.platform.authz.ServiceViews.fingerprint(it)) }
     }
-    private companion object { val CURRENCY = Regex("^[A-Z]{3}$") }
+    private companion object { val CURRENCY = Regex("^[A-Z]{3}$"); val VEHICLE_TYPE = Regex("^[A-Z][A-Z0-9_]{1,39}$") }
 }
 
 /** Grund, warum ein Tankvorgang nicht in eine Energiekosten-Kennzahl eingeht (WP-M4-43). [countsAgainstCoverage]: der Vorgang fehlt noch (senkt den Abdeckungsgrad), im Gegensatz zu storniert oder anderer Währung. */
@@ -88,7 +147,7 @@ data class ReportingPeriod(val fromDay: LocalDate, val toDayInclusive: LocalDate
 }
 
 /** Abfrage von Kennzahlwerten: [metricId] `null` = alle registrierten Kennzahlen; [version] `null` = jüngste freigegebene Version. */
-data class MetricQuery(val period: ReportingPeriod, val metricId: String? = null, val version: Int? = null, val filter: MetricFilter = MetricFilter())
+data class MetricQuery(val period: ReportingPeriod, val metricId: String? = null, val version: Int? = null, val filter: MetricFilter = MetricFilter(), val scope: ReportScope = ReportScope.TENANT_WIDE)
 
 /**
  * Ausgewiesener Kennzahlwert mit Definition und Version, Filter, Zeitraum, Zähler, Nenner, Datenstand und Vollständigkeit. [asOf] ist der Datenstand der Quelle (jüngste Ereigniszeit der verarbeiteten
@@ -123,6 +182,8 @@ data class RejectionRow(
 data class RejectionReport(
     val period: ReportingPeriod, val filter: MetricFilter, val reasonCode: String?, val attempts: Long, val rejections: Long, val technicalErrors: Long, val rows: List<RejectionRow>,
     val state: MetricState, val coverage: BigDecimal?, val asOf: Instant?, val sourceEvents: Long,
+    /** `true`: kleine Gruppe (WP-M4-58), die Zahlen sind nicht ausgewiesen (0 steht dann für „unterdrückt“, nie für einen Wert). */
+    val suppressed: Boolean = false,
 )
 
 /** Abgleich der Versuche (`travel_attempt`, Eigentümer booking-dispatch) gegen die Faktenbasis aus dem Ereignisprotokoll; leere Listen = kein Unterschied. */
@@ -143,6 +204,8 @@ data class FunnelReport(
     val requests: Long, val offers: Long, val confirmedBookings: Long, val completedBookings: Long,
     val requestRejected: Long, val requestTechnicalError: Long, val offerNotBooked: Long, val paymentFailed: Long, val cancelledByPassenger: Long, val cancelledByOperator: Long, val cancelledOther: Long,
     val unlinkedBookings: Long, val state: MetricState, val coverage: BigDecimal?, val asOf: Instant?, val sourceEvents: Long,
+    /** `true`: kleine Gruppe (WP-M4-58), die Zahlen sind nicht ausgewiesen. */
+    val suppressed: Boolean = false,
 )
 
 /** Eine Stufe des Abgleichs: Zahl der Fakten gegen die aus dem Ereignisprotokoll neu gezählte Zahl. */
@@ -171,7 +234,7 @@ interface Metrics {
     fun evaluate(tenant: TenantId, query: MetricQuery, tolerances: PickupToleranceSource = PickupToleranceSource.NONE, arrivalTolerances: ArrivalToleranceSource = ArrivalToleranceSource.NONE): List<MetricValue>
 
     /** Ablehnungen nach Grund und Gruppe: Primär getrennt von Sekundär; [reasonCode] filtert auf einen Katalogcode (unbekannt: 400). */
-    fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter(), reasonCode: String? = null): RejectionReport
+    fun rejections(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter(), reasonCode: String? = null, scope: ReportScope = ReportScope.TENANT_WIDE): RejectionReport
 
     /** Legt eine Änderung als Entwurf der nächsten Version an; die Definition gilt erst nach [approve]. Liefert die neue Versionsnummer. */
     fun propose(tenant: TenantId, metricId: String, change: DefinitionChange): Int
@@ -180,7 +243,7 @@ interface Metrics {
     fun approve(tenant: TenantId, metricId: String, version: Int, approvedBy: String)
 
     /** Nachfragetrichter mit den vier getrennten Zählgrößen und den Endzuständen (WP-M4-51); nur der Filter `service_id` ist zulässig (Buchungen kennen keinen Kanal): `channel` ergibt 400. */
-    fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter()): FunnelReport
+    fun funnel(tenant: TenantId, period: ReportingPeriod, filter: MetricFilter = MetricFilter(), scope: ReportScope = ReportScope.TENANT_WIDE): FunnelReport
 
     /** Abgleich der Trichterzahlen gegen das Ereignisprotokoll des Zeitraums (WP-M4-51): meldet Unterschiede, ändert nichts. */
     fun reconcileFunnel(tenant: TenantId, period: ReportingPeriod): FunnelReconciliation
