@@ -1,0 +1,33 @@
+{
+  "schema": "taktovia-rollout-plan/1",
+  "status": "vorläufig, D-05 und OP-26 offen: Stufen, Rauchprobe und Stoppkriterien sind im Pflichtenheft nicht festgelegt und vom Auftraggeber zu bestätigen",
+  "umgebungen": ["staging", "production"],
+  "regeln": {
+    "nur_signierte_artefakte": true,
+    "migration": "expand/contract über den separaten kurzlebigen Migrationszugang; die Anwendung läuft nie mit dem Migrationszugang, die Migration nie mit dem Laufzeitzugang",
+    "fehlerbehandlung": "Vorwärtskorrektur: bestätigte Buchungen, Kapazitätssperren und Zahlungszustände werden bei Abbruch nie gelöscht oder zurückgesetzt; zurückgenommen wird nur der Verkehrsanteil der neuen Version",
+    "serialisierung": "genau eine Bereitstellung je Umgebung gleichzeitig"
+  },
+  "stufen": [
+    {"id": "kanarienvogel", "verkehrsanteil_pct": 5, "mindestdauer_s": 300, "rauchprobe": ["gesundheit", "migrationsstand", "runtime_rolle", "tabellen_policy", "synthetische_probe"]},
+    {"id": "teilausrollung", "verkehrsanteil_pct": 25, "mindestdauer_s": 600, "rauchprobe": ["gesundheit", "migrationsstand", "runtime_rolle", "synthetische_probe", "alarmkette"]},
+    {"id": "vollausrollung", "verkehrsanteil_pct": 100, "mindestdauer_s": 900, "rauchprobe": ["gesundheit", "migrationsstand", "runtime_rolle", "tabellen_policy", "synthetische_probe", "alarmkette", "archivierungsverzug"]}
+  ],
+  "rauchproben": {
+    "gesundheit": "GET /actuator/health der neuen Version ist UP",
+    "migrationsstand": "Prüfsumme der angewendeten Migrationen entspricht dem Manifest des Abnahme-Builds",
+    "runtime_rolle": "Laufzeitverbindung: kein Superuser, kein BYPASSRLS, kein Tabelleneigentum",
+    "tabellen_policy": "Wächter „Tabelle ohne Policy“ ohne Befund",
+    "synthetische_probe": "Probe Kernbuchung und Operator (infra/availability) grün",
+    "alarmkette": "Testalarm erreicht den definierten Empfänger (infra/alerting/chain.py)",
+    "archivierungsverzug": "WAL-Archivierungsverzug unter 15 min (infra/backup/taktovia_backup/wal.py)"
+  },
+  "stoppkriterien": {
+    "fehlerrate_5xx_pct_max": 1.0,
+    "rauchprobe_fehlgeschlagen": true,
+    "verfuegbarkeitsprobe_rot": true,
+    "outbox_alter_s_max": 120,
+    "unbestimmte_zahlungen_max": 0,
+    "hinweis": "Schwellen vorläufig (OP-26)"
+  }
+}

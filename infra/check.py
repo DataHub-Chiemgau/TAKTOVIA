@@ -321,6 +321,14 @@ def check_alarmkatalog(root, errs, notes):
     check_alerting.check(root, root.parent, errs, notes)
 
 
+def check_rollout(root, errs, notes):
+    """WP-M5-28: Produktionsumgebung, Rolloutplan, Betriebszugriff (infra/check_rollout.py)."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_rollout as cr
+    errs.extend(f"rollout: {e}" for e in cr.check(root, root.parent))
+    notes.append("rollout: Produktionsdefinition, Plan, Betriebszugriff statisch geprueft (Produktionsumgebung beim Anbieter NICHT ausgefuehrt, D-05)")
+
+
 def check_env_separation(root, errs, notes):
     """WP-M1-40: Umgebungsmatrix (umgebungsmatrix.json) und Trennung von Konten, Netzen, Identitaeten und Secrets je Umgebung."""
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -339,7 +347,7 @@ def check_umgebungen(root, errs, notes):
 
 def run(root):
     errs, notes = [], []
-    for fn in (check_compose, check_realm, check_observability, check_terraform, check_datensicherung, check_deploy, check_secrets, check_gateway, check_alerting, check_alarmkatalog, check_env_separation, check_umgebungen):
+    for fn in (check_compose, check_realm, check_observability, check_terraform, check_datensicherung, check_deploy, check_secrets, check_gateway, check_alerting, check_alarmkatalog, check_env_separation, check_umgebungen, check_rollout):
         try:
             fn(root, errs, notes)
         except Exception as e:  # fehlende Datei etc. = Fehler, kein Absturz

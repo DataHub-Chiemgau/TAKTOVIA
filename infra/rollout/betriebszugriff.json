@@ -1,0 +1,16 @@
+{
+  "schema": "taktovia-betriebszugriff/1",
+  "status": "vorläufig, D-05 offen: Identitätsanbieter und Betriebsmodell stehen nicht fest; die Regeln gelten unabhängig davon",
+  "regeln": {
+    "personengebunden": "Jeder Zugriff auf Production gehört zu genau einer benannten Person; Gruppen-, Sammel- und Dienstkonten mit Konsolenzugang sind verboten",
+    "mfa": "Anmeldung nur mit Mehrfaktor (privilegierte Konten, Kap. 02 / WP-M1-04); ein Zugriff ohne MFA wird abgewiesen",
+    "protokoll": "Jeder Zugriff wird mit Person, Zeit, Zweck und Umfang in einem nur anfügbaren, verketteten Protokoll festgehalten",
+    "notfallzugang": {
+      "freigabe": "zwei Personen (Anforderer und freigebende Person, nicht identisch)",
+      "pflichtfelder": ["person", "freigeber", "begruendung", "ticket"],
+      "hoechstdauer_min": 120,
+      "nachbereitung": "Nachträgliche Prüfung innerhalb von 2 Werktagen; der Zugang endet automatisch"
+    },
+    "verbotene_kontonamen": ["admin", "administrator", "root", "operator", "betrieb", "support", "shared", "team", "ops"]
+  }
+}
