@@ -106,6 +106,7 @@ class MetricsController(private val analytics: AnalyticsApi, private val config:
         "metric_id" to m.definition.metricId, "definition_version" to m.definition.version, "state" to m.state.name, "reason" to m.reason?.name, "value" to m.value, "numerator" to m.numerator,
         "denominator" to m.denominator, "coverage" to m.coverage, "unit" to m.definition.unit, "filter" to m.filter.toMap(), "period" to periodJson(m.period), "as_of" to m.asOf?.toString(),
         "source_events" to m.sourceEvents, "snapshot_id" to m.snapshotId?.toString(), "exclusions" to m.exclusions.map(::exclusionJson), "approximation" to m.approximation?.name,
+        "components" to m.components.takeIf { it.isNotEmpty() },
     )
 
     private fun exclusionJson(e: MetricExclusion): Map<String, Any?> = linkedMapOf("document_id" to e.documentId.toString(), "vehicle_id" to e.vehicleId?.toString(), "reason" to e.reason.name)

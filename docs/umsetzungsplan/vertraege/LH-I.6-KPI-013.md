@@ -28,7 +28,7 @@
 - **Negativ:** Überführungsfahrt wird nicht als produktive Fahrgaststrecke gezählt (Originalabnahme); Werkstattfahrt zählt nicht produktiv und wird getrennt ausgewiesen; Datenlücke (fehlende GPS-Daten für Teil der Fahrten) weist Vollständigkeit aus statt eines scheingenauen Werts (E2E-084); Fahrt außerhalb Betriebsdienst wird nicht gezählt; Betriebsstunden zählen nur innerhalb der definierten Erfassungsgrenze (Beginn/Ende Betriebsdienst) und nie Überführung/Werkstattfahrt als produktiv; Fahrzeug eines anderen Mandanten fließt nicht ein; nicht zuordenbare Kilometer (GPS-Lücke) werden separat ausgewiesen und nicht auf andere Kategorien verteilt.
 - **Konkurrierend:** nachträglich korrigierte Kilometerklassifikation während der Berechnung erzeugt eine neue Snapshot-Version statt Überschreiben.
 - **Referenztests:** E2E-084.
-- Testfälle: E2E-084; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/KilometerMetricsTest.kt::ueberfuehrung_zaehlt_nicht_als_produktive_fahrgaststrecke; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/KilometerMetricsTest.kt::musterfahrt_ergibt_erwartete_kilometer
+- Testfälle: E2E-084; geplant:backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/KilometerMetricsTest.kt::ueberfuehrung_zaehlt_nicht_als_produktive_fahrgaststrecke; geplant:backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/KilometerMetricsTest.kt::musterfahrt_ergibt_erwartete_kilometer
 
 ## Reviews
 

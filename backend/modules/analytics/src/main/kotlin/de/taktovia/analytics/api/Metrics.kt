@@ -100,6 +100,8 @@ data class MetricValue(
     val filter: MetricFilter, val period: ReportingPeriod, val asOf: Instant?, val sourceEvents: Long, val snapshotId: UUID?,
     /** Nur Energiekosten-Kennzahlen (WP-M4-43): nicht eingegangene Vorgänge mit Grund und die Kennzeichnung der Näherung. */
     val exclusions: List<MetricExclusion> = emptyList(), val approximation: MetricApproximation? = null,
+    /** Nur Kilometerkennzahlen (WP-M4-56/-57): Zerlegung des Werts, z. B. Kilometer je Kategorie der Kilometerklassifikation (Schlüssel `PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`, `UNASSIGNED`). */
+    val components: Map<String, BigDecimal> = emptyMap(),
 )
 
 /** Änderung einer Definition: nur die gesetzten Felder weichen von der jüngsten Version ab (neue Version im Entwurf, Freigabe getrennt). */

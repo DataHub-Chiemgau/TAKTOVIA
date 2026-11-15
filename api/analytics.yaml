@@ -6,7 +6,7 @@ paths:
       security:
       - oidc:
         - analytics:read
-      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Mit `breakdown=funnel` zusätzlich der Nachfragetrichter (WP-M4-51, KPI-005/ANA-001): die vier Zählgrößen Anfragen, Angebote (angezeigt), bestätigte und abgeschlossene Buchungen stehen getrennt in `funnel.counts` und werden nie als Summe ausgewiesen; `funnel.end_states` trennt Anfrage abgelehnt, Angebot angezeigt aber nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno und Betreiberstorno (Storno nach Abschluss ändert die Stufe „abgeschlossen“ nicht). Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Energiekosten (WP-M4-43, `energy_cost_per_100km` und `energy_cost_per_operating_hour`): nur freigegebene, gebuchte Tankvorgänge gehen ein (Kostenbasis in Minor Units, je Energieart und Währung getrennt, nie gemischt oder addiert); nicht eingegangene Vorgänge stehen mit Grund in `exclusions`, fehlende Energiedaten senken den Abdeckungsgrad (`PROVISIONAL`) und ergeben nie 0 Kosten; `approximation` kennzeichnet die P1-Erwerbsnäherung. Ein unbekanntes oder fremdes Fahrzeug (`vehicle_id`) ist 404.'
+      description: 'Liefert die freigegebenen Kennzahldefinitionen (stabile ID, Definitionsversion, Zähler, Nenner, Ausschlüsse, Zeitbezug, zulässige Filterdimensionen; WP-M4-46) und, wenn ein Zeitraum (`from`/`to`) angegeben ist, die Werte der Kennzahl(en) mit Definition und Version, Filter, Zähler, Nenner, Datenstand (`as_of`) und Vollständigkeit. Der Zeitraum besteht aus Betriebstagen in der `reporting_timezone` des Mandanten, nie aus festen 24 Stunden. Ein Nullnenner oder fehlende Daten ergeben `NOT_COMPUTABLE` mit Grund (nie 0 oder 100 %), unvollständige Quellen `PROVISIONAL` mit Abdeckungsgrad, kleine Gruppen `SUPPRESSED` (auch per Differenzbildung benachbarter Filter nicht ableitbar). Identische Abfragen liefern für alle berechtigten Benutzer des Mandanten identische Werte und denselben Datenstand. Mit `breakdown=rejection_reason` zusätzlich die Ablehnungen nach Grund und Gruppe (Spalte „Ablehnungsgrund“: Primärgründe zählen Ablehnungen, Sekundärgründe nur als Label, technische Fehler getrennt; `reason_code` begrenzt auf einen Katalogcode). Unbekannte Kennzahl oder Version: 404; nicht zulässige Filterdimension, unbekannter Ablehnungscode oder unvollständige Parameter: 400. Mit `breakdown=funnel` zusätzlich der Nachfragetrichter (WP-M4-51, KPI-005/ANA-001): die vier Zählgrößen Anfragen, Angebote (angezeigt), bestätigte und abgeschlossene Buchungen stehen getrennt in `funnel.counts` und werden nie als Summe ausgewiesen; `funnel.end_states` trennt Anfrage abgelehnt, Angebot angezeigt aber nicht gebucht, Zahlung fehlgeschlagen, Fahrgaststorno und Betreiberstorno (Storno nach Abschluss ändert die Stufe „abgeschlossen“ nicht). Jede Auswertung wird als Snapshot mit Definitionsversion festgehalten. Energiekosten (WP-M4-43, `energy_cost_per_100km` und `energy_cost_per_operating_hour`): nur freigegebene, gebuchte Tankvorgänge gehen ein (Kostenbasis in Minor Units, je Energieart und Währung getrennt, nie gemischt oder addiert); nicht eingegangene Vorgänge stehen mit Grund in `exclusions`, fehlende Energiedaten senken den Abdeckungsgrad (`PROVISIONAL`) und ergeben nie 0 Kosten; `approximation` kennzeichnet die P1-Erwerbsnäherung. Ein unbekanntes oder fremdes Fahrzeug (`vehicle_id`) ist 404. Kilometerkennzahlen (WP-M4-56, `vehicle_km`, `productive_km`, `empty_km_rate`, `passenger_km`, `operating_hours`; Kilometerklassifikation WP-M4-42): `components` zerlegt den Wert in Kilometer je Kategorie (`PASSENGER`, `EMPTY`, `TRANSFER`, `WORKSHOP`, `UNASSIGNED`); Leer + produktiv + nicht zuordenbar = Fahrzeugkilometer im Betriebsdienst (Nenner der Leerkilometerquote), Überführung und Werkstattfahrt zählen nie als produktiv; nicht zuordenbare Kilometer (z. B. GPS-Lücke) senken `coverage` (`PROVISIONAL`) und werden nie verteilt. Formel, Erfassungsgrenze und Distanzquelle jeder Kennzahl stehen in ihrer Definition (`numerator`, `denominator`, `exclusions`, `time_basis`).'
       parameters:
       - name: metric_id
         in: query
@@ -57,7 +57,7 @@ paths:
         required: false
         schema:
           $ref: common.yaml#/components/schemas/UUID
-        description: Filterdimension Fahrzeug (nur Energiekosten-Kennzahlen); ein unbekanntes oder fremdes Fahrzeug ist 404.
+        description: Filterdimension Fahrzeug (Energiekosten- und Kilometerkennzahlen); ein unbekanntes oder fremdes Fahrzeug ist 404.
       - name: energy
         in: query
         required: false
@@ -394,6 +394,13 @@ components:
             - ACQUISITION_BASIS_P1
           - type: 'null'
           description: Kennzeichnung einer Näherung; `ACQUISITION_BASIS_P1` = Erwerbsnäherung ohne Bestandsführung und Ladeverluste (Kap. 03 §1.1).
+        components:
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: number
+          - type: 'null'
+          description: 'Nur Kilometerkennzahlen (WP-M4-56): Kilometer je Kategorie der Kilometerklassifikation (PASSENGER, EMPTY, TRANSFER, WORKSHOP, UNASSIGNED); sonst nicht gesetzt.'
       required:
       - metric_id
       - definition_version

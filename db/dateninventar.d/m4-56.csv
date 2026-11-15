@@ -1,0 +1,14 @@
+tabelle;spalte;personenbezogen;zweck;rechtsgrundlage;schutzklasse;loeschklasse;bemerkung
+vehicle_km_occupancy;tenant_id;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;id;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;run_id;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;vehicle_id;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;service_day;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;period_from;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;period_to;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;passengers;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;km_thousandths;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_occupancy;rule_version;nein;TECHNISCHER_BETRIEB;;;;
+vehicle_km_run;capacity_seats;nein;TECHNISCHER_BETRIEB;;;;WP-M4-56: Sitzplaetze zum Klassifikationszeitpunkt
+vehicle_km_run;capacity_wheelchair;nein;TECHNISCHER_BETRIEB;;;;WP-M4-56: Rollstuhlplaetze zum Klassifikationszeitpunkt
+aggregate_snapshot;components;nein;NACHFRAGEANALYSE;;;;WP-M4-56: Kilometer je Kategorie

@@ -40,6 +40,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     private val mapper = JsonMapper.builder().build()
     private val energy = JdbcEnergyCosts(mapper)
     private val pickup = JdbcPickupPunctuality()
+    private val distance = JdbcDistanceMetrics(mapper)
 
     // ---- Definitionen -------------------------------------------------------------------------------------------------------------------
 
@@ -50,6 +51,8 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
     private fun seed(j: JdbcOperations) {
         j.queryForObject("SELECT taktovia.seed_metric_definitions()", Int::class.java)
         j.queryForObject("SELECT taktovia.seed_energy_metric_definitions()", Int::class.java)   // Energiekosten-Kennzahlen (WP-M4-43)
+        j.queryForObject("SELECT taktovia.seed_km_metric_definitions()", Int::class.java)   // WP-M4-56: Kilometer-, Betriebsstunden- und Fahrgastkilometer-Kennzahlen
+        j.queryForObject("SELECT taktovia.seed_utilization_metric_definitions()", Int::class.java)   // WP-M4-57
         j.queryForObject("SELECT taktovia.seed_pickup_punctuality_definitions()", Int::class.java)   // WP-M4-53: Version 2 der Abholkennzahlen (ausführbar)
     }
 
@@ -67,16 +70,18 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
             seed(j)
             val defs = if (query.metricId != null) listOf(one(j, query.metricId, query.version)) else latest(j)
             defs.forEach { requireDimensions(it, query.filter) }
-            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) }
+            val energyDefs = defs.filter { it.metricId in ENERGY_IDS }; val funnelDefs = defs.filter { it.metricId in FUNNEL_METRICS }; val distanceDefs = defs.filter { it.executable && it.metricId in JdbcDistanceMetrics.IDS}
+            val attemptDefs = defs.filter { it.metricId !in ENERGY_IDS && it.metricId !in FUNNEL_METRICS && !(it.executable && it.metricId in JdbcPickupPunctuality.METRICS) && it !in distanceDefs }
             // unbekanntes oder fremdes Fahrzeug (RLS) ist 404, nie ein leerer Wert
-            if (energyDefs.isNotEmpty() && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
+            if ((energyDefs.isNotEmpty() || distanceDefs.isNotEmpty()) && query.filter.vehicleId != null && j.queryForObject("SELECT count(*) FROM taktovia.vehicle WHERE id = ?", Int::class.java, query.filter.vehicleId) == 0) throw ProblemException.notFound()
             val pickupDefs = defs.filter { it.executable && it.metricId in JdbcPickupPunctuality.METRICS }
             val pc = if (pickupDefs.isEmpty()) null else pickup.counts(j, tenant, query.period, query.filter, tolerances, bind = pickupDefs.any { it.metricId == "pickup_on_time" })
             val pickupValues = pickupDefs.map { d -> pickupValue(j, d, query, pc!!) }
             val attemptValues = if (attemptDefs.isEmpty()) emptyList() else counts(j, query.period, query.filter).let { c -> attemptDefs.map { d -> value(j, d, query, c) } }
             val funnelValues = if (funnelDefs.isEmpty()) emptyList() else funnelRow(j, query.period, query.filter).let { fc -> funnelDefs.map { d -> funnelValue(j, d, query, fc) } }
             val energyValues = energyDefs.flatMap { d -> energy.evaluate(j, d, query.period, query.filter) }
-            (attemptValues + funnelValues + energyValues + pickupValues).sortedBy { it.definition.metricId }
+            val distanceValues = distanceDefs.map { d -> distance.evaluate(j, d, query.period, query.filter) }
+            (attemptValues + funnelValues + energyValues + distanceValues + pickupValues).sortedBy { it.definition.metricId }
         }
     }
 

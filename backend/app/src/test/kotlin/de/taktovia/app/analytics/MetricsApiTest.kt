@@ -67,10 +67,10 @@ class MetricsApiTest {
         val w = World(env)
         val r = env.get("/v1/analytics/metrics", w.tokens.getValue("planner"))
         assertEquals(200, r.status, r.text); assertTrue(r.json["values"].isNull)
-        val defs = r.json["definitions"]; assertEquals(24, defs.size())
+        val defs = r.json["definitions"]; assertEquals(26, defs.size())
         for (d in defs) {
             for (k in listOf("numerator", "denominator", "exclusions", "time_basis")) assertTrue(d[k].asString().isNotBlank(), "${d["metric_id"].asString()}.$k")
-            assertTrue(d["filter_dimensions"].isArray); assertEquals(if (d["metric_id"].asString() in setOf("pickup_on_time", "mean_pickup_delay")) 2 else 1, d["version"].asInt())
+            assertTrue(d["filter_dimensions"].isArray); assertEquals(if (d["metric_id"].asString() in setOf("pickup_on_time", "mean_pickup_delay", "empty_km_rate", "productive_km", "passenger_km", "seat_time_utilization", "capacity_utilization_distance_weighted")) 2 else 1, d["version"].asInt())
         }
         val one = env.get("/v1/analytics/metrics?metric_id=requests", w.tokens.getValue("planner"))
         assertEquals(1, one.json["definitions"].size()); assertEquals("requests", one.json["definitions"][0]["metric_id"].asString())

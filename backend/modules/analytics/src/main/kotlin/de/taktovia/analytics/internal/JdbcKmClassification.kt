@@ -82,12 +82,15 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
         val eventsComplete = matched && !watermarkIncomplete
 
         val segments = KmClassifier.classify(points, shifts, occupancy)
+        val slices = KmClassifier.occupancy(points, shifts, occupancy)
+        // Kapazität des Fahrzeugs zum Klassifikationszeitpunkt (WP-M4-56): gehört zum Lauf, eine Umrüstung erzeugt einen neuen Lauf mit neuer Kapazität
+        val cap = j.query("SELECT capacity_config ->> 'seats', capacity_config ->> 'wheelchair' FROM taktovia.vehicle WHERE id = ?", { rs, _ -> rs.getString(1)?.toIntOrNull() to rs.getString(2)?.toIntOrNull() }, vehicleId).single()
         val total = segments.sumOf { it.meters }
         val dataAsOf = (points.map { it.receivedAt } + shiftRows.mapNotNull { it.planCreatedAt }).maxOrNull() ?: dayStart
 
         val canon = StringBuilder()
         fun feed(s: String) { canon.append(s).append('\n') }
-        feed("v${KmClassification.RULE_VERSION}|$vehicleId|$day|complete=$eventsComplete")
+        feed("v${KmClassification.RULE_VERSION}|$vehicleId|$day|complete=$eventsComplete|cap=${cap.first}/${cap.second}")
         points.forEach { feed("p|${it.id}|${it.at}|${it.receivedAt}|${it.distanceFromPrevM}") }
         shiftRows.forEach { feed("s|${it.shift.id}|${it.shift.from}|${it.shift.to}|${it.shift.function}|${it.shift.hasPlan}|${it.planRevision}") }
         events.forEach { feed("e|${it.id}|${it.type}|${it.at}") }
@@ -98,12 +101,17 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
 
         val runId = UUID.randomUUID()
         j.update(
-            "INSERT INTO taktovia.vehicle_km_run(tenant_id, id, vehicle_id, service_day, input_sha256, data_as_of, rule_version, position_count, events_complete, total_km_thousandths) " +
-                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)", runId, vehicleId, java.sql.Date.valueOf(day), sha, Timestamp.from(dataAsOf), KmClassification.RULE_VERSION, points.size, eventsComplete, total)
+            "INSERT INTO taktovia.vehicle_km_run(tenant_id, id, vehicle_id, service_day, input_sha256, data_as_of, rule_version, position_count, events_complete, total_km_thousandths, capacity_seats, capacity_wheelchair) " +
+                "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", runId, vehicleId, java.sql.Date.valueOf(day), sha, Timestamp.from(dataAsOf), KmClassification.RULE_VERSION, points.size, eventsComplete, total, cap.first, cap.second)
         segments.forEach { s ->
             j.update(
                 "INSERT INTO taktovia.vehicle_km_segment(tenant_id, id, run_id, vehicle_id, service_day, period_from, period_to, category, km_thousandths, source, rule_version) " +
                     "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, 'POSITION', ?)", UUID.randomUUID(), runId, vehicleId, java.sql.Date.valueOf(day), Timestamp.from(s.from), Timestamp.from(s.to), s.category.name, s.meters, KmClassification.RULE_VERSION)
+        }
+        slices.forEach { s ->
+            j.update(
+                "INSERT INTO taktovia.vehicle_km_occupancy(tenant_id, id, run_id, vehicle_id, service_day, period_from, period_to, passengers, km_thousandths, rule_version) " +
+                    "VALUES (taktovia.current_tenant(), ?, ?, ?, ?, ?, ?, ?, ?, ?)", UUID.randomUUID(), runId, vehicleId, java.sql.Date.valueOf(day), Timestamp.from(s.from), Timestamp.from(s.to), s.passengers, s.meters, KmClassification.RULE_VERSION)
         }
         return view(j, runId, created = true)
     }
