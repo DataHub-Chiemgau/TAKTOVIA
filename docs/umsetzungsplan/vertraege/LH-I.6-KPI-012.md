@@ -28,7 +28,7 @@
 - **Negativ:** Rollstuhlplätze werden in `Kapazitätsauslastung distanzgewichtet` gesondert gezählt und nicht den Sitzplätzen zugeschlagen (vorläufig, OP 31); Nullnenner / keine verfügbare Kapazität im Zeitraum ergibt „nicht berechenbar“; Fahrzeug mit geänderter Kapazität im Zeitraum wird zeitanteilig gewichtet; Fahrzeug eines anderen Mandanten fließt nicht ein.
 - **Konkurrierend:** Kapazitätsänderung (Umrüstung) während laufender Berechnung ändert einen bereits veröffentlichten `aggregate_snapshot` nicht rückwirkend.
 - **Referenztests:** keine Katalog-Testfälle im WP-Dokument genannt.
-- Testfälle: geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/UtilizationMetricsTest.kt::testumlauf_vier_fahrgaeste_beide_auslastungen; geplant:backend/analytics/src/test/kotlin/de/taktovia/analytics/UtilizationMetricsTest.kt::nullnenner_ist_nicht_berechenbar
+- Testfälle: geplant:backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/UtilizationMetricsTest.kt::testumlauf_vier_fahrgaeste_beide_auslastungen; geplant:backend/modules/analytics/src/test/kotlin/de/taktovia/analytics/UtilizationMetricsTest.kt::nullnenner_ist_nicht_berechenbar
 
 ## Reviews
 
