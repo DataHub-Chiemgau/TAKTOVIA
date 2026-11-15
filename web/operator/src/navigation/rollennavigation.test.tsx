@@ -107,6 +107,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Fahrer und Qualifikationen',
           'Schichtzuweisung',
           'Kennzahlen',
+          'Live-Betrieb',
           'Gebiete, Stops, Tarife',
         ],
       ],
@@ -117,6 +118,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Checklistenvorlagen',
           'Prüfnachweise',
           'Kennzahlen',
+          'Live-Betrieb',
           'Gebiete, Stops, Tarife',
           'Kooperation und Rollen',
           'Datenschutz, Audit, Support',
@@ -132,6 +134,7 @@ describe('rollenbezogene Navigation (WP-M1-07): Anzeige folgt den Scopes aus der
           'Kostenübersicht je Kostenobjekt',
           'Eigene Zeit und Abwesenheit',
           'Kennzahlen',
+          'Live-Betrieb',
         ],
       ],
       [

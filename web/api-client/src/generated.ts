@@ -1415,9 +1415,30 @@ export interface AnalyticsMetrics {
   rejections: RejectionBreakdown | null;
   funnel: FunnelBreakdown | null;
   not_performed: NotPerformedBreakdown | null;
+  live?: LiveDashboard | null;
   items?: MetricValue[];
   next_cursor?: null;
   as_of?: string | null;
+}
+
+export interface LiveTile {
+  id: 'open_requests' | 'available_capacity' | 'critical_delays' | 'vehicle_outages';
+  value: number | null;
+  as_of: string | null;
+  age_seconds: number | null;
+  state: 'FRESH' | 'STALE' | 'NO_DATA';
+  details: Record<string, unknown>;
+}
+
+export interface LiveDashboard {
+  evaluated_at: string;
+  as_of: string | null;
+  refresh_seconds: number;
+  stale_after_seconds: number;
+  tolerance_min: number;
+  alert_min: number;
+  scope: 'TENANT' | 'SERVICES';
+  tiles: LiveTile[];
 }
 
 export interface NotPerformedBreakdown {
@@ -5168,7 +5189,7 @@ export interface Operations {
   };
   getAnalyticsMetrics: {
     path: Record<string, never>;
-    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; operator_id?: UUID; region_id?: UUID; service_area_id?: UUID; vehicle_type?: string; day?: string; hour?: number; breakdown?: 'rejection_reason' | 'funnel' | 'not_performed'; reason_code?: string };
+    query: { metric_id?: string; version?: number; from?: string; to?: string; service_id?: UUID; channel?: 'WEB' | 'APP' | 'API'; vehicle_id?: UUID; energy?: 'FUEL' | 'ELECTRIC'; currency?: string; operator_id?: UUID; region_id?: UUID; service_area_id?: UUID; vehicle_type?: string; day?: string; hour?: number; breakdown?: 'rejection_reason' | 'funnel' | 'not_performed' | 'live'; reason_code?: string };
     headers: { traceparent?: string };
     body: undefined;
     response: AnalyticsMetrics;

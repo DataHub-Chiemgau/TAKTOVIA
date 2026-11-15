@@ -29,6 +29,7 @@ import { OrganizationAdmin } from './identity/OrganizationAdmin';
 import { Belegpruefung } from './belege/Belegpruefung';
 import { Fahrzeugkosten } from './kosten/Fahrzeugkosten';
 import { Kennzahlen } from './kennzahlen/Kennzahlen';
+import { LiveDashboard } from './kennzahlen/LiveDashboard';
 import { Kostenuebersicht } from './kosten/Kostenuebersicht';
 import { Fahrerfreigabe } from './personal/Fahrerfreigabe';
 import { EigeneZeit } from './zeit/EigeneZeit';
@@ -223,6 +224,14 @@ export function App() {
               element={
                 <RequireRight right="analytics">
                   <Kennzahlen />
+                </RequireRight>
+              }
+            />
+            <Route
+              path="/auswertung/live"
+              element={
+                <RequireRight right="analytics">
+                  <LiveDashboard />
                 </RequireRight>
               }
             />

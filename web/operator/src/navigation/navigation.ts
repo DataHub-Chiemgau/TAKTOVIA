@@ -95,6 +95,12 @@ export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
     href: '/auswertung/kennzahlen',
     requires: 'analytics',
   },
+  {
+    id: 'ui07-live',
+    label: 'Live-Betrieb',
+    href: '/auswertung/live',
+    requires: 'analytics',
+  },
   { id: 'ui17', label: 'Gebiete, Stops, Tarife', href: '/admin/gebiete', requires: 'admin.ui17' },
   {
     id: 'ui18',

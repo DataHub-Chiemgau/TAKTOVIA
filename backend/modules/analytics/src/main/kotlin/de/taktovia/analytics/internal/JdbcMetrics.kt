@@ -11,6 +11,10 @@ import de.taktovia.analytics.api.MetricFilter
 import de.taktovia.analytics.api.MetricQuery
 import de.taktovia.analytics.api.MetricReason
 import de.taktovia.analytics.api.MetricState
+import de.taktovia.analytics.api.LiveDashboard
+import de.taktovia.analytics.api.LiveSettings
+import de.taktovia.analytics.api.LiveState
+import de.taktovia.analytics.api.LiveTile
 import de.taktovia.analytics.api.MetricValue
 import de.taktovia.analytics.api.MetricValueKind
 import de.taktovia.analytics.api.Metrics
@@ -249,6 +253,28 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         }
     }
 
+    /** Live-Dashboard (WP-M4-60): ein Statement (`live_dashboard`), ein Lesestand für alle vier Kacheln und ihren Datenstand. */
+    override fun live(tenant: TenantId, now: java.time.Instant, settings: LiveSettings, scope: ReportScope): LiveDashboard = tx.run(tenant, readOnly = true) { j ->
+        val allowed = allowedServices(j, scope)
+        val row = j.query(LIVE, { rs, _ ->
+            fun ts(c: String) = rs.getTimestamp(c)?.toInstant()
+            fun lng(c: String) = rs.getObject(c)?.let { (it as Number).toLong() }
+            listOf(
+                Triple("open_requests", lng("open_requests"), ts("open_as_of")) to emptyMap<String, Long?>(),
+                Triple("available_capacity", lng("capacity_vehicles"), ts("capacity_as_of")) to mapOf("seats" to lng("capacity_seats"), "wheelchair_spaces" to lng("capacity_wheelchair")),
+                Triple("critical_delays", lng("critical_delays"), ts("delays_as_of")) to emptyMap(),
+                Triple("vehicle_outages", lng("outage_vehicles"), ts("outage_as_of")) to mapOf("long_outages" to lng("long_outages")),
+            )
+        }, Timestamp.from(now), allowed?.joinToString(",", "{", "}"), settings.toleranceMin, settings.alertMin).single()
+        val tiles = row.map { (head, details) ->
+            val (id, value, asOf) = head
+            val age = asOf?.let { maxOf(0L, java.time.Duration.between(it, now).seconds) }
+            val state = when { asOf == null || value == null -> LiveState.NO_DATA; age!! > settings.staleAfterSeconds -> LiveState.STALE; else -> LiveState.FRESH }
+            LiveTile(id, value, asOf, age, state, if (state == LiveState.NO_DATA) details.mapValues { null } else details)
+        }
+        LiveDashboard(now, settings, tiles, tiles.mapNotNull { it.asOf }.minOrNull(), if (allowed == null) "TENANT" else "SERVICES")
+    }
+
     override fun reconcileFunnel(tenant: TenantId, period: ReportingPeriod): FunnelReconciliation = tx.run(tenant, readOnly = true) { j ->
         FunnelReconciliation(period, j.query(FUNNEL_RECONCILIATION, { rs, _ -> FunnelStageDiff(rs.getString("stage"), rs.getLong("fact_count"), rs.getLong("log_count")) }, Timestamp.from(period.from), Timestamp.from(period.to)))
     }
@@ -392,6 +418,7 @@ internal class JdbcMetrics(private val tx: TenantTransactions, override val smal
         const val FUNNEL = "SELECT * FROM taktovia.funnel_counts_filtered(CAST(? AS timestamptz), CAST(? AS timestamptz), CAST(? AS uuid), CAST(? AS text), CAST(? AS uuid), CAST(? AS uuid), CAST(? AS uuid), CAST(? AS integer), CAST(? AS text), CAST(? AS uuid[]))"
         /** Dimensionen des Nachfragetrichters (Buchungen kennen weder Kanal noch Fahrzeug). */
         val FUNNEL_DIMENSIONS = setOf(MetricDimensions.SERVICE_ID, MetricDimensions.OPERATOR_ID, MetricDimensions.REGION_ID, MetricDimensions.SERVICE_AREA_ID, MetricDimensions.HOUR, MetricDimensions.DAY)
+        const val LIVE = "SELECT * FROM taktovia.live_dashboard(CAST(? AS timestamptz), CAST(? AS uuid[]), CAST(? AS integer), CAST(? AS integer))"
         const val FUNNEL_RECONCILIATION = "SELECT stage, fact_count, log_count FROM taktovia.funnel_reconciliation(?, ?) ORDER BY stage"
         const val DEF_COLUMNS = "SELECT d.metric_id, d.version, d.name, d.value_kind, d.unit, d.numerator_definition, d.denominator_definition, d.exclusions, d.time_basis, d.period_basis, " +
             "array_to_string(d.filter_dimensions, ',') AS dims, d.source, d.executable, d.not_executable_reason, d.approved_at"
