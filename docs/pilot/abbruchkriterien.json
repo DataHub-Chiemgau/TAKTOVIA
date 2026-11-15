@@ -1,0 +1,118 @@
+{
+  "schema": "taktovia-abbruchkriterien/1",
+  "status": "VORLAGE: Schwellen und Entscheider vom Auftraggeber festzulegen und freizugeben (Kap. 08 §8.4, D-05, D-11). Die Arbeitsannahmen sind keine Vorgabe des Pflichtenhefts.",
+  "freigabe": {
+    "freigegeben_von": null,
+    "datum": null
+  },
+  "entscheider": {
+    "rolle": "betriebsleitung",
+    "vertretung_rolle": "betriebsleitung_vertretung",
+    "auftraggeber_rolle": "auftraggeber"
+  },
+  "entscheidungsweg": [
+    {
+      "stufe": 1,
+      "rolle": "betrieb-bereitschaft",
+      "aktion": "Messwert und Kriterium bestätigen, Betriebsleitung informieren, Vorfall im Leitstellenprotokoll vermerken",
+      "frist_min": 15
+    },
+    {
+      "stufe": 2,
+      "rolle": "betriebsleitung",
+      "aktion": "Entscheidung: Pilot unterbrechen (Rückfallbetrieb aktivieren) oder mit Auflage fortsetzen; Entscheidung mit Begründung im Journal erfassen",
+      "frist_min": 60
+    },
+    {
+      "stufe": 3,
+      "rolle": "auftraggeber",
+      "aktion": "Auftraggeber informieren; bei Unterbrechung entscheidet er gemeinsam mit der Betriebsleitung über die Wiederaufnahme",
+      "frist_min": 240
+    }
+  ],
+  "wiederaufnahme": "Nach einer Unterbrechung ist die Wiederaufnahme nur zulässig, wenn alle Kriterien im Messfenster wieder innerhalb der Schwelle liegen und die Betriebsleitung und der Auftraggeber (zwei verschiedene Personen) zustimmen.",
+  "kriterien": [
+    {
+      "id": "PK-01",
+      "titel": "Ausfall der Kernbuchung (Mangel der Klasse A, CORE_BOOKING_OUTAGE)",
+      "messgroesse": "Dauer des anhaltenden Alarms KERNBUCHUNG_AUSFALL",
+      "einheit": "Minuten",
+      "vergleich": ">=",
+      "schwelle": null,
+      "schwelle_arbeitsannahme": 10,
+      "schwelle_status": "OFFEN_AUFTRAGGEBER",
+      "messquelle": {
+        "art": "alarm",
+        "id": "KERNBUCHUNG_AUSFALL"
+      },
+      "mangelklasse": "A",
+      "runbook": "docs/betrieb/alarm-handlungsschritte.md#kernbuchung_ausfall"
+    },
+    {
+      "id": "PK-02",
+      "titel": "Verfügbarkeit der Kernbuchung unter Schwelle",
+      "messgroesse": "Verfügbarkeit Kernbuchung im Messfenster (synthetische Probe)",
+      "einheit": "Prozent",
+      "vergleich": "<",
+      "schwelle": null,
+      "schwelle_arbeitsannahme": 99.0,
+      "schwelle_status": "OFFEN_AUFTRAGGEBER",
+      "messquelle": {
+        "art": "verfuegbarkeit",
+        "bereich": "kernbuchung",
+        "feld": "verfuegbarkeit_prozent"
+      },
+      "mangelklasse": "B",
+      "runbook": "docs/betrieb/betriebshandbuch.md#5-monitoring-und-dashboards"
+    },
+    {
+      "id": "PK-03",
+      "titel": "Ungeklärte Zahlungen über Schwelle",
+      "messgroesse": "Anzahl unbestimmter Zahlungsvorgänge (CAPTURE_UNKNOWN, RECONCILING)",
+      "einheit": "Anzahl",
+      "vergleich": ">",
+      "schwelle": null,
+      "schwelle_arbeitsannahme": 5,
+      "schwelle_status": "OFFEN_AUFTRAGGEBER",
+      "messquelle": {
+        "art": "metrik",
+        "name": "taktovia_payment_intent_indeterminate",
+        "alarm": "PSP_UNBESTIMMT"
+      },
+      "mangelklasse": "B",
+      "runbook": "docs/betrieb/alarm-handlungsschritte.md#psp_unbestimmt"
+    },
+    {
+      "id": "PK-04",
+      "titel": "Ereignisauslieferung gestaut (Outbox)",
+      "messgroesse": "Dauer des anhaltenden Alarms OUTBOX_STAU",
+      "einheit": "Minuten",
+      "vergleich": ">=",
+      "schwelle": null,
+      "schwelle_arbeitsannahme": 30,
+      "schwelle_status": "OFFEN_AUFTRAGGEBER",
+      "messquelle": {
+        "art": "alarm",
+        "id": "OUTBOX_STAU"
+      },
+      "mangelklasse": "B",
+      "runbook": "docs/betrieb/alarm-handlungsschritte.md#outbox_stau"
+    },
+    {
+      "id": "PK-05",
+      "titel": "Archivierungsverzug gefährdet den Wiederherstellungspunkt (RPO)",
+      "messgroesse": "Dauer des anhaltenden Alarms ARCHIVIERUNGS_REPLIKATIONSVERZUG",
+      "einheit": "Minuten",
+      "vergleich": ">=",
+      "schwelle": null,
+      "schwelle_arbeitsannahme": 15,
+      "schwelle_status": "OFFEN_AUFTRAGGEBER",
+      "messquelle": {
+        "art": "alarm",
+        "id": "ARCHIVIERUNGS_REPLIKATIONSVERZUG"
+      },
+      "mangelklasse": "A",
+      "runbook": "docs/betrieb/alarm-handlungsschritte.md#archivierungs_replikationsverzug"
+    }
+  ]
+}

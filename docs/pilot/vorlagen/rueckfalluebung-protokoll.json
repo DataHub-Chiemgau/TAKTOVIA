@@ -1,0 +1,8 @@
+{
+  "art": "Tischuebung",
+  "datum": "TT.MM.JJJJ eintragen",
+  "abnahme_build": "Wert aus docs/dokumentation/paket.json",
+  "szenario_kriterium": "ID des simulierten Abbruchkriteriums, zum Beispiel PK-01",
+  "schritte": [],
+  "befunde": []
+}
