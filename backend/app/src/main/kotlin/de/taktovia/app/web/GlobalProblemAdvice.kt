@@ -61,6 +61,9 @@ class GlobalProblemAdvice(private val problems: ProblemWriter) {
             ProblemException.invalid(Violation("/\$query/${e.parameterName}", ViolationCode.REQUIRED))
         is MethodArgumentTypeMismatchException ->
             ProblemException.invalid(Violation("/\$query/${e.name}", ViolationCode.TYPE_MISMATCH))
+        // Verbindung oder Transaktion nicht zu öffnen (Datenbank weg, Pool erschöpft): 503 mit Retry-After statt 500 (WP-M5-16, fail-closed)
+        is org.springframework.transaction.CannotCreateTransactionException, is java.sql.SQLTransientConnectionException ->
+            ProblemException(ErrorCode.SERVICE_UNAVAILABLE, headers = mapOf("Retry-After" to "5"), cause = e)
         is DataAccessException, is SQLException -> DbErrorMapper.map(e)
         else -> DbErrorMapper.map(e).takeIf { it.code != ErrorCode.INTERNAL_ERROR } ?: ProblemException(ErrorCode.INTERNAL_ERROR, cause = e)
     }
