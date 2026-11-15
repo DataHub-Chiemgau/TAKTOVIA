@@ -1,0 +1,1206 @@
+{
+  "acceptance_decision": "PENDING",
+  "clock": {
+    "mode": "frozen",
+    "start": "2026-01-01T00:00:00Z"
+  },
+  "defect_class": null,
+  "environment": {
+    "name": "local",
+    "simulated_components": []
+  },
+  "event_trace_ids": {
+    "event_ids": [],
+    "trace_ids": []
+  },
+  "executed_at": "2026-01-01T00:00:00.000Z",
+  "migration_state": {
+    "latest": "V50200__standortminimierung_parameter.sql",
+    "scripts": [
+      {
+        "checksum": -226771926,
+        "script": "R__grants_m1_40.sql"
+      },
+      {
+        "checksum": -1962247084,
+        "script": "R__runtime_grants.sql"
+      },
+      {
+        "checksum": -107680667,
+        "script": "R__runtime_grants_m1_05.sql"
+      },
+      {
+        "checksum": -1836842966,
+        "script": "R__runtime_grants_m1_06.sql"
+      },
+      {
+        "checksum": 1490379614,
+        "script": "R__runtime_grants_m1_07.sql"
+      },
+      {
+        "checksum": -805317191,
+        "script": "R__runtime_grants_m1_09.sql"
+      },
+      {
+        "checksum": 828970185,
+        "script": "R__runtime_grants_m1_10.sql"
+      },
+      {
+        "checksum": 1890077660,
+        "script": "R__runtime_grants_m1_16.sql"
+      },
+      {
+        "checksum": -1898764385,
+        "script": "R__runtime_grants_m1_17.sql"
+      },
+      {
+        "checksum": -1621620034,
+        "script": "R__runtime_grants_m1_19.sql"
+      },
+      {
+        "checksum": -932327684,
+        "script": "R__runtime_grants_m1_21.sql"
+      },
+      {
+        "checksum": 622487311,
+        "script": "R__runtime_grants_m1_23.sql"
+      },
+      {
+        "checksum": 231343883,
+        "script": "R__runtime_grants_m1_27.sql"
+      },
+      {
+        "checksum": 345747194,
+        "script": "R__runtime_grants_m1_31.sql"
+      },
+      {
+        "checksum": 919172456,
+        "script": "R__runtime_grants_m1_31_wp28.sql"
+      },
+      {
+        "checksum": 693774899,
+        "script": "R__runtime_grants_m1_31_wp29.sql"
+      },
+      {
+        "checksum": 1074211071,
+        "script": "R__runtime_grants_m1_31_wp30.sql"
+      },
+      {
+        "checksum": 317128579,
+        "script": "R__runtime_grants_m1_33.sql"
+      },
+      {
+        "checksum": -1084450593,
+        "script": "R__runtime_grants_m1_34.sql"
+      },
+      {
+        "checksum": 823635037,
+        "script": "R__runtime_grants_m1_35.sql"
+      },
+      {
+        "checksum": -699464705,
+        "script": "R__runtime_grants_m2_02.sql"
+      },
+      {
+        "checksum": -1696535219,
+        "script": "R__runtime_grants_m2_03.sql"
+      },
+      {
+        "checksum": 1974550176,
+        "script": "R__runtime_grants_m2_06.sql"
+      },
+      {
+        "checksum": 1286447602,
+        "script": "R__runtime_grants_m2_07.sql"
+      },
+      {
+        "checksum": 2090311949,
+        "script": "R__runtime_grants_m2_08.sql"
+      },
+      {
+        "checksum": -160032212,
+        "script": "R__runtime_grants_m2_10.sql"
+      },
+      {
+        "checksum": -448770467,
+        "script": "R__runtime_grants_m2_13.sql"
+      },
+      {
+        "checksum": 1700013072,
+        "script": "R__runtime_grants_m2_14.sql"
+      },
+      {
+        "checksum": 494303432,
+        "script": "R__runtime_grants_m2_16.sql"
+      },
+      {
+        "checksum": -734764256,
+        "script": "R__runtime_grants_m2_21.sql"
+      },
+      {
+        "checksum": 1995026887,
+        "script": "R__runtime_grants_m2_23.sql"
+      },
+      {
+        "checksum": -1915254079,
+        "script": "R__runtime_grants_m2_25.sql"
+      },
+      {
+        "checksum": 273405029,
+        "script": "R__runtime_grants_m2_28.sql"
+      },
+      {
+        "checksum": -741357298,
+        "script": "R__runtime_grants_m2_29.sql"
+      },
+      {
+        "checksum": -111689804,
+        "script": "R__runtime_grants_m2_30.sql"
+      },
+      {
+        "checksum": -1272764269,
+        "script": "R__runtime_grants_m2_31.sql"
+      },
+      {
+        "checksum": -844892744,
+        "script": "R__runtime_grants_m2_32.sql"
+      },
+      {
+        "checksum": 961587407,
+        "script": "R__runtime_grants_m2_33.sql"
+      },
+      {
+        "checksum": -812778998,
+        "script": "R__runtime_grants_m2_44.sql"
+      },
+      {
+        "checksum": 962659644,
+        "script": "R__runtime_grants_m3_02.sql"
+      },
+      {
+        "checksum": -1527845088,
+        "script": "R__runtime_grants_m3_06.sql"
+      },
+      {
+        "checksum": -516665402,
+        "script": "R__runtime_grants_m3_07.sql"
+      },
+      {
+        "checksum": -2067902007,
+        "script": "R__runtime_grants_m3_10.sql"
+      },
+      {
+        "checksum": 1058223799,
+        "script": "R__runtime_grants_m3_11.sql"
+      },
+      {
+        "checksum": 1589144422,
+        "script": "R__runtime_grants_m3_16.sql"
+      },
+      {
+        "checksum": -1395720384,
+        "script": "R__runtime_grants_m3_18.sql"
+      },
+      {
+        "checksum": 1554941559,
+        "script": "R__runtime_grants_m3_21.sql"
+      },
+      {
+        "checksum": -1527050202,
+        "script": "R__runtime_grants_m3_22.sql"
+      },
+      {
+        "checksum": -1821396990,
+        "script": "R__runtime_grants_m3_24.sql"
+      },
+      {
+        "checksum": 318470254,
+        "script": "R__runtime_grants_m3_31.sql"
+      },
+      {
+        "checksum": 183604683,
+        "script": "R__runtime_grants_m3_34.sql"
+      },
+      {
+        "checksum": -1861326302,
+        "script": "R__runtime_grants_m3_35.sql"
+      },
+      {
+        "checksum": -977266752,
+        "script": "R__runtime_grants_m3_39.sql"
+      },
+      {
+        "checksum": 144974953,
+        "script": "R__runtime_grants_m3_42.sql"
+      },
+      {
+        "checksum": 1209518589,
+        "script": "R__runtime_grants_m3_43.sql"
+      },
+      {
+        "checksum": 595687048,
+        "script": "R__runtime_grants_m3_44.sql"
+      },
+      {
+        "checksum": -700993845,
+        "script": "R__runtime_grants_m3_45.sql"
+      },
+      {
+        "checksum": 735742790,
+        "script": "R__runtime_grants_m3_48.sql"
+      },
+      {
+        "checksum": -1025345112,
+        "script": "R__runtime_grants_m3_50.sql"
+      },
+      {
+        "checksum": -2142401541,
+        "script": "R__runtime_grants_m3_54.sql"
+      },
+      {
+        "checksum": -1000107857,
+        "script": "R__runtime_grants_m4_04.sql"
+      },
+      {
+        "checksum": -356643178,
+        "script": "R__runtime_grants_m4_06.sql"
+      },
+      {
+        "checksum": 907164155,
+        "script": "R__runtime_grants_m4_08.sql"
+      },
+      {
+        "checksum": 139461837,
+        "script": "R__runtime_grants_m4_15.sql"
+      },
+      {
+        "checksum": 1129324691,
+        "script": "R__runtime_grants_m4_16.sql"
+      },
+      {
+        "checksum": -2077043989,
+        "script": "R__runtime_grants_m4_21.sql"
+      },
+      {
+        "checksum": -1485254393,
+        "script": "R__runtime_grants_m4_22.sql"
+      },
+      {
+        "checksum": 1490848836,
+        "script": "R__runtime_grants_m4_23.sql"
+      },
+      {
+        "checksum": -2102012870,
+        "script": "R__runtime_grants_m4_24.sql"
+      },
+      {
+        "checksum": -1581439685,
+        "script": "R__runtime_grants_m4_27.sql"
+      },
+      {
+        "checksum": 928498981,
+        "script": "R__runtime_grants_m4_29.sql"
+      },
+      {
+        "checksum": 938609064,
+        "script": "R__runtime_grants_m4_30.sql"
+      },
+      {
+        "checksum": 1837377778,
+        "script": "R__runtime_grants_m4_31.sql"
+      },
+      {
+        "checksum": -1600837307,
+        "script": "R__runtime_grants_m4_32.sql"
+      },
+      {
+        "checksum": -118261375,
+        "script": "R__runtime_grants_m4_33.sql"
+      },
+      {
+        "checksum": 1935066901,
+        "script": "R__runtime_grants_m4_34.sql"
+      },
+      {
+        "checksum": -1175350920,
+        "script": "R__runtime_grants_m4_35.sql"
+      },
+      {
+        "checksum": 938837791,
+        "script": "R__runtime_grants_m4_37.sql"
+      },
+      {
+        "checksum": -390733149,
+        "script": "R__runtime_grants_m4_39.sql"
+      },
+      {
+        "checksum": -72288376,
+        "script": "R__runtime_grants_m4_41.sql"
+      },
+      {
+        "checksum": -831667911,
+        "script": "R__runtime_grants_m4_42.sql"
+      },
+      {
+        "checksum": 824298927,
+        "script": "R__runtime_grants_m4_43.sql"
+      },
+      {
+        "checksum": 242956366,
+        "script": "R__runtime_grants_m4_45.sql"
+      },
+      {
+        "checksum": 965039208,
+        "script": "R__runtime_grants_m4_46.sql"
+      },
+      {
+        "checksum": -480131790,
+        "script": "R__runtime_grants_m4_51.sql"
+      },
+      {
+        "checksum": 1710509661,
+        "script": "R__runtime_grants_m4_52.sql"
+      },
+      {
+        "checksum": 922814623,
+        "script": "R__runtime_grants_m4_53.sql"
+      },
+      {
+        "checksum": 1857407475,
+        "script": "R__runtime_grants_m4_54.sql"
+      },
+      {
+        "checksum": 778141319,
+        "script": "R__runtime_grants_m4_55.sql"
+      },
+      {
+        "checksum": 1589179709,
+        "script": "R__runtime_grants_m4_56.sql"
+      },
+      {
+        "checksum": 772227074,
+        "script": "R__runtime_grants_m4_57.sql"
+      },
+      {
+        "checksum": -1548585874,
+        "script": "R__runtime_grants_m4_58.sql"
+      },
+      {
+        "checksum": 1286470258,
+        "script": "R__runtime_grants_m4_60.sql"
+      },
+      {
+        "checksum": -208366646,
+        "script": "R__runtime_grants_m4_61.sql"
+      },
+      {
+        "checksum": 647061557,
+        "script": "R__runtime_grants_m5_19.sql"
+      },
+      {
+        "checksum": 67290947,
+        "script": "R__zz_modulzugaenge_m4_64.sql"
+      },
+      {
+        "checksum": 315898173,
+        "script": "V10100__sitzungsregister.sql"
+      },
+      {
+        "checksum": -848537981,
+        "script": "V1020__waehrungskatalog.sql"
+      },
+      {
+        "checksum": 1940575600,
+        "script": "V10210__praezedenz_fahrzeugscope.sql"
+      },
+      {
+        "checksum": -738450632,
+        "script": "V10220__publikation_vier_augen.sql"
+      },
+      {
+        "checksum": -643239083,
+        "script": "V10230__wirkungsbericht.sql"
+      },
+      {
+        "checksum": 1750190542,
+        "script": "V10330__aufbewahrung_loeschung.sql"
+      },
+      {
+        "checksum": 1746982781,
+        "script": "V1050__mandant_rechtstraeger_organisation.sql"
+      },
+      {
+        "checksum": 2077923915,
+        "script": "V1060__mitgliedschaft.sql"
+      },
+      {
+        "checksum": -1229418905,
+        "script": "V1070__rollenkatalog_rechtematrix.sql"
+      },
+      {
+        "checksum": -767274655,
+        "script": "V1090__organisationsstruktur.sql"
+      },
+      {
+        "checksum": 1479356673,
+        "script": "V1120__audit_abfrage_systemmandant.sql"
+      },
+      {
+        "checksum": 1020922162,
+        "script": "V1130__idempotenz_register.sql"
+      },
+      {
+        "checksum": -480151029,
+        "script": "V1140__outbox_inbox_zustellung.sql"
+      },
+      {
+        "checksum": -1460879548,
+        "script": "V1150__operation_lease.sql"
+      },
+      {
+        "checksum": 246281005,
+        "script": "V1160__webhook_grundlage.sql"
+      },
+      {
+        "checksum": -664464650,
+        "script": "V1170__zustandshaertung.sql"
+      },
+      {
+        "checksum": 824180360,
+        "script": "V1180__zeitzonen_pruefung.sql"
+      },
+      {
+        "checksum": 2051608781,
+        "script": "V1190__policy_schema.sql"
+      },
+      {
+        "checksum": -1572269311,
+        "script": "V1200__config_revision_lebenszyklus.sql"
+      },
+      {
+        "checksum": -1774155018,
+        "script": "V1250__config_revision_profilscope.sql"
+      },
+      {
+        "checksum": 475071499,
+        "script": "V1270__zusage_snapshot.sql"
+      },
+      {
+        "checksum": 1399291488,
+        "script": "V1280__fahrgast_registrierung.sql"
+      },
+      {
+        "checksum": 1612083717,
+        "script": "V1290__fahrgastprofil.sql"
+      },
+      {
+        "checksum": 1342025321,
+        "script": "V1300__einwilligung.sql"
+      },
+      {
+        "checksum": -221073915,
+        "script": "V1340__fahrzeugrollen.sql"
+      },
+      {
+        "checksum": 250681087,
+        "script": "V1350__fahrerstamm_qualifikation.sql"
+      },
+      {
+        "checksum": 1130641117,
+        "script": "V1351__fahrerfreigabe.sql"
+      },
+      {
+        "checksum": 723780999,
+        "script": "V1400__umgebungskennung.sql"
+      },
+      {
+        "checksum": 188300381,
+        "script": "V1460__audit_event_formate.sql"
+      },
+      {
+        "checksum": 1731169884,
+        "script": "V1__kernschema.sql"
+      },
+      {
+        "checksum": 192190694,
+        "script": "V20100__routing_cache.sql"
+      },
+      {
+        "checksum": 164503007,
+        "script": "V20110__anfrageerfassung.sql"
+      },
+      {
+        "checksum": 1496565134,
+        "script": "V20130__ablehnungsgruende.sql"
+      },
+      {
+        "checksum": -1888033575,
+        "script": "V20140__ressourcenvektor_passenger_trip.sql"
+      },
+      {
+        "checksum": -671858342,
+        "script": "V20160__fahrtenplan_route_stop.sql"
+      },
+      {
+        "checksum": 1394952490,
+        "script": "V20190__zusagefenster_hold.sql"
+      },
+      {
+        "checksum": -1770593030,
+        "script": "V20200__mehrzielgewichte_parameter.sql"
+      },
+      {
+        "checksum": 1264777327,
+        "script": "V2020__fahrzeugpool_fixture.sql"
+      },
+      {
+        "checksum": -1696813155,
+        "script": "V20210__ride_offer.sql"
+      },
+      {
+        "checksum": 2001479790,
+        "script": "V20220__hold_zustandsautomat.sql"
+      },
+      {
+        "checksum": -2130090654,
+        "script": "V20230__buchung_bestaetigung.sql"
+      },
+      {
+        "checksum": 1403139620,
+        "script": "V20250__booking_status_history.sql"
+      },
+      {
+        "checksum": 117326608,
+        "script": "V20260__storno.sql"
+      },
+      {
+        "checksum": -1707198424,
+        "script": "V20270__storno_ursache.sql"
+      },
+      {
+        "checksum": -342322374,
+        "script": "V20280__planrevision_verteilung.sql"
+      },
+      {
+        "checksum": 1749781985,
+        "script": "V20290__payment_event.sql"
+      },
+      {
+        "checksum": -34873246,
+        "script": "V2030__dienst_betriebszeiten.sql"
+      },
+      {
+        "checksum": -1221906562,
+        "script": "V2040__bediengebiet_revisionen.sql"
+      },
+      {
+        "checksum": 699801214,
+        "script": "V20440__fussweg_snapshot.sql"
+      },
+      {
+        "checksum": 818884680,
+        "script": "V2050__haltepunkt_aktivstatus.sql"
+      },
+      {
+        "checksum": -872584333,
+        "script": "V2060__relationsregeln_zonen_zielpunkte.sql"
+      },
+      {
+        "checksum": 258651475,
+        "script": "V2070__tarifrevision_preisregeln.sql"
+      },
+      {
+        "checksum": 821429520,
+        "script": "V2080__tarifkomponenten.sql"
+      },
+      {
+        "checksum": -876294548,
+        "script": "V2090__fare_quote_haertung.sql"
+      },
+      {
+        "checksum": 443595544,
+        "script": "V2300__zahlungsautomat.sql"
+      },
+      {
+        "checksum": 1236068775,
+        "script": "V2310__refund_case.sql"
+      },
+      {
+        "checksum": 811349114,
+        "script": "V2320__nachrichtenversand.sql"
+      },
+      {
+        "checksum": 1857507439,
+        "script": "V2330__nachrichtenvorlagen.sql"
+      },
+      {
+        "checksum": -1147576052,
+        "script": "V2360__favoriten_koordinate.sql"
+      },
+      {
+        "checksum": 735132808,
+        "script": "V2__haertung_periode.sql"
+      },
+      {
+        "checksum": -565609711,
+        "script": "V30080__sperr_freigabekern.sql"
+      },
+      {
+        "checksum": -1648574063,
+        "script": "V30110__pflichtvorlagen.sql"
+      },
+      {
+        "checksum": -61915168,
+        "script": "V30120__barrierefreiheit_pruefpunkte.sql"
+      },
+      {
+        "checksum": 2053151909,
+        "script": "V30130__fahrzeug_bedienart.sql"
+      },
+      {
+        "checksum": -232187491,
+        "script": "V30140__pruefabschluss.sql"
+      },
+      {
+        "checksum": 2032492799,
+        "script": "V30150__pruefentwurf_nachtraege.sql"
+      },
+      {
+        "checksum": 984589712,
+        "script": "V30160__kritischer_mangel_sperre.sql"
+      },
+      {
+        "checksum": 1749679367,
+        "script": "V30170__schichtstartwerte.sql"
+      },
+      {
+        "checksum": -833697129,
+        "script": "V30180__technikbereitschaft.sql"
+      },
+      {
+        "checksum": 1535812410,
+        "script": "V30190__einsatzbereitschaft.sql"
+      },
+      {
+        "checksum": -819835065,
+        "script": "V30200__schadenakte_herkunft.sql"
+      },
+      {
+        "checksum": 1528551796,
+        "script": "V3020__m3_tabellen.sql"
+      },
+      {
+        "checksum": 936347462,
+        "script": "V30210__bekannte_altschaeden_quittierung.sql"
+      },
+      {
+        "checksum": 673910986,
+        "script": "V30220__fahrzeugwechsel.sql"
+      },
+      {
+        "checksum": 737318017,
+        "script": "V30290__fahrerereignis_wirkung.sql"
+      },
+      {
+        "checksum": 1076350093,
+        "script": "V30300__boarding_code_pruefung.sql"
+      },
+      {
+        "checksum": 1147120651,
+        "script": "V30310__fahrzeug_dienststatus.sql"
+      },
+      {
+        "checksum": 1667669876,
+        "script": "V30370__booking_search_indexes.sql"
+      },
+      {
+        "checksum": -6805638,
+        "script": "V30390__leitstellenbuchung.sql"
+      },
+      {
+        "checksum": -38041406,
+        "script": "V30400__manuelle_umplanung.sql"
+      },
+      {
+        "checksum": -70528831,
+        "script": "V30401__hold_umbuchung.sql"
+      },
+      {
+        "checksum": -1683348232,
+        "script": "V3040__kapazitaetskonfiguration.sql"
+      },
+      {
+        "checksum": -1775716339,
+        "script": "V30420__ueberfaelligkeit_hinweise.sql"
+      },
+      {
+        "checksum": 1346658216,
+        "script": "V30430__schadenakte_meldung.sql"
+      },
+      {
+        "checksum": -1666780581,
+        "script": "V30440__schadenevidenz_upload.sql"
+      },
+      {
+        "checksum": 662313630,
+        "script": "V30450__schadenklassifikation.sql"
+      },
+      {
+        "checksum": 1288217239,
+        "script": "V30460__kritische_meldung_alarm.sql"
+      },
+      {
+        "checksum": 1561047301,
+        "script": "V30470__schadenakte_statusautomat.sql"
+      },
+      {
+        "checksum": -1672969117,
+        "script": "V30480__schadenakte_historie.sql"
+      },
+      {
+        "checksum": 813511584,
+        "script": "V30490__schadenliste.sql"
+      },
+      {
+        "checksum": 639058060,
+        "script": "V30500__schadenakte_vertraulichkeit.sql"
+      },
+      {
+        "checksum": -1175007504,
+        "script": "V3050__fahrerstamm_vollausbau.sql"
+      },
+      {
+        "checksum": -1648245793,
+        "script": "V30510__reparaturauftrag_wiederfreigabe.sql"
+      },
+      {
+        "checksum": -395024745,
+        "script": "V30530__incident_workflow.sql"
+      },
+      {
+        "checksum": 563770918,
+        "script": "V30540__stoerungsablauf.sql"
+      },
+      {
+        "checksum": -567937975,
+        "script": "V30550__ablaufprotokoll.sql"
+      },
+      {
+        "checksum": 907398416,
+        "script": "V3060__fahrzeugpool_zuordnung.sql"
+      },
+      {
+        "checksum": 1831839682,
+        "script": "V3070__schichtueberlappung.sql"
+      },
+      {
+        "checksum": -632205580,
+        "script": "V3100__checklistenvorlagen_pruefelemente.sql"
+      },
+      {
+        "checksum": 71084788,
+        "script": "V3240__fahrer_geraete_ereigniseingang.sql"
+      },
+      {
+        "checksum": -283966724,
+        "script": "V3250__dienstantritt.sql"
+      },
+      {
+        "checksum": 437225512,
+        "script": "V3340__positionserfassung.sql"
+      },
+      {
+        "checksum": -448414597,
+        "script": "V3350__live_kanal.sql"
+      },
+      {
+        "checksum": -1539204655,
+        "script": "V3520__alarm_grundlage.sql"
+      },
+      {
+        "checksum": -1291066924,
+        "script": "V3__tenant_id_unveraenderlich.sql"
+      },
+      {
+        "checksum": -1217571010,
+        "script": "V40030__schichtmodell.sql"
+      },
+      {
+        "checksum": -2025726571,
+        "script": "V40040__dienstplan_entwurf.sql"
+      },
+      {
+        "checksum": -124643186,
+        "script": "V40060__abwesenheit.sql"
+      },
+      {
+        "checksum": -353754203,
+        "script": "V40080__zeitereignis.sql"
+      },
+      {
+        "checksum": 1383453301,
+        "script": "V40100__zeitereignis_zeitzone.sql"
+      },
+      {
+        "checksum": -1863268169,
+        "script": "V40120__zeitereignis_herkunft_konflikt.sql"
+      },
+      {
+        "checksum": 1553870211,
+        "script": "V40130__arbeitszeit_parameter.sql"
+      },
+      {
+        "checksum": 1290289690,
+        "script": "V40140__dienstplan_publikation.sql"
+      },
+      {
+        "checksum": -1258632141,
+        "script": "V40150__dienstplan_revisionshistorie.sql"
+      },
+      {
+        "checksum": -1222520897,
+        "script": "V40160__dienstplan_depotberechtigung.sql"
+      },
+      {
+        "checksum": -1634280394,
+        "script": "V40170__schicht_dienstbezug.sql"
+      },
+      {
+        "checksum": -593259142,
+        "script": "V40210__uploadticket_quarantaene.sql"
+      },
+      {
+        "checksum": -1954486354,
+        "script": "V40220__belegaggregat_kanaele.sql"
+      },
+      {
+        "checksum": 730766777,
+        "script": "V40230__belegrevision_pruefspur.sql"
+      },
+      {
+        "checksum": -1037187094,
+        "script": "V40240__belegintegritaet.sql"
+      },
+      {
+        "checksum": 763297750,
+        "script": "V40260__beleg_client_uuid.sql"
+      },
+      {
+        "checksum": -126360515,
+        "script": "V40270__ocr_extraktion.sql"
+      },
+      {
+        "checksum": 1337415075,
+        "script": "V40280__ocr_bestaetigung.sql"
+      },
+      {
+        "checksum": -694961243,
+        "script": "V40290__kostenzuordnung.sql"
+      },
+      {
+        "checksum": -951568713,
+        "script": "V40300__tankvorgang.sql"
+      },
+      {
+        "checksum": -2011197413,
+        "script": "V40310__tankplausibilitaet.sql"
+      },
+      {
+        "checksum": -1741802099,
+        "script": "V40320__dublettenerkennung.sql"
+      },
+      {
+        "checksum": 1502788766,
+        "script": "V40330__kostenereignis_journal.sql"
+      },
+      {
+        "checksum": -1135245337,
+        "script": "V40340__freigabe_workflow.sql"
+      },
+      {
+        "checksum": -1244221331,
+        "script": "V40350__belegaufteilung.sql"
+      },
+      {
+        "checksum": 619743448,
+        "script": "V40360__fiskalperiode_gegenereignis.sql"
+      },
+      {
+        "checksum": 958112155,
+        "script": "V40370__hauptbuch_export.sql"
+      },
+      {
+        "checksum": 850704368,
+        "script": "V40390__kostenklassifikation.sql"
+      },
+      {
+        "checksum": -2002837928,
+        "script": "V40400__fahrzeugkosten_manuell.sql"
+      },
+      {
+        "checksum": -1316599451,
+        "script": "V40410__kilometerstandsregister.sql"
+      },
+      {
+        "checksum": 629519840,
+        "script": "V40420__fahrzeugkilometer_klassifikation.sql"
+      },
+      {
+        "checksum": 738419023,
+        "script": "V40450__analytics_faktenbasis.sql"
+      },
+      {
+        "checksum": 723740546,
+        "script": "V40460__kennzahlregister.sql"
+      },
+      {
+        "checksum": 1496493155,
+        "script": "V40461__energiekosten_kennzahlen.sql"
+      },
+      {
+        "checksum": 374890792,
+        "script": "V40470__versuch_faktenbasis.sql"
+      },
+      {
+        "checksum": -2036258190,
+        "script": "V40480__ablehnungskatalog_gruppen.sql"
+      },
+      {
+        "checksum": 253660408,
+        "script": "V40490__ablehnungscodes_ressourcen.sql"
+      },
+      {
+        "checksum": 2023924007,
+        "script": "V40500__ablehnungscodes_grenzen_partner.sql"
+      },
+      {
+        "checksum": 1246232671,
+        "script": "V40510__nachfragetrichter.sql"
+      },
+      {
+        "checksum": 500045637,
+        "script": "V40520__zeitfakten.sql"
+      },
+      {
+        "checksum": 1709073500,
+        "script": "V40530__abholpuenktlichkeit.sql"
+      },
+      {
+        "checksum": -1003016892,
+        "script": "V40531__abholpuenktlichkeit_definitionen.sql"
+      },
+      {
+        "checksum": -1899255023,
+        "script": "V40540__ankunftspuenktlichkeit.sql"
+      },
+      {
+        "checksum": -242480237,
+        "script": "V40550__nicht_durchgefuehrte_fahrten.sql"
+      },
+      {
+        "checksum": 1078847909,
+        "script": "V40551__no_show_rate_definition.sql"
+      },
+      {
+        "checksum": -1716040716,
+        "script": "V40560__kilometerkennzahlen.sql"
+      },
+      {
+        "checksum": 338019817,
+        "script": "V40570__auslastungskennzahlen.sql"
+      },
+      {
+        "checksum": -912357502,
+        "script": "V40580__berichtsfilter_dimensionen.sql"
+      },
+      {
+        "checksum": -1438161161,
+        "script": "V40581__kpi_aggregation_min_n.sql"
+      },
+      {
+        "checksum": 1902400550,
+        "script": "V40600__live_dashboard.sql"
+      },
+      {
+        "checksum": 1617990298,
+        "script": "V40610__eta_model_revision.sql"
+      },
+      {
+        "checksum": 2141088183,
+        "script": "V40611__eta_parameter_personalisierung.sql"
+      },
+      {
+        "checksum": 174219377,
+        "script": "V40620__eta_prognose_parameter.sql"
+      },
+      {
+        "checksum": 796111754,
+        "script": "V40650__schichtuebernahme_dienstplan.sql"
+      },
+      {
+        "checksum": -1407237876,
+        "script": "V40660__angebot_eta_version.sql"
+      },
+      {
+        "checksum": -2123455548,
+        "script": "V50050__probemandant.sql"
+      },
+      {
+        "checksum": -1358172427,
+        "script": "V50080__position_qualitaet.sql"
+      },
+      {
+        "checksum": 1537706040,
+        "script": "V50110__perf_indizes.sql"
+      },
+      {
+        "checksum": -1840355976,
+        "script": "V50190__export_job.sql"
+      },
+      {
+        "checksum": -642072391,
+        "script": "V50200__standortminimierung_parameter.sql"
+      }
+    ]
+  },
+  "responsible": "Plattform (QA)",
+  "result": "PASSED",
+  "revisions": {
+    "config_revision": "NONE_M0",
+    "contract_revision": "NONE_M0",
+    "tariff_revision": "NONE_M0"
+  },
+  "roles_and_tenants": [
+    {
+      "identity": "a.tenant_admin",
+      "role": "tenant_admin",
+      "tenant_id": "00000000-0000-4000-8000-00000000000a"
+    }
+  ],
+  "run_id": "run-573d4cbaa21b426b",
+  "schema_version": "1.0",
+  "seed": {
+    "data_state_sha256": "9d928b94208dbd3322060f59aa51a738f929a24a28ce289021ed4bd9ec1c3290",
+    "name": "two-tenants",
+    "tenants": {
+      "A": "00000000-0000-4000-8000-00000000000a",
+      "B": "00000000-0000-4000-8000-00000000000b"
+    },
+    "version": "1.0.0"
+  },
+  "software_build": {
+    "build_id": "7eeeb1b5e3871c036dca69898eda37ffc82236c3",
+    "origin": "TAKTOVIA_BUILD_ID"
+  },
+  "soll_ist": [
+    {
+      "actual": [
+        "taktovia_runtime",
+        false,
+        false,
+        0
+      ],
+      "expected": [
+        "taktovia_runtime",
+        false,
+        false,
+        0
+      ],
+      "ok": true,
+      "step": "Rolle der Prüfungen: Runtime, kein Superuser, kein BYPASSRLS, kein Eigentümer"
+    },
+    {
+      "actual": {
+        "00000000": [
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "00000000": [
+          0,
+          0
+        ]
+      },
+      "ok": true,
+      "step": "Runtime-Rolle, beide Mandanten: kein Dienst und kein Fahrzeug des jeweils anderen Mandanten sichtbar"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test ExtractedFieldKorrekturTest.betrag_89_statt_39_korrigierbar_vorschlag_nachvollziehbar"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test ExtractedFieldKorrekturTest.korrektur_erhaelt_ocr_vorschlag"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test ExtractedFieldKorrekturTest.mehrwertsteuer_bestaetigen_und_korrigieren_und_leere_felder_nicht_bestaetigbar"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test OcrConfirmationTest.freigabe_mit_unbestaetigtem_betrag_wird_abgewiesen"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test OcrConfirmationTest.niedrige_konfidenz_wird_markiert_sichere_felder_nicht"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test OcrConfirmationTest.korrektur_parallel_zur_freigabe_ergibt_412"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test DocumentRevisionTest.korrektur_ueberschreibt_original_nie"
+    },
+    {
+      "actual": "PASSED",
+      "expected": "PASSED",
+      "ok": true,
+      "step": "Backend-Test DocumentRevisionTest.parallele_korrekturen_genau_eine_gewinnt"
+    },
+    {
+      "actual": "OK, 4 Tests",
+      "expected": "OK, mindestens 3 Tests",
+      "ok": true,
+      "step": "Datenbanktest test_document_revision (ausgeführt)"
+    },
+    {
+      "actual": "OK, 4 Tests",
+      "expected": "OK, mindestens 3 Tests",
+      "ok": true,
+      "step": "Datenbanktest test_expense_integrity (ausgeführt)"
+    },
+    {
+      "actual": "23 bestanden, Exit 0",
+      "expected": ">= 15 bestanden",
+      "ok": true,
+      "step": "Webtests web/operator src/belege (ausgeführt)"
+    }
+  ],
+  "source_key": [
+    "LH-I.1-DOC-002",
+    "LH-I.1-DOC-003",
+    "LH-I.1-DOC-007"
+  ],
+  "test": {
+    "id": "E2E-066",
+    "kind": "E2E",
+    "name": "OCR falscher Betrag: Korrektur möglich, ursprünglicher Vorschlag nachvollziehbar",
+    "version": "1.0.0"
+  }
+}
