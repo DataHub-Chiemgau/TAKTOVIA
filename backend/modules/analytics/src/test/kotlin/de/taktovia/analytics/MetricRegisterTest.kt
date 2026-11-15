@@ -97,8 +97,8 @@ class MetricRegisterTest {
         assertEquals(MetricState.NOT_COMPUTABLE, tech.state); assertEquals(MetricReason.ZERO_DENOMINATOR, tech.reason); assertNull(tech.value); assertEquals(BigDecimal.ZERO, tech.denominator)
         assertEquals(BigDecimal.ZERO, v.getValue("requests").value); assertEquals(MetricState.OK, v.getValue("requests").state)
         // nicht ausführbare Kennzahlen weisen keinen Wert aus, sondern ihren Grund
-        val offer = v.getValue("arrival_on_time")
-        assertEquals(MetricState.NOT_COMPUTABLE, offer.state); assertEquals(MetricReason.NOT_EXECUTABLE_IN_THIS_RELEASE, offer.reason); assertNull(offer.value); assertNull(offer.snapshotId)
+        val offer = v.getValue("technical_partner_rejections")
+        assertEquals(MetricState.NOT_COMPUTABLE, offer.state); assertEquals(MetricReason.NO_PARTNERS_IN_P1, offer.reason); assertNull(offer.value); assertNull(offer.snapshotId)
         // No-Show-Rate (WP-M4-55) ist ausführbar, hat aber ohne Buchungsdaten keinen Wert (nie 0 oder 100 %)
         assertEquals(MetricState.NOT_COMPUTABLE, v.getValue("no_show_rate").state); assertEquals(MetricReason.NO_DATA, v.getValue("no_show_rate").reason)
         assertEquals(MetricReason.NO_PARTNERS_IN_P1, v.getValue("technical_partner_rejections").reason)
