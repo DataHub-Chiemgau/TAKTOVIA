@@ -1,0 +1,5 @@
+# Git-Referenz des freigegebenen Datenbankstandes (Vorstand) für die Migrationsstufe des Release-Gates (WP-M5-22).
+# Planungsannahme (OP-17): Bis zum ersten Pilotrelease gibt es keinen ausgelieferten Stand; als Vorstand dient hier der Integrationsstand nach Welle 11
+# (Merge wave11-c1). Mit dem ersten Release wird die Zeile auf dessen Tag gesetzt und danach je Release fortgeschrieben.
+# Die Referenz muss im Checkout vorhanden sein (CI: fetch-depth 0).
+a1fe0ab

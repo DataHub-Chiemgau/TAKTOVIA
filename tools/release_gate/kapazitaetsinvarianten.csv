@@ -1,0 +1,9 @@
+invariante;referenz;art;ort;name;min_parallel;bemerkung
+letzter_platz_zwei_clients;PH-AT-004;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt;zwei_clients_letzter_platz_hoechstens_eine_buchung;2;
+hundert_parallele_confirms;PH-AT-004;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt;hundert_parallele_confirms_ein_sitz;2;
+hundert_parallele_holds;PH-AT-004;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/HoldConcurrencyTest.kt;test_100_parallele_holds_hoechstens_einer;2;
+rollstuhlplatz_parallel;PH-AT-004;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/WheelchairConcurrencyTest.kt;zwei_parallele_rollstuhlbuchungen_hoechstens_eine;2;
+storno_parallel_zu_confirm;Kap. 04 §4.5;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/CancelConcurrencyTest.kt;storno_parallel_zu_confirm_nie_ueberbelegt;2;
+ablauf_parallel_zu_confirm;Kap. 04 §4.5;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmConcurrencyTest.kt;confirm_parallel_expiry_und_release_ein_ausgang;2;
+idempotenz_hundert_parallele_requests;PH-AT-011;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingIdempotencyHttpTest.kt;hundert_parallele_identische_requests_eine_buchung;2;
+idempotenz_zwei_schluessel_parallel;PH-AT-011;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingIdempotencyHttpTest.kt;zwei_schluessel_parallel_hoechstens_eine_buchung;2;

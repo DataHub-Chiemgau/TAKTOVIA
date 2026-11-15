@@ -1,0 +1,36 @@
+funktion;stufe;art;ort;name;token;bemerkung
+Angebot;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;angebot_zeitfenster_verlangt_geordnete_raender_und_fahrzeit_hat_untergrenze;;
+Angebot;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/RideOfferTest.kt;angebot_unveraendert_bei_get_und_etag;;
+Angebot;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/RideOfferHttpApiTest.kt;anfrage_liefert_zeitfenster_und_versuch;;
+Angebot;contract;contract;;createRideOffer;;Vertragsfall in RideOfferContractCases
+Hold;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;hold_deckt_nur_wenn_jede_dimension_reicht_und_reserve_zaehlt_mit;;
+Hold;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/HoldCommandTest.kt;hold_und_outbox_gemeinsam_oder_gar_nicht;;
+Hold;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/RideOfferHoldHttpApiTest.kt;hold_if_match_idempotenz_freigabe_und_fehlercodes;;
+Hold;contract;contract;;holdRideOffer;OFFER_EXPIRED;Vertragsfall in OfferHoldContractCases
+Hold;contract;contract;;releaseHold;;Vertragsfall in OfferHoldContractCases
+Confirm;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;confirm_geht_nur_ueber_confirming_und_nie_direkt_von_held_nach_confirmed;;
+Confirm;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/ConfirmBookingTest.kt;hold_confirm_buchung_lesbar;;
+Confirm;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingHttpApiTest.kt;confirm_liefert_buchung_mit_etag_location_und_nummer_und_get_liest_sie;;
+Confirm;contract;contract;;confirmBooking;REQUOTE_REQUIRED;Vertragsfall in BookingContractCases
+Ablauf;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;ablauf_fuehrt_nie_zu_bestaetigt;;
+Ablauf;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/HoldExpiryTest.kt;ablauf_gibt_kapazitaet_frei_und_nie_abgelaufen_und_belegt;;
+Ablauf;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/RideOfferHoldHttpApiTest.kt;abgelaufenes_angebot_409_und_ohne_planbindung_keine_kapazitaet;;
+Ablauf;contract;contract;;confirmBooking;HOLD_EXPIRED;Ablauf hat keine eigene Operation; der Vertrag von confirmBooking dokumentiert 409 HOLD_EXPIRED (Prüfung des Textes), der Ablauffall selbst läuft als semantischer Fall abgelaufener_hold
+Storno;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;storno_ist_ein_zweistufiger_weg_und_endzustaende_sind_endgueltig;;
+Storno;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/booking/CancelBookingTest.kt;storno_gibt_kapazitaet_frei_und_neue_planrevision;;
+Storno;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/booking/BookingHttpApiTest.kt;storno_if_match_grund_frist_und_betreiberstorno;;
+Storno;contract;contract;;cancelBooking;;Vertragsfall in BookingContractCases
+Planrevision;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;planrevision_intervall_einer_buchung_und_umlaufzustaende;;
+Planrevision;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/RunPlanValidatorTest.kt;parallele_planaenderung_ein_revisionskonflikt;;
+Planrevision;integration;kotlin;backend/app/src/test/kotlin/de/taktovia/app/dispatch/RunRevisionApiTest.kt;plan_cas_428_412_201_mit_etag_begruendung_und_planvergleich;;
+Planrevision;contract;contract;;createRunRevision;REVISION_MISMATCH;Vertragsfall in W14C6ContractCases
+Planrevision;contract;contract;;listRunRevisions;;Vertragsfall in W14C6ContractCases
+Einfuegeheuristik;unit;python;workers/routing/tests/test_insertion_heuristic.py;test_einfuegen_anfang_mitte_ende;;Routing-Worker, reine Python-Tests ohne Datenbank
+Einfuegeheuristik;unit;python;workers/routing/tests/test_insertion_heuristic.py;test_keine_zulaessige_position_begruendete_ablehnung;;
+Einfuegeheuristik;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/InsertionPlanRevisionTest.kt;ohne_zulaessige_position_kommt_eine_begruendete_ablehnung;;Kern gegen Worker-Schnittstelle und Datenbank
+Einfuegeheuristik;contract;python;workers/routing/tests/test_insertion_heuristic.py;test_fremder_mandant_und_fahrzeugscope_nicht_ueberschritten;;Worker-Vertrag workers/routing/contract/insert-request.json über die JSON-Schnittstelle (200, 422 SCOPE_VIOLATION, 400)
+Constraint-Validator;unit;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/KernbuchungUnitTest.kt;constraint_validator_erkennt_reihenfolge_kapazitaet_und_vektorfehler;;
+Constraint-Validator;unit;python;workers/routing/tests/test_insertion_heuristic.py;test_alle_varianten_bestehen_validator;;
+Constraint-Validator;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/RunPlanValidatorTest.kt;verletzendes_solverergebnis_wird_nicht_gespeichert;;
+Constraint-Validator;integration;kotlin;backend/modules/booking-dispatch/src/test/kotlin/de/taktovia/bookingdispatch/HardLimitsValidatorTest.kt;verletzendes_ergebnis_des_workers_wird_im_kern_verworfen;;
+Constraint-Validator;contract;contract;;createRunRevision;PROMISE_WINDOW_VIOLATION;Ablehnung unzulässiger Pläne als 409 im Vertrag dokumentiert

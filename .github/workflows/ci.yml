@@ -114,6 +114,14 @@ jobs:
         run: |
           python tools/lint_sql.py
           python -m unittest discover -s tests/acceptance/security -t . -p 'test_*.py'
+      - name: JUnit-Ergebnisse für das Release-Gate einsammeln (WP-M5-22)
+        if: always()
+        run: |
+          mkdir -p junit-backend
+          find backend -path '*/build/test-results/test/TEST-*.xml' -exec cp {} junit-backend/ \;
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: backend-junit, path: junit-backend }
 
   web:
     name: Web (WP-M0-05)
@@ -205,3 +213,46 @@ jobs:
         run: python infra/check.py
       # Gebaute Images (Auslieferungsartefakt): sobald der Image-Bau steht, `docker save <image> -o image.tar`
       # und `python tools/secret_scan.py artifact image.tar` sowie über das SBOM-Verzeichnis. NICHT ausgeführt (kein Docker).
+
+  release-gate:
+    name: Release-Gate (WP-M5-22) – Pflichtprüfungen Kernbuchung und Disposition
+    # Verweigert das Release, sobald eine Pflichtstufe fehlt oder rot ist; das Release-Artefakt (Manifest + Signatur) entsteht nur bei vollständig grünem Lauf
+    # und nur auf Versions-Tags. mobile ist (noch nicht verifiziert, continue-on-error) bewusst keine Pflichtstufe. Stufen: tools/release_gate/pflichtpruefungen.json.
+    needs: [repository, vertraege, datenbank, backend, web, workers, lieferkette, secret-scan]
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env: { POSTGRES_PASSWORD: ci_admin }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TAKTOVIA_DB_HOST: 127.0.0.1
+      TAKTOVIA_DB_NAME: taktovia_test
+      TAKTOVIA_DB_ADMIN_USER: postgres
+      TAKTOVIA_DB_ADMIN_PASSWORD: ci_admin
+      TAKTOVIA_DB_MIGRATOR_PASSWORD: ci_migrator
+      TAKTOVIA_DB_RUNTIME_PASSWORD: ci_runtime
+      TAKTOVIA_REQUIRE_DB: 'true'
+      TAKTOVIA_GATE_EXTERN_GITLEAKS: ${{ needs.lieferkette.result }}
+      TAKTOVIA_GATE_EXTERN_OSV: ${{ needs.lieferkette.result }}
+      TAKTOVIA_RELEASE_SIGNING_KEY: ${{ secrets.TAKTOVIA_RELEASE_SIGNING_KEY }}
+      TAKTOVIA_BUILD_ID: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # die Migrationsstufe liest den freigegebenen Vorstand aus der Git-Historie
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install "psycopg[binary]==3.2.*" PyYAML jsonschema openapi-spec-validator pytest==9.2.0
+      - uses: actions/download-artifact@v4
+        with: { name: backend-junit, path: junit-backend }
+      - run: python db/db.py bootstrap && python db/db.py migrate
+      - name: Selbsttest des Gates (rote Stufen verhindern das Release)
+        run: python -m unittest discover -s tests/acceptance/release -p 'test_*.py' -v
+      - name: Pflichtprüfungen; Release-Artefakt nur auf Versions-Tags
+        run: python tools/release_gate/gate.py run --ci --ergebnisse junit-backend --out release-out ${{ startsWith(github.ref, 'refs/tags/v') && ' ' || '--ohne-artefakt' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: release-gate-bericht, path: release-out }
+

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "beschreibung": "Pflichtstufen des Release-Gates (WP-M5-22, LH-6.20-QAT-002). Jede Stufe muss grün sein oder mit protokollierter Ausnahme (ausnahmen.json) übersprungen werden. Liste und Zuordnung: docs/umsetzungsplan/vertraege/LH-6.20-QAT-002.md, abgeleitet aus WP-M5-22 und Kap. 08 §8.4 (OP-17).",
+  "definition": {
+    "kernbuchung": ["/v1/ride-offers", "/v1/bookings", "Modul booking-dispatch (Angebot, Hold, Confirm, Ablauf, Storno)"],
+    "disposition": ["/v1/runs/{id}/revisions", "Modul booking-dispatch (Planrevision, Constraint-Validator)", "workers/routing (Einfügeheuristik)"]
+  },
+  "abdeckung": {
+    "funktionen": ["Angebot", "Hold", "Confirm", "Ablauf", "Storno", "Planrevision", "Einfuegeheuristik", "Constraint-Validator"],
+    "stufen": ["unit", "integration", "contract"]
+  },
+  "semantische_faelle": [
+    "abgelaufener_hold", "sca_laenger_als_hold", "confirm_timeout_spaet_positiv", "hundert_identische_webhooks",
+    "manipulation_tenant_id", "unzulaessige_fremd_id", "offline_checkin_alte_planrevision", "ph_at_011_idempotenz_fingerprint"
+  ],
+  "kapazitaetsinvarianten": [
+    "letzter_platz_zwei_clients", "hundert_parallele_confirms", "hundert_parallele_holds", "rollstuhlplatz_parallel",
+    "storno_parallel_zu_confirm", "ablauf_parallel_zu_confirm", "idempotenz_hundert_parallele_requests", "idempotenz_zwei_schluessel_parallel"
+  ],
+  "stufen": [
+    {
+      "id": "unit", "name": "Unit-Tests (ohne Datenbank und HTTP)",
+      "pruefungen": [
+        {"id": "routing-worker-unit", "art": "befehl", "cwd": "workers/routing",
+         "argv": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--junitxml={ergebnisse}/pytest-routing.xml", "tests/test_insertion_heuristic.py", "tests/test_insertion_limits.py"]},
+        {"id": "kernbuchung-unit-kotlin", "art": "junit", "klassen": ["KernbuchungUnitTest"], "mindestens": 7},
+        {"id": "testbibliothek-unit", "art": "befehl", "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests/lib", "-p", "test_*.py"]}
+      ]
+    },
+    {
+      "id": "datenbankintegration", "name": "Datenbankintegrationstests unter der Runtime-Rolle",
+      "pruefungen": [
+        {"id": "db-tests", "art": "befehl", "cwd": "db/tests", "timeout_s": 3000,
+         "argv": ["{python}", "-m", "unittest", "discover", "-s", ".", "-p", "test_*.py"]},
+        {"id": "kernbuchung-integration-kotlin", "art": "junit", "mindestens": 2,
+         "klassen": ["RideOfferTest", "RideOfferRequestTest", "HoldCommandTest", "HoldExpiryTest", "ConfirmBookingTest", "CancelBookingTest", "RunPlanValidatorTest",
+                     "HardLimitsValidatorTest", "InsertionPlanRevisionTest", "PlanRevisionSyncTest", "BookingHttpApiTest", "RideOfferHttpApiTest", "RideOfferHoldHttpApiTest",
+                     "RunRevisionApiTest", "BookingIdempotencyHttpTest"]},
+        {"id": "runtime-rolle", "art": "junit", "klassen": ["BackendStartTest"], "mindestens": 1}
+      ]
+    },
+    {
+      "id": "api-contract", "name": "API-Contract-Tests gegen api/",
+      "pruefungen": [
+        {"id": "api-lint", "art": "befehl", "argv": ["{python}", "api/tools/lint.py"]},
+        {"id": "api-bundle", "art": "befehl", "argv": ["{python}", "api/tools/bundle.py", "--check"]},
+        {"id": "vertragslauf", "art": "junit", "klassen": ["ContractCoverageTest"], "mindestens": 2},
+        {"id": "funktionsabdeckung", "art": "funktionsabdeckung"}
+      ]
+    },
+    {
+      "id": "migration", "name": "Migration frisch und aus freigegebenem Vorstand",
+      "pruefungen": [
+        {"id": "migration-frisch-und-vorstand", "art": "befehl", "timeout_s": 3000, "argv": ["{python}", "tools/release_gate/migration_check.py"]}
+      ]
+    },
+    {
+      "id": "architektur", "name": "Architekturtest Modulgrenzen",
+      "pruefungen": [
+        {"id": "architekturregeln", "art": "junit", "klassen": ["ArchitectureTest", "ArchitectureRulesSelfTest", "TableOwnershipTest", "ZeitGeldRegelnTest", "CacheKeyArchitectureTest"], "mindestens": 1}
+      ]
+    },
+    {
+      "id": "isolation", "name": "Isolationssuite (Mandantentrennung)",
+      "pruefungen": [
+        {"id": "isolation-backend", "art": "junit", "klassen": ["CrossTenantIsolationTest"], "mindestens": 1},
+        {"id": "isolation-akzeptanz", "art": "befehl", "cwd": "tests/acceptance", "timeout_s": 1800,
+         "argv": ["{python}", "-m", "unittest", "test_mandantenisolation_m1", "-v"]}
+      ]
+    },
+    {
+      "id": "semantische-contract-faelle", "name": "Semantische Contract-Fälle Kap. 05 §5.8 (Kernbuchung, Disposition) und PH-AT-011",
+      "pruefungen": [
+        {"id": "semantische-faelle", "art": "semantisch"}
+      ]
+    },
+    {
+      "id": "kapazitaetsinvarianten", "name": "Kapazitäts- und Idempotenzinvarianten mit mindestens zwei parallelen Transaktionen (Kap. 04 §4.5, PH-AT-004, PH-AT-011)",
+      "pruefungen": [
+        {"id": "konkurrierende-invarianten", "art": "kapazitaet"}
+      ]
+    },
+    {
+      "id": "lieferkette", "name": "Lieferkettenprüfung",
+      "pruefungen": [
+        {"id": "secret-scan-baum", "art": "befehl", "argv": ["{python}", "tools/secret_scan.py", "tree", "."]},
+        {"id": "sql-lint", "art": "befehl", "argv": ["{python}", "tools/lint_sql.py"]},
+        {"id": "gitleaks-historie", "art": "extern", "name": "gitleaks", "beschreibung": "Gitleaks über die Git-Historie (CI-Job lieferkette)"},
+        {"id": "osv-schwachstellen", "art": "extern", "name": "osv", "beschreibung": "OSV-Scanner über Lockfiles (CI-Job lieferkette)"}
+      ]
+    }
+  ]
+}

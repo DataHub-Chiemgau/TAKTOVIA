@@ -7,3 +7,4 @@ backend/**/build/
 .kotlin/
 *.class
 .claude/worktrees/
+release-out/
