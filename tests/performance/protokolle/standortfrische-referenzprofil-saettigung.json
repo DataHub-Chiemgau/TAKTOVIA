@@ -1,0 +1,12 @@
+{
+  "protokoll_version": "1.0",
+  "norm": "LH-6.19-NFR-005",
+  "status_zielwert": "vorläufig, D-05 offen",
+  "lauf": "Referenzprofil referenz-skalierung (Stufenfaktor 0,4), 2 Mandanten x 250 Fahrzeuge, 5.000 Lesesitzungen je Mandant, Leitstellen-Beobachter alle 5 s, jedes 50. Fahrzeug mit unterbrochenem Strom",
+  "umgebung": "eine geteilte Maschine (Lastgenerator, Anwendung, PostgreSQL, Test-Issuer); Maschinen-CPU max 99,9 %",
+  "ergebnis_referenzstufe_100_prozent": {"beobachtungen": 5488, "standortalter_p50_s": 28.0, "standortalter_p95_s": 69.0, "standortalter_max_s": 95.0, "anteil_ueber_30s": 0.45208, "erfassung_bis_empfang_p95_s": 17.975, "positionsmeldungen_antwortzeit_p95_ms": 24772.9},
+  "urteil": "verfehlt in dieser Messumgebung",
+  "ursache": "Sättigung der Messmaschine: Antwortzeit der gesamten API p95 23 s in der Referenzstufe; die Positionsmeldungen des Generators werden verzögert angenommen (Messzeit des Geräts ist alt, wenn der Server sie empfängt). Kein Befund zur Zielhardware.",
+  "massnahme": "Messung auf Zielhardware mit getrenntem Lastgenerator nach Festlegung von D-05; bis dahin gilt das Normalbetriebsprofil (profiles/standortfrische.json) als Nachweis des Mechanismus.",
+  "hinweis": "Während des Laufs wurden 11 Meldungen (Fahrer der Verspätungsprobe) mit 401 beantwortet, 3 mit 422: Ursache nicht untersucht (möglicher Zusammenhang mit der Sättigung ungeprüft)."
+}

@@ -176,6 +176,11 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
   const notLive = stale || connection.restricted;
   const stand = lastUpdate ? standHhmm(lastUpdate, zone) : null;
   const p = booking.promise;
+  // Standort des Fahrzeugs (WP-M5-08): der Server berechnet das Alter; veraltet heißt keine Live-Position und keine Grundlage einer laufenden ETA
+  const location = booking.vehicle?.location;
+  const locationStale = location?.state === 'STALE';
+  const forecastFallback =
+    booking.eta?.forecast?.fallback_reason ?? (locationStale ? 'POSITION_STALE' : null);
   const acc = booking.pickup_stop?.accessibility as Record<string, unknown> | undefined;
   return (
     <article
@@ -249,10 +254,9 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
           <>
             <dt>{tx('reise.prognose')}</dt>
             <dd data-testid="prognose">
-              {booking.eta.forecast.fallback_reason ? (
+              {forecastFallback ? (
                 <>
-                  {tx('reise.prognoseRueckfall')} (
-                  {tx(prognoseGrund(booking.eta.forecast.fallback_reason))}
+                  {tx('reise.prognoseRueckfall')} ({tx(prognoseGrund(forecastFallback))}
                   {booking.eta.forecast.data_stand
                     ? `, ${tx('reise.prognoseStand')} ${ortszeit(booking.eta.forecast.data_stand, zone)}`
                     : ''}
@@ -281,6 +285,41 @@ export function BookingDetail({ bookingId, zone, pollMs = 5000, children }: Book
             ? `${notLive && stand ? `${stand}: ` : ''}${booking.vehicle.label}${booking.vehicle.vehicle_class ? ` (${booking.vehicle.vehicle_class})` : ''}`
             : tx('reise.fahrzeugKeins')}
         </dd>
+        {location ? (
+          <>
+            <dt>{tx('reise.standort')}</dt>
+            <dd data-testid="fahrzeug-standort" data-state={location.state}>
+              {location.state === 'UNKNOWN' || !location.measured_at ? (
+                tx('reise.standortUnbekannt')
+              ) : locationStale ? (
+                <>
+                  <strong>{tx('reise.standortVeraltet')}</strong>{' '}
+                  <time dateTime={location.measured_at}>
+                    {ortszeit(location.measured_at, zone)}
+                  </time>
+                  . {tx('reise.standortVeraltetHinweis')}
+                </>
+              ) : notLive || !location.position ? (
+                <>
+                  {tx('reise.standortNichtLive')}{' '}
+                  <time dateTime={location.measured_at}>
+                    {ortszeit(location.measured_at, zone)}
+                  </time>
+                </>
+              ) : (
+                <>
+                  {tx('reise.standortFrisch')}{' '}
+                  <time dateTime={location.measured_at}>
+                    {ortszeit(location.measured_at, zone)}
+                  </time>
+                  {': '}
+                  {location.position.latitude.toFixed(4)} N,{' '}
+                  {location.position.longitude.toFixed(4)} O
+                </>
+              )}
+            </dd>
+          </>
+        ) : null}
         <dt>{tx('angebot.preis')}</dt>
         <dd data-testid="preis">{formatMoney(p.gross)}</dd>
         <dt>{tx('reise.letzterStand')}</dt>

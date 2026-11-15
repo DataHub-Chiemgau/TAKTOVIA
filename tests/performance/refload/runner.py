@@ -45,6 +45,8 @@ class Profile:
     operators_per_tenant: int = 10
     operator_think_s: float = 5.0
     driver_interval_s: float = 15.0               # Positionsmeldung je Fahrzeug
+    interrupted_vehicle_stride: int = 50          # WP-M5-08: jedes n-te Fahrzeug unterbricht seinen Positionsstrom nach dem Aufwärmen (Veraltet-Nachweis unter Last); 0 = keines
+    observe_interval_s: float = 5.0               # WP-M5-08: Leitstellen-Beobachter liest die Fahrzeugliste („Anzeige“) in diesem Takt
     stages: list[Stage] = field(default_factory=lambda: [Stage("100 %", 1.0, 30)])
     warmup_s: float = 5.0
     status: str = "vorläufig, D-05 offen"
@@ -68,6 +70,7 @@ class State:
         self.t0 = time.monotonic()
         self.inflight = 0
         self.counters: dict[str, int] = {}
+        self.loc_obs: list[dict] = []                 # WP-M5-08: Beobachtungen der Standortanzeige (Leitstelle)
 
     def count(self, k: str, n: int = 1) -> None:
         self.counters[k] = self.counters.get(k, 0) + n
@@ -185,22 +188,61 @@ async def operator_session(st: State, rec, app, idp, w: W.TenantWorld, i: int, s
         await c.close()
 
 
-async def driver_session(st: State, rec, app, idp, w: W.TenantWorld, rig: W.DriverRig, i: int, seed: int) -> None:
+async def driver_session(st: State, rec, app, idp, w: W.TenantWorld, rig: W.DriverRig, i: int, seed: int, w_rigs: list) -> None:
     from datetime import datetime, timezone
     rnd = random.Random(f"{seed}|{w.label}|drv|{i}")
     c = Client(rec, "127.0.0.1", app.port, w.label, lambda: idp.token(rig.subject, sid=rig.sid))
-    await asyncio.sleep(rnd.random() * st.p.driver_interval_s)
+    stride = st.p.interrupted_vehicle_stride
+    interrupted = stride > 0 and i % stride == 0        # sendet nur bis zum Ende des Aufwärmens (künstlich veralteter Standort, WP-M5-08)
+    late_probe = stride > 0 and i % stride == 1         # sendet zusätzlich eine ältere Messung nach der neueren (falsche Reihenfolge)
+    foreign_probe = stride > 0 and i % stride == 2      # meldet einmal für ein nicht zugeordnetes Fahrzeug des eigenen Mandanten
+    await asyncio.sleep(0 if interrupted else rnd.random() * st.p.driver_interval_s)
     n = 0
     st.count(f"fahrersitzungen_{w.label}")
     try:
         while not st.stop:
-            body = {"shift_id": rig.shift_id, "vehicle_id": rig.vehicle_id, "device_id": rig.device_id,
-                    "samples": [{"position": {"latitude": round(51.04 + rnd.random() * 0.05, 6), "longitude": round(13.72 + rnd.random() * 0.06, 6)}, "accuracy_meters": 5.0, "measured_at": datetime.now(timezone.utc).isoformat()}]}
+            if interrupted and time.monotonic() - st.t0 >= st.p.warmup_s and n > 0:
+                await asyncio.sleep(st.p.driver_interval_s); continue
+            now = datetime.now(timezone.utc)
+            sample = lambda at: {"position": {"latitude": round(51.04 + rnd.random() * 0.05, 6), "longitude": round(13.72 + rnd.random() * 0.06, 6)}, "accuracy_meters": 5.0, "measured_at": at.isoformat()}  # noqa: E731
+            body = {"shift_id": rig.shift_id, "vehicle_id": rig.vehicle_id, "device_id": rig.device_id, "samples": [sample(now)]}
             await c.call("POST /v1/driver/positions", "POST", "/v1/driver/positions", body)
             n += 1
+            if late_probe:
+                from datetime import timedelta
+                s2, _, _ = await c.call("POST /v1/driver/positions (verspätet)", "POST", "/v1/driver/positions", {**body, "samples": [sample(now - timedelta(seconds=10))]})
+                st.count("pos_probe_verspaetet_200" if s2 == 200 else f"pos_probe_verspaetet_http_{s2}")
+            if foreign_probe and n == 1 and len(w_rigs) > 3:
+                other = w_rigs[(i + 3) % len(w_rigs)]
+                s3, _, _ = await c.call("POST /v1/driver/positions (fremdes Fahrzeug)", "POST", "/v1/driver/positions", {**body, "vehicle_id": other.vehicle_id})
+                st.count("pos_probe_fremdes_fahrzeug_404" if s3 == 404 else f"pos_probe_fremdes_fahrzeug_http_{s3}")
             if n % 4 == 0:
                 await c.call("GET /v1/driver/shifts/{id}/run", "GET", f"/v1/driver/shifts/{rig.shift_id}/run")
             await asyncio.sleep(st.p.driver_interval_s)
+    finally:
+        await c.close()
+
+
+async def location_observer(st: State, rec, app, idp, w: W.TenantWorld) -> None:
+    """Leitstellen-Beobachter (WP-M5-08): liest im Takt die Fahrzeugliste (UI-07) und hält je Fahrzeug fest, was die Anzeige zeigt: Standortalter (Serveruhr), Zustand, Qualität, Messzeit, Empfangszeit."""
+    c = Client(rec, "127.0.0.1", app.port, w.label, lambda: idp.token(w.planner_sub))
+    await asyncio.sleep(st.p.observe_interval_s)
+    try:
+        while not st.stop:
+            t0 = time.monotonic()
+            cursor = ""
+            while True:
+                s, _, js = await c.call("GET /v1/operator/vehicles (Standortbeobachter)", "GET", "/v1/operator/vehicles?limit=100" + (f"&cursor={cursor}" if cursor else ""))
+                if s != 200 or not js:
+                    st.count(f"beobachter_http_{s}"); break
+                now = time.monotonic() - st.t0
+                for v in js.get("items", []):
+                    st.loc_obs.append({"t": now, "tenant": w.label, "vehicle_id": v["vehicle_id"], "state": v.get("position_state"), "stale": v.get("position_stale"), "age_s": v.get("position_age_seconds"),
+                                       "quality": v.get("position_quality"), "measured_at": v.get("position_measured_at"), "received_at": v.get("position_received_at")})
+                cursor = js.get("next_cursor") or ""
+                if not cursor:
+                    break
+            await asyncio.sleep(max(0.5, st.p.observe_interval_s - (time.monotonic() - t0)))
     finally:
         await c.close()
 
@@ -289,7 +331,8 @@ async def run_load(app, idp, admin_factory, worlds: list[W.TenantWorld], rigs: d
         tasks.append(asyncio.create_task(booking_arrivals(st, rec, app, idp, admin_factory, w, p.seed)))
         tasks += [asyncio.create_task(read_session(st, rec, app, idp, w, i, n_sess, p.seed)) for i in range(n_sess)]
         tasks += [asyncio.create_task(operator_session(st, rec, app, idp, w, i, p.seed)) for i in range(p.operators_per_tenant)]
-        tasks += [asyncio.create_task(driver_session(st, rec, app, idp, w, r, i, p.seed)) for i, r in enumerate(rigs.get(w.label, []))]
+        tasks += [asyncio.create_task(driver_session(st, rec, app, idp, w, r, i, p.seed, rigs.get(w.label, []))) for i, r in enumerate(rigs.get(w.label, []))]
+        tasks.append(asyncio.create_task(location_observer(st, rec, app, idp, w)))
         if any(s.burst_actors for s in p.stages):
             # Überlastakteure: je Konto mehrere gleichzeitige Verbindungen ohne Pause (zusammen über der Quote je Akteur von 600 Anfragen/min)
             tasks += [asyncio.create_task(burst_actor(st, rec, app, idp, w, i)) for i in range(max(s.burst_actors for s in p.stages)) for _ in range(8)]
@@ -308,7 +351,7 @@ async def run_load(app, idp, admin_factory, worlds: list[W.TenantWorld], rigs: d
     done, pending = await asyncio.wait(tasks, timeout=90)
     for t in pending:
         t.cancel()
-    return {"stages": stage_bounds, "counters": st.counters, "race": race_result, "pending_at_stop": len(pending)}
+    return {"stages": stage_bounds, "counters": st.counters, "race": race_result, "pending_at_stop": len(pending), "standort_beobachtungen": st.loc_obs}
 
 
 def stage_of(bounds: list[dict], t: float) -> str:

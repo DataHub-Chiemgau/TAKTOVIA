@@ -1049,6 +1049,8 @@ export interface DriverPositionResult {
     index: number;
     reason: 'FUTURE_TIME' | 'OUTSIDE_SERVICE';
   })[];
+  unusable?: number;
+  unusable_indices?: number[];
 }
 
 export interface ExpectedPassengers {
@@ -1722,6 +1724,14 @@ export interface RideBookingEtaForecast {
 export interface RideVehicleIdentification {
   label: string;
   vehicle_class: string | null;
+  location?: RideVehicleLocation;
+}
+
+export interface RideVehicleLocation {
+  state: 'FRESH' | 'STALE' | 'UNKNOWN';
+  measured_at: Timestamp | null;
+  age_seconds: number | null;
+  position: Point | null;
 }
 
 export interface RideCancellationOption {
@@ -2420,6 +2430,8 @@ export interface OperatorVehicle {
   position_received_at?: string | null;
   position_age_seconds: number | null;
   position_stale: boolean;
+  position_state?: 'FRESH' | 'STALE' | 'UNKNOWN';
+  position_quality?: 'GOOD' | 'LOW_ACCURACY' | null;
   open_defect_count: number;
   current_run_id: UUID | null;
   revision: number;

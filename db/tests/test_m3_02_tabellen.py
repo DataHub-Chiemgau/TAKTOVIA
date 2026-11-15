@@ -116,7 +116,7 @@ class Mandantentrennung(unittest.TestCase):
                                (B, uid(), self.wb['shift'], self.wb['vehicle'], uid(), wa['template'], ACTOR)),
             'repair_order': ("INSERT INTO taktovia.repair_order(tenant_id,id,defect_id,vehicle_id,created_by) VALUES (%s,%s,%s,%s,%s)", (B, uid(), wa['defect'], self.wb['vehicle'], ACTOR)),
             'vehicle_block': ("INSERT INTO taktovia.vehicle_block(tenant_id,id,vehicle_id,source,reason_code,set_by) VALUES (%s,%s,%s,'OPERATIONS','MANUAL',%s)", (B, uid(), wa['vehicle'], ACTOR)),
-            'position_sample': ("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,created_by) VALUES (%s,%s,%s,%s,ST_GeogFromText('POINT(8 50)'),5,now(),%s)",
+            'position_sample': ("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,quality,created_by) VALUES (%s,%s,%s,%s,ST_GeogFromText('POINT(8 50)'),5,now(),'GOOD',%s)",
                                 (B, uid(), wa['vehicle'], self.wb['shift'], ACTOR)),
             'incident': ("INSERT INTO taktovia.incident(tenant_id,id,kind,vehicle_id,dedupe_key,created_by) VALUES (%s,%s,'DEFECT',%s,%s,%s)", (B, uid(), wa['vehicle'], f'd-{uid()}', ACTOR)),
         }

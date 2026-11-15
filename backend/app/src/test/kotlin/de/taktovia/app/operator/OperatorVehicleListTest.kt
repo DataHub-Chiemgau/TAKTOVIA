@@ -43,7 +43,7 @@ class OperatorVehicleListTest {
             env.exec("INSERT INTO taktovia.staff_shift(tenant_id,id,driver_ref,vehicle_id,starts_at,ends_at,timezone,roster_revision,state) VALUES (?,?,?,?,now() - interval '1 hour', now() + interval '5 hours','Europe/Berlin',0,?)", tenant.value, id, UUID.randomUUID(), vehicle, state)
         }
         fun position(vehicle: UUID, shift: UUID, ageSeconds: Long, lat: Double, lon: Double) = env.exec(
-            "INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,created_by) VALUES (?,?,?,?,CAST(ST_SetSRID(ST_MakePoint(?,?),4326) AS geography),5,?,?,'user:t')",
+            "INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) VALUES (?,?,?,?,CAST(ST_SetSRID(ST_MakePoint(?,?),4326) AS geography),5,?,?,'GOOD','user:t')",
             tenant.value, UUID.randomUUID(), vehicle, shift, lon, lat, Timestamp.from(Instant.now().minusSeconds(ageSeconds)), Timestamp.from(Instant.now().minusSeconds(maxOf(0, ageSeconds - 1))))
         fun labels(token: String, query: String = ""): List<String> = env.get("/v1/operator/vehicles$query", token).also { check(it.status == 200) { it.text } }.json["items"].values().map { it["vehicle_label"].asString() }.sorted()
     }
@@ -150,6 +150,9 @@ class OperatorVehicleListTest {
         assertTrue(stale["position_measured_at"].asString() < stale["position_received_at"].asString() || stale["position_measured_at"].asString() == stale["position_received_at"].asString())
         // ohne jede Messung: keine Position, veraltet
         val none = items.getValue("AB-1"); assertTrue(none["position"].isNull); assertTrue(none["position_stale"].asBoolean())
+        // WP-M5-08: Zustand und Qualität getrennt von der Farbe als Felder; ohne Position UNKNOWN
+        assertEquals("FRESH", live["position_state"].asString()); assertEquals("STALE", stale["position_state"].asString()); assertEquals("UNKNOWN", none["position_state"].asString())
+        assertEquals("GOOD", live["position_quality"].asString()); assertTrue(none["position_quality"].isNull)
         // das Detail liefert denselben Stand
         val d = env.get("/v1/operator/vehicles/${w.va2}", w.tokenA); assertEquals(200, d.status); assertTrue(d.json["position_stale"].asBoolean()); assertEquals(51.0300, d.json["position"]["latitude"].asDouble(), 1e-6)
     }

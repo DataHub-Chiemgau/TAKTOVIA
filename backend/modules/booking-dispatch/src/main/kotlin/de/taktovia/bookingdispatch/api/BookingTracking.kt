@@ -67,7 +67,7 @@ data class BookingEta(
 data class BookingEtaForecast(val earliest: Instant, val latest: Instant, val basis: EtaBasis, val dataStand: Instant?, val fallbackReason: String?, val modelVersion: Int?, val configVersion: String?)
 
 /** Fahrzeugidentifikation für Fahrgäste (Arbeitsannahme zu Offener Punkt 35): Bezeichnung und Fahrzeugklasse, nie Halter, Fahrer oder Wartungsdaten. */
-data class VehicleIdentification(val label: String, val vehicleClass: String?)
+data class VehicleIdentification(val label: String, val vehicleClass: String?, val vehicleId: java.util.UUID? = null)
 
 /** Stornoregel der Buchung für die Oberfläche: Frist (spätester Zeitpunkt des Fahrgaststornos), ob die Aktion jetzt angeboten wird, und ob die Frist ein Planungsdefault ist. */
 data class CancellationOption(val allowed: Boolean, val deadlineAt: Instant, val deadlineMin: Int, val deadlineDefaulted: Boolean)

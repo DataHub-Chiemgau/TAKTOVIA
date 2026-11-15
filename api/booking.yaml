@@ -1471,9 +1471,40 @@ components:
           - type: string
             pattern: ^[A-Z][A-Z0-9_]{1,39}$
           - type: 'null'
+        location:
+          $ref: '#/components/schemas/RideVehicleLocation'
       required:
       - label
       - vehicle_class
+    RideVehicleLocation:
+      type: object
+      additionalProperties: false
+      description: 'Standort des zugewiesenen Fahrzeugs für UI-04 (WP-M5-08, NFR-005), nur bei einer aktiven, bestätigten Buchung (bevorstehend oder laufend) und nur für den eigenen Fahrgast bzw. das Betriebspersonal im Dienstscope. Der Server berechnet das Alter gegen seine Uhr. Nur bei `FRESH` (jünger als die Schwelle, Planungsdefault 30 s) steht `position`; bei `STALE` stehen nur Zeit und Alter der letzten Position (nie als Live-Position und nie als Grundlage einer laufenden ETA darstellen, keine Fortschreibung); `UNKNOWN` = keine verwendbare Position.'
+      properties:
+        state:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - UNKNOWN
+        measured_at:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Timestamp
+          - type: 'null'
+        age_seconds:
+          oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        position:
+          oneOf:
+          - $ref: common.yaml#/components/schemas/Point
+          - type: 'null'
+      required:
+      - state
+      - measured_at
+      - age_seconds
+      - position
     RideCancellationOption:
       type: object
       additionalProperties: false

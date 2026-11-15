@@ -36,7 +36,7 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
 
     override fun classifyDay(tenant: TenantId, serviceDay: LocalDate): List<KmRunView> {
         val start = Timestamp.from(serviceDay.atStartOfDay(ZoneOffset.UTC).toInstant()); val end = Timestamp.from(serviceDay.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
-        val vehicles = tx.run(tenant, readOnly = true) { j -> j.query("SELECT DISTINCT vehicle_id FROM taktovia.position_sample WHERE measured_at >= ? AND measured_at < ? ORDER BY vehicle_id", { rs, _ -> rs.getObject(1, UUID::class.java) }, start, end) }
+        val vehicles = tx.run(tenant, readOnly = true) { j -> j.query("SELECT DISTINCT vehicle_id FROM taktovia.position_sample WHERE quality <> 'UNUSABLE' AND measured_at >= ? AND measured_at < ? ORDER BY vehicle_id", { rs, _ -> rs.getObject(1, UUID::class.java) }, start, end) }
         return vehicles.map { classify(tenant, it, serviceDay) }
     }
 
@@ -47,7 +47,7 @@ internal class JdbcKmClassification(private val ctxTx: ContextTransactions, priv
         val ts0 = Timestamp.from(dayStart); val ts1 = Timestamp.from(dayEnd)
 
         val points = j.query(
-            "WITH s AS (SELECT DISTINCT ON (measured_at) id, measured_at, received_at, position FROM taktovia.position_sample WHERE vehicle_id = ? AND measured_at >= ? AND measured_at < ? ORDER BY measured_at, id) " +
+            "WITH s AS (SELECT DISTINCT ON (measured_at) id, measured_at, received_at, position FROM taktovia.position_sample WHERE vehicle_id = ? AND quality <> 'UNUSABLE' AND measured_at >= ? AND measured_at < ? ORDER BY measured_at, id) " +
                 "SELECT id, measured_at, received_at, CAST(round(ST_Distance(position, lag(position) OVER w)) AS bigint) FROM s WINDOW w AS (ORDER BY measured_at) ORDER BY measured_at",
             { rs, _ -> KmPoint(rs.getObject(1, UUID::class.java), rs.getTimestamp(2).toInstant(), rs.getTimestamp(3).toInstant(), rs.getObject(4)?.let { rs.getLong(4) }) }, vehicleId, ts0, ts1)
 

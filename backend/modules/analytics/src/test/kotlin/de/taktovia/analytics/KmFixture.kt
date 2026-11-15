@@ -72,7 +72,7 @@ class KmFixture : AutoCloseable {
     /** Position des Fahrzeugs; Breitengrad 48 + [step] / 1000 Grad (ein Schritt etwa 111 m). [receivedAt] steuert den Eingang (Datenstand). */
     fun position(w: World, shift: UUID, at: String, step: Int, receivedAt: String = at): UUID {
         val id = UUID.randomUUID()
-        exec("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,created_by) VALUES (?,?,?,?,ST_SetSRID(ST_MakePoint(9.0, 48.0 + ? / 1000.0),4326)::geography,5,CAST(? AS timestamptz),CAST(? AS timestamptz),'service:test')",
+        exec("INSERT INTO taktovia.position_sample(tenant_id,id,vehicle_id,shift_id,position,accuracy_m,measured_at,received_at,quality,created_by) VALUES (?,?,?,?,ST_SetSRID(ST_MakePoint(9.0, 48.0 + ? / 1000.0),4326)::geography,5,CAST(? AS timestamptz),CAST(? AS timestamptz),'GOOD','service:test')",
             w.tenant.value, id, w.vehicle, shift, step, at, receivedAt)
         return id
     }

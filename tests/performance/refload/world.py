@@ -27,7 +27,10 @@ class ApiError(RuntimeError):
     pass
 
 
-def call(base: str, method: str, path: str, token: str, body=None, if_match: str | None = None, key: bool = True, timeout: float = 30.0) -> tuple[int, dict | None, dict]:
+HEADER_FLAKES = [0]      # Beobachtung (WP-M5-08): unter paralleler Last antwortet die Anwendung vereinzelt 422 INVALID_VALUE auf einen gültigen Idempotency-Key; der Testaufbau wiederholt dann mit neuem Schlüssel (gezählt)
+
+
+def call(base: str, method: str, path: str, token: str, body=None, if_match: str | None = None, key: bool = True, timeout: float = 30.0, _try: int = 0) -> tuple[int, dict | None, dict]:
     data = None if body is None else (body if isinstance(body, bytes) else json.dumps(body).encode())
     h = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     if data is not None:
@@ -43,6 +46,9 @@ def call(base: str, method: str, path: str, token: str, body=None, if_match: str
             return r.status, (json.loads(raw) if raw else None), dict(r.headers)
     except urllib.error.HTTPError as e:
         raw = e.read()
+        if e.code == 422 and _try < 3 and b'"/$header/Idempotency-Key"' in raw and b"INVALID_VALUE" in raw:
+            HEADER_FLAKES[0] += 1
+            return call(base, method, path, token, body, if_match, key, timeout, _try + 1)
         try:
             return e.code, json.loads(raw) if raw else None, dict(e.headers)
         except ValueError:
@@ -52,7 +58,7 @@ def call(base: str, method: str, path: str, token: str, body=None, if_match: str
 def need(resp, expected, what):
     status, body, _ = resp
     if status != expected:
-        raise ApiError(f"{what}: HTTP {status} {json.dumps(body)[:300]}")
+        raise ApiError(f"{what}: HTTP {status} {json.dumps(body)[:900]}")
     return body
 
 

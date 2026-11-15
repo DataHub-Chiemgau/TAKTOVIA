@@ -116,6 +116,7 @@ class OperatorVehicleController(private val fleet: FleetsafetyApi, private val s
         "active_blocks" to f.activeBlocks.map { block(it) },
         "position" to p?.let { linkedMapOf("latitude" to it.latitude, "longitude" to it.longitude) }, "position_measured_at" to p?.measuredAt?.toString(),
         "position_received_at" to p?.receivedAt?.toString(), "position_age_seconds" to p?.ageSeconds, "position_stale" to (p?.stale ?: true),
+        "position_state" to (p?.state?.name ?: "UNKNOWN"), "position_quality" to p?.quality?.name,
         "open_defect_count" to f.openDefectCount, "current_run_id" to run?.runId?.toString(), "revision" to f.revision,
         "service_ids" to f.serviceIds.map { it.toString() }, "unavailable_dimensions" to f.unavailableDimensions.sorted(), "open_alert_count" to f.openAlertCount,
         "inspection_status" to f.inspectionStatus.name, "inspection_status_revision" to f.inspectionStatusRevision,

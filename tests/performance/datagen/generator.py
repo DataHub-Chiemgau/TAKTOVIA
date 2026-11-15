@@ -234,8 +234,8 @@ def fill_tenant(conn, tenant: str, seed: int, scale: Scale, index: int = 1) -> R
             for v in range(scale.vehicles):
                 sid = g('shift', f'{d_i}|{v}')
                 for s in range(0, 10 * 3600, scale.position_interval_s):
-                    yield (tenant, g('pos', f'{d_i}|{v}|{s}'), vehicles[v], sid, f'SRID=4326;POINT({13.62 + ((v * 37 + s // 60) % 260) / 1000:.5f} {50.99 + ((v * 17 + s // 90) % 120) / 1000:.5f})', 10, _ts(start + dt.timedelta(seconds=s)), ACTOR)
-    _copy(conn, 'position_sample', ['tenant_id', 'id', 'vehicle_id', 'shift_id', 'position', 'accuracy_m', 'measured_at', 'created_by'], position_rows(), digest, report)
+                    yield (tenant, g('pos', f'{d_i}|{v}|{s}'), vehicles[v], sid, f'SRID=4326;POINT({13.62 + ((v * 37 + s // 60) % 260) / 1000:.5f} {50.99 + ((v * 17 + s // 90) % 120) / 1000:.5f})', 10, _ts(start + dt.timedelta(seconds=s)), 'GOOD', ACTOR)
+    _copy(conn, 'position_sample', ['tenant_id', 'id', 'vehicle_id', 'shift_id', 'position', 'accuracy_m', 'measured_at', 'quality', 'created_by'], position_rows(), digest, report)
     conn.commit()
     report.seconds = round(time.monotonic() - t0, 2)
     report.data_state_sha256 = digest.hexdigest()

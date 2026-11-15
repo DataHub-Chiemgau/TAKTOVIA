@@ -231,6 +231,13 @@ export const texte = {
   'reise.prognoseGrundSonst': 'Prognose derzeit nicht verfügbar',
   'reise.fahrzeug': 'Fahrzeug',
   'reise.fahrzeugKeins': 'Noch kein Fahrzeug zugewiesen',
+  'reise.standort': 'Standort des Fahrzeugs',
+  'reise.standortFrisch': 'Aktuelle Position, gemessen um',
+  'reise.standortNichtLive': 'Keine Echtzeit: letzte bekannte Position von',
+  'reise.standortVeraltet': 'Standort veraltet: letzte bekannte Position von',
+  'reise.standortVeraltetHinweis':
+    'Das ist keine Live-Position. Sie wird nicht fortgeschrieben und nicht für eine laufende Ankunftsprognose verwendet; es gilt die geplante Abholzeit.',
+  'reise.standortUnbekannt': 'Noch keine Position bekannt',
   'reise.letzterStand': 'Letzter Stand',
   'reise.offlineStand': 'Keine Echtzeitdaten: Angezeigt wird der zuletzt geladene Stand von',
   'reise.veraltet': 'Daten veraltet: Die Verbindung ist unterbrochen. Angezeigt wird der Stand von',
