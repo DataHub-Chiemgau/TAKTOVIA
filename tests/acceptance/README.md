@@ -68,3 +68,23 @@ python tests/acceptance/m3_gate/run.py [--write-e2e]   # 19 Szenarien + M2-Regre
 PH-AT-020, AT-08 bis AT-11, AT-26 bis AT-36, AT-50, AT-51, AT-60 unter der Runtime-Rolle mit beiden Mandanten, dazu die Regression PH-AT-004 und AT-01 bis AT-05 nach Ablösung der M2-Fixtures. Die Parallelitätsharness von PH-AT-020 ist
 `backend/app/src/test/kotlin/de/taktovia/app/fleet/PhAt020SafetyHarnessTest.kt` (120 Durchläufe, beide Reihenfolgen und Wettlauf, mit Negativkontrolle). Umfang, offene Teilschritte (OP-12, OP-13, OP-21, Flutter) und Zielmeilenstein
 je Test: [docs/m3-gate-umfang.md](docs/m3-gate-umfang.md). Die Abnahmeentscheidung bleibt `PENDING`/`Ausstehend`.
+
+## E2E-Referenzfall, negative Fälle, Fault-Injection (WP-M5-23, WP-M5-24, WP-M5-16)
+
+**Ersatzumgebung, kein Staging.** Die Szenarien laufen gegen die ECHTE Anwendung (Spring-Boot-Jar als Prozess, Runtime-Rolle, PostgreSQL mit RLS), einen lokalen JWT-Test-Issuer (statt Keycloak), den PSP-Simulator
+(statt PSP-Sandbox, D-03) und ohne Messaging-Broker und Redis (der Outbox-Relay stellt im Prozess zu, `taktovia.events.local-loopback`). Ein Lauf gegen Staging ist in dieser Umgebung nicht ausführbar.
+Voraussetzung: `cd backend && ./gradlew :app:bootJar` und die Datenbankumgebung aus `db/db.py`; ohne Jar werden die Tests übersprungen (`TAKTOVIA_REQUIRE_APP_JAR=true`: schlagen fehl).
+
+| Datei | Inhalt |
+|---|---|
+| `e2e/referenzwelt.py`, `e2e/referenzfall.py` | Welt (Anwendung, Issuer, PSP-Simulator, vier Mandanten mit eingespielten Stammdaten) und Bausteine des Referenzfalls (Angebot, Hold, Buchung, Zahlung, Plan, Dienststart, Fahrerereignisse, Kennzahlen) |
+| `e2e/test_referenzfall_staging.py` | WP-M5-23 (LH-6.20-QAT-003): Referenzfall mit und ohne Zahlung, Kennzahlen mit Datenstand, zweiter Lauf, zwei Mandanten, Wächter, Evidenz und Log-Stichprobe |
+| `e2e/waechter.py` | Wächter „keine manuelle DB-Korrektur“: Anweisungs-Trigger je Tabelle, wertet die Schreibzugriffe nach Rolle aus (Runtime erlaubt, Testaufbau `e2e-testaufbau` ausgewiesen, alles andere Befund) |
+| `e2e/aufraeumen.py` | Aufräumprüfung (verwaiste Holds, überfällige Leases, unbestimmte Zahlungen ohne Abgleich, unzugestellte Outbox, Stopps stornierter Buchungen); Klärfälle werden getrennt ausgewiesen |
+| `test_negative_e2e.py` | WP-M5-24 (LH-6.20-QAT-004): Doppelbuchung (100 parallel), No-Show, Storno nach Disposition, Hold-Ablauf, PSP-Timeout, Solver-Timeout, Fahrzeugausfall, Idempotenzkonflikt, zwei Mandanten; Tabelle Negativfall - Endstatus - Aufräumprozess - Frist im Modulkopf |
+| `test_fault_injection_m5.py` | WP-M5-16: Datenbank (Abriss, Ausfall, Failover unter 40 parallelen Bestätigungen), Worker-Absturz zwischen PSP-Aufruf und Commit, PSP, Messaging, Redis-Zustand, Kartenquelle; Erwartungstabelle im Modulkopf |
+| `test_betriebshandbuch.py` | WP-M5-26: Vollständigkeitsabgleich Alarmkatalog <-> Runbooks (`tools/check_betriebshandbuch.py`) |
+
+Der Testaufbau (Planbindung des Angebots, Fahrzeugfreigabe, Schicht, Planstopps, Rückdatieren eines Holds, Fahrgastprofil) schreibt per Administratorzugang, weil die Einfügeheuristik, die Freigabeketten und die Registrierung in den
+Anwendungspaketen nicht an diese Pfade verdrahtet sind; der Wächter weist diese Schreibzugriffe getrennt aus. Backend-seitig gehören dazu die zuschaltbaren Zeitgeber ohne Betriebswerkzeug: `taktovia.workers.tenant-file`
+(Mandantenliste des Betriebs), `taktovia.events.local-loopback` und `taktovia.events.loopback-tenant-file` (Ereigniszustellung im Prozess).

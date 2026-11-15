@@ -245,11 +245,15 @@ internal class JdbcCapacityHolds(
         kinds.forEachIndexed { i, kind ->
             j.update("INSERT INTO taktovia.passenger_trip(tenant_id, id, booking_id, seq, place_kind, assistance_codes) VALUES (taktovia.current_tenant(), ?, ?, ?, ?, CAST(? AS text[]))", UUID.randomUUID(), bookingId, i + 1, kind, codes)
         }
-        outbox.append(j, OutboxEvent(bookingId, 1, "booking.confirmed", linkedMapOf(
+        // Angebot, aus dem die Buchung entstand (WP-M5-23): Voraussetzung der Zuordnung „Angebot angezeigt, nicht gebucht“ im Nachfragetrichter (Buchungskonversion, WP-M4-51); Buchungen ohne Angebot (Leitstelle) lassen das Feld weg
+        val offerId = j.query("SELECT id FROM taktovia.ride_offer WHERE hold_id = ?", { rs, _ -> rs.getObject(1, UUID::class.java) }, holdId).firstOrNull()
+        val confirmedPayload = linkedMapOf<String, Any?>(
             "booking_id" to bookingId.toString(), "hold_id" to holdId.toString(), "service_id" to serviceId.toString(), "run_id" to runId.toString(), "run_revision" to hold.runRevision,
             "pickup_earliest" to promise.pickupEarliest, "pickup_latest" to promise.pickupLatest, "arrival_latest" to promise.arrivalLatest,
             "gross_minor" to promise.grossMinor, "currency" to promise.currency, "capacity_vector" to vector.toMap(),
-        ), clock.instant(), correlationId = ctx.correlationId))
+        )
+        if (offerId != null) confirmedPayload["offer_id"] = offerId.toString()
+        outbox.append(j, OutboxEvent(bookingId, 1, "booking.confirmed", confirmedPayload, clock.instant(), correlationId = ctx.correlationId))
         BookingView(bookingId, holdId, "CONFIRMING", 1, snapshotText, kinds.mapIndexed { i, k -> i + 1 to k })
     }
 
