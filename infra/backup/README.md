@@ -27,4 +27,4 @@ Tests: `tests/performance/test_restore_drehbuch.py`. Vertrag: [LH-6.18-SEC-010](
 
 ## Grenzen (nicht ausgeführt, nicht Gegenstand von M1)
 
-S3 Object Lock, verwaltete Dienste, Standby über Hosts und Failover (Entwurf), die Messung von RPO/RTO unter Last und der Abgleichbericht der Ausfallübung (**WP-M5-15**). Kontinuierliches WAL/PITR gegen einen privaten Cluster ist seit WP-M5-14 ausgeführt. Backupintervall, Aufbewahrung und Testzyklus sind im Pflichtenheft nicht beziffert (OP-31); `backup-policy.json` enthält Planungswerte.
+S3 Object Lock, verwaltete Dienste, Standby über Hosts und Failover (Entwurf), die Messung von RPO/RTO unter Last und der Abgleichbericht der Ausfallübung sind seit **WP-M5-15** ausgeführt (`tests/performance/ausfalluebung-plan-m5.md`), gegen einen privaten Cluster, nicht gegen die Zielumgebung. Kontinuierliches WAL/PITR gegen einen privaten Cluster ist seit WP-M5-14 ausgeführt. Backupintervall, Aufbewahrung und Testzyklus sind im Pflichtenheft nicht beziffert (OP-31); `backup-policy.json` enthält Planungswerte.

@@ -19,8 +19,8 @@ REPO = HERE.parents[2]
 GATE_IDS = ["PH-AT-001", "PH-AT-011", "PH-AT-017", "PH-AT-018", "AT-18", "AT-24", "AT-49", "E2E-091", "E2E-096", "E2E-097", "E2E-098"]
 # Gate-Suite M2 (WP-M2-48): Katalogtests mit eigener Zeile in e2e.csv; Evidenz unter evidence/m2
 M2_GATE_IDS = ["AT-01", "AT-02", "AT-03", "AT-04", "AT-05", "AT-07", "AT-13", "AT-15", "AT-19"]
-# Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py)
-M5_GATE_IDS = ["AT-59"]
+# Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py; WP-M5-15: AT-23, tests/acceptance/m5_at23/run.py)
+M5_GATE_IDS = ["AT-59", "AT-23"]
 GREEN = {"Umgesetzt", "Abgenommen"}
 CATALOG_ID = re.compile(r"^(AT-\d{2}|E2E-\d{3}|PH-AT-\d{3})$")
 
