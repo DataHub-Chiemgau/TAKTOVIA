@@ -73,6 +73,9 @@ VALID = {
     'CapacityPatch': {'combinations': [{'code': 'STANDARD', 'wheelchair_places': 0}], 'active_combination': 'STANDARD'},
     'VehicleServiceAssignmentCreate': {'service_id': U1, 'service_area_id': None, 'valid_from': '2026-12-01T00:00:00Z', 'valid_to': None},
     'VehicleServiceAssignmentEnd': {'valid_to': '2027-01-01T00:00:00Z'},
+    # WP-M3-54: Störungsablauf, Umbuchung und Storno betroffener Buchungen
+    'OutageRebookRequest': {'proposal_id': U1, 'reason_code': 'VEHICLE_OUTAGE'},
+    'OutageCancelRequest': {'reason_code': 'VEHICLE_OUTAGE'},
 }
 # Je Schema: Mutation, die ein Pflichtfeld entfernt, bzw. einen unzulässigen Wert setzt
 BROKEN = {
@@ -109,6 +112,8 @@ BROKEN = {
     'CapacityPatch': ('active_combination', 'klein'),
     'VehicleServiceAssignmentCreate': ('valid_from', 'gestern'),
     'VehicleServiceAssignmentEnd': ('valid_to', 'morgen'),
+    'OutageRebookRequest': ('reason_code', 'kleinbuchstaben'),
+    'OutageCancelRequest': ('reason_code', 'kleinbuchstaben'),
 }
 
 
