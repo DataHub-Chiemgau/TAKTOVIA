@@ -431,7 +431,8 @@ def m4_isolation(ctx):
     start(ctx)
     backend(ctx, *VERTRAG, *T("RosterDepotAuthorizationTest", "planer_fremdes_depot_lesen_aendern_veroeffentlichen_abgewiesen", "manipulierte_tenant_id_im_payload_wirkungslos"),
             *T("ReceiptCaptureTest", "fremder_mandant_kein_zugriff_auf_beleg"), *T("TimeEventStempelnTest", "parallele_stempel_zweier_mandanten_bleiben_getrennt"), *T("MetricRegisterTest", "mandantentrennung_der_kennzahlen"))
-    dbtests(ctx, "test_m4_64_katalog", "test_m4_64_modulzugaenge", "test_isolation_alle_tabellen", "test_analytics_rls", "test_analytics_fakten_rls", min_tests=2)
+    dbtests(ctx, "test_m4_64_katalog", "test_m4_64_modulzugaenge", "test_isolation_alle_tabellen", min_tests=2)
+    dbtests(ctx, "test_analytics_rls", "test_analytics_fakten_rls", min_tests=1)
 
 
 @m4_scenario("TECH-M4-A11Y", "1.0.0", ["ENABLER:WP-M4-18", "ENABLER:WP-M4-20", "ENABLER:WP-M4-38", "ENABLER:WP-M4-44", "ENABLER:WP-M4-59"], "Barrierefreiheitsnachweis UI-12 bis UI-15 und Kennzahlenansicht (Tastatur, Zoom, Reflow; Kap. 06 §6.1)")
