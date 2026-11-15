@@ -29,10 +29,17 @@ internal class CachingRoutingPort(
         return v
     }
 
+    /**
+     * Zugriff auf den flüchtigen Cache (Redis-Rolle) mit Ausfallsicherheit (WP-M5-16): ein Ausfall des Caches ist ein Fehlschlag (Treffer fehlt, Schreiben entfällt), nie ein Fehler der Anfrage;
+     * Wahrheit sind PostgreSQL und der Worker. Ein ungültiger Schlüssel (fehlender Mandantenanteil) bleibt dagegen ein Programmierfehler und wird nicht verschluckt.
+     */
+    private fun volatileGet(key: String): String? = try { volatile.get(key) } catch (e: IllegalArgumentException) { throw e } catch (e: Exception) { null }
+    private fun volatilePut(key: String, value: String) { try { volatile.put(key, value) } catch (e: IllegalArgumentException) { throw e } catch (e: Exception) { /* Cache nicht erreichbar: ohne Wirkung */ } }
+
     private fun cached(ctx: RequestContext, o: String, d: String, p: String, v: String): MatrixCell? {
-        volatile.get(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d))?.let { raw -> parse(raw, v)?.let { return it } }
+        volatileGet(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d))?.let { raw -> parse(raw, v)?.let { return it } }
         val hit = ctxTx.run(ctx, readOnly = true) { j -> db.get(j, o, d, p, v) } ?: return null
-        volatile.put(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d), "$v|${hit.timeSeconds}|${hit.distanceMeters}")
+        volatilePut(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d), "$v|${hit.timeSeconds}|${hit.distanceMeters}")
         return hit
     }
 
@@ -44,7 +51,7 @@ internal class CachingRoutingPort(
 
     private fun store(ctx: RequestContext, o: String, d: String, p: String, v: String, cell: MatrixCell, provider: String) {
         ctxTx.run(ctx) { j -> db.put(j, ctx.tenant.value, o, d, p, v, cell, provider) }
-        volatile.put(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d), "$v|${cell.timeSeconds}|${cell.distanceMeters}")
+        volatilePut(RoutingCacheKey.redisKey(ctx.tenant.value, p, v, o, d), "$v|${cell.timeSeconds}|${cell.distanceMeters}")
     }
 
     override fun route(ctx: RequestContext, originStop: String, destinationStop: String, profile: String): RouteInfo = compute(ctx, originStop, destinationStop, profile, walk = false)

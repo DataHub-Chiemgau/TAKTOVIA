@@ -30,6 +30,12 @@ sealed interface ExecutionResult {
 }
 
 /**
+ * Aufräumen nach wirksamem Nicht-Erscheinen in der Transaktion des Fahrerereignisses (WP-M5-24): Hold freigeben (die Kapazität zählt wieder) und Buchung aus dem Plan nehmen (Planrevision ohne ihre Stopps).
+ * Kein Stornoereignis und keine Zahlungsreaktion (das Nicht-Erscheinen ist keine Fahrgaststornierung, BKG-015 ist P2); die Sperrreihenfolge (Umlauf, Hold, Buchung) hält [BookingExecution].
+ */
+fun interface NoShowCleanup { fun cleanup(j: JdbcOperations, correlationId: UUID, bookingId: UUID) }
+
+/**
  * Wirkung der Fahrerereignisse auf Buchung und Fahrt (WP-M3-29, LH-6.6-DRV-005), einziger Schreibweg für `journey_leg.execution_state` und die Ausführungsübergänge der Buchung.
  * Läuft **in der Transaktion des Aufrufers** (`staff-time`, Mandantenkontext gesetzt): Statuswirkung, Historie und Ereignis entstehen gemeinsam mit dem Fahrerereignis oder gar nicht.
  *
@@ -48,6 +54,7 @@ interface BookingExecution {
     fun serviceOf(j: JdbcOperations, bookingId: UUID): UUID?
 
     companion object {
-        fun create(outbox: Outbox, clock: Clock = Clock.systemUTC()): BookingExecution = JdbcBookingExecution(outbox, clock, JourneyShells.create())
+        /** Ohne [cleanup] bleibt der Hold nach einem Nicht-Erscheinen bestehen (nur für Tests der reinen Statuswirkung); die Anwendung übergibt [Bookings.noShowCleanup]. */
+        fun create(outbox: Outbox, clock: Clock = Clock.systemUTC(), cleanup: NoShowCleanup? = null): BookingExecution = JdbcBookingExecution(outbox, clock, JourneyShells.create(), cleanup)
     }
 }

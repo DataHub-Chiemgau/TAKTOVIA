@@ -4,6 +4,7 @@ import de.taktovia.app.openapi.OpenApiRegistry
 import de.taktovia.app.openapi.SemanticKeyword
 import de.taktovia.app.openapi.TimeKeyword
 import de.taktovia.app.web.CorrelationFilter
+import de.taktovia.app.web.DatabaseUnavailableFilter
 import de.taktovia.app.web.ProblemWriter
 import de.taktovia.app.web.OriginPolicyFilter
 import de.taktovia.app.web.PathHardeningFilter
@@ -119,6 +120,9 @@ class ApiConfiguration {
     @Bean fun originPolicyFilter(env: Environment, problems: ProblemWriter) = FilterRegistrationBean(
         OriginPolicyFilter(env.getProperty("taktovia.security.cors.allowed-origins")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(), problems),
     ).apply { order = Ordered.HIGHEST_PRECEDENCE + 3 }
+
+    /** Fail-closed bei Datenbankausfall in Filtern (WP-M5-16): `503` mit Problem-Body statt Containerfehler. */
+    @Bean fun databaseUnavailableFilter(problems: ProblemWriter) = FilterRegistrationBean(DatabaseUnavailableFilter(problems)).apply { order = Ordered.HIGHEST_PRECEDENCE + 3 }   // außen genug, um auch Ausnahmen der Sicherheits- und Kontextfilter zu fangen
 
     @Bean fun rateLimitFilter(limiter: RateLimiter, identity: ObjectProvider<RequestIdentityResolver>, problems: ProblemWriter) =
         FilterRegistrationBean(RateLimitFilter(limiter, { identity.getIfAvailable { RemoteAddressIdentity } }, problems)).apply { order = Ordered.HIGHEST_PRECEDENCE + 10 }

@@ -298,6 +298,18 @@ internal class JdbcBookings(
     override fun cancel(ctx: RequestContext, bookingId: UUID, cmd: CancelBooking): CancelResult = ctxTx.run(ctx) { j -> cancelIn(j, ctx, bookingId, cmd) }
 
     /**
+     * Aufräumen nach Nicht-Erscheinen (WP-M5-24), aufgerufen von [BookingExecution] in der Transaktion des Fahrerereignisses nach `CANCEL_PENDING -> CANCELED` (Umlauf und Hold sind dort bereits gesperrt):
+     * Hold freigeben (die Kapazität zählt wieder) und Plan ohne die Buchung (neue Planrevision). Bewusst **kein** Ereignis `booking.cancelled` und keine Zahlungsreaktion: das Nicht-Erscheinen ist
+     * keine Fahrgaststornierung (Kennzahl `Buchungsstornoquote Fahrgast`), die Gebührenregel BKG-015 ist P2 (der Einzug bleibt, `noShowPercent` 0); die Meldung geht als `driver.no_show_recorded` hinaus.
+     */
+    override fun noShowCleanup() = de.taktovia.bookingdispatch.api.NoShowCleanup { j, correlationId, bookingId ->
+        val holdId = j.queryForObject("SELECT hold_id FROM taktovia.booking WHERE id = ?", UUID::class.java, bookingId)!!
+        val runId = j.queryForObject("SELECT run_id FROM taktovia.capacity_hold WHERE id = ?", UUID::class.java, holdId)!!
+        j.update("UPDATE taktovia.capacity_hold SET state = 'RELEASED' WHERE id = ? AND state = 'CONSUMED'", holdId)
+        removeFromPlan(j, correlationId, runId, bookingId)
+    }
+
+    /**
      * Storno in der laufenden Transaktion (siehe [cancel]). Storniert **Betriebspersonal** (Disposition, Callcenter), entsteht in derselben Transaktion der Änderungseintrag `booking_change`
      * (Art `CANCEL`) mit Akteur, Zeitpunkt, Grundcode und optionalem Freitext sowie der Auditeintrag `dispatch.booking.cancelled` (WP-M3-39): Akteur und Grund fehlen nie, der Akteur ist getrennt vom
      * Fahrgast. Ein Stornogrund ist hier ohnehin Pflicht (Katalog, 422 sonst).

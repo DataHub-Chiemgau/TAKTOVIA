@@ -1,6 +1,6 @@
 # Alarme und erste Handlungsschritte (WP-M5-04)
 
-Jedes kritische Fehlerszenario aus [infra/alerting/katalog.yaml](../../infra/alerting/katalog.yaml) hat hier einen ersten Handlungsschritt (Runbook-Verweis). Das vollständige Betriebshandbuch (Monitoring, Eskalation, Notbetrieb) liefert WP-M5-26; dieser Abschnitt ist sein Vorläufer und wird dort übernommen.
+Jedes kritische Fehlerszenario aus [infra/alerting/katalog.yaml](../../infra/alerting/katalog.yaml) hat hier einen ersten Handlungsschritt (Runbook-Verweis). Das vollständige Betriebshandbuch (Monitoring, Eskalation, Notbetrieb) steht in [betriebshandbuch.md](betriebshandbuch.md) (WP-M5-26) mit einem Runbook je Alarm (Auslöser, Rolle, Diagnose, Sofortmaßnahme, Eskalation, Nacharbeit); dieser Abschnitt bleibt als Kurzfassung der ersten Handlungsschritte bestehen.
 
 **Status:** Vorschlag. Empfänger und Rufbereitschaft sind organisatorisch offen (D-05, OP-07, OP-32/OP-39); die Rollen unten sind Rollen, keine Personen. Die Regeln liegen unter `infra/observability/alert-rules.d/`, die Zustellung über genau einen Kanal (`infra/alerting/alertmanager.yml`).
 
