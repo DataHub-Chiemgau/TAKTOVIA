@@ -28,7 +28,11 @@
 - **Negativ:** Listenabfrage mit `limit` 100 (Obergrenze laut Kap. 05) und tiefer Paginierung bleibt im Ziel oder wird als Klasse ausgewiesen; Abfrage auf fremde UUID liefert 404 und ist nicht messbar schneller/langsamer als eine eigene nicht gefundene UUID (kein Zeitseitenkanal); Index-Migration ohne Sperre auf Buchungstabellen.
 - **Konkurrierend (Datentrennung):** Cache-Treffer von Mandant A wird nie an Mandant B ausgeliefert (identische Pfade, parallele Anfragen); Isolationssuite PH-AT-001 bleibt nach jeder Optimierung grün.
 - **Referenztests:** PH-AT-001.
-- Testfälle: PH-AT-001; geplant:tests/performance/test_standard_api_p95.py::test_p95_standard_api_unter_referenzlast; geplant:tests/performance/test_standard_api_p95.py::test_cache_liefert_nie_fremden_mandanten_aus; geplant:db/tests/test_perf_indizes.py::test_index_migration_ohne_buchungssperre_und_frisch_migrierbar; geplant:tests/performance/test_standard_api_p95.py::test_fremde_uuid_404_ohne_zeitseitenkanal
+- Testfälle: PH-AT-001; tests/performance/test_standard_api_p95.py::test_p95_standard_api_unter_referenzlast; tests/performance/test_standard_api_p95.py::test_cache_liefert_nie_fremden_mandanten_aus; db/tests/test_perf_indizes.py::test_index_migration_ohne_buchungssperre_und_frisch_migrierbar; tests/performance/test_standard_api_p95.py::test_fremde_uuid_404_ohne_zeitseitenkanal; tests/performance/test_standard_api_p95.py::test_listenabfrage_limit_100_und_tiefe_paginierung_im_ziel; db/tests/test_perf_indizes.py::test_plan_liest_buchungen_in_schluesselreihenfolge_mit_rls_bedingung_als_indexbedingung
+
+## Umsetzung (WP-M5-11)
+
+Messung: `tests/performance/test_standard_api_p95.py` mit `tests/performance/refload/standardapi.py` (echte Anwendung, Runtime-Rolle, RLS, zwei Mandanten, Datenbestand aus WP-M5-02 in mittlerer Skala; Opt-in `TAKTOVIA_PERF_RUN=1`); Protokoll und Befunde: `tests/performance/protokolle/standard-api-p95-m5-11*.md`. Messpunkt ist die Clientzeit auf derselben Maschine (obere Schranke der serverseitigen Zeit), Klassen ohne Datensatz im Messaufbau über den 404-Pfad. Migration `V50110__perf_indizes.sql` (statt `V<n>__perf_indizes.sql`, Nummernraum WP-M5-11) mit `CREATE INDEX CONCURRENTLY` (neuer Marker `-- taktovia:no-transaction`, `db/db.py`). Zielwerte vorläufig (D-05); Ergebnis: alle gemessenen Klassen unter 1 s, keine Abnahme des Betriebs-Gates.
 
 ## Reviews
 

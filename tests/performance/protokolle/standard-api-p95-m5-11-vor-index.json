@@ -1,0 +1,537 @@
+{
+ "protokoll_version": "1.0",
+ "wp": "WP-M5-11",
+ "anforderung": "LH-6.19-NFR-002",
+ "ziel": "p95 <= 1000 ms je Endpunktklasse",
+ "status_zielwert": "vorläufig, D-05 offen",
+ "messpunkt": "Clientzeit des Lastgenerators auf derselben Maschine (obere Schranke der serverseitigen Zeit; Gateway nicht vorhanden, OP-04); 202 zählt bis zur Annahme",
+ "gestartet": "2026-11-15T05:08:47.817535+00:00",
+ "build": "11eae2a50d7e38c0b80eb05b46307b4672a6d24a+lokal",
+ "migrationsstand": {
+  "letzte_versionsmigration": "V50200__standortminimierung_parameter.sql",
+  "angewendet": 260,
+  "postgresql": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+  "postgis": "3.4.2"
+ },
+ "seed": 20261201,
+ "skala": {
+  "name": "mittel",
+  "vehicles": 250,
+  "drivers": 250,
+  "depots": 4,
+  "services": 3,
+  "stops": 120,
+  "passengers": 2000,
+  "days": 3,
+  "bookings_per_day": 1500,
+  "position_interval_s": 1800
+ },
+ "hardware": {
+  "os": "Linux-6.18.44-fc-v470-x86_64-with-glibc2.39",
+  "python": "3.13.18",
+  "logical_cpus": 4,
+  "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "memory_total_mb": 16087,
+  "virtualized": "nicht geprüft"
+ },
+ "datenvolumen": {
+  "mandanten": {
+   "eec9a569-037b-3247-1c77-5adc38353d67": {
+    "legal_entity": 1,
+    "organization": 1,
+    "region": 1,
+    "depot": 4,
+    "config_revision": 3,
+    "service": 3,
+    "service_area": 3,
+    "stop_revision": 120,
+    "tariff_revision": 3,
+    "membership": 283,
+    "driver": 266,
+    "qualification_revision": 250,
+    "vehicle": 266,
+    "vehicle_pool_assignment": 250,
+    "roster_revision": 4,
+    "staff_shift": 766,
+    "vehicle_run": 750,
+    "resource_release": 750,
+    "passenger_private": 2000,
+    "travel_attempt": 4500,
+    "fare_quote": 4500,
+    "journey": 4500,
+    "capacity_hold": 4500,
+    "booking": 4500,
+    "booking_status_history": 4500,
+    "payment_intent": 4500,
+    "position_sample": 15000
+   },
+   "cc47bbe7-ed4d-ff46-1235-6e9fa5ca6a7a": {
+    "legal_entity": 1,
+    "organization": 1,
+    "region": 1,
+    "depot": 4,
+    "config_revision": 3,
+    "service": 3,
+    "service_area": 3,
+    "stop_revision": 120,
+    "tariff_revision": 3,
+    "membership": 282,
+    "driver": 266,
+    "qualification_revision": 250,
+    "vehicle": 266,
+    "vehicle_pool_assignment": 250,
+    "roster_revision": 4,
+    "staff_shift": 766,
+    "vehicle_run": 750,
+    "resource_release": 750,
+    "passenger_private": 2000,
+    "travel_attempt": 4500,
+    "fare_quote": 4500,
+    "journey": 4500,
+    "capacity_hold": 4500,
+    "booking": 4500,
+    "booking_status_history": 4500,
+    "payment_intent": 4500,
+    "position_sample": 15000
+   }
+  },
+  "befuellung_s": 0.0,
+  "datenbankgroesse_bytes": 115276823
+ },
+ "rolle_und_rls": {
+  "runtime_rolle": "taktovia_runtime",
+  "superuser": false,
+  "bypassrls": false,
+  "tabellen_mit_erzwungener_rls": 177,
+  "mandanten_in_der_messung": 2
+ },
+ "last": {
+  "sitzungen_je_mandant": 24,
+  "think_s": 0.3,
+  "dauer_s": 45.0,
+  "aufwaermen_s": 8.0,
+  "gemessene_anfragen": 7637,
+  "durchsatz_rps": 169.7,
+  "mix_gewichte": {
+   "me": 14,
+   "operator_list": 10,
+   "operator_deep": 4,
+   "services": 8,
+   "service_areas": 4,
+   "stops": 8,
+   "vehicles": 8,
+   "driver_events": 6,
+   "driver_run": 6,
+   "inspections": 2,
+   "defects": 4,
+   "rosters": 3,
+   "time_events": 4,
+   "expenses": 2,
+   "config": 5,
+   "operations": 2,
+   "metrics": 3
+  },
+  "buchungsmandanten_mit_testflotte": 2,
+  "referenzlast_hinweis": "Angebotene Last des Generators auf geteilter Maschine; die Referenzspitze (Kap. 08 §8.6, Annahme OP-01) wird nicht erreicht, wenn durchsatz_rps darunter liegt"
+ },
+ "klassen": [
+  {
+   "klasse": "GET /v1/analytics/metrics",
+   "n": 210,
+   "p50_ms": 24.985,
+   "p95_ms": 76.8,
+   "p99_ms": 113.652,
+   "max_ms": 142.78,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 4.74,
+   "status": {
+    "200": 210
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/bookings (limit 100)",
+   "n": 223,
+   "p50_ms": 23.895,
+   "p95_ms": 79.428,
+   "p99_ms": 112.939,
+   "max_ms": 133.591,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 5.02,
+   "status": {
+    "200": 223
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/bookings/{id}",
+   "n": 225,
+   "p50_ms": 15.569,
+   "p95_ms": 66.105,
+   "p99_ms": 120.51,
+   "max_ms": 218.746,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 5.02,
+   "status": {
+    "200": 225
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/config/effective",
+   "n": 324,
+   "p50_ms": 13.719,
+   "p95_ms": 71.775,
+   "p99_ms": 114.35,
+   "max_ms": 139.824,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 7.21,
+   "status": {
+    "200": 324
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/defects",
+   "n": 282,
+   "p50_ms": 15.184,
+   "p95_ms": 65.96,
+   "p99_ms": 153.919,
+   "max_ms": 186.944,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 6.35,
+   "status": {
+    "200": 282
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/driver/shifts/{id}/run",
+   "n": 417,
+   "p50_ms": 17.766,
+   "p95_ms": 75.213,
+   "p99_ms": 140.472,
+   "max_ms": 203.118,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 9.3,
+   "status": {
+    "200": 417
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/expenses/{id} (404-Pfad)",
+   "n": 116,
+   "p50_ms": 12.963,
+   "p95_ms": 85.403,
+   "p99_ms": 98.751,
+   "max_ms": 105.732,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 2.58,
+   "status": {
+    "404": 116
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/inspections/{id} (404-Pfad)",
+   "n": 150,
+   "p50_ms": 13.864,
+   "p95_ms": 69.942,
+   "p99_ms": 159.819,
+   "max_ms": 188.915,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 3.46,
+   "status": {
+    "404": 150
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/me",
+   "n": 966,
+   "p50_ms": 12.27,
+   "p95_ms": 65.169,
+   "p99_ms": 118.179,
+   "max_ms": 218.524,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 21.49,
+   "status": {
+    "200": 966
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/operations/{id} (404-Pfad)",
+   "n": 124,
+   "p50_ms": 14.133,
+   "p95_ms": 73.679,
+   "p99_ms": 106.887,
+   "max_ms": 125.746,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 2.79,
+   "status": {
+    "404": 124
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/operator/bookings (limit 100)",
+   "n": 645,
+   "p50_ms": 37.246,
+   "p95_ms": 115.868,
+   "p99_ms": 159.447,
+   "max_ms": 228.976,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 14.38,
+   "status": {
+    "200": 645
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/operator/bookings (limit 100, Folgeseiten)",
+   "n": 271,
+   "p50_ms": 34.49,
+   "p95_ms": 83.16,
+   "p99_ms": 122.065,
+   "max_ms": 152.424,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 6.06,
+   "status": {
+    "200": 271
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/operator/vehicles",
+   "n": 549,
+   "p50_ms": 102.385,
+   "p95_ms": 214.331,
+   "p99_ms": 312.752,
+   "max_ms": 384.406,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 12.24,
+   "status": {
+    "200": 549
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/rosters",
+   "n": 197,
+   "p50_ms": 12.72,
+   "p95_ms": 71.228,
+   "p99_ms": 96.61,
+   "max_ms": 105.066,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 4.44,
+   "status": {
+    "200": 197
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/service-areas",
+   "n": 288,
+   "p50_ms": 14.47,
+   "p95_ms": 68.006,
+   "p99_ms": 129.87,
+   "max_ms": 156.88,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 6.52,
+   "status": {
+    "200": 288
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/services",
+   "n": 558,
+   "p50_ms": 11.693,
+   "p95_ms": 49.202,
+   "p99_ms": 109.843,
+   "max_ms": 155.088,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 12.51,
+   "status": {
+    "200": 558
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/stops",
+   "n": 524,
+   "p50_ms": 13.759,
+   "p95_ms": 59.596,
+   "p99_ms": 122.273,
+   "max_ms": 216.862,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 11.72,
+   "status": {
+    "200": 524
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "GET /v1/time-events",
+   "n": 254,
+   "p50_ms": 11.794,
+   "p95_ms": 46.254,
+   "p99_ms": 101.461,
+   "max_ms": 255.168,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 5.71,
+   "status": {
+    "200": 254
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "POST /v1/bookings (Confirm)",
+   "n": 223,
+   "p50_ms": 28.67,
+   "p95_ms": 98.905,
+   "p99_ms": 143.188,
+   "max_ms": 266.054,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 5.01,
+   "status": {
+    "201": 223
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "POST /v1/bookings/{id}/cancel",
+   "n": 225,
+   "p50_ms": 34.014,
+   "p95_ms": 123.48,
+   "p99_ms": 235.484,
+   "max_ms": 282.915,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 5.03,
+   "status": {
+    "200": 225
+   },
+   "urteil": "erfüllt"
+  },
+  {
+   "klasse": "POST /v1/driver/events",
+   "n": 420,
+   "p50_ms": 21.99,
+   "p95_ms": 82.782,
+   "p99_ms": 186.565,
+   "max_ms": 255.069,
+   "error_count": 0,
+   "error_rate": 0.0,
+   "shed_429": 0,
+   "rps": 9.38,
+   "status": {
+    "403": 420
+   },
+   "urteil": "erfüllt"
+  }
+ ],
+ "klassen_nicht_gemessen": {
+  "POST /v1/inspections": "Prüflauf-Start braucht Checklistenvorlage und Freigabekette (kein Teil des Messaufbaus); gemessen wird der 404-Pfad von GET /v1/inspections/{id}"
+ },
+ "zeitseitenkanal": {
+  "n_je_art": 300,
+  "status_fremd": [
+   404
+  ],
+  "status_eigen": [
+   404
+  ],
+  "fremd": {
+   "n": 300,
+   "min_ms": 2.567,
+   "mean_ms": 4.328,
+   "p50_ms": 4.099,
+   "p90_ms": 5.556,
+   "p95_ms": 5.968,
+   "p99_ms": 7.742,
+   "max_ms": 9.072,
+   "error_count": 0,
+   "shed_429": 0,
+   "error_rate": 0.0,
+   "rps": 114.18
+  },
+  "eigen_unbekannt": {
+   "n": 300,
+   "min_ms": 2.454,
+   "mean_ms": 4.394,
+   "p50_ms": 4.138,
+   "p90_ms": 5.839,
+   "p95_ms": 6.615,
+   "p99_ms": 8.804,
+   "max_ms": 10.132,
+   "error_count": 0,
+   "shed_429": 0,
+   "error_rate": 0.0,
+   "rps": 114.18
+  },
+  "median_diff_ms": 0.037,
+  "median_fremd_ms": 4.102,
+  "median_eigen_ms": 4.139
+ },
+ "cache_probe": {
+  "pfade": [
+   "/v1/services",
+   "/v1/service-areas",
+   "/v1/stops?limit=100",
+   "/v1/operator/vehicles?limit=100",
+   "/v1/config/effective",
+   "/v1/me",
+   "/v1/operator/bookings?limit=100"
+  ],
+  "anfragen": 1680,
+  "status": {
+   "200": 1680
+  },
+  "fremde_ids_in_antworten": 0,
+  "beispiele": []
+ },
+ "urteil": "erfüllt",
+ "verfehlte_klassen": []
+}

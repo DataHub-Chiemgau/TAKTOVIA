@@ -198,7 +198,7 @@ class DriverRig:
     sid: str = ""
 
 
-def provision_drivers(app, idp, admin, w: TenantWorld, count: int, workers: int = 8) -> list[DriverRig]:
+def provision_drivers(app, idp, admin, w: TenantWorld, count: int, workers: int = 8, label_prefix: str = "L") -> list[DriverRig]:
     """Je Fahrer: Mitgliedschaft, Stamm, Fahrzeug (SQL), Schicht (API, Disposition), Gerät (API) und Dienstantritt (API). So wie im Backend-Test `DriverPositionApiTest.World`."""
     from concurrent.futures import ThreadPoolExecutor
     tid = w.tenant_id
@@ -212,7 +212,7 @@ def provision_drivers(app, idp, admin, w: TenantWorld, count: int, workers: int 
     with admin.cursor() as cur:
         cur.executemany("INSERT INTO taktovia.membership(tenant_id,id,issuer,subject,role_code) VALUES (%s,%s,%s,%s,'driver')", [(tid, r[1], idp.issuer, r[0]) for r in rows])
         cur.executemany("INSERT INTO taktovia.driver(tenant_id,id,membership_id,display_name,contact_channel,contact_value) VALUES (%s,%s,%s,'Fahrer','APP','x')", [(tid, r[2], r[1]) for r in rows])
-        cur.executemany("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config,vehicle_label) VALUES (%s,%s,'fixture','{}',%s)", [(tid, r[3], f"L-{k:04d}") for k, r in enumerate(rows)])
+        cur.executemany("INSERT INTO taktovia.vehicle(tenant_id,id,owner_org_ref,capacity_config,vehicle_label) VALUES (%s,%s,'fixture','{}',%s)", [(tid, r[3], f"{label_prefix}-{k:04d}") for k, r in enumerate(rows)])
     now = datetime.now(timezone.utc)
 
     def setup(r):

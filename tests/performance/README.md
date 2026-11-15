@@ -59,6 +59,10 @@ Aufruf (mit Opt-in, weil Minuten Laufzeit): `cd backend && ./gradlew :app:bootJa
 gelten für diese Umgebung und nicht als Abnahme (D-05 offen). Die Produktionsverdrahtung von `/v1/ride-offers` bindet Angebote noch nicht an Kandidatensuche und Solver (`CandidateGate.PASS_THROUGH`); Hold und Confirm laufen mit einer
 im Testaufbau gesetzten Planbindung (SQL). Beides steht in jedem Bericht unter „Grenzen“.
 
+## Standard-API je Endpunktklasse (WP-M5-11)
+
+`test_standard_api_p95.py`, `refload/standardapi.py`: Messung der nicht-optimierenden Standard-API (`/v1/me`, Buchungen Lesen/Confirm/Storno, Dienste, Gebiete, Haltepunkte, Fahrzeuge, Fahrerereignisse und Umlauf, Schäden, Dienstpläne, Zeitereignisse, Konfiguration, Kennzahlen, 404-Pfade für Beleg, Operation und Prüfung) gegen die echte Anwendung (Runtime-Rolle, RLS) mit zwei Mandanten und dem Datenbestand aus WP-M5-02 (Skala `TAKTOVIA_PERF_STD_SCALE=mittel|small|reference`, Standard mittel: 250 Fahrzeuge, 4.500 Buchungen je Mandant). Dazu der Zeitseitenkanal (fremde gegen eigene unbekannte UUID) und die Cache-Probe (identische Pfade beider Mandanten parallel). Protokoll mit p50/p95/p99 je Klasse, Hardware, Datenvolumen, Build, Migrationsstand und Seed unter `out/standardapi/` (geprüfte Fassung und Befunde: `protokolle/standard-api-p95-m5-11*.md`). Aufruf: `TAKTOVIA_PERF_RUN=1 python -m unittest test_standard_api_p95` (Datenbankumgebung wie `db/db.py`, bootJar gebaut; eine eigene Datenbank empfohlen). Messpunkt ist die Clientzeit auf derselben Maschine, Zielwert vorläufig (D-05, OP-04).
+
 ## Verfügbarkeitsmessung (WP-M5-05)
 
 `availability/`: Tests der synthetischen Proben, des Monatsberichts und des Probemandanten (Werkzeug: `infra/availability`); Nachweis gegen die Anwendung in `protokolle/m5-05/`.
