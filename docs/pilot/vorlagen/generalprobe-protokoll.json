@@ -1,0 +1,17 @@
+{
+  "umgebung": "staging",
+  "datum": "TT.MM.JJJJ eintragen",
+  "abnahme_build": "Wert aus docs/dokumentation/paket.json",
+  "datenstand": "Migrationsstand und Seed der Staging-Umgebung eintragen",
+  "betriebstag_dauer_h": 0,
+  "pilotstammdaten_protokoll_sha256": "SHA-256 der Protokolldatei der Einspielung eintragen",
+  "betreiberpersonal": [
+    {"prozess": "Leitstelle", "person_pseudonym": ""},
+    {"prozess": "Werkstatt und Fahrzeugfreigabe", "person_pseudonym": ""},
+    {"prozess": "Zahlungsklärung", "person_pseudonym": ""},
+    {"prozess": "Datenschutz", "person_pseudonym": ""},
+    {"prozess": "Betrieb und Rufbereitschaft", "person_pseudonym": ""}
+  ],
+  "befunde": [],
+  "ergebnis": ""
+}

@@ -1,0 +1,16 @@
+{
+  "paket": "TAKTOVIA Dokumentationspaket P1",
+  "arbeitspaket": "WP-M5-27",
+  "anforderung": "LH-6.20-QAT-006",
+  "abnahme_build": "ENTWURF-W18-9d035b7",
+  "bezugs_commit": "9d035b762f6482000b381604f2240e0fa13d376a",
+  "hinweis": "Dokumentationsstandard: Sprache Deutsch, versioniert im Repository, Bezug auf den Build (abnahme_build und bezugs_commit), zugängliche Struktur, keine echten Personendaten. Ein signierter Abnahme-Build existiert noch nicht (WP-M5-28/-31); der Bezug ist der Repository-Stand des Bezugs-Commits.",
+  "dokumente": [
+    {"id": "betriebshandbuch", "pfad": "docs/betrieb/betriebshandbuch.md", "titel": "Betriebshandbuch", "pruefung": "betriebshandbuch"},
+    {"id": "administratorhandbuch", "pfad": "docs/dokumentation/administratorhandbuch.md", "titel": "Administratorhandbuch"},
+    {"id": "fahrerschulung", "pfad": "docs/dokumentation/fahrerschulung.md", "titel": "Fahrerschulung"},
+    {"id": "datenschutzdokumentation", "pfad": "docs/dokumentation/datenschutzdokumentation.md", "titel": "Datenschutzdokumentation"},
+    {"id": "standardbetrieb", "pfad": "docs/dokumentation/standardbetrieb.md", "titel": "Standardbetrieb und Demonstration"},
+    {"id": "uebergabeprotokoll", "pfad": "docs/dokumentation/uebergabeprotokoll.md", "titel": "Übergabeprotokoll"}
+  ]
+}

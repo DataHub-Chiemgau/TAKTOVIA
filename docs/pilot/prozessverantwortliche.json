@@ -1,0 +1,11 @@
+{
+  "schema": "taktovia-prozessverantwortliche/1",
+  "status": "VORLAGE: Personen und Vertretungen sind vom Betreiber zu benennen (D-05, D-11). Kein Eintrag ist besetzt.",
+  "verantwortungen": [
+    {"id": "PV-01", "prozess": "Leitstelle", "plattformrolle": "dispatcher", "person": null, "vertretung": null, "in_plattform_angelegt": false},
+    {"id": "PV-02", "prozess": "Werkstatt und Fahrzeugfreigabe", "plattformrolle": "workshop", "person": null, "vertretung": null, "in_plattform_angelegt": false},
+    {"id": "PV-03", "prozess": "Zahlungsklärung", "plattformrolle": "finance", "person": null, "vertretung": null, "in_plattform_angelegt": false},
+    {"id": "PV-04", "prozess": "Datenschutz", "plattformrolle": "tenant_admin", "person": null, "vertretung": null, "in_plattform_angelegt": false},
+    {"id": "PV-05", "prozess": "Betrieb und Rufbereitschaft", "plattformrolle": null, "betriebsrolle": "betrieb-bereitschaft", "person": null, "vertretung": null, "in_plattform_angelegt": false}
+  ]
+}

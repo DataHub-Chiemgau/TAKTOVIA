@@ -1,0 +1,14 @@
+{
+  "schema": "taktovia-rueckfallbetrieb/1",
+  "status": "VORLAGE: Den Rückfallprozess liefert der Betreiber (D-11, Notbetrieb); dieser Ablauf ist die Arbeitsannahme aus dem Notbetrieb des Betriebshandbuchs (Abschnitt 11) und aus dem Entscheidungsweg.",
+  "schritte": [
+    "Entscheidung zur Unterbrechung im Journal erfassen",
+    "Notbetrieb erklären und Leitstelle informieren",
+    "Fahrgäste mit bestätigten Buchungen informieren",
+    "Fahrten ohne Plattform telefonisch disponieren",
+    "Notbetriebsblatt führen",
+    "Fahrer anweisen: Stoppliste weiterfahren, keine Freigabe ohne Weisung",
+    "Auftraggeber informieren",
+    "Rückkehr: Notizen nachbuchen und Journal abschließen"
+  ]
+}

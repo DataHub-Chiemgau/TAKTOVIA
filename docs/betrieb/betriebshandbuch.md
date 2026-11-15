@@ -1,3 +1,10 @@
+---
+dokument_version: 0.1
+abnahme_build: ENTWURF-W18-9d035b7
+sprache: de
+stand: 2026-11-15
+arbeitspaket: WP-M5-26
+---
 # Betriebshandbuch TAKTOVIA: Monitoring, Eskalation, Notbetrieb
 
 - **Arbeitspaket:** WP-M5-26 (Enabler, Betriebs-Gate aus Kap. 08 §8.4)
