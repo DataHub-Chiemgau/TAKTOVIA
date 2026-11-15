@@ -1,0 +1,2 @@
+table;runtime_privileges;note
+arrival_tolerance_binding;SELECT,INSERT;WP-M4-54: je Buchung und Zusageversion die zum Vergleichsstichtag wirksame Ankunftstoleranz, nur anhaengen (Trigger)

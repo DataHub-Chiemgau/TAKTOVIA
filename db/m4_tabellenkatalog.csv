@@ -62,3 +62,4 @@ pickup_tolerance_binding;analytics;APPEND_ONLY;;WP-M4-53;je Buchung und Zusageve
 not_performed_cause;analytics;APPEND_ONLY;;WP-M4-55;Ursachenkatalog nicht durchgeführter Fahrten je Mandant, nach dem Anlegen unveränderlich
 not_performed_trip;analytics;VERAENDERLICH;;WP-M4-55;abgeleiteter Fakt Fahrt nicht durchgeführt mit wirksamer Ursache, wiederaufbaubar aus fact_booking
 not_performed_correction;analytics;APPEND_ONLY;;WP-M4-55;Korrekturvermerke zur Ursache (Akteur, Grund, alter und neuer Wert), nur anhängen
+arrival_tolerance_binding;analytics;APPEND_ONLY;;WP-M4-54;je Buchung und Zusageversion die zum Vergleichsstichtag wirksame Ankunftstoleranz, nur anhängen

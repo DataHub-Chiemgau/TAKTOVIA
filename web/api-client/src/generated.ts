@@ -1342,6 +1342,7 @@ export interface MetricValue {
   snapshot_id: UUID | null;
   exclusions: MetricExclusion[];
   approximation: 'ACQUISITION_BASIS_P1' | null;
+  without_promise?: number | null;
 }
 
 export interface RejectionRow {
