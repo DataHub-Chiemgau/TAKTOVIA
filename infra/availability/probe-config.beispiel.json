@@ -1,0 +1,12 @@
+{
+  "_hinweis": "Beispiel ohne Zugangsdaten: Werte der Form env:NAME werden zur Laufzeit aus der Umgebung gelesen (Secret-Speicher der Betriebsdomäne). Nicht ausgeführt gegen eine Zielumgebung (D-05).",
+  "base_url": "https://api.staging.example.invalid",
+  "token_url": "https://id.staging.example.invalid/realms/taktovia/protocol/openid-connect/token",
+  "zugang_kernbuchung": {"grant_type": "password", "client_id": "taktovia-probe", "username": "env:TAKTOVIA_PROBE_FAHRGAST_USER", "password": "env:TAKTOVIA_PROBE_FAHRGAST_PASSWORT"},
+  "zugang_operator": {"grant_type": "password", "client_id": "taktovia-probe", "username": "env:TAKTOVIA_PROBE_OPERATOR_USER", "password": "env:TAKTOVIA_PROBE_OPERATOR_PASSWORT"},
+  "probemandant_id": "00000000-0000-0000-0000-000000000000",
+  "dienst_id": "00000000-0000-0000-0000-000000000000",
+  "probefahrzeug_id": "00000000-0000-0000-0000-000000000000",
+  "referenz_url": "https://www.example.com/",
+  "timeout_s": 10
+}

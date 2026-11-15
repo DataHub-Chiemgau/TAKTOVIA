@@ -21,7 +21,7 @@ AT-19;11.2;Barrierefreier Buchungsweg;Screenreader, Tastatur, Schriftvergrößer
 AT-20;11.2;E-Reichweitenkonflikt;Niedriger SoC vor langem Umlauf;Fahrzeug nicht disponierbar, Ladealternative;Nicht ausgeführt;;;
 AT-21;11.2;Prognoseausfall;Prognosesystem abgeschaltet;Buchung und Disposition funktionieren ohne KI;Nicht ausgeführt;;;
 AT-22;11.2;Simulationsisolation;Planer startet große Szenariosimulation;Keine Änderung an Echt-Buchungen, SLOs bleiben gültig;Nicht ausgeführt;;;
-AT-23;11.2;Restore;Ausfall produktnaher Datenbank;Wiederherstellung mit vereinbartem RTO/RPO;Nicht ausgeführt;;;
+AT-23;11.2;Restore;Ausfall produktnaher Datenbank;Wiederherstellung mit vereinbartem RTO/RPO;Bestanden (Übung lokal, vorläufige Zielwerte);2eb3223a9546dcbbcf217358d2ccfaa82ca817b5+lokal;"run-c26685ffb2695521; tests/acceptance/evidence/m5/AT-23-run-c26685ffb2695521.json";Ausstehend (Auftraggeber, D-12)
 AT-24;11.2;API-/Webhook-Wiederholung;Doppelte und verspätete Events;Konsistenter Endstatus trotz Wiederholung;Bestanden (M1-Umfang);88d4412a572c8cb38aa9e3b2375f65351872ed7d+lokal;"run-d2c0de793ba27d98; tests/acceptance/evidence/m1/AT-24-run-d2c0de793ba27d98.json";Ausstehend (Auftraggeber, D-12)
 AT-25;11.2;PBefG-Datenexport;Testdaten für gesetzlich relevante Kategorien;Vollständigkeit nach Freigabecheckliste;Nicht ausgeführt;;;
 AT-26;11.2;Pflichtcheck vor Disposition;Schicht anlegen, Fahrer anmelden und Fahrzeug ohne Prüfung verfügbar schalten;"Keine Einsatzfreigabe; Liste der fehlenden Prüfschritte sichtbar";Teilweise bestanden (M3-Umfang, offene Teilschritte ausgewiesen);879fd9fcb4b040f268d2ce2c4c251ab0dd40022f+lokal;"run-07d510c66a92aab9; tests/acceptance/evidence/m3/AT-26-run-07d510c66a92aab9.json";Ausstehend (Auftraggeber, D-12)

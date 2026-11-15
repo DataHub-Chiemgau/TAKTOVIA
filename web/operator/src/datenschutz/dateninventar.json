@@ -19242,6 +19242,15 @@
           "schutzklasse": "",
           "loeschklasse": "",
           "bemerkung": ""
+        },
+        {
+          "spalte": "synthetic",
+          "personenbezogen": "nein",
+          "zweck": "MANDANTENTRENNUNG",
+          "rechtsgrundlage": "",
+          "schutzklasse": "",
+          "loeschklasse": "",
+          "bemerkung": ""
         }
       ]
     },

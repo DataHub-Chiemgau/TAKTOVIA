@@ -1,0 +1,5 @@
+{
+  "schema": "wartungskalender.v1",
+  "hinweis": "Wartungsfenster der Plattform (UTC). Ein Eintrag muss vor Beginn des Fensters stehen (`eingetragen_am` < `von`), sonst gilt er im Bericht als nachträglich und wird nicht herausgerechnet. Regel und Zeitfenster sind Arbeitswerte (D-05 offen).",
+  "fenster": []
+}

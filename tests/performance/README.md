@@ -34,7 +34,7 @@ nötig ist; das Profilformat und das Berichtsformat bleiben davon unberührt. Da
 
 Spitzen-Requests/s und Anzahl aktiver Mandanten sind im Profil als `open_parameters` mit Wert `null` und Status „OFFEN (D-05)“ ausgewiesen.
 Ein Profil im Modus `measurement` wird ohne diese Werte abgewiesen; ein Beispielprofil läuft, der Bericht ist dann `valid_for_acceptance: false`.
-Das Restore-Drehbuch ist nur eine Vorlage; das Wiederanlaufdrehbuch (WP-M5-14) steht in `wiederanlauf-drehbuch-m5.md` (Tests `test_pitr.py`, `test_wiederanlauf_drehbuch.py`, Trockenlaufprotokoll in `protokolle/`); die Durchführung der Ausfallübung mit Messung gehört zu WP-M5-15.
+Das Restore-Drehbuch ist nur eine Vorlage; das Wiederanlaufdrehbuch (WP-M5-14) steht in `wiederanlauf-drehbuch-m5.md` (Tests `test_pitr.py`, `test_wiederanlauf_drehbuch.py`, Trockenlaufprotokoll in `protokolle/`); die Durchführung der Ausfallübung mit RPO-/RTO-Messung und PSP-Abgleich ist WP-M5-15 (`ausfalluebung/`, Plan `ausfalluebung-plan-m5.md`, Test `test_ausfalluebung.py`, Protokoll `protokolle/ausfalluebung-m5-15.json`).
 
 ## Referenzdatenbestand (WP-M5-02)
 
@@ -58,3 +58,7 @@ Aufruf (mit Opt-in, weil Minuten Laufzeit): `cd backend && ./gradlew :app:bootJa
 `TAKTOVIA_PERF_STAGE_SCALE` skaliert die Stufendauer des Referenzlaufs (Standard 0,4; der dokumentierte Messlauf nutzt 1,0). **Grenzen:** Generator, Anwendung, PostgreSQL und Issuer teilen sich die CPUs der Maschine; die Werte
 gelten für diese Umgebung und nicht als Abnahme (D-05 offen). Die Produktionsverdrahtung von `/v1/ride-offers` bindet Angebote noch nicht an Kandidatensuche und Solver (`CandidateGate.PASS_THROUGH`); Hold und Confirm laufen mit einer
 im Testaufbau gesetzten Planbindung (SQL). Beides steht in jedem Bericht unter „Grenzen“.
+
+## Verfügbarkeitsmessung (WP-M5-05)
+
+`availability/`: Tests der synthetischen Proben, des Monatsberichts und des Probemandanten (Werkzeug: `infra/availability`); Nachweis gegen die Anwendung in `protokolle/m5-05/`.

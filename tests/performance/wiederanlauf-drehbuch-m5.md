@@ -1,7 +1,7 @@
 # Wiederanlaufdrehbuch Datenbank (WP-M5-14, Vorlage aus WP-M0-25)
 
 Beschreibt jeden Schritt vom Ausfall der Primärdatenbank bis zur funktionsfähigen End-to-End-Probe. Ausführbare Teile: `infra/backup/taktovia_backup` (`wal.py`, `pitr.py`, `consistency.py`,
-`drehbuch.py`), Protokollstruktur nach `templates/restore-drehbuch-vorlage.json`. Die Durchführung der Ausfallübung mit Messung ist **WP-M5-15** (nicht Teil dieses Pakets).
+`drehbuch.py`), Protokollstruktur nach `templates/restore-drehbuch-vorlage.json`. Die Durchführung der Ausfallübung mit Messung ist **WP-M5-15**: Plan und Ergebnis in [ausfalluebung-plan-m5.md](ausfalluebung-plan-m5.md), Protokoll `protokolle/ausfalluebung-m5-15.json`.
 Verträge: [LH-6.19-NFR-007](../../docs/umsetzungsplan/vertraege/LH-6.19-NFR-007.md), [LH-6.18-SEC-010](../../docs/umsetzungsplan/vertraege/LH-6.18-SEC-010.md); Alarme: `docs/betrieb/alarm-handlungsschritte.md`.
 
 ## Messdefinitionen (Kap. 08 §8.6, vorläufige Lastenheftziele, D-05)
@@ -49,7 +49,7 @@ Objektspeicher: wird aus der versionierten Replik bzw. dem Objektbackup (`create
 
 ## Abgleich der Zahlungen (Schritt 6, Verhalten des Backends)
 
-Nach einem Restore kann der Zahlungsdienstleister weiter sein als die Datenbank. `reconcileAfterRestoreIn` betrachtet jede Zahlung in `CREATED`, `REQUIRES_ACTION`, `CAPTURE_PENDING`, `CAPTURE_UNKNOWN`, `RECONCILING`, `VOID_PENDING`, `REFUND_PENDING` und stellt höchstens einen Abgleich ein. Der Abgleich fragt den Status über die Providerreferenz, ohne Providerreferenz über die **eigene Händlerreferenz** (`merchant_ref`), ab und übernimmt nur den verifizierten Stand. Er löst nie eine neue Autorisierung oder einen neuen Einzug aus; die ursprünglichen Operationen wiederholen nur mit derselben Kommandoreferenz. Grenze: eine Zahlung, deren `payment_intent`-Zeile im Verlustfenster angelegt wurde und deshalb lokal **fehlt**, wird nicht gefunden (der PSP-Adapter hat keine Auflistung nach Zeitraum); sie erscheint im Abgleichbericht der Ausfallübung (WP-M5-15) über Providerseite.
+Nach einem Restore kann der Zahlungsdienstleister weiter sein als die Datenbank. `reconcileAfterRestoreIn` betrachtet jede Zahlung in `CREATED`, `REQUIRES_ACTION`, `CAPTURE_PENDING`, `CAPTURE_UNKNOWN`, `RECONCILING`, `VOID_PENDING`, `REFUND_PENDING` und stellt höchstens einen Abgleich ein. Der Abgleich fragt den Status über die Providerreferenz, ohne Providerreferenz über die **eigene Händlerreferenz** (`merchant_ref`), ab und übernimmt nur den verifizierten Stand. Er löst nie eine neue Autorisierung oder einen neuen Einzug aus; die ursprünglichen Operationen wiederholen nur mit derselben Kommandoreferenz. Grenze: eine Zahlung, deren `payment_intent`-Zeile im Verlustfenster angelegt wurde und deshalb lokal **fehlt**, wird nicht gefunden (der PSP-Adapter hat keine Auflistung nach Zeitraum); sie erscheint im Abgleichbericht der Ausfallübung (WP-M5-15, `ausfalluebung/abgleich.py`) über die Providerseite (Händlerreferenz aus dem Ereignisstrom).
 
 ## Nachweise und Grenzen
 

@@ -21,8 +21,8 @@ GATE_IDS = ["PH-AT-001", "PH-AT-011", "PH-AT-017", "PH-AT-018", "AT-18", "AT-24"
 M2_GATE_IDS = ["AT-01", "AT-02", "AT-03", "AT-04", "AT-05", "AT-07", "AT-13", "AT-15", "AT-19"]
 # Gate-Suite M3 (WP-M3-56): Katalogtests mit eigener Zeile in e2e.csv; Evidenz unter evidence/m3
 M3_GATE_IDS = ["AT-08", "AT-09", "AT-10", "AT-11", "AT-26", "AT-27", "AT-28", "AT-29", "AT-30", "AT-31", "AT-32", "AT-33", "AT-34", "AT-35", "AT-36", "AT-50", "AT-51", "AT-60"]
-# Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py)
-M5_GATE_IDS = ["AT-59"]
+# Gate-Tests späterer Meilensteine mit eigenem Läufer und eigener Evidenzablage (WP-M5-20: AT-59 im P1-Mindestumfang, tests/acceptance/m5_at59/run.py; WP-M5-15: AT-23, tests/acceptance/m5_at23/run.py)
+M5_GATE_IDS = ["AT-59", "AT-23"]
 GREEN = {"Umgesetzt", "Abgenommen"}
 CATALOG_ID = re.compile(r"^(AT-\d{2}|E2E-\d{3}|PH-AT-\d{3})$")
 
