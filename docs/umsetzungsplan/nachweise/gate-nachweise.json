@@ -1,0 +1,136 @@
+{
+ "schema": "taktovia-gate-nachweise/1",
+ "hinweis": "Von Hand gepflegte Nachweisliste je Gate (Kap. 08 §8.4). `tools/nachweis_p1.py` prüft nur, dass jeder Verweis existiert und der Stand eingetragen ist; die Inhalte stammen aus den genannten Protokollen. Stand 'erbracht' nur, wenn der Nachweis in der geforderten Umgebung (Staging, Abnahme-Build, Prüfer) geführt wurde; Ersatzumgebungen sind 'teilweise'.",
+ "gates": {
+  "Fachmodell": {
+   "nachweise": [
+    {
+     "beschreibung": "Review-Protokoll Fachmodell: Zustandsautomaten, Entitäten, Preis- und Kostenregeln der Detailverträge mit ausführbarem Test, Liste der offenen Geschäftsentscheidungen und gesperrten Aktivierungen",
+     "verweise": [
+      "docs/umsetzungsplan/nachweise/fachmodell-review.md"
+     ],
+     "stand": "teilweise",
+     "grenze": "Werkzeug- und Agentenprüfung, kein Fachreview durch benannte Personen (D-12); Geld- und Beförderungsrolle (D-01, D-03, D-04, D-06, D-07) nicht entschieden"
+    }
+   ]
+  },
+  "CI": {
+   "nachweise": [
+    {
+     "beschreibung": "Unit-, Datenbankintegrations- und Contract-Tests lokal ausgeführt (Backend-Gesamtbuild, DB-Tests, API-Lint und Bündel, Contract, Web)",
+     "verweise": [
+      "backend/build.gradle.kts",
+      "db/tests",
+      "api/tools/lint.py",
+      "tests/contract"
+     ],
+     "stand": "teilweise",
+     "grenze": "lokaler Lauf in der Ersatzumgebung; die Workflows in .github/workflows/ci.yml sind angelegt, aber nicht auf dem Server gelaufen (Branch-Schutz offen)"
+    },
+    {
+     "beschreibung": "Release-Gate mit Pflichtprüfungen für Kernbuchung und Disposition, Migration frisch und aus freigegebenem Vorstand",
+     "verweise": [
+      "tools/release_gate/gate.py",
+      "tools/release_gate/migration_check.py",
+      "tools/release_gate/pflichtpruefungen.json"
+     ],
+     "stand": "teilweise",
+     "grenze": "signiert nur mit HMAC, keine Lieferkettensignatur; kein CI-Lauf auf dem Server"
+    }
+   ]
+  },
+  "Partnerfreigabe": {
+   "nachweise": [
+    {
+     "beschreibung": "Partner-Sandbox je Operation (Idempotenz, Statusabfrage, Storno) als Sandbox-Adapter der Testumgebung",
+     "verweise": [
+      "tests/sandbox/partner/test_partner_sandbox.py"
+     ],
+     "stand": "teilweise",
+     "grenze": "Sandbox-Adapter, keine realen Partner; in P1 gibt es keine buchbaren Partner"
+    }
+   ]
+  },
+  "Sicherheit": {
+   "nachweise": [
+    {
+     "beschreibung": "RLS-, Rollen- und Objektprüfung: Isolationssuite, Feldzugriffsmatrix, Authentisierungsangriffe, Upload- und Exportberechtigungen",
+     "verweise": [
+      "docs/umsetzungsplan/nachweise/WP-M5-17-sicherheitsabnahme.md",
+      "tests/acceptance/m5_sicherheit"
+     ],
+     "stand": "teilweise",
+     "grenze": "Ersatzumgebung (kein Keycloak, kein Staging)"
+    },
+    {
+     "beschreibung": "Unabhängiger Penetrationstest und Behandlung kritischer Befunde",
+     "verweise": [
+      "tests/acceptance/m5_sicherheit/pentest/register.json"
+     ],
+     "stand": "fehlt",
+     "grenze": "nicht durchgeführt; Register AUSSTEHEND, keine benannte Prüfstelle (D-12), kein Staging"
+    }
+   ]
+  },
+  "UX": {
+   "nachweise": [
+    {
+     "beschreibung": "Barrierefreiheitsprüfung Fahrer und Planer (AT-54) und übrige Kernreisen: automatisierte Prüfungen und Prüfprotokolle",
+     "verweise": [
+      "docs/umsetzungsplan/nachweise/WP-M5-18-pruefprotokoll.md",
+      "docs/umsetzungsplan/nachweise/WP-M5-30-pruefprotokoll.md"
+     ],
+     "stand": "teilweise",
+     "grenze": "Screenreader-Durchläufe (NVDA, VoiceOver, TalkBack), AT-19 auf dem Abnahme-Build und Zielgeräte nicht ausgeführt; AT-54 nicht in e2e.csv"
+    }
+   ]
+  },
+  "Betrieb": {
+   "nachweise": [
+    {
+     "beschreibung": "Messbares Lastprofil und p95-Ziele (Standard-API, Fahrtangebote, Planrevision) in der Ersatzumgebung",
+     "verweise": [
+      "tests/performance/protokolle/standard-api-p95-m5-11.md",
+      "tests/performance/protokolle/planrevision-m5-13.md",
+      "tests/performance/test_referenzprofil.py"
+     ],
+     "stand": "teilweise",
+     "grenze": "Referenzprofil nicht vereinbart (OP-01), Messungen auf lokaler Hardware, nicht auf der Zielumgebung (D-05)"
+    },
+    {
+     "beschreibung": "Restore, Failover und Ausfallübung mit RPO/RTO-Messung",
+     "verweise": [
+      "tests/performance/protokolle/ausfalluebung-m5-15.json",
+      "tests/performance/wiederanlauf-drehbuch-m5.md",
+      "tests/performance/protokolle/wiederanlauf-trockenlauf-m5-14.json"
+     ],
+     "stand": "teilweise",
+     "grenze": "lokale Übung mit vorläufigen Zielwerten (AT-23), keine Replikation auf getrennter Hardware"
+    },
+    {
+     "beschreibung": "Notbetrieb, Monitoring und Eskalation: Betriebshandbuch mit Runbooks je Alarm, Alarmkatalog, synthetische Proben",
+     "verweise": [
+      "docs/betrieb/betriebshandbuch.md",
+      "infra/alerting/katalog.yaml",
+      "tests/performance/protokolle/m5-05/probenlauf-anwendung.md"
+     ],
+     "stand": "teilweise",
+     "grenze": "keine Übung mit Betriebspersonal, keine reale Telemetrie-Senke, kein voller Monat Verfügbarkeitsmessung (OP-02)"
+    }
+   ]
+  },
+  "Pilot": {
+   "nachweise": [
+    {
+     "beschreibung": "Pilotbereitschaft: Abbruchkriterien, Entscheidungsweg, Rückfallbetrieb, Prozessverantwortliche, Generalprobe und Produktionseinspielung (Vorlage und Werkzeuge)",
+     "verweise": [
+      "docs/pilot/pilotbereitschaft.md",
+      "tools/pilot_bereitschaft.py"
+     ],
+     "stand": "fehlt",
+     "grenze": "nichts freigegeben: keine Schwellen, keine benannten Personen, keine Generalprobe, keine Rückfallübung, keine Produktionsumgebung (D-05, D-11)"
+    }
+   ]
+  }
+ }
+}

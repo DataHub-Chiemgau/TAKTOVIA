@@ -91,3 +91,14 @@ Anwendungspaketen nicht an diese Pfade verdrahtet sind; der Wächter weist diese
 
 - `test_dokumentationspaket.py` (WP-M5-27, LH-6.20-QAT-006): Dokumentationspaket `docs/dokumentation/` gegen den Build (`tools/check_dokumentationspaket.py`: Versionierung, Oberflächen- und Schnittstellenabgleich, Personendaten, Platzhalter, Zugänglichkeit, Fahrerschulung, Standardbetrieb mit Protokollprüfung). Die Demonstration durch den Abnehmer ist **nicht** ausgeführt.
 - `test_pilotbereitschaft.py` (WP-M5-29): Abbruchkriterien, Entscheidungsjournal, Prozessverantwortliche, Protokollprüfung (synthetisch) und Produktionseinspielung in einer Ersatzumgebung (echte Anwendung und Werkzeug; braucht `./gradlew :app:bootJar`, sonst übersprungen). Generalprobe, Rückfallübung und echte Produktionseinspielung sind **nicht** ausgeführt; siehe `docs/pilot/pilotbereitschaft.md`.
+
+## M5-Gate und Nachweisführung P1 (WP-M5-31)
+
+```bash
+python tests/acceptance/m5_gate/regression.py --build <Commit> [--write-e2e]   # alle Gate-Suiten auf EINEM Build (M1 bis M4, AT-23, AT-59, AT-25/-53/-54/-61)
+python tools/nachweis_p1.py lauf --python db/tests --python tests/acceptance ... --vitest-json web.json   # Testergebnisse sammeln
+python tools/nachweis_p1.py bericht --write       # Nachweismatrix (docs/umsetzungsplan/nachweise/nachweismatrix-p1.csv) und Gate-Bericht (docs/umsetzungsplan/gate-bericht-m5.md); Exit 1 bei Verstößen
+python tools/nachweis_p1.py fachmodell --write    # Review-Protokoll Fachmodell
+```
+
+`test_nachweis_p1.py` prüft das Werkzeug mit synthetischen Mini-Repositories (entfernte Evidenz, fremder Build, Mängelregeln, Gates). Der Bericht über das echte Repository weist offene Punkte aus; er entscheidet nichts (Abnahme: Auftraggeber, D-12).
